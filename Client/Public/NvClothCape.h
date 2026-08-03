@@ -70,6 +70,10 @@ public:
 	static UPtr<CNvClothCape> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
 
+	/*----------- 광윤 추가 -----------*/
+	bool	GetShadowBounds(BoundingBox& OutBounds) const override;
+	/*---------------------------------*/
+
 private:
 	struct BODY_COLLISION_BONE
 	{

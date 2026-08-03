@@ -447,9 +447,11 @@ HRESULT CModel_Instance_Manager::Render(ID3D11DeviceContext* pContext, const REN
 }
 
 /*----------- 광윤 추가 -----------*/
-HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch){
+HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch, int32_t _PointFaceIndex){
 	
 	if (!_LightHandle)	return E_FAIL;
+
+	if (_PointFaceIndex < -1 || _PointFaceIndex >= static_cast<int32_t>(POINT_SHADOW_FACE_COUNT))	return E_FAIL;
 
 	auto pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(_LightHandle.value());
 	if (nullptr == pLight) return E_FAIL;
@@ -467,7 +469,15 @@ HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pCo
 			if (i < pBatch->ShadowBounds.size()) {
 				const auto& Bounds = pBatch->ShadowBounds[i];
 
-				if (Bounds.has_value())	bVisibleToLight = pLight->Intersects_ShadowBounds(Bounds.value());
+				if (Bounds.has_value()) {
+					if (pLight->Get_LightType() == LIGHT_TYPE::POINT && _PointFaceIndex >= 0) {
+						bVisibleToLight = pLight->Intersects_PointShadowFace(static_cast<uint32_t>(_PointFaceIndex), Bounds.value());
+					}
+					else {
+						bVisibleToLight = pLight->Intersects_ShadowBounds(Bounds.value());
+					}
+
+				}
 			}
 
 			if (!bVisibleToLight)	continue;

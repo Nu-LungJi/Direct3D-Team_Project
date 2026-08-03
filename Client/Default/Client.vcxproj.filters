@@ -959,6 +959,9 @@
     <ClCompile Include="..\Private\SkyCloudyCube.cpp">
       <Filter>GameObject\SkyBox</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\BossMace.cpp">
+      <Filter>GameObject\Monster\TombBoss</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">

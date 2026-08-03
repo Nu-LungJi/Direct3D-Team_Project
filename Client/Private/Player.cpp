@@ -1771,19 +1771,11 @@ void CPlayer::OnTriggerExit(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 /*----------- 광윤 추가 -----------*/
 bool CPlayer::GetShadowBounds(BoundingBox& OutBounds) const
 {
-	if (!m_pComCollider || !m_pComCollider->Get())	return false;
+	if (nullptr == m_pComCharacterController)	return false;
 
-	CCollider* pCollider = m_pComCollider->Get();
-
-	if (pCollider->GetCollType() != CollType::Box)	return false;
-
-	const auto* pBox = static_cast<const CCollBox*>(pCollider);
-
-	pBox->GetLocalBoundingBox().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
-
-	OutBounds.Extents.x *= 1.25f;
-	OutBounds.Extents.y *= 1.25f;
-	OutBounds.Extents.z *= 1.25f;
+	const auto PlayerPosition = m_pComCharacterController->GetPosition();
+	OutBounds.Center = PlayerPosition;
+	OutBounds.Extents = { 1.25f, 1.6f, 1.0f };
 
 	return true;
 }

@@ -23,6 +23,8 @@ namespace Engine
 		_matrix matView{};
 		_matrix matProj{};
 		_matrix matViewProj{};
+
+		int32_t	PointShadowFaceIndex = -1;
 	} RENDER_CTX;
 
 	typedef struct tagWorkerTask

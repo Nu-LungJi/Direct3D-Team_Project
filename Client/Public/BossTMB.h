@@ -40,6 +40,11 @@ private:
 private:
 	_string			m_EffectNames[ETOUI(BOSSTOMB_SKILL::END)];
 	_bool			m_bStar{ true };
+
+	/*----------- 광윤 추가 -----------*/
+	std::optional<CHandle> AdditionalLightHandle{};
+	/*---------------------------------*/
+
 	uint32_t		m_iColliderBoneIndex{UINT32_MAX};
 public:
 	static E::UPtr<CBossTMB> Create();

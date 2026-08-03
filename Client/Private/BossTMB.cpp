@@ -239,6 +239,11 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	m_fEMissiveColor = { 0.75f,0.9f,1.f};
 
+	/*----------- 광윤 추가 -----------*/
+	// 보스가 빛을 등지면 너무 어두워져서 전면만 추가 라이트 설치
+	AdditionalLightHandle = CGameInstance::Get().Allocate_EffectLight(GetTransform().GetLoadedPostion(), 500.f, { 0.47f, 1.f, 1.f }, 15.f, 20.f, 99999.f, { 0.f, 0.f, 0.f });
+	/*---------------------------------*/
+
 
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("Spine1");
 	return S_OK;
@@ -260,7 +265,7 @@ void CBossTMB::Active_Skill()
 			CGameInstance::Get().SetEffectWorldMatrix(m_iCurEffectID, *GetTransform().GetWorldMatrix());
 		m_bSkillLoop = true;
 	}
-
+		
 	_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
 	
 	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) && fCurrRatio >= m_fSkillRatio.x && fCurrRatio < m_fSkillRatio.y)
@@ -278,9 +283,7 @@ void CBossTMB::Active_Skill()
 		
 		m_iPreSkill = m_iCurSkill;
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK), FLAGTYPE::ADD);
-
 	}
-	
 }
 void CBossTMB::PriorityUpdate(E::_float fTimeDelta)
 {
@@ -294,6 +297,17 @@ void CBossTMB::FixedUpdate(E::_float fTimeDelta)
 {
 	if (!m_bDonMove)
 		m_pCharacterMotor->FixedUpdate(fTimeDelta);
+	/*----------- 광윤 추가 -----------*/
+	auto AdditionalLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(AdditionalLightHandle.value());
+	if (nullptr == AdditionalLight) return;
+	
+	XMVECTOR LookVec = GetTransform().GetState(STATE::LOOK);
+	XMVECTOR PosVec = GetTransform().GetState(STATE::POSITION);
+	
+	_float3	 LightOffset = { 0.f, 10.f, 0.f };
+	
+	AdditionalLight->Set_LightPosition(PosVec + LookVec * 12.f + XMLoadFloat3(&LightOffset));
+	/*---------------------------------*/
 }
 
 void CBossTMB::Update(E::_float fTimeDelta)
