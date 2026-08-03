@@ -53,7 +53,12 @@ public:
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
-			.iQueryMask = PX_ALL_LAYERS
+			// [LSY] 적 CCT와는 충돌하되 전투용 HurtBox는 이동 Query에서 제외한다.
+			.iQueryMask =
+				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+				ETOUI(COLLISION_LAYER::ENEMY_BODY)
 		};
 		StringID LevelTag;
 		CHandle  UIHandle;

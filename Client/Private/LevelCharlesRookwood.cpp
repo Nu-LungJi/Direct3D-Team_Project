@@ -216,7 +216,8 @@ std::optional<CHandle> CLevelCharlesRookwood::SpawnPlayer()
 		.iSimulationMask = PX_ALL_LAYERS,
 		.iQueryMask =
 			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
-			ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+			ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+			ETOUI(COLLISION_LAYER::ENEMY_BODY)
 	};
 	return  E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::CHARLES_ROOKWOOD,
