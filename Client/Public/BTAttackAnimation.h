@@ -26,14 +26,16 @@ private:
 	void							Att(CMonster* pMon, CComTransform* pSrcTransform, CGameObject* pTarget, _float fRotRatio);
 	void							ShakeCam(_float fRotRatio);
 	void							Rotation(CComTransform* pTransform, CComCharacterMoveIntent* pMoveIntent, CGameObject* pTarget,_float fTimeDelta, _float fRotRatio);
-	void							Reset_Value();
+
+	void OnEnter()override;
+	void OnExit(EVALUATE eResult)override;
 private:
 	MOVE				m_eMove{ MOVE::STRAIGHT };
 
 	_float3				m_vEmissiveColor{};
-	_float2				m_vRatio{}, m_vRotRatio{}, m_vAttRatio{};
-	_float				m_fDis{}, m_fTime{}, m_fIntensive{ 0.5f }, m_fCamShakeRatio{};
-	_bool				m_bRatioInvert{ false }, m_bActiveSkill{ false }, m_bCamShake{ true };
+	_float2				m_vRatio{}, m_vRotRatio{}, m_vAttRatio{}, m_vAttCollRatio{0.f,0.f};
+	_float				m_fDis{}, m_fTime{}, m_fIntensive{ 0.5f }, m_fCamShakeRatio{}, m_fAttRadius{5.f};
+	_bool				m_bRatioInvert{ false }, m_bActiveSkill{ false }, m_bCamShake{ true }, m_bAttRatio{false};
 public:
 	static UPtr<CBTAttackAnimation> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

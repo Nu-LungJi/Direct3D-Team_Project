@@ -897,9 +897,6 @@
     <ClCompile Include="..\Private\Cursor.cpp">
       <Filter>GameObject\UI\Cursor</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Mon_Weapon.cpp">
-      <Filter>GameObject\Monster\00.Parents</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\Monster.cpp">
       <Filter>GameObject\Monster\00.Parents</Filter>
     </ClCompile>
@@ -917,6 +914,10 @@
     </ClCompile>
     <ClCompile Include="..\Private\Mon_Weapon.cpp">
       <Filter>GameObject\Monster</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BossMace.cpp" />
+    <ClCompile Include="..\Private\Mon_Weapon.cpp">
+      <Filter>GameObject\Monster\00.Parents</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

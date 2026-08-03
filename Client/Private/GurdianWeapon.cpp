@@ -61,54 +61,89 @@ HRESULT CGurdianWeapon::Initialize(void* pArg)
 
 void CGurdianWeapon::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_bDead)
+	{
+		Dead_Parent(fTimeDelta);
+		return;
+	}
+
 	__super::PriorityUpdate(fTimeDelta);
+
 }
 
 void CGurdianWeapon::Update(E::_float fTimeDelta)
 {
+	if (m_bDead)
+		return;
+
+	
 	__super::Update(fTimeDelta);
+
 	Weapon_Throw(fTimeDelta);
+
 }
 
 void CGurdianWeapon::LateUpdate(E::_float fTimeDelta)
 {
-	auto* pParent = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle);
-	auto* pBT = pParent ? pParent->GetComponent<CComBeHavior>("Com_BT") : nullptr;
+	if (!m_bDead)
+	{
+		if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
+		{
+			if (!m_bThrow)
+			{
+				if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
+				{
+					if (pModel->Get_CombinedBoneMatrices().size() > m_iBoneSocketIndex)
+					{
+						_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
+						for (uint32_t i = 0; i < 3; ++i)
+						{
+							Par.r[i] = XMVector3Normalize(Par.r[i]);
+						}
+						XMStoreFloat4x4(&m_ParentMatrix, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
+					}
+				}
+			}
+			if (auto pBT = iter->GetComponent<CComBeHavior>("Com_BT"))
+			{
+				if (!m_bThrow && pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
+				{
+					m_bThrow = true;
+					XMStoreFloat3(&m_vLook, pBT->GetGameObject()->GetTransform().GetState(STATE::LOOK));
+					XMStoreFloat4x4(&m_ParentMatrix, (XMLoadFloat4x4(&m_ParentMatrix)));
+				}
+				else if (m_bThrow && !pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
+					m_bThrow = false;
 
-	if (m_bDebrisPhysicsActivated)
+				if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
+				{
+					m_bDead = true;
+					m_bDebrisPhysicsActivated = true;
+
+				}
+				if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
+				{
+					Weapon_CallBack();
+					pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
+				}
+			}
+		}
+
+
+	}
+
+	if (m_bDead && m_bDebrisPhysicsActivated)
 	{
 		UpdatePhysicData();
 		GetTransform().Update();
 	}
 	else
 	{
-		if (pParent)
-		{
-			if (!m_bThrow)
-				UpdateSocketParentMatrix();
-
-			if (pBT)
-			{
-				if (!m_bThrow && pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
-				{
-					m_bThrow = true;
-					XMStoreFloat3(&m_vLook, pParent->GetTransform().GetState(STATE::LOOK));
-				}
-				else if (m_bThrow && !pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::THROW)))
-					m_bThrow = false;
-			}
-		}
-
 		GetTransform().SetParentWorldMatrix(m_ParentMatrix);
 		GetTransform().Update();
 	}
+	
 
-	// [LSY] 무기 물리 활성 여부가 기존 디졸브 플래그 처리에 영향을 주지 않도록 분리한다.
-	if (pBT && pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE)))
-	{
-		Weapon_CallBack();
-		pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DISSOLVE), FLAGTYPE::DEL);
-	}
 
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 
@@ -180,6 +215,19 @@ _bool CGurdianWeapon::ActivateDebrisPhysics()
 	m_bThrow = false;
 	m_bDebrisPhysicsActivated = true;
 	return true;
+}
+void CGurdianWeapon::Dead_Parent(_float fTimeDelta)
+{
+	m_fTick += fTimeDelta;
+	_float t = m_fTick / 3.f;
+	m_fDissolveintensity = 0 + (1 - 0) * t;
+	if (t >= 1.f)
+	{
+		m_fDissolveintensity = 0.f;
+		m_fTick = 0.f;
+		SetPendingDestroy();
+	
+	}
 }
 
 HRESULT CGurdianWeapon::InitializeDebrisPhysics(const DESC& Desc)

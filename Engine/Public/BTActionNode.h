@@ -22,6 +22,10 @@ protected:
 
 	 HRESULT					InitializePrototype(void* pArg) override;
 	 HRESULT					Initalize(void* pArg) override;
+
+
+	 virtual void OnEnter() {};
+	 virtual void OnExit(EVALUATE eResult) {};
 public:
 	void						Abort() override;
 	virtual void				Update_Gui();

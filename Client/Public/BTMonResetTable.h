@@ -23,7 +23,7 @@ public:
 	virtual nlohmann::json		Save_Node()override;
 	HRESULT						Load_json(const nlohmann::json& j) override;
 private:
-	_bool			m_bIsActive{ false };
+	_bool			m_bHardReset{ false };
 public:
 	static UPtr<CBTMonResetTable> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

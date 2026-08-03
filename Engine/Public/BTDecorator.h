@@ -21,6 +21,8 @@ protected:
 	virtual HRESULT	InitializePrototype(void* pArg) override;
 	virtual HRESULT Initalize(void* pArg) override;
 
+	virtual void OnEnter() {};
+	virtual void OnExit(EVALUATE eResult) {};
 public:
 	virtual EVALUATE	Evaluate(_float fTimeDelta)override;
 	void						Abort() override;

@@ -16,7 +16,7 @@ public:
 public:
 	struct DESC : public CMon_Weapon::WEAPON_DESC
 	{
-		// [LSY] 소켓 Parent World에 포함될 몬스터 스케일을 Convex 크기에 반영한다.
+		// [LSY] ���� Parent World�� ���Ե� ���� �������� Convex ũ�⿡ �ݿ��Ѵ�.
 		_float3 vOwnerScale{ 1.f, 1.f, 1.f };
 		_float fMass{ 3.f };
 		PX_FILTER_DESC tFilter{
@@ -55,6 +55,7 @@ public:
 	_bool					Weapon_CallBack() { return m_bDissolve; }
 
 private:
+	void					Dead_Parent(_float fTimeDelta);
 	HRESULT				InitializeDebrisPhysics(const DESC& Desc);
 	_bool				UpdateSocketParentMatrix();
 	static const char*	ResolveConvexPath(std::string_view sWeaponName);

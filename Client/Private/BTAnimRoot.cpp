@@ -269,19 +269,28 @@ HRESULT CBTAnimRoot::Load_json(const nlohmann::json& j)
 	}
 	return S_OK;
 }
-void CBTAnimRoot::Active_Skill()
+_bool CBTAnimRoot::Active_Skill()
 {
 	
 	if (auto pBT = Get_ComBT())
 	{
-		if (pBT->Check_Flag(ETOUI(BTFLAG::ATTACK)) || m_eSkillType == ATTMON::END)
-			return;
+		if (m_eSkillType == ATTMON::END)
+			return false;
 
 		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
+			if (pBT->Check_Flag(ETOUI(BTFLAG::ENDHIT)))
+				pSrc->Skill_Finished();
+
+			if (pBT->Check_Flag(ETOUI(BTFLAG::ATTACK)))
+				return false;
+
+
 			pSrc->Set_AttTable(m_eSkillType, m_fSkillRatio);
+			return true;
 		}
 	}
+	return false;
 }
 void CBTAnimRoot::EventFlagToRatio(_float fRatio)
 {
@@ -336,6 +345,36 @@ void CBTAnimRoot::Reset_CheckFlag()
 	for (auto& endFlag : m_EndFlags)
 		endFlag.bFlag = false;
 
+}
+
+void CBTAnimRoot::OnEnter()
+{
+	auto pBT = Get_ComBT();
+
+	if (!pBT) return;
+
+	auto pOwner = pBT->GetGameObject();
+
+	if (!pOwner) return;
+
+	auto pAnimator = pOwner->GetComponent<CComAnimator>("ComCModelAnimator");
+
+	if (!pAnimator) return;
+
+	auto& animState = pAnimator->GetCurAnimState();
+	m_bStart = true;
+	m_iLoopCnt = 0;
+	Reset_CheckFlag();
+	if (animState.iAnimIndex == m_Value.iAnimIndex)
+	{
+		animState.bFinished = false;
+		pAnimator->SetTrackPosition(0.f);
+		pAnimator->SetPlay(true);
+	}
+}
+
+void CBTAnimRoot::OnExit(EVALUATE eResult)
+{
 }
 
 

@@ -42,9 +42,12 @@ EVALUATE CBTAnimation::Evaluate(_float fTimeDelta)
 	Gravity();
 	
 	EventFlagToRatio(pAnimator->GetPlayAnimRatio());
+	if (m_bEarly && m_fEarlyRatio <= pAnimator->GetPlayAnimRatio() || bFinished)
+	{
+		return m_eDebug = EVALUATE::SUCCESS;
+	}
 	if (m_bLoop || bFinished)
 	{
-		Reset_CheckFlag();
 		return m_eDebug = EVALUATE::SUCCESS;
 	}
 
@@ -88,6 +91,13 @@ HRESULT CBTAnimation::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	return S_OK;
+}
+void CBTAnimation::OnEnter()
+{
+	__super::OnEnter();
+}
+void CBTAnimation::OnExit(EVALUATE eResult)
+{
 }
 E::UPtr<CBTAnimation> CBTAnimation::Create()
 {
