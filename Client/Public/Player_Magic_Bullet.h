@@ -2,6 +2,10 @@
 #include "GameObject.h"
 #include "Client_Defines.h"
 
+NS_BEGIN(Engine)
+class CComSound;
+NS_END
+
 NS_BEGIN(Client)
 
 class CPlayer_Magic_Bullet : public CGameObject
@@ -55,12 +59,14 @@ private:
 	CHandle m_hOwner{};
 	PX_QUERY_FILTER_DESC m_tQueryFilter{};
 	std::optional<CHandle> m_hPointLight{};
+	CComSound* m_pComSound{};
 
 	std::vector<_float3> m_Splines;
 
 private:
 	void BuildSpline(_float fCurveHeight, uint32_t iSampleCount);
 	void UpdatePointLight();
+	void StopFlightSound();
 	_bool SweepSegment(
 		const _float3& vStart,
 		const _float3& vEnd,
