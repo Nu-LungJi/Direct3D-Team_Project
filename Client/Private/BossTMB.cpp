@@ -53,7 +53,20 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	{
 		CComPxCharacterController::DESC Desc{};
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.vPosition = MonDesc->vPos;
+		const _float fHorizontalScale =
+			std::max(std::abs(MonDesc->vScale.x), std::abs(MonDesc->vScale.z));
+		const _float fVerticalScale = std::abs(MonDesc->vScale.y);
+		const _float3 vCenterOffset{
+			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
+			MonDesc->vCCTCenterOffset.y * fVerticalScale,
+			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
+		Desc.fHeight = MonDesc->fCCTHeight * fVerticalScale;
+		Desc.fRadius = MonDesc->fCCTRadius * fHorizontalScale;
+		Desc.fStepOffset = MonDesc->fCCTStepOffset;
+		Desc.vPosition = {
+			MonDesc->vPos.x + vCenterOffset.x,
+			MonDesc->vPos.y + vCenterOffset.y,
+			MonDesc->vPos.z + vCenterOffset.z };
 		Desc.tFilter = MonDesc->tFilter;
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PHYSX,
@@ -111,6 +124,10 @@ HRESULT CBossTMB::Initialize(void* pArg)
 		Desc.pMoveIntent = m_pMoveIntent;
 		Desc.pCharacterController = m_pCharacterController;
 		Desc.fGravity = -9.81f;
+		Desc.vControllerCenterOffset = {
+			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
+			MonDesc->vCCTCenterOffset.y * std::abs(MonDesc->vScale.y),
+			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
 		if (FAILED(AddComponentFromProto(

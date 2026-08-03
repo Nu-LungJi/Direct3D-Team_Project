@@ -228,8 +228,14 @@ HRESULT CPlayer::Initialize(void* pArg)
 	{
 		CComPxCharacterController::DESC Desc{};
 		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad(CResPhysXMaterial::DESC{});
+		Desc.fHeight = pDesc->fCCTHeight;
+		Desc.fRadius = pDesc->fCCTRadius;
+		Desc.fStepOffset = pDesc->fCCTStepOffset;
 		Desc.tFilter = pDesc->tFilter;
-		Desc.vPosition = pDesc->vInitialPosition;
+		Desc.vPosition = {
+			pDesc->vInitialPosition.x + pDesc->vCCTCenterOffset.x,
+			pDesc->vInitialPosition.y + pDesc->vCCTCenterOffset.y,
+			pDesc->vInitialPosition.z + pDesc->vCCTCenterOffset.z };
 		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::CCT_CAPSULE);
 		//Desc.fStepOffset = 0.f;
 		//Desc.fSlopeLimit = 1.f;	
@@ -253,6 +259,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		Desc.pCharacterController = m_pComCharacterController;
 		Desc.fGravity = -9.81f;
 		Desc.fJumpVelocity = 7.f;
+		Desc.vControllerCenterOffset = pDesc->vCCTCenterOffset;
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PERMANENT,ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,"ComCharacterMotor", &Desc, &m_pComCharacterMotor)))
