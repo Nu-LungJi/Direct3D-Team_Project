@@ -41,6 +41,8 @@ public:
 		const NVCLOTH_COLLISION_DESC& Desc);
 	_bool SetAnimationConstraints(
 		const NVCLOTH_ANIMATION_CONSTRAINT_DESC& Desc);
+	_bool ResetParticlesToPositions(
+		const std::vector<_float3>& Positions);
 	_bool SetVirtualParticles(_bool bEnabled);
 
 	void UpdateGUI() override;

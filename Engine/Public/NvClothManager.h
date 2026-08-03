@@ -54,6 +54,9 @@ public:
 	_bool SetClothAnimationConstraints(
 		NVCLOTH_CLOTH_HANDLE Handle,
 		const NVCLOTH_ANIMATION_CONSTRAINT_DESC& Desc);
+	_bool ResetClothParticlesToPositions(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		const std::vector<_float3>& Positions);
 	_bool SetClothVirtualParticles(
 		NVCLOTH_CLOTH_HANDLE Handle,
 		_bool bEnabled);

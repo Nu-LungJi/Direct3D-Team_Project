@@ -165,6 +165,20 @@ _bool CComNvCloth::SetAnimationConstraints(
 			Desc);
 }
 
+_bool CComNvCloth::ResetParticlesToPositions(
+	const std::vector<_float3>& Positions)
+{
+	if (!m_hCloth)
+		return false;
+
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	return pManager &&
+		pManager->ResetClothParticlesToPositions(
+			m_hCloth,
+			Positions);
+}
+
 _bool CComNvCloth::SetVirtualParticles(
 	_bool bEnabled)
 {

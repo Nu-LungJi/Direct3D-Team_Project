@@ -1668,6 +1668,79 @@ _bool CNvClothManager::SetClothAnimationConstraints(
 	return true;
 }
 
+_bool CNvClothManager::ResetClothParticlesToPositions(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	const std::vector<_float3>& Positions)
+{
+	ZoneScopedN("NvCloth_ResetClothParticlesToPositions");
+
+	if (!m_pImpl || !Handle || Positions.empty())
+		return false;
+
+	for (const auto& Position : Positions)
+	{
+		if (!IsFinite(Position))
+			return false;
+	}
+
+	std::scoped_lock Lock{ m_pImpl->StateMutex };
+	const auto Iter = m_pImpl->Cloths.find(Handle.iValue);
+	if (Iter == m_pImpl->Cloths.end() ||
+		!Iter->second ||
+		!Iter->second->pCloth)
+	{
+		return false;
+	}
+
+	auto& Record = *Iter->second;
+	auto* pCloth = Record.pCloth;
+	const uint32_t iParticleCount =
+		pCloth->getNumParticles();
+	if (Positions.size() != iParticleCount ||
+		Record.vecInverseMasses.size() != iParticleCount)
+	{
+		return false;
+	}
+
+	{
+		auto CurrentParticles =
+			pCloth->getCurrentParticles();
+		if (CurrentParticles.size() != iParticleCount)
+			return false;
+
+		for (uint32_t i = 0; i < iParticleCount; ++i)
+		{
+			const auto& Position = Positions[i];
+			CurrentParticles[i] = physx::PxVec4{
+				Position.x,
+				Position.y,
+				Position.z,
+				Record.vecInverseMasses[i] };
+		}
+	}
+
+	{
+		auto PreviousParticles =
+			pCloth->getPreviousParticles();
+		if (PreviousParticles.size() != iParticleCount)
+			return false;
+
+		for (uint32_t i = 0; i < iParticleCount; ++i)
+		{
+			const auto& Position = Positions[i];
+			PreviousParticles[i] = physx::PxVec4{
+				Position.x,
+				Position.y,
+				Position.z,
+				Record.vecInverseMasses[i] };
+		}
+	}
+
+	pCloth->clearInertia();
+	pCloth->clearInterpolation();
+	return true;
+}
+
 _bool CNvClothManager::SetClothVirtualParticles(
 	NVCLOTH_CLOTH_HANDLE Handle,
 	_bool bEnabled)
