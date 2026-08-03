@@ -73,6 +73,31 @@ namespace
 		PxQueryHitType::Enum m_eHitType{};
 	};
 
+	class CPxCCTInteractionFilter final : public PxControllerFilterCallback
+	{
+	public:
+		bool filter(const PxController& controllerA, const PxController& controllerB) override
+		{
+			const PxRigidDynamic* pActorA = controllerA.getActor();
+			const PxRigidDynamic* pActorB = controllerB.getActor();
+			if (!pActorA || !pActorB)
+				return false;
+
+			PxShape* pShapeA{};
+			PxShape* pShapeB{};
+			if (pActorA->getShapes(&pShapeA, 1) != 1 || !pShapeA ||
+				pActorB->getShapes(&pShapeB, 1) != 1 || !pShapeB)
+			{
+				return false;
+			}
+
+			const PxFilterData tFilterA = pShapeA->getQueryFilterData();
+			const PxFilterData tFilterB = pShapeB->getQueryFilterData();
+			return (tFilterA.word1 & tFilterB.word0) != 0 &&
+				(tFilterB.word1 & tFilterA.word0) != 0;
+		}
+	};
+
 	_bool BuildQueryFilterData(const PX_QUERY_FILTER_DESC& tDesc, _bool bMultiple, PxQueryFilterData& outFilterData)
 	{
 		outFilterData.data.word0 = tDesc.iQueryMask;
@@ -293,6 +318,7 @@ void CPhysXManager::UpdateGUI()
 {
     ImGui::Begin("CPhysXManager");
 	ImGui::Text("Simulation: %s", m_bGpuSimulationEnabled ? "GPU" : "CPU");
+	ImGui::Checkbox("CCT Interactions", &m_bCCTInteractionsEnabled);
     ImGui::Text("m_bDbgRender: %i", m_bDbgRender);
     if (ImGui::Button("DebugRender"))
     {
@@ -1071,6 +1097,19 @@ HRESULT CPhysXManager::Initialize()
 
     
 	return S_OK;
+}
+
+void CPhysXManager::PrepareCCTInteractions(_float fFixedTimeDelta)
+{
+	if (!m_bCCTInteractionsEnabled || !m_pControllerManager || fFixedTimeDelta <= 0.f ||
+		m_pControllerManager->getNbControllers() < 2)
+	{
+		return;
+	}
+
+	ZoneScopedN("CPhysXManager_PrepareCCTInteractions");
+	CPxCCTInteractionFilter tFilter{};
+	m_pControllerManager->computeInteractions(fFixedTimeDelta, &tFilter);
 }
 
 void CPhysXManager::StepSimulation(float fixedDeltaTime)

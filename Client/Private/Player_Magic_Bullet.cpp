@@ -4,7 +4,7 @@
 #include "Trail_CPU.h"
 #include "PhysXManager.h"
 
-#include "TmbGurdian.h"
+#include "Monster.h"
 #include "BossTMB.h"
 NS_USING(Client)
 
@@ -216,7 +216,7 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 		XMStoreFloat4x4(&impactWorldData, impactWorld);
 		CGameInstance::Get().PlayEffect("PlayerAttackSpread", impactWorldData);
 	}
-	if (auto pTmbGurdian= Cast<CTmbGurdian>(tHit.pGameObject))
+	if (auto pTmbGurdian= Cast<CMonster>(tHit.pGameObject))
 	{
 		static constexpr const char* HIT_SOUND_PATHS[] =
 		{

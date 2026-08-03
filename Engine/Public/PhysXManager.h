@@ -68,6 +68,9 @@ private:
 	void UpdateDebugRender(_float fTimeDelta);
 
 public:
+	void PrepareCCTInteractions(_float fFixedTimeDelta);
+	void SetCCTInteractionsEnabled(_bool bEnabled) { m_bCCTInteractionsEnabled = bEnabled; }
+	_bool IsCCTInteractionsEnabled() const { return m_bCCTInteractionsEnabled; }
 	void StepSimulation(float fixedDeltaTime);
 
 public:
@@ -117,6 +120,7 @@ private:
 private:
 	_bool m_bDbgRender{ false };
 	_bool m_bGpuSimulationEnabled{ false };
+	_bool m_bCCTInteractionsEnabled{ true };
 public:
 	static UPtr<CPhysXManager> Create();
 

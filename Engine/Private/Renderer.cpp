@@ -2008,39 +2008,92 @@ HRESULT CRenderer::RenderUI()
 {
 	auto& renderList = m_RenderObject[ETOUI(RENDERGROUP::UI)];
 
-	std::sort(renderList.begin(), renderList.end(),
+	constexpr int LATE_UI_WEIGHT = 1000;
+
+	std::stable_sort(
+		renderList.begin(),
+		renderList.end(),
 		[](const IRenderable* lhs, const IRenderable* rhs)
 		{
-			const CUIObject* l = static_cast<const CUIObject*>(lhs);
-			const CUIObject* r = static_cast<const CUIObject*>(rhs);
+			const auto* l = static_cast<const CUIObject*>(lhs);
+			const auto* r = static_cast<const CUIObject*>(rhs);
+
 			return l->GetWeight() < r->GetWeight();
 		});
 
-	auto noDepth = E::CGameInstance::Get().GetResourceFirst<E::CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL");
+	// 정렬된 목록에서 Weight >= 1000이 시작되는 위치
+	const auto lateBegin = std::lower_bound(
+		renderList.begin(),
+		renderList.end(),
+		LATE_UI_WEIGHT,
+		[](const IRenderable* pRenderable, int weight)
+		{
+			const auto* pUI =
+				static_cast<const CUIObject*>(pRenderable);
+
+			return pUI->GetWeight() < weight;
+		});
+
+	auto noDepth =
+		E::CGameInstance::Get()
+		.GetResourceFirst<E::CResDepthStencilState>(
+			TAG_RES_GRP_PERMANENT_STATE,
+			"DS_NO_DEPTHSTENCIL");
 
 	m_pContext->OMSetDepthStencilState(
 		noDepth->GetDepthStencilState().Get(),
 		0);
 
-	auto Alphablend = E::CGameInstance::Get().GetResourceFirst<E::CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
-	m_pContext->OMSetBlendState(Alphablend->GetBlendState().Get(), nullptr, 0xffffffff);
+	auto alphaBlend =
+		E::CGameInstance::Get()
+		.GetResourceFirst<E::CResBlendState>(
+			TAG_RES_GRP_PERMANENT_STATE,
+			"BS_ALPHA_BLEND");
 
-	for (auto* pRenderObject : renderList)
-	{
-		if (pRenderObject->HasRenderPass(RenderContext.pass))
+	m_pContext->OMSetBlendState(
+		alphaBlend->GetBlendState().Get(),
+		nullptr,
+		0xffffffff);
+
+	const auto RenderRange =
+		[this](auto begin, auto end)
 		{
-			pRenderObject->Render(m_pContext.Get(), RenderContext);
-		}
-	}
+			for (auto iter = begin; iter != end; ++iter)
+			{
+				IRenderable* pRenderObject = *iter;
 
-	{
-		E::CGameInstance::Get().FontLateDraw(RENDERGROUP::UI);
-	}
+				if (pRenderObject &&
+					pRenderObject->HasRenderPass(RenderContext.pass))
+				{
+					pRenderObject->Render(
+						m_pContext.Get(),
+						RenderContext);
+				}
+			}
+		};
 
-	auto Nonblend = E::CGameInstance::Get().GetResourceFirst<E::CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
-	m_pContext->OMSetBlendState(Nonblend->GetBlendState().Get(), nullptr, 0xffffffff);
+	// Weight < 1000
+	RenderRange(renderList.begin(), lateBegin);
+
+	// 기존 LateDraw 폰트
+	E::CGameInstance::Get().FontLateDraw(RENDERGROUP::UI);
+
+	// Weight >= 1000
+	RenderRange(lateBegin, renderList.end());
+
+	auto nonBlend =
+		E::CGameInstance::Get()
+		.GetResourceFirst<E::CResBlendState>(
+			TAG_RES_GRP_PERMANENT_STATE,
+			"BS_BLEND_NONE");
+
+	m_pContext->OMSetBlendState(
+		nonBlend->GetBlendState().Get(),
+		nullptr,
+		0xffffffff);
 
 	return S_OK;
+
 }
 #pragma endregion
 
