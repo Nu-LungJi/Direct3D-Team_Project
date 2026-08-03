@@ -210,6 +210,7 @@ void CBTTurnAnimation::OnEnter()
 }
 void CBTTurnAnimation::OnExit(EVALUATE eResult)
 {
+	__super::OnExit(eResult);
 }
 E::UPtr<CBTTurnAnimation> CBTTurnAnimation::Create()
 {

@@ -860,6 +860,15 @@ void CTmbGurdian::ReadySound()
 								"./Resources/SampleClient/Sound/PensiveKnight/Creak_Short/Creak_Short_Turn6.wav",
 
 	};
+	m_SoundTable["TmbSlash1"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash1.wav",};
+	m_SoundTable["TmbSlash2"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash2.wav", };
+	m_SoundTable["TmbSlash3"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash3.wav", };
+	m_SoundTable["TmbSlash4"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash4.wav", };
+	m_SoundTable["TmbSlash5"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash5.wav", };
+	m_SoundTable["TmbSlash6"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/Slash6.wav", };
+
+	m_SoundTable["TmbBeforeHit"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/BeforeHit.wav", };
+
 }
 
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
