@@ -137,6 +137,7 @@ private:
 	SPtr<CResPixelShader>		m_pDownSamplePS{};
 
 	SPtr<CResCBuffer>			m_pBloomCBuffer{};
+	SPtr<CResCBuffer>			m_pVolumetricCBuffer{};
 	SPtr<CResCBuffer>			m_pLensFlareCBuffer{};
 
 	SPtr<CResComputeShader>		m_pVolumetricComputeShader{};
@@ -206,7 +207,6 @@ private:
 	HRESULT	Render_PostProcess_Filter();
 
 	HRESULT	Bind_CameraAttribute(CCameraObject* _ActiveCam);
-	HRESULT	Bind_VolumetricFog();
 	HRESULT Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveCam);
 
 	_float	NoiseHash(uint32_t _X, uint32_t _Y, uint32_t _Z);
@@ -246,8 +246,8 @@ private:
 
 	_bool						m_bRenderable = { false };
 
-	ComPtr<ID3D11ShaderResourceView>	BlueNoiseTexture = { nullptr };
-	ComPtr<ID3D11ShaderResourceView>	VolumeTexture = { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	m_pBlueNoiseTexture = { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	m_pVolumeTexture = { nullptr };
 	ComPtr<ID3D11UnorderedAccessView>	VolumeUAV = { nullptr };
 
 	_float								m_fChromaticRingAlpha{};
@@ -290,6 +290,7 @@ private:
 
 	_float			TimeAccumulation{};
 
+	_float3 m_fFogCenterPos{};
 	_float	m_fFogIntensity{};
 	_float3	m_fFogColor{ 1.f, 1.f, 1.f };
 	_float	m_fFogMaxHeight{};

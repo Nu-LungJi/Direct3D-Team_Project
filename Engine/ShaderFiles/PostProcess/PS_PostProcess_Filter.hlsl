@@ -25,18 +25,18 @@ static const float Min_Luminance = -12.47393f;
 static const float Max_Luminance = 4.026069f;
 
 static const float DistortionIntensity	= 0.f; // 왜곡 강도
-static const float ChromaticIntensity	= 0.f; // 색수차 강도
-static const float VignetteIntensity	= 0.f; // 비네팅 강도
-static const float VignetteSmoothness	= 0.f; // 비네팅
+static const float ChromaticIntensity	= 0.00f; // 색수차 강도
+static const float VignetteIntensity	= 0.03f; // 비네팅 강도
+static const float VignetteSmoothness	= 10.f; // 비네팅
 
 // Distortion
 float2 Distortion(float2 _UV)
 {
     float2 Coord = _UV * 2.f - 1.f;
     
-    float Coord2 = dot(Coord, Coord);
+    float  CoordDot = dot(Coord, Coord);
     
-    float2 DistortedUV = Coord * (1.f + DistortionIntensity * Coord2);
+	float2 DistortedUV = Coord * (1.f + DistortionIntensity * CoordDot);
     
     return (DistortedUV + 1.f) * 0.5f;
 }

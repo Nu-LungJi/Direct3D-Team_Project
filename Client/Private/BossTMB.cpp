@@ -19,6 +19,7 @@
 #include "BossMace.h"
 #include "UIController.h"
 #include "UIManager.h"
+#include "Player.h"
 NS_USING(Client)
 
 CBossTMB::CBossTMB()
@@ -249,6 +250,57 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	return S_OK;
 }
 
+
+
+const _float CBossTMB::Get_Damage()
+{
+	uint32_t SkillID = Find_SkillNum(m_eAttType);
+
+	if (SkillID == ETOUI(BOSSTOMB_SKILL::BLUST_END))
+	{
+		m_fDamage = 45.f;
+	}else if (SkillID == ETOUI(BOSSTOMB_SKILL::STUMP))
+	{
+		m_fDamage = 25.f;
+	}
+
+
+	return m_fDamage;
+}
+
+void CBossTMB::OverLabTest(_vector vSrcPos, _float fRadius, int32_t iDamage)
+{
+	_float3 vSweepPos = {};
+	XMStoreFloat3(&vSweepPos, vSrcPos);
+	PX_OVERLAP_DESC   pxOverLabDesc{};
+	PX_OVERLAP_RESULT pxOverLapResult{};
+
+	pxOverLabDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX) };
+	pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = fRadius };
+	pxOverLabDesc.tPose = PX_QUERY_POSE{ .vPosition = vSweepPos };
+
+	_float3 vPos = pxOverLabDesc.tPose.vPosition;
+	auto pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
+
+	const auto vPreviousColor = pDbgLineRender->GetColor();
+	const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
+	pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
+	pDbgLineRender->SetDepthTest(true);
+	pDbgLineRender->AddSphere(fRadius, XMMatrixTranslation(vSweepPos.x, vSweepPos.y, vSweepPos.z));
+	pDbgLineRender->SetColor(vPreviousColor);
+	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+
+	if (CGameInstance::Get().GetPhysXManager()->Overlap(pxOverLabDesc, pxOverLapResult))
+	{
+		if (pxOverLapResult.bHit)
+		{
+			//m_fDamage
+			auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pxOverLapResult.hGameObject);
+			pTarget->OnQueryHit(iDamage);
+		}
+	}
+}
+
 void CBossTMB::Active_Skill()
 {
 	
@@ -428,6 +480,12 @@ void CBossTMB::Active_Dynamic_Effect()
 			{
 				pWeapon->Active_Effect(m_CurEffectName);
 				m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT), FLAGTYPE::DEL);
+				int32_t iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHand");
+
+				if (iBoneIndex >= m_pComModelInstance->Get_CombinedBoneMatrices().size())
+					return;
+				_float4x4 BoneMat = m_pComModelInstance->Get_CombinedBoneMatrices()[iBoneIndex];
+				OverLabTest(XMLoadFloat4x4(&BoneMat).r[3], 300.f, 30);
 			}
 		}
 
@@ -439,8 +497,8 @@ void CBossTMB::Active_Dynamic_Effect()
 		desc.hOwner = GetHandle();
 		desc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHand");
 		CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossBall, m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)], &desc);
-
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT), FLAGTYPE::DEL);
+
 	}
 }
 

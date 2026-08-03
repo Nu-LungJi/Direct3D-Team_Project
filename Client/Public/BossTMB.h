@@ -35,6 +35,9 @@ public:
 	_bool				Check_Table(PLAYER_SKILL_TYPE eType)override;
 
 private:
+
+	const _float		Get_Damage() override;
+	void				OverLabTest(_vector vSrcPos,  _float fRadius, int32_t iDamage);
 	void				Active_Skill();
 	void				Active_Dynamic_Effect();
 private:
