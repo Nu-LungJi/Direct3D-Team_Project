@@ -156,11 +156,11 @@ void CUIController::Update(E::_float fTimeDelta)
 		AddMonsterHP(-30.f);
 
 	// 죽는 화면
-	if (E::CGameInstance::Get().KeyDown(DIK_0) && !m_isCreateDeathScene)
-	{
-		m_isCreateDeathScene = true;
-		CreateDeathScene();
-	}
+	//if (E::CGameInstance::Get().KeyDown(DIK_0) && !m_isCreateDeathScene)
+	//{
+	//	m_isCreateDeathScene = true;
+	//	CreateDeathScene();
+	//}
 	
 
 	/****************필수********************/
@@ -186,8 +186,8 @@ void CUIController::CreatePlayScreen()
 {
 	/*******플레이어 체력*******/
 	m_PlayerHP = GET_SINGLE(UIManager)->LoadPrefab("PlayerHP").front();
-	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetMaxFill(100.f);
-	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetCurrentFill(100.f);
+	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetMaxFill(500);
+	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetCurrentFill(500);
 	/*******피니셔*******/
 	m_Finisher[0] = GET_SINGLE(UIManager)->LoadPrefab("Finisher1").front();
 	m_Finisher[1] = GET_SINGLE(UIManager)->LoadPrefab("Finisher2").front();
@@ -386,6 +386,7 @@ void CUIController::CreateDeathScene()
 	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
 	PlayFadeOutOnly(m_PotionCount);
 	//E::CGameInstance::Get().SetMouseFix(false);
+	SafeGetOBJ(*m_Cursor)->SetAlpha(1.f);
 
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Death.wav", SOUND_PLAY_DESC{
 			.sBusID = SOUND_BUS::UI,
@@ -643,6 +644,7 @@ void CUIController::ClearDeathScene()
 	if(std::nullopt != m_MonsterHP && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
 		PlayFadeInOnly(*m_MonsterHP);
 	//E::CGameInstance::Get().SetMouseFix(true);
+	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
 }
 
 E::CUIObject* CUIController::SafeGetOBJ(CHandle pHandle)

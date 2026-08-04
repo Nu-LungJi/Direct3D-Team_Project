@@ -234,8 +234,8 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			RCTX.pass = RENDERPASS::SHADOW;
 
 			const _bool bStaticWasDirty = LightOBJ->Is_StaticDirty();
-			const _bool bUpdateFinalThisFrame = bStaticWasDirty ||
-				((m_iShadowFrameIndex + static_cast<uint64_t>(ShadowSlot)) % 2ull == 0ull);
+			const _bool bUpdateFinalThisFrame = bStaticWasDirty;// ||
+				//((m_iShadowFrameIndex + static_cast<uint64_t>(ShadowSlot)) % 2ull == 0ull);
 
 			if (bStaticWasDirty) {
 				Build_StaticShadowCasterList(m_pActiveShadowLightList[i]);
