@@ -42,6 +42,10 @@ public:
 	void CreateFadeIn(float delay = 0.f, float playtime = 0.5f);
 	void CreateFadeOut(float delay = 0.f, float playtime = 0.5f);
 	void CreateFadeInSceneChange(float delay = 0.f, float playtime = 1.f, LEVEL level = LEVEL::LOGO);
+
+	/********데미지 폰트***********/
+	void CreateDamageFont(uint32_t damage, CHandle targetMonster,_bool isCritical = false);
+
 public:
 	std::optional<CHandle> RootUIPicking();
 
@@ -70,10 +74,11 @@ private:
 	/*************페이드인아웃****************/
 	CUIObject* SafeGetOBJ(CHandle pHandle)
 	{
-		if (nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle))
-			return E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle);
+		return E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle);
 	}
 	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
+	void PlayScaleDown(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
+	void PlayPosUP(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
 	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 	void PlayFadeInChange(CHandle pHandle, LEVEL level, float delay = 0.f, float playtime = 3.f);
 
