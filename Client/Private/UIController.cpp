@@ -156,11 +156,11 @@ void CUIController::Update(E::_float fTimeDelta)
 		AddMonsterHP(-30.f);
 
 	// 죽는 화면
-	if (E::CGameInstance::Get().KeyDown(DIK_0) && !m_isCreateDeathScene)
-	{
-		m_isCreateDeathScene = true;
-		CreateDeathScene();
-	}
+	//if (E::CGameInstance::Get().KeyDown(DIK_0) && !m_isCreateDeathScene)
+	//{
+	//	m_isCreateDeathScene = true;
+	//	CreateDeathScene();
+	//}
 	
 
 	/****************필수********************/

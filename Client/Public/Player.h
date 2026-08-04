@@ -103,6 +103,8 @@ public:
 	int32_t GetCurrentHp() const { return m_iHp; }
 	int32_t GetMaxHp() const { return m_iMaxHp; }
 	const _float3& GetLastHitPosition() const { return m_vLastHitPosition; }
+private:
+	void HandleDeath();
 public:
 	void Attack_Magic_Bullet();
 public:
@@ -220,6 +222,8 @@ private:
 	_float m_fSprintDirectionResponse{ 4.5f };
 	int32_t m_iHp{ 500 };
 	int32_t m_iMaxHp{ 500 };
+
+	_bool m_bDeathEventPublished{};
 	_float3 m_vLastHitPosition{};
 	_float m_fGroundFollowProbeStartHeight{ 0.1f };
 	_float m_fGroundFollowMaxStepDown{ 0.5f };

@@ -190,7 +190,10 @@ _bool CBridgeCRW::RequestBring()
 
 _bool CBridgeCRW::RequestFix()
 {
-	if (!m_pModelAnimator || m_eState != STATE::IDLE)
+	if (!m_pModelAnimator /*|| m_eState != STATE::IDLE*/)
+		return false;
+
+	if (m_eState == STATE::FIXING)
 		return false;
 
 	m_eState = STATE::FIXING;

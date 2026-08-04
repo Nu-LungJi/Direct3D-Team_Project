@@ -20,6 +20,9 @@
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
 #include "ClientEvents.h"
+
+#include "UIManager.h"
+#include "ComSound.h"
 NS_USING(Client)
 
 CMonster::CMonster()
@@ -116,12 +119,25 @@ HRESULT CMonster::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
+	{
+		CComSound::DESC Desc{};
 
 	// 모든 몬스터들이 고대마법에 공격캔슬하도록 구독
 	// CGameInstance::Get().EventSubscribe<FAcientMagicStart>(GetHandle(), [=]() { CancelAttack(); });
 
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoComponent::Prototype_Component_ComSound,
+			"Com_Sound",
+			&Desc,
+			&m_pComSound)))
+		{
+			return E_FAIL;
+		}
+	}
 	return S_OK;
 }
+
 
 void CMonster::PriorityUpdate(E::_float fTimeDelta)
 {
@@ -146,6 +162,8 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 void CMonster::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
+	if (!m_pComSound)
+		m_pComSound->Update();
 	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
 		m_pModelAnimator->Update(fTimeDelta);
 
@@ -457,6 +475,32 @@ _bool CMonster::Check_Flag(uint32_t iFlag)
 	return m_pBeHavior->Check_Flag(iFlag);
 }
 
+SOUND_ID  CMonster::Play_Sound(const MONSOUND& MonSound)
+{
+	auto iter = m_SoundTable.find(MonSound.SoundKey);
+
+	if (iter == m_SoundTable.end() || iter->second.empty())
+		return  INVALID_SOUND_ID;
+
+	auto& SoundPaths = iter->second;
+
+	int32_t iSoundIndex = Engine::RandInt(0, static_cast<int32_t>(SoundPaths.size()) - 1);
+
+	SOUND_3D_DESC Sounds = MonSound.str3DSound;
+	Sounds.vPosition = GetTransform().GetPosition();
+
+	auto id = CGameInstance::Get().GetSoundManager()->Play3D(
+		SoundPaths[iSoundIndex],
+		Sounds,
+		MonSound.SoundPlay
+	);
+	if (id == INVALID_SOUND_ID)
+	{
+		MSG_BOX("INVALID_SOUND_ID");
+	}
+	return id;
+}
+
 void CMonster::Skill_Finished()
 {
 	m_eAttType = ATTMON::END;
@@ -465,23 +509,52 @@ void CMonster::Skill_Finished()
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT) | ETOUI(CBTRoot::BTFLAG::ATTACK) | ETOUI(CBTRoot::BTFLAG::ENDHIT) |ETOUI(CBTRoot::BTFLAG::THROW),FLAGTYPE::DEL);
 }
 
+void CMonster::Get_SoundKey(_string& CurSoundName)
+{
+	_string Key = "";
+	if (ImGui::BeginCombo("SoundTable",CurSoundName.c_str()))
+	{
+		for (auto&[key, value] : m_SoundTable)
+		{
+			_bool bSelect = key == CurSoundName;
+			if (ImGui::Selectable(key.c_str(), bSelect))
+			{
+				CurSoundName = key;
+				break;
+			}
+
+			if(bSelect)
+				ImGui::SetItemDefaultFocus();
+		}
+
+		ImGui::EndCombo();
+	}
+	return;
+}
+
+
 void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 {
 	switch (eType)
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
+		GET_SINGLE(UIManager)->CreateDamageFont(5, GetHandle(), false);
 		m_iHp -= 5.f;
 		break;
 	case PLAYER_SKILL_TYPE::ACCIO:
+		GET_SINGLE(UIManager)->CreateDamageFont(10, GetHandle(), true);
 		m_iHp -= 10.f;
 		break;
 	case PLAYER_SKILL_TYPE::DEPULSO:
+		GET_SINGLE(UIManager)->CreateDamageFont(15, GetHandle(), true);
 		m_iHp -= 15.f;
 		break;
 	case PLAYER_SKILL_TYPE::DESCENDO:
+		GET_SINGLE(UIManager)->CreateDamageFont(20, GetHandle(), true);
 		m_iHp -= 20.f;
 		break;
 	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
 		m_iHp -= 25.f;
 		break;
 	case PLAYER_SKILL_TYPE::PROTEGO:

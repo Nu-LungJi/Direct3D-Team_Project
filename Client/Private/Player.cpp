@@ -36,6 +36,7 @@
 #include "Player_RepairoSkill_State.h"
 #include "Monster.h"
 #include "ComSound.h"
+#include "ClientEvents.h"
 
 #include "Player_RevelioSkill_State.h"
 #include "Player_Magic_Bullet.h"
@@ -1702,10 +1703,7 @@ _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,i
 
 
 	if (m_iHp <= 0)
-	{
-		if (m_pRagdollController)
-			m_pRagdollController->RequestFromCurrentMotion();
-	}
+		HandleDeath();
 	else if (m_pStateMachine)
 		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
 
@@ -1727,10 +1725,7 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
 	}
 	if (m_iHp <= 0)
-	{
-		if (m_pRagdollController)
-			m_pRagdollController->RequestFromCurrentMotion();
-	}
+		HandleDeath();
 	else if (m_pStateMachine)
 		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
 	return true;
@@ -1751,13 +1746,23 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
 	}
 	if (m_iHp <= 0)
-	{
-		if (m_pRagdollController)
-			m_pRagdollController->RequestFromCurrentMotion();
-	}
+		HandleDeath();
 	else if (m_pStateMachine)
 		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
 	return true;
+}
+
+void CPlayer::HandleDeath()
+{
+	if (m_bDeathEventPublished)
+		return;
+
+	m_bDeathEventPublished = true;
+
+	if (m_pRagdollController)
+		m_pRagdollController->RequestFromCurrentMotion();
+
+	CGameInstance::Get().EventPublish(FPlayerDied{ .hPlayer = GetHandle(), .fLevelBgmFadeDuration = 3.f });
 }
 
 
