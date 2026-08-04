@@ -220,8 +220,9 @@ private:
 	_float m_fDeceleration{ 18.f };
 	_float m_fJogDirectionResponse{ 7.f };
 	_float m_fSprintDirectionResponse{ 4.5f };
-	int32_t m_iHp{ 100 };
-	int32_t m_iMaxHp{ 100 };
+	int32_t m_iHp{ 500 };
+	int32_t m_iMaxHp{ 500 };
+
 	_bool m_bDeathEventPublished{};
 	_float3 m_vLastHitPosition{};
 	_float m_fGroundFollowProbeStartHeight{ 0.1f };
