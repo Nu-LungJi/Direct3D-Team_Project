@@ -386,6 +386,7 @@ void CUIController::CreateDeathScene()
 	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
 	PlayFadeOutOnly(m_PotionCount);
 	//E::CGameInstance::Get().SetMouseFix(false);
+	SafeGetOBJ(*m_Cursor)->SetAlpha(1.f);
 
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Death.wav", SOUND_PLAY_DESC{
 			.sBusID = SOUND_BUS::UI,
@@ -643,6 +644,7 @@ void CUIController::ClearDeathScene()
 	if(std::nullopt != m_MonsterHP && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
 		PlayFadeInOnly(*m_MonsterHP);
 	//E::CGameInstance::Get().SetMouseFix(true);
+	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
 }
 
 E::CUIObject* CUIController::SafeGetOBJ(CHandle pHandle)
