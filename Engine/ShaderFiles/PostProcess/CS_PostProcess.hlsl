@@ -4,6 +4,7 @@ Texture2D<float4> OriginalTexture	: register(t0);
 Texture2D<float4> BlurPassTexture	: register(t1);
 
 Texture2D<float4> LUT_Texture		: register(t2);
+Texture2D<float4> DepthTexture : register(t3);
 
 static const float	CenterWeight		= { 0.227027f };
 static const float	BlurOffsets[2]		= { 1.3846154f, 3.2307692f };
@@ -19,6 +20,9 @@ static const float	ChromaticRing_Radius	 = { 0.32f };
 static const float	ChromaticRing_Width		 = { 0.05f };
 static const float	ChromaticRing_Smoothness = { 0.06f };
 
+static const float  BorderThreshold = 0.2f;
+static const float  OutlineThickness = 0.2f;
+static const float3 OutlineColor = float3(1.f, 1.f, 1.f);
 // LUT ColorGrading Global Variable
 static const float LUT_Size = 16.f;
 
@@ -388,6 +392,21 @@ float3 ToneMap_AGXFilm(float3 _Color)
 	return saturate(mul(FilmColor, AGX_OutMatrix));
 }
 
+////////////////////////////////////////////// OutLiner
+float Render_ObjectEdge(float3 _Color, float2 _TexCoord)
+{
+	float CenterPixel = DepthTexture.SampleLevel(LinearWrap, _TexCoord, 0).r;
+	
+	float RightPixel	= DepthTexture.SampleLevel(LinearWrap, _TexCoord + float2(TexelSize.x, 0.f), 0);
+	float LeftPixel		= DepthTexture.SampleLevel(LinearWrap, _TexCoord - float2(TexelSize.x, 0.f), 0);
+	float UpPixel		= DepthTexture.SampleLevel(LinearWrap, _TexCoord - float2(0.f, TexelSize.y), 0);
+	float DownPixel		= DepthTexture.SampleLevel(LinearWrap, _TexCoord + float2(0.f, TexelSize.y), 0);
+
+	float DepthDiffer = abs(CenterPixel - RightPixel) + abs(CenterPixel - LeftPixel) + abs(CenterPixel - UpPixel) + abs(CenterPixel - DownPixel);
+	
+	return lerp(_Color, float3(1.f, 1.f, 1.f), step(BorderThreshold, DepthDiffer));
+}
+
 [numthreads(16, 16, 1)]
 void CSMain_PostProcess(uint3 ID : SV_DispatchThreadID)
 {
@@ -403,6 +422,10 @@ void CSMain_PostProcess(uint3 ID : SV_DispatchThreadID)
     // Chromatic Aberration
 	float3 FinalColor = ChromaticAberration(DistortedCoord);
     
+	// Edge Composite
+	float Edge = Render_ObjectEdge(DistortedCoord);
+	FinalColor = lerp(FinalColor, OutlineColor, Edge);
+	
     // ToneMapping
 	FinalColor = ToneMap_ACESFilm(FinalColor);
     //FinalColor = ToneMap_Reinhard(FinalColor);

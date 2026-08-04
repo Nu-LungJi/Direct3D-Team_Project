@@ -67,34 +67,35 @@ HRESULT CRenderer::Initialize()
 #pragma region INITIALIZE
 HRESULT CRenderer::InitializeShaderResource()
 {
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_BrightPass", "./ShaderFiles/PostProcess/PS_PostProcess_Bloom.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_BrightPass", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
 	{ 
-		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_BrightPass", .sTarget = "ps_5_0" })))    return E_FAIL;
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_BrightPass", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_VerticalBlur", "./ShaderFiles/PostProcess/PS_PostProcess_Bloom.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_VerticalBlur", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
 	{
-		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_VerticalBlur", .sTarget = "ps_5_0" })))    return E_FAIL;
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_VerticalBlur", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_HorizontalBlur", "./ShaderFiles/PostProcess/PS_PostProcess_Bloom.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_HorizontalBlur", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
 	{
-		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_HorizontalBlur", .sTarget = "ps_5_0" })))    return E_FAIL;
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_HorizontalBlur", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_UpSampling", "./ShaderFiles/PostProcess/PS_PostProcess_Bloom.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_UpSampling", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
 	{
-		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_UpSampling", .sTarget = "ps_5_0" })))    return E_FAIL;
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_UpSampling", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_DownSampling", "./ShaderFiles/PostProcess/PS_PostProcess_Bloom.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_DownSampling", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
 	{
-		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_DownSampling", .sTarget = "ps_5_0" })))    return E_FAIL;
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_DownSampling", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_Combined", "./ShaderFiles/PostProcess/PS_PostProcess_Bloom.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_Combined", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
 	{
-		if (FAILED(res->Load()))    return E_FAIL;
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_Combined", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Filter", "./ShaderFiles/PostProcess/PS_PostProcess_Filter.hlsl"))
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Filter", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
 	{
-		if (FAILED(res->Load()))    return E_FAIL;
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_PostProcess", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
+
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_FullScreenQuad", "./ShaderFiles/FullscreenQuad/FullscreenQuad.hlsl"))
 	{
 		if (FAILED(res->Load()))    return E_FAIL;
