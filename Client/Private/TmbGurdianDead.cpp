@@ -406,8 +406,8 @@ void CTmbGurdianDead::Dead_Sound(_float3 vPos)
 
 	_string SoundPath = "./Resources/SampleClient/Sound/PensiveKnight/TombDead.wav";
 
-	SOUND_3D_DESC   Sound3D = { .fMinDistance = 10.f, .fMaxDistance = 30.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
-	SOUND_PLAY_DESC SoundPlay = { .sBusID = SOUND_BUS::SFX ,.fVolume = 0.01f,.fPitch = 1.f,.iPriority = 64,.bLoop = false };
+	SOUND_3D_DESC   Sound3D = { .fMinDistance = 1.f, .fMaxDistance = 30.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+	SOUND_PLAY_DESC SoundPlay = { .sBusID = SOUND_BUS::SFX ,.fVolume = 0.65f,.fPitch = 1.f,.iPriority = 64,.bLoop = false };
 
 	Sound3D.vPosition = GetTransform().GetPosition();
 

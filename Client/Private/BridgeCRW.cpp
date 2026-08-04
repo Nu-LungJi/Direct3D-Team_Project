@@ -170,7 +170,7 @@ _bool CBridgeCRW::RequestBring()
 	m_pModelAnimator->Play_Anim(
 		static_cast<int32_t>(STATE::DESCENDING), false, 0.1f);
 
-	CGameInstance::Get().GetSoundManager()->Play3D(
+	m_idBringSound = CGameInstance::Get().GetSoundManager()->Play3D(
 		"./Resources/SampleClient/Sound/Bridge/Bridge_Start.wav",
 		SOUND_3D_DESC{
 			.vPosition = GetTransform().GetPosition(),
@@ -200,6 +200,8 @@ _bool CBridgeCRW::RequestFix()
 	m_pModelAnimator->Play_Anim(
 		static_cast<int32_t>(STATE::FIXING), false, 0.1f);
 
+
+
 	CGameInstance::Get().GetSoundManager()->Play3D(
 		"./Resources/SampleClient/Sound/Bridge/Bridge_Bind.wav",
 		SOUND_3D_DESC{
@@ -221,6 +223,11 @@ _bool CBridgeCRW::RequestFix()
 void CBridgeCRW::LateUpdate(E::_float fTimeDelta)
 {
 	GetTransform().Update();
+
+	if (m_idBringSound != INVALID_SOUND_ID) {
+		
+		CGameInstance::Get().GetSoundManager()->Set3DAttributes(m_idBringSound, GetTransform().GetPosition());
+	}
 
 	const auto& pModel = m_pComModelInstance->GetModel();
 
