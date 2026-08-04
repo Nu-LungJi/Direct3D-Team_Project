@@ -203,24 +203,24 @@ void CTriggerCRW_StairStep::OnTriggerEnter(
 
 					case CMyMagicSquareStepController::PATTERN_EVENT::COMPLETED:
 						DEBUG_LOG("CMyMagicSquareStepController::PATTERN_EVENT::COMPLETED+_+\n");
-						{
-							auto id = CGameInstance::Get().GetSoundManager()->Play3D(
-								"./Resources/SampleClient/Sound/CharlesRookwood/MagicStep/MagicStep_Issue_1.wav",
-								SOUND_3D_DESC{
-									.vPosition = pPlayer->GetTransform().GetPosition(),
-									.fMinDistance = 30.f,
-									.fMaxDistance = 60.f,
-									.eRolloff = SOUND_3D_ROLLOFF::LINEAR
-								},
-								SOUND_PLAY_DESC{
-									.sBusID = SOUND_BUS::SFX,
-									.fVolume = 1.f,
-									.fPitch = 1.f,
-									.iPriority = 64,
-									.bLoop = false
-								}
-							);
-						}
+						//{
+						//	auto id = CGameInstance::Get().GetSoundManager()->Play3D(
+						//		"./Resources/SampleClient/Sound/CharlesRookwood/MagicStep/MagicStep_Issue_1.wav",
+						//		SOUND_3D_DESC{
+						//			.vPosition = pPlayer->GetTransform().GetPosition(),
+						//			.fMinDistance = 30.f,
+						//			.fMaxDistance = 60.f,
+						//			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+						//		},
+						//		SOUND_PLAY_DESC{
+						//			.sBusID = SOUND_BUS::SFX,
+						//			.fVolume = 1.f,
+						//			.fPitch = 1.f,
+						//			.iPriority = 64,
+						//			.bLoop = false
+						//		}
+						//	);
+						//}
 						// 이동 루프 페이드아웃 + 완료음
 						break;
 
