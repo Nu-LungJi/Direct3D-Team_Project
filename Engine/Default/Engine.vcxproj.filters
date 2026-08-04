@@ -544,6 +544,9 @@
     <Filter Include="PathPlayback">
       <UniqueIdentifier>{44a6a1ce-f910-4698-8430-5c345434c774}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Component\BeHavior\BlackBoard">
+      <UniqueIdentifier>{5ae5c2f5-28f2-4282-8126-5374cdbbd9cd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1252,6 +1255,9 @@
     <ClInclude Include="..\public\ComPathPlayback.h">
       <Filter>PathPlayback</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTBlackBoard.h">
+      <Filter>Component\BeHavior\BlackBoard</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1870,6 +1876,12 @@
     <ClCompile Include="..\private\ComPathPlayback.cpp">
       <Filter>PathPlayback</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\BTBlackBoard.cpp">
+      <Filter>Component\BeHavior\BlackBoard</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ComBeHavior.cpp">
+      <Filter>Component\BeHavior</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -1877,9 +1889,6 @@
     </ClCompile>
     <ClCompile Include="..\private\BTSelector.cpp">
       <Filter>Component\BeHavior\Root\Composite\CompositeNode</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\ComBeHavior.cpp">
-      <Filter>Component\BeHavior</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTRoot.cpp">
       <Filter>Component\BeHavior\Root</Filter>

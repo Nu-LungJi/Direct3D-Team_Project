@@ -67,7 +67,7 @@ void CUIController::Update(E::_float fTimeDelta)
 	if (!CursorCreate)
 	{
 
-		/*auto clientSize = CGameInstance::Get().GetClientScreenSize();
+		auto clientSize = CGameInstance::Get().GetClientScreenSize();
 		std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 		
 		CCursor::UIOBJECT_DESC Desc{};
@@ -84,7 +84,7 @@ void CUIController::Update(E::_float fTimeDelta)
 		
 		m_Cursor = E::CGameInstance::Get().AddGameObjectToLayer(currentLevel, "Prototype_GameObject_Cursor", "Layer_UI", &Desc);
 
-		CursorCreate = true;*/
+		CursorCreate = true;
 
 	}
 
@@ -135,7 +135,7 @@ void CUIController::Update(E::_float fTimeDelta)
 		});
 	}
 	// ************** 스펠슬롯
-	if (E::CGameInstance::Get().KeyDown(DIK_B) && E::CGameInstance::Get().KeyPressing(DIK_LCONTROL))
+	if (E::CGameInstance::Get().KeyDown(DIK_B))
 	{
 		ActiveShortCutSlot ? ActiveShortCutSlot = false : ActiveShortCutSlot = true;
 		if (ActiveShortCutSlot)
@@ -150,18 +150,6 @@ void CUIController::Update(E::_float fTimeDelta)
 		}
 			
 	}
-	//************** 몬스터hp
-	//if (E::CGameInstance::Get().KeyDown(DIK_5))
-	//{
-	//	if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
-	//	{
-	//		PlayMonsterHPDelete(*m_MonsterHP);
-	//	}
-	//	else
-	//	{
-	//		m_bMonsterHP = true;
-	//	}
-	//}
 
 	// 몬스터 HP 감송
 	if (E::CGameInstance::Get().KeyDown(DIK_6))
@@ -198,8 +186,8 @@ void CUIController::CreatePlayScreen()
 {
 	/*******플레이어 체력*******/
 	m_PlayerHP = GET_SINGLE(UIManager)->LoadPrefab("PlayerHP").front();
-	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetMaxFill(100.f);
-	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetCurrentFill(100.f);
+	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetMaxFill(500);
+	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetCurrentFill(500);
 	/*******피니셔*******/
 	m_Finisher[0] = GET_SINGLE(UIManager)->LoadPrefab("Finisher1").front();
 	m_Finisher[1] = GET_SINGLE(UIManager)->LoadPrefab("Finisher2").front();
@@ -257,17 +245,48 @@ void CUIController::CreateSpellType()
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[19]))->SetResTag("TEX_UI_T_spellmeter_Imperio_Overlay");
 
 	/*********비디오 패스**********/
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[0]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_ArrestoMomentum.avi");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[1]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Glacius.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[2]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Levioso.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[3]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Transformation.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[4]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Accio.avi");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[5]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Depulso.avi");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[6]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Descendo.avi");
-	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[15]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Reparo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[7]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Flipendo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[8]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Confringo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[9]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Diffindo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[10]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Expelliarmus.avi");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[11]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Bombarda.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[12]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Incendio.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[13]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Disillusionment.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[14]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Lumos.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[15]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Reparo.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[16]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_WingardiumLeviosa.avi");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[17]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_AvadaKedavra.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[18]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Crucio.avi");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[19]))->SetVideoPath(L"./Resources/SampleClient/Textures/UI/Video/FMV_Imperio.avi");
 
 	/*********디스크립션 json 이름**********/
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[0]))->SetDescJsonname("AristoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[1]))->SetDescJsonname("GlaciusDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[2]))->SetDescJsonname("LeviosoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[3]))->SetDescJsonname("TransformDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[4]))->SetDescJsonname("AssioDesc");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[5]))->SetDescJsonname("DepulsoDesc");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[6]))->SetDescJsonname("DescendoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[7]))->SetDescJsonname("FlipendoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[8]))->SetDescJsonname("ConfringoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[9]))->SetDescJsonname("DiffindoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[10]))->SetDescJsonname("ExpelliarmusDesc");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[11]))->SetDescJsonname("BombardaDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[12]))->SetDescJsonname("IncendioDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[13]))->SetDescJsonname("DisillDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[14]))->SetDescJsonname("LumosDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[15]))->SetDescJsonname("ReparoDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[16]))->SetDescJsonname("WingardiumDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[17]))->SetDescJsonname("AvadaKedavraDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[18]))->SetDescJsonname("CrucioDesc");
+	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[19]))->SetDescJsonname("ImperioDesc"); 
 
 	/********단축키슬롯**********/
 	m_SpellShortCutKeySlot[0] = GET_SINGLE(UIManager)->LoadPrefab("ShortCut1").front();
@@ -282,6 +301,14 @@ void CUIController::CreateSpellType()
 	//static_cast<CSpellMeter*>(SafeGetOBJ(m_SpellShortCutKeySlot[0]))->SetSpellType(ETOUI(SPELL_TYPE::B_BOMBARDA));
 
 	m_SpellSlotStatic = GET_SINGLE(UIManager)->LoadPrefab("SpellSlotStatic");
+
+	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/SpellOpen.wav", SOUND_PLAY_DESC{
+		.sBusID = SOUND_BUS::UI,
+		.fVolume = 0.5f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = false
+		});
 
 	E::CGameInstance::Get().SetMouseFix(false);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(1.f);
@@ -311,6 +338,14 @@ void CUIController::DeleteSpellType()
 
 	E::CGameInstance::Get().SetMouseFix(true);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
+
+	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/SpellClose.wav", SOUND_PLAY_DESC{
+	.sBusID = SOUND_BUS::UI,
+	.fVolume = 0.3f,
+	.fPitch = 1.f,
+	.iPriority = 64,
+	.bLoop = false
+		});
 }
 
 void CUIController::CreateDeathScene()
@@ -350,7 +385,8 @@ void CUIController::CreateDeathScene()
 
 	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
 	PlayFadeOutOnly(m_PotionCount);
-	//E::CGameInstance::Get().SetMouseFix(false);
+	E::CGameInstance::Get().SetMouseFix(false);
+	SafeGetOBJ(*m_Cursor)->SetAlpha(1.f);
 
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Death.wav", SOUND_PLAY_DESC{
 			.sBusID = SOUND_BUS::UI,
@@ -359,6 +395,10 @@ void CUIController::CreateDeathScene()
 			.iPriority = 64,
 			.bLoop = false
 		});
+
+	/*********텍스트 안보이게**********/
+	if (std::nullopt != m_MonsterHP && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+		PlayFadeOutOnly(*m_MonsterHP);
 }
 
 void CUIController::SetHPMax(_float maxHP)
@@ -597,9 +637,14 @@ void CUIController::ClearDeathScene()
 	
 	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
 	PlayFadeInOnly(m_PotionCount);
+
 	PlayFadeOutDelete(m_GameOverMask);
 	m_isCreateDeathScene = false;
-	//E::CGameInstance::Get().SetMouseFix(true);
+
+	if(std::nullopt != m_MonsterHP && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+		PlayFadeInOnly(*m_MonsterHP);
+	E::CGameInstance::Get().SetMouseFix(true);
+	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
 }
 
 E::CUIObject* CUIController::SafeGetOBJ(CHandle pHandle)

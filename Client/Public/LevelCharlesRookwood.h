@@ -41,9 +41,12 @@ private:
 
 private:
 	HRESULT PlayBGM();
-	HRESULT StopBGM();
+	HRESULT StopBGM(_float fDuration = 1.f);
+	void SubscribePlayerDeath(const CHandle& hPlayer);
 private:
-	SOUND_ID m_bmgID;
+	SOUND_ID m_bmgID{ INVALID_SOUND_ID };
+	CHandle m_hPlayer{};
+	uint64_t m_iPlayerDeathListenerID{};
 
 private:
 	_bool m_bCreatePlayScreenUI{ false };

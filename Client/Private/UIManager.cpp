@@ -15,6 +15,7 @@
 #include "UIController.h"
 #include "GameOverMask.h"
 #include "VideoObject.h"
+#include "Monster.h"
 
 NS_USING(Client)
 
@@ -1149,6 +1150,121 @@ void UIManager::CreateFadeInSceneChange(float delay, float playtime, LEVEL level
 	PlayFadeInChange(hBG, level, delay, playtime);
 }
 
+void UIManager::CreateDamageFont(uint32_t damage, CHandle targetMonster, _bool isCritical)
+{
+	auto* pMonster =
+		E::CGameInstance::Get()
+		.GetGameObjectByHandleT<CMonster>(targetMonster);
+
+	auto* pCamera =
+		E::CGameInstance::Get().GetActiveCamera();
+
+	if (!pMonster || !pCamera || damage == 0)
+		return;
+
+	const _float3 worldPosition =
+		pMonster->GetHurtBoxPosition();
+
+	const _float2 screenSize =
+		E::CGameInstance::Get().GetClientScreenSize();
+
+	const _vector world =
+		XMLoadFloat3(&worldPosition);
+
+	const _matrix view = pCamera->GetView();
+	const _matrix proj = pCamera->GetProj();
+
+	// 카메라 뒤쪽 검사
+	const _vector clipPosition =
+		XMVector4Transform(
+			XMVectorSet(
+				worldPosition.x,
+				worldPosition.y,
+				worldPosition.z,
+				1.f),
+			view * proj);
+
+	if (XMVectorGetW(clipPosition) <= 0.f)
+		return;
+
+	const _vector projected =
+		XMVector3Project(
+			world,
+			0.f,
+			0.f,
+			screenSize.x,
+			screenSize.y,
+			0.f,
+			1.f,
+			proj,
+			view,
+			XMMatrixIdentity());
+
+	_float3 screenPosition{};
+	XMStoreFloat3(&screenPosition, projected);
+
+	if (screenPosition.z < 0.f || screenPosition.z > 1.f)
+		return;
+
+	// 랜덤 오프셋
+	static std::mt19937 generator{ std::random_device{}() };
+	static std::uniform_real_distribution<float> offsetX{ -25.f, 25.f };
+	static std::uniform_real_distribution<float> offsetY{ -35.f, -10.f };
+
+	//auto handles = LoadPrefab("DamageFont");
+	//if (handles.empty())
+	//	return;
+
+
+
+	//const CHandle hDamageFont = handles.front();
+
+	m_CurrentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+
+	CTextUI::TEXT_DESC desc{};
+
+	desc.sObjectTag = "DamageFont";
+	desc.Name = "DamageFont";
+	desc.fSizeX = 1.5f;
+	desc.fSizeY = 1.5f;
+	desc.fAlpha = 1.f;
+	desc.Text = L"";
+	desc.ResWeight = 1;
+
+	std::optional<CHandle> hDamageFont = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextBox", "Layer_UI", &desc);
+	auto* pDamageFont = E::CGameInstance::Get()
+		.GetGameObjectByHandleT<CTextBox>(*hDamageFont);
+
+	if (!pDamageFont)
+		return;
+
+	pDamageFont->SetwText(std::to_wstring(damage));
+	pDamageFont->SetPos({
+		screenPosition.x + offsetX(generator),
+		screenPosition.y + offsetY(generator)
+		});
+
+	if (isCritical)
+	{
+		pDamageFont->SetColor({ 0.72f, 0.64f, 0.40f });
+		pDamageFont->SetSize({ 1.5f, 1.5f });
+		pDamageFont->SetScaleRatio(1.25f);
+	}
+	else
+	{
+		pDamageFont->SetColor({ 1.f, 1.f, 1.f });
+		pDamageFont->SetSize({1.2f, 1.2f});
+		pDamageFont->SetScaleRatio(1.f);
+	}
+
+	pDamageFont->SetAlpha(0.f);
+	pDamageFont->CalcUICoord();
+
+	PlayFadeIn(*hDamageFont, 0.f, 0.12f);
+	PlayPosUP(*hDamageFont, 0.12f, 0.7f);
+	PlayFadeOutDelete(*hDamageFont, 0.3f, 0.65f);
+}
+
 std::optional<CHandle> UIManager::RootUIPicking()
 {
 	std::optional<CHandle> targetHandle = std::nullopt;
@@ -1537,6 +1653,40 @@ void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
 		}, [pHandle]() {
 			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
 			}, EEaseType::EaseOutQuad, delay);
+}
+
+void UIManager::PlayScaleDown(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	_float scale = pBtn->GetSize().x;
+
+	pTween->PlayTween(scale, scale * 0.5f, playtime,
+		[pHandle](float currentValue) {
+			if (auto pObj = GetSafeUI(pHandle))
+			{
+				pObj->GetUIInfo().SizeX = currentValue;
+				pObj->CalcUICoord();
+			}
+		},nullptr, EEaseType::EaseOutQuad, delay);
+}
+
+void UIManager::PlayPosUP(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	_float2 originPos = pBtn->GetPos();
+
+	pTween->PlayTween(originPos.y, originPos.y - 20.f, playtime,
+		[pHandle](float currentValue) {
+			if (auto pObj = GetSafeUI(pHandle))
+			{
+				pObj->GetUIInfo().fY = currentValue;
+				pObj->CalcUICoord();
+			}
+		}, nullptr, EEaseType::Linear, delay);
 }
 
 void UIManager::PlayFadeIn(CHandle pHandle, float delay, float playtime)

@@ -2,7 +2,7 @@
 #include "Monster.h"
 #include "Client_Defines.h"
 
-enum class BOSSTOMB_SKILL{SPAWN, STUMP, BLUST_END, BLUST_START, BALL, BALL_BREAK, READY_STAR, THROW_STAR, SKIP,SMESH,END};
+enum class BOSSTOMB_SKILL{SPAWN, STUMP, BLUST_END, BLUST_START, BALL, BALL_BREAK, READY_STAR, THROW_STAR, SKIP,SMESH,DEAD,END};
 NS_BEGIN(Client)
 class CBossTMB final : public CMonster
 {
@@ -40,6 +40,7 @@ private:
 	void				OverLabTest(_vector vSrcPos,  _float fRadius, int32_t iDamage);
 	void				Active_Skill();
 	void				Active_Dynamic_Effect();
+	void				Dead();
 private:
 	_string			m_EffectNames[ETOUI(BOSSTOMB_SKILL::END)];
 	_bool			m_bStar{ true };

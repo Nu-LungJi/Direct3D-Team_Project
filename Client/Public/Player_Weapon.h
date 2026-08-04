@@ -25,6 +25,7 @@ public:
 		_string	WeaponName{},LevelTag{};
 		CHandle ParentHandle{};
 		int32_t iBoneIndex{ -1 };
+		int32_t iSpawnBoneIndex{ -1 };
 	}WEAPON_DESC;
 
 private:
@@ -60,11 +61,9 @@ private:
 	_float3				m_vLook{};
 	CHandle				m_ParentHandle{};
 	int32_t				m_iBoneSocketIndex{ -1 };
+	int32_t				m_iSpawnBoneIndex{ -1 };
 	_float				m_fAngle{ 0 };
 	_bool				m_bThrow{ false };
-
-private:
-	_float3 m_vSpawnLocalOffset{ 0.f, 0.3f, 0.f };
 
 public:
 	_float4x4 GetSpawnWorldMatrix() const;

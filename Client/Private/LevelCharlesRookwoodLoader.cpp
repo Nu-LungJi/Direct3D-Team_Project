@@ -108,7 +108,7 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_WEAPON_RESROUCE", CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Wand.bin"))) {
 
 				E::CResStaticModel::DESC pDesc{};
-				pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+				pDesc.PreTransformMatrix = XMMatrixRotationX(XMConvertToRadians(-90.f)) * XMMatrixScaling(1.f, 1.f, 1.f);
 				if (FAILED(res->Load(pDesc))) {
 					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_WEAPON_RESROUCE");
 					return false;
@@ -336,6 +336,14 @@ HRESULT CLevelCharlesRookwoodLoader::LoadPlayerCape()
 	{
 		MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_NvClothCape");
 		return E_FAIL;
+	}
+	{
+		_float4x4 mat;
+		XMStoreFloat4x4(&mat, XMMatrixIdentity());
+		mat._41 = -250.f;
+		mat._42 = -250.f;
+		mat._43 = -600.f;
+		CGameInstance::Get().PlayEffect("Portal", mat);
 	}
 
 	return S_OK;

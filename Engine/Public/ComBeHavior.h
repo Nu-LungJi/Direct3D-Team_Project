@@ -1,6 +1,7 @@
 #pragma once
 #include "Component.h"
 #include "BTRoot.h"
+
 NS_BEGIN(Engine)
 class  ENGINE_DLL CComBeHavior : public CComponent
 {
@@ -45,13 +46,14 @@ public:
 	_bool					Check_Flag(uint32_t iFlag);
 	void					Set_Flag(uint32_t iFlag, FLAGTYPE eType);
 	uint32_t				Get_Flag() { return m_iFlag; }
+	class CBTBlackBoard*	Get_Blackboard();
 private:
 	_string									m_ComponentName{};
 	UPtr<class CBTComposite>				m_Root{};
 	std::map<uint32_t,CBTRoot*>				m_NodeMap;
 	uint32_t								m_iNodeID{ 0 }, m_iFlag{ 0 };
 	_string									m_FileName{};
-	
+	UPtr<class CBTBlackBoard>				m_pBlackBoard{};
 public:
 	static UPtr<CComBeHavior>Create();
 	virtual UPtr<CPrototype> Clone(void* pArg) override;

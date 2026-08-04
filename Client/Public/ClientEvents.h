@@ -15,5 +15,12 @@ struct FRequestPlayerCameraShake
 	_float fFrequency{ 18.f };
 };
 
+struct FPlayerDied
+{
+	CHandle hPlayer{};
+	_float fLevelBgmFadeDuration{ 1.f };
+};
+
+struct FAcientMagicStart {};
 
 NS_END

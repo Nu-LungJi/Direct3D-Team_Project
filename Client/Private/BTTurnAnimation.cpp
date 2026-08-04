@@ -67,6 +67,7 @@ EVALUATE CBTTurnAnimation::Evaluate(_float fTimeDelta)
 				}
 				m_fTick += fTimeDelta;
 
+				Play_Sound(fTimeDelta);
 				const _float fTurnSpeed = std::max(std::abs(m_fAngle) / 1.6f, 1.f);
 				pMoveIntent->SetFacingIntent(m_vTargetLook, fTurnSpeed);
 
@@ -148,6 +149,7 @@ HRESULT CBTTurnAnimation::Load_json(const nlohmann::json& j)
 }
 void CBTTurnAnimation::Abort()
 {
+	__super::Abort();
 	m_fTick = 0.f;
 	m_bTurn = false;
 }
@@ -201,6 +203,14 @@ _bool CBTTurnAnimation::SelectAngle( _float fAngle)
 }
 void CBTTurnAnimation::Turn(_float fTimeDelta)
 {
+}
+void CBTTurnAnimation::OnEnter()
+{
+	__super::OnEnter();
+}
+void CBTTurnAnimation::OnExit(EVALUATE eResult)
+{
+	__super::OnExit(eResult);
 }
 E::UPtr<CBTTurnAnimation> CBTTurnAnimation::Create()
 {

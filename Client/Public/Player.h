@@ -103,6 +103,8 @@ public:
 	int32_t GetCurrentHp() const { return m_iHp; }
 	int32_t GetMaxHp() const { return m_iMaxHp; }
 	const _float3& GetLastHitPosition() const { return m_vLastHitPosition; }
+private:
+	void HandleDeath();
 public:
 	void Attack_Magic_Bullet();
 public:
@@ -127,10 +129,7 @@ public:
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
 	void ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta);
-	void ApplyDirectionalMovement(
-		const _float3& vDirection,
-		_float fSpeed,
-		_float fTimeDelta);
+	void ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_float fTimeDelta);
 	void ApplyGroundFollow(_float fFixedTimeDelta);
 	void PrepareLocomotionResume();
 	void InitializeSkillSlotUI();
@@ -148,6 +147,10 @@ public:
 	void SetBodyEffectID(uint32_t effectID) { m_iDashBodyEffectID = effectID; }
 	void UpdateAttachedEffects();
 	CHandle& GetWeaponHandle() { return m_Partes[ETOUI(PARTES::WEAPON)]; }
+
+
+	_bool GetInvincible() const { return m_bInvincible; }
+	void SetInvincible(_bool bInvincible) { m_bInvincible = bInvincible; }
 private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
@@ -217,12 +220,15 @@ private:
 	_float m_fDeceleration{ 18.f };
 	_float m_fJogDirectionResponse{ 7.f };
 	_float m_fSprintDirectionResponse{ 4.5f };
-	int32_t m_iHp{ 100 };
-	int32_t m_iMaxHp{ 100 };
+	int32_t m_iHp{ 500 };
+	int32_t m_iMaxHp{ 500 };
+
+	_bool m_bDeathEventPublished{};
 	_float3 m_vLastHitPosition{};
 	_float m_fGroundFollowProbeStartHeight{ 0.1f };
 	_float m_fGroundFollowMaxStepDown{ 0.5f };
 	_float m_fGroundFollowProbeRadius{ 0.2f };
+	_bool  m_bInvincible{ false };
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
 	//[LSY] 테스트 로그니 지우셔도 됩니다.
