@@ -20,6 +20,8 @@
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
 #include "ClientEvents.h"
+
+#include "UIManager.h"
 #include "ComSound.h"
 NS_USING(Client)
 
@@ -536,18 +538,23 @@ void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 	switch (eType)
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
+		GET_SINGLE(UIManager)->CreateDamageFont(5, GetHandle(), false);
 		m_iHp -= 5.f;
 		break;
 	case PLAYER_SKILL_TYPE::ACCIO:
+		GET_SINGLE(UIManager)->CreateDamageFont(10, GetHandle(), true);
 		m_iHp -= 10.f;
 		break;
 	case PLAYER_SKILL_TYPE::DEPULSO:
+		GET_SINGLE(UIManager)->CreateDamageFont(15, GetHandle(), true);
 		m_iHp -= 15.f;
 		break;
 	case PLAYER_SKILL_TYPE::DESCENDO:
+		GET_SINGLE(UIManager)->CreateDamageFont(20, GetHandle(), true);
 		m_iHp -= 20.f;
 		break;
 	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
 		m_iHp -= 25.f;
 		break;
 	case PLAYER_SKILL_TYPE::PROTEGO:
