@@ -186,8 +186,8 @@ void CUIController::CreatePlayScreen()
 {
 	/*******플레이어 체력*******/
 	m_PlayerHP = GET_SINGLE(UIManager)->LoadPrefab("PlayerHP").front();
-	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetMaxFill(100.f);
-	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetCurrentFill(100.f);
+	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetMaxFill(500);
+	static_cast<CHPBar*>(SafeGetOBJ(m_PlayerHP))->SetCurrentFill(500);
 	/*******피니셔*******/
 	m_Finisher[0] = GET_SINGLE(UIManager)->LoadPrefab("Finisher1").front();
 	m_Finisher[1] = GET_SINGLE(UIManager)->LoadPrefab("Finisher2").front();
