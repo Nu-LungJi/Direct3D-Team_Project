@@ -200,17 +200,18 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 		
 		PX_OVERLAP_DESC   pxOverLabDesc{};
 		PX_OVERLAP_RESULT pxOverLapResult{};
+		if (m_bOverLabMove)
+		{
+			XMStoreFloat3(&m_vLastPos, XMLoadFloat3(&m_vLastPos) + XMLoadFloat3(&m_vLastDir) * m_fOverLabSpeed * fTimeDelta);
+			XMStoreFloat3(&vPos, XMLoadFloat3(&m_vLastPos));
+		}
 
 		pxOverLabDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX) };
 		pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = m_fCurOverLabSpeed };
 		pxOverLabDesc.tPose = PX_QUERY_POSE{ .vPosition = vPos };
 
 		vPos = pxOverLabDesc.tPose.vPosition;
-		if (m_bOverLabMove)
-		{
-			XMStoreFloat3(&m_vLastPos, XMLoadFloat3(&m_vLastPos) + XMLoadFloat3(&m_vLastDir) * m_fOverLabSpeed * fTimeDelta);
-			XMStoreFloat3(&vPos , XMLoadFloat3(&m_vLastPos));
-		}
+		
 		auto pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
 
 		const auto vPreviousColor = pDbgLineRender->GetColor();
