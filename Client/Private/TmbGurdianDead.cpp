@@ -52,7 +52,8 @@ _bool CTmbGurdianDead::ActivatePhysics()
 		GetTransform().GetPosition();
 	const _float4 vRotation =
 		GetTransform().GetQuaternion();
-
+	
+	Dead_Sound(vPosition);
 	if (!m_pComPxRigidBody->SetPose(
 			vPosition,
 			vRotation) ||
@@ -397,6 +398,29 @@ void CTmbGurdianDead::Boom(_float fTimeDelta)
 		SetPendingDestroyCascade();
 	}
 
+}
+void CTmbGurdianDead::Dead_Sound(_float3 vPos)
+{
+	if (!m_bSound)
+		return;
+
+	_string SoundPath = "./Resources/SampleClient/Sound/PensiveKnight/TombDead.wav";
+
+	SOUND_3D_DESC   Sound3D = { .fMinDistance = 10.f, .fMaxDistance = 30.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+	SOUND_PLAY_DESC SoundPlay = { .sBusID = SOUND_BUS::SFX ,.fVolume = 0.01f,.fPitch = 1.f,.iPriority = 64,.bLoop = false };
+
+	Sound3D.vPosition = GetTransform().GetPosition();
+
+	auto id = CGameInstance::Get().GetSoundManager()->Play3D(
+		SoundPath,
+		Sound3D,
+		SoundPlay
+	);
+	if (id == INVALID_SOUND_ID)
+	{
+		MSG_BOX("TombDead.wav");
+	}
+	m_bSound = false;
 }
 /*---------------------------------*/
 

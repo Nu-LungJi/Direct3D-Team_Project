@@ -1,7 +1,7 @@
 #pragma once
 
 #include "PhysXCollisionProxyObject.h"
-
+#include "Handle.h"
 NS_BEGIN(Client)
 
 class CTriggerCRW_BridgeFix final : public E::CPhysXCollisionProxyObject
@@ -16,6 +16,7 @@ private:
 
 public:
 	HRESULT Initialize(void* pArg) override;
+	void Update(_float fTimeDelta) override;
 	void OnTriggerEnter(E::CGameObject* pObj, const E::PX_ON_TRIGGER_DATA& info) override;
 	void OnTriggerExit(E::CGameObject* pObj, const E::PX_ON_TRIGGER_DATA& info) override;
 
@@ -25,6 +26,7 @@ public:
 
 private:
 	_bool m_bSpawned{ false };
+	std::optional<CHandle> m_hTiggeredPlayer{};
 };
 
 NS_END
