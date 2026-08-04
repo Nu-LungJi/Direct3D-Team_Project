@@ -889,10 +889,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			m_bCoolTime_Num4 = true;
 	}
 
-#ifdef _DEBUG
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_H))
 		OnQueryHit(20);
-#endif
 }
 
 
@@ -908,12 +906,27 @@ void CPlayer::InitializeSkillSlotUI()
 		return;
 
 	// 테스트용 코드 나중에 실제 프로토타입 시연회 때는 지워야 함 ---------------------------------------
-	pUIController->SetSpellType(1, ETOUI(SPELL_TYPE::ASSIO));
-	pUIController->SetSpellType(2, ETOUI(SPELL_TYPE::DEPULSO));
-	pUIController->SetSpellType(3, ETOUI(SPELL_TYPE::DESENDO));
+	uint32_t level = E::CGameInstance::Get().GetCurrentLevelID();
 
-	// SPELL_TYPE에 REVELIO가 추가되기 전까지 4번 슬롯은 빈 슬롯으로 둔다.
-	pUIController->SetSpellType(4, ETOUI(SPELL_TYPE::REPARO));
+	if (level == ETOUI(LEVEL::CHARLES_ROOKWOOD))
+	{
+		pUIController->SetSpellType(1, ETOUI(SPELL_TYPE::NONE));
+		pUIController->SetSpellType(2, ETOUI(SPELL_TYPE::NONE));
+		pUIController->SetSpellType(3, ETOUI(SPELL_TYPE::NONE));
+
+		// SPELL_TYPE에 REVELIO가 추가되기 전까지 4번 슬롯은 빈 슬롯으로 둔다.
+		pUIController->SetSpellType(4, ETOUI(SPELL_TYPE::NONE));
+	}
+	else if (level == ETOUI(LEVEL::BOSS_CHARLES_ROOKWOOD))
+	{
+		pUIController->SetSpellType(1, ETOUI(SPELL_TYPE::ASSIO));
+		pUIController->SetSpellType(2, ETOUI(SPELL_TYPE::DEPULSO));
+		pUIController->SetSpellType(3, ETOUI(SPELL_TYPE::DESENDO));
+
+		// SPELL_TYPE에 REVELIO가 추가되기 전까지 4번 슬롯은 빈 슬롯으로 둔다.
+		pUIController->SetSpellType(4, ETOUI(SPELL_TYPE::REPARO));
+	}
+
 
 	m_bSkillSlotUIInitialized = true;
 }

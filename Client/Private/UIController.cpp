@@ -625,21 +625,23 @@ void CUIController::AddMonsterHP(_float fill)
 
 void CUIController::ClearDeathScene()
 {
-	PlayFadeOutDelete(m_Desolve);
-	PlayFadeOutDelete(m_DeathDivider);
-	PlayFadeOutDelete(m_DeathTxt[0]);
-	PlayFadeOutDelete(m_DeathTxt[1]);
+	GET_SINGLE(UIManager)->CreateFadeInSceneChange(0.f, 1.f, LEVEL::BOSS_CHARLES_ROOKWOOD);
 
-	for (auto hUI : m_BeathButton)
-	{
-		PlayFadeOutDelete(hUI);
-	}
-	
-	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
-	PlayFadeInOnly(m_PotionCount);
-
-	PlayFadeOutDelete(m_GameOverMask);
-	m_isCreateDeathScene = false;
+	//PlayFadeOutDelete(m_Desolve);
+	//PlayFadeOutDelete(m_DeathDivider);
+	//PlayFadeOutDelete(m_DeathTxt[0]);
+	//PlayFadeOutDelete(m_DeathTxt[1]);
+	//
+	//for (auto hUI : m_BeathButton)
+	//{
+	//	PlayFadeOutDelete(hUI);
+	//}
+	//
+	////SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
+	//PlayFadeInOnly(m_PotionCount);
+	//
+	//PlayFadeOutDelete(m_GameOverMask);
+	//m_isCreateDeathScene = false;
 
 	if(std::nullopt != m_MonsterHP && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
 		PlayFadeInOnly(*m_MonsterHP);

@@ -784,9 +784,9 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	m_fEMissiveColor = { 1.f,1.f,1.f};
 	m_eMonType = MonDesc->MonType;
 	if (m_eMonType == MONSTER_TYPE::NORMAL)
-		m_iHp = m_iMaxHp = 200;
+		m_iHp = m_iMaxHp = 71;
 	else if (m_eMonType == MONSTER_TYPE::ELITE)
-		m_iHp = m_iMaxHp = 300;
+		m_iHp = m_iMaxHp = 125;
 	
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Spine1");
 	

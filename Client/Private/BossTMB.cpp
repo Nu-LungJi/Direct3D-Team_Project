@@ -51,7 +51,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-	m_iHp = m_iMaxHp = 800;
+	m_iHp = m_iMaxHp = 500;
 
 	{
 		CComPxCharacterController::DESC Desc{};
