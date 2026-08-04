@@ -37,47 +37,6 @@
 #include "Monster.h"
 #include "ComSound.h"
 
-#ifdef _DEBUG
-namespace
-{
-	// Targeting debug UI is intentionally isolated here.
-	// Remove this function and the single call in CPlayer::LateUpdate to delete it.
-	void DrawTargetingDebugUI(const E::CHandle& hTarget, const E::_float3& vPlayerPosition)
-	{
-		auto* pTarget = E::CGameInstance::Get().GetGameObjectByHandle(hTarget);
-		auto* pDebugLine = E::CGameInstance::Get().GetDbgLineRender();
-		if (!pTarget || !pDebugLine)
-			return;
-
-		const E::_float3 vTargetPosition = pTarget->GetTransform().GetPosition();
-		const E::_float3 vMarkerPosition{
-			vTargetPosition.x,
-			vTargetPosition.y + 1.5f,
-			vTargetPosition.z
-		};
-
-		const E::_float4 vPreviousColor = pDebugLine->GetColor();
-		const E::DBG_LINE_DEPTH_MODE ePreviousDepthMode = pDebugLine->GetDepthMode();
-
-		// Draw through geometry so the current target remains easy to identify.
-		pDebugLine->SetDepthTest(false);
-		pDebugLine->SetColor({ 1.f, 0.2f, 0.05f, 1.f });
-		pDebugLine->AddCircle(
-			0.65f,
-			XMMatrixRotationX(XM_PIDIV2) *
-			XMMatrixTranslation(vMarkerPosition.x, vMarkerPosition.y, vMarkerPosition.z));
-		pDebugLine->AddCircle(
-			0.65f,
-			XMMatrixRotationY(XM_PIDIV2) *
-			XMMatrixTranslation(vMarkerPosition.x, vMarkerPosition.y, vMarkerPosition.z));
-		pDebugLine->AddCross(vMarkerPosition, 0.85f);
-		pDebugLine->AddLine(vPlayerPosition, vTargetPosition);
-
-		pDebugLine->SetColor(vPreviousColor);
-		pDebugLine->SetDepthMode(ePreviousDepthMode);
-	}
-}
-#endif
 #include "Player_RevelioSkill_State.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
@@ -1441,10 +1400,6 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	{
 		pCamera->UpdateFollow(fTimeDelta);
 	}
-
-#ifdef _DEBUG
-	DrawTargetingDebugUI(m_hAutoTarget, GetTransform().GetPosition());
-#endif
 
 	// PhysX render buffer와 무관하게 현재 게임오브젝트 Transform을 즉시 시각화한다.
 	if(false)
