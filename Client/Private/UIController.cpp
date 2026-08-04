@@ -310,7 +310,7 @@ void CUIController::CreateSpellType()
 		.bLoop = false
 		});
 
-	//E::CGameInstance::Get().SetMouseFix(false);
+	E::CGameInstance::Get().SetMouseFix(false);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(1.f);
 }
 
@@ -336,7 +336,7 @@ void CUIController::DeleteSpellType()
 		PlayScaleAlphaDownDelete(m_SpellShortCutKeySlot[i]);
 	}
 
-	//E::CGameInstance::Get().SetMouseFix(true);
+	E::CGameInstance::Get().SetMouseFix(true);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
 
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/SpellClose.wav", SOUND_PLAY_DESC{
@@ -385,7 +385,7 @@ void CUIController::CreateDeathScene()
 
 	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
 	PlayFadeOutOnly(m_PotionCount);
-	//E::CGameInstance::Get().SetMouseFix(false);
+	E::CGameInstance::Get().SetMouseFix(false);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(1.f);
 
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Death.wav", SOUND_PLAY_DESC{
@@ -643,7 +643,7 @@ void CUIController::ClearDeathScene()
 
 	if(std::nullopt != m_MonsterHP && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
 		PlayFadeInOnly(*m_MonsterHP);
-	//E::CGameInstance::Get().SetMouseFix(true);
+	E::CGameInstance::Get().SetMouseFix(true);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
 }
 
