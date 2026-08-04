@@ -2,6 +2,7 @@
 #include "ComBeHavior.h"
 #include "BTDecorator.h"
 #include "BTComposite.h"
+#include "BTBlackboard.h"
 CComBeHavior::CComBeHavior()
 {
 }
@@ -45,7 +46,11 @@ HRESULT CComBeHavior::Initialize(void* pArg)
 	if (!pDesc->resBeHaviorMajor.empty() && !pDesc->resBeHaviorMinor.empty())
 		Load_DataByResource(pDesc->resBeHaviorMajor, pDesc->resBeHaviorMinor);
 
-    return S_OK;
+	m_pBlackBoard = CBTBlackBoard::Create();
+	if (nullptr == m_pBlackBoard)
+		return E_FAIL;
+	
+	return S_OK;
 }
 void CComBeHavior::Set_NodeInfo(CBTRoot* pNode)
 {
@@ -136,8 +141,6 @@ HRESULT CComBeHavior::Load_Data(const _string& filePath)
 }
 HRESULT CComBeHavior::Load_DataByResource(const _string& restagMajor, const _string& restagMinor)
 {
-
-
 	auto pRes = CGameInstance::Get().GetResourceFirst<CResJson>(restagMajor, restagMinor);
 	if (nullptr == pRes)
 	{ 
@@ -257,6 +260,14 @@ void CComBeHavior::Set_Flag(uint32_t iFlag, FLAGTYPE eType)
 		m_iFlag = iFlag;
 	else if (eType == FLAGTYPE::INVERT)
 		m_iFlag ^= iFlag;
+}
+
+CBTBlackBoard* CComBeHavior::Get_Blackboard()
+{
+	if(nullptr == m_pBlackBoard)
+		return nullptr;
+
+	return m_pBlackBoard.get();
 }
 
 void CComBeHavior::Update(_float fTimeDelta)

@@ -51,7 +51,7 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-	m_iHp = m_iMaxHp = 2000;
+	m_iHp = m_iMaxHp = 800;
 
 	{
 		CComPxCharacterController::DESC Desc{};
@@ -340,8 +340,18 @@ void CBossTMB::Active_Skill()
 }
 void CBossTMB::PriorityUpdate(E::_float fTimeDelta)
 {
+	
 	__super::PriorityUpdate(fTimeDelta);
 
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
+	{
+
+		if (m_CurEffectName == m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_START)] || m_CurEffectName == m_EffectNames[ETOUI(BOSSTOMB_SKILL::BLUST_END)])
+		{
+			CGameInstance::Get().StopEffect(m_iCurEffectID);
+		}
+		
+	}
 	Active_Skill();
 	Active_Dynamic_Effect();
 }
@@ -366,6 +376,7 @@ void CBossTMB::FixedUpdate(E::_float fTimeDelta)
 void CBossTMB::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
+	Dead();
 }
 
 void CBossTMB::LateUpdate(E::_float fTimeDelta)
@@ -500,6 +511,17 @@ void CBossTMB::Active_Dynamic_Effect()
 		CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_BossBall, m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)], &desc);
 		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT), FLAGTYPE::DEL);
 
+	}
+}
+
+void CBossTMB::Dead()
+{
+	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)) && m_CurEffectName == m_EffectNames[ETOUI(BOSSTOMB_SKILL::DEAD)])
+	{
+		if (m_pModelAnimator->GetFinish())
+		{
+			SetPendingDestroyCascade();
+		}
 	}
 }
 

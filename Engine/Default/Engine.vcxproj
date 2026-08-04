@@ -239,6 +239,7 @@
     <ClInclude Include="..\public\BinSerializeFormat.h" />
     <ClInclude Include="..\public\BinSerializer.h" />
     <ClInclude Include="..\Public\BTActionNode.h" />
+    <ClInclude Include="..\public\BTBlackBoard.h" />
     <ClInclude Include="..\Public\BTComposite.h" />
     <ClInclude Include="..\public\BTDecorator.h" />
     <ClInclude Include="..\public\BTRandSelector.h" />
@@ -583,6 +584,7 @@
     <ClCompile Include="..\private\BinDeSerializer.cpp" />
     <ClCompile Include="..\private\BinSerializer.cpp" />
     <ClCompile Include="..\Private\BTActionNode.cpp" />
+    <ClCompile Include="..\private\BTBlackBoard.cpp" />
     <ClCompile Include="..\Private\BTComposite.cpp" />
     <ClCompile Include="..\private\BTDecorator.cpp" />
     <ClCompile Include="..\private\BTRandSelector.cpp" />
