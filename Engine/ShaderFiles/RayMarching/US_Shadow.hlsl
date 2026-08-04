@@ -163,6 +163,7 @@ VS_FINAL_OUT VSMain_InstancedDirectional(VS_SHADOW_INSTANCED_IN IN, uint _Instan
 	
 	OUT.WorldPos = WorldPosition.xyz;
 	OUT.Position = mul(WorldPosition, g_matViewProj);
+	//OUT.Position = float4(IN.Position.xy * 0.1f, 0.5f, 1.0f);
 	
 	return OUT;
 }
@@ -183,7 +184,8 @@ VS_FINAL_OUT VSMain_Final(VS_IN IN)
 	OUT.WorldPos	= WorldPos.xyz;
 	
 	float4 ViewPos	= mul(WorldPos, g_matView);
-	OUT.Position	= mul(ViewPos, g_matProj);
+	OUT.Position = mul(ViewPos, g_matProj);
+	//OUT.Position = float4(IN.Position.xy * 0.1f, 0.5f, 1.0f);
 	
 	return OUT;
 }
@@ -235,7 +237,7 @@ void GSMain(triangle VS_OUT IN[3], inout TriangleStream<GS_OUT> _OutStream)
 		_OutStream.RestartStrip();
 	}
 }
-float PSMain(GS_OUT OUT) : SV_DEPTH
+float PSMain_Old(GS_OUT OUT) : SV_DEPTH
 {
 	float3	LightToPixel = OUT.WorldPos.xyz - AffectedLight[CurrentShadowLightIndex].Position;
     float	Distance = length(LightToPixel);
@@ -244,6 +246,10 @@ float PSMain(GS_OUT OUT) : SV_DEPTH
 	float	Depth = Distance / OuterRange;
 	
 	return saturate(Depth);
+}
+float PSMain_Directional(VS_FINAL_OUT OUT) : SV_DEPTH
+{
+	return 0.f;	
 }
 float PSMain_PointFace(VS_POINT_OUT OUT) : SV_DEPTH
 {

@@ -144,7 +144,7 @@ private:
 	SPtr<CResVertexShader>				m_pInstancedDirectionalLightVS = { nullptr };
 
 	SPtr<CResGeometryShader>			m_pPointLightGS = { nullptr };
-	SPtr<CResPixelShader>				m_pPointLightPS = { nullptr };
+	SPtr<CResPixelShader>				m_pDirectionalLightPS = { nullptr };
 
 	SPtr<CResComputeShader>				m_pShadowComputeShader = { nullptr };
 	SPtr<CResComputeShader>				m_pNonShadowComputeShader = { nullptr };
