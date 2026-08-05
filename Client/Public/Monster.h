@@ -134,7 +134,7 @@ public:
 	uint32_t					GetNormalCnt() {return m_iNormalHitCnt;}
 	CGameObject*				Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
 
-	SOUND_ID 						Play_Sound(const MONSOUND& MonSound);
+	SOUND_ID 					Play_Sound(const MONSOUND& MonSound);
 	virtual void				Skill_Finished();
 	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
 	virtual void				Set_AttTable(ATTMON eType, _float2 fSkillRatio) {};
@@ -147,6 +147,7 @@ protected:
 	virtual	void				Damaged(PLAYER_SKILL_TYPE eType);
 	void						Update_HurtBox();
 private:
+	void						Cancle_Attack();
 	void						Flag_Check(_float fTimeDelta);
 	void						StartEmissive() { if (m_bWork) return;  m_bEmissive = true; }
 	void						EmissiveFadeOut(_float fTimeDelta);
@@ -185,7 +186,7 @@ protected:
 	_float2								m_fSkillRatio{ };
 	uint32_t							m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{}, m_iCurEffectID{}, m_iPreSkill{}, m_iCurSkill{};
 	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{}, m_fDamage{};
-	int32_t								m_iHp{}, m_iMaxHp{},m_iColliderBoneIndex{};;
+	int32_t								m_iHp{}, m_iMaxHp{}, m_iColliderBoneIndex{}, m_iEventBoneIndex{-1};
 	_bool								m_bEmissive{ false }, m_bWork{ false },m_bSkillLoop{ false }, m_bSkipAtt{false};
 	_string								m_SocketName{}, m_CurEffectName{};
 	ATTMON								m_eAttType{ ATTMON::END },m_eLastSkillTable{ ATTMON::END };

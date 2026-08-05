@@ -48,6 +48,17 @@ void CBTDecorator::ResetDebug()
 	if (m_pDecorator != nullptr)
 		m_pDecorator->ResetDebug();
 }
+
+
+void CBTDecorator::OnEnter()
+{
+
+}
+void CBTDecorator::OnExit(EVALUATE eResult)
+{
+	if (m_pDecorator)
+		m_pDecorator->AbortExecute();
+}
 nlohmann::json CBTDecorator::Save_Node()
 {
 	const _string Name = "Child";

@@ -123,7 +123,7 @@ HRESULT CMonster::Initialize(void* pArg)
 		CComSound::DESC Desc{};
 
 	// 모든 몬스터들이 고대마법에 공격캔슬하도록 구독
-	// CGameInstance::Get().EventSubscribe<FAcientMagicStart>(GetHandle(), [=]() { CancelAttack(); });
+	// 
 
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PERMANENT,
@@ -134,6 +134,8 @@ HRESULT CMonster::Initialize(void* pArg)
 		{
 			return E_FAIL;
 		}
+
+		CGameInstance::Get().EventSubscribe<FAcientMagicStart>(GetHandle(), [=]() { Cancle_Attack(); });
 	}
 	return S_OK;
 }
@@ -614,6 +616,21 @@ void CMonster::Update_HurtBox()
 		m_pComRigidBody->SetKinematicTarget(
 			m_vHurtBoxPosition,
 			GetTransform().GetQuaternion());
+	}
+}
+
+void CMonster::Cancle_Attack()
+{
+	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::GROGY)) && !Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN)) && Is_Grounded())
+	{
+		if (m_iEventBoneIndex == -1)
+			return;
+		ReActiveTable();
+		m_pModelAnimator->Play_Anim(m_iEventBoneIndex, false, 0.1f);
+		//여기에 블랙보드로 잠금 하기
+		// 
+		//m_pComModelInstance->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
+
 	}
 }
 

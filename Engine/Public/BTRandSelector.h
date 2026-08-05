@@ -25,8 +25,10 @@ public:
 	void					Abort() override;
 	nlohmann::json			Save_Node() override;
 	HRESULT					Load_json(const nlohmann::json& j) override;
+public:
+	void					Shuffle();
 private:
-
+	std::vector<int32_t>	m_Shuffle;
 	uint32_t				m_iPreindex{};
 public:
 	static  UPtr<CBTRandSelector> Create(void* pArg);

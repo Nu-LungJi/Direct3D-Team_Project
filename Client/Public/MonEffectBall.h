@@ -17,7 +17,7 @@ public:
 		uint32_t iBoneIndex{};
 		PX_QUERY_FILTER_DESC tQueryFilter{
 					.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX) | ETOUI(COLLISION_LAYER::WORLD_STATIC) ,
-					.bQueryStatic = false,
+					.bQueryStatic = true,
 					.bQueryDynamic = true,
 					.bIncludeTrigger = false
 		};
@@ -46,7 +46,7 @@ private:
 	int32_t		m_iDamage{};
 	_float		m_fDeadTime{};
 	_float3		m_vDir{}, m_vEndLook{}, m_vPos{};
-
+	_bool			m_bPatternBroken{ false };
 	_float		m_fSpeed{50.f}, m_fPower{8.f};
 	_float4x4 m_CurWorldmat{}, m_Offsetmat{};
 	uint32_t m_iBoneIndex{}, m_iEffectID{};

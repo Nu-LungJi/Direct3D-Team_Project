@@ -68,8 +68,9 @@ void CMonEffectBall::FixedUpdate(E::_float fTimeDelta)
 
 void CMonEffectBall::Update(E::_float fTimeDelta)
 {
-
+	if (!m_bHit)
 	OverlapTest();
+
 	if (m_bHit || m_iEffectID == INVALID_EFFECT_INSTANCE_ID || m_fDeadTime > 1.f) {
 
 		_float4x4 mat = *GetTransform().GetWorldMatrix();
@@ -80,8 +81,19 @@ void CMonEffectBall::Update(E::_float fTimeDelta)
 				m_CurWorldmat._43);
 		_float4x4 effectMat;
 		XMStoreFloat4x4(&effectMat, effectWorld);
+		if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
+		{
+			CGameInstance::Get().StopEffect(m_iEffectID);
+			m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
+		}
+		if (!m_bPatternBroken)
+		{
+			CGameInstance::Get().PlayEffect(
+				"BossRingAttackAfterEffect",
+				effectMat,
+				_vector{});
+		}
 
-		CGameInstance::Get().PlayEffect("BossRingAttackAfterEffect", effectMat, _vector{});
 		SetPendingDestroy();
 		return;
 	}
@@ -108,38 +120,53 @@ HRESULT CMonEffectBall::Render(ID3D11DeviceContext* pContext, const E::RENDER_CT
 
 void CMonEffectBall::OverlapTest()
 {
-	_float3 vPos{};
+	if (!m_bThrow)
+		return;
+	_float3 vPos{
+			m_CurWorldmat._41,
+			m_CurWorldmat._42,
+			m_CurWorldmat._43
+	};
 
-	memcpy(&vPos, reinterpret_cast<_float*>(&m_CurWorldmat.m[3]), sizeof _float3);
-	PX_OVERLAP_DESC   pxOverLabDesc{};
-	PX_OVERLAP_RESULT pxOverLapResult{};
+	PX_OVERLAP_DESC desc{};
+	desc.tGeometry = {
+		.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,
+		.fRadius = 1.2f
+	};
+	desc.tPose = { .vPosition = vPos };
 
-	pxOverLabDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX) };
-	pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 1.2f };
-	pxOverLabDesc.tPose = PX_QUERY_POSE{ .vPosition = vPos };
+	// 플레이어 검사
+	desc.tFilter = {
+		.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX),
+		.bQueryStatic = false,
+		.bQueryDynamic = true
+	};
 
-	auto pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
-
-	const auto vPreviousColor = pDbgLineRender->GetColor();
-	const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
-	pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
-	pDbgLineRender->SetDepthTest(true);
-	pDbgLineRender->AddSphere(1.2f, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
-	pDbgLineRender->SetColor(vPreviousColor);
-	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
-
-	if (CGameInstance::Get().GetPhysXManager()->Overlap(pxOverLabDesc, pxOverLapResult))
+	PX_OVERLAP_RESULT result{};
+	if (CGameInstance::Get().GetPhysXManager()->Overlap(desc, result))
 	{
-		if (pxOverLapResult.bHit)
+		if (auto pTarget =
+			CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(
+				result.hGameObject))
 		{
-			//m_fDamage
-			auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pxOverLapResult.hGameObject);
-			CGameInstance::Get().StopEffect(m_iEffectID);
-			m_bHit = true;
 			pTarget->OnQueryHit(m_iDamage);
-
-
+			m_bHit = true;
+			return;
 		}
+	}
+
+	// 바닥/벽 검사
+	desc.tFilter = {
+		.iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC),
+		.bQueryStatic = true,
+		.bQueryDynamic = false
+	};
+
+	result = {};
+	if (CGameInstance::Get().GetPhysXManager()->Overlap(desc, result))
+	{
+		m_bHit = true; // 다음 종료 처리에서 폭발 이펙트
+		return;
 	}
 }
 
@@ -205,6 +232,8 @@ void CMonEffectBall::Chase(_float fTimeDelta)
 	{
 		CGameInstance::Get().StopEffect(m_iEffectID);
 		m_bHit = true;
+
+		m_bPatternBroken = true;
 		auto pCamera = CGameInstance::Get().GetActiveCamera();
 
 		if (!pCamera)
