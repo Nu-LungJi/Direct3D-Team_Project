@@ -153,6 +153,10 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_LensFlare", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_PostProcess", .sTarget = "cs_5_0" })))    return E_FAIL;
+	}
 
 	return S_OK;
 }
@@ -218,8 +222,11 @@ HRESULT CRenderer::InitializeOffscreen()
 
 HRESULT CRenderer::InitializeShadow()
 {
-	uint32_t ShadowMapResolutionX = { 1280 * 4 };
-	uint32_t ShadowMapResolutionY = { 720 * 4 };
+	_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
+	_float	ScreenMultiplierValue = 4.f;
+
+	uint32_t ShadowMapResolutionX = static_cast<uint32_t>(ScreenSize.x * ScreenMultiplierValue);
+	uint32_t ShadowMapResolutionY = static_cast<uint32_t>(ScreenSize.y * ScreenMultiplierValue);
 
 	m_pResDynTexTargetShadow = Generate_DepthStencil_RenderTarget("DynTex2D_Shadow", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, ShadowMapResolutionX, ShadowMapResolutionY);
 
@@ -232,9 +239,9 @@ HRESULT CRenderer::InitializeShadow()
 
 HRESULT CRenderer::InitializeFullscreen()
 {
-	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_FullscreenTex", E::CResQuadFullscreenTexBuffer::Create()))
+	if (auto m_pFullscreenVIBuffer = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_FullscreenTex", E::CResQuadFullscreenTexBuffer::Create()))
 	{
-		if (FAILED(res->Load()))    return E_FAIL;
+		if (FAILED(m_pFullscreenVIBuffer->Load()))    return E_FAIL;
 	}
 
 	if (m_pFullscreenVS = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_FullScreenQuad"))
@@ -285,10 +292,6 @@ HRESULT CRenderer::InitializeTargetPBR()
 	{
 		if (nullptr == m_pPBRVertexShader)	return E_FAIL;
 	}
-	if (m_pPBRPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PBR"))
-	{
-		if (nullptr == m_pPBRPixelShader)	return E_FAIL;
-	}
 
 	if (m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim"))
 	{
@@ -326,43 +329,37 @@ HRESULT CRenderer::InitializeBlendTarget()
 
 HRESULT CRenderer::InitializePostProcess() {
 
-	m_pResDynTexTargetPostProcess = Generate_RenderTarget("DynTex2D_PostProcess", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
-	if (nullptr == m_pResDynTexTargetPostProcess)        return E_FAIL;
-
 	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PostProcess", E::CResCBuffer::Create()))
 	{
 		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(POSTPROCESS) })))    return E_FAIL;
 	}
 
 	// LUT Texture Create
-	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/LUT_Fuji.dds", nullptr, m_pLUTTexture.GetAddressOf()))) {
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/LUT_Fuji.dds", nullptr, m_pLookUpTableTexture.GetAddressOf()))) {
 		MSG_BOX("Cannot Create LUT Texture File.");
 		return E_FAIL;
 	}
 
-	m_pPostProcessPS = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Filter");
-	if (nullptr == m_pPostProcessPS)		return E_FAIL;
-	
-
-	_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
-
-	m_pHalfViewPort		= Generate_ViewPort("VP_HalfScreenScale", ScreenSize.x / 2.f, ScreenSize.y / 2.f);
-	m_pQuarterViewPort	= Generate_ViewPort("VP_QuarterScreenScale", ScreenSize.x / 4.f, ScreenSize.y / 4.f);
-
 	{
 		m_pLensFlareComputeShader = E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_LensFlare");
+		if (nullptr == m_pLensFlareComputeShader)		return E_FAIL;
+
+		m_pPostProcessComputeShader = E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess");
+		if (nullptr == m_pPostProcessComputeShader)		return E_FAIL;
 
 		m_pResDynTexTargetLensFlare = Generate_UnorderedAccessView("UAV_LensFlare", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
+		if (nullptr == m_pResDynTexTargetLensFlare)		return E_FAIL;
+
+		m_pResDynTexTargetPostProcess = Generate_UnorderedAccessView("UAV_PostProcess", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
+		if (nullptr == m_pResDynTexTargetPostProcess)	return E_FAIL;
 
 		m_pLensFlareCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_LENSFLARE", E::CResCBuffer::Create());
-		if (nullptr == m_pLensFlareCBuffer) return E_FAIL;
+		if (nullptr == m_pLensFlareCBuffer || FAILED(m_pLensFlareCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LENSFLARE) })))    return E_FAIL;
 
-		if (FAILED(m_pLensFlareCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LENSFLARE) })))    return E_FAIL;
-
-		m_fScreenPosition = { 0.5f, 0.5f };
-		m_fExpandDuration = 10.f;
-		m_fCurrentLifeTime = 0.f;
-		m_fChromaticRingAlpha = 0.25f;
+		m_fScreenPosition		= { 0.5f, 0.5f };
+		m_fExpandDuration		= 10.f;
+		m_fCurrentLifeTime		= 0.f;
+		m_fChromaticRingAlpha	= 0.25f;
 	}
 
 	return S_OK;
@@ -403,25 +400,25 @@ HRESULT CRenderer::InitializeBloom() {
 	const uint32_t HalfScreenWidth		= FullScreenWidth / 2					, HalfScreenHeight		= FullScreenHeight / 2;
 	const uint32_t QuarterScreenWidth	= HalfScreenWidth / 2					, QuarterScreenHeight	= HalfScreenHeight / 2;
 
-	m_pResDynTexTargetBloomResult		= Generate_RenderTarget("DynTex2D_BloomResult"		, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE, FullScreenWidth, FullScreenHeight);
+	m_pResDynTexTargetBloomResult		= Generate_UnorderedAccessView("UAV_BloomResult", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, FullScreenWidth, FullScreenHeight);
 	
-	m_pResDynTexTargetBloom_HalfScaleA	= Generate_RenderTarget("DynTex2D_BloomHalfA"		, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE, HalfScreenWidth, HalfScreenHeight);
-	m_pResDynTexTargetBloom_HalfScaleB	= Generate_RenderTarget("DynTex2D_BloomHalfB"		, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE, HalfScreenWidth, HalfScreenHeight);
+	m_pResDynTexTargetBloom_HalfScaleA	= Generate_UnorderedAccessView("UAV_BloomHalfA"	, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, HalfScreenWidth, HalfScreenHeight);
+	m_pResDynTexTargetBloom_HalfScaleB	= Generate_UnorderedAccessView("UAV_BloomHalfB"	, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, HalfScreenWidth, HalfScreenHeight);
 	
-	m_pResDynTexTargetBloom_QuarterScaleA = Generate_RenderTarget("DynTex2D_BloomQuarterA"	, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE, QuarterScreenWidth, QuarterScreenHeight);
-	m_pResDynTexTargetBloom_QuarterScaleB = Generate_RenderTarget("DynTex2D_BloomQuarterB"	, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE, QuarterScreenWidth, QuarterScreenHeight);
+	m_pResDynTexTargetBloom_QuarterScaleA = Generate_UnorderedAccessView("UAV_BloomQuarterA", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, QuarterScreenWidth, QuarterScreenHeight);
+	m_pResDynTexTargetBloom_QuarterScaleB = Generate_UnorderedAccessView("UAV_BloomQuarterB", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, QuarterScreenWidth, QuarterScreenHeight);
 
 	if (!m_pResDynTexTargetBloomResult || !m_pResDynTexTargetBloom_HalfScaleA || !m_pResDynTexTargetBloom_HalfScaleB || 
 		!m_pResDynTexTargetBloom_QuarterScaleA || !m_pResDynTexTargetBloom_QuarterScaleB)	return E_FAIL;
 
-	m_pBrightPassPS			= E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_BrightPass");
-	m_pVerticalBlurPS		= E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_VerticalBlur");
-	m_pHorizontalBlurPS		= E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_HorizontalBlur");
-	m_pBloomPassPS			= E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_Combined");
-	m_pUpSamplePS			= E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_UpSampling");
-	m_pDownSamplePS			= E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_Bloom_DownSampling");
+	m_pBrightPassComputeShader			= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_BrightPass");
+	m_pVerticalBlurComputeShader		= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_VerticalBlur");
+	m_pHorizontalBlurComputeShader		= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_HorizontalBlur");
+	m_pBloomPassComputeShader			= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_Combined");
+	m_pUpSampleComputeShader			= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_UpSampling");
+	m_pDownSampleComputeShader			= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_DownSampling");
 
-	if (!m_pBrightPassPS || !m_pVerticalBlurPS || !m_pHorizontalBlurPS || !m_pBloomPassPS || !m_pUpSamplePS || !m_pDownSamplePS)	return E_FAIL;
+	if (!m_pBrightPassComputeShader || !m_pVerticalBlurComputeShader || !m_pHorizontalBlurComputeShader || !m_pBloomPassComputeShader || !m_pUpSampleComputeShader || !m_pDownSampleComputeShader)	return E_FAIL;
 
 	m_pBloomCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Bloom", E::CResCBuffer::Create());
 	if (nullptr == m_pBloomCBuffer) return E_FAIL;
@@ -454,8 +451,16 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 
 	if (FAILED(m_pVolumetricCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_VLFOG) })))    return E_FAIL;
 
-	m_pVolumeTexture = Create_Texture3D(DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_SHADER_RESOURCE, 32, 32, 32);
+	//m_pVolumeTexture = Create_Texture3D(DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_SHADER_RESOURCE, 32, 32, 32);
 
+	uint32_t FroxelGridX	= 160;
+	uint32_t FroxelGridY	= 90;
+	uint32_t FroxelGridZ	= 64;
+
+	m_pVoxelDensityColor	= Create_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FroxelGridX, FroxelGridY, FroxelGridZ);
+	m_pVoxelLighting		= Create_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FroxelGridX, FroxelGridY, FroxelGridZ);
+	m_pVoxelAccumulated		= Create_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FroxelGridX, FroxelGridY, FroxelGridZ);
+	
 	return S_OK;
 }
 HRESULT CRenderer::InitializeUI3D()
@@ -859,62 +864,41 @@ ComPtr<ID3D11ShaderResourceView> CRenderer::Create_Texture2D(DXGI_FORMAT _TexFor
 	return SRV;
 }
 
-ComPtr<ID3D11ShaderResourceView> CRenderer::Create_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight, uint32_t _TexDepth) {
+TEXTURE3D CRenderer::Create_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight, uint32_t _TexDepth) {
 
-	if (_TexWidth == 0)     _TexWidth = 1;
-	if (_TexHeight == 0)    _TexHeight = 1;
-	if (_TexDepth == 0)		_TexDepth = 1;
+	TEXTURE3D	VTEX3D = {};
 
-	std::vector<uint8_t> pPixelData(_TexWidth * _TexHeight * _TexDepth * 4);
+	D3D11_TEXTURE3D_DESC Tex3DDesc = {};
+	Tex3DDesc.Width			= _TexWidth;
+	Tex3DDesc.Height		= _TexHeight;
+	Tex3DDesc.Depth			= _TexDepth;
+	Tex3DDesc.MipLevels		= 1;
+	Tex3DDesc.Format		= _TexFormat;
+	Tex3DDesc.Usage			= D3D11_USAGE_DEFAULT;
+	Tex3DDesc.BindFlags		= _BindFlags;
+	Tex3DDesc.CPUAccessFlags = 0;
+	Tex3DDesc.MiscFlags		 = 0;
 
-	for (uint32_t z = 0; z < _TexDepth; ++z)
-	{
-		for (uint32_t y = 0; y < _TexHeight; ++y)
-		{
-			for (uint32_t x = 0; x < _TexWidth; ++x)
-			{
-				uint32_t iIdx = (z * _TexWidth * _TexHeight + y * _TexWidth + x) * 4;
-
-				float fNoiseR = NoiseHash(x, y, z);
-				float fNoiseG = NoiseHash(x * 2, y * 2, z * 2);
-				float fNoiseB = NoiseHash(x * 4, y * 4, z * 4);
-				float fNoiseA = NoiseHash(x * 8, y * 8, z * 8);
-
-				pPixelData[iIdx + 0] = static_cast<uint8_t>(saturate(fNoiseR * 0.5f + 0.5f) * 255.0f);
-				pPixelData[iIdx + 1] = static_cast<uint8_t>(saturate(fNoiseG * 0.5f + 0.5f) * 255.0f);
-				pPixelData[iIdx + 2] = static_cast<uint8_t>(saturate(fNoiseB * 0.5f + 0.5f) * 255.0f);
-				pPixelData[iIdx + 3] = static_cast<uint8_t>(saturate(fNoiseA * 0.5f + 0.5f) * 255.0f);
-			}
-		}
-	}
-
-	D3D11_TEXTURE3D_DESC Tex3dDesc = {};
-	Tex3dDesc.Width = _TexWidth;
-	Tex3dDesc.Height = _TexHeight;
-	Tex3dDesc.Depth = _TexDepth;
-	Tex3dDesc.MipLevels = 1;
-	Tex3dDesc.Format = _TexFormat;
-	Tex3dDesc.Usage = D3D11_USAGE_DEFAULT;
-	Tex3dDesc.BindFlags = _BindFlags;
-
-	ComPtr<ID3D11ShaderResourceView>	SRV = { nullptr };
-	ComPtr<ID3D11Texture3D>				Tex3D = { nullptr };
-
-	D3D11_SUBRESOURCE_DATA InitData = {};
-	InitData.pSysMem = pPixelData.data();
-	InitData.SysMemPitch = _TexWidth * 4;
-	InitData.SysMemSlicePitch = _TexWidth * _TexHeight * 4;
-
-	if (FAILED(m_pDevice->CreateTexture3D(&Tex3dDesc, &InitData, Tex3D.GetAddressOf())))				return nullptr;
+	if (FAILED(m_pDevice->CreateTexture3D(&Tex3DDesc, nullptr, VTEX3D.pTexture.GetAddressOf())))	return TEXTURE3D{};
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc{};
-	SRVDesc.Format = _TexFormat;
-	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
-	SRVDesc.Texture3D.MipLevels = 1;
-	SRVDesc.Texture3D.MostDetailedMip = 0;
-	if (FAILED(m_pDevice->CreateShaderResourceView(Tex3D.Get(), &SRVDesc, SRV.GetAddressOf())))			return nullptr;
+	SRVDesc.Format						= _TexFormat;
+	SRVDesc.ViewDimension				= D3D11_SRV_DIMENSION_TEXTURE3D;
+	SRVDesc.Texture3D.MipLevels			= 1;
+	SRVDesc.Texture3D.MostDetailedMip	= 0;
 
-	return SRV;
+	if (FAILED(m_pDevice->CreateShaderResourceView(VTEX3D.pTexture.Get(), &SRVDesc, VTEX3D.pSRV.GetAddressOf())))		return TEXTURE3D{};
+
+	D3D11_UNORDERED_ACCESS_VIEW_DESC UAVDesc{};
+	UAVDesc.Format						= _TexFormat;
+	UAVDesc.ViewDimension				= D3D11_UAV_DIMENSION_TEXTURE3D;
+	UAVDesc.Texture3D.MipSlice			= 0;
+	UAVDesc.Texture3D.FirstWSlice		= 0;
+	UAVDesc.Texture3D.WSize				= _TexDepth;
+
+	if (FAILED(m_pDevice->CreateUnorderedAccessView(VTEX3D.pTexture.Get(), &UAVDesc, VTEX3D.pUAV.GetAddressOf())))	return TEXTURE3D{};
+	
+	return VTEX3D;
 }
 
 HRESULT CRenderer::AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject)
@@ -1044,6 +1028,7 @@ _float CRenderer::NoiseHash(uint32_t _X, uint32_t _Y, uint32_t _Z)
 	n = (n << 13) ^ n;
 	return (1.0f - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0f);
 }
+
 #pragma endregion
 
 #pragma region  RENDERING
@@ -1414,6 +1399,10 @@ HRESULT CRenderer::Render_Effect()
 
 HRESULT CRenderer::Render_VolumetricEffect() {
 	if (ApplyVolumetric == false) return S_OK;
+
+	if (FAILED(Render_FroxelCell())) { Unbind_Resources(); return S_OK; }
+
+
 	ZoneScopedN("Render_VolumetricEffect");
 	{
 		ID3D11RenderTargetView* NullRTV[1] = { nullptr }; 
@@ -1466,6 +1455,55 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexUAVVolumetric;
 
+	return S_OK;
+}
+
+HRESULT CRenderer::Render_FroxelCell(){
+	{
+		m_pContext->CSSetShader(m_pFroxelDensityInjectionCS->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVoxelDensityColor.pUAV.Get() };
+		m_pContext->CSSetUnorderedAccessViews(1, 1, pUAVs, nullptr);
+	}
+	{
+		uint32_t FroxelX = (160 + 7) / 8;
+		uint32_t FroxelY = (90 + 7) / 8;
+		uint32_t FroxelZ = (64 + 7) / 8;
+
+		m_pContext->Dispatch(FroxelX, FroxelY, FroxelZ);
+
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(1, 1, pNullUAVs, nullptr);
+	}
+
+	return S_OK;
+}
+
+HRESULT CRenderer::Render_LightIntegration() {
+	{
+		m_pContext->CSSetShader(m_pLightIntegrationCS->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11ShaderResourceView* pSRVs[] = {
+			m_pVoxelDensityColor.pSRV.Get(),
+		};
+		m_pContext->CSSetShaderResources(0, 2, pSRVs);
+
+		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVoxelLighting.pUAV.Get() };
+		m_pContext->CSSetUnorderedAccessViews(1, 1, pUAVs, nullptr);
+	}
+	{
+		uint32_t FroxelX = (160 + 7) / 8;
+		uint32_t FroxelY = (90 + 7) / 8;
+		uint32_t FroxelZ = (64 + 7) / 8;
+
+		m_pContext->Dispatch(FroxelX, FroxelY, FroxelZ);
+
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(1, 1, pNullUAVs, nullptr);
+
+		ID3D11ShaderResourceView* pNullSRVs[2] = { nullptr, nullptr };
+		m_pContext->CSSetShaderResources(0, 2, pNullSRVs);
+	}
 	return S_OK;
 }
 
@@ -1523,20 +1561,56 @@ HRESULT CRenderer::Render_OffScreen() {
 HRESULT CRenderer::Render_PostProcess() {
 	if (ApplyFilter == false) return S_OK;
 
-	ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetPostProcess->GetRTV().Get() };
-	m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
-	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
-
-	auto pCbPostProcess = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PostProcess");
-
-	_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
-	m_pContext->ClearRenderTargetView(m_pBackBufferRTV.Get(), reinterpret_cast<float*>(&clearColor));
-
 	if (FAILED(Render_PostProcess_LensFlare())) { Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_PostProcess_Bloom()))		{ Unbind_Resources(); return S_OK; }
-	
+
 	if (FAILED(Render_PostProcess_Filter()))	{ Unbind_Resources(); return S_OK; }
+
+	return S_OK;
+}
+
+HRESULT CRenderer::Render_PostProcess_Focusing(){
+	ZoneScopedN("Render_PostProcess_FocusingDepth");
+	
+	if (!m_pOutlineTargetHandle)	return S_OK;
+
+	auto OutLineObject = CGameInstance::Get().GetGameObjectByHandle(m_pOutlineTargetHandle.value());
+	if (nullptr == OutLineObject)	return S_OK;
+	
+	{
+		ID3D11DepthStencilState* pDSS = nullptr;
+		m_pContext->OMSetDepthStencilState(pDSS, 0);
+
+		SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
+		if (nullptr == DepthWriteState) return S_OK;
+
+		m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
+		m_pContext->ClearDepthStencilView(m_pResDynTexTargetDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+	}
+	{
+		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetDepth->GetRTV().Get() };
+		m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
+		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+
+		m_pContext->PSSetShader(nullptr, nullptr, 0);
+	}
+	{
+		auto pGameCam = CGameInstance::Get().GetActiveCamera();
+		if (nullptr == pGameCam)    return S_OK;
+
+		if (FAILED(Reset_RenderContext(RENDERPASS::DEPTH, pGameCam)))	{ Unbind_Resources(); return S_OK; }
+
+		if (FAILED(Bind_CameraAttribute(pGameCam)))						{ Unbind_Resources(); return S_OK; }
+
+		OutLineObject->Render(m_pContext.Get(), RenderContext);
+	}
+	{
+		ID3D11RenderTargetView* pNullRTVs[1] = { nullptr };
+		m_pContext->OMSetRenderTargets(1, pNullRTVs, nullptr);
+		m_pContext->OMSetDepthStencilState(nullptr, 0);
+	}
+	
 
 	return S_OK;
 }
@@ -1591,63 +1665,42 @@ HRESULT CRenderer::Render_PostProcess_LensFlare(){
 }
 
 HRESULT CRenderer::Render_PostProcess_Bloom() {
-	m_pContext->VSSetShader(m_pOffScreenVertexShader->GetVertexShader().Get(), nullptr, 0);
-	m_pContext->IASetInputLayout(m_pOffScreenVertexShader->GetInputLayout().Get());
-
-	ID3D11Buffer* vertexBuffers[] = {
-			m_pFullscreenVIBuffer->GetVertexBuffer().Get()
-	};
-	uint32_t strides[] = {
-		m_pFullscreenVIBuffer->GetVertexStride()
-	};
-	uint32_t offsets[] = {
-		0
-	};
-
-	m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-	m_pContext->IASetIndexBuffer(m_pFullscreenVIBuffer->GetIndexBuffer().Get(), m_pFullscreenVIBuffer->GetIndexFormat(), 0); 
-	m_pContext->IASetPrimitiveTopology(m_pFullscreenVIBuffer->GetPrimitiveType());
-
 	_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
 
-	D3D11_VIEWPORT VP_FullScale		= { 0.f, 0.f, ScreenSize.x, ScreenSize.y, 0.f, 1.f };
-	D3D11_VIEWPORT VP_HalfScale		= { 0.f, 0.f, ScreenSize.x / 2.f, ScreenSize.y / 2.f, 0.f, 1.f };
-	D3D11_VIEWPORT VP_QuarterScale	= { 0.f, 0.f, ScreenSize.x / 4.f, ScreenSize.y / 4.f, 0.f, 1.f };
+	uint32_t ScreenX = static_cast<uint32_t>(ScreenSize.x);
+	uint32_t ScreenY = static_cast<uint32_t>(ScreenSize.y);
+
+	uint32_t HalfScreenX = ScreenX / 2;
+	uint32_t HalfScreenY = ScreenY / 2;
+
+	uint32_t QuarterScreenX = ScreenX / 4;
+	uint32_t QuarterScreenY = ScreenY / 4;
 
 	{	// FullScale -> HalfScale
-		m_pContext->RSSetViewports(1, &VP_HalfScale);
-
-		if (FAILED(Update_TexelSize(1.f / VP_FullScale.Width, 1.f / VP_FullScale.Height)))										return E_FAIL;
-		if (FAILED(Render_BrightPass(m_pResDynTexTargetBloom_HalfScaleA, m_pResDynTexTargetPreviousRenderView)))				return E_FAIL;
+		if (FAILED(Update_TexelSize(1.f / ScreenSize.x, 1.f / ScreenSize.y)))																 return E_FAIL;
+		if (FAILED(Render_BrightPass(m_pResDynTexTargetBloom_HalfScaleA, m_pResDynTexTargetPreviousRenderView, HalfScreenX, HalfScreenY)))					 return E_FAIL;
 	}
 	
 	{	// HalfScale -> QuarterScale
-		m_pContext->RSSetViewports(1, &VP_QuarterScale);
-
-		if (FAILED(Update_TexelSize(1.f / VP_HalfScale.Width, 1.f / VP_HalfScale.Height)))										return E_FAIL;
-		if (FAILED(Render_DownSamplePass(m_pResDynTexTargetBloom_QuarterScaleA, m_pResDynTexTargetBloom_HalfScaleA)))			return E_FAIL;
+		if (FAILED(Update_TexelSize(1.f / (ScreenSize.x / 2.f), 1.f / (ScreenSize.y / 2.f))))																 return E_FAIL;
+		if (FAILED(Render_DownSamplePass(m_pResDynTexTargetBloom_QuarterScaleA, m_pResDynTexTargetBloom_HalfScaleA, QuarterScreenX, QuarterScreenY)))		 return E_FAIL;
 	}
 
 	{	// QuarterScale Blur
-		if (FAILED(Update_TexelSize(1.f / VP_QuarterScale.Width, 1.f / VP_QuarterScale.Height)))								return E_FAIL;
-		if (FAILED(Render_VerticalBlurPass(m_pResDynTexTargetBloom_QuarterScaleB, m_pResDynTexTargetBloom_QuarterScaleA)))		return E_FAIL;
-		if (FAILED(Render_HorizontalBlurPass(m_pResDynTexTargetBloom_QuarterScaleA, m_pResDynTexTargetBloom_QuarterScaleB)))	return E_FAIL;
+		if (FAILED(Update_TexelSize(1.f / (ScreenSize.x / 4.f), 1.f / (ScreenSize.y / 4.f))))																 return E_FAIL;
+		if (FAILED(Render_VerticalBlurPass(m_pResDynTexTargetBloom_QuarterScaleB, m_pResDynTexTargetBloom_QuarterScaleA, QuarterScreenX, QuarterScreenY)))	 return E_FAIL;
+		if (FAILED(Render_HorizontalBlurPass(m_pResDynTexTargetBloom_QuarterScaleA, m_pResDynTexTargetBloom_QuarterScaleB, QuarterScreenX, QuarterScreenY))) return E_FAIL;
 	}
 
 	{	// HalfScale Blur
-		m_pContext->RSSetViewports(1, &VP_HalfScale);
-
-		if (FAILED(Update_TexelSize(1.f / VP_HalfScale.Width, 1.f / VP_HalfScale.Height)))										return E_FAIL;
-		if (FAILED(Render_VerticalBlurPass(m_pResDynTexTargetBloom_HalfScaleB, m_pResDynTexTargetBloom_HalfScaleA)))			return E_FAIL;
-		if (FAILED(Render_HorizontalBlurPass(m_pResDynTexTargetBloom_HalfScaleA, m_pResDynTexTargetBloom_HalfScaleB)))			return E_FAIL;
+		if (FAILED(Update_TexelSize(1.f / (ScreenSize.x / 2.f), 1.f / (ScreenSize.y / 2.f))))																 return E_FAIL;
+		if (FAILED(Render_VerticalBlurPass(m_pResDynTexTargetBloom_HalfScaleB, m_pResDynTexTargetBloom_HalfScaleA, HalfScreenX, HalfScreenY)))				 return E_FAIL;
+		if (FAILED(Render_HorizontalBlurPass(m_pResDynTexTargetBloom_HalfScaleA, m_pResDynTexTargetBloom_HalfScaleB, HalfScreenX, HalfScreenY)))			 return E_FAIL;
 	}
 
 	{
-		if (FAILED(Render_UpSampleCombinePass(m_pResDynTexTargetBloom_HalfScaleB, m_pResDynTexTargetBloom_HalfScaleA, m_pResDynTexTargetBloom_QuarterScaleA)))	return E_FAIL;
-		
-		m_pContext->RSSetViewports(1, &VP_FullScale);
-
-		if (FAILED(Render_CombinedPass(m_pResDynTexTargetBloomResult, m_pResDynTexTargetPreviousRenderView, m_pResDynTexTargetBloom_HalfScaleB)))				return E_FAIL;
+		if (FAILED(Render_UpSampleCombinePass(m_pResDynTexTargetBloom_HalfScaleB, m_pResDynTexTargetBloom_HalfScaleA, m_pResDynTexTargetBloom_QuarterScaleA, HalfScreenX, HalfScreenY)))	return E_FAIL;
+		if (FAILED(Render_CombinedPass(m_pResDynTexTargetBloomResult, m_pResDynTexTargetPreviousRenderView, m_pResDynTexTargetBloom_HalfScaleB, ScreenX, ScreenY)))							return E_FAIL;
 	}
 
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetBloomResult;
@@ -1658,48 +1711,42 @@ HRESULT CRenderer::Render_PostProcess_Bloom() {
 }
 
 HRESULT CRenderer::Render_PostProcess_Filter() {
-	ID3D11RenderTargetView* CombinedRTV[1] = { m_pOffScreenTex2D->GetRTV().Get() };
-	m_pContext->OMSetRenderTargets(1, CombinedRTV, nullptr);
+	ZoneScopedN("Render_PostProcess_Filter");
+	{
+		ID3D11RenderTargetView* NullRTV[1] = { nullptr };
+		m_pContext->OMSetRenderTargets(1, NullRTV, nullptr);
 
-	const auto& vs = m_pOffScreenVertexShader;
-	const auto& ps = m_pPostProcessPS;
-	const auto& viBuffer = m_pFullscreenVIBuffer;
+		m_pContext->CSSetShader(m_pPostProcessComputeShader->GetComputeShader().Get(), nullptr, 0);
 
-	m_pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-	m_pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+		ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexTargetPostProcess->GetUAV().Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
-	m_pContext->IASetInputLayout(vs->GetInputLayout().Get());
-	
-	ID3D11Buffer* vertexBuffers[] = {
-		viBuffer->GetVertexBuffer().Get()
-	};
-	uint32_t strides[] = {
-		viBuffer->GetVertexStride()
-	};
-	uint32_t offsets[] = {
-		0
-	};
+		ID3D11ShaderResourceView* pPostProcessSRVList[4] = { 
+			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
+			nullptr,
+			m_pLookUpTableTexture.Get(),
+			m_pResDynTexTargetDepth->GetSRV().Get()
+		};
 
-	m_pContext->PSSetShaderResources(0, 1, m_pResDynTexTargetPreviousRenderView->GetSRV().GetAddressOf());		// Combined Texture
-	m_pContext->PSSetShaderResources(1, 1, m_pLUTTexture.GetAddressOf());										// LUT Texture
+		m_pContext->CSSetShaderResources(0, 4, pPostProcessSRVList);
+	}
+	{
+		_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
 
-	m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
+		m_pContext->Dispatch((ScreenSize.x + 15) / 16, (ScreenSize.y + 15) / 16, 1);
+	}
 
 	Unbind_Resources();
 
-	m_pResDynTexTargetPreviousRenderView = m_pOffScreenTex2D;
+	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetPostProcess;
 
 	return S_OK;
 }
 HRESULT CRenderer::Render_UI3D() {
 	ZoneScopedN("Render_UserInterface3D");
 	{
-		{
-			m_pContext->CopyResource(
-				m_pResDynTexTargetUI3D->GetTexture().Get(),
-				m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
-		}
-
+		m_pContext->CopyResource(m_pResDynTexTargetUI3D->GetTexture().Get(), m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
+	
 		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetUI3D->GetRTV().Get() };
 		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
@@ -2122,31 +2169,43 @@ VOID	CRenderer::VolumetricFogGUI() {
 	ImGui::Begin("VolumetricFog");
 
 	_float CenterPos[3] = { m_fFogInfo.g_fFogCenterPos.x, m_fFogInfo.g_fFogCenterPos.y, m_fFogInfo.g_fFogCenterPos.z };
-	if (ImGui::DragFloat3("CenterPos", CenterPos)) {
-		m_fFogInfo.g_fFogCenterPos.x = CenterPos[0], m_fFogInfo.g_fFogCenterPos.y = CenterPos[1], m_fFogInfo.g_fFogCenterPos.z = CenterPos[2];
-	}
-	ImGui::DragFloat("Intensity", &m_fFogInfo.g_fFogIntensity, 0.1f, 0.f, 100.f, "%.1f");
-	if (ImGui::ColorEdit3("Color", (float*)&m_fFogInfo.g_fFogColor))
-	{
-		if (m_fFogInfo.g_fFogColor.x < 0.f) m_fFogInfo.g_fFogColor.x = 0.f;
-		if (m_fFogInfo.g_fFogColor.x > 1.f) m_fFogInfo.g_fFogColor.x = 1.f;
+	ImGui::DragFloat3("CenterPos", (float*)&m_fFogInfo.g_fFogCenterPos, 0.5f);
 
-		if (m_fFogInfo.g_fFogColor.y < 0.f) m_fFogInfo.g_fFogColor.y = 0.f;
-		if (m_fFogInfo.g_fFogColor.y > 1.f) m_fFogInfo.g_fFogColor.y = 1.f;
+	_float LightDirection[3] = { m_fFogInfo.g_fFogLightDirection.x, m_fFogInfo.g_fFogLightDirection.y, m_fFogInfo.g_fFogLightDirection.z };
+	if (ImGui::DragFloat3("LightDirection", LightDirection, 0.01f, -1.f, 1.f)) {
+		XMVECTOR vDir = XMVectorSet(LightDirection[0], LightDirection[1], LightDirection[2], 0.f);
+		if (XMVector3LengthSq(vDir).m128_f32[0] > 0.0001f) {
+			vDir = XMVector3Normalize(vDir);
+			XMStoreFloat3((XMFLOAT3*)&m_fFogInfo.g_fFogLightDirection, vDir);
 
-		if (m_fFogInfo.g_fFogColor.z < 0.f) m_fFogInfo.g_fFogColor.z = 0.f;
-		if (m_fFogInfo.g_fFogColor.z > 1.f) m_fFogInfo.g_fFogColor.z = 1.f;
+			LightDirection[0] = m_fFogInfo.g_fFogLightDirection.x;
+			LightDirection[1] = m_fFogInfo.g_fFogLightDirection.y;
+			LightDirection[2] = m_fFogInfo.g_fFogLightDirection.z;
+		}
 	}
+
+	ImGui::ColorEdit3("Color", (float*)&m_fFogInfo.g_fFogColor);
 
 	ImGui::Separator();
 
-	ImGui::DragFloat("Start Distance", &m_fFogInfo.g_fFogStartPos, 1.f, 0.f, 100.f, "%.1f");
-	ImGui::DragFloat("End Distance", &m_fFogInfo.g_fFogEndPos, 1.f, m_fFogInfo.g_fFogStartPos, 500.f, "%.1f");
+	ImGui::DragFloat("Intensity", &m_fFogInfo.g_fFogIntensity, 0.01f, 0.f, 5.f, "%.2f");
+	ImGui::DragFloat("Density"	, &m_fFogInfo.g_fFogDensity	 , 0.0001f, 0.f, 0.05f, "%.5f");
+	ImGui::DragFloat("Height"	, &m_fFogInfo.g_fFogHeight	 , 0.25f, -500.f, 500.f, "%.1f");
 
 	ImGui::Separator();
 
-	ImGui::DragFloat("Height", &m_fFogInfo.g_fFogHeight, 0.25f, -300.f, 300.f, "%.1f");
-	ImGui::DragFloat("Density", &m_fFogInfo.g_fFogDensity, 0.0001f, 0.f, 0.01f, "%.4f");
+	ImGui::DragFloat("Start Distance", &m_fFogInfo.g_fFogStartPos, 0.5f, 0.f, 100.f, "%.1f");
+	ImGui::DragFloat("End Distance", &m_fFogInfo.g_fFogEndPos, 1.f, m_fFogInfo.g_fFogStartPos + 0.1f, 1000.f, "%.1f");
+
+	ImGui::Separator();
+
+	ImGui::DragFloat("NoiseScale", &m_fFogInfo.g_fFogNoiseScale, 0.0005f, 0.0001f, 0.1f, "%.4f");
+	ImGui::DragFloat("ScatteringWeight", &m_fFogInfo.g_fFogScatteringWeight, 0.01f, 0.f, 1.f, "%.2f");
+
+	ImGui::Separator();
+
+	ImGui::DragFloat("FogAnisotropyGA(Forward)", &m_fFogInfo.g_fFogAnisotropyGA, 0.01f, 0.f, +0.99f, "%.2f");
+	ImGui::DragFloat("FogAnisotropyGB(Backward)", &m_fFogInfo.g_fFogAnisotropyGB, 0.01f, -0.99f, 0.f, "%.2f");
 
 	ImGui::End();
 }
@@ -2225,7 +2284,6 @@ HRESULT CRenderer::Render_Debugging() {
 	D3D11_MAPPED_SUBRESOURCE MRES{};
 
     for (uint32_t IDX = 0; IDX < 9; ++IDX) {
-	
         if (IDX != 8 && (IDX >= m_pResDynTexTargetList.size() || !m_pResDynTexTargetList[IDX]))
             continue;
 	
@@ -2308,142 +2366,174 @@ HRESULT	CRenderer::Update_TexelSize(_float _Width, _float _Height){
 		m_pContext->Unmap(m_pBloomCBuffer->GetCBuffer().Get(), 0);
 	}
 
-	m_pContext->PSSetConstantBuffers(10, 1, m_pBloomCBuffer->GetCBuffer().GetAddressOf());
+	m_pContext->CSSetConstantBuffers(10, 1, m_pBloomCBuffer->GetCBuffer().GetAddressOf());
 
 	return S_OK;
 }
 
-HRESULT CRenderer::Render_BrightPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture) {
-	if (nullptr == _OutPut || nullptr == _OriginTexture) return E_FAIL;
-	
-	auto OutputRTV = _OutPut->GetRTV();
-	if (nullptr == OutputRTV) return E_FAIL;
+HRESULT CRenderer::Render_BrightPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, uint32_t _ScreenX, uint32_t _ScreenY) {
+	{
+		if (nullptr == _OutPut || nullptr == _OriginTexture) return E_FAIL;
 
-	_float ClearColor[4] = { 0.f, 0.f, 1.f, 1.f };
-	m_pContext->ClearRenderTargetView(OutputRTV.Get(), reinterpret_cast<_float*>(&ClearColor));
-	m_pContext->OMSetRenderTargets(1, OutputRTV.GetAddressOf(), nullptr);
+		auto OutputUAV = _OutPut->GetUAV();
+		if (nullptr == OutputUAV) return E_FAIL;
 
-	m_pContext->PSSetShader(m_pBrightPassPS->GetPixelShader().Get(), nullptr, 0);
-	m_pContext->PSSetShaderResources(0, 1, _OriginTexture->GetSRV().GetAddressOf());
+		m_pContext->CSSetShader(m_pBrightPassComputeShader->GetComputeShader().Get(), nullptr, 0);
 
-	m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
+		ID3D11UnorderedAccessView* pUAVs[1] = { OutputUAV.Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
-	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
+		ID3D11ShaderResourceView* pOriginTex[1] = { _OriginTexture->GetSRV().Get() };
+		m_pContext->CSSetShaderResources(0, 1, pOriginTex);
+	}
+	{
+		m_pContext->Dispatch((_ScreenX + 7) / 8, (_ScreenY + 7) / 8, 1);
 
-	ID3D11ShaderResourceView* NULLSRV[2] = { nullptr, nullptr };
-	m_pContext->PSSetShaderResources(0, 2, NULLSRV);
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
 
-	return S_OK;
-}
-
-HRESULT CRenderer::Render_VerticalBlurPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _BlurPassTexture) {
-	if (nullptr == _OutPut || nullptr == _BlurPassTexture) return E_FAIL;
-	
-	auto OutputRTV = _OutPut->GetRTV();
-	if (nullptr == OutputRTV) return E_FAIL;
-
-	//_float ClearColor[4] = { 0.f, 0.f, 1.f, 1.f };
-	//m_pContext->ClearRenderTargetView(OutputRTV.Get(), reinterpret_cast<_float*>(&ClearColor));
-	m_pContext->OMSetRenderTargets(1, OutputRTV.GetAddressOf(), nullptr);
-
-	m_pContext->PSSetShader(m_pVerticalBlurPS->GetPixelShader().Get(), nullptr, 0);
-	m_pContext->PSSetShaderResources(1, 1, _BlurPassTexture->GetSRV().GetAddressOf());
-
-	m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
-
-	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
-
-	ID3D11ShaderResourceView* NULLSRV[2] = { nullptr, nullptr };
-	m_pContext->PSSetShaderResources(0, 2, NULLSRV);
+		ID3D11ShaderResourceView* NULLSRV[1] = { nullptr };
+		m_pContext->CSSetShaderResources(0, 1, NULLSRV);
+	}
 
 	return S_OK;
 }
 
-HRESULT CRenderer::Render_HorizontalBlurPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _BlurPassTexture) {
-	if (nullptr == _OutPut || nullptr == _BlurPassTexture) return E_FAIL;
+HRESULT CRenderer::Render_VerticalBlurPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _BlurPassTexture, uint32_t _ScreenX, uint32_t _ScreenY) {
+	{
+		if (nullptr == _OutPut || nullptr == _BlurPassTexture) return E_FAIL;
 
-	auto OutputRTV = _OutPut->GetRTV();
-	if (nullptr == OutputRTV) return E_FAIL;
+		auto OutputUAV = _OutPut->GetUAV();
+		if (nullptr == OutputUAV) return E_FAIL;
 
-	//_float ClearColor[4] = { 0.f, 0.f, 1.f, 1.f };
-	//m_pContext->ClearRenderTargetView(OutputRTV.Get(), reinterpret_cast<_float*>(&ClearColor));
-	m_pContext->OMSetRenderTargets(1, OutputRTV.GetAddressOf(), nullptr);
+		m_pContext->CSSetShader(m_pVerticalBlurComputeShader->GetComputeShader().Get(), nullptr, 0);
 
-	m_pContext->PSSetShader(m_pHorizontalBlurPS->GetPixelShader().Get(), nullptr, 0);
-	m_pContext->PSSetShaderResources(1, 1, _BlurPassTexture->GetSRV().GetAddressOf());
+		ID3D11UnorderedAccessView* pUAVs[1] = { OutputUAV.Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
-	m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
+		ID3D11ShaderResourceView* pBloomTex[1] = { _BlurPassTexture->GetSRV().Get() };
+		m_pContext->CSSetShaderResources(0, 1, pBloomTex);
+	}
+	{
+		m_pContext->Dispatch((_ScreenX + 7) / 8, (_ScreenY + 7) / 8, 1);
 
-	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
 
-	ID3D11ShaderResourceView* NULLSRV[2] = { nullptr, nullptr };
-	m_pContext->PSSetShaderResources(0, 2, NULLSRV);
-
-	return S_OK;
-}
-
-HRESULT CRenderer::Render_UpSampleCombinePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _HalfBloomTex, const SPtr<CResDynamicTexture2D>& _QuarterBloomTex) {
-	if (nullptr == _OutPut || nullptr == _HalfBloomTex || nullptr == _QuarterBloomTex) return E_FAIL;
-	
-	auto OutputRTV = _OutPut->GetRTV();
-	if (nullptr == OutputRTV) return E_FAIL;
-
-	m_pContext->OMSetRenderTargets(1, OutputRTV.GetAddressOf(), nullptr);
-
-	ID3D11ShaderResourceView* SRV[2] = { _HalfBloomTex->GetSRV().Get(), _QuarterBloomTex->GetSRV().Get() };
-	m_pContext->PSSetShader(m_pUpSamplePS->GetPixelShader().Get(), nullptr, 0);
-	m_pContext->PSSetShaderResources(0, 2, SRV);
-
-	m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
-
-	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
-
-	ID3D11ShaderResourceView* NULLSRV[2] = { nullptr, nullptr };
-	m_pContext->PSSetShaderResources(0, 2, NULLSRV);
+		ID3D11ShaderResourceView* NULLSRV[1] = { nullptr };
+		m_pContext->CSSetShaderResources(0, 1, NULLSRV);
+	}
 
 	return S_OK;
 }
 
-HRESULT CRenderer::Render_DownSamplePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _SrcTex) {
-	if (nullptr == _OutPut || nullptr == _SrcTex) return E_FAIL;
-	
-	auto OutputRTV = _OutPut->GetRTV();
-	if (nullptr == OutputRTV) return E_FAIL;
+HRESULT CRenderer::Render_HorizontalBlurPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _BlurPassTexture, uint32_t _ScreenX, uint32_t _ScreenY) {
+	{
+		if (nullptr == _OutPut || nullptr == _BlurPassTexture) return E_FAIL;
 
-	m_pContext->OMSetRenderTargets(1, OutputRTV.GetAddressOf(), nullptr);
+		auto OutputUAV = _OutPut->GetUAV();
+		if (nullptr == OutputUAV) return E_FAIL;
 
-	m_pContext->PSSetShader(m_pDownSamplePS->GetPixelShader().Get(), nullptr, 0);
-	m_pContext->PSSetShaderResources(0, 1, _SrcTex->GetSRV().GetAddressOf());
+		m_pContext->CSSetShader(m_pHorizontalBlurComputeShader->GetComputeShader().Get(), nullptr, 0);
 
-	m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
+		ID3D11UnorderedAccessView* pUAVs[1] = { OutputUAV.Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
-	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
+		ID3D11ShaderResourceView* pBloomTex[1] = { _BlurPassTexture->GetSRV().Get() };
+		m_pContext->CSSetShaderResources(0, 1, pBloomTex);
+	}
+	{
+		m_pContext->Dispatch((_ScreenX + 7) / 8, (_ScreenY + 7) / 8, 1);
 
-	ID3D11ShaderResourceView* NULLSRV[1] = { nullptr };
-	m_pContext->PSSetShaderResources(0, 1, NULLSRV);
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
+
+		ID3D11ShaderResourceView* NULLSRV[1] = { nullptr };
+		m_pContext->CSSetShaderResources(0, 1, NULLSRV);
+	}
 
 	return S_OK;
 }
 
-HRESULT CRenderer::Render_CombinedPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, const SPtr<CResDynamicTexture2D>& _BlurPassTexture) {
-	if (nullptr == _OutPut || nullptr == _OriginTexture || nullptr == _BlurPassTexture) return E_FAIL;
-	auto OutputRTV = _OutPut->GetRTV();
-	if (nullptr == OutputRTV) return E_FAIL;
+HRESULT CRenderer::Render_UpSampleCombinePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _HalfBloomTex, const SPtr<CResDynamicTexture2D>& _QuarterBloomTex, uint32_t _ScreenX, uint32_t _ScreenY) {
+	{
+		if (nullptr == _OutPut || nullptr == _HalfBloomTex || nullptr == _QuarterBloomTex) return E_FAIL;
 
-	//_float ClearColor[4] = { 0.f, 0.f, 1.f, 1.f };
-	//m_pContext->ClearRenderTargetView(OutputRTV.Get(), reinterpret_cast<_float*>(&ClearColor));
-	m_pContext->OMSetRenderTargets(1, OutputRTV.GetAddressOf(), nullptr);
+		auto OutputUAV = _OutPut->GetUAV();
+		if (nullptr == OutputUAV) return E_FAIL;
 
-	m_pContext->PSSetShader(m_pBloomPassPS->GetPixelShader().Get(), nullptr, 0);
-	m_pContext->PSSetShaderResources(0, 1, _OriginTexture->GetSRV().GetAddressOf());
-	m_pContext->PSSetShaderResources(1, 1, _BlurPassTexture->GetSRV().GetAddressOf());
+		m_pContext->CSSetShader(m_pUpSampleComputeShader->GetComputeShader().Get(), nullptr, 0);
 
-	m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
+		ID3D11UnorderedAccessView* pUAVs[1] = { OutputUAV.Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
-	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
+		ID3D11ShaderResourceView* pBloomTex[2] = { _HalfBloomTex->GetSRV().Get(), _QuarterBloomTex->GetSRV().Get() };
+		m_pContext->CSSetShaderResources(0, 2, pBloomTex);
+	}
+	{
+		m_pContext->Dispatch((_ScreenX + 7) / 8, (_ScreenY + 7) / 8, 1);
 
-	ID3D11ShaderResourceView* NULLSRV[2] = { nullptr, nullptr };
-	m_pContext->PSSetShaderResources(0, 2, NULLSRV);
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
+
+		ID3D11ShaderResourceView* NULLSRV[2] = { nullptr, nullptr };
+		m_pContext->CSSetShaderResources(0, 2, NULLSRV);
+	}
+
+	return S_OK;
+}
+
+HRESULT CRenderer::Render_DownSamplePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _SrcTex, uint32_t _ScreenX, uint32_t _ScreenY) {
+	{
+		if (nullptr == _OutPut || nullptr == _SrcTex) return E_FAIL;
+
+		auto OutputUAV = _OutPut->GetUAV();
+		if (nullptr == OutputUAV) return E_FAIL;
+
+		m_pContext->CSSetShader(m_pDownSampleComputeShader->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11UnorderedAccessView* pUAVs[1] = { OutputUAV.Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
+
+		ID3D11ShaderResourceView* pBloomTex[1] = { _SrcTex->GetSRV().Get() };
+		m_pContext->CSSetShaderResources(0, 1, pBloomTex);
+	}
+	{
+		m_pContext->Dispatch((_ScreenX + 7) / 8, (_ScreenY + 7) / 8, 1);
+
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
+
+		ID3D11ShaderResourceView* NULLSRV[1] = { nullptr };
+		m_pContext->CSSetShaderResources(0, 1, NULLSRV);
+	}
+
+	return S_OK;
+}
+
+HRESULT CRenderer::Render_CombinedPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, const SPtr<CResDynamicTexture2D>& _BlurPassTexture, uint32_t _ScreenX, uint32_t _ScreenY) {
+	{
+		if (nullptr == _OutPut || nullptr == _OriginTexture || nullptr == _BlurPassTexture) return E_FAIL;
+		auto OutputUAV = _OutPut->GetUAV();
+		if (nullptr == OutputUAV) return E_FAIL;
+
+		m_pContext->CSSetShader(m_pBloomPassComputeShader->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11UnorderedAccessView* pUAVs[1] = { OutputUAV.Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
+
+		ID3D11ShaderResourceView* pBloomTex[2] = { _OriginTexture->GetSRV().Get(), _BlurPassTexture->GetSRV().Get() };
+		m_pContext->CSSetShaderResources(0, 2, pBloomTex);
+	}
+	{
+		m_pContext->Dispatch((_ScreenX + 7) / 8, (_ScreenY + 7) / 8, 1);
+
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
+
+		ID3D11ShaderResourceView* NULLSRV[2] = { nullptr, nullptr };
+		m_pContext->CSSetShaderResources(0, 2, NULLSRV);
+	}
 
 	return S_OK;
 }

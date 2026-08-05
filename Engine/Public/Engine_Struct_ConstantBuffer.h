@@ -203,7 +203,15 @@ namespace Engine
 		_float	g_fFogStartPos;
 		_float	g_fFogEndPos;
 		_float	g_fFogDensity;
-		_float	FogPadding;
+		_float	g_fFogNoiseScale;
+
+		_float3	g_fFogLightDirection;
+		_float	g_fFogScatteringWeight;
+
+		_float	g_fFogAnisotropyGA;
+		_float	g_fFogAnisotropyGB;
+		_float2	g_fFogPadding;
+
 	};
 	static_assert(sizeof(CB_VLFOG) % 16 == 0);
 

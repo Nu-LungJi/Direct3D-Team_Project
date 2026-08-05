@@ -4,7 +4,7 @@ Texture2D<float4> OriginalTexture	: register(t0);
 Texture2D<float4> BlurPassTexture	: register(t1);
 
 Texture2D<float4> LUT_Texture		: register(t2);
-Texture2D<float4> DepthTexture : register(t3);
+Texture2D<float4> FocusingTexture	: register(t3);
 
 static const float	CenterWeight		= { 0.227027f };
 static const float	BlurOffsets[2]		= { 1.3846154f, 3.2307692f };
@@ -20,9 +20,8 @@ static const float	ChromaticRing_Radius	 = { 0.32f };
 static const float	ChromaticRing_Width		 = { 0.05f };
 static const float	ChromaticRing_Smoothness = { 0.06f };
 
-static const float  BorderThreshold = 0.2f;
-static const float  OutlineThickness = 0.2f;
-static const float3 OutlineColor = float3(1.f, 1.f, 1.f);
+static const float  OutlineThickness = 1.2f;
+static const float4 OutlineColor = float4(1.f, 1.f, 1.f, 1.f);
 // LUT ColorGrading Global Variable
 static const float LUT_Size = 16.f;
 
@@ -42,17 +41,17 @@ static const float3x3 AGX_OutMatrix = float3x3(
 static const float Min_Luminance = -12.47393f;
 static const float Max_Luminance = 4.026069f;
 
+static const float DistortionIntensity	= { 0.f }; // 왜곡 강도
+static const float ChromaticIntensity	= { 0.f }; // 색수차 강도
+static const float VignetteIntensity	= { 0.f }; // 비네팅 강도
+static const float VignetteSmoothness	= { 0.f }; // 비네팅
+
 RWTexture2D<float4> OUTPUT : register(u0);
 
 cbuffer CB_POSTPROCESS : register(b10)
 {
 	float2 TexelSize;
 	float2 _pad;
-	
-	float DistortionIntensity;	// 왜곡 강도
-	float ChromaticIntensity;	// 색수차 강도
-	float VignetteIntensity;	// 비네팅 강도
-	float VignetteSmoothness;	// 비네팅 
 };
 
 cbuffer CB_LENSFLARE : register(b11)
@@ -153,18 +152,46 @@ void CSMain_LensFlare(uint3 ID : SV_DispatchThreadID)
 }
 
 /////////////////////////// BLOOM Main Shader Function
+float KarisWeight(float3 _Color)
+{
+	float3 Luminance = dot(_Color, float3(0.2126f, 0.7152f, 0.0722f));
+	return 1.f / (1.f + max(Luminance, 0.0001f));
+}
 
-float3 DownSampling(float2 _TexCoord, float2 _TexelSize)
+float3 CustomDownSampling(Texture2D _Texture, float2 _TexCoord, float2 _TexelSize)
 {
 	float2 SamplingOffset = _TexelSize * 0.5f; // Sampling Near Pixel
 	
 	float3 Color = 0.f;
-	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, -SamplingOffset.y)).rgb;
-	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, -SamplingOffset.y)).rgb;
-	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, +SamplingOffset.y)).rgb;
-	Color += OriginalTexture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, +SamplingOffset.y)).rgb;
+	float ColorA = _Texture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, -SamplingOffset.y)).rgb;
+	float ColorB = _Texture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, -SamplingOffset.y)).rgb;
+	float ColorC = _Texture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, +SamplingOffset.y)).rgb;
+	float ColorD = _Texture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, +SamplingOffset.y)).rgb;
 
-	return Color * 0.25f; // Color / 4.f
+	float WeightA = KarisWeight(ColorA);
+	float WeightB = KarisWeight(ColorB);
+	float WeightC = KarisWeight(ColorC);
+	float WeightD = KarisWeight(ColorD);
+	
+	float3	WeightedColorSum = ColorA * WeightA + ColorB * WeightB + ColorC * WeightC + ColorD * WeightD;
+	float	WeightSum = WeightA + WeightB + WeightC + WeightD;
+	
+	return WeightedColorSum / max(WeightSum, 0.0001f);
+}
+
+float3 DownSampling(Texture2D _Texture, float2 _TexCoord, float2 _TexelSize)
+{
+	float2 SamplingOffset = _TexelSize * 0.5f;
+
+	float3 Color = 0.f;
+	Color += _Texture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, -SamplingOffset.y)).rgb;
+	Color += _Texture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, -SamplingOffset.y)).rgb;
+	Color += _Texture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, +SamplingOffset.y)).rgb;
+	Color += _Texture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, +SamplingOffset.y)).rgb;
+
+	Color *= 0.25f;
+	
+	return min(Color, float3(50.0f, 50.0f, 50.0f));
 }
 
 float3 GaussianBlur(float2 _TexCoord, float2 _TexelDirection)
@@ -182,6 +209,16 @@ float3 GaussianBlur(float2 _TexCoord, float2 _TexelDirection)
 	return CenterPixel.rgb;
 }
 
+float SoftKneeCurve(float _Luminance, float _Threshold, float _Knee)
+{
+	// make Transition by Threshold Softly
+	float Soft = _Luminance - _Threshold + _Knee;
+	Soft = clamp(Soft, 0.f, 2.f * _Knee);
+	Soft = Soft * Soft / max(4.f * _Knee, 0.0001f);
+	
+	return Soft;
+}
+
 [numthreads(8, 8, 1)]
 void CSMain_BrightPass(uint3 ID : SV_DispatchThreadID)
 {
@@ -190,10 +227,12 @@ void CSMain_BrightPass(uint3 ID : SV_DispatchThreadID)
 	
 	float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY); 
 	
-	float3	DownSampledColor = DownSampling(TexCoord, TexelSize);
+	float3	DownSampledColor = CustomDownSampling(OriginalTexture, TexCoord, TexelSize);
 
 	float	Luminance = dot(DownSampledColor, float3(0.2126f, 0.7152f, 0.0722f));
-	float	Contribution = smoothstep(BrightThreshold - 0.2f, BrightThreshold + 0.2f, Luminance);
+	
+	float	SoftKneeCurve = SoftKneeCurve(Luminance, BrightThreshold, 0.2f);
+	float	Contribution = max(SoftKneeCurve, Luminance - BrightThreshold) / max(Luminance, 0.0001f);
 
 	OUTPUT[ID.xy] = float4(DownSampledColor * Contribution, 1.f);
 	return;
@@ -203,8 +242,7 @@ void CSMain_BrightPass(uint3 ID : SV_DispatchThreadID)
 void CSMain_VerticalBlur(uint3 ID : SV_DispatchThreadID)
 {
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY)
-		return;
+	if (ID.x >= SCREENX || ID.y >= SCREENY) return;
 	
 	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
 	
@@ -216,8 +254,7 @@ void CSMain_VerticalBlur(uint3 ID : SV_DispatchThreadID)
 void CSMain_HorizontalBlur(uint3 ID : SV_DispatchThreadID)
 {
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY)
-		return;
+	if (ID.x >= SCREENX || ID.y >= SCREENY) return;
 	
 	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
 	
@@ -229,8 +266,7 @@ void CSMain_HorizontalBlur(uint3 ID : SV_DispatchThreadID)
 void CSMain_Combined(uint3 ID : SV_DispatchThreadID)
 {
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY)
-		return;
+	if (ID.x >= SCREENX || ID.y >= SCREENY) return;
 	
 	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
 	
@@ -245,8 +281,7 @@ void CSMain_Combined(uint3 ID : SV_DispatchThreadID)
 void CSMain_UpSampling(uint3 ID : SV_DispatchThreadID)
 {
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY)
-		return;
+	if (ID.x >= SCREENX || ID.y >= SCREENY) return;
 	
 	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
 	
@@ -261,12 +296,11 @@ void CSMain_UpSampling(uint3 ID : SV_DispatchThreadID)
 void CSMain_DownSampling(uint3 ID : SV_DispatchThreadID)
 {
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY)
-		return;
+	if (ID.x >= SCREENX || ID.y >= SCREENY) return;
 	
 	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
     
-	OUTPUT[ID.xy] = float4(DownSampling(TexCoord, TexelSize), 1.f);
+	OUTPUT[ID.xy] = float4(DownSampling(OriginalTexture, TexCoord, TexelSize), 1.f);
 	return;
 }
 
@@ -393,18 +427,23 @@ float3 ToneMap_AGXFilm(float3 _Color)
 }
 
 ////////////////////////////////////////////// OutLiner
-float Render_ObjectEdge(float3 _Color, float2 _TexCoord)
-{
-	float CenterPixel = DepthTexture.SampleLevel(LinearWrap, _TexCoord, 0).r;
+float3 Render_ObjectEdge(float3 _Color, float2 _TexCoord)
+{	
+	float	CenterPixel = FocusingTexture.SampleLevel(LinearClamp, _TexCoord, 0).r;
 	
-	float RightPixel	= DepthTexture.SampleLevel(LinearWrap, _TexCoord + float2(TexelSize.x, 0.f), 0);
-	float LeftPixel		= DepthTexture.SampleLevel(LinearWrap, _TexCoord - float2(TexelSize.x, 0.f), 0);
-	float UpPixel		= DepthTexture.SampleLevel(LinearWrap, _TexCoord - float2(0.f, TexelSize.y), 0);
-	float DownPixel		= DepthTexture.SampleLevel(LinearWrap, _TexCoord + float2(0.f, TexelSize.y), 0);
+	if (CenterPixel > 0.999f)	return _Color;
+	
+	float2	MaskTexelSize = TexelSize * OutlineThickness;
+	
+	float	RightPixel	= FocusingTexture.SampleLevel(LinearClamp, _TexCoord + float2(MaskTexelSize.x, 0.f), 0).r;
+	float	LeftPixel	= FocusingTexture.SampleLevel(LinearClamp, _TexCoord - float2(MaskTexelSize.x, 0.f), 0).r;
+	float	UpPixel		= FocusingTexture.SampleLevel(LinearClamp, _TexCoord - float2(0.f, MaskTexelSize.y), 0).r;
+	float	DownPixel	= FocusingTexture.SampleLevel(LinearClamp, _TexCoord + float2(0.f, MaskTexelSize.y), 0).r;
 
-	float DepthDiffer = abs(CenterPixel - RightPixel) + abs(CenterPixel - LeftPixel) + abs(CenterPixel - UpPixel) + abs(CenterPixel - DownPixel);
+	float	DepthEdge = abs(CenterPixel - RightPixel) + abs(CenterPixel - LeftPixel) 
+						+ abs(CenterPixel - UpPixel) + abs(CenterPixel - DownPixel);
 	
-	return lerp(_Color, float3(1.f, 1.f, 1.f), step(BorderThreshold, DepthDiffer));
+	return lerp(_Color, OutlineColor.rgb, saturate(DepthEdge) * OutlineColor.a);
 }
 
 [numthreads(16, 16, 1)]
@@ -423,8 +462,7 @@ void CSMain_PostProcess(uint3 ID : SV_DispatchThreadID)
 	float3 FinalColor = ChromaticAberration(DistortedCoord);
     
 	// Edge Composite
-	float Edge = Render_ObjectEdge(DistortedCoord);
-	FinalColor = lerp(FinalColor, OutlineColor, Edge);
+	FinalColor = Render_ObjectEdge(FinalColor, DistortedCoord);
 	
     // ToneMapping
 	FinalColor = ToneMap_ACESFilm(FinalColor);

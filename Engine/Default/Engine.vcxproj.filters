@@ -2048,6 +2048,9 @@
     <FxCompile Include="..\ShaderFiles\UI\Cursor.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\RayMarching\PS_Volumetric.hlsl">
+      <Filter>ShaderFiles\RayMarching</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">

@@ -256,7 +256,7 @@ PS_OUT PSMain(PS_IN In)
         g_EmissiveTexture.Sample(LinearWrap, In.vTexcoord).rgb *
         EmissiveColor * EmissiveIntensity;
 
-    Out.vDiffuse = float4(fDiffuse.rgb, 1.f);
+	Out.vDiffuse = fDiffuse;		// 광윤 추가 -> Alpha값 적용위해서 변경
     Out.vNormal = float4(fNormal * 0.5f + 0.5f, 1.f);
     Out.vSMRO = float4(
         fMRO.r * MetallicIntensity,

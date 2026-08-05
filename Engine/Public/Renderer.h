@@ -99,6 +99,7 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
 	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetLight{};
 	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetUI3D{};			// 3DUI
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetFocusingDepthMap{};	// DepthMap
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetHBAO{};			// HBAO
 
@@ -120,7 +121,6 @@ private:
 	SPtr<CResPixelShader>		m_pOffScreenPixelShader{};
 
 	SPtr<CResVertexShader>		m_pPBRVertexShader{};
-	SPtr<CResPixelShader>		m_pPBRPixelShader{};
 
 	SPtr<CResVertexShader>		m_pResVertexShader{};
 	SPtr<CResPixelShader>		m_pResPixelShader{};
@@ -131,12 +131,12 @@ private:
 	SPtr<CResVertexShader>		m_pUI3DVertexShader{};
 	SPtr<CResPixelShader>		m_pUI3DPixelShader{};
 
-	SPtr<CResPixelShader>		m_pBrightPassPS{};
-	SPtr<CResPixelShader>		m_pVerticalBlurPS{};
-	SPtr<CResPixelShader>		m_pHorizontalBlurPS{};
-	SPtr<CResPixelShader>		m_pBloomPassPS{};
-	SPtr<CResPixelShader>		m_pUpSamplePS{};
-	SPtr<CResPixelShader>		m_pDownSamplePS{};
+	SPtr<CResComputeShader>		m_pBrightPassComputeShader{};
+	SPtr<CResComputeShader>		m_pVerticalBlurComputeShader{};
+	SPtr<CResComputeShader>		m_pHorizontalBlurComputeShader{};
+	SPtr<CResComputeShader>		m_pBloomPassComputeShader{};
+	SPtr<CResComputeShader>		m_pUpSampleComputeShader{};
+	SPtr<CResComputeShader>		m_pDownSampleComputeShader{};
 
 	SPtr<CResCBuffer>			m_pBloomCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricCBuffer{};
@@ -144,6 +144,7 @@ private:
 
 	SPtr<CResComputeShader>		m_pVolumetricComputeShader{};
 	SPtr<CResComputeShader>		m_pLensFlareComputeShader{};
+	SPtr<CResComputeShader>		m_pPostProcessComputeShader{};
 
 private:
 	ComPtr<ID3D11Texture2D>				m_pBackBufferTexture{};
@@ -176,15 +177,12 @@ private:
 	SPtr<CResPixelShader> m_pFullscreenPS{};
 	SPtr<CResVIBuffer> m_pFullscreenVIBuffer{};
 
-	SPtr<CResPixelShader>	m_pPostProcessPS{};
 
-	ComPtr<ID3D11ShaderResourceView>	m_pLUTTexture = { nullptr };
+
+	ComPtr<ID3D11ShaderResourceView>	m_pLookUpTableTexture = { nullptr };
 	ComPtr<ID3D11UnorderedAccessView>	m_pUAVVolumetric = { nullptr };
 
 	ComPtr<ID3D11UnorderedAccessView>	m_pUAVLensFlare = { nullptr };
-private:
-	SPtr<CResViewPort>		m_pHalfViewPort{};
-	SPtr<CResViewPort>		m_pQuarterViewPort{};
 
 private:
 	UPtr<CMyGFSDK_SSAO> m_pGFSDK_SSAO{};
@@ -196,14 +194,19 @@ private:
 	HRESULT	Render_NonAlpha();
 	HRESULT	Render_Alpha();
 	HRESULT	Render_Effect();
-	HRESULT	Render_VolumetricEffect();
+
 	HRESULT Render_OffScreen();
 	HRESULT Render_UserInterface();
 
 	HRESULT Render_Lighting();
 	HRESULT Render_UI3D();
 
+	HRESULT	Render_VolumetricEffect();
+	HRESULT Render_FroxelCell();
+	HRESULT Render_LightIntegration();
+
 	HRESULT Render_PostProcess();
+	HRESULT Render_PostProcess_Focusing();
 	HRESULT Render_PostProcess_LensFlare();
 	HRESULT Render_PostProcess_Bloom();
 	HRESULT	Render_PostProcess_Filter();
@@ -220,7 +223,7 @@ private:
 	VOID	Render_Quad();
 
 	ComPtr<ID3D11ShaderResourceView>	Create_Texture2D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
-	ComPtr<ID3D11ShaderResourceView>	Create_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0, uint32_t _TexDepth = 0);
+	TEXTURE3D							Create_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight, uint32_t _TexDepth);
 
 	VOID	PostProcessGUI();
 	VOID	VolumetricFogGUI();
@@ -230,13 +233,15 @@ private:
 
 	// Bloom Helper Function
 	HRESULT	Update_TexelSize(_float _Width, _float _Height);
-	HRESULT Render_BrightPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture);
-	HRESULT	Render_VerticalBlurPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _BlurPassTexture);
-	HRESULT	Render_HorizontalBlurPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _BlurPassTexture);
+	HRESULT Render_BrightPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, uint32_t _ScreenX, uint32_t _ScreenY);
+	HRESULT	Render_VerticalBlurPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _BlurPassTexture, uint32_t _ScreenX, uint32_t _ScreenY);
+	HRESULT	Render_HorizontalBlurPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _BlurPassTexture, uint32_t _ScreenX, uint32_t _ScreenY);
 
-	HRESULT Render_UpSampleCombinePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _HalfBloomTex, const SPtr<CResDynamicTexture2D>& _QuarterBloomTex);
-	HRESULT Render_DownSamplePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _SrcTex);
-	HRESULT Render_CombinedPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, const SPtr<CResDynamicTexture2D>& _BlurPassTexture);
+	HRESULT Render_UpSampleCombinePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _HalfBloomTex, const SPtr<CResDynamicTexture2D>& _QuarterBloomTex, uint32_t _ScreenX, uint32_t _ScreenY);
+	HRESULT Render_DownSamplePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _SrcTex, uint32_t _ScreenX, uint32_t _ScreenY);
+	HRESULT Render_CombinedPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, const SPtr<CResDynamicTexture2D>& _BlurPassTexture, uint32_t _ScreenX, uint32_t _ScreenY);
+
+	HRESULT Apply_OutlineEffect(std::optional<CHandle> _OutlineTargetHandle) { m_pOutlineTargetHandle = _OutlineTargetHandle; }
 
 private:
 	XMFLOAT4X4					m_fDebugWorldMatrix[9];
@@ -293,6 +298,17 @@ private:
 	_float			TimeAccumulation{};
 
 	CB_VLFOG		m_fFogInfo{};
+
+	SPtr<CResComputeShader>		m_pFroxelDensityInjectionCS{};
+	SPtr<CResComputeShader>		m_pLightIntegrationCS{};
+	SPtr<CResComputeShader>		m_pFroxelAccumulationCS{};
+
+	TEXTURE3D		m_pVoxelDensityColor{};
+	TEXTURE3D		m_pVoxelLighting{};
+	TEXTURE3D		m_pVoxelAccumulated{};
+
+private:
+	std::optional<CHandle>	m_pOutlineTargetHandle{};
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

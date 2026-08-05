@@ -104,6 +104,20 @@ namespace Engine
 		_float3		LightPadding;
 	} EFFECT_LIGHT;
 
+	typedef struct tagTexture3D
+	{
+		ComPtr<ID3D11Texture3D>           pTexture;
+		ComPtr<ID3D11ShaderResourceView>  pSRV;
+		ComPtr<ID3D11UnorderedAccessView> pUAV;
+
+		void Reset()
+		{
+			pTexture.Reset();
+			pSRV.Reset();
+			pUAV.Reset();
+		}
+	} TEXTURE3D;
+
 	typedef struct tagPostProcess
 	{
 		_float BloomIntensity;		 // 블룸 강도
