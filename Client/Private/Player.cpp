@@ -436,11 +436,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
 		}
-		{
-			auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(67/255.f, 97 / 255.f, 174 / 255.f, 1.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(51/255.f, 77 / 255.f, 126 / 255.f, 4.f));
-		}
+
 	}
 
 	{

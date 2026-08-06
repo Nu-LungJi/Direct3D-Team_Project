@@ -7,6 +7,7 @@
 #include "PlayerAnimationRatioGuard.h"
 #include "Monster.h"
 #include "Player_Weapon.h"
+#include "Trail_CPU.h"
 NS_USING(Client)
 
 void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
@@ -61,6 +62,13 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 	m_fAnimRatio = 0.f;
 	m_fPreviousAnimRatio = 0.f;
 
+	{
+		{
+			auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(67 / 255.f, 97 / 255.f, 174 / 255.f, 1.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(51 / 255.f, 77 / 255.f, 126 / 255.f, 4.f));
+		}
+	}
 }
 
 void CPlayer_DepulsoSkill_State::CacheAnimationIndices(const CPlayer& player)
