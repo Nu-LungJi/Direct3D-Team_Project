@@ -40,6 +40,7 @@ private:
 	void				OverLabTest(_vector vSrcPos,  _float fRadius, int32_t iDamage);
 	void				Active_Skill();
 	void				Active_Dynamic_Effect();
+	void				Dead();
 private:
 	_string			m_EffectNames[ETOUI(BOSSTOMB_SKILL::END)];
 	_bool			m_bStar{ true };
