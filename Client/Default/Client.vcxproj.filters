@@ -1051,5 +1051,11 @@
     <FxCompile Include="..\ShaderFiles\Shader_SkyCloudy.hlsl">
       <Filter>ShaderFiles\SkyBox</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Mesh.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Texture.hlsl">
+      <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

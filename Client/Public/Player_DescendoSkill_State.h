@@ -49,7 +49,7 @@ private:
 	static constexpr _float ATTACK_END_RATIO = 0.2f;
 	static constexpr _float RECOVERY_EXIT_RATIO = 0.2f;
 	_float	m_fAnimRatio = 0.f;
-
+	uint32_t m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
 };
 
 

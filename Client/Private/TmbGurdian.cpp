@@ -671,13 +671,14 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	m_MonSkillLists[ATTMON::SLOT2] = ETOUI(TOMB_SKILL::SLASH);
 	m_MonSkillLists[ATTMON::SLOT3] = ETOUI(TOMB_SKILL::SMASH);
 	m_MonSkillLists[ATTMON::SLOT4] = ETOUI(TOMB_SKILL::HIT_ACCIO);
-
+	m_MonSkillLists[ATTMON::SLOT5] = ETOUI(TOMB_SKILL::HIT_DESCENDO);
 	m_MonSkillLists[ATTMON::SKIP] = ETOUI(TOMB_SKILL::SKIP);
 
 
 	m_EffectNames[ETOUI(TOMB_SKILL::JUMP_START)] = "TombJumpStart";
 	m_EffectNames[ETOUI(TOMB_SKILL::JUMP_END)] = "TombJumpEnd";
 	m_EffectNames[ETOUI(TOMB_SKILL::HIT_ACCIO)] = "AccioGrab";
+	m_EffectNames[ETOUI(TOMB_SKILL::HIT_DESCENDO)] = "Descendo_Enemy";
 	m_pComTransform->SetRotation(XMVectorSet(MonDesc->vRot.x, MonDesc->vRot.y, MonDesc->vRot.z, 0.f), MonDesc->fAngle);
 	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
 	GetTransform().Update();

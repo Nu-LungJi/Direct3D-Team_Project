@@ -6,6 +6,7 @@
 #include "ComSound.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Monster.h"
+#include "Player_Weapon.h"
 NS_USING(Client)
 
 void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
@@ -51,7 +52,15 @@ void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
-	CGameInstance::Get().PlayEffect("Descendo", *pPlayer->GetTransform().GetWorldMatrix());
+
+	{
+		auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+		if (!pWeapon)
+			return;
+		const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+		m_iEffectID = CGameInstance::Get().PlayEffect("DescendoStick", spawnWorld);
+	}
+	
 
 }
 
@@ -93,6 +102,7 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
+	
 		if (m_fAnimRatio >= CAST_START_RATIO)
 		{
 			m_ePhase = PHASE::ATTACK;
@@ -103,6 +113,13 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 
 	case PHASE::ATTACK:
 	{
+		{
+			auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+			if (!pWeapon)
+				return;
+			const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+			CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, spawnWorld);
+		}
 		if (m_fAnimRatio >= CAST_END_RATIO)
 		{
 		/*	if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DESCENDO))
