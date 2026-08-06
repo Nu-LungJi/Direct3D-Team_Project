@@ -121,10 +121,6 @@ HRESULT CMonster::Initialize(void* pArg)
 	}
 	{
 		CComSound::DESC Desc{};
-
-	// 모든 몬스터들이 고대마법에 공격캔슬하도록 구독
-	// 
-
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PERMANENT,
 			ES_EngineProtoComponent::Prototype_Component_ComSound,
@@ -157,7 +153,8 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 		
 	Flag_Check(fTimeDelta);
 	m_pCharacterMotor->SetGravity(-9.8f);
-	m_pBeHavior->Update(fTimeDelta);
+	if(Update_BT())
+		m_pBeHavior->Update(fTimeDelta);
 	
 }
 

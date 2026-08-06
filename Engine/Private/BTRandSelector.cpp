@@ -31,11 +31,18 @@ HRESULT CBTRandSelector::Initalize(void* pArg)
 
 void CBTRandSelector::OnEnter()
 {
+
 	Shuffle();
+	
 }
 
 void CBTRandSelector::OnExit(EVALUATE eResult)
 {
+	if (m_ePreEvaluate == EVALUATE::RUN)
+	{
+		if (!m_Shuffle.empty())
+			m_Shuffle.pop_back();
+	}
 }
 
 EVALUATE CBTRandSelector::Evaluate(_float fTimeDelta)
@@ -52,7 +59,7 @@ EVALUATE CBTRandSelector::Evaluate(_float fTimeDelta)
 	{
 		m_NodeValue.bCur = false;
 		m_Shuffle.pop_back();
-		return 	m_eDebug = EVALUATE::FAILED;
+		return 	m_ePreEvaluate = m_eDebug = EVALUATE::FAILED;
 	}
 		
 	EVALUATE eValuate = m_Actions[iRand]->Execute(fTimeDelta);
@@ -60,17 +67,17 @@ EVALUATE CBTRandSelector::Evaluate(_float fTimeDelta)
 	{
 		m_NodeValue.bCur = false;
 		m_Shuffle.pop_back();
-		return m_eDebug = EVALUATE::SUCCESS;
+		return m_ePreEvaluate = m_eDebug = EVALUATE::SUCCESS;
 	}
 	else if (eValuate == EVALUATE::RUN)
 	{
 		m_NodeValue.bCur = true;
 		m_NodeValue.iPreSecquenceIndex = iRand;
-		return m_eDebug = EVALUATE::RUN;
+		return m_ePreEvaluate = m_eDebug = EVALUATE::RUN;
 	}
 	m_NodeValue.bCur = false;
 	m_Shuffle.pop_back();
-	return m_eDebug = EVALUATE::FAILED;
+	return m_ePreEvaluate = m_eDebug = EVALUATE::FAILED;
 }
 
 void CBTRandSelector::Abort()

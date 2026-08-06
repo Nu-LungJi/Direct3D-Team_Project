@@ -19,6 +19,7 @@
 #include "ComPxSphereCollider.h"
 #include "UIController.h"
 #include "UIManager.h"
+#include "BTBlackBoard.h"
 NS_USING(Client)
 
 namespace
@@ -363,6 +364,8 @@ const _float CTmbGurdian::Get_Damage()
 
 _bool CTmbGurdian::Check_Table(PLAYER_SKILL_TYPE eType)
 {
+	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
+		return false;
 
 	Damaged(eType);
 	if (eType == PLAYER_SKILL_TYPE::ATTACK)
@@ -400,8 +403,7 @@ _bool CTmbGurdian::Check_Table(PLAYER_SKILL_TYPE eType)
 	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::SUPERARMOR)) && eType == PLAYER_SKILL_TYPE::ATTACK)
 		return false;
 
-	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
-		return false;
+	
 
 	MON_HIT_INFO HitInfo{};
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::ADD);

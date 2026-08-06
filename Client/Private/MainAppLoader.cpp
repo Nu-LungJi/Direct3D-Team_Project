@@ -478,11 +478,13 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHitCnt", CBTDecHitCnt::Create())))
 		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecEdgState", CBTDecEdgState::Create())))
+		return E_FAIL;
 	if (auto res = CGameInstance::Get().AddResource("BTJSON", "TOMB_BT_GURDIAN3", CResJson::Create("./Resources/json/BeHavior/GurDian3.json")))
 	{
 		if (FAILED(res->Load()))
 		{
-			MSG_BOX("");
+			MSG_BOX("LOAD FAILED TOMB_BT_GURDIAN3 JSON");
 			return E_FAIL;
 		}
 	}
@@ -490,7 +492,7 @@ HRESULT CMainAppLoader::Create_ActionNode()
 	{
 		if (FAILED(res->Load()))
 		{
-			MSG_BOX("");
+			MSG_BOX("LOAD FAILED TOMB_BT_GURDIANKNIGHT JSON");
 			return E_FAIL;
 		}
 	}
@@ -498,7 +500,15 @@ HRESULT CMainAppLoader::Create_ActionNode()
 	{
 		if (FAILED(res->Load()))
 		{
-			MSG_BOX("");
+			MSG_BOX("LOAD FAILED TOMB_BT_TOMBBOSS JSON");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "ENDERDRAGON", CResJson::Create("./Resources/json/BeHavior/Dragon.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED ENDERDRAGON JSON");
 			return E_FAIL;
 		}
 	}

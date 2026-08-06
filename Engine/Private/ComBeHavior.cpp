@@ -42,13 +42,18 @@ HRESULT CComBeHavior::Initialize(void* pArg)
 	proot->Set_OwnerName(m_ComponentName);
 	m_Root = std::move(ToUPtr(proot));
     m_NodeMap[m_iNodeID++] = m_Root.get();
-	
-	if (!pDesc->resBeHaviorMajor.empty() && !pDesc->resBeHaviorMinor.empty())
-		Load_DataByResource(pDesc->resBeHaviorMajor, pDesc->resBeHaviorMinor);
 
 	m_pBlackBoard = CBTBlackBoard::Create();
 	if (nullptr == m_pBlackBoard)
 		return E_FAIL;
+
+	if (!pDesc->resBeHaviorMajor.empty() && !pDesc->resBeHaviorMinor.empty())
+		Load_DataByResource(pDesc->resBeHaviorMajor, pDesc->resBeHaviorMinor);
+	else
+	{
+		Load_Data(pDesc->LoadPath);
+	}
+
 	
 	return S_OK;
 }

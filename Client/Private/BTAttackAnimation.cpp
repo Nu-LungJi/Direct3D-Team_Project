@@ -137,8 +137,6 @@ void CBTAttackAnimation::Update_Gui()
 		DragFloat("Move Speed", m_Value.fSpeed);
 		DragFloat("Intensive", m_fIntensive);
 		DragFloat("ShakeCamRatio", m_fCamShakeRatio);
-		ImGui::Text("RotRatio");
-		ImGui::DragFloat2("##RotRatio", reinterpret_cast<_float*>(&m_vRotRatio), 0.1f, 0.f, 1.f);
 		ImGui::Text("OverLabRatio");
 		ImGui::DragFloat2("##OverLabRatio", reinterpret_cast<_float*>(&m_vOverlabRatio), 0.1f, 0.f, 1.f);
 		DragFloat("AttRadius", m_fAttRadius);
@@ -192,6 +190,13 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 
 	if (m_vOverlabRatio.y >= fRotRatio && fRotRatio >= m_vOverlabRatio.x)
 	{
+		if (!m_bDir)
+		{
+			XMStoreFloat3(&m_vLastDir, pSrcTransform->GetState(STATE::LOOK));
+			m_vLastPos = pSrcTransform->GetPosition();
+			m_bDir = true;
+		}
+		
 		_float3 vPos = pSrcTransform->GetPosition();
 		if (m_bOverLabLoop)
 		{
@@ -261,7 +266,6 @@ void CBTAttackAnimation::Abort()
 nlohmann::json CBTAttackAnimation::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
-	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "RotRatio", m_vRotRatio);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "AttColRatio", m_vOverlabRatio);
 
 	SaveJsonValue(j, "overlabLoop", m_bOverLabLoop);
@@ -278,7 +282,6 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
-	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "RotRatio", m_vRotRatio);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "AttColRatio", m_vOverlabRatio);
 
 	LoadJsonValue(j, "overlabLoop", m_bOverLabLoop);
@@ -293,42 +296,21 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	return S_OK;
 }
 
-void CBTAttackAnimation::Rotation(CComTransform* pTransform, CComCharacterMoveIntent* pMoveIntent, CGameObject* pTarget, _float fTimeDelta, _float fRotRatio)
-{
-	if (m_vRotRatio.x < fRotRatio && m_vRotRatio.y >= fRotRatio)
-	{
-		_float3 vFacingDirection{};
-		XMStoreFloat3(&vFacingDirection, pTarget->GetTransform().GetState(STATE::POSITION) - pTransform->GetState(STATE::POSITION));
-		const _float fTurnTime = std::max(m_Value.fTime, 0.001f);
-		pMoveIntent->SetFacingIntent(vFacingDirection, 180.f / fTurnTime);
-	}
-	
-
-}
 
 void CBTAttackAnimation::OnEnter()
 {
+	m_bDir = false;
 	__super::OnEnter();
 	m_bAttRatio = m_bActiveSkill = false;
 	m_bCamShake = true;
 	m_fTime = 0.f;
 	m_fCurOverLabSpeed = m_fAttRadius;
 
-	if (auto pBT = Get_ComBT())
-	{
-		if (auto pOwner = pBT->GetGameObject())
-		{
-			if (auto pTransform = (Get_Component<CComTransform>(m_Handle, "Com_Transform")))
-			{
-				XMStoreFloat3(&m_vLastDir,pTransform->GetState(STATE::LOOK));
-				m_vLastPos = pTransform->GetPosition();
-			}
-		}
-	}
 
 }
 void CBTAttackAnimation::OnExit(EVALUATE eResult)
 {
+	m_bDir = false;
 }
 E::UPtr<CBTAttackAnimation> CBTAttackAnimation::Create()
 {

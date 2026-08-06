@@ -204,6 +204,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\public\BTDecEdgState.h" />
+    <ClInclude Include="..\public\Edg_Combat.h" />
+    <ClInclude Include="..\public\Edg_Spawn.h" />
+    <ClInclude Include="..\public\EnderDragon.h" />
+    <ClInclude Include="..\public\EnderDragon_State.h" />
     <ClInclude Include="..\Public\SkyCloudyCube.h" />
     <ClInclude Include="..\public\BossMace.h" />
     <ClInclude Include="..\Public\BridgeCRW.h" />
@@ -319,6 +324,7 @@
     <ClInclude Include="..\public\TriggerCRW_ToBoss.h" />
     <ClInclude Include="..\Public\Mon_Weapon.h" />
     <ClInclude Include="..\Public\VideoObject.h" />
+    <ClInclude Include="BlackBoardKey.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -327,6 +333,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\BTDecEdgState.cpp" />
+    <ClCompile Include="..\private\Edg_Combat.cpp" />
+    <ClCompile Include="..\private\Edg_Spawn.cpp" />
+    <ClCompile Include="..\private\EnderDragon.cpp" />
+    <ClCompile Include="..\private\EnderDragon_State.cpp" />
     <ClCompile Include="..\Private\SkyCloudyCube.cpp" />
     <ClCompile Include="..\private\BossMace.cpp" />
     <ClCompile Include="..\private\BossTMB.cpp" />

@@ -28,6 +28,7 @@ public:
 public:
 	void					Shuffle();
 private:
+	EVALUATE				m_ePreEvaluate{};
 	std::vector<int32_t>	m_Shuffle;
 	uint32_t				m_iPreindex{};
 public:

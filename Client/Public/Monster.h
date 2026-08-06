@@ -141,7 +141,7 @@ public:
 	void						Get_SoundKey(_string& CursoundName);
 
 protected:
-
+	virtual _bool				Update_BT() { return true; }
 	uint32_t					Find_SkillNum(ATTMON eType);
 	_bool						Check_Flag(uint32_t iFlag);
 	virtual	void				Damaged(PLAYER_SKILL_TYPE eType);
