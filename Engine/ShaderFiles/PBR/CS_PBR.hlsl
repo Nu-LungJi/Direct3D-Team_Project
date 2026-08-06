@@ -13,7 +13,7 @@ Texture2D<float4>		AmbientMap				: register(t4);
 Texture2D<float>		DepthMap				: register(t5);
 
 // Image Based Lighting
-TextureCube				IrridianceMap			: register(t6);		// Enviroment Light
+TextureCube				IrradianceMap			: register(t6);		// Enviroment Light
 TextureCube				PreFilterMap			: register(t7);					
 Texture2D<float4>		LookUpTableMap			: register(t8);		// BRDF LUT
 
@@ -233,9 +233,9 @@ float3 Compute_EnviromentLight(float3 N, float3 V, float3 _Albedo, float _Roughn
 	float3 KS = F;
 	float3 KD = (1.f - KS) * (1.f - Metallic);
 	
-	float3 Irridiance = IrridianceMap.SampleLevel(LinearClamp, N, 0.f).rgb;
+	float3 Irradiance = IrradianceMap.SampleLevel(LinearClamp, N, 0.f).rgb;
 	
-	float3 DiffuseAmbient = KD * Irridiance * _Albedo;
+	float3 DiffuseAmbient = KD * Irradiance * _Albedo;
 	float3 R = reflect(-V, N);
 	
 	float3 PreFilteredMap = PreFilterMap.SampleLevel(LinearClamp, R, Roughness * MAX_REFLECTION_LOD).rgb;
