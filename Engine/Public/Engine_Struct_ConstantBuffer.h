@@ -186,6 +186,9 @@ namespace Engine
 		float smokeIntensity;
 		float smokeSpeed;
 		float smokeTime;
+		uint32_t battleZoneCount;
+		_float3 battleZonePadding;
+		_float4 battleZones[8];
 	}CB_MINIMAP;
 	static_assert(sizeof(CB_MINIMAP) % 16 == 0);
 

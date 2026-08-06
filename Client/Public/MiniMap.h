@@ -36,6 +36,15 @@ public:
 		_float PlayerScrollScale{ 0.003f };
 	};
 
+	struct BATTLE_ZONE_INFO
+	{
+		_float3 Center{};
+		_float WorldRadius{ 15.f };
+		_float VisibleDistance{ 60.f };
+		_float Alpha{ 0.25f };
+		uint32_t LevelID{ static_cast<uint32_t>(-1) };
+	};
+
 private:
 	CMiniMap();
 	~CMiniMap() override;
@@ -48,6 +57,7 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	void SetMiniMapProfile(const MINIMAP_PROFILE& profile);
+	void AddBattleZone(const BATTLE_ZONE_INFO& battleZone);
 
 private:
 	virtual void PlayEffect(uint32_t uiState);
@@ -77,17 +87,23 @@ private:
 	static constexpr _float MONSTER_DETECTION_RADIUS = 60.f;
 	static constexpr _float MONSTER_SEARCH_INTERVAL = 0.1f;
 	static constexpr _float MINIMAP_BORDER_PADDING = 4.3f;
+	static constexpr size_t MAX_BATTLE_ZONE_COUNT = 8;
 
 	_bool m_bMonsterMarkerPoolInitialized{ false };
+	_bool m_bBattleZoneInitialized{ false };
 	_float m_fMonsterSearchAcc{ MONSTER_SEARCH_INTERVAL };
 	std::vector<CHandle> m_vMonsterMarkerHandles;
 	std::vector<CHandle> m_vNearbyMonsterHandles;
+	std::vector<BATTLE_ZONE_INFO> m_vBattleZones{};
+	std::array<_float4, MAX_BATTLE_ZONE_COUNT> m_BattleZoneShaderData{};
+	uint32_t m_iVisibleBattleZoneCount{};
 
 private:
 	void SearchPlayerIcon();
 	void SetPlayerIconRot(_float rot);
 	void CalcDir();
 	void InitializeMonsterMarkerPool();
+	void InitializeBattleZone();
 	void RefreshNearbyMonsters(E::CGameObject* pPlayer);
 	void UpdateMonsterMarkers(E::_float fTimeDelta, E::CGameObject* pPlayer);
 	void HideMonsterMarkers();
@@ -95,7 +111,10 @@ private:
 	void ConfigureDefaultProfile();
 	void UpdateWorldMapOffset(const _float3& playerPosition);
 	void UpdateFogMovementOffset(const _float3& playerPosition);
+	void UpdateBattleZones(const _float3& playerPosition);
 
+	void InitRookwoodBattleZone();
+	void InitBossRookwoodBattleZone();
 public:
 	static E::UPtr<CMiniMap> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

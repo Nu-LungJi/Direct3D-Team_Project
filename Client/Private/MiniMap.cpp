@@ -72,6 +72,7 @@ HRESULT CMiniMap::Initialize(void* pArg)
 void CMiniMap::PriorityUpdate(E::_float fTimeDelta)
 {
 	InitializeMonsterMarkerPool();
+	InitializeBattleZone();
 	SearchPlayerIcon();
 }
 
@@ -84,6 +85,7 @@ void CMiniMap::Update(E::_float fTimeDelta)
 	if (!m_isActive)
 	{
 		m_bHasPreviousPlayerPosition = false;
+		m_iVisibleBattleZoneCount = 0;
 		HideMonsterMarkers();
 		return;
 	}
@@ -104,6 +106,7 @@ void CMiniMap::Update(E::_float fTimeDelta)
 	if (!pCamera)
 	{
 		m_bHasPreviousPlayerPosition = false;
+		m_iVisibleBattleZoneCount = 0;
 		HideMonsterMarkers();
 		return;
 	}
@@ -113,12 +116,14 @@ void CMiniMap::Update(E::_float fTimeDelta)
 	if (!pPlayer)
 	{
 		m_bHasPreviousPlayerPosition = false;
+		m_iVisibleBattleZoneCount = 0;
 		HideMonsterMarkers();
 		return;
 	}
 
 	UpdateFogMovementOffset(pPlayer->GetTransform().GetPosition());
 	UpdateWorldMapOffset(pPlayer->GetTransform().GetPosition());
+	UpdateBattleZones(pPlayer->GetTransform().GetPosition());
 	UpdateMonsterMarkers(fTimeDelta, pPlayer);
 
 	XMVECTOR cameraLook = XMVectorSetY(
@@ -201,6 +206,9 @@ HRESULT CMiniMap::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		minimapBuffer.smokeIntensity = m_MiniMapProfile.SmokeIntensity;
 		minimapBuffer.smokeSpeed = m_MiniMapProfile.SmokeSpeed;
 		minimapBuffer.smokeTime = m_fSmokeTime;
+		minimapBuffer.battleZoneCount = m_iVisibleBattleZoneCount;
+		for (uint32_t i = 0; i < m_iVisibleBattleZoneCount; ++i)
+			minimapBuffer.battleZones[i] = m_BattleZoneShaderData[i];
 
 		// 미니맵 전용 컴포넌트나 버퍼 오브젝트를 통해 MapDiscard 진행
 		m_pMinimapCBuffer->MapDiscard(pContext, &minimapBuffer, sizeof(minimapBuffer));
@@ -234,12 +242,13 @@ HRESULT CMiniMap::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		const auto& minimapSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_MiniMapProfile.TextureTag);
 		
 
-		ID3D11ShaderResourceView* srvs[2] = {
+		ID3D11ShaderResourceView* srvs[3] = {
 			frameSrv->GetSRV().Get(),      // t0: 프레임
 			minimapSrv->GetSRV().Get(),   // t1: 맵
+			frameSrv->GetSRV().Get(),      // t2: battle-zone alpha mask
 		};
 
-		pContext->PSSetShaderResources(0, 2, srvs);
+		pContext->PSSetShaderResources(0, 3, srvs);
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
@@ -382,6 +391,25 @@ void CMiniMap::InitializeMonsterMarkerPool()
 
 		AddChildren(*markerHandle);
 		m_vMonsterMarkerHandles.push_back(*markerHandle);
+	}
+}
+
+void CMiniMap::InitializeBattleZone()
+{
+	if (m_bBattleZoneInitialized)
+		return;
+
+	m_bBattleZoneInitialized = true;
+
+	const uint32_t currentLevelID = E::CGameInstance::Get().GetCurrentLevelID();
+
+	switch (currentLevelID)
+	{
+	case ETOUI(LEVEL::CHARLES_ROOKWOOD):
+		InitRookwoodBattleZone();
+		break;
+	default:
+		break;
 	}
 }
 
@@ -613,6 +641,70 @@ void CMiniMap::UpdateFogMovementOffset(const _float3& playerPosition)
 		deltaX * m_MiniMapProfile.PlayerScrollScale, 1.f);
 	tMapOffset.y = fmodf(tMapOffset.y -
 		deltaZ * m_MiniMapProfile.PlayerScrollScale, 1.f);
+}
+
+void CMiniMap::UpdateBattleZones(const _float3& playerPosition)
+{
+	m_iVisibleBattleZoneCount = 0;
+	m_BattleZoneShaderData.fill({});
+
+	const _float mapSize = std::min(m_UIINFO.SizeX, m_UIINFO.SizeY);
+	if (mapSize <= 0.000001f)
+		return;
+
+	const _float mapRadius = mapSize * 0.5f;
+	const _float innerRadius = std::max(
+		0.f, mapRadius - MINIMAP_BORDER_PADDING);
+	if (innerRadius <= 0.f)
+		return;
+
+	const _float pixelPerWorldUnit =
+		innerRadius / MONSTER_DETECTION_RADIUS;
+	const uint32_t currentLevelID =
+		E::CGameInstance::Get().GetCurrentLevelID();
+	const uint32_t allLevels = static_cast<uint32_t>(-1);
+
+	for (const BATTLE_ZONE_INFO& battleZone : m_vBattleZones)
+	{
+		if (m_iVisibleBattleZoneCount >= MAX_BATTLE_ZONE_COUNT)
+			break;
+		if (battleZone.LevelID != allLevels &&
+			battleZone.LevelID != currentLevelID)
+			continue;
+
+		const _float deltaX = battleZone.Center.x - playerPosition.x;
+		const _float deltaZ = battleZone.Center.z - playerPosition.z;
+		const _float visibleDistanceSq =
+			battleZone.VisibleDistance * battleZone.VisibleDistance;
+		if (deltaX * deltaX + deltaZ * deltaZ > visibleDistanceSq)
+			continue;
+
+		const _float localX = deltaX * pixelPerWorldUnit;
+		const _float localY = -deltaZ * pixelPerWorldUnit;
+		const _float centerU = 0.5f + localX / m_UIINFO.SizeX;
+		const _float centerV = 0.5f + localY / m_UIINFO.SizeY;
+		const _float diameterUV = std::max(
+			0.001f,
+			battleZone.WorldRadius * 2.f * pixelPerWorldUnit / mapSize);
+
+		m_BattleZoneShaderData[m_iVisibleBattleZoneCount++] = {
+			centerU,
+			centerV,
+			diameterUV,
+			std::clamp(battleZone.Alpha, 0.f, 1.f)
+		};
+	}
+}
+
+void CMiniMap::InitRookwoodBattleZone()
+{
+	AddBattleZone({ { -178.f, 0.f, 160.f },40.f, 60.f, 0.25f,static_cast<uint32_t>(LEVEL::CHARLES_ROOKWOOD) });
+	AddBattleZone({ { -252.f, 0.f, -110.f },20.f, 60.f, 0.25f,static_cast<uint32_t>(LEVEL::CHARLES_ROOKWOOD) });
+	AddBattleZone({ { -254.f, 0.f, -210.f },30.f, 60.f, 0.25f,static_cast<uint32_t>(LEVEL::CHARLES_ROOKWOOD) });
+}
+
+void CMiniMap::InitBossRookwoodBattleZone()
+{
 }
 
 E::UPtr<CMiniMap> CMiniMap::Create()
