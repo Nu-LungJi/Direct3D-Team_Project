@@ -72,13 +72,15 @@ float3 ApplyBattleZones(float2 uv, float3 baseColor)
 float4 RenderDungeonFog(float2 uv, float maskAlpha)
 {
 	const float time = g_smokeTime * g_smokeSpeed;
-	const float2 fogUV = uv + g_mapOffset;
 
-	float2 flowUV = fogUV * 1.15f + time * float2(0.008f, 0.004f);
+	float2 flowUV = uv * 1.15f + g_mapOffset +
+		time * float2(0.008f, 0.004f);
 	float2 flow = (g_MinimapTex.Sample(LinearWrap, flowUV).rg * 2.f - 1.f) * 0.035f;
 
-	float2 smokeUV1 = fogUV * 0.82f + time * float2(-0.004f, 0.007f) + flow;
-	float2 smokeUV2 = fogUV * 1.37f + time * float2(0.006f, -0.003f) - flow * 0.55f;
+	float2 smokeUV1 = uv * 0.82f + g_mapOffset +
+		time * float2(-0.004f, 0.007f) + flow;
+	float2 smokeUV2 = uv * 1.37f + g_mapOffset +
+		time * float2(0.006f, -0.003f) - flow * 0.55f;
 
 	float smoke1 = GetLuminance(g_MinimapTex.Sample(LinearWrap, smokeUV1).rgb);
 	float smoke2 = GetLuminance(g_MinimapTex.Sample(LinearWrap, smokeUV2).rgb);
