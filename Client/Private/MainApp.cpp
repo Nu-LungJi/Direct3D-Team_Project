@@ -86,6 +86,11 @@ HRESULT CMainApp::Initialize()
 			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::UIEDITOR));
 		});
 
+	E::CGameInstance::Get().RegisterLevelChangeFunc("TO_LAST_BOSS_RANROK", [=]() {
+		Engine::CGameInstance::Get().ChangeLevel(
+			CLevelLoading::Create(m_pDevice, m_pContext, LEVEL::LAST_BOSS_RANROK));
+		});
+
 	// 초기 로딩에 소요된 시간을 첫 프레임의 DeltaTime에 포함하지 않는다.
 	CGameInstance::Get().UpdateTimeProvider();
 
