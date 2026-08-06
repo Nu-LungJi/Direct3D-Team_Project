@@ -139,6 +139,8 @@ public:
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
 	_float GetCurrentMoveSpeed() const { return m_fCurrentMoveSpeed; }
 	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
+	void SetFlyRequested(_bool bRequested);
+	_bool IsFlyRequested() const { return m_bFlyRequested; }
 	
 	_bool GetRenderInfluence() { return m_bRenderInfluence; }
 	void SetRenderInfluence(_bool _RenderInfluence) { m_bRenderInfluence = _RenderInfluence; }
@@ -184,6 +186,7 @@ private:
 
 private:
 	_bool	 m_bRenderInfluence{ false	 };
+	_bool m_bFlyRequested{};
 
 private:
 	struct PROJECTILE_LIFETIME

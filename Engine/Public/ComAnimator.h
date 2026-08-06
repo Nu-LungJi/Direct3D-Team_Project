@@ -326,6 +326,11 @@ public:
 
 	void	Sample_Channel_CPU( CResModelChanel* pChannel, _float fTrackPosition, uint32_t& iCurrentKeyFrameIndex, std::vector<_float4x4>& OutLocalBoneMatrices);
 	_matrix Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _float fTrackPosition) const;
+	_matrix Evaluate_RootCombinedMatrix_CPU(const CResModelAnim* pAnim, _float fTrackPosition) const;
+	void Prepare_RootMotionCache(const CResModelAnim* pAnim, _float fTrackPosition);
+	void Apply_RootMotionFromCombined(_fmatrix currentRootCombined);
+	void Update_RootMotion_GPU(const CResModelAnim* pAnim, _float fPreviousTrackPosition);
+	void Invalidate_RootMotionCache();
 	_vector RemoveYRotation(_vector qRotation) const;
 	void	Blend_Anim(_float fTimeDelta);
 
@@ -427,6 +432,11 @@ private:
 	// 애니메이션 Local 기준 RootMotion
 	_float3 m_vRootMotionDelta{ 0.f, 0.f, 0.f };
 	_float4 m_qRootMotionRotationDelta{ 0.f, 0.f, 0.f, 1.f };
+	_float4x4 m_RawRootLocalMatrix{};
+	_float4x4 m_PreviousRootCombinedMatrix{};
+	_bool m_bRawRootLocalValid{ false };
+	_bool m_bPreviousRootCombinedValid{ false };
+	int32_t m_iRootMotionCacheAnimIndex{ -1 };
 
 
 public:

@@ -23,6 +23,7 @@
 #include "DbgLineRender.h"
 #include "Player_StateMachine.h"
 #include "Player_Locomotion_State.h"
+#include "Player_Fly_State.h"
 #include "Player_Jump_State.h"
 #include "Player_Roll_State.h"
 #include "Player_Attack_State.h"
@@ -45,6 +46,8 @@
 #include "UIController.h"
 #include "UIManager.h"
 NS_USING(Client)
+
+
 
 void CPlayer::UpdateGUI()
 {
@@ -74,6 +77,7 @@ void CPlayer::UpdateGUI()
 	ImGui::Text("HP : %d", m_iHp);
 
 	ImGui::DragInt("HP : ",&m_iHp,0.1f,0,100000);
+
 
 	if (m_pRagdollController)
 		m_pRagdollController->UpdateGUI();
@@ -376,6 +380,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::REPAIRO_SKILL,
 			CPlayer_RepairoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::FLY,
+			CPlayer_Fly_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -864,30 +874,41 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 
-
-	if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {
-		//if (TryUseSkillSlot(1))
-		if(m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL))
-			m_bCoolTime_Num1 = true;
+	if (m_pStateMachine && CGameInstance::Get().KeyPressing(DIK_TAB) && CGameInstance::Get().KeyDown(DIK_3) && !m_bFlyRequested) {
+		SetFlyRequested(true);
+	}
+	else if (m_pStateMachine && CGameInstance::Get().KeyPressing(DIK_TAB) && CGameInstance::Get().KeyDown(DIK_3) && m_bFlyRequested) {
+		SetFlyRequested(false);
 	}
 
-	if (CGameInstance::Get().KeyDown(DIK_2) && !m_bCoolTime_Num2)
-	{
-		//if (TryUseSkillSlot(2))
-		if(m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL))
-			m_bCoolTime_Num2 = true;
-	}
-	if (CGameInstance::Get().KeyDown(DIK_3) && !m_bCoolTime_Num3)
-	{
-		//if (TryUseSkillSlot(3))
-		if(m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL))
-			m_bCoolTime_Num3 = true;
-	}	
+	if (!m_bFlyRequested) {
+		if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {
+			//if (TryUseSkillSlot(1))
+			if (m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL))
+				m_bCoolTime_Num1 = true;
+		}
 
-	if (CGameInstance::Get().KeyDown(DIK_4) && !m_bCoolTime_Num4) {
-		if(m_pStateMachine->RequestState(PLAYER_STATE::REPAIRO_SKILL))
-			m_bCoolTime_Num4 = true;
+		if (CGameInstance::Get().KeyDown(DIK_2) && !m_bCoolTime_Num2)
+		{
+			//if (TryUseSkillSlot(2))
+			if (m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL))
+				m_bCoolTime_Num2 = true;
+		}
+		if (CGameInstance::Get().KeyDown(DIK_3) && !m_bCoolTime_Num3)
+		{
+			//if (TryUseSkillSlot(3))
+			if (m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL))
+				m_bCoolTime_Num3 = true;
+		}
+
+		if (CGameInstance::Get().KeyDown(DIK_4) && !m_bCoolTime_Num4) {
+			if (m_pStateMachine->RequestState(PLAYER_STATE::REPAIRO_SKILL))
+				m_bCoolTime_Num4 = true;
+		}
+
 	}
+	
+
 
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_H))
 		OnQueryHit(20);
@@ -1320,7 +1341,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 	InitializeSkillSlotUI();
 
 	_bool bApplyRootMotionTranslation{};
-	_float3 vRootMotionDelta{};
+	_float3 vRootMotionWorldDisplacement{};
 
 	for (auto iter = m_Projectiles.begin(); iter != m_Projectiles.end();)
 	{
@@ -1348,7 +1369,18 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 		m_pModelAnimator->Update(fTimeDelta);
 		bApplyRootMotionTranslation = m_bRootMotionTranslationActive;
-		vRootMotionDelta = m_pModelAnimator->GetRootMotionDelta();
+		const _float3 vRootMotionDelta =
+			m_pModelAnimator->GetRootMotionDelta();
+
+		// Local 이동은 이번 프레임의 Root 회전을 적용하기 전 방향을
+		// 기준으로 월드 변환해야 Turn 중 이동 방향이 회전 후 방향으로
+		// 한 프레임 먼저 꺾이지 않는다.
+		const _vector vWorldDelta = XMVector3Rotate(
+			XMLoadFloat3(&vRootMotionDelta),
+			GetTransform().GetLoadedQuaternion());
+		XMStoreFloat3(
+			&vRootMotionWorldDisplacement,
+			vWorldDelta);
 
 		if (m_bRootMotionRotationActive)
 		{
@@ -1377,15 +1409,8 @@ void CPlayer::Update(E::_float fTimeDelta)
 		m_pComMoveIntent &&
 		!IsRagdollTransitioning())
 	{
-		const _vector vLocalDelta = XMLoadFloat3(&vRootMotionDelta);
-		const _vector vWorldDelta = XMVector3Rotate(
-			vLocalDelta,
-			GetTransform().GetLoadedQuaternion());
-
-		_float3 vWorldDisplacement{};
-		XMStoreFloat3(&vWorldDisplacement, vWorldDelta);
-
-		m_pComMoveIntent->AddExternalDisplacement(vWorldDisplacement);
+		m_pComMoveIntent->AddExternalDisplacement(
+			vRootMotionWorldDisplacement);
 	}
 
 	// [LSY] FixedUpdate에서 변경된 CCT 위치와 Update에서 적용한 회전을
@@ -1998,6 +2023,13 @@ void CPlayer::DelayFinish(_float fTimeDelta)
 			pUIController->CreateDeathScene();
 		}
 	}
+}
+
+void CPlayer::SetFlyRequested(_bool bRequested)
+{
+	m_bFlyRequested = bRequested;
+	if (bRequested && m_pStateMachine)
+		m_pStateMachine->RequestState(PLAYER_STATE::FLY);
 }
 
 E::UPtr<CPlayer> CPlayer::Create()

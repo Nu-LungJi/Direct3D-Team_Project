@@ -283,6 +283,9 @@
     <Filter Include="GameObject\CharlesRookwood\Bridge">
       <UniqueIdentifier>{451893ab-e6f2-4e4c-8948-178bfb126954}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Fly_State">
+      <UniqueIdentifier>{b78cf1cd-d217-4ee5-8a93-12d9a37ed1e6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -657,6 +660,9 @@
     <ClInclude Include="..\public\LevelLastBossRanrokLoader.h">
       <Filter>Loader\Level\LastBossRanrok</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Fly_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Fly_State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -985,6 +991,9 @@
     </ClCompile>
     <ClCompile Include="..\private\LevelLastBossRanrokLoader.cpp">
       <Filter>Loader\Level\LastBossRanrok</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Fly_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Fly_State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

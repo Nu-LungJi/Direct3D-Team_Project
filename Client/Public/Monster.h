@@ -139,7 +139,7 @@ public:
 	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
 	virtual void				Set_AttTable(ATTMON eType, _float2 fSkillRatio) {};
 	void						Get_SoundKey(_string& CursoundName);
-
+	 
 protected:
 
 	uint32_t					Find_SkillNum(ATTMON eType);
