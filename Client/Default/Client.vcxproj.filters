@@ -115,9 +115,6 @@
     <Filter Include="GameObject\CharlesRookwood\MyMagicSquareStep">
       <UniqueIdentifier>{ac16d04c-4937-40fe-a72e-ce43e2401ba5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Bridge">
-      <UniqueIdentifier>{451893ab-e6f2-4e4c-8948-178bfb126954}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\CharlesRookwood\Trigger\Step1">
       <UniqueIdentifier>{3887515f-08e3-4aee-9787-367ff6c2b400}</UniqueIdentifier>
     </Filter>
@@ -276,6 +273,15 @@
     </Filter>
     <Filter Include="GameObject\Monster\TombBoss\SYChild">
       <UniqueIdentifier>{a9756926-9808-484b-aed0-22a449e37832}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Level\LastBossRanrok">
+      <UniqueIdentifier>{02fca344-c4f9-4612-b8c9-fac4439f00cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader\Level\LastBossRanrok">
+      <UniqueIdentifier>{91d97e03-822f-4333-9bfb-6cb915a67e5b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\CharlesRookwood\Bridge">
+      <UniqueIdentifier>{451893ab-e6f2-4e4c-8948-178bfb126954}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -451,7 +457,7 @@
       <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\BridgeCRW.h">
-      <Filter>GameObject\Bridge</Filter>
+      <Filter>GameObject\CharlesRookwood\Bridge</Filter>
     </ClInclude>
     <ClInclude Include="..\public\TriggerCRW_DeSpawnStep.h">
       <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
@@ -645,6 +651,12 @@
     <ClInclude Include="..\Public\TombBossBullet.h">
       <Filter>GameObject\Monster\TombBoss\SYChild</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\LevelLastBossRanrok.h">
+      <Filter>Level\LastBossRanrok</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\LevelLastBossRanrokLoader.h">
+      <Filter>Loader\Level\LastBossRanrok</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -802,7 +814,7 @@
       <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\BridgeCRW.cpp">
-      <Filter>GameObject\Bridge</Filter>
+      <Filter>GameObject\CharlesRookwood\Bridge</Filter>
     </ClCompile>
     <ClCompile Include="..\private\TriggerCRW_DeSpawnStep.cpp">
       <Filter>GameObject\CharlesRookwood\Trigger\Step1</Filter>
@@ -967,6 +979,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\TombBossBullet.cpp">
       <Filter>GameObject\Monster\TombBoss\SYChild</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelLastBossRanrok.cpp">
+      <Filter>Level\LastBossRanrok</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LevelLastBossRanrokLoader.cpp">
+      <Filter>Loader\Level\LastBossRanrok</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
