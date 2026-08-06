@@ -182,6 +182,10 @@ namespace Engine
 		_float2	mapOffset;
 		float	mapRotation;
 		float	mapScale;
+		uint32_t mapMode;
+		float smokeIntensity;
+		float smokeSpeed;
+		float smokeTime;
 	}CB_MINIMAP;
 	static_assert(sizeof(CB_MINIMAP) % 16 == 0);
 

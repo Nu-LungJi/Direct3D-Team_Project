@@ -8,7 +8,14 @@ cbuffer CB_MINIMAP : register(b10)
 	float2 g_mapOffset;
 	float  g_mapRotation;
 	float  g_mapScale;
+	uint   g_mapMode;
+	float  g_smokeIntensity;
+	float  g_smokeSpeed;
+	float  g_smokeTime;
 };
+
+static const uint MINIMAP_MODE_WORLD_MAP = 0;
+static const uint MINIMAP_MODE_DUNGEON_FOG = 1;
 
 struct VS_IN
 {
@@ -30,6 +37,34 @@ PS_IN VSMain(VS_IN vin)
 	return output;
 }
 
+float GetLuminance(float3 color)
+{
+	return dot(color, float3(0.299f, 0.587f, 0.114f));
+}
+
+float4 RenderDungeonFog(float2 uv, float maskAlpha)
+{
+	const float time = g_smokeTime * g_smokeSpeed;
+	const float2 fogUV = uv + g_mapOffset;
+
+	float2 flowUV = fogUV * 1.15f + time * float2(0.008f, 0.004f);
+	float2 flow = (g_MinimapTex.Sample(LinearWrap, flowUV).rg * 2.f - 1.f) * 0.035f;
+
+	float2 smokeUV1 = fogUV * 0.82f + time * float2(-0.004f, 0.007f) + flow;
+	float2 smokeUV2 = fogUV * 1.37f + time * float2(0.006f, -0.003f) - flow * 0.55f;
+
+	float smoke1 = GetLuminance(g_MinimapTex.Sample(LinearWrap, smokeUV1).rgb);
+	float smoke2 = GetLuminance(g_MinimapTex.Sample(LinearWrap, smokeUV2).rgb);
+	float density = smoothstep(0.2f, 0.85f, smoke1 * 0.55f + smoke2 * 0.45f);
+	density = saturate(density * g_smokeIntensity);
+
+	const float3 darkColor = float3(0.035f, 0.045f, 0.055f);
+	const float3 fogColor = float3(0.48f, 0.52f, 0.55f);
+	float3 finalColor = lerp(darkColor, fogColor, density);
+
+	return float4(finalColor, maskAlpha * g_ui_color.a);
+}
+
 float4 PSMain(PS_IN input) : SV_Target
 {
 	float4 maskColor = g_MaskTex.Sample(LinearClamp, input.uv);
@@ -41,6 +76,11 @@ float4 PSMain(PS_IN input) : SV_Target
 	}
 
 	// 2. 미니맵 지도 UV 계산 (회전 및 스크롤)
+	if (g_mapMode == MINIMAP_MODE_DUNGEON_FOG)
+	{
+		return RenderDungeonFog(input.uv, maskColor.a);
+	}
+
 	float2 mapUV = input.uv - float2(0.5f, 0.5f);
 	mapUV *= g_mapScale;
 

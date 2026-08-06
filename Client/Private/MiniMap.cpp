@@ -7,6 +7,8 @@
 #include "Client_Defines.h"
 #include "Level_Defines.h"
 #include "PlayerThirdPersonCamera.h"
+#include "TextureUI.h"
+#include "Monster.h"
 
 NS_USING(Client)
 
@@ -63,20 +65,30 @@ HRESULT CMiniMap::Initialize(void* pArg)
 	}
 
 	m_UIINFO.UIType = ETOUI(UI_TYPE::MINIMAP);
+	ConfigureDefaultProfile();
 	return S_OK;
 }
 
 void CMiniMap::PriorityUpdate(E::_float fTimeDelta)
 {
+	InitializeMonsterMarkerPool();
 	SearchPlayerIcon();
 }
 
 void CMiniMap::Update(E::_float fTimeDelta)
 {
+	ConfigureDefaultProfile();
+
 	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
 
 	if (!m_isActive)
+	{
+		m_bHasPreviousPlayerPosition = false;
+		HideMonsterMarkers();
 		return;
+	}
+
+	m_fSmokeTime = fmodf(m_fSmokeTime + fTimeDelta, 10000.f);
 
 	CUIObject::Update(fTimeDelta);
 
@@ -90,12 +102,24 @@ void CMiniMap::Update(E::_float fTimeDelta)
 	auto* pCamera = Cast<CPlayerThirdPersonCamera>(
 		E::CGameInstance::Get().GetActiveCamera("PlayerCamera"));
 	if (!pCamera)
+	{
+		m_bHasPreviousPlayerPosition = false;
+		HideMonsterMarkers();
 		return;
+	}
 
 	auto* pPlayer = E::CGameInstance::Get().GetGameObjectByHandle(
 		pCamera->GetTargetHandle());
 	if (!pPlayer)
+	{
+		m_bHasPreviousPlayerPosition = false;
+		HideMonsterMarkers();
 		return;
+	}
+
+	UpdateFogMovementOffset(pPlayer->GetTransform().GetPosition());
+	UpdateWorldMapOffset(pPlayer->GetTransform().GetPosition());
+	UpdateMonsterMarkers(fTimeDelta, pPlayer);
 
 	XMVECTOR cameraLook = XMVectorSetY(
 		pCamera->GetTransform().GetState(STATE::LOOK), 0.f);
@@ -153,7 +177,12 @@ HRESULT CMiniMap::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		E::CB_PER_UI perUI{};
 		perUI.texCoord = { 0.f, 0.f };
 		perUI.uvSize = { 0.f, 0.f };
-		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
+		const _float renderAlpha =
+			m_MiniMapProfile.Mode == MINIMAP_MODE::DUNGEON_FOG ?
+			std::clamp(m_UIINFO.Alpha * m_MiniMapProfile.FogAlphaMultiplier,
+				0.f, 1.f) :
+			m_UIINFO.Alpha;
+		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, renderAlpha };
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
@@ -168,6 +197,10 @@ HRESULT CMiniMap::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		minimapBuffer.mapOffset = tMapOffset;
 		minimapBuffer.mapRotation = tRotation;
 		minimapBuffer.mapScale = tScale;
+		minimapBuffer.mapMode = static_cast<uint32_t>(m_MiniMapProfile.Mode);
+		minimapBuffer.smokeIntensity = m_MiniMapProfile.SmokeIntensity;
+		minimapBuffer.smokeSpeed = m_MiniMapProfile.SmokeSpeed;
+		minimapBuffer.smokeTime = m_fSmokeTime;
 
 		// 미니맵 전용 컴포넌트나 버퍼 오브젝트를 통해 MapDiscard 진행
 		m_pMinimapCBuffer->MapDiscard(pContext, &minimapBuffer, sizeof(minimapBuffer));
@@ -197,9 +230,8 @@ HRESULT CMiniMap::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	}
 
 	{
-		m_UIINFO.Restag = "TEX_UI_T_MapMini_Sanctuary_03_D";
 		const auto& frameSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_UI_T_HUD_MiniMap_Fade");
-		const auto& minimapSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
+		const auto& minimapSrv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_MiniMapProfile.TextureTag);
 		
 
 		ID3D11ShaderResourceView* srvs[2] = {
@@ -217,6 +249,15 @@ HRESULT CMiniMap::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 	pContext->PSSetConstantBuffers(10, 1, &nullBuffer);
 
 	return S_OK;
+}
+
+void CMiniMap::SetMiniMapProfile(const MINIMAP_PROFILE& profile)
+{
+	m_MiniMapProfile = profile;
+	m_UIINFO.Restag = profile.TextureTag;
+	tScale = profile.MapScale;
+	tMapOffset = {};
+	m_bHasPreviousPlayerPosition = false;
 }
 
 void CMiniMap::PlayEffect(uint32_t uiState)
@@ -280,12 +321,293 @@ void CMiniMap::CalcDir()
 	const _float cameraYaw = atan2f(m_cameraLook.x, m_cameraLook.z);
 	const _float playerYaw = atan2f(m_playerLook.x, m_playerLook.z);
 
-	// +Z is north. Rotate the minimap opposite to the camera heading.
-	m_UIINFO.Rot = XMConvertToDegrees(-cameraYaw);
+	// UI 좌표는 Y축이 아래를 향하므로 카메라 yaw와 같은 부호로 회전해야
+	// 카메라 전방이 미니맵 위쪽을 향한다.
+	m_UIINFO.Rot = XMConvertToDegrees(cameraYaw);
 	CalcUICoord();
 
 	// CUIObject combines child rotation as parent Rot + child LocalRot.
-	SetPlayerIconRot(XMConvertToDegrees(playerYaw));
+	SetPlayerIconRot(XMConvertToDegrees(-playerYaw));
+}
+
+void CMiniMap::InitializeMonsterMarkerPool()
+{
+	if (m_bMonsterMarkerPoolInitialized)
+		return;
+
+	m_bMonsterMarkerPoolInitialized = true;
+	m_vMonsterMarkerHandles.reserve(MONSTER_MARKER_COUNT);
+
+	const std::string currentLevel = _string("LEVEL_") +
+		MagicEnumToStringView(static_cast<LEVEL>(
+			E::CGameInstance::Get().GetCurrentLevelID())).data();
+
+	for (size_t i = 0; i < MONSTER_MARKER_COUNT; ++i)
+	{
+		CTextureUI::UIOBJECT_DESC desc{};
+		desc.sObjectTag = "MiniMap_MonsterMarker_" + std::to_string(i);
+		desc.Name = desc.sObjectTag;
+		desc.fX = m_UIINFO.fX;
+		desc.fY = m_UIINFO.fY;
+		desc.fSizeX = MONSTER_MARKER_SIZE;
+		desc.fSizeY = MONSTER_MARKER_SIZE;
+		desc.fAlpha = 0.f;
+		desc.ResTag = "TEX_UI_T_MiniMap_AuthorityFigure";
+		desc.ResWeight = m_UIINFO.Weight + 1;
+		desc.UIType = ETOUI(UI_TYPE::TEXUI);
+
+		auto markerHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+			currentLevel,
+			"Prototype_GameObject_TextureUI",
+			"Layer_UI",
+			&desc);
+		if (!markerHandle)
+			continue;
+
+		auto* pMarker = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CTextureUI>(*markerHandle);
+		if (!pMarker)
+			continue;
+
+		pMarker->SetParent(GetHandle());
+		pMarker->SetLocalPos({ 0.f, 0.f });
+		pMarker->SetColor({ 1.f, 0.12f, 0.08f });
+		pMarker->GetUIInfo().WeightOffset = 1;
+		SetMonsterMarkerVisible(pMarker, false);
+
+		AddChildren(*markerHandle);
+		m_vMonsterMarkerHandles.push_back(*markerHandle);
+	}
+}
+
+void CMiniMap::RefreshNearbyMonsters(E::CGameObject* pPlayer)
+{
+	m_vNearbyMonsterHandles.clear();
+	if (!pPlayer || m_vMonsterMarkerHandles.empty())
+		return;
+
+	std::vector<E::PX_OVERLAP_RESULT> results{};
+	const E::PX_OVERLAP_DESC overlapDesc{
+		.tGeometry = {
+			.eType = E::PX_QUERY_GEOMETRY_TYPE::SPHERE,
+			.fRadius = MONSTER_DETECTION_RADIUS
+		},
+		.tPose = {
+			.vPosition = pPlayer->GetTransform().GetPosition()
+		},
+		.tFilter = {
+			.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)
+		}
+	};
+
+	if (!E::CGameInstance::Get().GetPhysXManager()->
+		OverlapMultiple(overlapDesc, results,
+			static_cast<uint32_t>(MONSTER_MARKER_COUNT * 2)))
+		return;
+
+	for (const auto& result : results)
+	{
+		auto* pMonster = Cast<CMonster>(result.pGameObject);
+		if (!pMonster || pMonster->GetPendingDestroy() ||
+			pMonster->Get_CurrentHp() <= 0)
+			continue;
+
+		const CHandle monsterHandle = pMonster->GetHandle();
+		if (std::find(m_vNearbyMonsterHandles.begin(),
+			m_vNearbyMonsterHandles.end(), monsterHandle) !=
+			m_vNearbyMonsterHandles.end())
+			continue;
+
+		m_vNearbyMonsterHandles.push_back(monsterHandle);
+		if (m_vNearbyMonsterHandles.size() >=
+			m_vMonsterMarkerHandles.size())
+			break;
+	}
+}
+
+void CMiniMap::UpdateMonsterMarkers(
+	E::_float fTimeDelta, E::CGameObject* pPlayer)
+{
+	if (!m_bMonsterMarkerPoolInitialized || !pPlayer)
+	{
+		HideMonsterMarkers();
+		return;
+	}
+
+	m_fMonsterSearchAcc += fTimeDelta;
+	if (m_fMonsterSearchAcc >= MONSTER_SEARCH_INTERVAL)
+	{
+		m_fMonsterSearchAcc = 0.f;
+		RefreshNearbyMonsters(pPlayer);
+	}
+
+	const _float3& playerPos = pPlayer->GetTransform().GetPosition();
+	const _float mapRadius =
+		0.5f * std::min(m_UIINFO.SizeX, m_UIINFO.SizeY);
+	const _float markerRadius =
+		0.5f * sqrtf(MONSTER_MARKER_SIZE * MONSTER_MARKER_SIZE * 2.f);
+	const _float innerRadius = std::max(
+		0.f, mapRadius - markerRadius - MINIMAP_BORDER_PADDING);
+	const _float pixelPerWorldUnit =
+		innerRadius / MONSTER_DETECTION_RADIUS;
+	const _float detectionRadiusSq =
+		MONSTER_DETECTION_RADIUS * MONSTER_DETECTION_RADIUS;
+
+	for (size_t i = 0; i < m_vMonsterMarkerHandles.size(); ++i)
+	{
+		auto* pMarker = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CTextureUI>(m_vMonsterMarkerHandles[i]);
+		if (!pMarker)
+			continue;
+
+		if (i >= m_vNearbyMonsterHandles.size())
+		{
+			SetMonsterMarkerVisible(pMarker, false);
+			continue;
+		}
+
+		auto* pMonster = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CMonster>(m_vNearbyMonsterHandles[i]);
+		if (!pMonster || pMonster->GetPendingDestroy() ||
+			pMonster->Get_CurrentHp() <= 0)
+		{
+			SetMonsterMarkerVisible(pMarker, false);
+			continue;
+		}
+
+		const _float3& monsterPos = pMonster->GetTransform().GetPosition();
+		const _float dx = monsterPos.x - playerPos.x;
+		const _float dz = monsterPos.z - playerPos.z;
+		const _float distanceSq = dx * dx + dz * dz;
+
+		if (distanceSq > detectionRadiusSq || innerRadius <= 0.f)
+		{
+			SetMonsterMarkerVisible(pMarker, false);
+			continue;
+		}
+
+		pMarker->SetLocalPos({
+			dx * pixelPerWorldUnit,
+			-dz * pixelPerWorldUnit
+		});
+
+		XMVECTOR monsterLook = XMVectorSetY(
+			pMonster->GetTransform().GetState(STATE::LOOK), 0.f);
+		if (XMVectorGetX(XMVector3LengthSq(monsterLook)) > 0.000001f)
+		{
+			monsterLook = XMVector3Normalize(monsterLook);
+			pMarker->SetLocalRot(XMConvertToDegrees(-atan2f(
+				XMVectorGetX(monsterLook),
+				XMVectorGetZ(monsterLook))));
+		}
+
+		SetMonsterMarkerVisible(pMarker, true);
+	}
+}
+
+void CMiniMap::HideMonsterMarkers()
+{
+	for (const CHandle markerHandle : m_vMonsterMarkerHandles)
+	{
+		if (auto* pMarker = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CTextureUI>(markerHandle))
+		{
+			SetMonsterMarkerVisible(pMarker, false);
+		}
+	}
+}
+
+void CMiniMap::SetMonsterMarkerVisible(
+	E::CUIObject* pMarker, _bool bVisible)
+{
+	if (!pMarker)
+		return;
+
+	pMarker->SetAlphaRatio(bVisible ? 1.f : 0.f);
+	pMarker->SetAlpha(bVisible ? m_UIINFO.Alpha : 0.f);
+	pMarker->SetActive(bVisible);
+}
+
+void CMiniMap::ConfigureDefaultProfile()
+{
+	const uint32_t currentLevelID =
+		E::CGameInstance::Get().GetCurrentLevelID();
+	if (m_iConfiguredLevel == currentLevelID)
+		return;
+
+	m_iConfiguredLevel = currentLevelID;
+	MINIMAP_PROFILE profile{};
+	profile.Mode = MINIMAP_MODE::DUNGEON_FOG;
+	profile.TextureTag = "TEX_UI_T_MiniMapSmoke";
+	profile.MapScale = 1.f;
+	profile.SmokeIntensity = 0.9f;
+	profile.SmokeSpeed = 8.f;
+	profile.FogAlphaMultiplier = 1.75f;
+	profile.PlayerScrollScale = 0.015f;
+
+	SetMiniMapProfile(profile);
+}
+
+void CMiniMap::UpdateWorldMapOffset(const _float3& playerPosition)
+{
+	if (m_MiniMapProfile.Mode != MINIMAP_MODE::WORLD_MAP)
+	{
+		return;
+	}
+
+	const _float worldWidth =
+		m_MiniMapProfile.WorldMaxXZ.x - m_MiniMapProfile.WorldMinXZ.x;
+	const _float worldDepth =
+		m_MiniMapProfile.WorldMaxXZ.y - m_MiniMapProfile.WorldMinXZ.y;
+	if (fabsf(worldWidth) <= 0.000001f ||
+		fabsf(worldDepth) <= 0.000001f)
+	{
+		tMapOffset = {};
+		return;
+	}
+
+	const _float normalizedX = std::clamp(
+		(playerPosition.x - m_MiniMapProfile.WorldMinXZ.x) / worldWidth,
+		0.f, 1.f);
+	const _float normalizedZ = std::clamp(
+		(playerPosition.z - m_MiniMapProfile.WorldMinXZ.y) / worldDepth,
+		0.f, 1.f);
+
+	const _float mapU = m_MiniMapProfile.UVMin.x +
+		(m_MiniMapProfile.UVMax.x - m_MiniMapProfile.UVMin.x) * normalizedX;
+	const _float mapV = m_MiniMapProfile.UVMax.y +
+		(m_MiniMapProfile.UVMin.y - m_MiniMapProfile.UVMax.y) * normalizedZ;
+
+	tMapOffset = { mapU - 0.5f, mapV - 0.5f };
+}
+
+void CMiniMap::UpdateFogMovementOffset(const _float3& playerPosition)
+{
+	if (m_MiniMapProfile.Mode != MINIMAP_MODE::DUNGEON_FOG)
+	{
+		m_bHasPreviousPlayerPosition = false;
+		return;
+	}
+
+	if (!m_bHasPreviousPlayerPosition)
+	{
+		m_vPreviousPlayerPosition = playerPosition;
+		m_bHasPreviousPlayerPosition = true;
+		return;
+	}
+
+	const _float deltaX = playerPosition.x - m_vPreviousPlayerPosition.x;
+	const _float deltaZ = playerPosition.z - m_vPreviousPlayerPosition.z;
+	m_vPreviousPlayerPosition = playerPosition;
+
+	// Ignore teleports and large level-transition position changes.
+	if (deltaX * deltaX + deltaZ * deltaZ > 100.f)
+		return;
+
+	tMapOffset.x = fmodf(tMapOffset.x +
+		deltaX * m_MiniMapProfile.PlayerScrollScale, 1.f);
+	tMapOffset.y = fmodf(tMapOffset.y -
+		deltaZ * m_MiniMapProfile.PlayerScrollScale, 1.f);
 }
 
 E::UPtr<CMiniMap> CMiniMap::Create()
