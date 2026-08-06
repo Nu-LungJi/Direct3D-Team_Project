@@ -260,6 +260,11 @@ void CMiniMap::SetMiniMapProfile(const MINIMAP_PROFILE& profile)
 	m_bHasPreviousPlayerPosition = false;
 }
 
+void CMiniMap::AddBattleZone(const BATTLE_ZONE_INFO& battleZone)
+{
+	m_vBattleZones.push_back(battleZone);
+}
+
 void CMiniMap::PlayEffect(uint32_t uiState)
 {
 	if (m_pComTween == nullptr)
