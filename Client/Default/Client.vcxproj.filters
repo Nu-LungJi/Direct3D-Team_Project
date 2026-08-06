@@ -292,6 +292,12 @@
     <Filter Include="GameObject\AI\Decorator\Public">
       <UniqueIdentifier>{533992f1-81b5-4cd3-81f5-8c4f69e0d391}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\AI\BlackBoard">
+      <UniqueIdentifier>{92fa7c53-71ef-4ea5-aac9-d3f2c157335d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Action\Dragon">
+      <UniqueIdentifier>{e39345c4-32e3-4026-9d39-6e428062c414}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -645,9 +651,6 @@
     <ClInclude Include="..\public\Edg_Combat.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
-    <ClInclude Include="BlackBoardKey.h">
-      <Filter>GameObject\Monster\00.Parents</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\BTDecFlag.h">
       <Filter>GameObject\AI\Decorator\Public</Filter>
     </ClInclude>
@@ -677,6 +680,24 @@
     </ClInclude>
     <ClInclude Include="..\public\BTDecEdgState.h">
       <Filter>GameObject\AI\Decorator\Dragon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BlackBoardKey.h">
+      <Filter>GameObject\AI\BlackBoard</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTEdgStateFinished.h">
+      <Filter>GameObject\AI\Action\Dragon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Edg_Hit.h">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DragonBall.h">
+      <Filter>GameObject\Monster\EnderDragon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecEdgPhase.h">
+      <Filter>GameObject\AI\Decorator\Dragon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Edg_Phase.h">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1015,6 +1036,21 @@
     </ClCompile>
     <ClCompile Include="..\private\BTDecEdgState.cpp">
       <Filter>GameObject\AI\Decorator\Dragon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTEdgStateFinished.cpp">
+      <Filter>GameObject\AI\Action\Dragon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Edg_Hit.cpp">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\DragonBall.cpp">
+      <Filter>GameObject\Monster\EnderDragon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecEdgPhase.cpp">
+      <Filter>GameObject\AI\Decorator\Dragon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Edg_Phase.cpp">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

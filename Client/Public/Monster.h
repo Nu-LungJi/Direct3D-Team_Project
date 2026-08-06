@@ -122,7 +122,7 @@ public:
 	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }
 	virtual const _float		Get_Damage() { return 0.f; }
 	void						Set_Emissive(_float fEmissive) { m_fPreEmissive = m_fIntensive = fEmissive; }
-	_bool						Activate_PendingHit();
+	virtual _bool				Activate_PendingHit();
 	const MON_HIT_INFO			Get_ActiveHitInfo()const { return m_ActiveMonTable; }
 	const MON_HIT_INFO			Get_PendingHitInfo() const { return m_PendingMonTable; }
 	_bool						Is_PendingHit() { return m_bPending; }
@@ -139,16 +139,15 @@ public:
 	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };
 	virtual void				Set_AttTable(ATTMON eType, _float2 fSkillRatio) {};
 	void						Get_SoundKey(_string& CursoundName);
-
+	CComAnimator*				Get_Animator();
 protected:
-	virtual _bool				Update_BT() { return true; }
 	uint32_t					Find_SkillNum(ATTMON eType);
-	_bool						Check_Flag(uint32_t iFlag);
+	 _bool						Check_Flag(uint32_t iFlag);
 	virtual	void				Damaged(PLAYER_SKILL_TYPE eType);
 	void						Update_HurtBox();
+	virtual void				Flag_Check(_float fTimeDelta);
 private:
 	void						Cancle_Attack();
-	void						Flag_Check(_float fTimeDelta);
 	void						StartEmissive() { if (m_bWork) return;  m_bEmissive = true; }
 	void						EmissiveFadeOut(_float fTimeDelta);
 // 민수 추가 ----------------------------------------------------------

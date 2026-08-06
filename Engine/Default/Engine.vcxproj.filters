@@ -1258,6 +1258,9 @@
     <ClInclude Include="..\public\BTBlackBoard.h">
       <Filter>Component\BeHavior\BlackBoard</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTSubTreeNode.h">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode\ActionNode</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1881,6 +1884,9 @@
     </ClCompile>
     <ClCompile Include="..\private\ComBeHavior.cpp">
       <Filter>Component\BeHavior</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTSubTreeNode.cpp">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode\ActionNode</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

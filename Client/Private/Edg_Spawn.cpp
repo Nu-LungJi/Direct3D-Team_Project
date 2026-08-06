@@ -2,6 +2,8 @@
 #include "Edg_Spawn.h"
 #include "EnderDragon.h"
 #include "EnderDragon_State.h"
+#include "BlackBoardKey.h"
+#include "BTBlackBoard.h"
 NS_USING(Client)
 CEdg_Spawn::CEdg_Spawn()
 {
@@ -17,6 +19,8 @@ void CEdg_Spawn::Enter(CStateMachine* pStateMachine)
 
 	if (nullptr == pDragon)
 		return;
+
+	pDragon->Set_StateFinished(false);
 }
 
 void CEdg_Spawn::Exit(CStateMachine* pStateMachine)
@@ -29,12 +33,19 @@ void CEdg_Spawn::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta)
 
 void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 {
-	CEnderDragon_State* pDragonFsm = Cast<CEnderDragon_State>(pStateMachine);
-	
-	if (nullptr == pDragonFsm)
-		return;
-	pDragonFsm->Request_State(EDG_STATE::COMBAT);
+	auto pDragonFsm = Cast<CEnderDragon_State>(pStateMachine);
+	if (nullptr == pDragonFsm) return;
 
+	auto pDragon = pStateMachine->GetOwner<CEnderDragon>();
+	if (nullptr == pDragon) return;
+	
+	auto pBB = pDragon->Get_BlackBoard();
+	if (nullptr == pBB) return;
+
+	if (false == pDragon->Is_StateFinished()) return;
+	//카메라랑 샤바샤바 하고 전환
+
+	pDragonFsm->Request_State(EDG_STATE::COMBAT);
 }
 SPtr<CEdg_Spawn> CEdg_Spawn::Create()
 {

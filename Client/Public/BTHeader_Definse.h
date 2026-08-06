@@ -29,3 +29,5 @@
 
 //드래곤용
 #include "BTDecEdgState.h"
+#include "BTEdgStateFinished.h"
+#include "BTDecEdgPhase.h"

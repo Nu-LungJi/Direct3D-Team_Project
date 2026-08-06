@@ -153,8 +153,7 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 		
 	Flag_Check(fTimeDelta);
 	m_pCharacterMotor->SetGravity(-9.8f);
-	if(Update_BT())
-		m_pBeHavior->Update(fTimeDelta);
+	m_pBeHavior->Update(fTimeDelta);
 	
 }
 
@@ -430,7 +429,6 @@ _bool CMonster::Activate_PendingHit()
 		m_ActiveMonTable.eAttType == m_PendingMonTable.eAttType &&
 		m_ActiveMonTable.eHitType == m_PendingMonTable.eHitType;
 
-	//애니매이션 끊기용
 	if (!bSameHit)
 		++m_iHitCnt;
 
@@ -529,6 +527,11 @@ void CMonster::Get_SoundKey(_string& CurSoundName)
 		ImGui::EndCombo();
 	}
 	return;
+}
+
+CComAnimator* CMonster::Get_Animator()
+{
+	return m_pModelAnimator;
 }
 
 

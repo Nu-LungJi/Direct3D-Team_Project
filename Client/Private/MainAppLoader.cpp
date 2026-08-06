@@ -448,7 +448,7 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTCinematic", CBTCinematic::Create())))
 		return E_FAIL;
-	
+
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTRandMoveAnim", CBTRandMoveAnim::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTAnimation", CBTAnimation::Create())))
@@ -478,8 +478,18 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecHitCnt", CBTDecHitCnt::Create())))
 		return E_FAIL;
+
+	//-------------------------------------------------Dragon-----------------------------------------------------//
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTEdgStateFinished", CBTEdgStateFinished::Create())))
+		return E_FAIL;
+
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecEdgState", CBTDecEdgState::Create())))
 		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecEdgPhase", CBTDecEdgPhase::Create())))
+		return E_FAIL;
+	
+	//-------------------------------------------------------------------------------------------------------------//
+		
 	if (auto res = CGameInstance::Get().AddResource("BTJSON", "TOMB_BT_GURDIAN3", CResJson::Create("./Resources/json/BeHavior/GurDian3.json")))
 	{
 		if (FAILED(res->Load()))
@@ -512,6 +522,16 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
+	////서브트리
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "FIREBALL", CResJson::Create("./Resources/json/BeHavior/SubTree/SubTreeTest.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED FIREBALL JSON");
+			return E_FAIL;
+		}
+	}
+	
 	return S_OK; 
 }
 

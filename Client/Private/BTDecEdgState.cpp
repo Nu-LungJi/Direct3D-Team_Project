@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BTDecEdgState.h"
 #include "ComBeHavior.h"
+#include "BTBlackBoard.h"
 NS_USING(Client)
 
 CBTDecEdgState::CBTDecEdgState()
@@ -9,7 +10,7 @@ CBTDecEdgState::CBTDecEdgState()
 }
 CBTDecEdgState::CBTDecEdgState(const CBTDecEdgState& rhs) : CBTDecorator(rhs)
 {
-
+	m_eState = rhs.m_eState;
 }
 
 CBTDecEdgState::~CBTDecEdgState()
@@ -33,8 +34,21 @@ HRESULT CBTDecEdgState::Initalize(void* pArg)
 
 EVALUATE CBTDecEdgState::Evaluate(_float fTimeDelta)
 {
+	//--------------NullCheck---------------//
+	auto pBT = Get_ComBT();
+	if (!pBT) return m_eDebug = EVALUATE::FAILED;
 
-	return m_eDebug = EVALUATE::FAILED;
+	auto pBB = pBT->Get_Blackboard();
+	if(!pBB) return m_eDebug = EVALUATE::FAILED;
+
+	auto pState = pBB->Get_Value<EDG_STATE>(EDG_KEY::STATE);
+	if (!pState) return m_eDebug = EVALUATE::FAILED;
+	//--------------------------------------//
+
+	if (*pState != m_eState)
+		return m_eDebug = EVALUATE::FAILED;
+
+	return m_eDebug = __super::Evaluate(fTimeDelta);
 }
 void CBTDecEdgState::Update_Gui()
 {

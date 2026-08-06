@@ -1,7 +1,7 @@
 #pragma once
 #include "Client_Defines.h"
 #include "StateMachine.h"
-
+#include "BlackBoardKey.h"
 #define EDG_STATE_M  \
 X(NONE)\
 X(SPAWN)            \
