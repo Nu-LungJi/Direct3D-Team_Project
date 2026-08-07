@@ -218,6 +218,7 @@
     <ClInclude Include="..\public\EnderDragon_State.h" />
     <ClInclude Include="..\public\LevelLastBossRanrok.h" />
     <ClInclude Include="..\public\LevelLastBossRanrokLoader.h" />
+    <ClInclude Include="..\Public\Player_Fly_State.h" />
     <ClInclude Include="..\Public\SkyCloudyCube.h" />
     <ClInclude Include="..\public\BossMace.h" />
     <ClInclude Include="..\Public\BridgeCRW.h" />
@@ -354,6 +355,7 @@
     <ClCompile Include="..\private\Edg_Spawn.cpp" />
     <ClCompile Include="..\private\EnderDragon.cpp" />
     <ClCompile Include="..\private\EnderDragon_State.cpp" />
+    <ClCompile Include="..\Private\Player_Fly_State.cpp" />
     <ClCompile Include="..\Private\SkyCloudyCube.cpp" />
     <ClCompile Include="..\private\BossMace.cpp" />
     <ClCompile Include="..\private\BossTMB.cpp" />
@@ -475,6 +477,8 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Mesh.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Texture.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_SkyCloudy.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl" />

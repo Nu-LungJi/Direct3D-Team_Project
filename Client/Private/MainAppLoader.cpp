@@ -336,6 +336,38 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_CPU_Player_Skill_Mesh", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Player_Skill_Mesh.hlsl")))
+	{
+		if (!res)
+		{
+			MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_Player_Skill_Mesh", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Player_Skill_Mesh.hlsl")))
+	{
+		if (!res)
+		{
+			MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_CPU_Player_Skill_Texture", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Player_Skill_Texture.hlsl")))
+	{
+		if (!res)
+		{
+			MSG_BOX("");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_Player_Skill_Texture", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Player_Skill_Texture.hlsl")))
+	{
+		if (!res)
+		{
+			MSG_BOX("");
+			return E_FAIL;
+		}
+	}
 	////////// -- 광윤 추가 -- //////////
 	if (nullptr == CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_CPU_LIGHTNING_TEX", CResVertexShader::Create("./ShaderFiles/Shader_CPU_Lightning_Tex.hlsl")))	return E_FAIL;
 
