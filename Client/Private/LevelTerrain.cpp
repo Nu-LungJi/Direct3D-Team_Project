@@ -722,8 +722,8 @@ HRESULT CLevelTerrain::InitializeCamerasAndLighting(
 			CGameInstance::Get().SetActiveCamera("FLY");
 		}
 	}
-	
-	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+	_float3(0.577f, -0.577f, 0.577f);
+	CGameInstance::Get().Add_DirectionalLight({ 0.577f, -0.577f, 0.577f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
 }

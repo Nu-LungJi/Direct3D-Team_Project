@@ -130,7 +130,7 @@ struct VS_IN
 
 struct VS_OUT
 {
-	float4 WorldPos : POSITION;
+	float4 WorldPos : SV_POSITION;
 };
 struct VS_POINT_OUT
 {
@@ -176,7 +176,7 @@ VS_OUT VSMain(VS_IN IN)
 	
     return OUT;
 }
-VS_FINAL_OUT VSMain_Final(VS_IN IN)
+VS_FINAL_OUT VSMain_Directional(VS_IN IN)
 {
 	VS_FINAL_OUT OUT;
 	

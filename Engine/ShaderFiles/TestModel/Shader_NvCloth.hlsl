@@ -161,7 +161,7 @@ VS_SHADOW_OUT VSShadow(VS_IN In)
 struct VS_POINT_SHADOW_OUT
 {
 	float4 Position : SV_POSITION;
-	float3 WorldPos : TEXCOORD0;
+	float3 WorldPos : POSITION;
 };
 /*---------------------------------*/
 VS_POINT_SHADOW_OUT VSPointShadow(VS_IN In)

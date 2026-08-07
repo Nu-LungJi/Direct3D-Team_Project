@@ -163,10 +163,10 @@ float3 CustomDownSampling(Texture2D _Texture, float2 _TexCoord, float2 _TexelSiz
 	float2 SamplingOffset = _TexelSize * 0.5f; // Sampling Near Pixel
 	
 	float3 Color = 0.f;
-	float ColorA = _Texture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, -SamplingOffset.y)).rgb;
-	float ColorB = _Texture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, -SamplingOffset.y)).rgb;
-	float ColorC = _Texture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, +SamplingOffset.y)).rgb;
-	float ColorD = _Texture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, +SamplingOffset.y)).rgb;
+	float ColorA = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(-SamplingOffset.x, -SamplingOffset.y), 0).rgb;
+	float ColorB = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(+SamplingOffset.x, -SamplingOffset.y), 0).rgb;
+	float ColorC = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(-SamplingOffset.x, +SamplingOffset.y), 0).rgb;
+	float ColorD = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(+SamplingOffset.x, +SamplingOffset.y), 0).rgb;
 
 	float WeightA = KarisWeight(ColorA);
 	float WeightB = KarisWeight(ColorB);
@@ -184,10 +184,10 @@ float3 DownSampling(Texture2D _Texture, float2 _TexCoord, float2 _TexelSize)
 	float2 SamplingOffset = _TexelSize * 0.5f;
 
 	float3 Color = 0.f;
-	Color += _Texture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, -SamplingOffset.y)).rgb;
-	Color += _Texture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, -SamplingOffset.y)).rgb;
-	Color += _Texture.Sample(LinearClamp, _TexCoord + float2(-SamplingOffset.x, +SamplingOffset.y)).rgb;
-	Color += _Texture.Sample(LinearClamp, _TexCoord + float2(+SamplingOffset.x, +SamplingOffset.y)).rgb;
+	Color += _Texture.SampleLevel(LinearClamp, _TexCoord + float2(-SamplingOffset.x, -SamplingOffset.y), 0).rgb;
+	Color += _Texture.SampleLevel(LinearClamp, _TexCoord + float2(+SamplingOffset.x, -SamplingOffset.y), 0).rgb;
+	Color += _Texture.SampleLevel(LinearClamp, _TexCoord + float2(-SamplingOffset.x, +SamplingOffset.y), 0).rgb;
+	Color += _Texture.SampleLevel(LinearClamp, _TexCoord + float2(+SamplingOffset.x, +SamplingOffset.y), 0).rgb;
 
 	Color *= 0.25f;
 	
@@ -196,14 +196,14 @@ float3 DownSampling(Texture2D _Texture, float2 _TexCoord, float2 _TexelSize)
 
 float3 GaussianBlur(float2 _TexCoord, float2 _TexelDirection)
 {
-	float4 CenterPixel = BlurPassTexture.Sample(LinearClamp, _TexCoord) * CenterWeight;
+	float4 CenterPixel = BlurPassTexture.SampleLevel(LinearClamp, _TexCoord, 0) * CenterWeight;
 	
 	[unroll]
 	for (int i = 0; i < 2; ++i)
 	{
 		const float2 Offset = _TexelDirection * BlurOffsets[i];
-		CenterPixel += BlurPassTexture.Sample(LinearClamp, _TexCoord + Offset) * BlurWeights[i];
-		CenterPixel += BlurPassTexture.Sample(LinearClamp, _TexCoord - Offset) * BlurWeights[i];
+		CenterPixel += BlurPassTexture.SampleLevel(LinearClamp, _TexCoord + Offset, 0) * BlurWeights[i];
+		CenterPixel += BlurPassTexture.SampleLevel(LinearClamp, _TexCoord - Offset, 0) * BlurWeights[i];
 	}
 	
 	return CenterPixel.rgb;
@@ -231,8 +231,8 @@ void CSMain_BrightPass(uint3 ID : SV_DispatchThreadID)
 
 	float	Luminance = dot(DownSampledColor, float3(0.2126f, 0.7152f, 0.0722f));
 	
-	float	SoftKneeCurve = SoftKneeCurve(Luminance, BrightThreshold, 0.2f);
-	float	Contribution = max(SoftKneeCurve, Luminance - BrightThreshold) / max(Luminance, 0.0001f);
+	float	SoftKneeCurveValue = SoftKneeCurve(Luminance, BrightThreshold, 0.2f);
+	float	Contribution = max(SoftKneeCurveValue, Luminance - BrightThreshold) / max(Luminance, 0.0001f);
 
 	OUTPUT[ID.xy] = float4(DownSampledColor * Contribution, 1.f);
 	return;
@@ -270,8 +270,8 @@ void CSMain_Combined(uint3 ID : SV_DispatchThreadID)
 	
 	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
 	
-	float3 OriginalColor = OriginalTexture.Sample(LinearClamp, TexCoord).rgb;
-	float3 BloomBlurColor = BlurPassTexture.Sample(LinearClamp, TexCoord).rgb;
+	float3 OriginalColor	= OriginalTexture.SampleLevel(LinearClamp, TexCoord, 0).rgb;
+	float3 BloomBlurColor	= BlurPassTexture.SampleLevel(LinearClamp, TexCoord, 0).rgb;
     
 	OUTPUT[ID.xy] = float4(OriginalColor + BloomBlurColor * BloomIntensity, 1.f);
 	return;
@@ -285,8 +285,8 @@ void CSMain_UpSampling(uint3 ID : SV_DispatchThreadID)
 	
 	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
 	
-	float3 HalfBloom = OriginalTexture.Sample(LinearClamp, TexCoord).rgb;
-	float3 QuarterBloom = BlurPassTexture.Sample(LinearClamp, TexCoord).rgb;
+	float3 HalfBloom = OriginalTexture.SampleLevel(LinearClamp, TexCoord, 0).rgb;
+	float3 QuarterBloom = BlurPassTexture.SampleLevel(LinearClamp, TexCoord, 0).rgb;
 	
 	OUTPUT[ID.xy] = float4(HalfBloom * HalfBloomWeight + QuarterBloom * QuarterBloomWeight, 1.f);
 	return;
@@ -327,9 +327,9 @@ float3 ChromaticAberration(float2 _UV)
     
 	float2 Seperation = UVFromCenter * (DistanceFromCenter * ChromaticIntensity);
     
-	float R = OriginalTexture.Sample(LinearClamp, _UV - Seperation).r;
-	float G = OriginalTexture.Sample(LinearClamp, _UV).g;
-	float B = OriginalTexture.Sample(LinearClamp, _UV + Seperation).b;
+	float R = OriginalTexture.SampleLevel(LinearClamp, _UV - Seperation, 0).r;
+	float G = OriginalTexture.SampleLevel(LinearClamp, _UV, 0).g;
+	float B = OriginalTexture.SampleLevel(LinearClamp, _UV + Seperation, 0).b;
 
 	return float3(R, G, B);
 }
@@ -365,8 +365,8 @@ float3 LUT_Filtering(float3 _Color)
 	TexCoordB.x = (AdjustTile02 + LUT_UVOffset.x) / LUT_Size;
 	TexCoordB.y = LUT_UVOffset.y;
     
-	float3 LUT_ColorA = LUT_Texture.Sample(LinearClamp, TexCoordA).rgb;
-	float3 LUT_ColorB = LUT_Texture.Sample(LinearClamp, TexCoordB).rgb;
+	float3 LUT_ColorA = LUT_Texture.SampleLevel(LinearClamp, TexCoordA, 0).rgb;
+	float3 LUT_ColorB = LUT_Texture.SampleLevel(LinearClamp, TexCoordB, 0).rgb;
     
     //float3 LUT_Mapping = _Color * ((LUT_Size - 1.f) / LUT_Size) + (0.5f / LUT_Size);
     //return LUT_Texture.Sample(SamplerClamp, LUT_Mapping);

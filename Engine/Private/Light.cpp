@@ -26,7 +26,7 @@ HRESULT CLight::InitializePrototype(VOID* pArg) {
 		m_pDynamicLight.InnerAttanuation = { 20.f };
 		m_pDynamicLight.OuterAttanuation = { 30.f };
 
-		for (uint32_t i = 0; i < POINT_SHADOW_FACE_COUNT; ++i)
+		for (uint32_t i = 0; i < POINT_SHADOW_MAPCOUNT; ++i)
 			XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[i], XMMatrixIdentity());
 	}
 	{
@@ -111,7 +111,10 @@ VOID CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
 	{
 		E::CB_PER_PASS pCbPerPass{};
 
-		XMMATRIX LightViewProj = XMMatrixMultiply(LightViewMatrix, LightProjMatrix);
+		XMMATRIX LightViewProj{};
+		LightViewProj = m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::DIRECTIONAL) ?
+			XMLoadFloat4x4(&m_pDynamicLight.g_LightViewProj[0]) :
+			XMMatrixMultiply(LightViewMatrix, LightProjMatrix);
 
 		XMStoreFloat4x4(&pCbPerPass.matView, LightViewMatrix);
 		XMStoreFloat4x4(&pCbPerPass.matProj, LightProjMatrix);
@@ -163,6 +166,7 @@ VOID CLight::PrepareShadowMapMatrices() {
 	else {
 		Update_DirectionalShadowMatrices();
 	}
+
 	m_bShadowMatrixDirty = false;
 }
 
@@ -175,7 +179,7 @@ VOID CLight::Update_PointShadowMatrices() {
 	BoundingFrustum LocalFrustum{};
 	BoundingFrustum::CreateFromMatrix(LocalFrustum, ProjMat);
 
-	for (uint32_t i = 0; i < POINT_SHADOW_FACE_COUNT; ++i) {
+	for (uint32_t i = 0; i < POINT_SHADOW_MAPCOUNT; ++i) {
 		XMMATRIX ViewMat = XMMatrixLookAtLH(LightPosition, XMVectorAdd(LightPosition, DirectionVec[i]), BaseUpVec[i]);
 		XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[i], XMMatrixMultiply(ViewMat, ProjMat));
 		LocalFrustum.Transform(m_PointShadowFrustums[i], XMMatrixInverse(nullptr, ViewMat));
@@ -200,12 +204,102 @@ VOID CLight::Update_SpotShadowMatrices() {
 }
 
 VOID CLight::Update_DirectionalShadowMatrices() {
-	XMVECTOR	LightPosition = m_pComTransform->GetState(STATE::POSITION);
-	XMVECTOR	WorldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	auto MainCamera = CGameInstance::Get().GetActiveCamera();
+	XMMATRIX CamView	= MainCamera->GetView();
+	XMMATRIX CamProj	= MainCamera->GetProj();
 
-	XMStoreFloat4x4(&LightView, E::MakeSafeLookToLH(LightPosition, XMLoadFloat3(&m_pDynamicLight.LightDirection), WorldUp));
-	XMStoreFloat4x4(&LightProj, XMMatrixOrthographicLH(150.f, 150.f, 0.1f, 300.f));
-	XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[0], XMMatrixMultiply(XMLoadFloat4x4(&LightView), XMLoadFloat4x4(&LightProj)));
+	_float	 CameraNear = MainCamera->GetNear();
+	_float	 CameraFar	= MainCamera->GetFar();
+
+	uint32_t CascadeCount = 4;
+	_float	 Lambda		= 0.5f;
+
+	_float CSM_SplitDistance[5];
+	CSM_SplitDistance[0] = CameraNear;
+
+	for (uint32_t i = 1; i <= CascadeCount; ++i) {
+		_float FID = static_cast<_float>(i) / static_cast<_float>(CascadeCount);
+
+		_float LogValue		= CameraNear * powf(CameraFar / CameraNear, FID);
+		_float LinearValue	= CameraNear + (CameraFar - CameraNear) * FID;
+
+		CSM_SplitDistance[i] = Lambda * LogValue + (1.f - Lambda) * LinearValue;
+	}
+	
+	XMVECTOR LightDirection = XMLoadFloat3(&m_pDynamicLight.LightDirection);
+
+	for (uint32_t i = 0; i < CascadeCount; ++i) {
+		_float NearSplit = CSM_SplitDistance[i];
+		_float FarSplit  = CSM_SplitDistance[i+1];
+
+		// Get Frustum 8 Corners Position
+		std::vector<XMVECTOR> FrustumWorldCorners = Get_FrustumCorners(NearSplit, FarSplit);
+
+		// Get Frustum Center Position
+		XMVECTOR FrustumCenterPos = XMVectorZero();
+		for (int j = 0; j < 8; ++j) 
+			FrustumCenterPos += FrustumWorldCorners[j];
+		FrustumCenterPos /= 8.f;
+
+		// Set Light Position / ViewMat
+		_float DistanceFromCenter = 500.f;
+		XMVECTOR LightPosition = FrustumCenterPos - (LightDirection * DistanceFromCenter);
+		XMMATRIX LightViewMat = XMMatrixLookAtLH(LightPosition, FrustumCenterPos, XMVectorSet(0.f, 1.f, 0.f, 0.f));
+
+		_float MinX = FLT_MAX, MaxX = -FLT_MAX;
+		_float MinY = FLT_MAX, MaxY = -FLT_MAX;
+		_float MinZ = FLT_MAX, MaxZ = -FLT_MAX;
+
+		for (int j = 0; j < 8; ++j) {
+			XMVECTOR vLightSpacePos = XMVector3TransformCoord(FrustumWorldCorners[j], LightViewMat);
+
+			XMFLOAT3 Pos;
+			XMStoreFloat3(&Pos, vLightSpacePos);
+
+			MinX = std::min(MinX, Pos.x); MaxX = std::max(MaxX, Pos.x);
+			MinY = std::min(MinY, Pos.y); MaxY = std::max(MaxY, Pos.y);
+			MinZ = std::min(MinZ, Pos.z); MaxZ = std::max(MaxZ, Pos.z);
+		}
+		if (MinZ < 0.f)	MinZ *= 10.f;
+		else			MinZ /= 10.f;
+
+		if (MaxZ < 0.f)	MaxZ /= 10.f;
+		else			MaxZ *= 10.f;
+
+		XMMATRIX mLightProj = XMMatrixOrthographicOffCenterLH(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
+		XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[i], XMMatrixMultiply(LightViewMat, mLightProj));
+	}
+}
+
+std::vector<XMVECTOR> CLight::Get_FrustumCorners(_float _SplitNear, _float _SplitFar){
+	XMVECTOR vNDC[8] = {
+		XMVectorSet(-1.0f, +1.0f, 0.0f, 1.0f),
+		XMVectorSet(+1.0f, +1.0f, 0.0f, 1.0f),
+		XMVectorSet(+1.0f, -1.0f, 0.0f, 1.0f),
+		XMVectorSet(-1.0f, -1.0f, 0.0f, 1.0f),
+		XMVectorSet(-1.0f, +1.0f, 1.0f, 1.0f),
+		XMVectorSet(+1.0f, +1.0f, 1.0f, 1.0f),
+		XMVectorSet(+1.0f, -1.0f, 1.0f, 1.0f),
+		XMVectorSet(-1.0f, -1.0f, 1.0f, 1.0f)
+	};
+
+	auto MainCamera = CGameInstance::Get().GetActiveCamera();
+	_float fCameraNear = MainCamera->GetNear();
+	_float fCameraFar = MainCamera->GetFar();
+	_float fCameraAspect = MainCamera->GetAspect();
+	_float fCameraFovY = MainCamera->GetFovY();
+
+	XMMATRIX mCamView = MainCamera->GetView();
+	XMMATRIX mCamProj = XMMatrixPerspectiveFovLH(fCameraFovY, fCameraAspect, _SplitNear, _SplitFar);
+
+	XMMATRIX mInvViewProj = XMMatrixInverse(nullptr, mCamView * mCamProj);
+
+	std::vector<XMVECTOR> vWorldCorners(8);
+	for (int i = 0; i < 8; ++i) {
+		vWorldCorners[i] = XMVector3TransformCoord(vNDC[i], mInvViewProj);
+	}
+
+	return vWorldCorners;
 }
 
 HRESULT CLight::Update_Collider() {
@@ -265,7 +359,7 @@ _bool CLight::Intersects_ShadowBounds(const BoundingBox& _Bounds) const{
 HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& RCTX, const std::vector<IRenderable*>& _ObjectHandleList, int32_t _PointFaceIndex) {
 	if (m_bActivate_State == false) return E_FAIL;
 
-	if (_PointFaceIndex < -1 || _PointFaceIndex >= static_cast<int32_t>(POINT_SHADOW_FACE_COUNT))		return E_FAIL;
+	if (_PointFaceIndex < -1 || _PointFaceIndex >= static_cast<int32_t>(POINT_SHADOW_MAPCOUNT))		return E_FAIL;
 
 	const LIGHT_TYPE LightType = static_cast<LIGHT_TYPE>(m_pDynamicLight.LightType);
 
@@ -277,15 +371,22 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& 
 		XMMATRIX Identity = XMMatrixIdentity();
 		RCTX.matView = Identity;
 		RCTX.matProj = Identity;
-		RCTX.matViewProj = XMLoadFloat4x4(
-			&m_pDynamicLight.g_LightViewProj[_PointFaceIndex]);
+		RCTX.matViewProj = XMLoadFloat4x4(&m_pDynamicLight.g_LightViewProj[_PointFaceIndex]);
 	}
-	else {
+	else if (LightType == LIGHT_TYPE::SPOTLIGHT){
 		RCTX.PointShadowFaceIndex = -1;
 
 		RCTX.matView = XMLoadFloat4x4(&LightView);
 		RCTX.matProj = XMLoadFloat4x4(&LightProj);
 		RCTX.matViewProj = RCTX.matView * RCTX.matProj;
+	}
+	else {
+		RCTX.PointShadowFaceIndex = _PointFaceIndex;
+
+		XMMATRIX Identity = XMMatrixIdentity();
+		RCTX.matView = Identity;
+		RCTX.matProj = Identity;
+		RCTX.matViewProj = XMLoadFloat4x4(&m_pDynamicLight.g_LightViewProj[_PointFaceIndex]);
 	}
 
 	for (auto& GOBJ : _ObjectHandleList) {
@@ -297,7 +398,7 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& 
 			_bool bVisibleToLight = true;
 
 			if (LightType == LIGHT_TYPE::POINT && _PointFaceIndex >= 0) {
-				bVisibleToLight =Intersects_PointShadowFace(static_cast<uint32_t>(_PointFaceIndex),ShadowBound);
+				bVisibleToLight = Intersects_PointShadowFace(static_cast<uint32_t>(_PointFaceIndex),ShadowBound);
 			}
 			else {
 				bVisibleToLight = Intersects_ShadowBounds(ShadowBound);
@@ -311,7 +412,7 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& 
 	return S_OK;
 }
 
-VOID CLight::Reset_Light(){
+VOID	CLight::Reset_Light(){
 	m_pDynamicLight.LightDirection	 = { 1.f, -1.f, 1.f };
 	m_pDynamicLight.LightIntensity	 = { 0.f };
 	m_pDynamicLight.LightColor		 = { 1.f, 1.f, 1.f };
@@ -330,8 +431,8 @@ VOID CLight::Reset_Light(){
 
 	InvalidateAllShadow();
 }
-_bool CLight::Intersects_PointShadowFace(uint32_t _FaceIndex, const BoundingBox& _Bounds) const {
-	if (_FaceIndex >= POINT_SHADOW_FACE_COUNT)	return false;
+_bool	CLight::Intersects_PointShadowFace(uint32_t _FaceIndex, const BoundingBox& _Bounds) const {
+	if (_FaceIndex >= POINT_SHADOW_MAPCOUNT)	return false;
 
 	return m_PointShadowFrustums[_FaceIndex].Intersects(_Bounds);
 }

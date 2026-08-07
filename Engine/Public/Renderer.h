@@ -11,6 +11,10 @@ class CResDynamicTexture2D;
 class CMyGFSDK_SSAO;
 class CMyFSR2_2;
 
+#define FROXELX	160
+#define FROXELY	90
+#define FROXELZ	64
+
 class CRenderer final : public CEngineBase
 {
 private:
@@ -65,6 +69,7 @@ public:
 	SPtr<CResViewPort>			Generate_ViewPort(const StringID& _sResTag, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 
 	HRESULT	Generate_Texture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
+	HRESULT	Generate_DepthTexture2DArray(std::vector<ComPtr<ID3D11DepthStencilView>>& _ShadowDSVList, ComPtr<ID3D11ShaderResourceView>& _SRV, ComPtr<ID3D11Texture2D>& _TextureArray, uint32_t _Resolution, uint32_t _CascadeCount);
 	HRESULT	Generate_ShadowCubeMap(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _TextureArray, ID3D11ShaderResourceView** _SRV, uint32_t _Resolution, uint32_t _MaxLightCount);
 	HRESULT Generate_CubeMapList(std::vector<ComPtr<ID3D11DepthStencilView>>* _ShadowDSVList, uint32_t _Resolution, uint32_t _MaxLightCount);
 	HRESULT	Generate_ShadowTexture(ID3D11DepthStencilView** _ShadowDSV, ID3D11Texture2D** _Texture, ID3D11ShaderResourceView** _SRV, uint32_t _ResolutionX, uint32_t _ResolutionY);
@@ -74,8 +79,6 @@ public:
 
 	VOID	Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale);
 	VOID	Set_ChromaticRingOpacity(_float _Opacity) { m_fChromaticRingAlpha = _Opacity; }
-
-	VOID	Set_VolumetricFog(_float3 _Center, _float3 _Color, _float _Intensity, _float _Height, _float _StartPos, _float _EndPos, _float _Density);
 
 private:
 	_bool m_bDrawPlayerInvenUIPass{ false };
@@ -139,7 +142,9 @@ private:
 	SPtr<CResComputeShader>		m_pDownSampleComputeShader{};
 
 	SPtr<CResCBuffer>			m_pBloomCBuffer{};
-	SPtr<CResCBuffer>			m_pVolumetricCBuffer{};
+	SPtr<CResCBuffer>			m_pVolumetricFroxelCBuffer{};
+	SPtr<CResCBuffer>			m_pVolumetricVFogCBuffer{};
+	SPtr<CResCBuffer>			m_pVolumetricCSMCBuffer{};
 	SPtr<CResCBuffer>			m_pLensFlareCBuffer{};
 
 	SPtr<CResComputeShader>		m_pVolumetricComputeShader{};
@@ -177,8 +182,6 @@ private:
 	SPtr<CResPixelShader> m_pFullscreenPS{};
 	SPtr<CResVIBuffer> m_pFullscreenVIBuffer{};
 
-
-
 	ComPtr<ID3D11ShaderResourceView>	m_pLookUpTableTexture = { nullptr };
 	ComPtr<ID3D11UnorderedAccessView>	m_pUAVVolumetric = { nullptr };
 
@@ -202,8 +205,12 @@ private:
 	HRESULT Render_UI3D();
 
 	HRESULT	Render_VolumetricEffect();
+	HRESULT Update_VolumetricConstantBuffer();
 	HRESULT Render_FroxelCell();
 	HRESULT Render_LightIntegration();
+	HRESULT Render_FroxelAccumulation();
+	HRESULT Render_RayMarching();
+	HRESULT Render_VolumetricComposite();
 
 	HRESULT Render_PostProcess();
 	HRESULT Render_PostProcess_Focusing();
@@ -214,13 +221,9 @@ private:
 	HRESULT	Bind_CameraAttribute(CCameraObject* _ActiveCam);
 	HRESULT Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveCam);
 
-	_float	NoiseHash(uint32_t _X, uint32_t _Y, uint32_t _Z);
-	inline _float saturate(_float val) { return val < 0.0f ? 0.0f : (val > 1.0f ? 1.0f : val); }
 	HRESULT Render_FullScreen();
 
 	VOID	Unbind_Resources();
-
-	VOID	Render_Quad();
 
 	ComPtr<ID3D11ShaderResourceView>	Create_Texture2D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	TEXTURE3D							Create_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight, uint32_t _TexDepth);
@@ -299,13 +302,17 @@ private:
 
 	CB_VLFOG		m_fFogInfo{};
 
-	SPtr<CResComputeShader>		m_pFroxelDensityInjectionCS{};
+	SPtr<CResComputeShader>		m_pFroxeInjectionCS{};
 	SPtr<CResComputeShader>		m_pLightIntegrationCS{};
 	SPtr<CResComputeShader>		m_pFroxelAccumulationCS{};
+	SPtr<CResComputeShader>		m_pRayMarchingCS{};
+	SPtr<CResPixelShader>		m_pVolumetricCompositePS{};
 
 	TEXTURE3D		m_pVoxelDensityColor{};
 	TEXTURE3D		m_pVoxelLighting{};
 	TEXTURE3D		m_pVoxelAccumulated{};
+
+	ComPtr<ID3D11ShaderResourceView>	CSMShadowMapSRV{};
 
 private:
 	std::optional<CHandle>	m_pOutlineTargetHandle{};

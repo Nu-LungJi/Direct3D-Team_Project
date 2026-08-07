@@ -41,6 +41,8 @@ public:
 	VOID			Update_SpotShadowMatrices();
 	VOID			Update_DirectionalShadowMatrices();
 
+	std::vector<XMVECTOR>	Get_FrustumCorners(_float _SplitNear, _float _SplitFar);
+
 public:
 	HRESULT 		Set_LightType(LIGHT_TYPE _LTYPE);
 	LIGHT_TYPE		Get_LightType() { return static_cast<LIGHT_TYPE>(m_pDynamicLight.LightType); }
@@ -159,8 +161,10 @@ private:
 	XMFLOAT4X4 LightView{}, LightProj{};
 
 private:	// PointLight
-	XMVECTOR DirectionVec[6], BaseUpVec[6];
-	int32_t  m_ShadowSlot{-1};
+	XMVECTOR	DirectionVec[6], BaseUpVec[6];
+	int32_t		m_ShadowSlot{-1};
+
+
 
 public:
 	VOID		UpdateGUI() override;
@@ -175,7 +179,7 @@ public:
 	_bool		Intersects_PointShadowFace(uint32_t _FaceIndex, const BoundingBox& _Bounds) const;
 
 private:
-	std::array<BoundingFrustum, POINT_SHADOW_FACE_COUNT> m_PointShadowFrustums{};
+	std::array<BoundingFrustum, POINT_SHADOW_MAPCOUNT> m_PointShadowFrustums{};
 
 public:
 	static UPtr<CLight> Create();

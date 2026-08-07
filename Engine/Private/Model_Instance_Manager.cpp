@@ -451,7 +451,7 @@ HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pCo
 	
 	if (!_LightHandle)	return E_FAIL;
 
-	if (_PointFaceIndex < -1 || _PointFaceIndex >= static_cast<int32_t>(POINT_SHADOW_FACE_COUNT))	return E_FAIL;
+	if (_PointFaceIndex < -1 || _PointFaceIndex >= static_cast<int32_t>(POINT_SHADOW_MAPCOUNT))	return E_FAIL;
 
 	auto pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(_LightHandle.value());
 	if (nullptr == pLight) return E_FAIL;
