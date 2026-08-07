@@ -37,9 +37,6 @@
     <Filter Include="Loader\Level\Logo">
       <UniqueIdentifier>{7e9f7d17-14d6-4c04-adaf-777151b4c6b4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="LuaFiles">
-      <UniqueIdentifier>{b4064650-231e-4716-9e83-871a50b3ff8f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{6bd28087-0add-401b-9153-94d4f64a07f1}</UniqueIdentifier>
     </Filter>
@@ -297,6 +294,9 @@
     </Filter>
     <Filter Include="GameObject\AI\Action\Dragon">
       <UniqueIdentifier>{e39345c4-32e3-4026-9d39-6e428062c414}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\UI\LuaFiles">
+      <UniqueIdentifier>{b4064650-231e-4716-9e83-871a50b3ff8f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -699,6 +699,9 @@
     <ClInclude Include="..\public\Edg_Phase.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTDecEdgPatroll.h">
+      <Filter>GameObject\AI\Decorator\Dragon</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1051,6 +1054,9 @@
     </ClCompile>
     <ClCompile Include="..\private\Edg_Phase.cpp">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecEdgPatroll.cpp">
+      <Filter>GameObject\AI\Decorator\Dragon</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

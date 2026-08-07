@@ -205,13 +205,10 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	}
 	if (FAILED(Ready_Skill()))
 	{
-		MSG_BOX("Create Faield Skill");
+		MSG_BOX("Create Failed Skill");
 		return E_FAIL;
 	}
-
-	//m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
-	auto pBB = Get_BlackBoard();
-	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, m_ePhase);
+	Ready_BBKeyValue();
 
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
@@ -220,7 +217,51 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	return S_OK;
 }
+HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
+{
+	CEnderDragon_State::DESC Desc{};
+	if (FAILED(AddComponentFromProto(LevelTag, "Prototype_Component_Dragon_FSM", "EnderDragon_Fsm", &Desc, &m_pFsm))) return E_FAIL;
 
+
+	if (false == m_pFsm->Add_State(EDG_STATE::SPAWN, CEdg_Spawn::Create())) return E_FAIL;
+
+	if (false == m_pFsm->Add_State(EDG_STATE::COMBAT, CEdg_Combat::Create())) return E_FAIL;
+
+	if (false == m_pFsm->Add_State(EDG_STATE::HIT, CEdg_Hit::Create())) return E_FAIL;
+
+	if (false == m_pFsm->Add_State(EDG_STATE::PHASE_CHANGE, CEdg_Phase::Create())) return E_FAIL;
+
+	if (false == m_pFsm->Initialize_State(EDG_STATE::SPAWN)) return E_FAIL;
+
+
+	return S_OK;
+}
+HRESULT CEnderDragon::Ready_Skill()
+{
+	if (ETOUI(DRAGON_SKILL::END) > ETOUI(ATTMON::END))
+		return E_FAIL;
+
+	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(DRAGON_SKILL::BOOM);
+	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(DRAGON_SKILL::BRESS);
+	m_MonSkillLists[ATTMON::SLOT2] = ETOUI(DRAGON_SKILL::FIREBALL);
+
+	m_MonSkillLists[ATTMON::SKIP] = ETOUI(DRAGON_SKILL::SKIP);
+
+
+	//m_EffectNames[ETOUI(DRAGON_SKILL::JUMP_START)] = "TombJumpStart";
+	//m_EffectNames[ETOUI(DRAGON_SKILL::JUMP_END)] = "TombJumpEnd";
+	//m_EffectNames[ETOUI(DRAGON_SKILL::HIT_ACCIO)] = "AccioGrab";
+
+
+	return S_OK;
+}
+void CEnderDragon::Ready_BBKeyValue()
+{
+	auto pBB = Get_BlackBoard();
+	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, m_ePhase);
+	pBB->Set_Value<MOVE>(EDG_KEY::EPATROL, MOVE::LEFT);
+
+}
 void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 {
 	Check_Phase();
@@ -246,45 +287,7 @@ void CEnderDragon::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 
 }
-HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
-{
-	CEnderDragon_State::DESC Desc{};
-	if (FAILED(AddComponentFromProto(LevelTag,"Prototype_Component_Dragon_FSM","EnderDragon_Fsm",&Desc,&m_pFsm))) return E_FAIL;
-	
-	
-	if (false == m_pFsm->Add_State(EDG_STATE::SPAWN, CEdg_Spawn::Create())) return E_FAIL;
 
-	if (false == m_pFsm->Add_State(EDG_STATE::COMBAT, CEdg_Combat::Create())) return E_FAIL;
-
-	if (false == m_pFsm->Add_State(EDG_STATE::HIT, CEdg_Hit::Create())) return E_FAIL;
-
-	if (false == m_pFsm->Add_State(EDG_STATE::PHASE_CHANGE, CEdg_Phase::Create())) return E_FAIL;
-
-	if (false == m_pFsm->Initialize_State(EDG_STATE::SPAWN)) return E_FAIL;
-
-
-	return S_OK;
-}
-
-HRESULT CEnderDragon::Ready_Skill()
-{
-	if (ETOUI(DRAGON_SKILL::END) > ETOUI(ATTMON::END))
-		return E_FAIL;
-
-	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(DRAGON_SKILL::BOOM);
-	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(DRAGON_SKILL::BRESS);
-	m_MonSkillLists[ATTMON::SLOT2] = ETOUI(DRAGON_SKILL::FIREBALL);
-	
-	m_MonSkillLists[ATTMON::SKIP] = ETOUI(DRAGON_SKILL::SKIP);
-
-
-	//m_EffectNames[ETOUI(DRAGON_SKILL::JUMP_START)] = "TombJumpStart";
-	//m_EffectNames[ETOUI(DRAGON_SKILL::JUMP_END)] = "TombJumpEnd";
-	//m_EffectNames[ETOUI(DRAGON_SKILL::HIT_ACCIO)] = "AccioGrab";
-	
-	
-	return S_OK;
-}
 
 void CEnderDragon::Set_StateFinished(_bool bFinished)
 {

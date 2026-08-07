@@ -48,7 +48,9 @@ void CBTSubTreeNode::Abort()
 
 void CBTSubTreeNode::Update_Gui()
 {
-	m_pSubTreeRoot->Get_GuiNodeLink().ParentNode.Reset();
+	if(nullptr != m_pSubTreeRoot)
+		m_pSubTreeRoot->Get_GuiNodeLink().ParentNode.Reset();
+
 	if (ImGui::Button("Show SubTree"))
 		m_bIsSubTree = !m_bIsSubTree;
 	if (ImGui::TreeNode("SubTree Select"))

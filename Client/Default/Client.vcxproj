@@ -204,6 +204,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\public\BTDecEdgPatroll.h" />
     <ClInclude Include="..\Public\BlackBoardKey.h" />
     <ClInclude Include="..\public\BTDecEdgPhase.h" />
     <ClInclude Include="..\public\BTDecEdgState.h" />
@@ -338,6 +339,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\BTDecEdgPatroll.cpp" />
     <ClCompile Include="..\private\BTDecEdgPhase.cpp" />
     <ClCompile Include="..\private\BTDecEdgState.cpp" />
     <ClCompile Include="..\private\BTEdgStateFinished.cpp" />

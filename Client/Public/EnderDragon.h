@@ -35,6 +35,7 @@ public:
 	void						LateUpdate(E::_float fTimeDelta) override;
 	HRESULT						Ready_Fsm(const _string& LevelTag);
 	HRESULT						Ready_Skill();
+	void						Ready_BBKeyValue();
 public:
 	_string						Get_SkillName(ATTMON SkillNode)override;
 	CBTBlackBoard*				Get_BlackBoard();

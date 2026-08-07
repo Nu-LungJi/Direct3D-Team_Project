@@ -482,7 +482,8 @@ HRESULT CMainAppLoader::Create_ActionNode()
 	//-------------------------------------------------Dragon-----------------------------------------------------//
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTEdgStateFinished", CBTEdgStateFinished::Create())))
 		return E_FAIL;
-
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecEdgPatroll", CBTDecEdgPatroll::Create())))
+		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecEdgState", CBTDecEdgState::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecEdgPhase", CBTDecEdgPhase::Create())))
@@ -506,6 +507,7 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
+
 	if (auto res = CGameInstance::Get().AddResource("BTJSON", "TOMB_BT_TOMBBOSS", CResJson::Create("./Resources/json/BeHavior/TombBoss.json")))
 	{
 		if (FAILED(res->Load()))
@@ -514,7 +516,7 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResource("BTJSON", "ENDERDRAGON", CResJson::Create("./Resources/json/BeHavior/Dragon.json")))
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "ENDERDRAGON", CResJson::Create("./Resources/json/BeHavior/DragonTest.json")))
 	{
 		if (FAILED(res->Load()))
 		{
@@ -531,7 +533,46 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
-	
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "BRESSSHORT", CResJson::Create("./Resources/json/BeHavior/SubTree/BressShort.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED BRESSSHORT JSON");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "BRESSLONG", CResJson::Create("./Resources/json/BeHavior/SubTree/BressLong.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED BRESSLONG JSON");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "RANDOMBALL", CResJson::Create("./Resources/json/BeHavior/SubTree/RandomBall.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED RANDOMBALL JSON");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "MOVELEFT", CResJson::Create("./Resources/json/BeHavior/SubTree/MoveLeft.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED MOVELEFT JSON");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "MOVERIGHT", CResJson::Create("./Resources/json/BeHavior/SubTree/MoveRight.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED MOVERIGHT JSON");
+			return E_FAIL;
+		}
+	}
 	return S_OK; 
 }
 

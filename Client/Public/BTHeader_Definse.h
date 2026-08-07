@@ -31,3 +31,4 @@
 #include "BTDecEdgState.h"
 #include "BTEdgStateFinished.h"
 #include "BTDecEdgPhase.h"
+#include "BTDecEdgPatroll.h"
