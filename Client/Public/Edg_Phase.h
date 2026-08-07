@@ -18,14 +18,19 @@ public:
 	void Update(CStateMachine* pStateMachine, _float fTimeDelta) override;
 
 private:
-	void		Phase_Change_Action();
-	_bool        Phase_Second();
-	_bool        Phase_Third();
-	_bool        Phase_Four();
+	_bool		MovePhase(CEnderDragon* pDragon, _float fTimeDelta);
+	void		Phase_Change_Action(CEnderDragon* pDragon, _float fTimeDelta);
+
 	
 private:
 	DRAGON_PHASE			m_ePhase{};
 	DRAGON_PHASE			m_eNextPhase{};
+
+	
+	_bool					m_bNext{};
+	_float					m_fTick{};
+	_float3					m_vNextDir{}, m_vLastDir{};
+	std::vector<_float3>	m_PhasePos[ETOUI(DRAGON_PHASE::END)];
 public:
 	static SPtr<CEdg_Phase> Create();
 };

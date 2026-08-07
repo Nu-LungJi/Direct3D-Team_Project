@@ -119,7 +119,7 @@ EVALUATE CBTDecEdgPatroll::Patroll(MOVE eState, CBTBlackBoard* pBB)
 		return result;
 	_float3 vMoveDirection{};
 	XMStoreFloat3(&vMoveDirection, XMVector3Normalize(XMVectorSetY(XMLoadFloat3(&vDir),0.f)));
-	pMoveIntent->SetMoveIntent(vMoveDirection, 5.f);
+	pMoveIntent->SetMoveIntent(vMoveDirection, 15.f);
 
 	return result;
 }

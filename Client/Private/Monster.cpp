@@ -534,7 +534,16 @@ CComAnimator* CMonster::Get_Animator()
 	return m_pModelAnimator;
 }
 
+CComCharacterMoveIntent* CMonster::Get_MoveIntent()
+{
+	return m_pMoveIntent;
+}
 
+CBTBlackBoard* CMonster::Get_BlackBoard()
+{
+	if (nullptr == m_pBeHavior) return nullptr;
+	return m_pBeHavior->Get_Blackboard();
+}
 void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 {
 	switch (eType)

@@ -4,9 +4,7 @@
 enum class DRAGON_SKILL{BOOM,BRESS,FIREBALL,SKIP,END};
 enum class DRAGON_PHASE{PHASE1, PHASE2, PHASE3, PHASE4, PHASE5, END};
 // 투명 드래곤이 울부 짖었다
-NS_BEGIN(Engine)
-class CBTBlackBoard;
-NS_END
+
 
 NS_BEGIN(Client)
 class CEnderDragon final : public CMonster
@@ -38,7 +36,6 @@ public:
 	void						Ready_BBKeyValue();
 public:
 	_string						Get_SkillName(ATTMON SkillNode)override;
-	CBTBlackBoard*				Get_BlackBoard();
 
 	void						Set_StateFinished(_bool bFinished);
 	void						Set_Break(_bool bHit) { m_bIsBreak = bHit; }
@@ -49,9 +46,9 @@ public:
 	void						Check_Phase();
 private:
 	void						Update_BBToFsm();
-	
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);
+	void						Phase_Debug();
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
 

@@ -3,6 +3,7 @@
 #include "BTBlackBoard.h"
 #include "BlackBoardKey.h"
 #include "EnderDragon_State.h"
+#include "ComCharacterMoveIntent.h"
 NS_USING(Client)
 CEdg_Phase::CEdg_Phase()
 {
@@ -26,6 +27,11 @@ void CEdg_Phase::Enter(CStateMachine* pStateMachine)
 
 	m_ePhase = *pPhase;
 	m_eNextPhase = DRAGON_PHASE::END;
+	m_bNext = false;
+
+	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(0, 0, 0));
+	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(10, 0, 10));
+	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(20, 0, 40));
 }
 
 void CEdg_Phase::Exit(CStateMachine* pStateMachine)
@@ -49,60 +55,59 @@ void CEdg_Phase::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	auto pDragon = pDragonFsm->GetOwner<CEnderDragon>();
 	if (nullptr == pDragon) return;
 
-	auto pAnimator = pDragon->Get_Animator();
-	if (nullptr == pAnimator) return;
-
-	auto pBB = pDragon->Get_BlackBoard();
-	if (nullptr == pBB) return;
-
-	Phase_Change_Action();
+	Phase_Change_Action(pDragon,fTimeDelta);
 
 	//도망치는게 끝나면 다시 상태전환 하기
 	if (m_eNextPhase != DRAGON_PHASE::END)
 	{
+		auto pBB = pDragon->Get_BlackBoard();
+		if (nullptr == pBB) return;
+
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, m_eNextPhase);
 		pDragonFsm->Request_State(EDG_STATE::COMBAT);
 	}
 }
-void CEdg_Phase::Phase_Change_Action()
+_bool CEdg_Phase::MovePhase(CEnderDragon* pDragon, _float fTimeDelta)
 {
-	//뭔가 도망 치는
-	switch (m_ePhase)
+	auto pMoveIntent = pDragon->Get_MoveIntent();
+	if (nullptr == pMoveIntent)return false;
+	
+	if (m_PhasePos[ETOUI(m_ePhase)].empty()) return true;
+	
+	_vector vNextPos = XMLoadFloat3(&m_PhasePos[ETOUI(m_ePhase)].back());
+	_vector vCurPos  = XMLoadFloat3(&pDragon->GetTransform().GetPosition());
+
+	if (!m_bNext)
 	{
-	case DRAGON_PHASE::PHASE1:
-		break;
-
-	case DRAGON_PHASE::PHASE2:
-		if (Phase_Second())
-			m_eNextPhase = DRAGON_PHASE::PHASE2;
-		break;
-
-	case DRAGON_PHASE::PHASE3:
-		if (Phase_Third())
-			m_eNextPhase = DRAGON_PHASE::PHASE3;
-		break;
-
-	case DRAGON_PHASE::PHASE4:
-		if (Phase_Four())
-			m_eNextPhase = DRAGON_PHASE::PHASE4;
-		break;
-
-	case DRAGON_PHASE::PHASE5:
-		break;
+		XMStoreFloat3(&m_vLastDir, XMVector3Normalize(pDragon->GetTransform().GetState(STATE::LOOK)));
+		XMStoreFloat3(&m_vNextDir, XMVector3Normalize(XMVector3Normalize(XMVector3Length(vNextPos - vCurPos))));
+		m_bNext = true;
 	}
-	//뭐.. 뭐,....죽어
-}
-_bool CEdg_Phase::Phase_Second()
-{
+
+	_float fDist = XMVectorGetX(XMVector3Length(vNextPos - vCurPos));
+	if (fDist <= 0.5f)
+	{
+		m_PhasePos[ETOUI(m_ePhase)].pop_back();
+		m_bNext = false;
+		m_fTick = 0.f;
+	}
+
+	m_fTick += fTimeDelta;
+	_float t = m_fTick / 3.f;
+	if (t >= 1.f)
+		t = 1.f;
+
+	_float3 vLerpDir{};
+	XMStoreFloat3(&vLerpDir, XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vLastDir), XMLoadFloat3(&m_vNextDir), t)));
+	
+	pMoveIntent->SetMoveIntent(vLerpDir, 5.f);
+	pMoveIntent->SetFacingIntent(vLerpDir, 6.f);
 	return false;
 }
-_bool CEdg_Phase::Phase_Third()
+void CEdg_Phase::Phase_Change_Action(CEnderDragon* pDragon, _float fTimeDelta)
 {
-	return false;
-}
-_bool CEdg_Phase::Phase_Four()
-{
-	return false;
+	if (MovePhase(pDragon, fTimeDelta))
+		m_eNextPhase = m_ePhase;
 }
 SPtr<CEdg_Phase> CEdg_Phase::Create()
 {

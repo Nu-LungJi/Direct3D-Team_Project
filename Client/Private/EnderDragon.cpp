@@ -264,6 +264,7 @@ void CEnderDragon::Ready_BBKeyValue()
 }
 void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 {
+	Phase_Debug();
 	Check_Phase();
 	Flag_Check(fTimeDelta);
 	m_pFsm->PriorityUpdate(fTimeDelta);
@@ -320,11 +321,7 @@ _string CEnderDragon::Get_SkillName(ATTMON SkillNode)
 
 	return MagicEnumToStringView(static_cast<DRAGON_SKILL>(pValue->second)).data();
 }
-CBTBlackBoard* CEnderDragon::Get_BlackBoard()
-{
-	if (nullptr == m_pBeHavior) return nullptr;
-	return m_pBeHavior->Get_Blackboard();
-}
+
 _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 {
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
@@ -413,6 +410,32 @@ _bool CEnderDragon::BreakSkillType(PLAYER_SKILL_TYPE eType)
 		break;
 	}
 	return false;
+}
+void CEnderDragon::Phase_Debug()
+{
+	auto pBB = Get_BlackBoard();
+	if (nullptr == pBB) return;
+	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_Q))
+	{
+		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE2);
+
+	}
+	else if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_W))
+	{
+		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE3);
+	}
+	else if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_E))
+	{
+		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
+	}
+	else if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_R))
+	{
+		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE5);
+	}
 }
 E::UPtr<CEnderDragon> CEnderDragon::Create()
 {

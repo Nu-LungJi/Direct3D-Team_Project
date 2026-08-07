@@ -18,6 +18,7 @@ class CComCharacterMotor;
 class CComPxRigidBody;
 class CComPxSphereCollider;
 class CComSound;
+class CBTBlackBoard;
 NS_END
 
 
@@ -140,6 +141,8 @@ public:
 	virtual void				Set_AttTable(ATTMON eType, _float2 fSkillRatio) {};
 	void						Get_SoundKey(_string& CursoundName);
 	CComAnimator*				Get_Animator();
+	CComCharacterMoveIntent* Get_MoveIntent();
+	CBTBlackBoard*				Get_BlackBoard();
 protected:
 	uint32_t					Find_SkillNum(ATTMON eType);
 	 _bool						Check_Flag(uint32_t iFlag);
