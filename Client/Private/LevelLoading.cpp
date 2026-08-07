@@ -22,6 +22,8 @@
 #include "LevelUIEditor.h"
 #include "LevelUIEditorLoader.h"
 
+#include "LevelLastBossRanrok.h"
+#include "LevelLastBossRanrokLoader.h"
 NS_USING(Client)
 
 CLevelLoading::CLevelLoading(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex) noexcept
@@ -94,45 +96,6 @@ HRESULT CLevelLoading::Initialize()
 				int x = 0;
 			}
 
-			// dynamic_cast vs static_cast benchmark 
-			// dynamic_cast: 472ms, static_cast: 41ms
-			if constexpr (false)
-			{
-				E::CGameObject* volatile val = E::CGameInstance::Get().GetGameObjectByHandle(uiCam.value());
-				{
-					auto start = std::chrono::high_resolution_clock::now();
-					{
-						E::CUICamera* volatile sink = nullptr;
-						for (size_t i = 0; i < 10'000'000; ++i)
-						{
-							sink = dynamic_cast<E::CUICamera*>(val);
-						}
-					}
-					auto end = std::chrono::high_resolution_clock::now();
-					auto cost = std::chrono::duration<double, std::milli>(end - start).count();
-					MSG_BOX_STR(std::to_wstring(cost).c_str());
-				}
-				{
-					auto start = std::chrono::high_resolution_clock::now();
-					{
-						E::CUICamera* volatile sink = nullptr;
-						for (size_t i = 0; i < 10'000'000; ++i)
-						{
-							if (val->IsA(E::CUICamera::StaticType))
-							{
-								sink = static_cast<E::CUICamera*>(val);
-							}
-							else
-							{
-								sink = nullptr;
-							}
-						}
-					}
-					auto end = std::chrono::high_resolution_clock::now();
-					auto cost = std::chrono::duration<double, std::milli>(end - start).count();
-					MSG_BOX_STR(std::to_wstring(cost).c_str());
-				}
-			}
 			{
 				const auto* t = E::CGameInstance::GetConst().GetGameObjectByHandleT<E::CUICamera>(uiCam.value());
 
@@ -165,6 +128,9 @@ void CLevelLoading::Update(E::_float fTimeDelta)
 			break;
 		case LEVEL::HOGWART_WORLD:
 			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon1");
+			m_bLoadUiResource = true;
+			break;
+		case LEVEL::LAST_BOSS_RANROK:
 			m_bLoadUiResource = true;
 			break;
 		default:
@@ -234,6 +200,9 @@ HRESULT CLevelLoading::LoadEnd()
 	case LEVEL::UIEDITOR:
 		pNewLevel = CLevelUIEditor::Create();
 		break;
+	case LEVEL::LAST_BOSS_RANROK:
+		pNewLevel = CLevelLastBossRanrok::Create();
+		break;
 	}
 	assert(pNewLevel);
 
@@ -273,6 +242,9 @@ void CLevelLoading::StartUnload()
 		break;
 	case LEVEL::UIEDITOR:
 		m_futUnloadFinish = CLevelUIEditorLoader::UnLoad();
+		break;
+	case LEVEL::LAST_BOSS_RANROK:
+		m_futUnloadFinish = CLevelLastBossRanrokLoader::UnLoad();
 		break;
 	default:
 		StartLoad();
@@ -320,6 +292,9 @@ void CLevelLoading::StartLoad()
 		break;
 	case LEVEL::UIEDITOR:
 		m_futLoadFinish = CLevelUIEditorLoader::Load();
+		break;
+	case LEVEL::LAST_BOSS_RANROK:
+		m_futLoadFinish = CLevelLastBossRanrokLoader::Load();
 		break;
 	default:
 		m_ePhase = PHASE::COMPLETE;

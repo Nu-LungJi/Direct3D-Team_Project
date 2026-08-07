@@ -215,17 +215,17 @@ void CMonEffectBall::Chase(_float fTimeDelta)
 	}
 	if (m_bThrow)
 	{
-			m_fDeadTime += fTimeDelta;
+		m_fDeadTime += fTimeDelta;
 
-			_matrix matBall =XMLoadFloat4x4(&m_CurWorldmat);
+		_matrix matBall = XMLoadFloat4x4(&m_CurWorldmat);
 
-			_vector vPos = matBall.r[3];
-			_vector vDir =XMLoadFloat3(&m_vDir);
+		_vector vPos = matBall.r[3];
+		_vector vDir = XMLoadFloat3(&m_vDir);
 
-			vPos += vDir * m_fSpeed * fTimeDelta;
+		vPos += vDir * m_fSpeed * fTimeDelta;
 
-			matBall.r[3] = XMVectorSetW(vPos, 1.f);
-			XMStoreFloat4x4(&m_CurWorldmat,matBall);
+		matBall.r[3] = XMVectorSetW(vPos, 1.f);
+		XMStoreFloat4x4(&m_CurWorldmat, matBall);
 	}
 
 	if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN) | ETOUI(CBTRoot::BTFLAG::GROGY) | ETOUI(CBTRoot::BTFLAG::DEAD)))
@@ -235,7 +235,7 @@ void CMonEffectBall::Chase(_float fTimeDelta)
 
 		m_bPatternBroken = true;
 		auto pCamera = CGameInstance::Get().GetActiveCamera();
-
+		pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN), FLAGTYPE::DEL);
 		if (!pCamera)
 			return;
 		_matrix currentWorld = XMLoadFloat4x4(&m_CurWorldmat);
@@ -266,9 +266,9 @@ void CMonEffectBall::Chase(_float fTimeDelta)
 		return;
 	}
 
-		if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, m_CurWorldmat);
-	
+	if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
+		CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, m_CurWorldmat);
+
 }
 
 E::UPtr<CMonEffectBall> CMonEffectBall::Create()

@@ -67,10 +67,16 @@ HRESULT CLightManager::Initialize_LightManager() {
 	{
 		if (FAILED(m_pDirectionalLightVS->Load(CResShader::DESC{ .sEntryPoint = "VSMain_Final", .sTarget = "vs_5_0" })))    return E_FAIL;
 	}
+	if (m_pDirectionalLightPS = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_DirectionalShadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
+	{
+		if (FAILED(m_pDirectionalLightPS->Load(CResShader::DESC{ .sEntryPoint = "PSMain_Directional", .sTarget = "ps_5_0" })))    return E_FAIL;
+	}
+
 	if (m_pPointLightVS = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_NormalShadow_Point", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
 	{
 		if (FAILED(m_pPointLightVS->Load()))    return E_FAIL;
 	}
+
 	if (m_pPointFaceVS = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_PointFace", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
 	{
 		if (FAILED(m_pPointFaceVS->Load(CResShader::DESC{ .sEntryPoint = "VSMain_PointFace", .sTarget = "vs_5_0" })))    return E_FAIL;
@@ -79,13 +85,10 @@ HRESULT CLightManager::Initialize_LightManager() {
 	{
 		if (FAILED(m_pInstancedPointFaceVS->Load(CResShader::DESC{ .sEntryPoint = "VSMain_InstancedPointFace", .sTarget = "vs_5_0" })))    return E_FAIL;
 	}
+
 	if (m_pPointLightGS = CGameInstance::Get().AddResourceT<E::CResGeometryShader>(TAG_RES_GRP_PERMANENT_SHADER, "GS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
 	{
 		if (FAILED(m_pPointLightGS->Load()))    return E_FAIL;
-	}
-	if (m_pPointLightPS = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_Shadow", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
-	{
-		if (FAILED(m_pPointLightPS->Load()))    return E_FAIL;
 	}
 	if (m_pPointFacePS = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PointFace", "./ShaderFiles/RayMarching/US_Shadow.hlsl"))
 	{
@@ -234,8 +237,8 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			RCTX.pass = RENDERPASS::SHADOW;
 
 			const _bool bStaticWasDirty = LightOBJ->Is_StaticDirty();
-			const _bool bUpdateFinalThisFrame = bStaticWasDirty;// ||
-				//((m_iShadowFrameIndex + static_cast<uint64_t>(ShadowSlot)) % 2ull == 0ull);
+			const _bool bUpdateFinalThisFrame = bStaticWasDirty ||
+				((m_iShadowFrameIndex + static_cast<uint64_t>(ShadowSlot)) % 2ull == 0ull);
 
 			if (bStaticWasDirty) {
 				Build_StaticShadowCasterList(m_pActiveShadowLightList[i]);
@@ -257,7 +260,7 @@ HRESULT CLightManager::Capture_ShadowMap() {
 
 			const _bool bFinalShadowDirty = bStaticWasDirty || LightOBJ->Is_DynamicDirty();
 
-			if (bFinalShadowDirty && bUpdateFinalThisFrame) {
+			if (bFinalShadowDirty) {
 				if (FAILED(Copy_StaticShadowToFinal(LIGHT_TYPE::POINT, static_cast<uint32_t>(ShadowSlot)))) { UnBind_ShadowResource();  return E_FAIL; }
 
 				for (uint32_t Face = 0; Face < POINT_SHADOW_FACE_COUNT; ++Face) {
@@ -282,7 +285,7 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			m_pContext->IASetInputLayout(m_pDirectionalLightVS->GetInputLayout().Get());
 			m_pContext->VSSetShader(m_pDirectionalLightVS->GetVertexShader().Get(), nullptr, 0);
 			m_pContext->GSSetShader(nullptr, nullptr, 0);
-			m_pContext->PSSetShader(nullptr, nullptr, 0);
+			m_pContext->PSSetShader(m_pDirectionalLightPS->GetPixelShader().Get(), nullptr, 0);
 
 			m_pContext->RSSetViewports(1, &m_pDirectionalShadowViewPort->GetViewPort());
 
@@ -310,8 +313,8 @@ HRESULT CLightManager::Capture_ShadowMap() {
 				if (StaticShadowDSV) {
 					m_pContext->ClearDepthStencilView(StaticShadowDSV.Get(), D3D11_CLEAR_DEPTH, 1.f, 0);
 					m_pContext->OMSetRenderTargets(0, nullptr, StaticShadowDSV.Get());
-
-					if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pStaticShadowCasterScratch, -1))) { UnBind_ShadowResource();  return E_FAIL; }
+					
+					if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pRenderable_StaticObjectList, -1))) { UnBind_ShadowResource();  return E_FAIL; }
 
 					if (FAILED(Render_ShadowInstanced(m_pContext, m_pActiveShadowLightList[i], true)))				 { UnBind_ShadowResource();  return E_FAIL; }
 	

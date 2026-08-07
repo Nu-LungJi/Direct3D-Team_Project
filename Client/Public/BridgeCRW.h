@@ -98,6 +98,8 @@ private:
 	uint32_t m_iCurrentInstanceCount = 0u;
 	STATE m_eState{ STATE::FLOATING };
 
+	SOUND_ID m_idBringSound = INVALID_SOUND_ID;
+
 public:
 	static E::UPtr<CBridgeCRW> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

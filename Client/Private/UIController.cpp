@@ -310,7 +310,7 @@ void CUIController::CreateSpellType()
 		.bLoop = false
 		});
 
-	//E::CGameInstance::Get().SetMouseFix(false);
+	E::CGameInstance::Get().SetMouseFix(false);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(1.f);
 }
 
@@ -336,7 +336,7 @@ void CUIController::DeleteSpellType()
 		PlayScaleAlphaDownDelete(m_SpellShortCutKeySlot[i]);
 	}
 
-	//E::CGameInstance::Get().SetMouseFix(true);
+	E::CGameInstance::Get().SetMouseFix(true);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
 
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/SpellClose.wav", SOUND_PLAY_DESC{
@@ -385,7 +385,7 @@ void CUIController::CreateDeathScene()
 
 	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = { 0.f, 0.f, 0.f };
 	PlayFadeOutOnly(m_PotionCount);
-	//E::CGameInstance::Get().SetMouseFix(false);
+	E::CGameInstance::Get().SetMouseFix(false);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(1.f);
 
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/Death.wav", SOUND_PLAY_DESC{
@@ -625,25 +625,27 @@ void CUIController::AddMonsterHP(_float fill)
 
 void CUIController::ClearDeathScene()
 {
-	PlayFadeOutDelete(m_Desolve);
-	PlayFadeOutDelete(m_DeathDivider);
-	PlayFadeOutDelete(m_DeathTxt[0]);
-	PlayFadeOutDelete(m_DeathTxt[1]);
+	GET_SINGLE(UIManager)->CreateFadeInSceneChange(0.f, 1.f, LEVEL::BOSS_CHARLES_ROOKWOOD);
 
-	for (auto hUI : m_BeathButton)
-	{
-		PlayFadeOutDelete(hUI);
-	}
-	
-	//SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
-	PlayFadeInOnly(m_PotionCount);
-
-	PlayFadeOutDelete(m_GameOverMask);
-	m_isCreateDeathScene = false;
+	//PlayFadeOutDelete(m_Desolve);
+	//PlayFadeOutDelete(m_DeathDivider);
+	//PlayFadeOutDelete(m_DeathTxt[0]);
+	//PlayFadeOutDelete(m_DeathTxt[1]);
+	//
+	//for (auto hUI : m_BeathButton)
+	//{
+	//	PlayFadeOutDelete(hUI);
+	//}
+	//
+	////SafeGetOBJ(m_PotionCount)->GetUIInfo().Color = {1.f, 1.f, 1.f};
+	//PlayFadeInOnly(m_PotionCount);
+	//
+	//PlayFadeOutDelete(m_GameOverMask);
+	//m_isCreateDeathScene = false;
 
 	if(std::nullopt != m_MonsterHP && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
 		PlayFadeInOnly(*m_MonsterHP);
-	//E::CGameInstance::Get().SetMouseFix(true);
+	E::CGameInstance::Get().SetMouseFix(true);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
 }
 

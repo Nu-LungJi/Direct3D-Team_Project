@@ -13,7 +13,7 @@ public:
 	typedef struct tag_Mon_Ball : public CGameObject::GAMEOBJECT_DESC
 	{
 		_float fDamage{};
-		CHandle hOwner{},hTarget{};
+		CHandle hOwner{}, hTarget{};
 		uint32_t iBoneIndex{};
 		PX_QUERY_FILTER_DESC tQueryFilter{
 					.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX) | ETOUI(COLLISION_LAYER::WORLD_STATIC) ,
@@ -38,10 +38,10 @@ public:
 	void LateUpdate(E::_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 
-	void		Reset_Active() { m_bHit = false; }
+	void      Reset_Active() { m_bHit = false; }
 private:
-	void		OverlapTest();
-	void		Chase(_float fTimeDelta);
+	void      OverlapTest();
+	void      Chase(_float fTimeDelta);
 private:
 	int32_t		m_iDamage{};
 	_float		m_fDeadTime{};
@@ -53,7 +53,7 @@ private:
 	CHandle		m_hParent{}, m_hTarget{};
 	PX_QUERY_FILTER_DESC m_tQueryFilter{};
 
-	_bool		m_bHit{ false }, m_bThrow{ false };
+	_bool      m_bHit{ false }, m_bThrow{ false };
 public:
 	static E::UPtr<CMonEffectBall> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
