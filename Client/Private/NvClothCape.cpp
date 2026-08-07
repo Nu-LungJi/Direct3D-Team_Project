@@ -1550,6 +1550,7 @@ HRESULT CNvClothCape::Render_Shadow(
 		pPreviousVertexShader.GetAddressOf(),
 		nullptr,
 		nullptr);
+
 	pContext->GSGetShader(
 		pPreviousGeometryShader.GetAddressOf(),
 		nullptr,
@@ -1584,6 +1585,9 @@ HRESULT CNvClothCape::Render_Shadow(
 		pShadowVertexShader->GetVertexShader().Get(),
 		nullptr,
 		0);
+	/*----------- 광윤 추가 -----------*/
+	pContext->PSSetShader(nullptr, nullptr, 0);
+	/*---------------------------------*/
 	pContext->VSSetShaderResources(
 		9,
 		1,

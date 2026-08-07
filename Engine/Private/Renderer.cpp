@@ -504,6 +504,8 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 	m_fFogInfo.g_fFogAnisotropyGB = -0.3f;
 
 	m_fFogInfo.g_fFogScatteringWeight = 0.5f;
+	m_fFogInfo.g_fFogBaseHeight = 0.f;
+	m_fFogInfo.g_fFogHeightFallOff = 0.05f;
 
 	return S_OK;
 }
@@ -1470,6 +1472,9 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 			cbVLFog.g_fFogAnisotropyGB = m_fFogInfo.g_fFogAnisotropyGB;
 			cbVLFog.g_fFogScatteringWeight = m_fFogInfo.g_fFogScatteringWeight;
 
+			cbVLFog.g_fFogBaseHeight = m_fFogInfo.g_fFogBaseHeight;
+			cbVLFog.g_fFogHeightFallOff = m_fFogInfo.g_fFogHeightFallOff;
+
 			memcpy(MRES.pData, &cbVLFog, sizeof(CB_VLFOG));
 			m_pContext->Unmap(m_pVolumetricVFogCBuffer->GetCBuffer().Get(), 0);
 		}
@@ -1646,7 +1651,7 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 		pSRVs[0] = m_pResDynTexTargetDepth->GetSRV().Get();
 		pSRVs[1] = m_pResDynTexTargetPreviousRenderView->GetSRV().Get();
 		pSRVs[2] = m_pVoxelAccumulated.pSRV.Get();
-
+		pSRVs[3] = m_pBlueNoiseTexture.Get();
 		m_pContext->PSSetShaderResources(0, 4, pSRVs);
 	}
 
@@ -2349,6 +2354,8 @@ VOID	CRenderer::VolumetricFogGUI() {
 	ImGui::DragFloat("Density"	, &m_fFogInfo.g_fFogDensity	 , 0.001f, 0.f, 5.f, "%.5f");
 	ImGui::DragFloat("Height"	, &m_fFogInfo.g_fFogHeight	 , 0.25f, -500.f, 500.f, "%.1f");
 
+	ImGui::DragFloat("BaseHeight", &m_fFogInfo.g_fFogBaseHeight, 0.25f, -500.f, 500.f, "%.1f");
+	ImGui::DragFloat("HeightFallOff", &m_fFogInfo.g_fFogHeightFallOff, 0.25f, 0.f, 10.f, "%.2f");
 	ImGui::Separator();
 
 	ImGui::DragFloat("Start Distance", &m_fFogInfo.g_fFogStartPos, 0.5f, 0.f, 100.f, "%.1f");

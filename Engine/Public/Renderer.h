@@ -276,8 +276,8 @@ private:
 
 private:
 	_bool			ApplyFilter		= { true };		// 필터 적용 ON-OFF
-	_bool			ApplyVolumetric = { true };		// 볼류메트릭 효과 ON-OFF
-	_bool			ApplyShadow		= { true };		// 그림자 ON-OFF
+	_bool			ApplyVolumetric = { false };	// 볼류메트릭 효과 ON-OFF
+	_bool			ApplyShadow		= { false };		// 그림자 ON-OFF
 
 	RENDER_CTX		RenderContext = {};
 	XMMATRIX		ShadowLightVP{};

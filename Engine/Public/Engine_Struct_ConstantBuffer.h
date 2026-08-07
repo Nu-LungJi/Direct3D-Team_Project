@@ -199,8 +199,9 @@ namespace Engine
 		_float	g_fNearZ;
 		_float	g_fFarZ;
 		_float2	g_fScreenResolution;
+		_float2	g_fHalfScreenResolution;
 
-		_float	FroxelPadding;
+		_float3	FroxelPadding;
 	};
 	static_assert(sizeof(CB_FROXEL) % 16 == 0);
 
@@ -224,7 +225,9 @@ namespace Engine
 		_float	g_fFogAnisotropyGB;
 
 		_float	g_fFogScatteringWeight;
-		_float3	g_fFogPadding;
+		_float	g_fFogBaseHeight;
+		_float	g_fFogHeightFallOff;
+		_float	g_fFogPadding;
 	};
 	static_assert(sizeof(CB_VLFOG) % 16 == 0);
 

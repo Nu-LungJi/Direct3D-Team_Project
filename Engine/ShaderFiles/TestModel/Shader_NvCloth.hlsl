@@ -102,13 +102,14 @@ VS_OUT VSMain(VS_IN In)
     Out.vProjPos = Out.vPosition;
     return Out;
 }
-
+/*----------- 광윤 수정 -----------*/
 struct VS_SHADOW_OUT
 {
     float4 vPosition : SV_POSITION;
     float4 vWorldPos : POSITION;
+	float2 vTexcoord : TEXCOORD0;
 };
-
+/*---------------------------------*/
 VS_SHADOW_OUT VSShadow(VS_IN In)
 {
     VS_SHADOW_OUT Out;
@@ -150,6 +151,9 @@ VS_SHADOW_OUT VSShadow(VS_IN In)
     Out.vPosition = mul(
         Out.vWorldPos,
         mul(g_matView, g_matProj));
+	/*----------- 광윤 수정 -----------*/
+	Out.vTexcoord = In.vTexcoord;
+	/*---------------------------------*/
     return Out;
 }
 /*----------- 광윤 수정 -----------*/
@@ -162,6 +166,7 @@ struct VS_POINT_SHADOW_OUT
 {
 	float4 Position : SV_POSITION;
 	float3 WorldPos : POSITION;
+	float2 vTexcoord : TEXCOORD0;
 };
 /*---------------------------------*/
 VS_POINT_SHADOW_OUT VSPointShadow(VS_IN In)
@@ -206,7 +211,7 @@ VS_POINT_SHADOW_OUT VSPointShadow(VS_IN In)
 	/*----------- 광윤 수정 -----------*/
 	Out.Position = mul(LocalPosition, g_matWVP);
 	Out.WorldPos = WorldPosition.xyz;
-	
+	Out.vTexcoord = In.vTexcoord;
     //Out.vWorldPos = mul(
     //    float4(vClothPosition, 1.f),
     //    g_matWorld);
