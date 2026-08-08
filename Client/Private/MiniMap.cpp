@@ -73,6 +73,7 @@ void CMiniMap::PriorityUpdate(E::_float fTimeDelta)
 {
 	InitializeMonsterMarkerPool();
 	InitializeBattleZone();
+	InitializeObjectives();
 	SearchPlayerIcon();
 }
 
@@ -87,6 +88,7 @@ void CMiniMap::Update(E::_float fTimeDelta)
 		m_bHasPreviousPlayerPosition = false;
 		m_iVisibleBattleZoneCount = 0;
 		HideMonsterMarkers();
+		HideObjectiveMarkers();
 		return;
 	}
 
@@ -108,6 +110,7 @@ void CMiniMap::Update(E::_float fTimeDelta)
 		m_bHasPreviousPlayerPosition = false;
 		m_iVisibleBattleZoneCount = 0;
 		HideMonsterMarkers();
+		HideObjectiveMarkers();
 		return;
 	}
 
@@ -118,6 +121,7 @@ void CMiniMap::Update(E::_float fTimeDelta)
 		m_bHasPreviousPlayerPosition = false;
 		m_iVisibleBattleZoneCount = 0;
 		HideMonsterMarkers();
+		HideObjectiveMarkers();
 		return;
 	}
 
@@ -125,6 +129,7 @@ void CMiniMap::Update(E::_float fTimeDelta)
 	UpdateWorldMapOffset(pPlayer->GetTransform().GetPosition());
 	UpdateBattleZones(pPlayer->GetTransform().GetPosition());
 	UpdateMonsterMarkers(fTimeDelta, pPlayer);
+	UpdateObjectiveMarkers(pPlayer->GetTransform().GetPosition());
 
 	XMVECTOR cameraLook = XMVectorSetY(
 		pCamera->GetTransform().GetState(STATE::LOOK), 0.f);
@@ -274,6 +279,28 @@ void CMiniMap::AddBattleZone(const BATTLE_ZONE_INFO& battleZone)
 	m_vBattleZones.push_back(battleZone);
 }
 
+void CMiniMap::AddObjective(MINIMAP_OBJECTIVE_INFO objective)
+{
+	InitializeObjectiveMarkers(objective);
+	m_vObjectives.push_back(std::move(objective));
+}
+
+_bool CMiniMap::SetObjectiveActive(const std::string& key, _bool active)
+{
+	auto iter = std::find_if(
+		m_vObjectives.begin(), m_vObjectives.end(),
+		[&key](const MINIMAP_OBJECTIVE_INFO& objective)
+		{
+			return objective.Key == key;
+		});
+
+	if (iter == m_vObjectives.end())
+		return false;
+
+	iter->ManualActive = active;
+	return true;
+}
+
 void CMiniMap::PlayEffect(uint32_t uiState)
 {
 	if (m_pComTween == nullptr)
@@ -386,7 +413,7 @@ void CMiniMap::InitializeMonsterMarkerPool()
 		pMarker->SetParent(GetHandle());
 		pMarker->SetLocalPos({ 0.f, 0.f });
 		pMarker->SetColor({ 1.f, 0.12f, 0.08f });
-		pMarker->GetUIInfo().WeightOffset = 1;
+		pMarker->GetUIInfo().WeightOffset = 5;
 		SetMonsterMarkerVisible(pMarker, false);
 
 		AddChildren(*markerHandle);
@@ -410,6 +437,78 @@ void CMiniMap::InitializeBattleZone()
 		break;
 	default:
 		break;
+	}
+}
+
+void CMiniMap::InitializeObjectives()
+{
+	const uint32_t currentLevelID =
+		E::CGameInstance::Get().GetCurrentLevelID();
+	if (m_iObjectiveInitializedLevel == currentLevelID)
+		return;
+
+	HideObjectiveMarkers();
+	m_vObjectives.clear();
+	m_iObjectiveInitializedLevel = currentLevelID;
+
+	switch (currentLevelID)
+	{
+	case ETOUI(LEVEL::CHARLES_ROOKWOOD):
+		InitRookwoodObjectives();
+		break;
+	default:
+		break;
+	}
+}
+
+void CMiniMap::InitializeObjectiveMarkers(
+	MINIMAP_OBJECTIVE_INFO& objective)
+{
+	const uint32_t currentLevelID =
+		E::CGameInstance::Get().GetCurrentLevelID();
+	if (objective.LevelID != static_cast<uint32_t>(-1) &&
+		objective.LevelID != currentLevelID)
+		return;
+
+	const std::string currentLevel = _string("LEVEL_") +
+		MagicEnumToStringView(static_cast<LEVEL>(currentLevelID)).data();
+
+	for (size_t i = 0; i < objective.VisualPhases.size(); ++i)
+	{
+		auto& phase = objective.VisualPhases[i];
+		CTextureUI::UIOBJECT_DESC desc{};
+		desc.sObjectTag = "MiniMap_Objective_" + objective.Key +
+			"_" + std::to_string(i);
+		desc.Name = desc.sObjectTag;
+		desc.fX = m_UIINFO.fX;
+		desc.fY = m_UIINFO.fY;
+		desc.fSizeX = phase.IconSize;
+		desc.fSizeY = phase.IconSize;
+		desc.fAlpha = 0.f;
+		desc.ResTag = phase.TextureTag;
+		desc.ResWeight = m_UIINFO.Weight + phase.WeightOffset;
+		desc.UIType = ETOUI(UI_TYPE::TEXUI);
+
+		auto markerHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+			currentLevel,
+			phase.PrototypeTag,
+			"Layer_UI",
+			&desc);
+		if (!markerHandle)
+			continue;
+
+		auto* marker = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(*markerHandle);
+		if (!marker)
+			continue;
+
+		phase.MarkerHandle = *markerHandle;
+		marker->SetParent(GetHandle());
+		marker->SetLocalPos({ 0.f, 0.f });
+		marker->SetColor(phase.TintColor);
+		marker->GetUIInfo().WeightOffset = phase.WeightOffset;
+		SetObjectiveMarkerVisible(marker, false);
+		AddChildren(*markerHandle);
 	}
 }
 
@@ -556,9 +655,200 @@ void CMiniMap::SetMonsterMarkerVisible(
 	if (!pMarker)
 		return;
 
-	pMarker->SetAlphaRatio(bVisible ? 1.f : 0.f);
+	pMarker->SetAlphaRatio(
+		bVisible ? MINIMAP_ICON_ALPHA_RATIO : 0.f);
 	pMarker->SetAlpha(bVisible ? m_UIINFO.Alpha : 0.f);
 	pMarker->SetActive(bVisible);
+}
+
+void CMiniMap::UpdateObjectiveMarkers(const _float3& playerPosition)
+{
+	const uint32_t currentLevelID =
+		E::CGameInstance::Get().GetCurrentLevelID();
+	const _float mapRadius =
+		0.5f * std::min(m_UIINFO.SizeX, m_UIINFO.SizeY);
+	const _float pixelPerWorldUnit =
+		mapRadius / MONSTER_DETECTION_RADIUS;
+
+	for (auto& objective : m_vObjectives)
+	{
+		const _float deltaX = objective.WorldPosition.x - playerPosition.x;
+		const _float deltaZ = objective.WorldPosition.z - playerPosition.z;
+		const _float distanceSq = deltaX * deltaX + deltaZ * deltaZ;
+		OBJECTIVE_VISUAL_PHASE* selectedPhase = nullptr;
+		const _bool isCurrentLevel =
+			objective.LevelID == static_cast<uint32_t>(-1) ||
+			objective.LevelID == currentLevelID;
+		if (!isCurrentLevel)
+			objective.ProximityActive = false;
+
+		if (isCurrentLevel && IsObjectiveActive(objective, distanceSq))
+		{
+			const _float distance = sqrtf(distanceSq);
+			for (auto& phase : objective.VisualPhases)
+			{
+				const _float hysteresis =
+					std::max(0.f, phase.DistanceHysteresis);
+				const _float minDistance = phase.DesiredVisible ?
+					std::max(0.f, phase.MinDistance - hysteresis) :
+					phase.MinDistance + hysteresis;
+				const _float maxDistance = phase.DesiredVisible ?
+					phase.MaxDistance + hysteresis :
+					std::max(0.f, phase.MaxDistance - hysteresis);
+				const _bool aboveMin = distance >= minDistance;
+				const _bool belowMax = phase.MaxDistance <= 0.f ||
+					distance < maxDistance;
+				if (aboveMin && belowMax)
+				{
+					selectedPhase = &phase;
+					break;
+				}
+			}
+		}
+
+		for (auto& phase : objective.VisualPhases)
+			SetObjectivePhaseVisible(phase, &phase == selectedPhase);
+
+		// FadeOut 중에는 selectedPhase에서 제외되지만 Tween이 끝날 때까지
+		// 아이콘은 활성 상태이므로 미니맵 회전 상쇄를 계속 갱신한다.
+		for (auto& phase : objective.VisualPhases)
+		{
+			auto* phaseMarker = E::CGameInstance::Get().
+				GetGameObjectByHandleT<E::CUIObject>(phase.MarkerHandle);
+			if (!phaseMarker || !phaseMarker->GetActive())
+				continue;
+
+			phaseMarker->SetLocalRot(-m_UIINFO.Rot);
+			phaseMarker->GetUIInfo().Rot = 0.f;
+			phaseMarker->CalcUICoord();
+		}
+
+		if (!selectedPhase)
+			continue;
+
+		auto* marker = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(
+				selectedPhase->MarkerHandle);
+		if (!marker)
+			continue;
+
+		_float2 localPosition{
+			deltaX * pixelPerWorldUnit,
+			-deltaZ * pixelPerWorldUnit
+		};
+		const _float markerRadius =
+			0.5f * sqrtf(selectedPhase->IconSize *
+				selectedPhase->IconSize * 2.f);
+		const _float innerRadius = std::max(
+			0.f, mapRadius - markerRadius - MINIMAP_BORDER_PADDING);
+		const _float positionLength = sqrtf(
+			localPosition.x * localPosition.x +
+			localPosition.y * localPosition.y);
+		if (positionLength > innerRadius && positionLength > 0.000001f)
+		{
+			const _float clampRatio = innerRadius / positionLength;
+			localPosition.x *= clampRatio;
+			localPosition.y *= clampRatio;
+		}
+
+		marker->SetLocalPos(localPosition);
+		marker->SetLocalRot(-m_UIINFO.Rot);
+		marker->GetUIInfo().Rot = 0.f;
+		marker->CalcUICoord();
+	}
+}
+
+void CMiniMap::HideObjectiveMarkers()
+{
+	for (auto& objective : m_vObjectives)
+	{
+		objective.ProximityActive = false;
+		for (auto& phase : objective.VisualPhases)
+		{
+			phase.DesiredVisible = false;
+			if (auto* marker = E::CGameInstance::Get().
+				GetGameObjectByHandleT<E::CUIObject>(phase.MarkerHandle))
+			{
+				SetObjectiveMarkerVisible(marker, false);
+			}
+		}
+	}
+}
+
+_bool CMiniMap::IsObjectiveActive(
+	MINIMAP_OBJECTIVE_INFO& objective,
+	_float distanceSq) const
+{
+	if (objective.AutoActivateDistance > 0.f)
+	{
+		const _float exitDistance = objective.AutoActivateDistance +
+			std::max(0.f, objective.ActivationHysteresis);
+		const _float threshold = objective.ProximityActive ?
+			exitDistance : objective.AutoActivateDistance;
+		objective.ProximityActive = distanceSq <= threshold * threshold;
+	}
+	else
+	{
+		objective.ProximityActive = false;
+	}
+
+	const _bool isNear = objective.ProximityActive;
+
+	switch (objective.ActiveRule)
+	{
+	case OBJECTIVE_ACTIVE_RULE::MANUAL:
+		return objective.ManualActive;
+	case OBJECTIVE_ACTIVE_RULE::PROXIMITY:
+		return isNear;
+	case OBJECTIVE_ACTIVE_RULE::MANUAL_OR_PROXIMITY:
+		return objective.ManualActive || isNear;
+	case OBJECTIVE_ACTIVE_RULE::MANUAL_AND_PROXIMITY:
+		return objective.ManualActive && isNear;
+	default:
+		return false;
+	}
+}
+
+void CMiniMap::SetObjectiveMarkerVisible(
+	E::CUIObject* marker, _bool visible)
+{
+	if (!marker)
+		return;
+	if (auto* tween = marker->GetTweenCom())
+		tween->ClearTweens();
+
+	marker->SetAlphaRatio(
+		visible ? MINIMAP_ICON_ALPHA_RATIO : 0.f);
+	marker->SetAlpha(visible ? 1.f : 0.f);
+	marker->SetActive(visible);
+}
+
+void CMiniMap::SetObjectivePhaseVisible(
+	OBJECTIVE_VISUAL_PHASE& phase, _bool visible)
+{
+	if (phase.DesiredVisible == visible)
+		return;
+
+	phase.DesiredVisible = visible;
+	auto* marker = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(phase.MarkerHandle);
+	if (!marker)
+		return;
+
+	if (auto* tween = marker->GetTweenCom())
+		tween->ClearTweens();
+
+	if (visible)
+	{
+		marker->SetActive(true);
+		marker->SetAlphaRatio(MINIMAP_ICON_ALPHA_RATIO);
+		marker->SetAlpha(0.f);
+		PlayFadeIn(phase.MarkerHandle, 0.f, phase.FadeInTime);
+	}
+	else
+	{
+		PlayFadeOut(phase.MarkerHandle, 0.f, phase.FadeOutTime);
+	}
 }
 
 void CMiniMap::ConfigureDefaultProfile()
@@ -705,6 +995,83 @@ void CMiniMap::InitRookwoodBattleZone()
 
 void CMiniMap::InitBossRookwoodBattleZone()
 {
+}
+
+void CMiniMap::InitRookwoodObjectives()
+{
+	MINIMAP_OBJECTIVE_INFO objective{};
+	objective.Key = "Rookwood_MainMission_Test";
+	objective.WorldPosition = { -178.f, -226.f, 160.f };
+	objective.LevelID = ETOUI(LEVEL::CHARLES_ROOKWOOD);
+	objective.ActiveRule = OBJECTIVE_ACTIVE_RULE::PROXIMITY;
+	objective.AutoActivateDistance = 150.f;
+	objective.ActivationHysteresis = 5.f;
+	objective.VisualPhases.push_back({
+		.MinDistance = 10.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_MiniMap_MainMission",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = 36.f,
+		.TintColor = { 1.f, 0.78f, 0.04f },
+		.DistanceHysteresis = 1.f
+	});
+
+	AddObjective(std::move(objective));
+}
+
+CUIObject* CMiniMap::SafeGetOBJ(CHandle pHandle)
+{
+	if (nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle))
+		return E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle);
+
+	return nullptr;
+}
+
+void CMiniMap::PlayFadeIn(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	if (!pBtn)
+		return;
+	auto pTween = pBtn->GetTweenCom();
+	if (!pTween)
+		return;
+
+	//pBtn->SetInputLcok(true);
+
+	pBtn->SetAlphaRatio(MINIMAP_ICON_ALPHA_RATIO);
+	pBtn->SetAlpha(0.f);
+
+	pTween->PlayTween(0.f, 1.f, playtime,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, nullptr, EEaseType::EaseOutQuad, delay);
+}
+
+void CMiniMap::PlayFadeOut(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	if (!pBtn)
+		return;
+	auto pTween = pBtn->GetTweenCom();
+	if (!pTween)
+		return;
+
+	pBtn->SetInputLcok(true);
+
+	_float originAlpha = pBtn->GetAlpha();
+
+	pTween->PlayTween(originAlpha, 0.f, playtime,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, [pHandle]() {
+			if (auto* marker = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CUIObject>(pHandle))
+			{
+				marker->SetAlpha(0.f);
+				marker->SetAlphaRatio(0.f);
+				marker->SetActive(false);
+			}
+		}, EEaseType::EaseOutQuad, delay);
 }
 
 E::UPtr<CMiniMap> CMiniMap::Create()

@@ -45,6 +45,43 @@ public:
 		uint32_t LevelID{ static_cast<uint32_t>(-1) };
 	};
 
+	enum class OBJECTIVE_ACTIVE_RULE : uint8_t
+	{
+		MANUAL,
+		PROXIMITY,
+		MANUAL_OR_PROXIMITY,
+		MANUAL_AND_PROXIMITY
+	};
+
+	struct OBJECTIVE_VISUAL_PHASE
+	{
+		_float MinDistance{};
+		_float MaxDistance{}; // 0: no upper limit
+		std::string TextureTag;
+		std::string PrototypeTag{ "Prototype_GameObject_TextureUI" };
+		_float IconSize{ 24.f };
+		_float3 TintColor{}; // zero keeps the original texture color
+		int WeightOffset{ 4 };
+		_float FadeInTime{ 0.5f };
+		_float FadeOutTime{ 0.5f };
+		_float DistanceHysteresis{ 1.f };
+		_bool DesiredVisible{ false };
+		CHandle MarkerHandle{};
+	};
+
+	struct MINIMAP_OBJECTIVE_INFO
+	{
+		std::string Key;
+		_float3 WorldPosition{};
+		uint32_t LevelID{ static_cast<uint32_t>(-1) };
+		OBJECTIVE_ACTIVE_RULE ActiveRule{ OBJECTIVE_ACTIVE_RULE::MANUAL };
+		_float AutoActivateDistance{};
+		_float ActivationHysteresis{ 5.f };
+		_bool ManualActive{ false };
+		_bool ProximityActive{ false };
+		std::vector<OBJECTIVE_VISUAL_PHASE> VisualPhases;
+	};
+
 private:
 	CMiniMap();
 	~CMiniMap() override;
@@ -58,6 +95,8 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	void SetMiniMapProfile(const MINIMAP_PROFILE& profile);
 	void AddBattleZone(const BATTLE_ZONE_INFO& battleZone);
+	void AddObjective(MINIMAP_OBJECTIVE_INFO objective);
+	_bool SetObjectiveActive(const std::string& key, _bool active);
 
 private:
 	virtual void PlayEffect(uint32_t uiState);
@@ -78,6 +117,7 @@ private:
 	_bool m_bHasPreviousPlayerPosition{ false };
 	MINIMAP_PROFILE m_MiniMapProfile{};
 	uint32_t m_iConfiguredLevel{ static_cast<uint32_t>(-1) };
+	uint32_t m_iObjectiveInitializedLevel{ static_cast<uint32_t>(-1) };
 
 	_bool m_SearchPlayerIcon{false};
 	CHandle m_hPlayerIcon{};
@@ -87,6 +127,7 @@ private:
 	static constexpr _float MONSTER_DETECTION_RADIUS = 60.f;
 	static constexpr _float MONSTER_SEARCH_INTERVAL = 0.1f;
 	static constexpr _float MINIMAP_BORDER_PADDING = 4.3f;
+	static constexpr _float MINIMAP_ICON_ALPHA_RATIO = 2.5f;
 	static constexpr size_t MAX_BATTLE_ZONE_COUNT = 8;
 
 	_bool m_bMonsterMarkerPoolInitialized{ false };
@@ -97,6 +138,7 @@ private:
 	std::vector<BATTLE_ZONE_INFO> m_vBattleZones{};
 	std::array<_float4, MAX_BATTLE_ZONE_COUNT> m_BattleZoneShaderData{};
 	uint32_t m_iVisibleBattleZoneCount{};
+	std::vector<MINIMAP_OBJECTIVE_INFO> m_vObjectives;
 
 private:
 	void SearchPlayerIcon();
@@ -104,6 +146,8 @@ private:
 	void CalcDir();
 	void InitializeMonsterMarkerPool();
 	void InitializeBattleZone();
+	void InitializeObjectives();
+	void InitializeObjectiveMarkers(MINIMAP_OBJECTIVE_INFO& objective);
 	void RefreshNearbyMonsters(E::CGameObject* pPlayer);
 	void UpdateMonsterMarkers(E::_float fTimeDelta, E::CGameObject* pPlayer);
 	void HideMonsterMarkers();
@@ -112,9 +156,22 @@ private:
 	void UpdateWorldMapOffset(const _float3& playerPosition);
 	void UpdateFogMovementOffset(const _float3& playerPosition);
 	void UpdateBattleZones(const _float3& playerPosition);
+	void UpdateObjectiveMarkers(const _float3& playerPosition);
+	void HideObjectiveMarkers();
+	_bool IsObjectiveActive(MINIMAP_OBJECTIVE_INFO& objective,
+		_float distanceSq) const;
+	void SetObjectiveMarkerVisible(E::CUIObject* marker, _bool visible);
+	void SetObjectivePhaseVisible(
+		OBJECTIVE_VISUAL_PHASE& phase, _bool visible);
 
 	void InitRookwoodBattleZone();
 	void InitBossRookwoodBattleZone();
+	void InitRookwoodObjectives();
+
+private:
+	CUIObject* SafeGetOBJ(CHandle pHandle);
+	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
+	void PlayFadeOut(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 public:
 	static E::UPtr<CMiniMap> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
