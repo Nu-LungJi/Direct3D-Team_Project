@@ -12,5 +12,6 @@ namespace Client
 		BOSS_CHARLES_ROOKWOOD,
 		HOGWART_WORLD,
 		UIEDITOR,
+		LAST_BOSS_RANROK,
 	};
 }
