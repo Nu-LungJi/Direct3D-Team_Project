@@ -446,34 +446,36 @@ void CGameObjectManager::UpdateGUIDrawTreeNode(CGameObject* pObj)
 
 void CGameObjectManager::FrameStart()
 {
-	{
-		ZoneScopedN("CGameObjectManager_FrameStart");
-	}
+	ZoneScopedN("CGameObjectManager_FrameStart");
 
 	if (!m_bTreeReBuild)
 	{
 		return;
 	}
 
-	m_TreePreparation.clear();
-	for (const auto& [_, Layer] : m_Layers)
 	{
-		for (const auto& handle : Layer)
+		ZoneScopedN("CGameObjectManager_RebuildTree");
+
+		m_TreePreparation.clear();
+		for (const auto& [_, Layer] : m_Layers)
 		{
-			if (auto* pObj = GetGameObjectByHandle(handle))
+			for (const auto& handle : Layer)
 			{
-				if (!pObj->GetParentNode())
+				if (auto* pObj = GetGameObjectByHandle(handle))
 				{
-					m_TreePreparation.push_back(pObj);
+					if (!pObj->GetParentNode())
+					{
+						m_TreePreparation.push_back(pObj);
+					}
 				}
 			}
 		}
-	}
 
-	m_Tree.clear();
-	for (const auto& pRootObj : m_TreePreparation)
-	{
-		MyTreeDFS(pRootObj, [&](auto pObj) {m_Tree.push_back(pObj); }, &m_DFSReserved);
+		m_Tree.clear();
+		for (const auto& pRootObj : m_TreePreparation)
+		{
+			MyTreeDFS(pRootObj, [&](auto pObj) {m_Tree.push_back(pObj); }, &m_DFSReserved);
+		}
 	}
 
 	// TODO: 플래그 완성되면
@@ -482,13 +484,19 @@ void CGameObjectManager::FrameStart()
 
 void CGameObjectManager::FrameEnd()
 {
+	ZoneScopedN("CGameObjectManager_FrameEnd");
+	const _bool bTracyConnected = TracyIsConnected;
+
 	if (m_bAllResetCalled)
 	{
+		ZoneScopedN("CGameObjectManager_AllObjectsReset");
 		m_bAllResetCalled = false;
 		AllObjectsReset();
 	}
 	else
 	{
+		ZoneScopedN("CGameObjectManager_DestroyPendingObjects");
+
 		_bool bDestroyedAny = false;
 		for (auto iter = m_Tree.rbegin(); iter != m_Tree.rend(); ++iter)
 		{
@@ -500,6 +508,13 @@ void CGameObjectManager::FrameEnd()
 			//{
 			if (pObj->GetPendingDestroy())
 			{
+				ZoneNamedN(tObjectZone, "GameObject_Destroy", bTracyConnected);
+				if (bTracyConnected)
+				{
+					const std::string sDebugLabel = GetGameObjectDebugLabel(pObj);
+					ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
+				}
+
 				m_bTreeReBuild = true;
 				m_Objects[hObj.GetIndex()].Reset();
 				m_FreeSlots.push_back(hObj.GetIndex());
@@ -510,6 +525,8 @@ void CGameObjectManager::FrameEnd()
 
 		if (bDestroyedAny)
 		{
+			ZoneScopedN("CGameObjectManager_RemoveInvalidLayerHandles");
+
 			for (auto& [_, handles] : m_Layers)
 			{
 				std::erase_if(handles, [this](const CHandle& handle)
@@ -548,6 +565,9 @@ std::optional<CHandle> CGameObjectManager::GetFreeHandle()
 
 std::optional<CHandle> CGameObjectManager::AddGameObjectToLayer(const StringID& siProtoGroupTag, const StringID& siPrototypeTag, std::string_view sLayerName, void* pArg)
 {
+	const _bool bTracyConnected = TracyIsConnected;
+	ZoneNamedN(tObjectZone, "CGameObjectManager_AddGameObjectToLayer", bTracyConnected);
+
 	auto pDesc = static_cast<CGameObject::GAMEOBJECT_DESC*>(pArg);
 	auto allocHandle = GetFreeHandle();
 	if (!allocHandle)
@@ -566,6 +586,11 @@ std::optional<CHandle> CGameObjectManager::AddGameObjectToLayer(const StringID& 
 	}
 
 	auto objHandle = pGameObject->GetHandle();
+	if (bTracyConnected)
+	{
+		const std::string sDebugLabel = GetGameObjectDebugLabel(pGameObject.get());
+		ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
+	}
 
 	//auto iter = std::find(m_FreeSlots.begin(), m_FreeSlots.end(), objHandle.GetIndex());
 	//if (iter != m_FreeSlots.end())
@@ -673,13 +698,20 @@ void CGameObjectManager::DelLayer(std::string_view sLayerName)
 
 void CGameObjectManager::FixedUpdate(_float fTimeDelta)
 {
-	{
-		ZoneScopedN("CGameObjectManager_FixedUpdate");
-	}
+	ZoneScopedN("CGameObjectManager_FixedUpdate");
+	const _bool bTracyConnected = TracyIsConnected;
+
 	for (auto& pObj : m_Tree)
 	{
 		if (!pObj->GetPendingDestroy())
 		{
+			ZoneNamedN(tObjectZone, "GameObject_FixedUpdate", bTracyConnected);
+			if (bTracyConnected)
+			{
+				const std::string sDebugLabel = GetGameObjectDebugLabel(pObj);
+				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
+			}
+
 			pObj->FixedUpdate(fTimeDelta);
 		}
 	}
@@ -687,10 +719,20 @@ void CGameObjectManager::FixedUpdate(_float fTimeDelta)
 
 void CGameObjectManager::PriorityUpdate(_float fTimeDelta)
 {
+	ZoneScopedN("CGameObjectManager_PriorityUpdate");
+	const _bool bTracyConnected = TracyIsConnected;
+
 	for (auto& pObj : m_Tree)
 	{
 		if (!pObj->GetPendingDestroy())
 		{
+			ZoneNamedN(tObjectZone, "GameObject_PriorityUpdate", bTracyConnected);
+			if (bTracyConnected)
+			{
+				const std::string sDebugLabel = GetGameObjectDebugLabel(pObj);
+				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
+			}
+
 			pObj->PriorityUpdate(fTimeDelta);
 		}
 	}
@@ -698,10 +740,20 @@ void CGameObjectManager::PriorityUpdate(_float fTimeDelta)
 
 void CGameObjectManager::Update(_float fTimeDelta)
 {
+	ZoneScopedN("CGameObjectManager_Update");
+	const _bool bTracyConnected = TracyIsConnected;
+
 	for (auto& pObj : m_Tree)
 	{
 		if (!pObj->GetPendingDestroy())
 		{
+			ZoneNamedN(tObjectZone, "GameObject_Update", bTracyConnected);
+			if (bTracyConnected)
+			{
+				const std::string sDebugLabel = GetGameObjectDebugLabel(pObj);
+				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
+			}
+
 			pObj->Update(fTimeDelta);
 		}
 	}
@@ -709,10 +761,20 @@ void CGameObjectManager::Update(_float fTimeDelta)
 
 void CGameObjectManager::LateUpdate(_float fTimeDelta)
 {
+	ZoneScopedN("CGameObjectManager_LateUpdate");
+	const _bool bTracyConnected = TracyIsConnected;
+
 	for (auto& pObj : m_Tree)
 	{
 		if (!pObj->GetPendingDestroy())
 		{
+			ZoneNamedN(tObjectZone, "GameObject_LateUpdate", bTracyConnected);
+			if (bTracyConnected)
+			{
+				const std::string sDebugLabel = GetGameObjectDebugLabel(pObj);
+				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
+			}
+
 			pObj->LateUpdate(fTimeDelta);
 		}
 	}
@@ -774,6 +836,9 @@ void CGameObjectManager::AllReset()
 
 void CGameObjectManager::AllObjectsReset()
 {
+	ZoneScopedN("CGameObjectManager_AllObjectsResetInternal");
+	const _bool bTracyConnected = TracyIsConnected;
+
 	for (auto& pObj : m_Objects)
 	{
 		if (pObj.IsOccupied())
@@ -781,6 +846,13 @@ void CGameObjectManager::AllObjectsReset()
 			CHandle hObj = pObj.Get()->GetHandle();
 			if (pObj.Get()->GetPendingDestroy())
 			{
+				ZoneNamedN(tObjectZone, "GameObject_Destroy", bTracyConnected);
+				if (bTracyConnected)
+				{
+					const std::string sDebugLabel = GetGameObjectDebugLabel(pObj.Get());
+					ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
+				}
+
 				m_Objects[hObj.GetIndex()].Reset();
 				m_FreeSlots.push_back(hObj.GetIndex());
 			}
