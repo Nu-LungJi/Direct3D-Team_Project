@@ -150,8 +150,6 @@ private:
 
 
 
-	uint64_t							m_iShadowFrameIndex{};
-
 	std::vector<IRenderable*>			m_pStaticShadowCasterScratch{};
 
 private:	// PBR
@@ -174,8 +172,7 @@ private:	// SpotLight Shader
 	SPtr<CResPixelShader>				m_pNormalDirectionalPixelShader		= { nullptr };
 
 private:	// Instanceing Shader
-	SPtr<CResVertexShader>				m_pInstancedPointVertexShader		= { nullptr };
-	SPtr<CResVertexShader>				m_pInstancedDirectionalPixelShader	= { nullptr };
+	SPtr<CResVertexShader>				m_pInstancedDirectionalVertexShader = { nullptr };
 
 private:	// Light All (Active + DeActive), Main Directional Light
 	std::vector<std::optional<CHandle>>	m_LightHandleList{};

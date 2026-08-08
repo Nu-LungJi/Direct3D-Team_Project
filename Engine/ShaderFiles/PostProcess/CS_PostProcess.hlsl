@@ -427,23 +427,21 @@ float3 ToneMap_AGXFilm(float3 _Color)
 }
 
 ////////////////////////////////////////////// OutLiner
-float3 Render_ObjectEdge(float3 _Color, float2 _TexCoord)
+float Render_ObjectEdge(float2 _TexCoord)
 {	
-	float	CenterPixel = FocusingTexture.SampleLevel(LinearClamp, _TexCoord, 0).r;
-	
-	if (CenterPixel > 0.999f)	return _Color;
+	float CenterPixel = FocusingTexture.SampleLevel(PointClamp, _TexCoord, 0).r;
 	
 	float2	MaskTexelSize = TexelSize * OutlineThickness;
 	
-	float	RightPixel	= FocusingTexture.SampleLevel(LinearClamp, _TexCoord + float2(MaskTexelSize.x, 0.f), 0).r;
-	float	LeftPixel	= FocusingTexture.SampleLevel(LinearClamp, _TexCoord - float2(MaskTexelSize.x, 0.f), 0).r;
-	float	UpPixel		= FocusingTexture.SampleLevel(LinearClamp, _TexCoord - float2(0.f, MaskTexelSize.y), 0).r;
-	float	DownPixel	= FocusingTexture.SampleLevel(LinearClamp, _TexCoord + float2(0.f, MaskTexelSize.y), 0).r;
+	float	RightPixel	= FocusingTexture.SampleLevel(PointClamp, _TexCoord + float2(MaskTexelSize.x, 0.f), 0).r;
+	float	LeftPixel	= FocusingTexture.SampleLevel(PointClamp, _TexCoord - float2(MaskTexelSize.x, 0.f), 0).r;
+	float	UpPixel		= FocusingTexture.SampleLevel(PointClamp, _TexCoord - float2(0.f, MaskTexelSize.y), 0).r;
+	float	DownPixel	= FocusingTexture.SampleLevel(PointClamp, _TexCoord + float2(0.f, MaskTexelSize.y), 0).r;
 
 	float	DepthEdge = abs(CenterPixel - RightPixel) + abs(CenterPixel - LeftPixel) 
 						+ abs(CenterPixel - UpPixel) + abs(CenterPixel - DownPixel);
 	
-	return lerp(_Color, OutlineColor.rgb, saturate(DepthEdge) * 10.f);	
+	return step(0.0001f, DepthEdge);
 }
 
 [numthreads(16, 16, 1)]
@@ -461,9 +459,6 @@ void CSMain_PostProcess(uint3 ID : SV_DispatchThreadID)
     // Chromatic Aberration
 	float3 FinalColor = ChromaticAberration(DistortedCoord);
     
-	// Edge Composite
-	FinalColor = Render_ObjectEdge(FinalColor, DistortedCoord);
-	
     // ToneMapping
 	FinalColor = ToneMap_ACESFilm(FinalColor);
     //FinalColor = ToneMap_Reinhard(FinalColor);
@@ -475,7 +470,13 @@ void CSMain_PostProcess(uint3 ID : SV_DispatchThreadID)
     // Vignette
 	FinalColor = Vignetting(FinalColor, TexCoord);
 	
-	OUTPUT[ID.xy] = float4(pow(FinalColor, 1.f / 2.2f), 1.f);
+	FinalColor = pow(FinalColor, 1.f / 2.2f);
+	
+	// Edge Composite
+	float Edge = Render_ObjectEdge(DistortedCoord);
+	FinalColor = lerp(FinalColor, float3(1.f, 1.f, 1.f), Edge);
+	
+	OUTPUT[ID.xy] = float4(FinalColor, 1.f);
 	return;
 }
 

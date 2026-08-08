@@ -142,5 +142,7 @@ X(GROGY,   0x0004000)\
 #define MAX_EFFECT_LIGHT_RENDER_COUNT	15
 #define MAX_CASCADE_COUNT				4
 
+#define POINT_SHADOW_MAPSIZE			512
+#define SPOT_SHADOW_MAPSIZE				512
 #define CSM_SHADOW_MAPSIZE				2048
 /////////////////////////////////////////

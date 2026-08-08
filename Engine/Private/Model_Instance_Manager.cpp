@@ -463,31 +463,35 @@ HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pCo
 		m_ShadowVisibleSourceIndices.clear();
 
 		const size_t InstanceCount = pBatch->Instances.size();
+		const LIGHT_TYPE LightType = pLight->Get_LightType();
 
 		for (size_t i = 0; i < InstanceCount; ++i) {
 			_bool bVisibleToLight = true;
-			//if (i < pBatch->ShadowBounds.size()) {
-			//	const auto& Bounds = pBatch->ShadowBounds[i];
-			//
-			//	if (Bounds.has_value()) {
-			//		if (pLight->Get_LightType() == LIGHT_TYPE::POINT && _PointFaceIndex >= 0) {
-			//			bVisibleToLight = pLight->Intersects_PointShadowFace(static_cast<uint32_t>(_PointFaceIndex), Bounds.value());
-			//		}
-			//		else {
-			//			bVisibleToLight = pLight->Intersects_ShadowBounds(Bounds.value());
-			//		}
-			//
-			//	}
-			//}
+			if (LightType != LIGHT_TYPE::DIRECTIONAL && i < pBatch->ShadowBounds.size()) {
+				const auto& OptionalBounds = pBatch->ShadowBounds[i];
 
-			if (!bVisibleToLight)	continue;
+				if (OptionalBounds.has_value()) {
+					BoundingBox ShadowBound = OptionalBounds.value();
 
-			if (m_ShadowFilteredInstances.size() >= MAX_INSTANCE_COUNT)	return E_FAIL;
+					constexpr _float ShadowCullPadding = 1.f;
+
+					ShadowBound.Extents.x += ShadowCullPadding;
+					ShadowBound.Extents.y += ShadowCullPadding;
+					ShadowBound.Extents.z += ShadowCullPadding;
+
+					bVisibleToLight = pLight->Intersects_ShadowBounds(ShadowBound);
+
+					if (bVisibleToLight && LightType == LIGHT_TYPE::POINT && _PointFaceIndex >= 0) {
+						bVisibleToLight = pLight->Intersects_PointShadowFace(static_cast<uint32_t>(_PointFaceIndex), ShadowBound);
+					}
+				}
+			}
+
+			if (false == bVisibleToLight)	continue;
 
 			m_ShadowFilteredInstances.push_back(pBatch->Instances[i]);
 
 			m_ShadowVisibleSourceIndices.push_back(static_cast<uint32_t>(i));
-
 		}
 
 		if (m_ShadowFilteredInstances.empty())	continue;

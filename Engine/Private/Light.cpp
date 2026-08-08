@@ -391,7 +391,7 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& 
 
 	if (_PointFaceIndex < -1 || _PointFaceIndex >= static_cast<int32_t>(POINT_SHADOW_MAPCOUNT))		return E_FAIL;
 
-	const LIGHT_TYPE LightType = static_cast<LIGHT_TYPE>(m_pDynamicLight.LightType);
+	const LIGHT_TYPE LightType = Get_LightType();
 
 	RCTX.eye = XMLoadFloat3(&m_pComTransform->GetPosition());
 
@@ -422,20 +422,26 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& 
 	for (auto& GOBJ : _ObjectHandleList) {
 		if (nullptr == GOBJ) continue;
 	
-	//	BoundingBox ShadowBound{};
-	//
-	//	if (GOBJ->GetShadowBounds(ShadowBound)) {
-	//		_bool bVisibleToLight = true;
-	//
-	//		if (LightType == LIGHT_TYPE::POINT && _PointFaceIndex >= 0) {
-	//			bVisibleToLight = Intersects_PointShadowFace(static_cast<uint32_t>(_PointFaceIndex), ShadowBound);
-	//		}
-	//		else {
-	//			bVisibleToLight = Intersects_ShadowBounds(ShadowBound);
-	//		}
-	//		if (!bVisibleToLight) continue;
-	//	}
-	//
+		BoundingBox ShadowBound{};
+	
+		if (GOBJ->GetShadowBounds(ShadowBound)) {
+			const _float ShadowCullPadding = 1.f;
+
+			ShadowBound.Extents.x += ShadowCullPadding;
+			ShadowBound.Extents.y += ShadowCullPadding;
+			ShadowBound.Extents.z += ShadowCullPadding;
+
+			_bool bVisibleToLight = true;
+	
+			if (bVisibleToLight && LightType == LIGHT_TYPE::POINT && _PointFaceIndex >= 0) {
+				bVisibleToLight = Intersects_PointShadowFace(static_cast<uint32_t>(_PointFaceIndex), ShadowBound);
+			}
+			else {
+				bVisibleToLight = Intersects_ShadowBounds(ShadowBound);
+			}
+			if (false == bVisibleToLight) continue;
+		}
+	
 		if (FAILED(GOBJ->Render_Shadow(pContext, RCTX))) return E_FAIL;
 	}
 	

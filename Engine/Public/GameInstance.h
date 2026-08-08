@@ -289,6 +289,8 @@ public:
 
 	VOID	Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale);
 	VOID	Set_ChromaticRingOpacity(_float _Opacity);
+
+	VOID	Apply_OutlineEffect(std::optional<CHandle> targetHandle);
 #pragma endregion
 
 

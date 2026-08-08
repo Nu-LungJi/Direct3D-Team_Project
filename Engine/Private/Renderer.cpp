@@ -297,6 +297,9 @@ HRESULT CRenderer::InitializeBaseTarget() {
 	m_pResDynTexTargetDepth = Generate_DepthStencil_RenderTarget("DynTex2D_Target_Depth", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS);
 	if (nullptr == m_pResDynTexTargetDepth)        return E_FAIL;
 
+	m_pResDynTexTargetFocusingDepthMap = Generate_DepthStencil_RenderTarget("DynTex2D_Target_FocusingDepth", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS);
+	if (nullptr == m_pResDynTexTargetFocusingDepthMap)        return E_FAIL;
+
 	m_pResDynTexTargetPreviousRenderView = Generate_RenderTarget("Previous_RenderView", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
 	if (nullptr == m_pResDynTexTargetPreviousRenderView)	return E_FAIL;
 	return S_OK;
@@ -1721,6 +1724,8 @@ HRESULT CRenderer::Render_OffScreen() {
 HRESULT CRenderer::Render_PostProcess() {
 	if (ApplyFilter == false) return S_OK;
 
+	if (FAILED(Render_PostProcess_Focusing())) { Unbind_Resources(); return S_OK; }
+
 	if (FAILED(Render_PostProcess_LensFlare())) { Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_PostProcess_Bloom()))		{ Unbind_Resources(); return S_OK; }
@@ -1737,7 +1742,7 @@ HRESULT CRenderer::Render_PostProcess_Focusing(){
 
 	auto OutLineObject = CGameInstance::Get().GetGameObjectByHandle(m_pOutlineTargetHandle.value());
 	if (nullptr == OutLineObject)	return S_OK;
-	
+
 	{
 		ID3D11DepthStencilState* pDSS = nullptr;
 		m_pContext->OMSetDepthStencilState(pDSS, 0);
@@ -1746,11 +1751,12 @@ HRESULT CRenderer::Render_PostProcess_Focusing(){
 		if (nullptr == DepthWriteState) return S_OK;
 
 		m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
-		m_pContext->ClearDepthStencilView(m_pResDynTexTargetDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+		m_pContext->ClearDepthStencilView(m_pResDynTexTargetFocusingDepthMap->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
 	}
 	{
-		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetDepth->GetRTV().Get() };
-		m_pContext->OMSetRenderTargets(1, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
+		ID3D11DepthStencilView* pFocusingDSV = m_pResDynTexTargetFocusingDepthMap->GetDSV().Get();
+
+		m_pContext->OMSetRenderTargets(0, nullptr, pFocusingDSV);
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
 		m_pContext->PSSetShader(nullptr, nullptr, 0);
@@ -1885,7 +1891,7 @@ HRESULT CRenderer::Render_PostProcess_Filter() {
 			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
 			nullptr,
 			m_pLookUpTableTexture.Get(),
-			m_pResDynTexTargetDepth->GetSRV().Get()
+			m_pResDynTexTargetFocusingDepthMap->GetSRV().Get()
 		};
 
 		m_pContext->CSSetShaderResources(0, 4, pPostProcessSRVList);
@@ -2638,20 +2644,14 @@ HRESULT CRenderer::Render_UpSampleCombinePass(const SPtr<CResDynamicTexture2D>& 
 
 HRESULT CRenderer::Render_DownSamplePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _SrcTex, uint32_t _ScreenX, uint32_t _ScreenY) {
 	{
-		if (nullptr == _OutPut || nullptr == _SrcTex) return E_FAIL;
-
-		auto OutputUAV = _OutPut->GetUAV();
-		if (nullptr == OutputUAV) return E_FAIL;
-
 		m_pContext->CSSetShader(m_pDownSampleComputeShader->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11UnorderedAccessView* pUAVs[1] = { OutputUAV.Get() };
+		ID3D11UnorderedAccessView* pUAVs[1] = { _OutPut->GetUAV().Get() };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
-		ID3D11ShaderResourceView* pBloomTex[1] = { _SrcTex->GetSRV().Get() };
-		m_pContext->CSSetShaderResources(0, 1, pBloomTex);
-	}
-	{
+		ID3D11ShaderResourceView* pBloomSRV[1] = { _SrcTex->GetSRV().Get() };
+		m_pContext->CSSetShaderResources(0, 1, pBloomSRV);
+
 		m_pContext->Dispatch((_ScreenX + 7) / 8, (_ScreenY + 7) / 8, 1);
 
 		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
@@ -2666,17 +2666,13 @@ HRESULT CRenderer::Render_DownSamplePass(const SPtr<CResDynamicTexture2D>& _OutP
 
 HRESULT CRenderer::Render_CombinedPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, const SPtr<CResDynamicTexture2D>& _BlurPassTexture, uint32_t _ScreenX, uint32_t _ScreenY) {
 	{
-		if (nullptr == _OutPut || nullptr == _OriginTexture || nullptr == _BlurPassTexture) return E_FAIL;
-		auto OutputUAV = _OutPut->GetUAV();
-		if (nullptr == OutputUAV) return E_FAIL;
-
 		m_pContext->CSSetShader(m_pBloomPassComputeShader->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11UnorderedAccessView* pUAVs[1] = { OutputUAV.Get() };
+		ID3D11UnorderedAccessView* pUAVs[1] = { _OutPut->GetUAV().Get() };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
-		ID3D11ShaderResourceView* pBloomTex[2] = { _OriginTexture->GetSRV().Get(), _BlurPassTexture->GetSRV().Get() };
-		m_pContext->CSSetShaderResources(0, 2, pBloomTex);
+		ID3D11ShaderResourceView* pBloomSRV[2] = { _OriginTexture->GetSRV().Get(), _BlurPassTexture->GetSRV().Get() };
+		m_pContext->CSSetShaderResources(0, 2, pBloomSRV);
 	}
 	{
 		m_pContext->Dispatch((_ScreenX + 7) / 8, (_ScreenY + 7) / 8, 1);
@@ -2740,4 +2736,3 @@ UPtr<CRenderer> CRenderer::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11Dev
 	}	
 	return pInstance;
 }
-// CellInjection에서 OutPut이 비정상적으로 출력되는 문제 해결
