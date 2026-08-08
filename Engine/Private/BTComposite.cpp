@@ -20,7 +20,7 @@ HRESULT CBTComposite::Save_SubTree(const _string& SavePath)
 {
 	if (m_Actions.empty() || m_Actions.front() == nullptr)
 	{
-		MSG_BOX("Nob");
+		MSG_BOX("Nob Front null");
 		return E_FAIL;
 	}
 

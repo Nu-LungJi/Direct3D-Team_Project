@@ -27,6 +27,7 @@
 #include "BTBlackBoard.h"
 //Skill
 #include "EdgFireBall.h"
+#include "EdgBreath.h"
 NS_USING(Client)
 
 CEnderDragon::CEnderDragon()
@@ -242,15 +243,14 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 		return E_FAIL;
 
 	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(DRAGON_SKILL::BOOM);
-	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(DRAGON_SKILL::BRESS);
+	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(DRAGON_SKILL::BREATH);
 	m_MonSkillLists[ATTMON::SLOT2] = ETOUI(DRAGON_SKILL::FIREBALL);
 
-	m_MonSkillLists[ATTMON::SKIP] = ETOUI(DRAGON_SKILL::SKIP);
 
-
+	//////////////////////파티클 넣는곳/////////////////////////
 	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)] = "FireBall";
-	//m_EffectNames[ETOUI(DRAGON_SKILL::JUMP_END)] = "TombJumpEnd";
-	//m_EffectNames[ETOUI(DRAGON_SKILL::HIT_ACCIO)] = "AccioGrab";
+	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)] = "Breath";
+	////////////////////////////////////////////////////////////
 	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
 	
 	SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Mouth");
@@ -260,8 +260,11 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	auto FireBallhandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall,"03.FirBall",&SkillDesc);
 	if (!FireBallhandle) return E_FAIL;
 
+	auto BreathHandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, "03.Breath", &SkillDesc);
+	if (!BreathHandle) return E_FAIL;
 
 	m_SkillHandle[ETOUI(DRAGON_SKILL::FIREBALL)] = FireBallhandle.value();
+	m_SkillHandle[ETOUI(DRAGON_SKILL::BREATH)] = BreathHandle.value();
 
 	return S_OK;
 }
@@ -279,7 +282,6 @@ void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 	m_pFsm->PriorityUpdate(fTimeDelta);
 	Update_BBToFsm();
 	__super::PriorityUpdate(fTimeDelta);
-	Active_Skill();
 	m_pFsm->Update(fTimeDelta);
 }
 
@@ -332,30 +334,7 @@ _string CEnderDragon::Get_SkillName(ATTMON SkillNode)
 
 	return MagicEnumToStringView(static_cast<DRAGON_SKILL>(pValue->second)).data();
 }
-void CEnderDragon::Active_Skill()
-{
-	//판정할 클래스를 새로 만들어야 될지 고민
-	//만들어 버렸다
-	if (m_eAttType == ATTMON::END)
-		return;
-	
-	if (m_iCurSkill == m_iPreSkill)
-		return;
 
-	_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
-
-	if (fCurrRatio <= m_fSkillRatio.x)
-		return;
-
-	uint32_t iSkillIndex = Find_SkillNum(m_eAttType);
-	
-	auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(m_SkillHandle[iSkillIndex]);
-
-	if (nullptr == pSkill)
-		return;
-	pSkill->Active(m_CurEffectName);
-	m_iPreSkill = m_iCurSkill;
-}
 _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 {
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
@@ -454,17 +433,19 @@ void CEnderDragon::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	if (eType == ATTMON::END)
 		return;
 
-	if (m_eLastSkillTable == eType)
-		return;
-
 	uint32_t iSkillNum = Find_SkillNum(eType);
 	if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(DRAGON_SKILL::END))
 		return;
 
-	m_CurEffectName = m_EffectNames[iSkillNum];
+	auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(m_SkillHandle[iSkillNum]);
+	if (nullptr == pSkill)
+		return;
+	pSkill->Active(m_EffectNames[iSkillNum]);
+
+	m_CurEffectName.clear();
+	m_eAttType = ATTMON::END;
 	m_eLastSkillTable = m_eAttType = eType;
-	m_fSkillRatio = fSkillRatio;
-	++m_iCurSkill;
+
 }
 void CEnderDragon::Flag_Check(_float fTimeDelta)
 {

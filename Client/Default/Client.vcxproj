@@ -210,6 +210,7 @@
     <ClInclude Include="..\public\BTDecEdgState.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
     <ClInclude Include="..\public\DragonSkill.h" />
+    <ClInclude Include="..\public\EdgBreath.h" />
     <ClInclude Include="..\public\EdgFireBall.h" />
     <ClInclude Include="..\public\Edg_Combat.h" />
     <ClInclude Include="..\public\Edg_Hit.h" />
@@ -343,6 +344,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\EdgBreath.cpp" />
     <ClCompile Include="..\private\EdgFireBall.cpp" />
     <ClCompile Include="..\private\LevelLastBossRanrok.cpp" />
     <ClCompile Include="..\private\LevelLastBossRanrokLoader.cpp" />

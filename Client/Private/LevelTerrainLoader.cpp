@@ -24,6 +24,7 @@
 #include "BossMace.h"
 #include "EnderDragon_State.h"
 #include "EdgFireBall.h"
+#include "EdgBreath.h"
 // UI
 #include "UIController.h"
 #include "EffectUI.h"
@@ -498,6 +499,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		}
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, "Prototype_Component_Dragon_FSM",CEnderDragon_State::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, CEdgFireBall::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, CEdgBreath::Create()))) return E_FAIL;
 
 	}
 

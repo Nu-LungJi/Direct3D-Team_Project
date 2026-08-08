@@ -1,7 +1,7 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
-enum class DRAGON_SKILL{BOOM,BRESS,FIREBALL,SKIP,END};
+enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,SKIP,END};
 enum class DRAGON_PHASE{PHASE1, PHASE2, PHASE3, PHASE4, PHASE5, PHASE6, END};
 // 투명 드래곤이 울부 짖었다
 
@@ -50,7 +50,6 @@ private:
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);
 	void						Phase_Debug();
-	void						Active_Skill();
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
 

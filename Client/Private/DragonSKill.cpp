@@ -77,6 +77,8 @@ void CDragonSkill::Life_Check(_float fTimeDelta)
 
 	if (m_fLife >= m_fMaxLife || m_bHit)
 	{
+		if (m_iBoneIndex != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().StopEffect(m_iBoneIndex);
 		ResetValue();
 	}
 		
@@ -88,8 +90,12 @@ const _float4x4* CDragonSkill::Get_BoneMatrix()
 	auto pSrc = Get_Owner();
 	if (nullptr == pSrc)
 		return nullptr;
+	
+	_float4x4 CombineMatrix{};
 
-	return pSrc->Get_CombineBoneMatrix(m_iBoneIndex);
+	XMStoreFloat4x4(&CombineMatrix,
+		XMLoadFloat4x4(pSrc->Get_CombineBoneMatrix(m_iBoneIndex)) * XMLoadFloat4x4(pSrc->GetTransform().GetWorldMatrix()));
+	return &CombineMatrix;
 }
 
 void CDragonSkill::ResetValue()

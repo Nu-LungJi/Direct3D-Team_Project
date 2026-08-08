@@ -96,9 +96,14 @@ void CEdgFireBall::MoveBall(_float fTimeDelta)
 
 	_vector vNextPos = vPos + vDir * m_fSpeed * fTimeDelta;
 
-	GetTransform().SetPosition(vNextPos);
-	GetTransform().Update();
-	MoveSweep(vNextPos);
+	if (MoveSweep(vNextPos))
+	{
+		if (m_iBoneIndex != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().SetEffectWorldMatrix(m_iBoneIndex, *GetTransform().GetWorldMatrix());
+		GetTransform().SetPosition(vNextPos);
+		GetTransform().Update();
+	}
+
 }
 
 _bool CEdgFireBall::MoveSweep(_vector vNextPos)
@@ -114,6 +119,7 @@ _bool CEdgFireBall::MoveSweep(_vector vNextPos)
 
 	PX_SWEEP_DESC SweepDesc{};
 	SweepDesc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
+	SweepDesc.tGeometry.fRadius = m_fRadius;
 	SweepDesc.tPose.vPosition = vPos;
 	SweepDesc.vDirection = vDir;
 	SweepDesc.tFilter = m_pxQueryFilter;
@@ -133,8 +139,6 @@ _bool CEdgFireBall::MoveSweep(_vector vNextPos)
 		//펑
 		return false;
 	}
-	GetTransform().SetPosition(vNextPos);
-	GetTransform().Update();
 	return true;
 }
 

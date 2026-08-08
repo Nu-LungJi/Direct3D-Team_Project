@@ -313,6 +313,9 @@
     <Filter Include="GameObject\Monster\EnderDragon\Skill\FireBall">
       <UniqueIdentifier>{50a07458-33d1-4dc5-8875-84dba5aa3208}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\EnderDragon\Skill\Bress">
+      <UniqueIdentifier>{15ad6ff0-923c-4093-a6c9-78ea3f0340ef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -729,6 +732,9 @@
     <ClInclude Include="..\public\EdgFireBall.h">
       <Filter>GameObject\Monster\EnderDragon\Skill\FireBall</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\EdgBreath.h">
+      <Filter>GameObject\Monster\EnderDragon\Skill\Bress</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1096,6 +1102,9 @@
     </ClCompile>
     <ClCompile Include="..\private\EdgFireBall.cpp">
       <Filter>GameObject\Monster\EnderDragon\Skill\FireBall</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EdgBreath.cpp">
+      <Filter>GameObject\Monster\EnderDragon\Skill\Bress</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

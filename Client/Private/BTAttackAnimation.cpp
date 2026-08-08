@@ -58,14 +58,16 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 					m_bStart = false;
 				}
 
-				if (!m_bActiveSkill)
-				{
+				_float fAnimRatio = pAnimator->GetPlayAnimRatio();
+				if (!m_bTrigger && !m_bActiveSkill)
 					m_bActiveSkill = Active_Skill();
-				}
+				
+				if (m_bTrigger && !m_bActiveSkill && fAnimRatio >= m_fSkillRatio.x)
+					m_bActiveSkill = ActiveTriggerSkill();
+				
 				Gravity();
 				Play_Sound(fTimeDelta);
 				_bool bFinished = pAnimator->GetFinish();
-				_float fAnimRatio = pAnimator->GetPlayAnimRatio();
 				//살려주세요 살려주세요!!!
 				Att(pOwner, pTransform, pTarget, fAnimRatio,fTimeDelta);
 				EventFlagToRatio(fAnimRatio);
@@ -140,7 +142,7 @@ void CBTAttackAnimation::Update_Gui()
 		ImGui::Text("OverLabRatio");
 		ImGui::DragFloat2("##OverLabRatio", reinterpret_cast<_float*>(&m_vOverlabRatio), 0.1f, 0.f, 1.f);
 		DragFloat("AttRadius", m_fAttRadius);
-
+		BoolButton("TriggerSkill", m_bTrigger);
 		BoolButton("overlabLoop", m_bOverLabLoop);
 		BoolButton("overlabMove", m_bOverLabMove);
 		DragFloat("overlabSpeed", m_fOverLabSpeed);
@@ -276,6 +278,8 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 	SaveJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
 	SaveJsonValue(j, "AttRadius", m_fAttRadius);
 	SaveJsonValue(j, "OverlabMove", m_bOverLabMove);
+
+	SaveJsonValue(j, "TriggerSkill", m_bTrigger);
 	
 	return j;
 }
@@ -292,6 +296,7 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
 	LoadJsonValue(j, "AttRadius", m_fAttRadius);
 	LoadJsonValue(j, "OverlabMove", m_bOverLabMove);
+	LoadJsonValue(j, "TriggerSkill", m_bTrigger);
 
 	return S_OK;
 }
@@ -311,6 +316,17 @@ void CBTAttackAnimation::OnEnter()
 void CBTAttackAnimation::OnExit(EVALUATE eResult)
 {
 	m_bDir = false;
+}
+_bool CBTAttackAnimation::ActiveTriggerSkill()
+{
+	auto pBT = Get_ComBT();
+	if (nullptr == pBT) return false;
+
+	auto pMonster = static_cast<CMonster*>(pBT->GetGameObject());
+	if (nullptr == pMonster) return false;
+	
+	pMonster->Set_AttTable(m_eSkillType, m_fSkillRatio);
+	return true;
 }
 E::UPtr<CBTAttackAnimation> CBTAttackAnimation::Create()
 {
