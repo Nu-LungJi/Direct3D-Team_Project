@@ -279,7 +279,6 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 
 			const char* targetDirectories[] = {
 				"./Resources/SampleClient/Textures/UI/UITexture/PlayScreen",
-				"./Resources/SampleClient/Textures/UI/UITexture/SpellType",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
 				"./Resources/SampleClient/Textures/UI/UITexture/Cursor"
