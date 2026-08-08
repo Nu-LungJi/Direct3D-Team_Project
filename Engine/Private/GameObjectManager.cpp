@@ -16,29 +16,163 @@ CGameObjectManager::~CGameObjectManager()
 
 void CGameObjectManager::UpdateGUI()
 {
-	ImGui::Begin("GameObject_Manager");
-
-	if (ImGui::TreeNode("FreeSlots"))
+	if (!ImGui::Begin("GameObject_Manager"))
 	{
-		for (const auto& i : m_FreeSlots)
+		ImGui::End();
+		return;
+	}
+
+	std::vector<uint32_t> vecFreeSlotReferences(m_Objects.size(), 0);
+	size_t iInvalidFreeSlotCount = 0;
+	for (const size_t iFreeSlotIndex : m_FreeSlots)
+	{
+		if (iFreeSlotIndex >= m_Objects.size())
 		{
-			ImGui::Text("%i", i);
+			++iInvalidFreeSlotCount;
+			continue;
+		}
+
+		++vecFreeSlotReferences[iFreeSlotIndex];
+		if (m_Objects[iFreeSlotIndex].IsOccupied() ||
+			vecFreeSlotReferences[iFreeSlotIndex] > 1)
+		{
+			++iInvalidFreeSlotCount;
+		}
+	}
+
+	std::string sFreeSlotsLabel = "FreeSlots (" + std::to_string(m_FreeSlots.size()) +
+		" Entries";
+	if (iInvalidFreeSlotCount > 0)
+	{
+		sFreeSlotsLabel += ", " + std::to_string(iInvalidFreeSlotCount) + " Invalid";
+	}
+	sFreeSlotsLabel += ")###FreeSlots";
+
+	if (ImGui::TreeNode(sFreeSlotsLabel.c_str()))
+	{
+		for (const size_t iFreeSlotIndex : m_FreeSlots)
+		{
+			if (iFreeSlotIndex >= m_Objects.size())
+			{
+				ImGui::TextColored(
+					ImVec4{ 1.f, 0.35f, 0.35f, 1.f },
+					"[Invalid] Index: %zu | Slot: Out Of Range",
+					iFreeSlotIndex);
+				continue;
+			}
+
+			const auto& slot = m_Objects[iFreeSlotIndex];
+			const uint32_t iReferenceCount = vecFreeSlotReferences[iFreeSlotIndex];
+			if (slot.IsOccupied() || iReferenceCount > 1)
+			{
+				ImGui::TextColored(
+					ImVec4{ 1.f, 0.35f, 0.35f, 1.f },
+					"[Invalid] Index: %zu | Gen: %u | Slot: %s | References: %u",
+					iFreeSlotIndex,
+					slot.GetGeneration(),
+					slot.IsOccupied() ? "Occupied" : "Empty",
+					iReferenceCount);
+			}
+			else
+		{
+				ImGui::Text(
+					"Index: %zu | Gen: %u | Slot: Empty",
+					iFreeSlotIndex,
+					slot.GetGeneration());
+		}
 		}
 
 		ImGui::TreePop();
 	}
-	if (ImGui::TreeNode("Slots"))
+
+	size_t iOccupiedSlotCount = 0;
+	size_t iEmptySlotCount = 0;
+	size_t iUntrackedEmptySlotCount = 0;
+	for (size_t i = 0; i < m_Objects.size(); ++i)
+	{
+		if (m_Objects[i].IsOccupied())
+		{
+			++iOccupiedSlotCount;
+		}
+		else
+		{
+			++iEmptySlotCount;
+			if (vecFreeSlotReferences[i] == 0)
+				++iUntrackedEmptySlotCount;
+		}
+	}
+
+	std::string sSlotsLabel = "Slots (" + std::to_string(m_Objects.size()) + " Total, " +
+		std::to_string(iOccupiedSlotCount) + " Occupied, " +
+		std::to_string(iEmptySlotCount) + " Empty";
+	if (iUntrackedEmptySlotCount > 0)
+	{
+		sSlotsLabel += ", " + std::to_string(iUntrackedEmptySlotCount) + " Untracked";
+	}
+	sSlotsLabel += ")###Slots";
+
+	if (ImGui::TreeNode(sSlotsLabel.c_str()))
 	{
 		for (size_t i = 0; i < m_Objects.size(); ++i)
 		{
-			std::string occ = m_Objects[i].IsOccupied() ? "" : "[Empty]";
-			std::string a = "idx_" + std::to_string(i) + "_gen_" + std::to_string(m_Objects[i].GetGeneration());
-			occ += a;
-			if (ImGui::TreeNode(occ.c_str()))
+			auto& slot = m_Objects[i];
+			const bool bOccupied = slot.IsOccupied();
+			const uint32_t iFreeReferenceCount = vecFreeSlotReferences[i];
+			const bool bInvalidState =
+				(bOccupied && iFreeReferenceCount > 0) ||
+				(!bOccupied && iFreeReferenceCount != 1);
+
+			std::string sSlotLabel = bOccupied ? "[Occupied] " : "[Empty] ";
+			sSlotLabel += "Index: " + std::to_string(i) +
+				" | Gen: " + std::to_string(slot.GetGeneration());
+			if (bOccupied)
 			{
-				if (m_Objects[i].IsOccupied())
+				sSlotLabel += " | Type: " + std::string{ slot.Get()->GetTypeString() } +
+					" | Tag: " + std::string{ slot.Get()->GetObjectTag() };
+			}
+			else
 				{
-					m_Objects[i].Get()->UpdateGUI();
+				sSlotLabel += iFreeReferenceCount == 1 ?
+					" | FreeList: Registered" :
+					" | FreeList: Invalid";
+			}
+			sSlotLabel += "###Slot_" + std::to_string(i);
+
+			if (bInvalidState)
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f, 0.35f, 0.35f, 1.f });
+
+			const bool bSlotOpened = ImGui::TreeNode(sSlotLabel.c_str());
+
+			if (bInvalidState)
+				ImGui::PopStyleColor();
+
+			if (bSlotOpened)
+			{
+				ImGui::Text("Slot Index: %zu", i);
+				ImGui::Text("Slot Generation: %u", slot.GetGeneration());
+				ImGui::Text("FreeList References: %u", iFreeReferenceCount);
+
+				if (bOccupied)
+				{
+					CGameObject* pObj = slot.Get();
+					const CHandle hObject = pObj->GetHandle();
+					const std::string_view sObjectType = pObj->GetTypeString();
+					const std::string_view sObjectTag = pObj->GetObjectTag();
+					ImGui::Text(
+						"Object Type: %.*s",
+						static_cast<int>(sObjectType.size()),
+						sObjectType.data());
+					ImGui::Text(
+						"Object Tag: %.*s",
+						static_cast<int>(sObjectTag.size()),
+						sObjectTag.data());
+					ImGui::Text(
+						"Object Handle: Index %zu | Gen %u",
+						hObject.GetIndex(),
+						hObject.GetGeneration());
+					ImGui::Text("Pending Destroy: %s", pObj->GetPendingDestroy() ? "True" : "False");
+					ImGui::Separator();
+					pObj->UpdateGUI();
 				}
 
 				ImGui::TreePop();
@@ -48,30 +182,140 @@ void CGameObjectManager::UpdateGUI()
 		ImGui::TreePop();
 	}
 
-	if (ImGui::TreeNode("Layers"))
+	const bool bLayerFilterActive = m_GUISearchFilter[0] != '\0';
+	size_t iTotalValidLayerObjectCount = 0;
+	size_t iTotalInvalidLayerHandleCount = 0;
+	size_t iFilteredLayerItemCount = 0;
+	for (const auto& [sLayerName, vecHandles] : m_Layers)
 	{
-		for (uint32_t i = 0; i < m_Layers.size(); ++i)
+		for (const auto& handle : vecHandles)
 		{
-			if (ImGui::TreeNode(m_Layers[i].first.c_str()))
+			if (auto* pObj = GetGameObjectByHandle(handle))
 			{
-				for (const auto& handle : m_Layers[i].second)
+				++iTotalValidLayerObjectCount;
+				if (MatchesLayerObjectFilter(sLayerName, pObj))
+					++iFilteredLayerItemCount;
+			}
+			else
+			{
+				++iTotalInvalidLayerHandleCount;
+				if (m_bGUIShowInvalidLayerHandles &&
+					(MatchesGUIFilter(sLayerName) ||
+						MatchesGUIFilter(GetInvalidLayerHandleDebugText(handle))))
+				{
+					++iFilteredLayerItemCount;
+				}
+			}
+		}
+	}
+
+	std::string sLayersLabel = "Layers (";
+	if (bLayerFilterActive)
+	{
+		sLayersLabel += std::to_string(iFilteredLayerItemCount) + " Matches, ";
+	}
+	sLayersLabel += std::to_string(iTotalValidLayerObjectCount) + " Objects, " +
+		std::to_string(m_Layers.size()) + " Layers";
+	if (m_bGUIShowInvalidLayerHandles)
+	{
+		sLayersLabel += ", " + std::to_string(iTotalInvalidLayerHandleCount) + " Invalid";
+	}
+	sLayersLabel += ")###Layers";
+
+	if (ImGui::TreeNode(sLayersLabel.c_str()))
+	{
+		ImGui::SetNextItemWidth(-1);
+		ImGui::InputTextWithHint(
+			"##layer_search",
+			"Search layer or object...",
+			m_GUISearchFilter,
+			sizeof(m_GUISearchFilter));
+		ImGui::Checkbox("Show Invalid Handles", &m_bGUIShowInvalidLayerHandles);
+		ImGui::Separator();
+
+		for (const auto& [sLayerName, vecHandles] : m_Layers)
+		{
+			const bool bLayerNameMatched = MatchesGUIFilter(sLayerName);
+			size_t iValidObjectCount = 0;
+			size_t iInvalidHandleCount = 0;
+			size_t iMatchedItemCount = 0;
+
+			for (const auto& handle : vecHandles)
+			{
+				if (auto* pObj = GetGameObjectByHandle(handle))
+				{
+					++iValidObjectCount;
+					if (bLayerNameMatched || MatchesLayerObjectFilter(sLayerName, pObj))
+						++iMatchedItemCount;
+				}
+				else
+				{
+					++iInvalidHandleCount;
+					if (m_bGUIShowInvalidLayerHandles &&
+						(bLayerNameMatched ||
+							MatchesGUIFilter(GetInvalidLayerHandleDebugText(handle))))
+					{
+						++iMatchedItemCount;
+					}
+				}
+			}
+
+			if (bLayerFilterActive && iMatchedItemCount == 0)
+				continue;
+
+			std::string sLayerLabel = sLayerName + " (";
+			if (bLayerFilterActive)
+			{
+				sLayerLabel += std::to_string(iMatchedItemCount) + " Matches, ";
+			}
+			sLayerLabel += std::to_string(iValidObjectCount) + " Objects";
+			if (m_bGUIShowInvalidLayerHandles)
+			{
+				sLayerLabel += ", " + std::to_string(iInvalidHandleCount) + " Invalid";
+			}
+			sLayerLabel += ")###Layer_" + sLayerName;
+
+			if (ImGui::TreeNode(sLayerLabel.c_str()))
+			{
+				for (const auto& handle : vecHandles)
 				{
 					if (auto* pObj = GetGameObjectByHandle(handle))
 					{
-						std::string s = std::to_string(handle.GetIndex()) + "_" + std::string{ pObj->GetObjectTag() };
-						if (ImGui::TreeNode(s.data()))
+						if (bLayerFilterActive && !bLayerNameMatched &&
+							!MatchesLayerObjectFilter(sLayerName, pObj))
+						{
+							continue;
+						}
+
+						std::string sObjectLabel = GetGameObjectDebugLabel(pObj);
+						sObjectLabel += "###LayerObject_" + std::to_string(handle.GetIndex()) + "_" +
+							std::to_string(handle.GetGeneration());
+						if (ImGui::TreeNode(sObjectLabel.c_str()))
 						{
 							pObj->UpdateGUI();
-
 							ImGui::TreePop();
 						}
+					}
+					else if (m_bGUIShowInvalidLayerHandles)
+					{
+						const std::string sInvalidHandleText =
+							GetInvalidLayerHandleDebugText(handle);
+						if (bLayerFilterActive && !bLayerNameMatched &&
+							!MatchesGUIFilter(sInvalidHandleText))
+						{
+							continue;
+						}
+
+						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f, 0.35f, 0.35f, 1.f });
+						ImGui::TextUnformatted(sInvalidHandleText.c_str());
+						ImGui::PopStyleColor();
 					}
 				}
 
 				ImGui::TreePop();
 			}
-
 		}
+
 		ImGui::TreePop();
 	}
 
@@ -91,10 +335,66 @@ void CGameObjectManager::UpdateGUI()
 
 	ImGui::End();
 }
+
+bool CGameObjectManager::MatchesGUIFilter(std::string_view sText) const
+{
+	if (m_GUISearchFilter[0] == '\0')
+		return true;
+
+	const std::string_view sFilter{ m_GUISearchFilter };
+	const auto iter = std::search(
+		sText.begin(),
+		sText.end(),
+		sFilter.begin(),
+		sFilter.end(),
+		[](char chLeft, char chRight)
+		{
+			return std::tolower(static_cast<unsigned char>(chLeft)) ==
+				std::tolower(static_cast<unsigned char>(chRight));
+		});
+
+	return iter != sText.end();
+}
+
+bool CGameObjectManager::MatchesLayerObjectFilter(
+	std::string_view sLayerName,
+	CGameObject* pObj) const
+{
+	if (MatchesGUIFilter(sLayerName))
+		return true;
+
+	return MatchesGUIFilter(GetGameObjectDebugLabel(pObj));
+}
+
+std::string CGameObjectManager::GetGameObjectDebugLabel(CGameObject* pObj) const
+{
+	const CHandle handle = pObj->GetHandle();
+	return "Index: " + std::to_string(handle.GetIndex()) +
+		" | Type: " + std::string{ pObj->GetTypeString() } +
+		" | Tag: " + std::string{ pObj->GetObjectTag() };
+}
+
+std::string CGameObjectManager::GetInvalidLayerHandleDebugText(const CHandle& handle) const
+{
+	const size_t iIndex = handle.GetIndex();
+	std::string sText = "[Invalid] Index: " + std::to_string(iIndex) +
+		" | Stored Gen: " + std::to_string(handle.GetGeneration());
+
+	if (iIndex >= m_Objects.size())
+	{
+		sText += " | Slot: Out Of Range";
+		return sText;
+	}
+
+	const auto& slot = m_Objects[iIndex];
+	sText += " | Current Gen: " + std::to_string(slot.GetGeneration());
+	sText += slot.IsOccupied() ? " | Slot: Occupied" : " | Slot: Empty";
+	return sText;
+}
+
 bool CGameObjectManager::MatchesFilter(CGameObject* pObj) const
 {
-	std::string label =
-		std::to_string(pObj->GetHandle().GetIndex()) + "_" + std::string{ pObj->GetObjectTag() };
+	const std::string label = GetGameObjectDebugLabel(pObj);
 
 	std::string labelLower = label;
 	std::string filterLower = m_GUISearchFilter;
@@ -115,8 +415,10 @@ bool CGameObjectManager::MatchesFilter(CGameObject* pObj) const
 
 void CGameObjectManager::UpdateGUIDrawTreeNode(CGameObject* pObj)
 {
-	std::string label =
-		std::to_string(pObj->GetHandle().GetIndex()) + "_" + std::string{ pObj->GetObjectTag() };
+	const CHandle handle = pObj->GetHandle();
+	std::string label = GetGameObjectDebugLabel(pObj);
+	label += "###TreeObject_" + std::to_string(handle.GetIndex()) + "_" +
+		std::to_string(handle.GetGeneration());
 
 	if (m_GUISearchFilter[0] != '\0' && !MatchesFilter(pObj))
 		return;
