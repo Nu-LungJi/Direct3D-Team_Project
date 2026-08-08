@@ -191,7 +191,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 		// TestModel은 생성 직후부터 CPU pose + VS skinning 경로를 사용한다.
 		m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 
-		if (!m_pModelAnimator->Set_UpperBodyRootBone("Spine_01",3))
+		if (!m_pModelAnimator->Set_UpperBodyRootBone("SKT_Spine",3))
 		{
 			MSG_BOX("FAILED to Set UpperBodyRootBone");
 		}
