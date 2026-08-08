@@ -465,7 +465,7 @@ public:
 #pragma endregion
 
 #pragma region MAPMESH_INSTANCE_RENDER
-	HRESULT PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData);
+	HRESULT PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData, EMapMeshRenderFeature renderFeature = EMapMeshRenderFeature::Static);
 	// 인스턴싱 On/Off , 드로우 콜 GUI
 	_bool IsInstancingEnabled();
 	void SetInstancingEnabled(_bool bEnabled);

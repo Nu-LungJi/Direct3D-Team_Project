@@ -286,10 +286,26 @@ namespace Engine
 	}MAPCHUNK_COORD;
 
 	//----------------------------MapMeshObject 인스턴싱------------------------
+	struct WIND_DESC
+	{
+		EWindType type = EWindType::None;
+		_float strength = 0.f;
+		_float speed = 1.f;
+		_float frequency = 1.f;
+		_float bendExponent = 2.f;
+		_float heightStart = 0.f;
+		_float heightEnd = 1.f;
+	};
+
 	typedef struct tagMapMeshInstanceData
 	{
 		_float4x4 world;
+		_float4 windParams; // strength, speed, frequency, bendExponent
+		_float2 windHeightParams; // local influence start Y, inverse influence height
+		uint32_t windType;
+		_float padding;
 	} MAPMESH_INSTANCE_DATA;
+	static_assert(sizeof(MAPMESH_INSTANCE_DATA) % 16 == 0);
 
 	typedef struct tagMapMeshOcclusionData
 	{
