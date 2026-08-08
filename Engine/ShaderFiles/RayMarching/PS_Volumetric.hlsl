@@ -5,9 +5,9 @@ Texture2D SceneColorTexture			: register(t1);
 Texture3D VoxelAccumulatedTexture	: register(t2);
 Texture2D BlueNoiseTexture			: register(t3);
 
-const static float MaxFroxelZDistance = { 100.f };
+const static float	MaxFroxelZDistance = { 100.f };
 const static float2 NoiseResolution = { 256.f, 256.f };
-const static float DepthThreshold = 25.f;
+const static float	DepthThreshold = { 25.f };
 
 cbuffer CB_FroxelConfig : register(b10)
 {
