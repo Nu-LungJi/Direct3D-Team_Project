@@ -74,12 +74,12 @@ void CGameObjectManager::UpdateGUI()
 					iReferenceCount);
 			}
 			else
-		{
+			{
 				ImGui::Text(
 					"Index: %zu | Gen: %u | Slot: Empty",
 					iFreeSlotIndex,
 					slot.GetGeneration());
-		}
+			}
 		}
 
 		ImGui::TreePop();
@@ -131,7 +131,7 @@ void CGameObjectManager::UpdateGUI()
 					" | Tag: " + std::string{ slot.Get()->GetObjectTag() };
 			}
 			else
-				{
+			{
 				sSlotLabel += iFreeReferenceCount == 1 ?
 					" | FreeList: Registered" :
 					" | FreeList: Invalid";
@@ -489,6 +489,7 @@ void CGameObjectManager::FrameEnd()
 	}
 	else
 	{
+		_bool bDestroyedAny = false;
 		for (auto iter = m_Tree.rbegin(); iter != m_Tree.rend(); ++iter)
 		{
 			CGameObject* pObj = *iter;
@@ -502,8 +503,20 @@ void CGameObjectManager::FrameEnd()
 				m_bTreeReBuild = true;
 				m_Objects[hObj.GetIndex()].Reset();
 				m_FreeSlots.push_back(hObj.GetIndex());
+				bDestroyedAny = true;
 			}
 			//}
+		}
+
+		if (bDestroyedAny)
+		{
+			for (auto& [_, handles] : m_Layers)
+			{
+				std::erase_if(handles, [this](const CHandle& handle)
+				{
+					return GetGameObjectByHandle(handle) == nullptr;
+				});
+			}
 		}
 	}
 }
