@@ -485,56 +485,42 @@ void CGameObjectManager::FrameStart()
 void CGameObjectManager::FrameEnd()
 {
 	ZoneScopedN("CGameObjectManager_FrameEnd");
-	const _bool bTracyConnected = TracyIsConnected;
-
-	if (m_bAllResetCalled)
+	const _bool bProcessBatchReset = m_bBatchResetPending;
+	std::unordered_set<std::string> resetTargetLayers{};
+	if (bProcessBatchReset)
 	{
-		ZoneScopedN("CGameObjectManager_AllObjectsReset");
-		m_bAllResetCalled = false;
-		AllObjectsReset();
+		// [LSY] 이번 FrameEnd에서 처리할 요청을 분리해 이후 새로 들어오는 요청과 섞이지 않게 한다.
+		m_bBatchResetPending = false;
+		resetTargetLayers = std::move(m_PendingResetTargetLayers);
+		m_PendingResetTargetLayers.clear();
+	}
+
+	_bool bAnyObjectDestroyed{};
+	if (bProcessBatchReset)
+	{
+		ZoneScopedN("CGameObjectManager_DestroyAllPendingObjects");
+		bAnyObjectDestroyed = DestroyAllPendingObjects();
 	}
 	else
 	{
-		ZoneScopedN("CGameObjectManager_DestroyPendingObjects");
+		ZoneScopedN("CGameObjectManager_DestroyPendingObjectsInTree");
+		bAnyObjectDestroyed = DestroyPendingObjectsInTree();
+	}
 
-		_bool bDestroyedAny = false;
-		for (auto iter = m_Tree.rbegin(); iter != m_Tree.rend(); ++iter)
-		{
-			CGameObject* pObj = *iter;
-			CHandle hObj = pObj->GetHandle();
+	if (bAnyObjectDestroyed)
+	{
+		m_bTreeReBuild = true;
+	}
 
-			// double check 필요 없을듯
-			//if (GetGameObjectByHandle(hObj) == pObj)
-			//{
-			if (pObj->GetPendingDestroy())
-			{
-				ZoneNamedN(tObjectZone, "GameObject_Destroy", bTracyConnected);
-				if (bTracyConnected)
-				{
-					const std::string sDebugLabel = GetGameObjectDebugLabel(pObj);
-					ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
-				}
+	if (bAnyObjectDestroyed || bProcessBatchReset)
+	{
+		RemoveInvalidLayerHandles();
+	}
 
-				m_bTreeReBuild = true;
-				m_Objects[hObj.GetIndex()].Reset();
-				m_FreeSlots.push_back(hObj.GetIndex());
-				bDestroyedAny = true;
-			}
-			//}
-		}
-
-		if (bDestroyedAny)
-		{
-			ZoneScopedN("CGameObjectManager_RemoveInvalidLayerHandles");
-
-			for (auto& [_, handles] : m_Layers)
-			{
-				std::erase_if(handles, [this](const CHandle& handle)
-				{
-					return GetGameObjectByHandle(handle) == nullptr;
-				});
-			}
-		}
+	if (bProcessBatchReset &&
+		RemoveEmptyResetTargetLayers(resetTargetLayers))
+	{
+		SortLayer();
 	}
 }
 
@@ -805,59 +791,185 @@ UPtr<CGameObjectManager> CGameObjectManager::Create()
 // 그래서 지우기 전에 먼저 이거 호출
 void CGameObjectManager::AllReset()
 {
-	for (auto& pObj : m_Objects)
+	RequestResetByLayers({}, RESET_LAYER_MODE::EXCLUDE);
+}
+
+size_t CGameObjectManager::ResetObjectsInLayers(
+	std::span<const std::string_view> layerNames)
+{
+	return RequestResetByLayers(layerNames, RESET_LAYER_MODE::INCLUDE_ONLY);
+}
+
+size_t CGameObjectManager::ResetAllObjectsExceptLayers(
+	std::span<const std::string_view> excludedLayerNames)
+{
+	return RequestResetByLayers(excludedLayerNames, RESET_LAYER_MODE::EXCLUDE);
+}
+
+size_t CGameObjectManager::RequestResetByLayers(
+	std::span<const std::string_view> layerNames,
+	RESET_LAYER_MODE eMode)
+{
+	ZoneScopedN("CGameObjectManager_RequestResetByLayers");
+
+	// [LSY] 전달받은 레이어와 그 레이어가 소유한 유효 오브젝트 슬롯을 빠르게 판별하기 위한 표식이다.
+	std::vector<uint8_t> matchedSlots(m_Objects.size(), 0);
+	std::vector<uint8_t> matchedLayers(m_Layers.size(), 0);
+
+	// [LSY] 존재하는 레이어만 찾고, 세대까지 유효한 핸들의 슬롯만 제거 후보로 표시한다.
+	for (const std::string_view layerName : layerNames)
 	{
-		if (pObj.IsOccupied() && !pObj.Get()->IsPersistent())
+		const auto layerIter = m_LookupLayers.find(layerName);
+		if (layerIter == m_LookupLayers.end())
+			continue;
+
+		const size_t layerIndex = layerIter->second;
+		matchedLayers[layerIndex] = 1;
+
+		const auto& handles = m_Layers[layerIndex].second;
+		for (const CHandle& handle : handles)
 		{
-			pObj.Get()->SetPendingDestroy();
+			if (GetGameObjectByHandle(handle))
+			{
+				matchedSlots[handle.GetIndex()] = 1;
+			}
 		}
 	}
-	m_bTreeReBuild = true;
-	m_bAllResetCalled = true;
-	//FrameStart();
-	//FrameEnd();
+
+	// [LSY] FrameEnd에서 비어 있을 때 제거할 실제 리셋 대상 레이어 이름을 보관한다.
+	_bool bHasResetTargetLayer = false;
+	for (size_t i = 0; i < m_Layers.size(); ++i)
+	{
+		const _bool bLayerMatched = matchedLayers[i] != 0;
+		const _bool bResetTargetLayer =
+			eMode == RESET_LAYER_MODE::INCLUDE_ONLY ?
+			bLayerMatched : !bLayerMatched;
+
+		if (bResetTargetLayer)
+		{
+			m_PendingResetTargetLayers.emplace(m_Layers[i].first);
+			bHasResetTargetLayer = true;
+		}
+	}
+
+	// [LSY] 모드에 따라 선택된 오브젝트를 실제 삭제하지 않고 PendingDestroy 상태로 예약한다.
+	size_t resetObjectCount{};
+	for (size_t i = 0; i < m_Objects.size(); ++i)
+	{
+		auto& slot = m_Objects[i];
+		if (!slot.IsOccupied())
+			continue;
+
+		CGameObject* pObject = slot.Get();
+		const _bool bMatched = matchedSlots[i] != 0;
+		const _bool bShouldReset =
+			eMode == RESET_LAYER_MODE::INCLUDE_ONLY ? bMatched : !bMatched;
+
+		if (!bShouldReset || pObject->GetPendingDestroy())
+			continue;
+
+		pObject->SetPendingDestroy();
+		++resetObjectCount;
+	}
+
+	if (resetObjectCount > 0)
+	{
+		// [LSY] 런타임 업데이트 중 순회하고 있을 수 있는 기존 트리는 즉시 비우지 않는다.
+		// PendingDestroy 오브젝트는 후속 업데이트에서 제외하고, FrameEnd 삭제 후 다음 FrameStart에 재구성한다.
+		m_bTreeReBuild = true;
+	}
+
+	if (resetObjectCount > 0 || bHasResetTargetLayer)
+	{
+		m_bBatchResetPending = true;
+	}
+
+	return resetObjectCount;
+}
+
+_bool CGameObjectManager::DestroyAllPendingObjects()
+{
+	ZoneScopedN("CGameObjectManager_DestroyAllPendingObjectsInternal");
+	const _bool bTracyConnected = TracyIsConnected;
+	_bool bAnyObjectDestroyed = false;
+
+	for (auto& slot : m_Objects)
+	{
+		if (!slot.IsOccupied())
+			continue;
+
+		CGameObject* pObject = slot.Get();
+		if (!pObject->GetPendingDestroy())
+			continue;
+
+		ZoneNamedN(tObjectZone, "GameObject_Destroy", bTracyConnected);
+		if (bTracyConnected)
+		{
+			const std::string sDebugLabel = GetGameObjectDebugLabel(pObject);
+			ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
+		}
+
+		const CHandle hObject = pObject->GetHandle();
+		slot.Reset();
+		m_FreeSlots.push_back(hObject.GetIndex());
+		bAnyObjectDestroyed = true;
+	}
+
+	return bAnyObjectDestroyed;
+}
+
+_bool CGameObjectManager::DestroyPendingObjectsInTree()
+{
+	const _bool bTracyConnected = TracyIsConnected;
+	_bool bAnyObjectDestroyed = false;
+
+	for (auto iter = m_Tree.rbegin(); iter != m_Tree.rend(); ++iter)
+	{
+		CGameObject* pObject = *iter;
+		if (!pObject->GetPendingDestroy())
+			continue;
+
+		ZoneNamedN(tObjectZone, "GameObject_Destroy", bTracyConnected);
+		if (bTracyConnected)
+		{
+			const std::string sDebugLabel = GetGameObjectDebugLabel(pObject);
+			ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
+		}
+
+		const CHandle hObject = pObject->GetHandle();
+		m_Objects[hObject.GetIndex()].Reset();
+		m_FreeSlots.push_back(hObject.GetIndex());
+		bAnyObjectDestroyed = true;
+	}
+
+	return bAnyObjectDestroyed;
+}
+
+void CGameObjectManager::RemoveInvalidLayerHandles()
+{
+	ZoneScopedN("CGameObjectManager_RemoveInvalidLayerHandles");
 
 	for (auto& [_, handles] : m_Layers)
 	{
 		std::erase_if(handles, [this](const CHandle& handle)
 		{
-			const auto* pObject = GetGameObjectByHandle(handle);
-			return pObject == nullptr || !pObject->IsPersistent();
+			return GetGameObjectByHandle(handle) == nullptr;
 		});
 	}
-	std::erase_if(m_Layers, [](const auto& layer)
-	{
-		return layer.second.empty();
-	});
-	SortLayer();
-	m_TreePreparation.clear();
-	m_Tree.clear();
 }
 
-void CGameObjectManager::AllObjectsReset()
+_bool CGameObjectManager::RemoveEmptyResetTargetLayers(
+	const std::unordered_set<std::string>& resetTargetLayers)
 {
-	ZoneScopedN("CGameObjectManager_AllObjectsResetInternal");
-	const _bool bTracyConnected = TracyIsConnected;
-
-	for (auto& pObj : m_Objects)
-	{
-		if (pObj.IsOccupied())
+	const size_t removedLayerCount = std::erase_if(
+		m_Layers,
+		[&resetTargetLayers](const auto& layer)
 		{
-			CHandle hObj = pObj.Get()->GetHandle();
-			if (pObj.Get()->GetPendingDestroy())
-			{
-				ZoneNamedN(tObjectZone, "GameObject_Destroy", bTracyConnected);
-				if (bTracyConnected)
-				{
-					const std::string sDebugLabel = GetGameObjectDebugLabel(pObj.Get());
-					ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
-				}
+			return layer.second.empty() &&
+				resetTargetLayers.contains(layer.first);
+		});
 
-				m_Objects[hObj.GetIndex()].Reset();
-				m_FreeSlots.push_back(hObj.GetIndex());
-			}
-		}
-	}
+	return removedLayerCount > 0;
 }
 
 void CGameObjectManager::Free()

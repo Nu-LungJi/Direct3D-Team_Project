@@ -1007,6 +1007,18 @@ void CGameInstance::GameObjectAllReset()
 	m_pGameObjectManager->AllReset();
 }
 
+size_t CGameInstance::GameObjectResetLayers(
+	std::span<const std::string_view> layerNames)
+{
+	return m_pGameObjectManager->ResetObjectsInLayers(layerNames);
+}
+
+size_t CGameInstance::GameObjectAllResetExceptLayers(
+	std::span<const std::string_view> excludedLayerNames)
+{
+	return m_pGameObjectManager->ResetAllObjectsExceptLayers(excludedLayerNames);
+}
+
 inline CGameObject* CGameInstance::GetGameObjectByHandle(const CHandle& handle)
 {
 	return m_pGameObjectManager->GetGameObjectByHandle(handle);

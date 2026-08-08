@@ -1,4 +1,5 @@
 #pragma once
+#include <initializer_list>
 #include "Engine_Defines.h"
 #include "ResourceManager.h"
 #include "WorkerManager.h"
@@ -201,6 +202,15 @@ public:
 #pragma region GAMEOBJECT_MANAGER
 public:
 	void GameObjectAllReset();
+	size_t GameObjectResetLayers(std::span<const std::string_view> layerNames);
+	size_t GameObjectAllResetExceptLayers(std::span<const std::string_view> excludedLayerNames);
+
+	template<typename TLayer>
+	size_t GameObjectResetLayers(std::initializer_list<TLayer> layerNames);
+
+	template<typename TLayer>
+	size_t GameObjectAllResetExceptLayers(std::initializer_list<TLayer> excludedLayerNames);
+
 	template<typename TLayer>
 	std::optional<CHandle> AddGameObjectToLayer(const StringID& iPrototypeLevelIndex, const StringID& svPrototypeTag, TLayer&& sLayerName, void* pArg = nullptr)
 	{
@@ -685,6 +695,38 @@ private:
 	UPtr<CEffectManager> m_pEffectManager{};
 	UPtr<CPathPlaybackEditor> m_pPathPlaybackEditor{};
 };
+
+template<typename TLayer>
+size_t CGameInstance::GameObjectResetLayers(
+	std::initializer_list<TLayer> layerNames)
+{
+	std::vector<std::string_view> layerNameViews{};
+	layerNameViews.reserve(layerNames.size());
+
+	for (const auto& layerName : layerNames)
+	{
+		layerNameViews.push_back(MagicEnumToStringView(layerName));
+	}
+
+	return GameObjectResetLayers(
+		std::span<const std::string_view>{ layerNameViews });
+}
+
+template<typename TLayer>
+size_t CGameInstance::GameObjectAllResetExceptLayers(
+	std::initializer_list<TLayer> excludedLayerNames)
+{
+	std::vector<std::string_view> layerNameViews{};
+	layerNameViews.reserve(excludedLayerNames.size());
+
+	for (const auto& layerName : excludedLayerNames)
+	{
+		layerNameViews.push_back(MagicEnumToStringView(layerName));
+	}
+
+	return GameObjectAllResetExceptLayers(
+		std::span<const std::string_view>{ layerNameViews });
+}
 
 template<typename TJoint>
 TJoint* CGameInstance::AddPxJoint(

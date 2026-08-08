@@ -50,7 +50,9 @@ HRESULT CLevelLoading::Initialize()
 {
 	LOG_MEMORY("CLevelLoading::Initialize");
 
-	Engine::CGameInstance::Get().GameObjectAllReset();
+	Engine::CGameInstance::Get().GameObjectAllResetExceptLayers({
+		"00_ENGINE_CINEMATIC_CAMERA"
+	});
 
 	GET_SINGLE(UIManager)->CreateFadeOut(1.f, 2.f);
 

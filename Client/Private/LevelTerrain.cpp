@@ -44,7 +44,9 @@ CLevelTerrain::~CLevelTerrain()
 
 HRESULT CLevelTerrain::Initialize()
 {
-	Engine::CGameInstance::Get().GameObjectAllReset();
+	Engine::CGameInstance::Get().GameObjectAllResetExceptLayers({
+		"00_ENGINE_CINEMATIC_CAMERA"
+	});
 
 	GET_SINGLE(UIManager)->CreateFadeOut();
 

@@ -39,7 +39,9 @@ CLevelCharlesRookwood::~CLevelCharlesRookwood()
 
 HRESULT CLevelCharlesRookwood::Initialize()
 {
-	E::CGameInstance::Get().GameObjectAllReset();
+	E::CGameInstance::Get().GameObjectAllResetExceptLayers({
+		"00_ENGINE_CINEMATIC_CAMERA"
+	});
 
 	GET_SINGLE(UIManager)->CreateFadeOut(2.f, 3.f);
 
