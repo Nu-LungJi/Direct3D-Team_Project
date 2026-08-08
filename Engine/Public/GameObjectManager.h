@@ -26,6 +26,7 @@ public:
 	void UpdateGUIDrawTreeNode( CGameObject* handle);
 private:
 	char m_GUISearchFilter[256] = {};
+	_bool m_bGUIEnableSearchInput{ false };
 	_bool m_bGUIShowInvalidLayerHandles{ false };
 	bool MatchesGUIFilter(std::string_view sText) const;
 	bool MatchesLayerObjectFilter(std::string_view sLayerName, CGameObject* pObj) const;

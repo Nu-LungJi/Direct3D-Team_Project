@@ -161,6 +161,17 @@ public:
 private:
 	_bool m_bPendingDestroy{ false };
 
+public:
+	// [LSY] GameObjectManager가 호출하는 Fixed/Priority/Update/LateUpdate 참여 여부만 제어한다.
+	void SetManagedUpdateEnabled(_bool bEnabled);
+	void SetManagedUpdateEnabledCascade(_bool bEnabled);
+	_bool IsManagedUpdateEnabled() const { return m_bManagedUpdateEnabled; }
+protected:
+	virtual void OnManagedUpdateEnabled() {}
+	virtual void OnManagedUpdateDisabled() {}
+private:
+	_bool m_bManagedUpdateEnabled{ true };
+
 	// IPhysicsListener
 public:
 	void OnWake() override {}

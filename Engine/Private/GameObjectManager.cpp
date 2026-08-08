@@ -121,6 +121,8 @@ void CGameObjectManager::UpdateGUI()
 			const bool bInvalidState =
 				(bOccupied && iFreeReferenceCount > 0) ||
 				(!bOccupied && iFreeReferenceCount != 1);
+			const bool bManagedUpdateDisabled =
+				bOccupied && !slot.Get()->IsManagedUpdateEnabled();
 
 			std::string sSlotLabel = bOccupied ? "[Occupied] " : "[Empty] ";
 			sSlotLabel += "Index: " + std::to_string(i) +
@@ -140,10 +142,12 @@ void CGameObjectManager::UpdateGUI()
 
 			if (bInvalidState)
 				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1.f, 0.35f, 0.35f, 1.f });
+			else if (bManagedUpdateDisabled)
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
 
 			const bool bSlotOpened = ImGui::TreeNode(sSlotLabel.c_str());
 
-			if (bInvalidState)
+			if (bInvalidState || bManagedUpdateDisabled)
 				ImGui::PopStyleColor();
 
 			if (bSlotOpened)
@@ -182,7 +186,8 @@ void CGameObjectManager::UpdateGUI()
 		ImGui::TreePop();
 	}
 
-	const bool bLayerFilterActive = m_GUISearchFilter[0] != '\0';
+	const bool bLayerFilterActive =
+		m_bGUIEnableSearchInput && m_GUISearchFilter[0] != '\0';
 	size_t iTotalValidLayerObjectCount = 0;
 	size_t iTotalInvalidLayerHandleCount = 0;
 	size_t iFilteredLayerItemCount = 0;
@@ -224,12 +229,20 @@ void CGameObjectManager::UpdateGUI()
 
 	if (ImGui::TreeNode(sLayersLabel.c_str()))
 	{
+		ImGui::Checkbox("Enable Search Input##Layers", &m_bGUIEnableSearchInput);
 		ImGui::SetNextItemWidth(-1);
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !m_bGUIEnableSearchInput);
+		ImGui::PushStyleVar(
+			ImGuiStyleVar_Alpha,
+			m_bGUIEnableSearchInput ? ImGui::GetStyle().Alpha :
+			ImGui::GetStyle().Alpha * 0.5f);
 		ImGui::InputTextWithHint(
 			"##layer_search",
 			"Search layer or object...",
 			m_GUISearchFilter,
 			sizeof(m_GUISearchFilter));
+		ImGui::PopStyleVar();
+		ImGui::PopItemFlag();
 		ImGui::Checkbox("Show Invalid Handles", &m_bGUIShowInvalidLayerHandles);
 		ImGui::Separator();
 
@@ -290,7 +303,17 @@ void CGameObjectManager::UpdateGUI()
 						std::string sObjectLabel = GetGameObjectDebugLabel(pObj);
 						sObjectLabel += "###LayerObject_" + std::to_string(handle.GetIndex()) + "_" +
 							std::to_string(handle.GetGeneration());
-						if (ImGui::TreeNode(sObjectLabel.c_str()))
+
+						const bool bManagedUpdateDisabled = !pObj->IsManagedUpdateEnabled();
+						if (bManagedUpdateDisabled)
+							ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+
+						const bool bObjectOpened = ImGui::TreeNode(sObjectLabel.c_str());
+
+						if (bManagedUpdateDisabled)
+							ImGui::PopStyleColor();
+
+						if (bObjectOpened)
 						{
 							pObj->UpdateGUI();
 							ImGui::TreePop();
@@ -321,8 +344,20 @@ void CGameObjectManager::UpdateGUI()
 
 	if (ImGui::TreeNode("Tree"))
 	{
+		ImGui::Checkbox("Enable Search Input##Tree", &m_bGUIEnableSearchInput);
 		ImGui::SetNextItemWidth(-1);
-		ImGui::InputTextWithHint("##search", "Search...", m_GUISearchFilter, sizeof(m_GUISearchFilter));
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !m_bGUIEnableSearchInput);
+		ImGui::PushStyleVar(
+			ImGuiStyleVar_Alpha,
+			m_bGUIEnableSearchInput ? ImGui::GetStyle().Alpha :
+			ImGui::GetStyle().Alpha * 0.5f);
+		ImGui::InputTextWithHint(
+			"##search",
+			"Search...",
+			m_GUISearchFilter,
+			sizeof(m_GUISearchFilter));
+		ImGui::PopStyleVar();
+		ImGui::PopItemFlag();
 		ImGui::Separator();
 
 		for (const auto& rootHandle : m_TreePreparation)
@@ -338,7 +373,7 @@ void CGameObjectManager::UpdateGUI()
 
 bool CGameObjectManager::MatchesGUIFilter(std::string_view sText) const
 {
-	if (m_GUISearchFilter[0] == '\0')
+	if (!m_bGUIEnableSearchInput || m_GUISearchFilter[0] == '\0')
 		return true;
 
 	const std::string_view sFilter{ m_GUISearchFilter };
@@ -394,6 +429,9 @@ std::string CGameObjectManager::GetInvalidLayerHandleDebugText(const CHandle& ha
 
 bool CGameObjectManager::MatchesFilter(CGameObject* pObj) const
 {
+	if (!m_bGUIEnableSearchInput || m_GUISearchFilter[0] == '\0')
+		return true;
+
 	const std::string label = GetGameObjectDebugLabel(pObj);
 
 	std::string labelLower = label;
@@ -420,10 +458,20 @@ void CGameObjectManager::UpdateGUIDrawTreeNode(CGameObject* pObj)
 	label += "###TreeObject_" + std::to_string(handle.GetIndex()) + "_" +
 		std::to_string(handle.GetGeneration());
 
-	if (m_GUISearchFilter[0] != '\0' && !MatchesFilter(pObj))
+	if (m_bGUIEnableSearchInput &&
+		m_GUISearchFilter[0] != '\0' && !MatchesFilter(pObj))
 		return;
 
-	if (ImGui::TreeNode(label.c_str()))
+	const bool bManagedUpdateDisabled = !pObj->IsManagedUpdateEnabled();
+	if (bManagedUpdateDisabled)
+		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+
+	const bool bObjectOpened = ImGui::TreeNode(label.c_str());
+
+	if (bManagedUpdateDisabled)
+		ImGui::PopStyleColor();
+
+	if (bObjectOpened)
 	{
 		pObj->UpdateGUI();
 
@@ -689,7 +737,8 @@ void CGameObjectManager::FixedUpdate(_float fTimeDelta)
 
 	for (auto& pObj : m_Tree)
 	{
-		if (!pObj->GetPendingDestroy())
+		if (!pObj->GetPendingDestroy() &&
+			pObj->IsManagedUpdateEnabled())
 		{
 			ZoneNamedN(tObjectZone, "GameObject_FixedUpdate", bTracyConnected);
 			if (bTracyConnected)
@@ -710,7 +759,8 @@ void CGameObjectManager::PriorityUpdate(_float fTimeDelta)
 
 	for (auto& pObj : m_Tree)
 	{
-		if (!pObj->GetPendingDestroy())
+		if (!pObj->GetPendingDestroy() &&
+			pObj->IsManagedUpdateEnabled())
 		{
 			ZoneNamedN(tObjectZone, "GameObject_PriorityUpdate", bTracyConnected);
 			if (bTracyConnected)
@@ -731,7 +781,8 @@ void CGameObjectManager::Update(_float fTimeDelta)
 
 	for (auto& pObj : m_Tree)
 	{
-		if (!pObj->GetPendingDestroy())
+		if (!pObj->GetPendingDestroy() &&
+			pObj->IsManagedUpdateEnabled())
 		{
 			ZoneNamedN(tObjectZone, "GameObject_Update", bTracyConnected);
 			if (bTracyConnected)
@@ -752,7 +803,8 @@ void CGameObjectManager::LateUpdate(_float fTimeDelta)
 
 	for (auto& pObj : m_Tree)
 	{
-		if (!pObj->GetPendingDestroy())
+		if (!pObj->GetPendingDestroy() &&
+			pObj->IsManagedUpdateEnabled())
 		{
 			ZoneNamedN(tObjectZone, "GameObject_LateUpdate", bTracyConnected);
 			if (bTracyConnected)

@@ -118,6 +118,13 @@ void CGameObject::UpdateGUI()
     {
         SetPendingDestroy();
     }
+
+	_bool bManagedUpdateEnabled = IsManagedUpdateEnabled();
+	if (ImGui::Checkbox("Managed Update", &bManagedUpdateEnabled))
+	{
+		SetManagedUpdateEnabledCascade(bManagedUpdateEnabled);
+	}
+
     //ImGui::Text("dest: %s", m_bPendingDestroy ? "true" : "false");
     if (ImGui::TreeNode("Components"))
     {
@@ -173,6 +180,27 @@ void CGameObject::SetPendingDestroy(_bool b)
 void CGameObject::SetPendingDestroyCascade(_bool b)
 {
     MyTreeDFS(this, [&](auto pObj) {pObj->SetPendingDestroy(b); });
+}
+
+void CGameObject::SetManagedUpdateEnabled(_bool bEnabled)
+{
+	if (m_bManagedUpdateEnabled == bEnabled)
+		return;
+
+	m_bManagedUpdateEnabled = bEnabled;
+
+	if (m_bManagedUpdateEnabled)
+		OnManagedUpdateEnabled();
+	else
+		OnManagedUpdateDisabled();
+}
+
+void CGameObject::SetManagedUpdateEnabledCascade(_bool bEnabled)
+{
+	MyTreeDFS(this, [bEnabled](CGameObject* pObject)
+	{
+		pObject->SetManagedUpdateEnabled(bEnabled);
+	});
 }
 
 void CGameObject::SyncActivePhysXData(const PX_SYNC_DATA& syncData)
