@@ -699,7 +699,7 @@ void CMiniMap::UpdateBattleZones(const _float3& playerPosition)
 void CMiniMap::InitRookwoodBattleZone()
 {
 	AddBattleZone({ { -178.f, 0.f, 160.f },40.f, 60.f, 0.25f,static_cast<uint32_t>(LEVEL::CHARLES_ROOKWOOD) });
-	AddBattleZone({ { -252.f, 0.f, -110.f },20.f, 60.f, 0.25f,static_cast<uint32_t>(LEVEL::CHARLES_ROOKWOOD) });
+	AddBattleZone({ { -252.f, 0.f, -120.f },20.f, 60.f, 0.25f,static_cast<uint32_t>(LEVEL::CHARLES_ROOKWOOD) });
 	AddBattleZone({ { -254.f, 0.f, -210.f },30.f, 60.f, 0.25f,static_cast<uint32_t>(LEVEL::CHARLES_ROOKWOOD) });
 }
 
