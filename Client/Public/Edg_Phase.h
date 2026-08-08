@@ -10,6 +10,10 @@ public:
 private:
 	CEdg_Phase();
 	~CEdg_Phase() override;
+
+private:
+	HRESULT	Initialize();
+
 public:
 	void Enter(CStateMachine* pStateMachine)override;
 	void Exit(CStateMachine* pStateMachine)override;
@@ -30,7 +34,7 @@ private:
 	_bool					m_bNext{};
 	_float					m_fTick{};
 	_float3					m_vNextDir{}, m_vLastDir{};
-	std::vector<_float3>	m_PhasePos[ETOUI(DRAGON_PHASE::END)];
+	std::list<_float3>	m_PhasePos[ETOUI(DRAGON_PHASE::END)];
 public:
 	static SPtr<CEdg_Phase> Create();
 };

@@ -12,7 +12,17 @@ CEdg_Phase::CEdg_Phase()
 CEdg_Phase::~CEdg_Phase()
 {
 }
+HRESULT CEdg_Phase::Initialize()
+{
 
+	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(20, 0, 20));
+	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(40, 0, 40));
+	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(80, 0, 80));
+	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(40, 0, 40));
+	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(20, 0, 20));
+
+	return S_OK;
+}
 void CEdg_Phase::Enter(CStateMachine* pStateMachine)
 {
 	CEnderDragon* pDragon = pStateMachine->GetOwner<CEnderDragon>();
@@ -29,9 +39,6 @@ void CEdg_Phase::Enter(CStateMachine* pStateMachine)
 	m_eNextPhase = DRAGON_PHASE::END;
 	m_bNext = false;
 
-	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(0, 0, 0));
-	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(10, 0, 10));
-	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(20, 0, 40));
 }
 
 void CEdg_Phase::Exit(CStateMachine* pStateMachine)
@@ -45,6 +52,7 @@ void CEdg_Phase::Exit(CStateMachine* pStateMachine)
 
 void CEdg_Phase::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta)
 {
+	
 }
 
 void CEdg_Phase::Update(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -55,7 +63,7 @@ void CEdg_Phase::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	auto pDragon = pDragonFsm->GetOwner<CEnderDragon>();
 	if (nullptr == pDragon) return;
 
-	Phase_Change_Action(pDragon,fTimeDelta);
+	Phase_Change_Action(pDragon, fTimeDelta);
 
 	//도망치는게 끝나면 다시 상태전환 하기
 	if (m_eNextPhase != DRAGON_PHASE::END)
@@ -74,20 +82,21 @@ _bool CEdg_Phase::MovePhase(CEnderDragon* pDragon, _float fTimeDelta)
 	
 	if (m_PhasePos[ETOUI(m_ePhase)].empty()) return true;
 	
-	_vector vNextPos = XMLoadFloat3(&m_PhasePos[ETOUI(m_ePhase)].back());
+	_vector vNextPos = XMLoadFloat3(&m_PhasePos[ETOUI(m_ePhase)].front());
 	_vector vCurPos  = XMLoadFloat3(&pDragon->GetTransform().GetPosition());
 
+	_vector vToNext = vNextPos - vCurPos;
 	if (!m_bNext)
 	{
 		XMStoreFloat3(&m_vLastDir, XMVector3Normalize(pDragon->GetTransform().GetState(STATE::LOOK)));
-		XMStoreFloat3(&m_vNextDir, XMVector3Normalize(XMVector3Normalize(XMVector3Length(vNextPos - vCurPos))));
+		XMStoreFloat3(&m_vNextDir, XMVector3Normalize(vNextPos - vCurPos));
 		m_bNext = true;
 	}
-
+	_float fDot = XMVectorGetX(XMVector3Dot(XMVector3Normalize(vToNext), XMLoadFloat3(&m_vNextDir)));
 	_float fDist = XMVectorGetX(XMVector3Length(vNextPos - vCurPos));
-	if (fDist <= 0.5f)
+	if (fDist <= 0.5f || fDot < 0.f)
 	{
-		m_PhasePos[ETOUI(m_ePhase)].pop_back();
+		m_PhasePos[ETOUI(m_ePhase)].pop_front();
 		m_bNext = false;
 		m_fTick = 0.f;
 	}
@@ -112,7 +121,7 @@ void CEdg_Phase::Phase_Change_Action(CEnderDragon* pDragon, _float fTimeDelta)
 SPtr<CEdg_Phase> CEdg_Phase::Create()
 {
 	auto pInstance = ToSPtr(new CEdg_Phase{});
-	if (!pInstance)
+	if (FAILED(pInstance->Initialize()))
 	{
 		MSG_BOX("Failed to create CEdg_Phase");
 		return nullptr;

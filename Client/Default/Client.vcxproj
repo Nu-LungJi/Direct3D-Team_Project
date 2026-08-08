@@ -209,7 +209,8 @@
     <ClInclude Include="..\public\BTDecEdgPhase.h" />
     <ClInclude Include="..\public\BTDecEdgState.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
-    <ClInclude Include="..\public\DragonBall.h" />
+    <ClInclude Include="..\public\DragonSkill.h" />
+    <ClInclude Include="..\public\EdgFireBall.h" />
     <ClInclude Include="..\public\Edg_Combat.h" />
     <ClInclude Include="..\public\Edg_Hit.h" />
     <ClInclude Include="..\public\Edg_Phase.h" />
@@ -342,13 +343,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\EdgFireBall.cpp" />
     <ClCompile Include="..\private\LevelLastBossRanrok.cpp" />
     <ClCompile Include="..\private\LevelLastBossRanrokLoader.cpp" />
     <ClCompile Include="..\private\BTDecEdgPatroll.cpp" />
     <ClCompile Include="..\private\BTDecEdgPhase.cpp" />
     <ClCompile Include="..\private\BTDecEdgState.cpp" />
     <ClCompile Include="..\private\BTEdgStateFinished.cpp" />
-    <ClCompile Include="..\private\DragonBall.cpp" />
+    <ClCompile Include="..\private\DragonSKill.cpp" />
     <ClCompile Include="..\private\Edg_Combat.cpp" />
     <ClCompile Include="..\private\Edg_Hit.cpp" />
     <ClCompile Include="..\private\Edg_Phase.cpp" />

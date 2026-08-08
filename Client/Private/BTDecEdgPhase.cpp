@@ -52,8 +52,8 @@ EVALUATE CBTDecEdgPhase::Evaluate(_float fTimeDelta)
 }
 void CBTDecEdgPhase::Update_Gui()
 {
-
-	if (ImGui::BeginCombo("EdgState", MagicEnumToStringView(m_eState).data()))
+	ImGui::Text("EdgState");
+	if (ImGui::BeginCombo("##EdgState", MagicEnumToStringView(m_eState).data()))
 	{
 		for (uint32_t i = 0; i < ETOUI(DRAGON_PHASE::END); ++i)
 		{

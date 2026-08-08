@@ -68,6 +68,7 @@ namespace Client
 		Prototype_GameObject_TmbGurdianDead,
 		Prototype_GameObject_BossWeapon,
 		Prototype_GameObject_Dragon,
+		Prototype_GameObject_Dragon_FireBall,
 		Prototype_GameObject_Axe,
 		Prototype_GameObject_Sword,
 		Prototype_GameObject_Mace,

@@ -529,6 +529,14 @@ void CMonster::Get_SoundKey(_string& CurSoundName)
 	return;
 }
 
+const _float4x4* CMonster::Get_CombineBoneMatrix(int32_t iBoneIndex)
+{
+	if (iBoneIndex >= m_pComModelInstance->Get_CombinedBoneMatrices().size() || iBoneIndex < 0)
+		return nullptr;
+
+	return &m_pComModelInstance->Get_CombinedBoneMatrices()[iBoneIndex];
+}
+
 CComAnimator* CMonster::Get_Animator()
 {
 	return m_pModelAnimator;

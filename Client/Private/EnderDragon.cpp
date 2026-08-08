@@ -12,14 +12,12 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "DbgLineRender.h"
-#include "TmbGurdianDead.h"
-#include "GurdianWeapon.h"
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
 #include "UIController.h"
 #include "UIManager.h"
-#include "EnderDragon_State.h"
 //FSM
+#include "EnderDragon_State.h"
 #include "Edg_Spawn.h"
 #include "Edg_Combat.h"
 #include "Edg_Hit.h"
@@ -27,6 +25,8 @@
 //BB
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
+//Skill
+#include "EdgFireBall.h"
 NS_USING(Client)
 
 CEnderDragon::CEnderDragon()
@@ -203,7 +203,7 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 		MSG_BOX("Create Failed Fsm");
 		return E_FAIL;
 	}
-	if (FAILED(Ready_Skill()))
+	if (FAILED(Ready_Skill(MonDesc->LevelTag)))
 	{
 		MSG_BOX("Create Failed Skill");
 		return E_FAIL;
@@ -236,7 +236,7 @@ HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
 
 	return S_OK;
 }
-HRESULT CEnderDragon::Ready_Skill()
+HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 {
 	if (ETOUI(DRAGON_SKILL::END) > ETOUI(ATTMON::END))
 		return E_FAIL;
@@ -248,10 +248,20 @@ HRESULT CEnderDragon::Ready_Skill()
 	m_MonSkillLists[ATTMON::SKIP] = ETOUI(DRAGON_SKILL::SKIP);
 
 
-	//m_EffectNames[ETOUI(DRAGON_SKILL::JUMP_START)] = "TombJumpStart";
+	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)] = "FireBall";
 	//m_EffectNames[ETOUI(DRAGON_SKILL::JUMP_END)] = "TombJumpEnd";
 	//m_EffectNames[ETOUI(DRAGON_SKILL::HIT_ACCIO)] = "AccioGrab";
+	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
+	
+	SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Mouth");
+	SkillDesc.hOwner = GetHandle();
+	if (-1 == SkillDesc.iBoneIndex) return E_FAIL;
 
+	auto FireBallhandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall,"03.FirBall",&SkillDesc);
+	if (!FireBallhandle) return E_FAIL;
+
+
+	m_SkillHandle[ETOUI(DRAGON_SKILL::FIREBALL)] = FireBallhandle.value();
 
 	return S_OK;
 }
@@ -266,16 +276,17 @@ void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 {
 	Phase_Debug();
 	Check_Phase();
-	Flag_Check(fTimeDelta);
 	m_pFsm->PriorityUpdate(fTimeDelta);
 	Update_BBToFsm();
 	__super::PriorityUpdate(fTimeDelta);
+	Active_Skill();
+	m_pFsm->Update(fTimeDelta);
 }
 
 void CEnderDragon::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
-	m_pFsm->Update(fTimeDelta);
+	//m_pFsm->Update(fTimeDelta);
 }
 
 void CEnderDragon::FixedUpdate(E::_float fTimeDelta)
@@ -321,7 +332,30 @@ _string CEnderDragon::Get_SkillName(ATTMON SkillNode)
 
 	return MagicEnumToStringView(static_cast<DRAGON_SKILL>(pValue->second)).data();
 }
+void CEnderDragon::Active_Skill()
+{
+	//판정할 클래스를 새로 만들어야 될지 고민
+	//만들어 버렸다
+	if (m_eAttType == ATTMON::END)
+		return;
+	
+	if (m_iCurSkill == m_iPreSkill)
+		return;
 
+	_float fCurrRatio = m_pModelAnimator->GetPlayAnimRatio();
+
+	if (fCurrRatio <= m_fSkillRatio.x)
+		return;
+
+	uint32_t iSkillIndex = Find_SkillNum(m_eAttType);
+	
+	auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(m_SkillHandle[iSkillIndex]);
+
+	if (nullptr == pSkill)
+		return;
+	pSkill->Active(m_CurEffectName);
+	m_iPreSkill = m_iCurSkill;
+}
 _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 {
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
@@ -344,10 +378,10 @@ _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 	{
 		m_pFsm->Request_State(EDG_STATE::HIT);
 		m_bIsBreak = true;
-		MON_HIT_INFO HitInfo{};
-		HitInfo.eAttType = m_eAttType;
-		HitInfo.eHitType = eType;
-		m_PendingMonTable = HitInfo;
+
+		m_PendingMonTable.eAttType = m_eAttType;
+		m_PendingMonTable.eHitType = eType;
+	
 		m_bPending = true;
 	}
 	
@@ -356,23 +390,81 @@ _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 }
 void CEnderDragon::Check_Phase()
 {
+	if (m_pFsm->GetCurState() != EDG_STATE::COMBAT)
+		return;
 	auto pBB = Get_BlackBoard();
 	if (nullptr == pBB) return;
 
+	auto pSrc = Get_Target();
+	if (nullptr == pSrc) return;
+
+	_float3 DestPos = pSrc->GetTransform().GetPosition();
+	_float3 SrcPos = GetTransform().GetPosition();
+
+	_float fDis = XMVectorGetX(XMVector3Length(XMLoadFloat3(&DestPos) - XMLoadFloat3(&SrcPos)));
 	if (false == m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE2)] && m_iHp <= m_iMaxHp - m_iMaxHp / 8.f)
 	{
+		//피 조금 까이고 도망
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE2)] = true;
 		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
 
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE,DRAGON_PHASE::PHASE2);
+		return;
 	}
-	else if (false == m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE3)] && m_iHp <= m_iMaxHp / 2.f)
+	else if (false == m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE3)] && fDis <= 10.f)
 	{
+		//도망간 후 파이어볼 잠깐 쏘다 거리 가까워지면 다시 run
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE3)] = true;
 		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
 
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE3);
+		return;
 	}
+	else if (false == m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE4)] && m_iHp <= m_iMaxHp / 2.f)
+	{
+		//대충 날다 두드려 맞고 도망
+		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE4)] = true;
+		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
+		return;
+	}
+	else if (false == m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE5)] && m_iHp <= m_iMaxHp / 3.f)
+	{
+		//대충 땅바닥 진입전 마지막 비행
+		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE5)] = true;
+		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE5);
+		return;
+	}
+	else if (false == m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE6)] && m_iHp <= m_iMaxHp / 4.f)
+	{
+		//바닥 마지막전투
+		//죽어
+		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE6)] = true;
+		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE6);
+		return;
+	}
+}
+void CEnderDragon::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
+{
+	if (eType == ATTMON::END)
+		return;
+
+	if (m_eLastSkillTable == eType)
+		return;
+
+	uint32_t iSkillNum = Find_SkillNum(eType);
+	if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(DRAGON_SKILL::END))
+		return;
+
+	m_CurEffectName = m_EffectNames[iSkillNum];
+	m_eLastSkillTable = m_eAttType = eType;
+	m_fSkillRatio = fSkillRatio;
+	++m_iCurSkill;
 }
 void CEnderDragon::Flag_Check(_float fTimeDelta)
 {
@@ -418,23 +510,28 @@ void CEnderDragon::Phase_Debug()
 	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_Q))
 	{
 		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
-		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE2);
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE1);
 
 	}
 	else if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_W))
 	{
 		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
-		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE3);
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE2);
 	}
 	else if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_E))
 	{
 		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
-		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE3);
 	}
 	else if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_R))
 	{
 		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
-		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE5);
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
+	}
+	else if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_T))
+	{
+		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
 	}
 }
 E::UPtr<CEnderDragon> CEnderDragon::Create()

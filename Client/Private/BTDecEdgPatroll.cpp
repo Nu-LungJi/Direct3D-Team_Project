@@ -67,8 +67,8 @@ EVALUATE CBTDecEdgPatroll::Evaluate(_float fTimeDelta)
 }
 void CBTDecEdgPatroll::Update_Gui()
 {
-
-	if (ImGui::BeginCombo("Move", MagicEnumToStringView(m_eState).data()))
+	ImGui::Text("Move");
+	if (ImGui::BeginCombo("##Move", MagicEnumToStringView(m_eState).data()))
 	{
 		for (uint32_t i = 0; i < ETOUI(MOVE::END); ++i)
 		{

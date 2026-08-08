@@ -23,6 +23,7 @@
 #include "EnderDragon.h"
 #include "BossMace.h"
 #include "EnderDragon_State.h"
+#include "EdgFireBall.h"
 // UI
 #include "UIController.h"
 #include "EffectUI.h"
@@ -482,7 +483,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_Dragon.bin"))) {
 		
 			E::CResModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(5.f, 5.f, 5.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+			pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 		
 			if (FAILED(res->Load(pDesc)))
 			{
@@ -495,8 +496,8 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Dragon");
 			return E_FAIL;
 		}
-		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN,
-			"Prototype_Component_Dragon_FSM",CEnderDragon_State::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, "Prototype_Component_Dragon_FSM",CEnderDragon_State::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, CEdgFireBall::Create()))) return E_FAIL;
 
 	}
 

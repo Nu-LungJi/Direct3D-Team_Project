@@ -307,6 +307,12 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_Fly_State">
       <UniqueIdentifier>{b78cf1cd-d217-4ee5-8a93-12d9a37ed1e6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\EnderDragon\Skill">
+      <UniqueIdentifier>{60b180f7-c143-4768-868b-6ffdb32625dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\EnderDragon\Skill\FireBall">
+      <UniqueIdentifier>{50a07458-33d1-4dc5-8875-84dba5aa3208}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -699,9 +705,6 @@
     <ClInclude Include="..\public\Edg_Hit.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\DragonBall.h">
-      <Filter>GameObject\Monster\EnderDragon</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\BTDecEdgPhase.h">
       <Filter>GameObject\AI\Decorator\Dragon</Filter>
     </ClInclude>
@@ -719,6 +722,12 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_Fly_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Fly_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\DragonSkill.h">
+      <Filter>GameObject\Monster\EnderDragon\Skill</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\EdgFireBall.h">
+      <Filter>GameObject\Monster\EnderDragon\Skill\FireBall</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1064,9 +1073,6 @@
     <ClCompile Include="..\private\Edg_Hit.cpp">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\DragonBall.cpp">
-      <Filter>GameObject\Monster\EnderDragon</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\BTDecEdgPhase.cpp">
       <Filter>GameObject\AI\Decorator\Dragon</Filter>
     </ClCompile>
@@ -1084,6 +1090,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Fly_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Fly_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\DragonSKill.cpp">
+      <Filter>GameObject\Monster\EnderDragon\Skill</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EdgFireBall.cpp">
+      <Filter>GameObject\Monster\EnderDragon\Skill\FireBall</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
