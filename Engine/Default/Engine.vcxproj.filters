@@ -585,6 +585,9 @@
     <ClInclude Include="..\Public\Engine_Base.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Engine_BuildConfig.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\TimeProvider.h">
       <Filter>Time</Filter>
     </ClInclude>
@@ -1415,6 +1418,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\FontManager.cpp">
       <Filter>Font</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Engine_BuildConfig.cpp">
+      <Filter>99.Defines</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\WorkerManager.cpp">
       <Filter>Worker</Filter>
