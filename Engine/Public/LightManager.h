@@ -85,6 +85,7 @@ public:
 	VOID	Notify_StaticShadowSceneChanged(const BoundingBox& ChangedBounds);
 
 	XMMATRIX	Get_CascadeShadowViewProj(uint32_t _Index);
+	XMFLOAT4	Get_CascadeShadowSplits();
 	CSM_DATA&	Get_MainDirectionalLightData() { return m_pMainDirectionalLight; }
 
 public:		// Effect Light Fuction
@@ -161,6 +162,7 @@ private:	// PBR
 	SPtr<CResCBuffer>					m_pNormalLightConstantBuffer		= { nullptr };
 	SPtr<CResCBuffer>					m_pShadowLightConstantBuffer		= { nullptr };
 	SPtr<CResCBuffer>					m_pEffectLightConstantBuffer		= { nullptr };
+	SPtr<CResCBuffer>					m_pPBRCSMConstantBuffer				= { nullptr };
 
 private:	// PointLight Face
 	SPtr<CResVertexShader>				m_pInstancedPointFaceVertexShader	= { nullptr };

@@ -84,7 +84,7 @@ HRESULT CLevelTerrain::Initialize()
 	if (FAILED(InitializePathPlaybackTests()))
 		return E_FAIL;
 
-	if(false)
+	if(true)
 	{
 		for (uint32_t i = 0; i < 6; ++i)
 		{

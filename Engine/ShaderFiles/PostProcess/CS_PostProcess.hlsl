@@ -20,7 +20,7 @@ static const float	ChromaticRing_Radius	 = { 0.32f };
 static const float	ChromaticRing_Width		 = { 0.05f };
 static const float	ChromaticRing_Smoothness = { 0.06f };
 
-static const float  OutlineThickness = 1.2f;
+static const float  OutlineThickness = 1.f;
 static const float4 OutlineColor = float4(1.f, 1.f, 1.f, 1.f);
 // LUT ColorGrading Global Variable
 static const float LUT_Size = 16.f;
@@ -443,7 +443,7 @@ float3 Render_ObjectEdge(float3 _Color, float2 _TexCoord)
 	float	DepthEdge = abs(CenterPixel - RightPixel) + abs(CenterPixel - LeftPixel) 
 						+ abs(CenterPixel - UpPixel) + abs(CenterPixel - DownPixel);
 	
-	return lerp(_Color, OutlineColor.rgb, saturate(DepthEdge) * OutlineColor.a);
+	return lerp(_Color, OutlineColor.rgb, saturate(DepthEdge) * 10.f);	
 }
 
 [numthreads(16, 16, 1)]

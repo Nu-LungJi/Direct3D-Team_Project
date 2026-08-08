@@ -197,11 +197,13 @@ namespace Engine
 	{
 		_float3	g_fFroxelGridSize;
 		_float	g_fNearZ;
+
 		_float	g_fFarZ;
 		_float2	g_fScreenResolution;
-		_float2	g_fHalfScreenResolution;
+		_float  g_fSliceDepthRatio;
 
-		_float3	FroxelPadding;
+		_float2	g_fHalfScreenResolution;
+		_float2	FroxelPadding1;
 	};
 	static_assert(sizeof(CB_FROXEL) % 16 == 0);
 

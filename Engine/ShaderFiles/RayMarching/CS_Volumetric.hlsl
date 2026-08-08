@@ -1,34 +1,33 @@
 #include "../ShaderHeader/SH_CommonFunction.hlsli"
-
-Texture2D<float4>		SceneColorTexture	: register(t0);
 											
-Texture2D<float>		DepthTexture		: register(t1);
-Texture2D<float>		BlueNoiseTexture	: register(t3);
-Texture3D<float4>		VolumeTexture		: register(t4);
+Texture2D<float>		DepthTexture		: register(t0);
+Texture2D<float>		BlueNoiseTexture	: register(t1);
+Texture3D<float4>		VolumeTexture		: register(t2);
 
-Texture3D<float4>		VoxelDensityColor	: register(t5);
-Texture3D<float4>		VoxelLightingColor	: register(t6);
+Texture3D<float>		VoxelDensityColor	: register(t3);
+Texture3D<float4>		VoxelLightingColor	: register(t4);
 
-Texture2DArray<float>	ShadowMapArray		: register(t7);
+Texture2DArray<float>	ShadowMapArray		: register(t5);
 										  
 RWTexture2D<float4>		OUTPUT				: register(u0);
 RWTexture3D<float4>		OUTPUT3D			: register(u1);
+RWTexture3D<float>		OUTPUT_DENSITY		: register(u2);
 
 const static float2		SceneResolution		= { 1280.f, 720.f };
 const static float2		NoiseResolution     = { 256.f, 256.f };
 const static uint		GodRayMaxStep       = { 16 };
 
-const static float		MaxFroxelZDistance = { 500.f };
-
 cbuffer CB_FroxelConfig : register(b10)
 {
 	float3	FroxelGridSize;
 	float	NearZ;
+	
 	float	FarZ;
 	float2	ScreenResolution;
-	float2	HalfScreenResolution;
+	float	SliceDepthRatio;
 	
-	float3	Padding;
+	float2	HalfScreenResolution;
+	float2	Padding1;
 };
 
 cbuffer CB_VLFOG : register(b11)
@@ -70,14 +69,9 @@ float ViewDepthToFroxelZ(float _Depth, float _Near, float _Far)
 	return log(max(_Depth, _Near) / _Near) / log(_Far / _Near);
 }
 
-float FroxelZToViewDepth(float _ZSlice, float _Near, float _Far, float _MaxSlice)
-{
-	return _Near * pow(_Far / _Near, (_ZSlice + 0.5f) / _MaxSlice);
-}
-
 float3 FroxelZToWorldPos(float3 _TexCoord)
 {
-	float	ViewDepth = NearZ * pow(MaxFroxelZDistance / NearZ, _TexCoord.z);
+	float	ViewDepth = NearZ * pow(FarZ / NearZ, _TexCoord.z);
 		
 	float2 ScreenSpaceNDC;
 	ScreenSpaceNDC.x = _TexCoord.x * +2.f - 1.f;
@@ -108,7 +102,7 @@ float Henyey_Greenstein_Phase(float _CosTheta, float _Anistropy)
 }
 float Henyey_Greenstein_DualPhase(float3 _RayDirection, float3 _FogLightDirection, float _FrontAnistropy, float _BackAnistropy, float k)
 {
-	float CosTheta = dot(_RayDirection, _FogLightDirection);
+	float CosTheta = dot(_RayDirection, -_FogLightDirection);
 	
 	float PhaseValueA = Henyey_Greenstein_Phase(CosTheta, _FrontAnistropy);
 	float PhaseValueB = Henyey_Greenstein_Phase(CosTheta, _BackAnistropy);
@@ -118,13 +112,13 @@ float Henyey_Greenstein_DualPhase(float3 _RayDirection, float3 _FogLightDirectio
 
 float GetVolumeFogDensity(float3 _WorldPos)    
 {
-    //float FogHeight = exp(-_WorldPos.y * 0.05f);
 	if (FogHeight <= 0.0001f)	return 0.f;
 	
-	float	FogMaxHeight = max(0.f, FogHeight - _WorldPos.y);
-	if (FogMaxHeight <= 0.f)	return 0.f;
+	float	FogMaxHeight = max(0.f, _WorldPos.y - FogBaseHeight);
+
+	float	HeightFactor = exp(-FogMaxHeight * FogHeightFallOff);
 	
-	float	HeightFactor = saturate(FogMaxHeight / FogHeight);
+	float	HeightLimit = 1.f - smoothstep(FogHeight * 0.8f, FogHeight, FogMaxHeight);
 
 	float3	NoiseTexCoord = (_WorldPos - FogCenterPos) * FogNoiseScale;
     float4	NoiseSet	= VolumeTexture.SampleLevel(LinearWrap, NoiseTexCoord, 0.f);
@@ -133,7 +127,7 @@ float GetVolumeFogDensity(float3 _WorldPos)
     float	SubNoise	= NoiseSet.g * 0.5f + NoiseSet.b * 0.3f + NoiseSet.a * 0.2f;
     float	FinalNoise	= saturate(MainNoise * 0.7f + SubNoise * 0.3f);
 	
-	return	HeightFactor * FinalNoise * FogDensity;
+	return	HeightFactor * FinalNoise * FogDensity * HeightLimit;
 }
 
 //float Compute_ShadowBrightness(float4 _Position)
@@ -164,8 +158,10 @@ float GetVolumeFogDensity(float3 _WorldPos)
 
 float Compute_CascadeShadow(float3 _WorldPos)
 {
-	float4 ViewPos = mul(float4(_WorldPos, 1.0f), g_matView);
+	float4 ViewPos = mul(float4(_WorldPos, 1.f), g_matView);
 	float ViewDepth = abs(ViewPos.z);
+	
+	if (CascadeSplits.w <= 0.f || ViewDepth >= CascadeSplits.w)	return 1.f;
 	
 	int CascadeIndex = 3;
 	if		(ViewDepth < CascadeSplits.x)	CascadeIndex = 0;
@@ -188,24 +184,10 @@ float Compute_CascadeShadow(float3 _WorldPos)
 	}
 	
 	float CurrentDepth = ShadowSpacePos.z - ShadowBias.x;
-	float ShadowFactor = 0.f;
+
+	float ShadowFactor = ShadowMapArray.SampleCmpLevelZero(ShadowSampler, float3(ShadowMapUV, (float) CascadeIndex), CurrentDepth);
 	
-	float2 TexelSize = 1.f / ShadowMapSize;
-	
-	[unroll]
-	for (int x = -1; x <= 1; ++x)
-	{
-        [unroll]
-		for (int y = -1; y <= 1; ++y)
-		{
-			float2 Offset = float2(x, y) * TexelSize;
-            
-			ShadowFactor += ShadowMapArray.SampleCmpLevelZero(ShadowSampler,
-			float3(ShadowMapUV + Offset, (float)CascadeIndex), CurrentDepth);
-		}
-	}
-	
-	return ShadowFactor / 9.f;
+	return ShadowFactor;
 }
 
 
@@ -219,10 +201,12 @@ void CSMain_CellInjection(uint3 ID : SV_DispatchThreadID)
 	float3	VoxelWorldPos = FroxelZToWorldPos(TexCoord);
 	float	FogDensity	  = GetVolumeFogDensity(VoxelWorldPos);
 	
-	float	HeightDiffer  = max(VoxelWorldPos.y - FogBaseHeight, 0.0f);
-	float	HeightFactor  = exp(-HeightDiffer * FogHeightFallOff);
+	float	FogDistance = abs(mul(float4(VoxelWorldPos, 1.f), g_matView).z);
+	float	FogDistanceFactor = smoothstep(FogStartPos, max(FogEndPos, FogStartPos + 0.0001f), FogDistance);
 	
-	OUTPUT3D[ID] = float4(FogColor, FogDensity * HeightFactor);
+	FogDensity *= FogDistanceFactor;
+
+	OUTPUT_DENSITY[ID] = FogDensity;
 	return;
 }
 
@@ -230,9 +214,8 @@ void CSMain_CellInjection(uint3 ID : SV_DispatchThreadID)
 void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 {
 	if (ID.x >= (uint) FroxelGridSize.x || ID.y >= (uint) FroxelGridSize.y || ID.z >= (uint) FroxelGridSize.z)	return;
-
-	float4	DensityData = VoxelDensityColor.Load(int4(ID.xyz, 0));
-	float	Density = DensityData.a;
+	
+	float Density = VoxelDensityColor.Load(int4(ID.xyz, 0));
 
 	if (Density <= 0.0001f)
 	{
@@ -258,7 +241,7 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 	
 	float3	AmbientScattering = FogColor * Density * 0.15f;
 	
-	float3	Scattering = DensityData.rgb * FogLightColor * FogIntensity * Density * ShadowBrightness * PhaseValue + AmbientScattering;
+	float3	Scattering = FogColor * FogLightColor * FogIntensity * Density * ShadowBrightness * PhaseValue + AmbientScattering;
 	float	Extinction = Density;
 	
 	OUTPUT3D[ID] = float4(Scattering, Extinction);
@@ -273,6 +256,9 @@ void CSMain_FroxelZAccumulation(uint3 ID : SV_DispatchThreadID)
 	
 	float3	AccumulatedScattering = float3(0.0f, 0.0f, 0.0f);
 	float	AccumulatedTransmittance = 1.f;
+	
+	float	SliceRatio = SliceDepthRatio;
+	float	NearSlice  = NearZ;
 
 	[loop]
 	for (uint z = 0; z < (uint) FroxelGridSize.z; ++z)
@@ -283,7 +269,8 @@ void CSMain_FroxelZAccumulation(uint3 ID : SV_DispatchThreadID)
 		float3	Scattering = LightingData.rgb;
 		float	Extinction = LightingData.a;
 		
-		float	RayStepSize = GetSliceDeltaZ(z, FroxelGridSize.z, NearZ, MaxFroxelZDistance);
+		float	FarSlice = NearSlice * SliceRatio;
+		float	RayStepSize = FarSlice - NearSlice;
 		
 		float	StepExtinction = Extinction * RayStepSize;
 		float	StepTransmittance = exp(-StepExtinction);
@@ -309,6 +296,8 @@ void CSMain_FroxelZAccumulation(uint3 ID : SV_DispatchThreadID)
 		}
 		
 		OUTPUT3D[VoxelCoord] = float4(AccumulatedScattering, AccumulatedTransmittance);
+		
+		NearSlice = FarSlice;
 	}
 	
 	return;
@@ -402,7 +391,7 @@ void CSMain_RayMarching(uint3 ID : SV_DispatchThreadID)
 	float4	ViewSpacePos = mul(float4(WorldPos, 1.0f), g_matView);
 	float	PixelViewZ = abs(ViewSpacePos.z);
 	
-	float	FroxelZ = ViewDepthToFroxelZ(PixelViewZ, NearZ, MaxFroxelZDistance);
+	float	FroxelZ = ViewDepthToFroxelZ(PixelViewZ, NearZ, FarZ);
 	float3	FroxelTexCoord = float3(TexCoord, saturate(FroxelZ));
 	
 	float3	RayStart = g_vCamPos;
@@ -411,9 +400,9 @@ void CSMain_RayMarching(uint3 ID : SV_DispatchThreadID)
 	float	RayLength = length(RayVector);
 	float3	RayDirection = normalize(RayVector);
 	
-	if (PixelViewZ > MaxFroxelZDistance)
+	if (PixelViewZ > FarZ)
 	{
-		RayLength *= (MaxFroxelZDistance / max(PixelViewZ, 0.0001f));
+		RayLength *= (FarZ / max(PixelViewZ, 0.0001f));
 	}
 	
 	float StepSize = RayLength / (float) GodRayMaxStep;
@@ -432,7 +421,7 @@ void CSMain_RayMarching(uint3 ID : SV_DispatchThreadID)
 		
 		float	SampleViewZ = abs(mul(float4(SampleWorldPos, 1.0f), g_matView).z);
 			
-		float	SampleFroxelZ = ViewDepthToFroxelZ(SampleViewZ, NearZ, MaxFroxelZDistance);
+		float	SampleFroxelZ = ViewDepthToFroxelZ(SampleViewZ, NearZ, FarZ);
 		float3	SampleFroxelTexCoord = float3(TexCoord, saturate(SampleFroxelZ));
 		
 		float4	LightingData = VoxelLightingColor.SampleLevel(LinearClamp, SampleFroxelTexCoord, 0);

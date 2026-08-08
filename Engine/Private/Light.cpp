@@ -153,9 +153,15 @@ VOID CLight::Update_EffectLight(const _float& _DT){
 }
 
 VOID CLight::PrepareShadowMapMatrices() {
-	if (!m_bShadowMatrixDirty)	return;
-
 	LIGHT_TYPE LTYPE = static_cast<LIGHT_TYPE>(m_pDynamicLight.LightType);
+
+	if (LTYPE == LIGHT_TYPE::DIRECTIONAL) {
+		Update_DirectionalShadowMatrices();
+		m_bShadowMatrixDirty = false;
+		return;
+	}
+
+	if (!m_bShadowMatrixDirty) return;
 
 	if		(LTYPE == LIGHT_TYPE::POINT) {
 		Update_PointShadowMatrices();
@@ -163,10 +169,7 @@ VOID CLight::PrepareShadowMapMatrices() {
 	else if (LTYPE == LIGHT_TYPE::SPOTLIGHT) {
 		Update_SpotShadowMatrices();
 	}
-	else {
-		Update_DirectionalShadowMatrices();
-	}
-
+	
 	m_bShadowMatrixDirty = false;
 }
 
@@ -187,7 +190,7 @@ VOID CLight::Update_PointShadowMatrices() {
 }
 
 VOID CLight::Update_SpotShadowMatrices() {
-	_float	 fNearZ = 0.01f;
+	_float	 fNearZ = 0.1f;
 
 	m_pDynamicLight.OuterAttanuation = std::clamp(m_pDynamicLight.OuterAttanuation, 1.f, 75.f);
 	m_pDynamicLight.LightRange = std::clamp(m_pDynamicLight.LightRange, 0.01f + 0.01f, 100.f);
@@ -205,20 +208,20 @@ VOID CLight::Update_SpotShadowMatrices() {
 
 VOID CLight::Update_DirectionalShadowMatrices() {
 	auto MainCamera = CGameInstance::Get().GetActiveCamera();
-	XMMATRIX CamView	= MainCamera->GetView();
-	XMMATRIX CamProj	= MainCamera->GetProj();
+	if (nullptr == MainCamera)	return;
 
 	_float	 CameraNear = MainCamera->GetNear();
-	_float	 CameraFar	= MainCamera->GetFar();
 
-	uint32_t CascadeCount = 4;
-	_float	 Lambda		= 0.5f;
+	const _float ShadowMaxDistance = 200.f;		// 카메라 Far가 변하면 그림자 품질도 달라지므로 최대 그림자 Casting 거리 제한
+	_float	 CameraFar	= std::min(MainCamera->GetFar(), ShadowMaxDistance);
 
-	_float CSM_SplitDistance[5];
+	_float	 Lambda		= 0.7f;
+
+	_float CSM_SplitDistance[MAX_CASCADE_COUNT + 1];	// Cascade 한 절두체의 시작거리(i) ~ 끝 거리(i+1)
 	CSM_SplitDistance[0] = CameraNear;
 
-	for (uint32_t i = 1; i <= CascadeCount; ++i) {
-		_float FID = static_cast<_float>(i) / static_cast<_float>(CascadeCount);
+	for (uint32_t i = 1; i <= MAX_CASCADE_COUNT; ++i) {
+		_float FID = static_cast<_float>(i) / static_cast<_float>(MAX_CASCADE_COUNT);
 
 		_float LogValue		= CameraNear * powf(CameraFar / CameraNear, FID);
 		_float LinearValue	= CameraNear + (CameraFar - CameraNear) * FID;
@@ -226,9 +229,21 @@ VOID CLight::Update_DirectionalShadowMatrices() {
 		CSM_SplitDistance[i] = Lambda * LogValue + (1.f - Lambda) * LinearValue;
 	}
 	
-	XMVECTOR LightDirection = XMLoadFloat3(&m_pDynamicLight.LightDirection);
+	m_fCascadeShadowSplits = XMFLOAT4(CSM_SplitDistance[1], CSM_SplitDistance[2], CSM_SplitDistance[3], CSM_SplitDistance[4]);
 
-	for (uint32_t i = 0; i < CascadeCount; ++i) {
+	XMVECTOR LightDirection = XMLoadFloat3(&m_pDynamicLight.LightDirection);
+	_float LightDirectionLength = XMVectorGetX(XMVector3Length(LightDirection));
+
+	if (LightDirectionLength <= 0.0001f)
+	{
+		LightDirection = XMVectorSet(0.f, -1.f, 0.f, 0.f);
+	}
+	else
+	{
+		LightDirection = XMVector3Normalize(LightDirection);
+	}
+
+	for (uint32_t i = 0; i < MAX_CASCADE_COUNT; ++i) {
 		_float NearSplit = CSM_SplitDistance[i];
 		_float FarSplit  = CSM_SplitDistance[i+1];
 
@@ -241,8 +256,19 @@ VOID CLight::Update_DirectionalShadowMatrices() {
 			FrustumCenterPos += FrustumWorldCorners[j];
 		FrustumCenterPos /= 8.f;
 
+		_float FrustumRadius = 0.f;
+		for (int j = 0; j < 8; ++j)
+		{
+			XMVECTOR CornerOffset = FrustumWorldCorners[j] - FrustumCenterPos;
+
+			_float CornerDistance = XMVectorGetX(XMVector3Length(CornerOffset));
+
+			FrustumRadius = std::max(FrustumRadius, CornerDistance);
+		}
+
 		// Set Light Position / ViewMat
-		_float DistanceFromCenter = 500.f;
+		const _float CasterSearchDistance = 1000.f;
+		_float DistanceFromCenter = FrustumRadius + CasterSearchDistance;
 		XMVECTOR LightPosition = FrustumCenterPos - (LightDirection * DistanceFromCenter);
 		XMMATRIX LightViewMat = XMMatrixLookAtLH(LightPosition, FrustumCenterPos, XMVectorSet(0.f, 1.f, 0.f, 0.f));
 
@@ -260,11 +286,17 @@ VOID CLight::Update_DirectionalShadowMatrices() {
 			MinY = std::min(MinY, Pos.y); MaxY = std::max(MaxY, Pos.y);
 			MinZ = std::min(MinZ, Pos.z); MaxZ = std::max(MaxZ, Pos.z);
 		}
-		if (MinZ < 0.f)	MinZ *= 10.f;
-		else			MinZ /= 10.f;
+		const _float CascadeXYMargin = FrustumRadius * 0.1f;
 
-		if (MaxZ < 0.f)	MaxZ /= 10.f;
-		else			MaxZ *= 10.f;
+		MinX -= CascadeXYMargin;
+		MaxX += CascadeXYMargin;
+		MinY -= CascadeXYMargin;
+		MaxY += CascadeXYMargin;
+
+		MinZ = 0.01f;
+		const _float ReceiverDepthPadding = 100.f;
+		MaxZ += ReceiverDepthPadding;
+		MaxZ = std::max(MaxZ, MinZ + 1.f);
 
 		XMMATRIX mLightProj = XMMatrixOrthographicOffCenterLH(MinX, MaxX, MinY, MaxY, MinZ, MaxZ);
 		XMStoreFloat4x4(&m_pDynamicLight.g_LightViewProj[i], XMMatrixMultiply(LightViewMat, mLightProj));
@@ -273,24 +305,22 @@ VOID CLight::Update_DirectionalShadowMatrices() {
 
 std::vector<XMVECTOR> CLight::Get_FrustumCorners(_float _SplitNear, _float _SplitFar){
 	XMVECTOR vNDC[8] = {
-		XMVectorSet(-1.0f, +1.0f, 0.0f, 1.0f),
-		XMVectorSet(+1.0f, +1.0f, 0.0f, 1.0f),
-		XMVectorSet(+1.0f, -1.0f, 0.0f, 1.0f),
-		XMVectorSet(-1.0f, -1.0f, 0.0f, 1.0f),
-		XMVectorSet(-1.0f, +1.0f, 1.0f, 1.0f),
-		XMVectorSet(+1.0f, +1.0f, 1.0f, 1.0f),
-		XMVectorSet(+1.0f, -1.0f, 1.0f, 1.0f),
-		XMVectorSet(-1.0f, -1.0f, 1.0f, 1.0f)
+		XMVectorSet(-1.f, +1.f, 0.f, 1.f),
+		XMVectorSet(+1.f, +1.f, 0.f, 1.f),
+		XMVectorSet(+1.f, -1.f, 0.f, 1.f),
+		XMVectorSet(-1.f, -1.f, 0.f, 1.f),
+		XMVectorSet(-1.f, +1.f, 1.f, 1.f),
+		XMVectorSet(+1.f, +1.f, 1.f, 1.f),
+		XMVectorSet(+1.f, -1.f, 1.f, 1.f),
+		XMVectorSet(-1.f, -1.f, 1.f, 1.f)
 	};
 
 	auto MainCamera = CGameInstance::Get().GetActiveCamera();
-	_float fCameraNear = MainCamera->GetNear();
-	_float fCameraFar = MainCamera->GetFar();
 	_float fCameraAspect = MainCamera->GetAspect();
 	_float fCameraFovY = MainCamera->GetFovY();
 
 	XMMATRIX mCamView = MainCamera->GetView();
-	XMMATRIX mCamProj = XMMatrixPerspectiveFovLH(fCameraFovY, fCameraAspect, _SplitNear, _SplitFar);
+	XMMATRIX mCamProj = XMMatrixPerspectiveFovLH(XMConvertToRadians(fCameraFovY), fCameraAspect, _SplitNear, _SplitFar);
 
 	XMMATRIX mInvViewProj = XMMatrixInverse(nullptr, mCamView * mCamProj);
 
@@ -391,21 +421,21 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& 
 
 	for (auto& GOBJ : _ObjectHandleList) {
 		if (nullptr == GOBJ) continue;
-
-		BoundingBox ShadowBound{};
-
-		if (GOBJ->GetShadowBounds(ShadowBound)) {
-			_bool bVisibleToLight = true;
-
-			if (LightType == LIGHT_TYPE::POINT && _PointFaceIndex >= 0) {
-				bVisibleToLight = Intersects_PointShadowFace(static_cast<uint32_t>(_PointFaceIndex),ShadowBound);
-			}
-			else {
-				bVisibleToLight = Intersects_ShadowBounds(ShadowBound);
-			}
-			if (!bVisibleToLight) continue;
-		}
-
+	
+	//	BoundingBox ShadowBound{};
+	//
+	//	if (GOBJ->GetShadowBounds(ShadowBound)) {
+	//		_bool bVisibleToLight = true;
+	//
+	//		if (LightType == LIGHT_TYPE::POINT && _PointFaceIndex >= 0) {
+	//			bVisibleToLight = Intersects_PointShadowFace(static_cast<uint32_t>(_PointFaceIndex), ShadowBound);
+	//		}
+	//		else {
+	//			bVisibleToLight = Intersects_ShadowBounds(ShadowBound);
+	//		}
+	//		if (!bVisibleToLight) continue;
+	//	}
+	//
 		if (FAILED(GOBJ->Render_Shadow(pContext, RCTX))) return E_FAIL;
 	}
 	
@@ -431,11 +461,13 @@ VOID	CLight::Reset_Light(){
 
 	InvalidateAllShadow();
 }
+
 _bool	CLight::Intersects_PointShadowFace(uint32_t _FaceIndex, const BoundingBox& _Bounds) const {
 	if (_FaceIndex >= POINT_SHADOW_MAPCOUNT)	return false;
 
 	return m_PointShadowFrustums[_FaceIndex].Intersects(_Bounds);
 }
+
 HRESULT	CLight::Set_LightType(LIGHT_TYPE _LTYPE) {
 	if (m_pDynamicLight.LightType == ETOUI(_LTYPE))
 		return E_FAIL;

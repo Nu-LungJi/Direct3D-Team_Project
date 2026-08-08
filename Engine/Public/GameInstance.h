@@ -325,12 +325,11 @@ public:
 
 	VOID	Notify_StaticShadowSceneChanged(const BoundingBox& ChangedBounds);
 
-	// LSY 변경: 콘텐츠 코드가 별칭 기반 배치 라이트 조회 및 런타임 제어 API를 사용한다.
-	CLightManager* GetLightManager() const { return m_pLightManager.get(); }
-	_bool			Evaluate_DirectionalLightCount();
+	_bool		Evaluate_DirectionalLightCount();
 
-	XMMATRIX Get_CascadeShadowViewProj(uint32_t _Index);
-	CSM_DATA& Get_MainDirectionalLightData();
+	XMMATRIX	Get_CascadeShadowViewProj(uint32_t _Index);
+	XMFLOAT4	Get_CascadeShadowSplits();
+	CSM_DATA&	Get_MainDirectionalLightData();
 
 #pragma endregion
 

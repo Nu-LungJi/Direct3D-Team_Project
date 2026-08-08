@@ -29,6 +29,7 @@ public:
 	HRESULT			InitializePrototype(VOID* pArg) override;
 	HRESULT			Initialize(VOID* pArg) override;
 	VOID			PriorityUpdate(E::_float _DT) override {};
+	VOID			UpdateGUI() override;
 	VOID			Update(E::_float _DT) override;
 	VOID			LateUpdate(E::_float _DT) override {};
 	HRESULT			Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) { return S_OK; };
@@ -42,6 +43,7 @@ public:
 	VOID			Update_DirectionalShadowMatrices();
 
 	std::vector<XMVECTOR>	Get_FrustumCorners(_float _SplitNear, _float _SplitFar);
+	XMFLOAT4		Get_CascadeShadowSplits() const { return m_fCascadeShadowSplits; }
 
 public:
 	HRESULT 		Set_LightType(LIGHT_TYPE _LTYPE);
@@ -158,6 +160,8 @@ private:
 	_float								m_fPointLightInnerAttenuation{};
 	_float								m_fPointLightOuterAttenuation{};
 
+	XMFLOAT4 m_fCascadeShadowSplits{};
+
 	XMFLOAT4X4 LightView{}, LightProj{};
 
 private:	// PointLight
@@ -167,7 +171,7 @@ private:	// PointLight
 
 
 public:
-	VOID		UpdateGUI() override;
+
 
 	HRESULT		Update_Collider();
 
@@ -180,6 +184,7 @@ public:
 
 private:
 	std::array<BoundingFrustum, POINT_SHADOW_MAPCOUNT> m_PointShadowFrustums{};
+
 
 public:
 	static UPtr<CLight> Create();

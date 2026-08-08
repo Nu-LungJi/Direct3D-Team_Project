@@ -1303,6 +1303,9 @@ _bool	CGameInstance::Evaluate_DirectionalLightCount() {
 XMMATRIX CGameInstance::Get_CascadeShadowViewProj(uint32_t _Index) {
 	return m_pLightManager->Get_CascadeShadowViewProj(_Index);
 }
+XMFLOAT4 CGameInstance::Get_CascadeShadowSplits() {
+	return m_pLightManager->Get_CascadeShadowSplits();
+}
 CSM_DATA& CGameInstance::Get_MainDirectionalLightData() {
 	return m_pLightManager->Get_MainDirectionalLightData();
 }

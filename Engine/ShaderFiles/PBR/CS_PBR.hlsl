@@ -24,9 +24,13 @@ Texture2DArray<float>	DynamicShadowMaps		: register(t10);	// Directional Dynamic
 TextureCubeArray<float> StaticShadowCubeMaps	: register(t11);	// Point Static
 TextureCubeArray<float> DynamicShadowCubeMaps	: register(t12);	// Point Dynamic
 
+Texture2DArray<float>	CSMShadowMaps			: register(t13); // Directional Light
+
 static const float		ShadowSmoothness		= 1.5f;
 static const float		ShadowBrightness		= 0.f;
-static const float		ShadowDepthBias			= 0.002f;
+static const float		PointShadowDepthBias	= 0.002f;
+static const float		SpotShadowDepthBias		= 0.00001f;
+
 
 static const float		EnviromentIntensity		= 0.00f;			// 환경광 밝기
 static const float		FillLightBrightness		= 0.25f;			// 등지는 영역의 밝기
@@ -64,7 +68,13 @@ cbuffer CB_EFFECT_LIGHT : register(b11)
 	uint	ELightCount;
 	float3	ELightPadding;
 };
-
+cbuffer CB_CSM : register(b12)
+{
+	matrix ShadowViewProj[4];
+	float4 CascadeSplits;
+	float2 ShadowMapSize;
+	float2 ShadowBias;
+};
 
 float Get_GradientNoise(float2 _PixelPos)
 {
@@ -153,9 +163,8 @@ float Compute_SmoothShadow(float4 _WorldPos, float3 _WorldNormal, float2x2 _Rand
 	if (LightNDC.x < -1.f || LightNDC.x > 1.f ||
 	 	LightNDC.y < -1.f || LightNDC.y > 1.f ||
 		LightNDC.z < 0.f || LightNDC.z > 1.f)		return 1.f;
-	
 
-	float CurrentPixelDepth = saturate(LightNDC.z - ShadowDepthBias);
+	float CurrentPixelDepth = saturate(LightNDC.z - SpotShadowDepthBias);
 	float ShadowFactor = 0.f;
 	
     [unroll]
@@ -174,8 +183,10 @@ float Compute_SmoothShadow(float4 _WorldPos, float3 _WorldNormal, float2x2 _Rand
 		return NormalShadowFactor;
 	}
 	
-	float  Distance = length(_WorldPos.xyz - AffectedLight[_LightIndex].Position);
 	return NormalShadowFactor;
+	
+	
+	float  Distance = length(_WorldPos.xyz - AffectedLight[_LightIndex].Position);
 	return Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
 }
 
@@ -183,14 +194,14 @@ float Compute_PointShadow(float4 _WorldPos, float3 _WorldNormal, float2x2 _Rando
 {
 	float3 LightToPixel = _WorldPos.xyz - AffectedLight[_LightIndex].Position;
 	float Distance = length(LightToPixel);
-	
+
 	float CurrentPixelDepth = Distance / max(0.02f, AffectedLight[_LightIndex].OuterAttanuation);
-	CurrentPixelDepth -= ShadowDepthBias;
+	CurrentPixelDepth -= PointShadowDepthBias;
 	
 	float InvDistance = 1.0f / max(Distance, 0.0001f);
-	float3 Direction = LightToPixel * InvDistance;
+	float3 Direction = LightToPixel / max(Distance, 0.0001f);;
 	float3 BaseUP = abs(Direction.z) < 0.999f ? float3(0.f, 0.f, 1.f) : float3(1.f, 0.f, 0.f);
-	
+
 	float3 TangentX = normalize(cross(Direction, BaseUP));
 	float3 TangentY = normalize(cross(Direction, TangentX));
     
@@ -214,6 +225,248 @@ float Compute_PointShadow(float4 _WorldPos, float3 _WorldNormal, float2x2 _Rando
 	
 	return NormalShadowFactor;
 	return Attenuate_ShadowStrength(NormalShadowFactor, Distance, _LightIndex);
+}
+
+static const uint PointShadowDebugMode = 1u;
+float4 Debug_PointShadow(
+    float4 _WorldPos,
+    int _ShadowSlot,
+    uint _LightIndex)
+{
+    // --------------------------------------------------------
+    // 1. ShadowSlot 확인
+    // --------------------------------------------------------
+
+	if (_ShadowSlot < 0 ||
+        _ShadowSlot >= MAX_SHADOW_LIGHT_COUNT)
+	{
+        // 보라색: ShadowSlot 오류
+		return float4(1.f, 0.f, 1.f, 1.f);
+	}
+
+
+    // --------------------------------------------------------
+    // 2. Point Light 기준 방향 및 거리 계산
+    // --------------------------------------------------------
+
+	float3 LightToPixel =
+        _WorldPos.xyz -
+        AffectedLight[_LightIndex].Position;
+
+	float Distance =
+        length(LightToPixel);
+
+	float OuterRange =
+        max(
+            0.02f,
+            AffectedLight[_LightIndex].OuterAttanuation);
+
+	float CurrentPixelDepth =
+        Distance / OuterRange;
+
+	float3 Direction =
+        normalize(LightToPixel);
+
+
+    // --------------------------------------------------------
+    // DEBUG MODE 2: Cube Face 확인
+    // --------------------------------------------------------
+
+	if (PointShadowDebugMode == 2u)
+	{
+		float3 AbsDirection =
+            abs(Direction);
+
+		if (AbsDirection.x >= AbsDirection.y &&
+            AbsDirection.x >= AbsDirection.z)
+		{
+			if (Direction.x >= 0.f)
+			{
+                // +X Face: 빨강
+				return float4(1.f, 0.f, 0.f, 1.f);
+			}
+
+            // -X Face: 초록
+			return float4(0.f, 1.f, 0.f, 1.f);
+		}
+
+		if (AbsDirection.y >= AbsDirection.x &&
+            AbsDirection.y >= AbsDirection.z)
+		{
+			if (Direction.y >= 0.f)
+			{
+                // +Y Face: 파랑
+				return float4(0.f, 0.f, 1.f, 1.f);
+			}
+
+            // -Y Face: 노랑
+			return float4(1.f, 1.f, 0.f, 1.f);
+		}
+
+		if (Direction.z >= 0.f)
+		{
+            // +Z Face: 시안
+			return float4(0.f, 1.f, 1.f, 1.f);
+		}
+
+        // -Z Face: 보라
+		return float4(1.f, 0.f, 1.f, 1.f);
+	}
+
+
+    // --------------------------------------------------------
+    // DEBUG MODE 3: Light Range 확인
+    // --------------------------------------------------------
+
+	if (PointShadowDebugMode == 3u)
+	{
+		float RangeRatio =
+            saturate(Distance / OuterRange);
+
+		return float4(
+            RangeRatio,
+            RangeRatio,
+            RangeRatio,
+            1.f);
+	}
+
+
+    // --------------------------------------------------------
+    // 3. Point ShadowMap의 실제 깊이 샘플링
+    // --------------------------------------------------------
+
+	float RawShadowDepth =
+        DynamicShadowCubeMaps.SampleLevel(
+            LinearClamp,
+            float4(Direction, _ShadowSlot),
+            0.f);
+
+
+    // --------------------------------------------------------
+    // DEBUG MODE 0: 수동 깊이 비교
+    // --------------------------------------------------------
+
+	if (PointShadowDebugMode == 0u)
+	{
+		if (RawShadowDepth >= 0.99999f)
+		{
+            // 빨강: 해당 광선 방향에 저장된 깊이가 없음
+			return float4(1.f, 0.f, 0.f, 1.f);
+		}
+
+		float DepthDifference =
+            CurrentPixelDepth -
+            RawShadowDepth;
+
+		if (DepthDifference >
+            PointShadowDepthBias)
+		{
+            // 파랑: 현재 픽셀이 저장 깊이보다 뒤에 있음
+			return float4(0.f, 0.f, 1.f, 1.f);
+		}
+
+        // 초록: 현재 픽셀이 첫 번째 표면
+		return float4(0.f, 1.f, 0.f, 1.f);
+	}
+
+
+    // --------------------------------------------------------
+    // DEBUG MODE 1: SampleCmp 결과 확인
+    // --------------------------------------------------------
+
+	if (PointShadowDebugMode == 1u)
+	{
+		if (RawShadowDepth >= 0.99999f)
+		{
+            // 빨강: 해당 광선 방향에 저장된 깊이가 없음
+			return float4(1.f, 0.f, 0.f, 1.f);
+		}
+
+		float CompareResult =
+            DynamicShadowCubeMaps.SampleCmpLevelZero(
+                ShadowSampler,
+                float4(Direction, _ShadowSlot),
+                CurrentPixelDepth -
+                PointShadowDepthBias);
+
+		if (CompareResult < 0.5f)
+		{
+            // 파랑: SampleCmp가 그림자로 판정
+			return float4(0.f, 0.f, 1.f, 1.f);
+		}
+
+        // 초록: SampleCmp가 조명으로 판정
+		return float4(0.f, 1.f, 0.f, 1.f);
+	}
+
+
+    // 잘못된 Debug Mode 값
+	return float4(1.f, 0.f, 1.f, 1.f);
+}
+
+float Compute_CascadeShadow(float4 _WorldPos, float2x2 _RandomRotMat)
+{
+	float4 ViewPos = mul(float4(_WorldPos.xyz, 1.f), g_matView);
+	float ViewDepth = abs(ViewPos.z);
+	
+	if (CascadeSplits.w <= 0.f || ViewDepth >= CascadeSplits.w)
+		return 1.f;
+	
+	int		CascadeIndex;
+	if		(ViewDepth < CascadeSplits.x)	CascadeIndex = 0;
+	else if (ViewDepth < CascadeSplits.y)	CascadeIndex = 1;
+	else if (ViewDepth < CascadeSplits.z)	CascadeIndex = 2;
+	else 	CascadeIndex = 3;
+	
+	float4 LightPos = mul(float4(_WorldPos.xyz, 1.f), ShadowViewProj[CascadeIndex]);
+	
+	if (abs(LightPos.w) <= 0.00001f)	return 1.f;
+	
+	float3 LightNDC = LightPos.xyz / LightPos.w;
+	
+	if (LightNDC.x < -1.f || LightNDC.x > 1.f ||
+		LightNDC.y < -1.f || LightNDC.y > 1.f ||
+		LightNDC.z < 0.f || LightNDC.z > 1.f )
+	{
+		return 1.f;
+	}
+
+	float2 ShadowMapUV;
+	ShadowMapUV.x = LightNDC.x * +0.5f + 0.5f;
+	ShadowMapUV.y = LightNDC.y * -0.5f + 0.5f;
+	
+	float	CurrentDepth = LightNDC.z - ShadowBias.x;
+	
+	float2	SamplingRange = ShadowSmoothness / max(ShadowMapSize, float2(1.f, 1.f));
+	float	ShadowFactor = 0.f;
+	
+	[branch]
+	if (CascadeIndex <= 1)
+	{
+		[unroll]
+		for (int i = 0; i < POISSON_COUNT; ++i)
+		{
+			float2 RotatedOffset = mul(PoissonDisk_EightTab[i], _RandomRotMat);
+		
+			float2 SampleUV = ShadowMapUV + RotatedOffset * SamplingRange;
+			ShadowFactor += CSMShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(SampleUV, (float) CascadeIndex), CurrentDepth);
+		}
+		ShadowFactor *= 0.125f;
+	}
+	else
+	{
+		[unroll]
+		for (int i = 0; i < POISSON_COUNT / 2; ++i)
+		{
+			float2 RotatedOffset = mul(PoissonDisk_FourTab[i], _RandomRotMat);
+		
+			float2 SampleUV = ShadowMapUV + RotatedOffset * SamplingRange;
+			ShadowFactor += CSMShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(SampleUV, (float) CascadeIndex), CurrentDepth);
+		}
+		ShadowFactor *= 0.25f;
+	}
+	
+	return lerp(ShadowBrightness, 1.f, ShadowFactor);
 }
 
 float3 Compute_EnviromentLight(float3 N, float3 V, float3 _Albedo, float _Roughness, float _Metallic, float3 MBR)
@@ -250,11 +503,18 @@ float3 Compute_EnviromentLight(float3 N, float3 V, float3 _Albedo, float _Roughn
 [numthreads(16, 16, 1)]
 void CSMain(uint3 ID : SV_DispatchThreadID)
 {
+	uint ScreenWidth;
+	uint ScreenHeight;
+	DepthMap.GetDimensions(ScreenWidth, ScreenHeight);
+	
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY) return; // 스레드가 해상도 넘어가면 출력X
+	if (ID.x >= ScreenWidth || ID.y >= ScreenHeight)	return;
+	//[branch]
+	//if (ID.x >= SCREENX || ID.y >= SCREENY) return; // 스레드가 해상도 넘어가면 출력X
 	int3 PixelCoord = int3(ID.xy, 0);
 	
-	float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	//float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(ScreenWidth, ScreenHeight);
     //float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
 	float Depth = DepthMap.Load(PixelCoord); // 해당 픽셀 깊이 계산
 
@@ -267,6 +527,13 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	
     float4 DepthWorld = Convert_WorldPosByDepth(Depth, TexCoord);
 
+	float4 DebugViewPos =
+	mul(float4(DepthWorld.xyz, 1.f), g_matView);
+
+	float DebugViewDepth = abs(DebugViewPos.z);
+
+	float3 CascadeDebugColor = float3(1.f, 0.f, 1.f);
+	
     //float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
 	float3 WorldNormal = normalize(NormalMap.Load(PixelCoord).rgb * 2.f - 1.f);
 	
@@ -299,7 +566,6 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 		[branch]
 		if (Compute_DynamicLight(DepthWorld.xyz, AffectedLight[i], L, Radiance))
 		{
-			
 			float RawNDL = dot(WorldNormal, L);
 			[branch]
 			if (RawNDL > 0.f)
@@ -321,11 +587,16 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 				float ShadowFactor = 1.f;
 				int ShadowSlot = AffectedLight[i].ShadowSlot;
 				
+				uint LightType = AffectedLight[i].LightType;
+				
 				[branch]
-				if (ShadowSlot >= 0 && ShadowSlot < MAX_SHADOW_LIGHT_COUNT)
+				if (LightType == LIGHT_DIRECTIONAL)
 				{
-					[branch]
-					if (AffectedLight[i].LightType == LIGHT_POINT)
+					ShadowFactor = Compute_CascadeShadow(DepthWorld, RandomNoiseMatrix);
+				}
+				else if (ShadowSlot >= 0 && ShadowSlot < MAX_SHADOW_LIGHT_COUNT)
+				{
+					if (LightType == LIGHT_POINT)
 					{
 						ShadowFactor = Compute_PointShadow(DepthWorld, WorldNormal, RandomNoiseMatrix, ShadowSlot, i);
 					}
@@ -338,6 +609,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 			}
 		}
 	}
+
 	float3 EffectAccumulation = float3(0.f, 0.f, 0.f);
 	
 	[loop]
@@ -391,12 +663,19 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 [numthreads(16, 16, 1)]
 void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 {
+	uint ScreenWidth;
+	uint ScreenHeight;
+	DepthMap.GetDimensions(ScreenWidth, ScreenHeight);
+	
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY)
-		return; // 스레드가 해상도 넘어가면 출력X
+	if (ID.x >= ScreenWidth || ID.y >= ScreenHeight)
+		return;
+	//[branch]
+	//if (ID.x >= SCREENX || ID.y >= SCREENY) return; // 스레드가 해상도 넘어가면 출력X
 	int3 PixelCoord = int3(ID.xy, 0);
 	
-	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	//float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(ScreenWidth, ScreenHeight);
     //float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
 	float Depth = DepthMap.Load(PixelCoord); // 해당 픽셀 깊이 계산
 
@@ -408,7 +687,7 @@ void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 	}
 	
 	float4 DepthWorld = Convert_WorldPosByDepth(Depth, TexCoord);
-
+	
     //float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
 	float3 WorldNormal = normalize(NormalMap.Load(PixelCoord).rgb * 2.f - 1.f);
 	
@@ -467,7 +746,11 @@ void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 				if (ShadowSlot >= 0 && ShadowSlot < MAX_SHADOW_LIGHT_COUNT)
 				{
 					[branch]
-					if (AffectedLight[i].LightType == LIGHT_POINT)
+					if		(AffectedLight[i].LightType == LIGHT_DIRECTIONAL)
+					{
+						ShadowFactor = Compute_CascadeShadow(DepthWorld, RandomNoiseMatrix);
+					}
+					else if (AffectedLight[i].LightType == LIGHT_POINT)
 					{
 						ShadowFactor = Compute_PointShadow(DepthWorld, WorldNormal, RandomNoiseMatrix, ShadowSlot, i);
 					}
@@ -501,13 +784,21 @@ void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 [numthreads(16, 16, 1)]
 void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
 {
+	uint ScreenWidth;
+	uint ScreenHeight;
+	DepthMap.GetDimensions(ScreenWidth, ScreenHeight);
+	
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= (uint) SCREENY)
+	if (ID.x >= ScreenWidth || ID.y >= ScreenHeight)
 		return;
-	int3	PixelCoord = int3(ID.xy, 0);
-	float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
-	//float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
-	float	Depth = DepthMap.Load(PixelCoord).r; // 해당 픽셀 깊이 계산
+	//[branch]
+	//if (ID.x >= SCREENX || ID.y >= SCREENY) return; // 스레드가 해상도 넘어가면 출력X
+	int3 PixelCoord = int3(ID.xy, 0);
+	
+	//float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(ScreenWidth, ScreenHeight);
+    //float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
+	float Depth = DepthMap.Load(PixelCoord); // 해당 픽셀 깊이 계산
 	
 	[branch]
 	if (Depth >= 1.f)

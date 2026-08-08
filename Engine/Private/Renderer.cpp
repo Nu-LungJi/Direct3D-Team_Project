@@ -481,7 +481,7 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 
 	if (!m_pFroxeInjectionCS || !m_pLightIntegrationCS || !m_pFroxelAccumulationCS || !m_pRayMarchingCS || !m_pVolumetricCompositePS) return E_FAIL;
 
-	m_pVoxelDensityColor	= Create_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
+	m_pVoxelDensityColor	= Create_Texture3D(DXGI_FORMAT_R16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
 	m_pVoxelLighting		= Create_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
 	m_pVoxelAccumulated		= Create_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
 	
@@ -1441,7 +1441,8 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 			cbFroxel.g_fNearZ			 = { 0.1f };
 			cbFroxel.g_fFarZ			 = { 1000.f };
 			cbFroxel.g_fScreenResolution = { ScreenSize.x, ScreenSize.y };
-
+			cbFroxel.g_fHalfScreenResolution = { ScreenSize.x * 0.5f, ScreenSize.y * 0.5f };
+			cbFroxel.g_fSliceDepthRatio		 = std::powf(cbFroxel.g_fFarZ / cbFroxel.g_fNearZ, 1.f / static_cast<_float>(FROXELZ));
 			memcpy(MRES.pData, &cbFroxel, sizeof(CB_FROXEL));
 			m_pContext->Unmap(m_pVolumetricFroxelCBuffer->GetCBuffer().Get(), 0);
 		}
@@ -1466,7 +1467,13 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 			cbVLFog.g_fFogNoiseScale = m_fFogInfo.g_fFogNoiseScale;
 
 			cbVLFog.g_fFogLightColor = m_fFogInfo.g_fFogLightColor;
-			cbVLFog.g_fFogLightDirection = m_fFogInfo.g_fFogLightDirection;
+
+			if (auto LightHandle = CGameInstance::Get().Get_MainDirectionalLightData().m_pLightHandle) {
+				if (auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value()))
+					cbVLFog.g_fFogLightDirection = LightOBJ->Get_LightDirection();
+				else
+					cbVLFog.g_fFogLightDirection = _float3(0.f, 0.f, 0.f);
+			}
 
 			cbVLFog.g_fFogAnisotropyGA = m_fFogInfo.g_fFogAnisotropyGA;
 			cbVLFog.g_fFogAnisotropyGB = m_fFogInfo.g_fFogAnisotropyGB;
@@ -1484,16 +1491,16 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 	{
 		CB_CSM cbCSM{};
 
-		CSM_DATA CascadeShadowLightData = CGameInstance::Get().Get_MainDirectionalLightData();
+		const CSM_DATA& CascadeShadowLightData = CGameInstance::Get().Get_MainDirectionalLightData();
 		if (CascadeShadowLightData.m_pLightHandle && CascadeShadowLightData.m_pShadowSRV) {
 			CSMShadowMapSRV = CascadeShadowLightData.m_pShadowSRV.Get();
 			for (int i = 0; i < 4; ++i)
 			{
 				cbCSM.g_mShadowViewProj[i]	= CGameInstance::Get().Get_CascadeShadowViewProj(i);
-				cbCSM.g_fCascadeSplits		= XMFLOAT4(10.f, 25.f, 50.f, 100.f);
-				cbCSM.g_fShadowMapSize		= XMFLOAT2(2048.f, 2048.f);
-				cbCSM.g_fShadowBias			= XMFLOAT2(0.0005f, 0.0f);
 			}
+			cbCSM.g_fCascadeSplits = CGameInstance::Get().Get_CascadeShadowSplits();
+			cbCSM.g_fShadowMapSize = XMFLOAT2(CSM_SHADOW_MAPSIZE, CSM_SHADOW_MAPSIZE);
+			cbCSM.g_fShadowBias = XMFLOAT2(0.0005f, 0.0f);
 		}
 		else  CSMShadowMapSRV = nullptr; 
 
@@ -1514,10 +1521,10 @@ HRESULT CRenderer::Render_FroxelCell(){
 		m_pContext->CSSetShader(m_pFroxeInjectionCS->GetComputeShader().Get(), nullptr, 0);
 
 		ID3D11ShaderResourceView* pSRVs[1] = { m_pVolumeTexture.Get() };
-		m_pContext->CSSetShaderResources(4, 1, pSRVs);
+		m_pContext->CSSetShaderResources(2, 1, pSRVs);
 
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVoxelDensityColor.pUAV.Get() };
-		m_pContext->CSSetUnorderedAccessViews(1, 1, pUAVs, nullptr);
+		m_pContext->CSSetUnorderedAccessViews(2, 1, pUAVs, nullptr);
 	}
 	{
 		uint32_t FroxelX = (FROXELX + 7) / 8;
@@ -1527,7 +1534,7 @@ HRESULT CRenderer::Render_FroxelCell(){
 		m_pContext->Dispatch(FroxelX, FroxelY, FroxelZ);
 
 		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
-		m_pContext->CSSetUnorderedAccessViews(1, 1, pNullUAVs, nullptr);
+		m_pContext->CSSetUnorderedAccessViews(2, 1, pNullUAVs, nullptr);
 	}
 
 	return S_OK;
@@ -1537,13 +1544,12 @@ HRESULT CRenderer::Render_LightIntegration() {
 	{
 		m_pContext->CSSetShader(m_pLightIntegrationCS->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11ShaderResourceView* pSRVs[3] = {
-			m_pVoxelDensityColor.pSRV.Get(),
-			m_pResDynTexTargetDepth->GetSRV().Get(),
-			CSMShadowMapSRV.Get()
-		};
-
-		m_pContext->CSSetShaderResources(5, 3, pSRVs);
+		ID3D11ShaderResourceView* pSRVs[6] = { nullptr };
+		pSRVs[1] = m_pBlueNoiseTexture.Get();
+		pSRVs[3] = m_pVoxelDensityColor.pSRV.Get();
+		pSRVs[5] = CSMShadowMapSRV.Get();
+		
+		m_pContext->CSSetShaderResources(0, 6, pSRVs);
 
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVoxelLighting.pUAV.Get() };
 		m_pContext->CSSetUnorderedAccessViews(1, 1, pUAVs, nullptr);
@@ -1555,8 +1561,8 @@ HRESULT CRenderer::Render_LightIntegration() {
 
 		m_pContext->Dispatch(FroxelX, FroxelY, FroxelZ);
 
-		ID3D11ShaderResourceView* pNullSRVs[8] = { nullptr };
-		m_pContext->CSSetShaderResources(0, 8, pNullSRVs);
+		ID3D11ShaderResourceView* pNullSRVs[6] = { nullptr };
+		m_pContext->CSSetShaderResources(0, 6, pNullSRVs);
 
 		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
 		m_pContext->CSSetUnorderedAccessViews(1, 1, pNullUAVs, nullptr);
@@ -1569,20 +1575,17 @@ HRESULT CRenderer::Render_FroxelAccumulation(){
 	{
 		m_pContext->CSSetShader(m_pFroxelAccumulationCS->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11ShaderResourceView* pSRVs[] = {
-			m_pVoxelLighting.pSRV.Get()
-		};
-		m_pContext->CSSetShaderResources(6, 1, pSRVs);
+		ID3D11ShaderResourceView* pSRVs[] = { m_pVoxelLighting.pSRV.Get() };
+		m_pContext->CSSetShaderResources(4, 1, pSRVs);
 
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVoxelAccumulated.pUAV.Get() };
 		m_pContext->CSSetUnorderedAccessViews(1, 1, pUAVs, nullptr);
 	}
 	{
-		uint32_t FroxelX = (FROXELX + 7) / 8;
-		uint32_t FroxelY = (FROXELY + 7) / 8;
-		uint32_t FroxelZ = (FROXELZ + 7) / 8;
+		uint32_t FroxelX = (FROXELX + 15) / 16;
+		uint32_t FroxelY = (FROXELY + 15) / 16;
 
-		m_pContext->Dispatch(FroxelX, FroxelY, FroxelZ);
+		m_pContext->Dispatch(FroxelX, FroxelY, 1);
 
 		ID3D11ShaderResourceView* pNullSRVs[7] = { nullptr };
 		m_pContext->CSSetShaderResources(0, 7, pNullSRVs);
@@ -1599,11 +1602,11 @@ HRESULT CRenderer::Render_RayMarching() {
 		m_pContext->CSSetShader(m_pRayMarchingCS->GetComputeShader().Get(), nullptr, 0);
 
 		ID3D11ShaderResourceView* pSRVs[7] = { nullptr };
-		pSRVs[1] = m_pResDynTexTargetDepth->GetSRV().Get();
-		pSRVs[3] = m_pBlueNoiseTexture.Get();
-		pSRVs[6] = m_pVoxelAccumulated.pSRV.Get();
+		pSRVs[0] = m_pResDynTexTargetDepth->GetSRV().Get();
+		pSRVs[1] = m_pBlueNoiseTexture.Get();
+		pSRVs[4] = m_pVoxelLighting.pSRV.Get();
 
-		m_pContext->CSSetShaderResources(0, 7, pSRVs);
+		m_pContext->CSSetShaderResources(0, 5, pSRVs);
 
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexUAVVolumetric->GetUAV().Get()};
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
@@ -1630,7 +1633,6 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 
 	_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
 	m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const _float*>(&ClearColor));
-	m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
 
 	m_pContext->VSSetShader(m_pOffScreenVertexShader->GetVertexShader().Get(), nullptr, 0);
 	m_pContext->PSSetShader(m_pVolumetricCompositePS->GetPixelShader().Get(), nullptr, 0);
@@ -1651,7 +1653,7 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 		pSRVs[0] = m_pResDynTexTargetDepth->GetSRV().Get();
 		pSRVs[1] = m_pResDynTexTargetPreviousRenderView->GetSRV().Get();
 		pSRVs[2] = m_pVoxelAccumulated.pSRV.Get();
-		pSRVs[3] = m_pBlueNoiseTexture.Get();
+		//pSRVs[3] = m_pBlueNoiseTexture.Get();
 		m_pContext->PSSetShaderResources(0, 4, pSRVs);
 	}
 

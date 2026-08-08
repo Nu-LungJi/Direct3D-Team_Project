@@ -466,19 +466,19 @@ HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pCo
 
 		for (size_t i = 0; i < InstanceCount; ++i) {
 			_bool bVisibleToLight = true;
-			if (i < pBatch->ShadowBounds.size()) {
-				const auto& Bounds = pBatch->ShadowBounds[i];
-
-				if (Bounds.has_value()) {
-					if (pLight->Get_LightType() == LIGHT_TYPE::POINT && _PointFaceIndex >= 0) {
-						bVisibleToLight = pLight->Intersects_PointShadowFace(static_cast<uint32_t>(_PointFaceIndex), Bounds.value());
-					}
-					else {
-						bVisibleToLight = pLight->Intersects_ShadowBounds(Bounds.value());
-					}
-
-				}
-			}
+			//if (i < pBatch->ShadowBounds.size()) {
+			//	const auto& Bounds = pBatch->ShadowBounds[i];
+			//
+			//	if (Bounds.has_value()) {
+			//		if (pLight->Get_LightType() == LIGHT_TYPE::POINT && _PointFaceIndex >= 0) {
+			//			bVisibleToLight = pLight->Intersects_PointShadowFace(static_cast<uint32_t>(_PointFaceIndex), Bounds.value());
+			//		}
+			//		else {
+			//			bVisibleToLight = pLight->Intersects_ShadowBounds(Bounds.value());
+			//		}
+			//
+			//	}
+			//}
 
 			if (!bVisibleToLight)	continue;
 

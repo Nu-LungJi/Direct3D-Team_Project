@@ -55,9 +55,10 @@ cbuffer CB_CPU_SKINNING_MESH : register(b5)
 
 cbuffer CB_SHADOW : register(b11)
 {
-	uint CurrentShadowLightIndex;
-	uint CurrentPointFaceIndex;
-	float2 ShadowPadding;
+	uint	CurrentShadowLightIndex;
+	uint	CurrentPointFaceIndex;
+	uint	CurrentCascadeIndex;
+	float	ShadowPadding;
 }
 
 
@@ -161,8 +162,14 @@ VS_FINAL_OUT VSMain_InstancedDirectional(VS_SHADOW_INSTANCED_IN IN, uint _Instan
 	
 	float4 WorldPosition = mul(SkinnedPosition, gInstances[_InstancedID].WorldMatrix);
 	
+	uint LightViewProjIndex = 0;
+	
+	if (AffectedLight[CurrentShadowLightIndex].LightType == LIGHT_DIRECTIONAL) {
+		LightViewProjIndex = CurrentCascadeIndex;
+	}
+	
 	OUT.WorldPos = WorldPosition.xyz;
-	OUT.Position = mul(WorldPosition, g_matViewProj);
+	OUT.Position = mul(WorldPosition, AffectedLight[CurrentShadowLightIndex].g_LightViewProj[LightViewProjIndex]);
 	//OUT.Position = float4(IN.Position.xy * 0.1f, 0.5f, 1.0f);
 	
 	return OUT;
@@ -183,8 +190,7 @@ VS_FINAL_OUT VSMain_Directional(VS_IN IN)
 	float4 WorldPos = mul(float4(IN.Position, 1.0f), g_matWorld);
 	OUT.WorldPos	= WorldPos.xyz;
 	
-	float4 ViewPos	= mul(WorldPos, g_matView);
-	OUT.Position = mul(ViewPos, g_matProj);
+	OUT.Position = mul(float4(IN.Position, 1.0f), g_matWVP);
 	//OUT.Position = float4(IN.Position.xy * 0.1f, 0.5f, 1.0f);
 	
 	return OUT;
@@ -249,7 +255,7 @@ float PSMain_Old(GS_OUT OUT) : SV_DEPTH
 }
 float PSMain_Directional(VS_FINAL_OUT OUT) : SV_DEPTH
 {
-	return 0.f;	
+	return OUT.Position.z;
 }
 float PSMain_PointFace(VS_POINT_OUT OUT) : SV_DEPTH
 {

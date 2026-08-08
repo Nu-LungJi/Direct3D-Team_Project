@@ -1541,6 +1541,7 @@ HRESULT CNvClothCape::Render_Shadow(
 
 	ComPtr<ID3D11InputLayout> pPreviousInputLayout{};
 	ComPtr<ID3D11VertexShader> pPreviousVertexShader{};
+	ComPtr<ID3D11PixelShader> pPreviousPixelShader{};
 	ComPtr<ID3D11GeometryShader> pPreviousGeometryShader{};
 	ComPtr<ID3D11ShaderResourceView>
 		pPreviousParticleSRV{};
@@ -1550,7 +1551,9 @@ HRESULT CNvClothCape::Render_Shadow(
 		pPreviousVertexShader.GetAddressOf(),
 		nullptr,
 		nullptr);
-
+	/*----------- 광윤 추가 -----------*/
+	pContext->PSGetShader(pPreviousPixelShader.GetAddressOf(),nullptr,nullptr);
+	/*---------------------------------*/
 	pContext->GSGetShader(
 		pPreviousGeometryShader.GetAddressOf(),
 		nullptr,
@@ -1633,6 +1636,9 @@ HRESULT CNvClothCape::Render_Shadow(
 		pPreviousVertexShader.Get(),
 		nullptr,
 		0);
+	/*----------- 광윤 추가 -----------*/
+	pContext->PSSetShader(pPreviousPixelShader.Get(), nullptr, 0);
+	/*---------------------------------*/
 	return S_OK;
 }
 
