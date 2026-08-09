@@ -446,6 +446,79 @@ void CComAnimator::Play_Anim(int32_t iAnimIndex, _bool bLoop, _float fBlendDurat
 	Invalidate_RootMotionCache();
 }
 
+void CComAnimator::Play_UpperAnim(int32_t iAnimIndex, _bool bLoop, _float fFadeDuration)
+{
+	if (m_pModelInstance == nullptr || m_pModelInstance->GetModel() == nullptr)
+		return;
+
+	auto& Anims = m_pModelInstance->GetModel()->GetAnimations();
+	if (iAnimIndex < 0 || iAnimIndex >= static_cast<int32_t>(Anims.size()) || Anims[iAnimIndex] == nullptr)
+		return;
+
+	m_UpperAnimState.Reset();
+	m_UpperAnimState.SetAnim(iAnimIndex, bLoop);
+	m_UpperAnimState.KeyFrameIndices.resize(Anims[iAnimIndex]->GetNumChannel(), 0);
+
+	m_fUpperFadeStartWeight = m_fUpperLayerWeight;
+	m_fUpperFadeTargetWeight = 1.f;
+	m_fUpperFadeTime = 0.f;
+	m_fUpperFadeDuration = std::max(fFadeDuration, 0.f);
+	if (m_fUpperFadeDuration <= 0.f)
+		m_fUpperLayerWeight = 1.f;
+}
+
+void CComAnimator::Stop_UpperAnim(_float fFadeDuration)
+{
+	if (!m_UpperAnimState.IsValid())
+		return;
+
+	m_fUpperFadeStartWeight = m_fUpperLayerWeight;
+	m_fUpperFadeTargetWeight = 0.f;
+	m_fUpperFadeTime = 0.f;
+	m_fUpperFadeDuration = std::max(fFadeDuration, 0.f);
+	if (m_fUpperFadeDuration <= 0.f)
+	{
+		m_fUpperLayerWeight = 0.f;
+		m_UpperAnimState.Reset();
+	}
+}
+
+_bool CComAnimator::Set_UpperBodyRootBone(const _char* pBoneName, uint32_t iBlendDepth)
+{
+	if (m_pModelInstance == nullptr || m_pModelInstance->GetModel() == nullptr || pBoneName == nullptr)
+		return false;
+
+	auto pModel = m_pModelInstance->GetModel();
+	const int32_t iRootBoneIndex = pModel->Get_BoneIndex(pBoneName);
+	const auto& Bones = pModel->GetBones();
+	if (iRootBoneIndex < 0 || iRootBoneIndex >= static_cast<int32_t>(Bones.size()))
+		return false;
+
+	m_UpperBodyMask.assign(Bones.size(), 0.f);
+	const uint32_t iSafeBlendDepth = std::max(iBlendDepth, 1u);
+
+	for (uint32_t i = 0; i < static_cast<uint32_t>(Bones.size()); ++i)
+	{
+		int32_t iCurrent = static_cast<int32_t>(i);
+		uint32_t iDepthFromRoot = 0;
+		while (iCurrent >= 0)
+		{
+			if (iCurrent == iRootBoneIndex)
+			{
+				m_UpperBodyMask[i] = std::min(
+					static_cast<_float>(iDepthFromRoot + 1) / static_cast<_float>(iSafeBlendDepth),
+					1.f);
+				break;
+			}
+
+			iCurrent = Bones[iCurrent]->GetParendBoneIndex();
+			++iDepthFromRoot;
+		}
+	}
+
+	return true;
+}
+
 void CComAnimator::Play_Action(int32_t iActionIndex, _float fBlendDuration)
 {
 	if (m_pModelInstance == nullptr)
@@ -701,6 +774,12 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 
 	if (m_CombinedBoneMatrices.size() != iBoneCount)
 		m_CombinedBoneMatrices.resize(iBoneCount);
+	if (m_UpperLocalBoneMatrices.size() != iBoneCount)
+		m_UpperLocalBoneMatrices.resize(iBoneCount);
+	if (m_FinalLocalBoneMatrices.size() != iBoneCount)
+		m_FinalLocalBoneMatrices.resize(iBoneCount);
+	if (m_UpperBodyMask.size() != iBoneCount)
+		m_UpperBodyMask.assign(iBoneCount, 0.f);
 
 
 	// 1. 기본 Bone Local Matrix로 초기화
@@ -723,6 +802,9 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 
 	// Combined 올리기 전 Blend 
 	Blend_Anim(fTimeDelta);
+	Update_UpperLayer(fTimeDelta);
+	Build_UpperLocalPose();
+	Compose_FinalLocalPose();
 
 	// 3. Combined Matrix 계산
 	_matrix matPreTransform = XMLoadFloat4x4(&pModel->Get_PreTransformMatrix());
@@ -736,12 +818,12 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 
 
 		if (-1 == iParentIndex) {
-			XMStoreFloat4x4(&m_CombinedBoneMatrices[i], XMLoadFloat4x4(&m_LocalBoneMatrices[i]) * matPreTransform);
+			XMStoreFloat4x4(&m_CombinedBoneMatrices[i], XMLoadFloat4x4(&m_FinalLocalBoneMatrices[i]) * matPreTransform);
 			continue;
 		}
 
 
-		XMStoreFloat4x4(&m_CombinedBoneMatrices[i], XMLoadFloat4x4(&m_LocalBoneMatrices[i]) * XMLoadFloat4x4(&m_CombinedBoneMatrices[iParentIndex]));
+		XMStoreFloat4x4(&m_CombinedBoneMatrices[i], XMLoadFloat4x4(&m_FinalLocalBoneMatrices[i]) * XMLoadFloat4x4(&m_CombinedBoneMatrices[iParentIndex]));
 
 	}
 
@@ -766,6 +848,107 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 	}
 
 	
+}
+
+void CComAnimator::Update_UpperLayer(_float fTimeDelta)
+{
+	if (!m_UpperAnimState.IsValid())
+		return;
+
+	Update_AnimState(fTimeDelta, m_UpperAnimState);
+
+	if (m_fUpperFadeDuration > 0.f)
+	{
+		m_fUpperFadeTime += fTimeDelta;
+		const _float fRatio = std::clamp(m_fUpperFadeTime / m_fUpperFadeDuration, 0.f, 1.f);
+		m_fUpperLayerWeight = m_fUpperFadeStartWeight +
+			(m_fUpperFadeTargetWeight - m_fUpperFadeStartWeight) * fRatio;
+
+		if (fRatio >= 1.f)
+			m_fUpperFadeDuration = 0.f;
+	}
+
+	if (m_UpperAnimState.bFinished && !m_UpperAnimState.bLoop && m_fUpperFadeTargetWeight > 0.f)
+		Stop_UpperAnim(0.1f);
+
+	if (m_fUpperLayerWeight <= 0.f && m_fUpperFadeTargetWeight <= 0.f)
+	{
+		m_fUpperLayerWeight = 0.f;
+		m_UpperAnimState.Reset();
+	}
+}
+
+void CComAnimator::Build_UpperLocalPose()
+{
+	if (!m_UpperAnimState.IsValid() || m_fUpperLayerWeight <= 0.f ||
+		m_pModelInstance == nullptr || m_pModelInstance->GetModel() == nullptr)
+		return;
+
+	auto pModel = m_pModelInstance->GetModel();
+	const auto& Bones = pModel->GetBones();
+	const auto& Anims = pModel->GetAnimations();
+	if (m_UpperAnimState.iAnimIndex < 0 ||
+		m_UpperAnimState.iAnimIndex >= static_cast<int32_t>(Anims.size()))
+		return;
+
+	auto pAnim = Anims[m_UpperAnimState.iAnimIndex];
+	if (pAnim == nullptr)
+		return;
+
+	for (uint32_t i = 0; i < (uint32_t)(Bones.size()); ++i)
+	{
+		_matrix matLocal = Bones[i]->Get_TransformationMatrix();
+		if (auto* pChannel = pAnim->GetChannelByBoneIndex(i))
+			matLocal = Evaluate_ChannelMatrix_CPU(pChannel, m_UpperAnimState.fTrackPosition);
+		XMStoreFloat4x4(&m_UpperLocalBoneMatrices[i], matLocal);
+	}
+}
+
+void CComAnimator::Compose_FinalLocalPose()
+{
+	if (m_FinalLocalBoneMatrices.size() != m_LocalBoneMatrices.size())
+		m_FinalLocalBoneMatrices.resize(m_LocalBoneMatrices.size());
+
+	const _bool bUseUpperLayer =
+		m_UpperAnimState.IsValid() &&
+		m_fUpperLayerWeight > 0.f &&
+		m_UpperBodyMask.size() == m_LocalBoneMatrices.size();
+
+	if (!bUseUpperLayer)
+	{
+		m_FinalLocalBoneMatrices = m_LocalBoneMatrices;
+		return;
+	}
+
+	for (uint32_t i = 0; i < static_cast<uint32_t>(m_LocalBoneMatrices.size()); ++i)
+	{
+		const _float fWeight = std::clamp(m_UpperBodyMask[i] * m_fUpperLayerWeight, 0.f, 1.f);
+		if (fWeight <= 0.f)
+		{
+			m_FinalLocalBoneMatrices[i] = m_LocalBoneMatrices[i];
+			continue;
+		}
+
+		_vector vBaseScale, qBaseRotation, vBaseTranslation;
+		_vector vUpperScale, qUpperRotation, vUpperTranslation;
+		if (!XMMatrixDecompose(&vBaseScale, &qBaseRotation, &vBaseTranslation, XMLoadFloat4x4(&m_LocalBoneMatrices[i])) ||
+			!XMMatrixDecompose(&vUpperScale, &qUpperRotation, &vUpperTranslation, XMLoadFloat4x4(&m_UpperLocalBoneMatrices[i])))
+		{
+			m_FinalLocalBoneMatrices[i] = m_LocalBoneMatrices[i];
+			continue;
+		}
+
+		const _vector vScale = XMVectorLerp(vBaseScale, vUpperScale, fWeight);
+		const _vector qRotation = XMQuaternionSlerp(qBaseRotation, qUpperRotation, fWeight);
+		const _vector vTranslation = XMVectorLerp(vBaseTranslation, vUpperTranslation, fWeight);
+		XMStoreFloat4x4(
+			&m_FinalLocalBoneMatrices[i],
+			XMMatrixAffineTransformation(
+				vScale,
+				XMVectorSet(0.f, 0.f, 0.f, 1.f),
+				qRotation,
+				XMVectorSetW(vTranslation, 1.f)));
+	}
 }
 
 _bool CComAnimator::Sample_CombinedBoneMatrices(int32_t iAnimIndex, _float fTrackPosition, const std::vector<uint32_t>& boneChain,_float4x4& outMatrix) const
