@@ -24,6 +24,8 @@ void CRenderer::UpdateGUI()
 }
 VOID	CRenderer::Update(_float fTimeDelta) {
 	m_fCurrentLifeTime += fTimeDelta;
+	m_fDeltaTime = fTimeDelta;
+	m_fTimeAccumulation += fTimeDelta;
 }
 HRESULT CRenderer::Initialize()
 {
@@ -1012,6 +1014,8 @@ HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 		XMStoreFloat4x4(&cbPerPass.matInvViewProj, XMMatrixMultiply(XMLoadFloat4x4(&cbPerPass.matInvProj), XMLoadFloat4x4(&cbPerPass.matInvView)));
 
 		cbPerPass.vCamPos = _ActiveCam->GetTransform().GetPosition();
+		cbPerPass.fDeltaTime = m_fDeltaTime;
+		cbPerPass.fTimeAccumulation = m_fTimeAccumulation;
 
 		XMStoreFloat4x4(&cbPerPass.matShadowLightViewProj, ShadowLightVP);
 

@@ -2060,6 +2060,9 @@
     <FxCompile Include="..\ShaderFiles\UI\Cursor.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced_Foliage.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">
