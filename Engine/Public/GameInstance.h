@@ -4,6 +4,7 @@
 #include "ResourceManager.h"
 #include "WorkerManager.h"
 #include "GameObjectManager.h"
+#include "GameObjectPoolManager.h"
 #include "CameraManager.h"
 #include "ShaderManager.h"
 #include "DbgLineRender.h"
@@ -251,6 +252,10 @@ public:
 	T* GetFirstGameObjectByLayer(TLayer&& sLayerName) const
 	{
 		return m_pGameObjectManager->GetFirstGameObjectByLayer<T>(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
+	}
+	CGameObjectPoolManager* GetGameObjectPoolManager() const
+	{
+		return m_pGameObjectPoolManager.get();
 	}
 	//template<typename T, typename E> requires std::is_enum_v<E>
 	//T* GetFirstGameObjectByLayer(E layer) const
@@ -667,6 +672,7 @@ private:
 	UPtr<CTimeProvider> m_pTimeProvider{};
 	UPtr<CPrototypeManager> m_pPrototypeManager{};
 	UPtr<CGameObjectManager> m_pGameObjectManager{};
+	UPtr<CGameObjectPoolManager> m_pGameObjectPoolManager{};
 	UPtr<CCameraManager> m_pCameraManager{};
 	UPtr<CColliderManager> m_pColliderManager{};
 	UPtr<CRenderer> m_pRenderer{};

@@ -203,6 +203,28 @@ void CGameObject::SetManagedUpdateEnabledCascade(_bool bEnabled)
 	});
 }
 
+_bool CGameObject::AcquireFromPool(void* pArg)
+{
+	// [LSY] 이전 사용에서 남은 PhysX 동기화 결과를 재사용하지 않는다.
+	m_PhysXSyncData = {};
+	m_bPhysXSynced = false;
+
+	if (m_bPendingDestroy || !OnAcquireFromPool(pArg))
+		return false;
+
+	SetManagedUpdateEnabledCascade(true);
+	return true;
+}
+
+void CGameObject::ReleaseToPool()
+{
+	SetManagedUpdateEnabledCascade(false);
+	// [LSY] 비활성 객체에 이전 PhysX 결과가 남지 않도록 정리한다.
+	m_PhysXSyncData = {};
+	m_bPhysXSynced = false;
+	OnReleaseToPool();
+}
+
 void CGameObject::SyncActivePhysXData(const PX_SYNC_DATA& syncData)
 {
     m_PhysXSyncData = syncData;

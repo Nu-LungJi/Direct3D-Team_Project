@@ -12,6 +12,7 @@
 NS_BEGIN(Engine)
 
 struct MODEL_INSTANCE_BATCH;
+class CGameObjectPoolManager;
 
 class ENGINE_DLL CGameObject : public CPrototype,
 								public IRenderable,
@@ -169,8 +170,14 @@ public:
 protected:
 	virtual void OnManagedUpdateEnabled() {}
 	virtual void OnManagedUpdateDisabled() {}
+	virtual _bool OnAcquireFromPool(void* pArg) { return true; }
+	virtual void OnReleaseToPool() {}
 private:
+	// Pool Manager를 거치지 않은 직접 호출은 Manager의 Handle 상태와 어긋나므로 차단한다.
+	_bool AcquireFromPool(void* pArg = nullptr);
+	void ReleaseToPool();
 	_bool m_bManagedUpdateEnabled{ true };
+	friend class CGameObjectPoolManager;
 
 	// IPhysicsListener
 public:

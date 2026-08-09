@@ -86,6 +86,9 @@ HRESULT CLevelTerrain::Initialize()
 	if (FAILED(InitializePathPlaybackTests()))
 		return E_FAIL;
 
+	if (FAILED(InitializeOilBarrelPool()))
+		return E_FAIL;
+
 	if(false)
 	{
 		for (uint32_t i = 0; i < 6; ++i)
@@ -855,6 +858,45 @@ HRESULT CLevelTerrain::Render()
 void CLevelTerrain::UpdateGUI()
 {
 	ImGui::Begin("Terrain");
+	if (ImGui::CollapsingHeader("Oil Barrel Pool"))
+	{
+		auto* pPoolManager =
+			CGameInstance::Get().GetGameObjectPoolManager();
+		if (pPoolManager)
+		{
+			ImGui::Text(
+				"Total: %zu | Active: %zu | Available: %zu",
+				pPoolManager->GetTotalCount("Terrain_OilBarrelPool"),
+				pPoolManager->GetActiveCount("Terrain_OilBarrelPool"),
+				pPoolManager->GetAvailableCount("Terrain_OilBarrelPool"));
+		}
+		ImGui::DragFloat3(
+			"Acquire Position",
+			&m_vOilBarrelPoolSpawnPosition.x,
+			0.1f);
+
+		if (ImGui::Button("Acquire Oil Barrel"))
+		{
+			COilBarrel::POOL_ACQUIRE_DESC tAcquireDesc{};
+			tAcquireDesc.vPosition = m_vOilBarrelPoolSpawnPosition;
+			if (!pPoolManager ||
+				!pPoolManager->Acquire(
+					"Terrain_OilBarrelPool",
+					&tAcquireDesc))
+			{
+				DEBUG_LOG("[OilBarrelPool] Acquire failed.\n");
+			}
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Release All"))
+		{
+			if (pPoolManager)
+				pPoolManager->ReleaseAll("Terrain_OilBarrelPool");
+		}
+
+		ImGui::Separator();
+	}
 	ImGui::DragFloat(
 		"Tomb Boss Bullet Spawn Yaw",
 		&m_fTombBossBulletSpawnYawDegrees,
@@ -955,6 +997,45 @@ void CLevelTerrain::UpdateGUI()
 
 	ImGui::End();
 
+}
+
+HRESULT CLevelTerrain::InitializeOilBarrelPool()
+{
+	auto* pPoolManager =
+		CGameInstance::Get().GetGameObjectPoolManager();
+	if (!pPoolManager)
+		return E_FAIL;
+
+	CGameObjectPoolManager::POOL_DESC tPoolDesc{};
+	tPoolDesc.iPrewarmCount = 8;
+	tPoolDesc.iGrowCount = 4;
+	tPoolDesc.iMaxCount = 32;
+	tPoolDesc.eExhaustPolicy =
+		CGameObjectPoolManager::EXHAUST_POLICY::GROW;
+	tPoolDesc.fnCreate = [iObjectIndex = size_t{ 0 }]() mutable
+		-> std::optional<CHandle>
+	{
+		COilBarrel::DESC tDesc{};
+		tDesc.sObjectTag =
+			"PooledOilBarrel_" + std::to_string(iObjectIndex++);
+		tDesc.vInitialPosition = { 0.f, -1000.f, 0.f };
+		tDesc.vConvexScale = { 300.f, 300.f, 300.f };
+		tDesc.tFilter = PX_FILTER_DESC{
+			.iLayer = ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
+			.iSimulationMask = PX_ALL_LAYERS,
+			.iQueryMask = PX_ALL_LAYERS
+		};
+
+		return CGameInstance::Get().AddGameObjectToLayer(
+			LEVEL::TERRAIN,
+			PROTO_GAMEOBJECT::Prototype_GameObject_OilBarrel,
+			"03_OilBarrelPool",
+			&tDesc);
+	};
+
+	return pPoolManager->RegisterPool(
+		"Terrain_OilBarrelPool",
+		std::move(tPoolDesc)) ? S_OK : E_FAIL;
 }
 
 void CLevelTerrain::Picking()
@@ -1103,5 +1184,10 @@ Engine::UPtr<CLevelTerrain> CLevelTerrain::Create()
 
 void CLevelTerrain::Free()
 {
+	if (auto* pPoolManager =
+		CGameInstance::Get().GetGameObjectPoolManager())
+	{
+		pPoolManager->UnregisterPool("Terrain_OilBarrelPool");
+	}
 	CLevel::Free();
 }

@@ -783,6 +783,9 @@
     <ClInclude Include="..\Public\GameObjectManager.h">
       <Filter>GameObject\Manager</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\GameObjectPoolManager.h">
+      <Filter>GameObject\Manager</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\CameraObject.h">
       <Filter>GameObject\Camera</Filter>
     </ClInclude>
@@ -1465,6 +1468,9 @@
       <Filter>Collider\Sphere</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\GameObjectManager.cpp">
+      <Filter>GameObject\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\GameObjectPoolManager.cpp">
       <Filter>GameObject\Manager</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\CameraObject.cpp">
