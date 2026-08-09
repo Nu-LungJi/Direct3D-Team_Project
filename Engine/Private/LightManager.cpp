@@ -721,7 +721,7 @@ _bool CLightManager::Evaluate_DirectionalLightCount(){
 		if (LightObject->Get_LightType() == LIGHT_TYPE::DIRECTIONAL) {
 			if (LightHandle != m_pMainDirectionalLight.m_pLightHandle && m_pMainDirectionalLight.m_pLightHandle) {
 				
-				MSG_BOX("Directional Light already exist.");
+				//MSG_BOX("Directional Light already exist.");
 				return true;
 			}
 			else {
@@ -884,7 +884,7 @@ VOID	CLightManager::Update_ActiveLights() {
 		
 		if (LightOBJ->Get_LightType() == LIGHT_TYPE::DIRECTIONAL) {
 			if (m_pMainDirectionalLight.m_pLightHandle) {
-				MSG_BOX("Directional Light already exist.");
+				//MSG_BOX("Directional Light already exist.");
 				LightOBJ->Set_LightType(LIGHT_TYPE::SPOTLIGHT);
 				continue;
 			}
