@@ -44,6 +44,64 @@ void CEnderDragon::UpdateGUI()
 {
 	CGameObject::UpdateGUI();
 	ImGui::DragInt("HP", &m_iHp, 0, 1);
+	
+	if (ImGui::Button("AddWay"))
+	{
+		auto pSrc = CGameInstance::Get().GetActiveCamera();
+		if (nullptr == pSrc) return;
+
+		m_DebugPoint.push_back(pSrc->GetTransform().GetPosition());
+	}
+	if (ImGui::Button("DelWay"))
+	{
+		if (!m_DebugPoint.empty())
+			m_DebugPoint.pop_back();
+	}
+	if (ImGui::Button("SaveWay"))
+		m_bPopup = true;
+
+	if (m_bPopup)
+	{
+		_string Path = "./Resources/json/WayPoint/";
+
+		ImGui::OpenPopup("SaveWay");
+		_char NameBUffer[64]{};
+		if (ImGui::BeginPopup("SaveWay", ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::Text("FileName");
+			if (ImGui::InputText("##FileName", &NameBUffer[0], IM_ARRAYSIZE(NameBUffer))) //이름 입력
+			{
+				m_WayName = NameBUffer;
+
+			}
+			if (ImGui::Button("Ok"))
+			{
+				m_bPopup = false;
+				if (m_WayName.empty())
+				{
+					ImGui::CloseCurrentPopup();
+					MSG_BOX("NoName");
+				}
+				else
+				{
+					nlohmann::json j;
+					JsonSaveLoadManager::SaveJsonTypeFloat3list(j, m_WayName, m_DebugPoint);
+					Path += m_WayName + ".json";
+					std::ofstream path(Path);
+					path << j.dump(4);
+					path.close();
+				}
+			} ImGui::SameLine(100.f);
+			if (ImGui::Button("Cancle"))
+			{
+				m_bPopup = false;
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+	Phase_Debug();
 }
 
 HRESULT CEnderDragon::InitializePrototype(void* pArg)
@@ -294,7 +352,7 @@ void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 	if (!m_bDebug) return;
 
 
-	Phase_Debug();
+
 	Check_Phase();
 	m_pFsm->PriorityUpdate(fTimeDelta);
 	Update_BBToFsm();
@@ -537,6 +595,20 @@ _bool CEnderDragon::BreakSkillType(PLAYER_SKILL_TYPE eType)
 }
 void CEnderDragon::Phase_Debug()
 {
+	uint32_t i = 0;
+	for (auto& iter : m_DebugPoint)
+	{
+		auto pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
+
+		const auto vPreviousColor = pDbgLineRender->GetColor();
+		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
+		pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
+		pDbgLineRender->SetDepthTest(true);
+		pDbgLineRender->AddSphere(1.2f, XMMatrixTranslation(iter.x, iter.y, iter.z));
+		pDbgLineRender->SetColor(vPreviousColor);
+		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+		Picking(iter, 0x44524750 + i++);
+	}
 	auto pBB = Get_BlackBoard();
 	if (nullptr == pBB) return;
 	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_Q))
@@ -565,6 +637,36 @@ void CEnderDragon::Phase_Debug()
 		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
 	}
+}
+void CEnderDragon::Picking(_float3& vPos, uint32_t iID)
+{
+	auto pCamera =CGameInstance::Get().GetActiveCamera();
+
+	ImGuiViewport* pViewport =ImGui::GetMainViewport();
+
+	if (!pCamera || !pViewport)
+		return;
+
+	_float4x4 View{};
+	_float4x4 Projection{};
+	_float4x4 World{};
+
+	XMStoreFloat4x4(&View,	pCamera->GetView());
+	XMStoreFloat4x4(&Projection,pCamera->GetProj());
+
+	XMStoreFloat4x4(&World,XMMatrixTranslation(	vPos.x,	vPos.y,vPos.z));
+
+	ImGuizmo::SetOrthographic(false);
+	ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList(pViewport));
+
+	ImGuizmo::SetRect(pViewport->Pos.x,pViewport->Pos.y,pViewport->Size.x,pViewport->Size.y);;
+	ImGuizmo::SetID(iID);
+	if (!ImGuizmo::Manipulate(	&View._11,&Projection._11,ImGuizmo::TRANSLATE,ImGuizmo::WORLD,&World._11))
+		return;
+	
+	vPos ={ World._41, World._42, World._43};
+
+	return ;
 }
 E::UPtr<CEnderDragon> CEnderDragon::Create()
 {

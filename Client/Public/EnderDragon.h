@@ -59,7 +59,9 @@ private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);
+	
 	void						Phase_Debug();
+	void						Picking(_float3& vPos,uint32_t iID);
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
 
@@ -67,8 +69,10 @@ private:
 	EDG_SKILL_INFO	m_SkillHandle[ETOUI(DRAGON_SKILL::END)]{};
 	DRAGON_SKILL	m_eDragonSkill{};
 	DRAGON_PHASE	m_ePhase{};
-	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false };
+	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false };
 
+	_string						m_WayName{};
+	std::list<_float3>			m_DebugPoint;
 	std::array<_bool, ETOUI(DRAGON_PHASE::END)>	m_bPhaseLock{ false };
 public:
 	static E::UPtr<CEnderDragon> Create();

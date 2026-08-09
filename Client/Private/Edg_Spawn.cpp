@@ -99,19 +99,19 @@ void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	//if (false == pDragon->Is_StateFinished()) return;
 	//카메라랑 샤바샤바 하고 전환
 
-	switch (m_eSpawn)
-	{
-	case EDG_SPAWN_NUMBER::FIRST:
-		MoveSpawn(pDragon, fTimeDelta);
-		break;
-	case EDG_SPAWN_NUMBER::SECOND:
-		Play_Anim(pDragon, fTimeDelta);
-		break;
-	case EDG_SPAWN_NUMBER::THIRD:
-		pDragonFsm->Request_State(EDG_STATE::COMBAT);
-		break;
-	}
-	//pDragonFsm->Request_State(EDG_STATE::COMBAT);
+	//switch (m_eSpawn)
+	//{
+	//case EDG_SPAWN_NUMBER::FIRST:
+	//	MoveSpawn(pDragon, fTimeDelta);
+	//	break;
+	//case EDG_SPAWN_NUMBER::SECOND:
+	//	Play_Anim(pDragon, fTimeDelta);
+	//	break;
+	//case EDG_SPAWN_NUMBER::THIRD:
+	//	pDragonFsm->Request_State(EDG_STATE::COMBAT);
+	//	break;
+	//}
+	pDragonFsm->Request_State(EDG_STATE::COMBAT);
 }
 
 _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
