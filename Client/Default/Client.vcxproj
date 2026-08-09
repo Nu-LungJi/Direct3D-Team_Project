@@ -290,6 +290,7 @@
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h" />
     <ClInclude Include="..\public\RagdollTest.h" />
     <ClInclude Include="..\public\TestPathPlaybackObject.h" />
+    <ClInclude Include="..\public\LuaTestObject.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
     <ClInclude Include="..\Public\PlayerRagdollController.h" />
@@ -425,6 +426,7 @@
     <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp" />
     <ClCompile Include="..\private\RagdollTest.cpp" />
     <ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
+    <ClCompile Include="..\private\LuaTestObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\PlayerRagdollController.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />

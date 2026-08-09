@@ -1120,17 +1120,11 @@ HRESULT CLuaManager::Execute(const std::string& script, const sol::environment& 
 	try
 	{
 		std::string formattedChunkName = chunkName;
+		std::replace(formattedChunkName.begin(), formattedChunkName.end(), '\\', '/');
 
-		// 파일 경로 형태(.lua)로 들어왔다면 절대 경로 처리
-		if (chunkName.find(".lua") != std::string::npos)
-		{
-			std::filesystem::path absolutePath = std::filesystem::absolute(chunkName);
-			formattedChunkName = "@" + absolutePath.generic_string();
-		}
-		else if (!chunkName.empty() && chunkName[0] != '@') // 단순 문자열이면 @ 추가
-		{
-			formattedChunkName = "@" + chunkName;
-		}
+		// [LSY] 복사된 런타임 스크립트를 원본 Lua 파일에 매핑할 수 있도록 상대 청크 경로를 유지한다.
+		if (!formattedChunkName.empty() && formattedChunkName.front() != '@')
+			formattedChunkName.insert(formattedChunkName.begin(), '@');
 
 		auto result = m_Lua.safe_script(
 			script,
@@ -1160,16 +1154,10 @@ HRESULT CLuaManager::Execute(const std::string& script, const std::string& chunk
 	try
 	{
 		std::string formattedChunkName = chunkName;
+		std::replace(formattedChunkName.begin(), formattedChunkName.end(), '\\', '/');
 
-		if (chunkName.find(".lua") != std::string::npos)
-		{
-			std::filesystem::path absolutePath = std::filesystem::absolute(chunkName);
-			formattedChunkName = "@" + absolutePath.generic_string();
-		}
-		else if (!chunkName.empty() && chunkName[0] != '@')
-		{
-			formattedChunkName = "@" + chunkName;
-		}
+		if (!formattedChunkName.empty() && formattedChunkName.front() != '@')
+			formattedChunkName.insert(formattedChunkName.begin(), '@');
 
 		// env 매개변수 없이 m_Lua(글로벌 상태)에 바로 실행
 		auto result = m_Lua.safe_script(
