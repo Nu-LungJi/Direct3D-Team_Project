@@ -558,7 +558,7 @@ int32_t CMonster::Find_AnimIndex(const _string& AnimName)
 	if (nullptr == pModel) return -1;
 
 	auto pAnims = pModel->GetAnimations();
-	if (pAnims.empty()) return;
+	if (pAnims.empty()) return -1;
 
 	for (size_t i = 0; i < pAnims.size(); ++i)
 	{
