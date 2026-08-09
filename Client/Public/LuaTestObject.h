@@ -4,7 +4,7 @@
 #include "GameObject.h"
 
 NS_BEGIN(Engine)
-class CComLuaScript;
+class CLuaScriptInstance;
 NS_END
 
 NS_BEGIN(Client)
@@ -27,11 +27,14 @@ public:
 	void LateUpdate(_float fTimeDelta) override;
 
 private:
-	CComLuaScript* m_pComLuaScript{};
+	SPtr<CLuaScriptInstance> m_pLuaScript{};
 
 public:
 	static UPtr<CLuaTestObject> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
+
+protected:
+	void Free() override;
 };
 
 NS_END

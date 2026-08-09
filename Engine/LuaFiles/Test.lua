@@ -1,25 +1,28 @@
+local Script = {}
 
-function OnCreate()
+function Script.OnCreate(ctx)
     print("OnCreate")
-    print(self)
-    print(gameObject)
-    print(transform:GetPosition())
+    print(ctx.ownerHandle)
 end
 
-function Update(dt)
+function Script.OnDestroy(ctx)
+    print("OnDestroy")
+end
+
+function Script.Update(ctx, dt)
     --print(dt)
 end
 
-function PriorityUpdate(dt)
-	--print(dt)
-	local x = 10;
-    if false then
+function Script.PriorityUpdate(ctx, dt)
+	--print("hihi")
+
+    if true then
         if Input.KeyDown(Key.Space) then
-            --print("Space Down")
+            print("Space Down")
         end
 
         if Input.KeyPressing(Key.W) then
-            --print("W  Pressing")
+            --print("W Pressing")
         end
 
         if Input.KeyUp(Key.Escape) then
@@ -37,25 +40,6 @@ function PriorityUpdate(dt)
             --print("Mouse:", dx, dy)
         end
     end
-
-
-
-    do
-        if Input.KeyPressing(Key.Left) then
-            transform:AddPosition(Vector3(-0.1, 0.0, 0.0))
-        end
-
-        if Input.KeyPressing(Key.Right) then
-            transform:AddPosition(Vector3(0.1, 0.0, 0.0))
-        end
-
-        if Input.KeyPressing(Key.Up) then
-            transform:AddPosition(Vector3(0.0, 0.0, 0.1))
-        end
-
-        if Input.KeyPressing(Key.Down) then
-            transform:AddPosition(Vector3(0.0, 0.0, -0.1))
-        end
-    end
-    
 end
+
+return Script

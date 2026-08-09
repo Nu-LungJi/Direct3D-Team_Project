@@ -1,8 +1,9 @@
 #include "pch.h"
 #include "LuaTestObject.h"
 
-#include "ComLuaScript.h"
 #include "GameInstance.h"
+#include "LuaManager.h"
+#include "LuaScriptInstance.h"
 #include "ResLuaScript.h"
 #include "Resources.h"
 
@@ -20,19 +21,27 @@ HRESULT CLuaTestObject::Initialize(void* pArg)
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
 
-	CComLuaScript::DESC Desc{};
-	Desc.pResScript = CGameInstance::Get().GetResourceFirst<CResLuaScript>(
+	auto pLuaResource = CGameInstance::Get().GetResourceFirst<CResLuaScript>(
 		ES_EngineResMajorType::PERMANENT_LUA,
 		ES_EngineResLuaScript::LUA_TEST);
-	if (!Desc.pResScript)
+	if (!pLuaResource)
 		return E_FAIL;
 
-	if (FAILED(AddComponentFromProto(
-		ES_EngineProtoMajorType::LUA,
-		ES_EngineProtoComponent::Prototype_Component_ComLuaScript,
-		"ComLuaScript",
-		&Desc,
-		&m_pComLuaScript)))
+	auto* pLuaManager = CGameInstance::Get().GetLuaManager();
+	if (!pLuaManager)
+		return E_FAIL;
+
+	m_pLuaScript = pLuaManager->CreateScriptInstance(pLuaResource, "LuaTestObject");
+	if (!m_pLuaScript)
+		return E_FAIL;
+
+	m_pLuaScript->SetContext("ownerHandle", GetHandle());
+	if (FAILED(m_pLuaScript->Load()))
+		return E_FAIL;
+
+	const auto eCreateResult = m_pLuaScript->Call("OnCreate");
+	if (eCreateResult == LUA_CALL_RESULT::SCRIPT_ERROR ||
+		eCreateResult == LUA_CALL_RESULT::INVALID_INSTANCE)
 	{
 		return E_FAIL;
 	}
@@ -42,22 +51,26 @@ HRESULT CLuaTestObject::Initialize(void* pArg)
 
 void CLuaTestObject::PriorityUpdate(_float fTimeDelta)
 {
-	m_pComLuaScript->PriorityUpdate(fTimeDelta);
+	if (m_pLuaScript)
+		m_pLuaScript->Call("PriorityUpdate", fTimeDelta);
 }
 
 void CLuaTestObject::FixedUpdate(_float fTimeDelta)
 {
-	m_pComLuaScript->FixedUpdate(fTimeDelta);
+	if (m_pLuaScript)
+		m_pLuaScript->Call("FixedUpdate", fTimeDelta);
 }
 
 void CLuaTestObject::Update(_float fTimeDelta)
 {
-	m_pComLuaScript->Update(fTimeDelta);
+	if (m_pLuaScript)
+		m_pLuaScript->Call("Update", fTimeDelta);
 }
 
 void CLuaTestObject::LateUpdate(_float fTimeDelta)
 {
-	m_pComLuaScript->LateUpdate(fTimeDelta);
+	if (m_pLuaScript)
+		m_pLuaScript->Call("LateUpdate", fTimeDelta);
 	GetTransform().Update();
 }
 
@@ -83,4 +96,13 @@ UPtr<CPrototype> CLuaTestObject::Clone(void* pArg)
 	}
 
 	return pInstance;
+}
+
+void CLuaTestObject::Free()
+{
+	if (m_pLuaScript)
+		m_pLuaScript->Call("OnDestroy");
+	m_pLuaScript.reset();
+
+	CGameObject::Free();
 }

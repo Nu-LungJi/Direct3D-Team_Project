@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "LuaManager.h"
+#include "LuaScriptInstance.h"
 #include "GameInstance.h"
 #include "LuaWatcher.h"
-#include "ComLuaScript.h"
 #include "GameObject.h"
 #include "ComTransform.h"
 #include "ResLuaScript.h"
@@ -32,19 +32,19 @@ void CLuaManager::UpdateGUI()
 	
 	if (ImGui::Button("script test"))
 	{
-		CGameInstance::Get().LuaScriptExecute(R"( print("Hello Lua") )");
+		Execute(R"( print("Hello Lua") )");
 	}
 	if (ImGui::Button("GetValue"))
 	{
 		std::string a;
-		CGameInstance::Get().LuaGetValue("test", a);
+		GetValue("test", a);
 
 		int x = 0;
 	}
 
 	if (ImGui::Button("SetValue"))
 	{
-		CGameInstance::Get().LuaSetValue("test", "18.f");
+		SetValue("test", "18.f");
 	}
 	ImGui::End();
 }
@@ -52,6 +52,27 @@ void CLuaManager::UpdateGUI()
 void CLuaManager::Update(_float fTimeDelta)
 {
 	UpdateHotReload();
+}
+
+SPtr<CLuaScriptInstance> CLuaManager::CreateScriptInstance(
+	const SPtr<CResLuaScript>& pScript,
+	const _string& sDebugName)
+{
+	CLuaScriptInstance::DESC Desc{};
+	Desc.pScript = pScript;
+	Desc.sDebugName = sDebugName;
+
+	auto pInstance = CLuaScriptInstance::Create(*this, Desc);
+	if (pInstance)
+	{
+		std::erase_if(m_ScriptInstances, [](const WPtr<CLuaScriptInstance>& pWeakInstance)
+		{
+			return pWeakInstance.expired();
+		});
+		m_ScriptInstances.emplace_back(pInstance);
+	}
+
+	return pInstance;
 }
 
 HRESULT CLuaManager::Initialize()
@@ -146,7 +167,6 @@ HRESULT CLuaManager::Initialize_RegistType()
 	RegisterType<CFlyCamera>();
 
 	RegisterType<CComponent>();
-	RegisterType<CComLuaScript>();
 	RegisterType<CComCollider>();
 	RegisterType<CComTransform>();
 
@@ -727,19 +747,6 @@ HRESULT CLuaManager::Initialize_ClassBindnig()
 	}
 #pragma endregion
 
-#pragma region ComLuaScript
-	{
-		m_Lua.new_usertype<CComLuaScript>("ComLuaScript",
-			sol::no_constructor,
-			sol::meta_function::to_string,
-			[](CComLuaScript&)
-			{
-				return std::string("ComLuaScript");
-			}
-		);
-	}
-#pragma endregion
-
 #pragma region ComCollider
 	{
 		m_Lua.new_usertype<CComCollider>("ComCollider",
@@ -1078,71 +1085,58 @@ HRESULT CLuaManager::Initialize_DefineBinding()
 	return S_OK;
 }
 
-sol::protected_function CLuaManager::CacheFunction(const std::string& funcName)
+sol::table CLuaManager::CreateTable()
 {
-	sol::object obj = m_Lua.globals()[funcName];
-
-	if (obj.valid() && obj.get_type() == sol::type::function)
-		return obj.as<sol::protected_function>();
-
-	return sol::protected_function(); // 유효하지 않은 빈 객체 반환
+	return m_Lua.create_table();
 }
 
-sol::protected_function CLuaManager::CacheFunction(const sol::environment& env, const std::string& funcName)
-{
-	// 1. Env에서 먼저 찾기
-	sol::object obj = env[funcName];
-
-	// 2. Env에 없거나 함수가 아니면, 전역(Globals) 공간에서 찾기 (선택적 폴백)
-	if (!obj.valid() || obj.get_type() != sol::type::function)
-	{
-		sol::state_view lua(env.lua_state());
-		obj = lua.globals()[funcName];
-	}
-
-	// 3. 최종 반환
-	if (obj.valid() && obj.get_type() == sol::type::function)
-		return obj.as<sol::protected_function>();
-
-	return sol::protected_function(); // 유효하지 않은 빈 객체 반환
-}
-
-bool CLuaManager::HasFunction(sol::environment& env, std::string_view function) const
-{
-	sol::object obj = env[std::string(function)];
-
-	return obj.valid() &&
-		obj.get_type() == sol::type::function;
-}
-
-HRESULT CLuaManager::Execute(const std::string& script, const sol::environment& env, const std::string& chunkName)
+HRESULT CLuaManager::ExecuteModule(
+	const std::string& sSource,
+	const std::string& sChunkName,
+	const sol::table& Context,
+	sol::environment& OutEnvironment,
+	sol::table& OutExports)
 {
 	try
 	{
-		std::string formattedChunkName = chunkName;
-		std::replace(formattedChunkName.begin(), formattedChunkName.end(), '\\', '/');
+		std::string FormattedChunkName = sChunkName;
+		std::replace(FormattedChunkName.begin(), FormattedChunkName.end(), '\\', '/');
+		if (!FormattedChunkName.empty() && FormattedChunkName.front() != '@')
+			FormattedChunkName.insert(FormattedChunkName.begin(), '@');
 
-		// [LSY] 복사된 런타임 스크립트를 원본 Lua 파일에 매핑할 수 있도록 상대 청크 경로를 유지한다.
-		if (!formattedChunkName.empty() && formattedChunkName.front() != '@')
-			formattedChunkName.insert(formattedChunkName.begin(), '@');
+		sol::environment NewEnvironment{ m_Lua, sol::create, m_Lua.globals() };
+		NewEnvironment["Context"] = Context;
+		NewEnvironment["__ScriptPath"] = sChunkName;
 
-		auto result = m_Lua.safe_script(
-			script,
-			env,
+		sol::protected_function_result Result = m_Lua.safe_script(
+			sSource,
+			NewEnvironment,
 			sol::script_pass_on_error,
-			formattedChunkName
-		);
+			FormattedChunkName);
 
-		if (!result.valid())
+		if (!Result.valid())
 		{
-			sol::error err = result;
-			OutputDebugStringA(("[Lua Env Execute Error] " + std::string(err.what()) + "\n").c_str());
+			sol::error Error = Result;
+			OutputDebugStringA(("[Lua Module Execute Error] " +
+				std::string{ Error.what() } + "\n").c_str());
 			return E_FAIL;
 		}
+
+		sol::object ReturnedObject = Result.get<sol::object>();
+		if (!ReturnedObject.valid() || ReturnedObject.get_type() != sol::type::table)
+		{
+			OutputDebugStringA(("[Lua Module Error] Script must return a table: " +
+				sChunkName + "\n").c_str());
+			return E_FAIL;
+		}
+
+		OutEnvironment = std::move(NewEnvironment);
+		OutExports = ReturnedObject.as<sol::table>();
 	}
-	catch (const std::exception& e)
+	catch (const std::exception& Exception)
 	{
-		OutputDebugStringA(("[C++ Exception in Lua Env] " + std::string(e.what()) + "\n").c_str());
+		OutputDebugStringA(("[C++ Exception in Lua Module] " +
+			std::string{ Exception.what() } + "\n").c_str());
 		return E_FAIL;
 	}
 
@@ -1181,13 +1175,6 @@ HRESULT CLuaManager::Execute(const std::string& script, const std::string& chunk
 
 	return S_OK;
 }
-// object 하나당 하나만들기 
-sol::environment CLuaManager::CreateEnvironment()
-{
-	return sol::environment(m_Lua, sol::create, m_Lua.globals());
-}
-
-
 HRESULT CLuaManager::Compile(const std::string& script)
 {
 	// script 변수에 파일 경로가 들어온다면 m_Lua.load_file(script) 를 쓰셔야 합니다!
@@ -1209,42 +1196,6 @@ HRESULT CLuaManager::Compile(const std::string& script)
 	}
 
 	return S_OK;
-}
-
-void CLuaManager::EnvDump(const sol::environment& env) const
-{
-	OutputDebugStringA("========== Lua Environment ==========\n");
-
-	sol::table table = env;
-
-	for (auto& kv : table)
-	{
-		sol::object key = kv.first;
-		sol::object value = kv.second;
-
-		if (!key.is<std::string>())
-			continue;
-
-		std::string line = key.as<std::string>();
-		line += " : ";
-		line += sol::type_name(value.lua_state(), value.get_type());
-		line += "\n";
-
-		OutputDebugStringA(line.c_str());
-	}
-
-	OutputDebugStringA("=====================================\n");
-}
-
-void CLuaManager::EnvClear(sol::environment& env)
-{
-	sol::table table = env;
-
-	for (auto& kv : table)
-	{
-		if (kv.first.is<std::string>())
-			env[kv.first.as<std::string>()] = sol::lua_nil;
-	}
 }
 
 void CLuaManager::UpdateHotReload()
@@ -1285,7 +1236,7 @@ void CLuaManager::UpdateHotReload()
 			// 4. 원본 폴더에서 Bin 폴더로 복사
 			fs::copy_file(srcPath, destPath, fs::copy_options::overwrite_existing);
 		}
-		catch (const fs::filesystem_error& e)
+		catch (const fs::filesystem_error&)
 		{
 			OutputDebugStringA(("[Lua] File Copy Failed: " + srcStr + "\n").c_str());
 			continue;
@@ -1304,41 +1255,50 @@ void CLuaManager::UpdateHotReload()
 
 void CLuaManager::OnFileChanged(const std::string& path)
 {
-	// 1. 매니저를 통해 해당 경로의 리소스 리스트를 바로 획득
-	auto pResList = CGameInstance::Get().GetResourcesByPath(path);
+	const auto Resources = CGameInstance::Get().GetResourcesByPath(path);
+	_bool bResourceReloaded{};
 
-	if (pResList.empty()) return; // 해당 경로에 리소스가 없음
-
-	// 2. 리스트 순회하며 리로드
-	for (auto pRes : pResList)
+	for (const auto& pResource : Resources)
 	{
-		// 리소스가 LuaScript인지 확인하고 캐스팅
-		if (auto pLuaRes = Cast<CResLuaScript>(pRes))
-		{
-			if (SUCCEEDED(pLuaRes->Reload()))
-			{
-				const auto& iterCom = m_scriptRegistry.find(path);
-				if (iterCom != m_scriptRegistry.end())
-				{
-					for (auto& com : iterCom->second)
-					{
-						com->LuaScriptRelod();
-					}
-				}
-			}
-		}
+		auto pLuaScript = Cast<CResLuaScript>(pResource);
+		if (pLuaScript && SUCCEEDED(pLuaScript->Reload()))
+			bResourceReloaded = true;
 	}
-}
 
+	if (!bResourceReloaded)
+		return;
 
-void CLuaManager::RegisterComponent(const std::string& path, ILuaScriptRelodable* pComp)
-{
-	m_scriptRegistry[path].push_back(pComp);
-}
-void CLuaManager::UnregisterComponent(const std::string& path, ILuaScriptRelodable* pComp)
-{
-	auto& list = m_scriptRegistry[path];
-	list.erase(std::remove(list.begin(), list.end(), pComp), list.end());
+	auto NormalizePath = [](std::string_view sPath)
+	{
+		std::string NormalizedPath =
+			std::filesystem::path{ sPath }.lexically_normal().generic_string();
+
+		std::ranges::transform(NormalizedPath, NormalizedPath.begin(),
+			[](unsigned char Character)
+			{
+				return static_cast<char>(std::tolower(Character));
+			});
+
+		return NormalizedPath;
+	};
+
+	const std::string ChangedPath = NormalizePath(path);
+	std::erase_if(m_ScriptInstances,
+		[&](const WPtr<CLuaScriptInstance>& pWeakInstance)
+		{
+			auto pInstance = pWeakInstance.lock();
+			if (!pInstance)
+				return true;
+
+			if (NormalizePath(pInstance->GetScriptPath()) == ChangedPath &&
+				FAILED(pInstance->Reload()))
+			{
+				OutputDebugStringA(("[Lua] Script instance reload failed: " +
+					pInstance->GetScriptPath() + "\n").c_str());
+			}
+
+			return false;
+		});
 }
 
 UPtr<CLuaManager> CLuaManager::Create()
@@ -1349,5 +1309,17 @@ UPtr<CLuaManager> CLuaManager::Create()
 		return nullptr;
 	}
 	return pInstance;
+}
+
+void CLuaManager::Free()
+{
+	for (const auto& pWeakInstance : m_ScriptInstances)
+	{
+		if (auto pInstance = pWeakInstance.lock())
+			pInstance->Invalidate();
+	}
+	m_ScriptInstances.clear();
+
+	CEngineBase::Free();
 }
 

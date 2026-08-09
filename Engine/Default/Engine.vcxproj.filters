@@ -487,9 +487,6 @@
     <Filter Include="LuaFiles\SomeFolder">
       <UniqueIdentifier>{bde2835c-1d45-44d2-aca4-56623b27cddf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Lua\LuaEnv">
-      <UniqueIdentifier>{8ba16c43-054b-4dbb-9c2a-aed24797421d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Component\PhysX\CharacterController">
       <UniqueIdentifier>{3ff22233-47fd-43dc-9f31-4bdf198f60e8}</UniqueIdentifier>
     </Filter>
@@ -1153,20 +1150,14 @@
     <ClInclude Include="..\public\ResLuaScript.h">
       <Filter>Resource\Lua\Script</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\ComLuaScript.h">
-      <Filter>Component\Lua</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\LuaWatcher.h">
       <Filter>Lua\Watcher</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\ShaderWatcher.h">
       <Filter>Resource\Shader</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\ILuaScriptRelodable.h">
+    <ClInclude Include="..\public\LuaScriptInstance.h">
       <Filter>Lua</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\LuaEnv.h">
-      <Filter>Lua\LuaEnv</Filter>
     </ClInclude>
     <ClInclude Include="..\public\ComPxCharacterController.h">
       <Filter>Component\PhysX\CharacterController</Filter>
@@ -1801,17 +1792,14 @@
     <ClCompile Include="..\private\ResLuaScript.cpp">
       <Filter>Resource\Lua\Script</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\ComLuaScript.cpp">
-      <Filter>Component\Lua</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\LuaWatcher.cpp">
       <Filter>Lua\Watcher</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\ShaderWatcher.cpp">
       <Filter>Resource\Shader</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\LuaEnv.cpp">
-      <Filter>Lua\LuaEnv</Filter>
+    <ClCompile Include="..\private\LuaScriptInstance.cpp">
+      <Filter>Lua</Filter>
     </ClCompile>
     <ClCompile Include="..\private\ComPxCharacterController.cpp">
       <Filter>Component\PhysX\CharacterController</Filter>

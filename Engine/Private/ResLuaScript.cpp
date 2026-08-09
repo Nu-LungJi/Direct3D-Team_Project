@@ -1,13 +1,12 @@
 #include "pch.h"
 #include "ResLuaScript.h"
 #include "GameInstance.h"
+#include "LuaManager.h"
 
 NS_USING(Engine)
 
 HRESULT CResLuaScript::Load(const std::any& arg)
 {
-	auto desc = std::any_cast<CResLuaScript::DESC>(&arg);
-
 	if (m_eState == STATE::LOADED)
 	{
 		return S_OK;
@@ -18,16 +17,21 @@ HRESULT CResLuaScript::Load(const std::any& arg)
 
 		std::ifstream file(m_sPath, std::ios::binary);
 		if (!file.is_open())
+		{
+			m_Source.clear();
+			m_eState = STATE::LOADFAIL;
 			return E_FAIL;
+		}
 
 		m_Source.assign(
 			std::istreambuf_iterator<char>(file),
 			std::istreambuf_iterator<char>());
 
-		if (CGameInstance::Get().LuaCompile(m_Source))
+		auto pLuaManager = CGameInstance::Get().GetLuaManager();
+		if (!pLuaManager || FAILED(pLuaManager->Compile(m_Source)))
 		{
 			MSG_BOX("Lua Compile Failed See Log");
-			m_Source = "";
+			m_Source.clear();
 			m_eState = STATE::LOADFAIL;
 			return E_FAIL;
 		}
@@ -39,6 +43,7 @@ HRESULT CResLuaScript::Load(const std::any& arg)
 
 HRESULT CResLuaScript::Unload(const std::any& arg)
 {
+	m_Source.clear();
 	m_eState = STATE::UNLOAD;
 	return S_OK;
 }
@@ -71,8 +76,5 @@ SPtr<CResLuaScript> CResLuaScript::CreateAndLoad(const _string& sPath)
 HRESULT CResLuaScript::Reload()
 {
 	Unload();
-	Load();
-
-	//OutputDebugStringA(("[Lua] Reload Success: " + GetPath() + "\n").c_str());
-	return S_OK;
+	return Load();
 }
