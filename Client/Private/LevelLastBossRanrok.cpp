@@ -44,35 +44,35 @@ HRESULT CLevelLastBossRanrok::Initialize()
 		return E_FAIL;
 	}
 
-	//auto hPlayer = SpawnPlayer();
-	//if (!hPlayer)
-	//{
-	//	MSG_BOX("Player Handle Failed To CLevelCharlesRookwood");
-	//	return E_FAIL;
-	//}
+	auto hPlayer = SpawnPlayer();
+	if (!hPlayer)
+	{
+		MSG_BOX("Player Handle Failed To CLevelLastBossRanrok");
+		return E_FAIL;
+	}
 
-	//if (FAILED(SpawnPlayerCape(*hPlayer)))
-	//	return E_FAIL;
+	if (FAILED(SpawnPlayerCape(*hPlayer)))
+		return E_FAIL;
 
 	if (FAILED(CGameInstance::Get().LoadMap(CLevelLastBossRanrokLoader::MAP_PATH, true)))
 		return E_FAIL;
 
-	//if (FAILED(SpawnStaticCollision()))
-	//	return E_FAIL;
+	if (FAILED(SpawnStaticCollision()))
+		return E_FAIL;
 
 	if (FAILED(SpawnFlyCamera()))
 		return E_FAIL;
 
 	if (FAILED(SpawnUICamera()))
 		return E_FAIL;
-	//if (FAILED(SpawnPlayerCamera(hPlayer)))
-	//	return E_FAIL;
+	if (FAILED(SpawnPlayerCamera(hPlayer)))
+		return E_FAIL;
 
 	//if (FAILED(SpawnMonster(hPlayer)))
 	//	return E_FAIL;
 
-	//if (FAILED(SpawnLightPlacement()))
-	//	return E_FAIL;
+	if (FAILED(SpawnLightPlacement()))
+		return E_FAIL;
 
 	//if (FAILED(SpawnSkyBox()))
 	//	return E_FAIL;
@@ -95,7 +95,7 @@ void CLevelLastBossRanrok::Update(E::_float fTimeDelta)
 			CGameObject::GAMEOBJECT_DESC Desc{};
 			Desc.sObjectTag = "UIController";
 
-			GET_SINGLE(UIManager)->SetUIController(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController",
+			GET_SINGLE(UIManager)->SetUIController(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_UIController",
 				"UIController", &Desc));
 		}
 	}
@@ -115,7 +115,7 @@ HRESULT CLevelLastBossRanrok::Render()
 
 void CLevelLastBossRanrok::UpdateGUI()
 {
-	ImGui::Begin("level: CharlesRookwood");
+	ImGui::Begin("level: LastBossRanrok");
 
 	ImGui::End();
 }
@@ -205,7 +205,7 @@ HRESULT CLevelLastBossRanrok::SpawnPlayerCamera(std::optional<CHandle> hPlayer)
 	Desc.fYaw = -90.f;
 
 	auto hPlayerCamera = E::CGameInstance::Get().AddGameObjectToLayer(
-		LEVEL::CHARLES_ROOKWOOD,
+		LEVEL::LAST_BOSS_RANROK,
 		PROTO_GAMEOBJECT::Prototype_GameObject_PlayerThirdPersonCamera,
 		"101_CAMERA",
 		&Desc);
@@ -222,9 +222,9 @@ std::optional<CHandle> CLevelLastBossRanrok::SpawnPlayer()
 {
 	CPlayer::DESC PlayerDesc{};
 	PlayerDesc.sObjectTag = "Player";
-	PlayerDesc.vInitialPosition = { -6.f, -215.f, 156.f };
-	PlayerDesc.vInitialRotation = { 0.f, -90.f, 0.f };
-	PlayerDesc.LevelTag = LEVEL::CHARLES_ROOKWOOD;
+	PlayerDesc.vInitialPosition = { -25.f, 228.f, -150.f };
+	PlayerDesc.vInitialRotation = { 0.f, 0.f, 0.f };
+	PlayerDesc.LevelTag = LEVEL::LAST_BOSS_RANROK;
 	PlayerDesc.tFilter = PX_FILTER_DESC{
 		 .iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
 		.iSimulationMask = PX_ALL_LAYERS,
@@ -234,7 +234,7 @@ std::optional<CHandle> CLevelLastBossRanrok::SpawnPlayer()
 			ETOUI(COLLISION_LAYER::ENEMY_BODY)
 	};
 	return  E::CGameInstance::Get().AddGameObjectToLayer(
-		LEVEL::CHARLES_ROOKWOOD,
+		LEVEL::LAST_BOSS_RANROK,
 		PROTO_GAMEOBJECT::Prototype_GameObject_Player,
 		"03_Player",
 		&PlayerDesc);
@@ -245,7 +245,7 @@ HRESULT CLevelLastBossRanrok::SpawnPlayerCape(CHandle hPlayer)
 	CNvClothCape::DESC Desc{};
 	Desc.sObjectTag = "NvClothCape";
 	Desc.hTarget = hPlayer;
-	Desc.sResourceGroup = LEVEL::CHARLES_ROOKWOOD;
+	Desc.sResourceGroup = LEVEL::LAST_BOSS_RANROK;
 	Desc.sModelResourceTag = "PLAYER_CAPE_MODEL_RESOURCE";
 	Desc.sClothMeshResourceTag = "PLAYER_CAPE_CLOTH_RESOURCE";
 	Desc.sTargetModelComponentTag = "ComCModelIntance";
@@ -259,7 +259,7 @@ HRESULT CLevelLastBossRanrok::SpawnPlayerCape(CHandle hPlayer)
 		false);
 
 	if (!E::CGameInstance::Get().AddGameObjectToLayer(
-		LEVEL::CHARLES_ROOKWOOD,
+		LEVEL::LAST_BOSS_RANROK,
 		PROTO_GAMEOBJECT::Prototype_GameObject_NvClothCape,
 		"03_Player",
 		&Desc))
@@ -279,7 +279,7 @@ HRESULT CLevelLastBossRanrok::SpawnMonster(std::optional<CHandle> hPlayer)
 			CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
 			TmbGurdianDesc.sObjectTag = "TmbGurdian";
 			TmbGurdianDesc.TargetHandle = hPlayer.value();
-			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::LAST_BOSS_RANROK);
 			TmbGurdianDesc.vPos = _float3(-232.f, -227.f, -219.f);
 			TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
 			TmbGurdianDesc.resBeHaviorMajor = "BTJSON";
@@ -289,7 +289,7 @@ HRESULT CLevelLastBossRanrok::SpawnMonster(std::optional<CHandle> hPlayer)
 			TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
 			TmbGurdianDesc.vWeaponScale = _float3(100.f, 100.f, 100.f);
 			TmbGurdianDesc.vScale = _float3(3.f, 3.f, 3.f);
-			auto EliteTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+			auto EliteTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
 
 			if (!EliteTmb)
 			{
@@ -303,7 +303,7 @@ HRESULT CLevelLastBossRanrok::SpawnMonster(std::optional<CHandle> hPlayer)
 			CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
 			TmbGurdianDesc.sObjectTag = "TmbGurdian";
 			TmbGurdianDesc.TargetHandle = hPlayer.value();
-			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
+			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::LAST_BOSS_RANROK);
 			TmbGurdianDesc.vPos = _float3(-270.f, -227.f, -219.f);
 			TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
 			TmbGurdianDesc.resBeHaviorMajor = "BTJSON";
@@ -313,7 +313,7 @@ HRESULT CLevelLastBossRanrok::SpawnMonster(std::optional<CHandle> hPlayer)
 			TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
 			TmbGurdianDesc.vWeaponScale = _float3(100.f, 100.f, 100.f);
 			TmbGurdianDesc.vScale = _float3(3.f, 3.f, 3.f);
-			auto EliteTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+			auto EliteTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
 
 			if (!EliteTmb)
 			{
@@ -331,7 +331,7 @@ HRESULT CLevelLastBossRanrok::SpawnStaticCollision()
 	auto handles = CGameInstance::Get()
 		.GetPhysXManager()
 		->CreateCollisionProxyObjectsFromFile(
-			"Level_CharlesRookwood",
+			"Level_LastBossRanrok",
 			"00_MapCollision");
 
 	if (handles.empty())
@@ -346,7 +346,7 @@ HRESULT CLevelLastBossRanrok::SpawnLightPlacement()
 	desc.sObjectTag =
 		"LastBossRanrokLightPlacement";
 	desc.sLightFileName =
-		"LastBossRanrok_LightProtoType_A";
+		"Level_LastBossRanrok";
 
 	return CGameInstance::Get().
 		AddGameObjectToLayer(
