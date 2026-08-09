@@ -75,7 +75,7 @@ namespace Engine
 	} SPOT_LIGHT;
 
 	typedef struct tagDynamicLight {
-		XMFLOAT4X4	g_LightViewProj[POINT_SHADOW_FACE_COUNT];
+		XMFLOAT4X4	g_LightViewProj[POINT_SHADOW_MAPCOUNT];
 
 		_float3		LightDirection;
 		_float		LightIntensity;
@@ -103,6 +103,20 @@ namespace Engine
 
 		_float3		LightPadding;
 	} EFFECT_LIGHT;
+
+	typedef struct tagTexture3D
+	{
+		ComPtr<ID3D11Texture3D>           pTexture;
+		ComPtr<ID3D11ShaderResourceView>  pSRV;
+		ComPtr<ID3D11UnorderedAccessView> pUAV;
+
+		void Reset()
+		{
+			pTexture.Reset();
+			pSRV.Reset();
+			pUAV.Reset();
+		}
+	} TEXTURE3D;
 
 	typedef struct tagPostProcess
 	{
@@ -549,6 +563,15 @@ namespace Engine
 
 	}MODEL_INSTANCE_BATCH;
 
+	struct CSM_DATA
+	{
+		std::vector<ComPtr<ID3D11DepthStencilView>>		m_pShadowDSVList{};
+		ComPtr<ID3D11ShaderResourceView>				m_pShadowSRV{};
+		ComPtr<ID3D11Texture2D>							m_pTextureArray{};
+
+		std::optional<CHandle>							m_pLightHandle{};
+	};
+	
 
 	//----------------------------AnimationObject------------------------------------
 }

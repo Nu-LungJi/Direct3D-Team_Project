@@ -129,7 +129,11 @@ void CMiniMap::Update(E::_float fTimeDelta)
 	UpdateWorldMapOffset(pPlayer->GetTransform().GetPosition());
 	UpdateBattleZones(pPlayer->GetTransform().GetPosition());
 	UpdateMonsterMarkers(fTimeDelta, pPlayer);
-	UpdateObjectiveMarkers(pPlayer->GetTransform().GetPosition());
+	// PlayerCamera는 플레이어 위치/방향 조회에 사용하고,
+	// 월드 좌표 투영은 실제 렌더링 중인 활성 카메라를 사용한다.
+	UpdateObjectiveMarkers(
+		pPlayer->GetTransform().GetPosition(),
+		E::CGameInstance::Get().GetActiveCamera());
 
 	XMVECTOR cameraLook = XMVectorSetY(
 		pCamera->GetTransform().GetState(STATE::LOOK), 0.f);
@@ -299,6 +303,37 @@ _bool CMiniMap::SetObjectiveActive(const std::string& key, _bool active)
 
 	iter->ManualActive = active;
 	return true;
+}
+
+_bool CMiniMap::SetContentGroupActive(
+	QUEST_UI_GROUP group, _bool active)
+{
+	if (group == QUEST_UI_GROUP::NONE ||
+		group == QUEST_UI_GROUP::END)
+		return false;
+
+	_bool found = false;
+	for (auto& battleZone : m_vBattleZones)
+	{
+		if (battleZone.Group != group)
+			continue;
+
+		battleZone.Enabled = active;
+		found = true;
+	}
+
+	for (auto& objective : m_vObjectives)
+	{
+		if (objective.Group != group)
+			continue;
+
+		objective.Enabled = active;
+		if (!active)
+			objective.ProximityActive = false;
+		found = true;
+	}
+
+	return found;
 }
 
 void CMiniMap::PlayEffect(uint32_t uiState)
@@ -507,8 +542,43 @@ void CMiniMap::InitializeObjectiveMarkers(
 		marker->SetLocalPos({ 0.f, 0.f });
 		marker->SetColor(phase.TintColor);
 		marker->GetUIInfo().WeightOffset = phase.WeightOffset;
+		marker->SetAlphaRatio(0.f);
 		SetObjectiveMarkerVisible(marker, false);
 		AddChildren(*markerHandle);
+
+		if (!phase.ShowScreenMarker)
+			continue;
+
+		CTextureUI::UIOBJECT_DESC screenDesc{};
+		screenDesc.sObjectTag = "Screen_Objective_" + objective.Key +
+			"_" + std::to_string(i);
+		screenDesc.Name = screenDesc.sObjectTag;
+		screenDesc.fX = 0.f;
+		screenDesc.fY = 0.f;
+		screenDesc.fSizeX = phase.ScreenMarkerSize;
+		screenDesc.fSizeY = phase.ScreenMarkerSize;
+		screenDesc.fAlpha = 0.f;
+		screenDesc.ResTag = phase.TextureTag;
+		screenDesc.ResWeight = phase.ScreenMarkerWeight;
+		screenDesc.UIType = ETOUI(UI_TYPE::TEXUI);
+
+		auto screenMarkerHandle = E::CGameInstance::Get().
+			AddGameObjectToLayer(
+				currentLevel,
+				phase.PrototypeTag,
+				"Layer_UI",
+				&screenDesc);
+		if (!screenMarkerHandle)
+			continue;
+
+		auto* screenMarker = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(*screenMarkerHandle);
+		if (!screenMarker)
+			continue;
+
+		phase.ScreenMarkerHandle = *screenMarkerHandle;
+		screenMarker->SetColor(phase.TintColor);
+		SetObjectiveMarkerVisible(screenMarker, false);
 	}
 }
 
@@ -661,7 +731,9 @@ void CMiniMap::SetMonsterMarkerVisible(
 	pMarker->SetActive(bVisible);
 }
 
-void CMiniMap::UpdateObjectiveMarkers(const _float3& playerPosition)
+void CMiniMap::UpdateObjectiveMarkers(
+	const _float3& playerPosition,
+	E::CCameraObject* camera)
 {
 	const uint32_t currentLevelID =
 		E::CGameInstance::Get().GetCurrentLevelID();
@@ -679,10 +751,11 @@ void CMiniMap::UpdateObjectiveMarkers(const _float3& playerPosition)
 		const _bool isCurrentLevel =
 			objective.LevelID == static_cast<uint32_t>(-1) ||
 			objective.LevelID == currentLevelID;
-		if (!isCurrentLevel)
+		if (!objective.Enabled || !isCurrentLevel)
 			objective.ProximityActive = false;
 
-		if (isCurrentLevel && IsObjectiveActive(objective, distanceSq))
+		if (objective.Enabled && isCurrentLevel &&
+			IsObjectiveActive(objective, distanceSq))
 		{
 			const _float distance = sqrtf(distanceSq);
 			for (auto& phase : objective.VisualPhases)
@@ -707,7 +780,17 @@ void CMiniMap::UpdateObjectiveMarkers(const _float3& playerPosition)
 		}
 
 		for (auto& phase : objective.VisualPhases)
-			SetObjectivePhaseVisible(phase, &phase == selectedPhase);
+		{
+			const _bool isSelected = &phase == selectedPhase;
+			SetObjectivePhaseVisible(phase, isSelected);
+
+			const _bool showScreenMarker = isSelected &&
+				phase.ShowScreenMarker &&
+				UpdateScreenObjectiveMarkerPosition(
+					phase, objective.WorldPosition, camera);
+			SetScreenObjectivePhaseVisible(
+				phase, showScreenMarker);
+		}
 
 		// FadeOut 중에는 selectedPhase에서 제외되지만 Tween이 끝날 때까지
 		// 아이콘은 활성 상태이므로 미니맵 회전 상쇄를 계속 갱신한다.
@@ -770,6 +853,14 @@ void CMiniMap::HideObjectiveMarkers()
 				GetGameObjectByHandleT<E::CUIObject>(phase.MarkerHandle))
 			{
 				SetObjectiveMarkerVisible(marker, false);
+			}
+
+			phase.ScreenMarkerDesiredVisible = false;
+			if (auto* screenMarker = E::CGameInstance::Get().
+				GetGameObjectByHandleT<E::CUIObject>(
+					phase.ScreenMarkerHandle))
+			{
+				SetObjectiveMarkerVisible(screenMarker, false);
 			}
 		}
 	}
@@ -849,6 +940,114 @@ void CMiniMap::SetObjectivePhaseVisible(
 	{
 		PlayFadeOut(phase.MarkerHandle, 0.f, phase.FadeOutTime);
 	}
+}
+
+void CMiniMap::SetScreenObjectivePhaseVisible(
+	OBJECTIVE_VISUAL_PHASE& phase, _bool visible)
+{
+	if (!phase.ShowScreenMarker)
+		return;
+
+	auto* marker = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(
+			phase.ScreenMarkerHandle);
+	if (!marker)
+		return;
+
+	// 원하는 상태뿐 아니라 실제 객체 상태도 함께 검사한다.
+	// 객체가 레이어에 늦게 반영되거나 외부에서 비활성화된 경우에도
+	// 다음 프레임에 표시 전환을 다시 수행할 수 있다.
+	if (phase.ScreenMarkerDesiredVisible == visible)
+	{
+		// FadeOut 중에는 객체가 활성 상태인 것이 정상이다. 표시 요청인데
+		// 실제 객체만 비활성인 경우에 한해서 FadeIn을 다시 시도한다.
+		if (!visible || marker->GetActive())
+			return;
+	}
+
+	phase.ScreenMarkerDesiredVisible = visible;
+
+	if (auto* tween = marker->GetTweenCom())
+		tween->ClearTweens();
+
+	if (visible)
+	{
+		marker->SetActive(true);
+		marker->SetAlphaRatio(1.f);
+		marker->SetAlpha(0.f);
+		PlayFadeIn(
+			phase.ScreenMarkerHandle, 0.f, phase.FadeInTime);
+	}
+	else
+	{
+		PlayFadeOut(
+			phase.ScreenMarkerHandle, 0.f, phase.FadeOutTime);
+	}
+}
+
+_bool CMiniMap::UpdateScreenObjectiveMarkerPosition(
+	OBJECTIVE_VISUAL_PHASE& phase,
+	const _float3& worldPosition,
+	E::CCameraObject* camera)
+{
+	if (!camera)
+		return false;
+
+	auto* marker = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(
+			phase.ScreenMarkerHandle);
+	if (!marker)
+		return false;
+
+	const _float3 markerWorldPosition{
+		worldPosition.x + phase.ScreenMarkerWorldOffset.x,
+		worldPosition.y + phase.ScreenMarkerWorldOffset.y,
+		worldPosition.z + phase.ScreenMarkerWorldOffset.z
+	};
+	const _matrix view = camera->GetView();
+	const _matrix projection = camera->GetProj();
+	const _vector clipPosition = XMVector4Transform(
+		XMVectorSet(
+			markerWorldPosition.x,
+			markerWorldPosition.y,
+			markerWorldPosition.z,
+			1.f),
+		view * projection);
+	if (XMVectorGetW(clipPosition) <= 0.f)
+		return false;
+
+	const _float2 screenSize =
+		E::CGameInstance::Get().GetClientScreenSize();
+	if (screenSize.x <= 0.f || screenSize.y <= 0.f)
+		return false;
+
+	const _vector projected = XMVector3Project(
+		XMLoadFloat3(&markerWorldPosition),
+		0.f,
+		0.f,
+		screenSize.x,
+		screenSize.y,
+		0.f,
+		1.f,
+		projection,
+		view,
+		XMMatrixIdentity());
+
+	_float3 screenPosition{};
+	XMStoreFloat3(&screenPosition, projected);
+	const _float halfSize = phase.ScreenMarkerSize * 0.5f;
+	const _bool isOnScreen =
+		screenPosition.z >= 0.f && screenPosition.z <= 1.f &&
+		screenPosition.x >= halfSize &&
+		screenPosition.x <= screenSize.x - halfSize &&
+		screenPosition.y >= halfSize &&
+		screenPosition.y <= screenSize.y - halfSize;
+	if (!isOnScreen)
+		return false;
+
+	marker->SetPos({ screenPosition.x, screenPosition.y });
+	marker->CalcUICoord();
+	return true;
 }
 
 void CMiniMap::ConfigureDefaultProfile()
@@ -958,6 +1157,8 @@ void CMiniMap::UpdateBattleZones(const _float3& playerPosition)
 	{
 		if (m_iVisibleBattleZoneCount >= MAX_BATTLE_ZONE_COUNT)
 			break;
+		if (!battleZone.Enabled)
+			continue;
 		if (battleZone.LevelID != allLevels &&
 			battleZone.LevelID != currentLevelID)
 			continue;
@@ -988,9 +1189,35 @@ void CMiniMap::UpdateBattleZones(const _float3& playerPosition)
 
 void CMiniMap::InitRookwoodBattleZone()
 {
-	AddBattleZone({ { -178.f, 0.f, 160.f },40.f, 60.f, 0.25f,static_cast<uint32_t>(LEVEL::CHARLES_ROOKWOOD) });
-	AddBattleZone({ { -252.f, 0.f, -120.f },20.f, 60.f, 0.25f,static_cast<uint32_t>(LEVEL::CHARLES_ROOKWOOD) });
-	AddBattleZone({ { -254.f, 0.f, -210.f },30.f, 60.f, 0.25f,static_cast<uint32_t>(LEVEL::CHARLES_ROOKWOOD) });
+	BATTLE_ZONE_INFO trial01{};
+	trial01.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_01;
+	trial01.Enabled = false;
+	trial01.Center = { -178.f, 0.f, 160.f };
+	trial01.WorldRadius = 40.f;
+	trial01.VisibleDistance = 60.f;
+	trial01.Alpha = 0.25f;
+	trial01.LevelID = ETOUI(LEVEL::CHARLES_ROOKWOOD);
+	AddBattleZone(trial01);
+
+	BATTLE_ZONE_INFO trial02{};
+	trial02.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_02;
+	trial02.Enabled = false;
+	trial02.Center = { -252.f, 0.f, -120.f };
+	trial02.WorldRadius = 20.f;
+	trial02.VisibleDistance = 60.f;
+	trial02.Alpha = 0.25f;
+	trial02.LevelID = ETOUI(LEVEL::CHARLES_ROOKWOOD);
+	AddBattleZone(trial02);
+
+	BATTLE_ZONE_INFO trial03{};
+	trial03.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_03;
+	trial03.Enabled = false;
+	trial03.Center = { -254.f, 0.f, -210.f };
+	trial03.WorldRadius = 30.f;
+	trial03.VisibleDistance = 60.f;
+	trial03.Alpha = 0.25f;
+	trial03.LevelID = ETOUI(LEVEL::CHARLES_ROOKWOOD);
+	AddBattleZone(trial03);
 }
 
 void CMiniMap::InitBossRookwoodBattleZone()
@@ -1000,6 +1227,8 @@ void CMiniMap::InitBossRookwoodBattleZone()
 void CMiniMap::InitRookwoodObjectives()
 {
 	MINIMAP_OBJECTIVE_INFO objective{};
+	objective.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_01;
+	objective.Enabled = false;
 	objective.Key = "Rookwood_MainMission_Test";
 	objective.WorldPosition = { -178.f, -226.f, 160.f };
 	objective.LevelID = ETOUI(LEVEL::CHARLES_ROOKWOOD);
@@ -1013,7 +1242,11 @@ void CMiniMap::InitRookwoodObjectives()
 		.PrototypeTag = "Prototype_GameObject_TextureUI",
 		.IconSize = 36.f,
 		.TintColor = { 1.f, 0.78f, 0.04f },
-		.DistanceHysteresis = 1.f
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = true,
+		.ScreenMarkerSize = 42.f,
+		.ScreenMarkerWorldOffset = { 0.f, 2.5f, 0.f },
+		.ScreenMarkerWeight = 100
 	});
 
 	AddObjective(std::move(objective));
