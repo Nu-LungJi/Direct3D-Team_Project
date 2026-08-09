@@ -28,6 +28,7 @@
 //Skill
 #include "EdgFireBall.h"
 #include "EdgBreath.h"
+#include "EdgPulse.h"
 NS_USING(Client)
 
 CEnderDragon::CEnderDragon()
@@ -245,26 +246,35 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(DRAGON_SKILL::BOOM);
 	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(DRAGON_SKILL::BREATH);
 	m_MonSkillLists[ATTMON::SLOT2] = ETOUI(DRAGON_SKILL::FIREBALL);
+	m_MonSkillLists[ATTMON::SLOT3] = ETOUI(DRAGON_SKILL::PULSE);
 
 
 	//////////////////////파티클 넣는곳/////////////////////////
 	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)] = "FireBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)] = "Breath";
+	m_EffectNames[ETOUI(DRAGON_SKILL::PULSE)] = "Pulse";
 	////////////////////////////////////////////////////////////
 	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
+	int32_t iFireBall{};
 	
-	SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Mouth");
+	iFireBall = SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Head");
+	
 	SkillDesc.hOwner = GetHandle();
-	if (-1 == SkillDesc.iBoneIndex) return E_FAIL;
-
-	auto FireBallhandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall,"03.FirBall",&SkillDesc);
-	if (!FireBallhandle) return E_FAIL;
-
+	
 	auto BreathHandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, "03.Breath", &SkillDesc);
 	if (!BreathHandle) return E_FAIL;
 
-	m_SkillHandle[ETOUI(DRAGON_SKILL::FIREBALL)] = FireBallhandle.value();
-	m_SkillHandle[ETOUI(DRAGON_SKILL::BREATH)] = BreathHandle.value();
+	SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_Main");
+	
+	auto PulseHandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Pulse, "03.Pulse", &SkillDesc);
+	if (!PulseHandle) return E_FAIL;
+
+	int32_t iOffsetBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Mouth");
+	m_SkillHandle[ETOUI(DRAGON_SKILL::FIREBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iFireBall,
+	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, .NameTag = "03.FireBall",.iOffsetBoneIndex = iOffsetBoneIndex };
+
+	m_SkillHandle[ETOUI(DRAGON_SKILL::BREATH)] = EDG_SKILL_INFO{.handle = BreathHandle.value(), .bPool = true,};
+	m_SkillHandle[ETOUI(DRAGON_SKILL::PULSE)]  = EDG_SKILL_INFO{.handle = PulseHandle.value() , .bPool = true,};
 
 	return S_OK;
 }
@@ -381,6 +391,20 @@ void CEnderDragon::Check_Phase()
 	_float3 SrcPos = GetTransform().GetPosition();
 
 	_float fDis = XMVectorGetX(XMVector3Length(XMLoadFloat3(&DestPos) - XMLoadFloat3(&SrcPos)));
+
+	auto pFinished = pBB->Get_Value<_bool>(EDG_KEY::BSTATE_FINISHED);
+	if (nullptr == pFinished) return;
+
+	//if (false == m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE1)] && *pFinished)
+	//{
+	//	
+	//	m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE1)] = true;
+	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//
+	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE2);
+	//	return;
+	//}
+	 
 	if (false == m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE2)] && m_iHp <= m_iMaxHp - m_iMaxHp / 8.f)
 	{
 		//피 조금 까이고 도망
@@ -405,10 +429,10 @@ void CEnderDragon::Check_Phase()
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE4)] = true;
 		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
 
-		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
+		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE5);
 		return;
 	}
-	else if (false == m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE5)] && m_iHp <= m_iMaxHp / 3.f)
+	else if (false == m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE4)] && m_iHp <= m_iMaxHp / 3.f)
 	{
 		//대충 땅바닥 진입전 마지막 비행
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE5)] = true;
@@ -437,11 +461,28 @@ void CEnderDragon::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(DRAGON_SKILL::END))
 		return;
 
-	auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(m_SkillHandle[iSkillNum]);
-	if (nullptr == pSkill)
-		return;
-	pSkill->Active(m_EffectNames[iSkillNum]);
+	if (true == m_SkillHandle[iSkillNum].bPool)
+	{
+		auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(m_SkillHandle[iSkillNum].handle);
+		if (nullptr == pSkill)
+			return;
+		pSkill->Active(m_EffectNames[iSkillNum]);
+	}
+	else
+	{
+		CDragonSkill::EDG_SKILL_DESC SkillDesc{};
+		SkillDesc.hOwner = GetHandle();
+		SkillDesc.iBoneIndex = m_SkillHandle[iSkillNum].iBoneIndex;
+		SkillDesc.iOffsetBoneIndex = m_SkillHandle[iSkillNum].iOffsetBoneIndex;
+		auto SkillHandle = CGameInstance::Get().AddGameObjectToLayer(m_SkillHandle[iSkillNum].LevelTag, 
+			m_SkillHandle[iSkillNum].ProtoTag, m_SkillHandle[iSkillNum].NameTag, &SkillDesc);
+		if (!SkillHandle) return;
 
+		auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(SkillHandle.value());
+		if (nullptr == pSkill)
+			return;
+		pSkill->Active(m_EffectNames[iSkillNum]);
+	}
 	m_CurEffectName.clear();
 	m_eAttType = ATTMON::END;
 	m_eLastSkillTable = m_eAttType = eType;

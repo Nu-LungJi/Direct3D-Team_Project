@@ -316,6 +316,9 @@
     <Filter Include="GameObject\Monster\EnderDragon\Skill\Bress">
       <UniqueIdentifier>{15ad6ff0-923c-4093-a6c9-78ea3f0340ef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\EnderDragon\Skill\Pulse">
+      <UniqueIdentifier>{09992e54-522b-43d3-906d-2a40796d13e4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -738,6 +741,9 @@
     <ClInclude Include="..\Public\UI_Structs.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\EdgPulse.h">
+      <Filter>GameObject\Monster\EnderDragon\Skill\Pulse</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1108,6 +1114,9 @@
     </ClCompile>
     <ClCompile Include="..\private\EdgBreath.cpp">
       <Filter>GameObject\Monster\EnderDragon\Skill\Bress</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EdgPulse.cpp">
+      <Filter>GameObject\Monster\EnderDragon\Skill\Pulse</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

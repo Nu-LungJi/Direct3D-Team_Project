@@ -16,7 +16,7 @@
 #include "NvClothCape.h"
 #include "UIController.h"
 
-#include "TmbGurdian.h"
+#include "EnderDragon.h"
 #include "LightPlacementObject.h"
 #include "ClientEvents.h"
 
@@ -68,6 +68,7 @@ HRESULT CLevelLastBossRanrok::Initialize()
 	//if (FAILED(SpawnPlayerCamera(hPlayer)))
 	//	return E_FAIL;
 
+	//플레이어가 옮겨지면 풀어다오
 	//if (FAILED(SpawnMonster(hPlayer)))
 	//	return E_FAIL;
 
@@ -272,55 +273,24 @@ HRESULT CLevelLastBossRanrok::SpawnPlayerCape(CHandle hPlayer)
 
 HRESULT CLevelLastBossRanrok::SpawnMonster(std::optional<CHandle> hPlayer)
 {
-	// 레벨배치 엘리트몹 by SY
 	{
-		{
-			//리트리트리트리트엘리트리트리트리트리
-			CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
-			TmbGurdianDesc.sObjectTag = "TmbGurdian";
-			TmbGurdianDesc.TargetHandle = hPlayer.value();
-			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
-			TmbGurdianDesc.vPos = _float3(-232.f, -227.f, -219.f);
-			TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
-			TmbGurdianDesc.resBeHaviorMajor = "BTJSON";
-			TmbGurdianDesc.resBeHaviorMinor = "TOMB_BT_GURDIANKNIGHT";
-			TmbGurdianDesc.MonType = MONSTER_TYPE::ELITE;
-			TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Sword);
-			TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
-			TmbGurdianDesc.vWeaponScale = _float3(100.f, 100.f, 100.f);
-			TmbGurdianDesc.vScale = _float3(3.f, 3.f, 3.f);
-			auto EliteTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+		CEnderDragon::DRAGON_DESC Dragon{};
+		Dragon.sObjectTag = "Dragon";
+		Dragon.TargetHandle = hPlayer.value();
+		Dragon.LevelTag = MagicEnumToStringView(LEVEL::LAST_BOSS_RANROK);
+		XMStoreFloat3(&Dragon.vPos, XMVectorSet(16.775f, 227.104f, -91.734f, 1.f));
+		Dragon.ReSourceTag = "Model_Resource_Dragon";
+		Dragon.resBeHaviorMajor = "BTJSON";
+		Dragon.resBeHaviorMinor = "ENDERDRAGON";
+		Dragon.MonType = MONSTER_TYPE::BOSS;
+		auto pDragon = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon, "02_Dragon", &Dragon);
 
-			if (!EliteTmb)
-			{
-				MSG_BOX("Create TmbGurdian Failed in Rookwood");
-				return E_FAIL;
-			}
+		if (!pDragon)
+		{
+			MSG_BOX("Create Dragon Failed in Terrain");
+			return E_FAIL;
 		}
 
-		{
-			//리트리트리트리트엘리트리트리트리트리
-			CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
-			TmbGurdianDesc.sObjectTag = "TmbGurdian";
-			TmbGurdianDesc.TargetHandle = hPlayer.value();
-			TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::CHARLES_ROOKWOOD);
-			TmbGurdianDesc.vPos = _float3(-270.f, -227.f, -219.f);
-			TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
-			TmbGurdianDesc.resBeHaviorMajor = "BTJSON";
-			TmbGurdianDesc.resBeHaviorMinor = "TOMB_BT_GURDIANKNIGHT";
-			TmbGurdianDesc.MonType = MONSTER_TYPE::ELITE;
-			TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Sword);
-			TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
-			TmbGurdianDesc.vWeaponScale = _float3(100.f, 100.f, 100.f);
-			TmbGurdianDesc.vScale = _float3(3.f, 3.f, 3.f);
-			auto EliteTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
-
-			if (!EliteTmb)
-			{
-				MSG_BOX("Create TmbGurdian Failed in Rookwood");
-				return E_FAIL;
-			}
-		}
 	}
 	return S_OK;
 }

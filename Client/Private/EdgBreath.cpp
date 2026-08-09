@@ -72,8 +72,8 @@ void CEdgBreath::Active(const _string& SkillName)
 	auto pDest = pSrc->Get_Target();
 	if (nullptr == pDest) return;
 
-	const _float4x4* pBoneMatrix = Get_BoneMatrix();
-	_matrix matBone = XMLoadFloat4x4(pBoneMatrix);
+	 _float4x4 BoneMatrix = Get_BoneMatrix(m_iBoneIndex);
+	_matrix matBone = XMLoadFloat4x4(&BoneMatrix); 
 	_vector vDestPos = XMLoadFloat3(&pDest->GetTransform().GetPosition());
 
 
@@ -98,8 +98,8 @@ void CEdgBreath::Cancle()
 
 void CEdgBreath::MoveBreath(_float fTimeDelta)
 {
-	const _float4x4* pBoneMatrix = Get_BoneMatrix();
-	_matrix matBone = XMLoadFloat4x4(pBoneMatrix);
+	 _float4x4 BoneMatrix = Get_BoneMatrix(m_iBoneIndex);
+	_matrix matBone = XMLoadFloat4x4(&BoneMatrix);
 	_vector vQuat = XMQuaternionRotationMatrix(matBone);
 
 	m_fBreathTick += fTimeDelta;
