@@ -1385,9 +1385,9 @@ _bool	CGameInstance::Has_ActiveDynamicShadowBatch() {
 #pragma endregion
 
 #pragma region MAPMESH_INSTANCE_RENDER
-HRESULT CGameInstance::PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData)
+HRESULT CGameInstance::PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData, EMapMeshRenderFeature renderFeature)
 {
-	return m_pMapMeshInstancingRenderer->PushMapObjectInstance(pModel, instanceData, occlusionData);
+	return m_pMapMeshInstancingRenderer->PushMapObjectInstance(pModel, renderFeature, instanceData, occlusionData);
 }
 // 인스턴싱 On/Off , 드로우 콜 GUI
 _bool CGameInstance::IsInstancingEnabled()

@@ -279,6 +279,8 @@ private:
 	_float			m_fExpandDuration{};
 	_float			m_fCurrentLifeTime{};
 	_float			m_fScale{};
+	_float			m_fDeltaTime{};
+	_float			m_fTimeAccumulation{};
 	
 // Hi-Z buffer ownership
 private:
