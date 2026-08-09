@@ -23,6 +23,7 @@
 #include "RagdollTest.h"
 #include "NvClothCape.h"
 
+#include "EnderDragon.h"
 #include "BossTMB.h"
 #include "TmbGurdian.h"
 #include "LightPlacementObject.h"
@@ -736,14 +737,14 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 		TmbDesc.TargetHandle = hPlayer.value();
 		TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
 		XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(5, 5, 5, 1));
-		TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
+		TmbDesc.ReSourceTag = "Model_Resource_TombBoss";
 		TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
 		XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
 		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
 
 		if (!BossTmb)
 		{
-			MSG_BOX("Create BossTmb Failed in Rookwood");
+			MSG_BOX("Create BossTmb Failed in TERRAIN");
 			return E_FAIL;
 		}
 	}
@@ -760,54 +761,39 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
 		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
 		TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
-		
+
 		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
 		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
-	
+
 		if (!BossTmb)
 		{
 			MSG_BOX("Create TmbGurdian Failed in Terrain");
 			return E_FAIL;
 		}
 	}
-	//{
-	//	CBossTMB::TMB_DESC TmbDesc{};
-	//	TmbDesc.sObjectTag = "BossTmb";
-	//	TmbDesc.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
-	//	XMStoreFloat3(&TmbDesc.vPos, XMVectorSet(5, 5, 5, 1));
-	//	TmbDesc.ReSourceTag = "Model_Resource_TombProtector";
-	//	TmbDesc.BeHaviorTag = "./Resources/json/BeHavior/BossDef.json";
-	//	XMStoreFloat3(&TmbDesc.vScale, XMVectorSet(6.f, 6.f, 6.f, 1));
-	//	auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_BossTMB, "02_BossTmb", &TmbDesc);
-	//
-	//	if (!BossTmb)
-	//	{
-	//		MSG_BOX("Create BossTmb Failed in Rookwood");
-	//		return E_FAIL;
-	//	}
-	//}
-	//{
-	//	CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
-	//	TmbGurdianDesc.sObjectTag = "TmbGurdian";
-	//	TmbGurdianDesc.TargetHandle = hPlayer.value();
-	//	TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
-	//	TmbGurdianDesc.vPos =  _float3(44.f, 15.f, 65.f);
-	//	TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
-	//	TmbGurdianDesc.BeHaviorTag = "./Resources/json/BeHavior/GurDianKnight.json";
-	//	TmbGurdianDesc.MonType = MONSTER_TYPE::ELITE;
-	//	TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Sword);
-	//	TmbGurdianDesc.WeaponResourceName = "Model_Resource_Sword";
-	//	TmbGurdianDesc.vWeaponScale = _float3(100.f, 100.f, 100.f);
-	//	TmbGurdianDesc.vScale = _float3(3.f, 3.f, 3.f);
-	//	auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
-	//
-	//	if (!BossTmb)
-	//	{
-	//		MSG_BOX("Create TmbGurdian Failed in Rookwood");
-	//		return E_FAIL;
-	//	}
-	//}
 
+	{
+		CEnderDragon::DRAGON_DESC Dragon{};
+		Dragon.sObjectTag = "Dragon";
+		Dragon.TargetHandle = hPlayer.value();
+		Dragon.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
+		XMStoreFloat3(&Dragon.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
+		Dragon.ReSourceTag = "Model_Resource_Dragon";
+		Dragon.resBeHaviorMajor = "BTJSON";
+		Dragon.resBeHaviorMinor = "ENDERDRAGON";
+		Dragon.MonType = MONSTER_TYPE::BOSS;
+
+		auto pDragon = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon, "02_Dragon", &Dragon);
+
+		if (!pDragon)
+		{
+			MSG_BOX("Create Dragon Failed in Terrain");
+			return E_FAIL;
+		}
+	
+	}
+	
+	
 	{
 		CLightPlacementObject::DESC desc{};
 		desc.sObjectTag = "TerrainLightPlacement";

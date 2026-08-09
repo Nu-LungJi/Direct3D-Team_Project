@@ -194,45 +194,15 @@ HRESULT CComAnimator::Update_Anim(_float fTimeDelta)
 
 	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
 	m_qRootMotionRotationDelta = _float4{ 0.f, 0.f, 0.f, 1.f };
-
-	if (m_bRootMotion && m_iRootBoneIndex >= 0)
+	if (m_CurAnimState.fTrackPosition < fPrevTrackPosition)
 	{
-		auto pRootChannel = pAnim->FindRootChannel(m_iRootBoneIndex);
-
-		if (pRootChannel)
-		{
-			_matrix matPrev = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), fPrevTrackPosition);
-			_matrix matCurr = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), m_CurAnimState.fTrackPosition);
-
-			_float3 vPrevPos{};
-			_float3 vCurrPos{};
-
-			XMStoreFloat3(&vPrevPos, matPrev.r[3]);
-			XMStoreFloat3(&vCurrPos, matCurr.r[3]);
-
-			m_vRootMotionDelta.x = vCurrPos.x - vPrevPos.x;
-			m_vRootMotionDelta.y = 0.f;
-			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
-
-		
-			_vector vPrevScale;
-			_vector qPrevRotation;
-			_vector vPrevTranslation;
-			_vector vCurrScale;
-			_vector qCurrRotation;
-			_vector vCurrTranslation;
-			if (XMMatrixDecompose(&vPrevScale, &qPrevRotation, &vPrevTranslation, matPrev) &&
-				XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
-			{
-				const _vector qDeltaRotation = XMQuaternionNormalize(
-					XMQuaternionMultiply(qCurrRotation, XMQuaternionInverse(qPrevRotation)));
-				XMStoreFloat4(&m_qRootMotionRotationDelta, qDeltaRotation);
-			}
-		}
+		Invalidate_RootMotionCache();
+		Prepare_RootMotionCache(pAnim.get(), m_CurAnimState.fTrackPosition);
 	}
-	// 계산 CPU에서 GPU로 넘어가는건 안정화다음 작업 최적화 할떄 고치기
-
-
+	else
+	{
+		Prepare_RootMotionCache(pAnim.get(), fPrevTrackPosition);
+	}
 	Build_BoneMatrices_CPU(fTimeDelta);
 
 	if (pAnim->GetDuration() > 0.f)
@@ -271,71 +241,34 @@ HRESULT CComAnimator::Update_Action(_float fTimeDelta)
 
 
 	_float fPrevTrackPosition = m_CurAnimState.fTrackPosition;
+	const int32_t iPreviousAnimIndex = m_CurAnimState.iAnimIndex;
 
 	Update_ActionState(fTimeDelta, m_CurAnimState);
-
-	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
-
-	if (m_bRootMotion && m_iRootBoneIndex >= 0)
+	if (m_CurAnimState.iAnimIndex != iPreviousAnimIndex)
 	{
-		auto pRootChannel = pResAnim->FindRootChannel(m_iRootBoneIndex);
-
-		if (pRootChannel)
+		Invalidate_RootMotionCache();
+		if (m_CurAnimState.iAnimIndex < 0 ||
+			m_CurAnimState.iAnimIndex >= static_cast<int32_t>(Anims.size()))
 		{
-			_matrix matPrev = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), fPrevTrackPosition);
-			_matrix matCurr = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), m_CurAnimState.fTrackPosition);
-
-			_float3 vPrevPos{};
-			_float3 vCurrPos{};
-
-			XMStoreFloat3(&vPrevPos, matPrev.r[3]);
-			XMStoreFloat3(&vCurrPos, matCurr.r[3]);
-
-			m_vRootMotionDelta.x = vCurrPos.x - vPrevPos.x;
-			m_vRootMotionDelta.y = 0.f;
-			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
-
-			_vector vPrevScale;
-			_vector qPrevRotation;
-			_vector vPrevTranslation;
-			_vector vCurrScale;
-			_vector qCurrRotation;
-			_vector vCurrTranslation;
-			if (XMMatrixDecompose(&vPrevScale, &qPrevRotation, &vPrevTranslation, matPrev) &&
-				XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
-			{
-				const _vector qDeltaRotation = XMQuaternionNormalize(
-					XMQuaternionMultiply(qCurrRotation, XMQuaternionInverse(qPrevRotation)));
-				XMStoreFloat4(&m_qRootMotionRotationDelta, qDeltaRotation);
-			}
-
-
-			/*		_vector qPrevRotation{};
-
-
-					_vector vCurrScale;
-					_vector qCurrRotation;
-					_vector vCurrTranslation;
-
-					if (XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
-					{
-						qPrevRotation = XMQuaternionNormalize(qPrevRotation);
-						qCurrRotation = XMQuaternionNormalize(qCurrRotation);
-
-
-						_vector qDeltaRotation = XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation);
-
-						qDeltaRotation = XMQuaternionNormalize(qDeltaRotation);
-
-
-						_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
-			}*/
+			return E_FAIL;
 		}
+		pResAnim = Anims[m_CurAnimState.iAnimIndex];
+		if (pResAnim == nullptr)
+			return E_FAIL;
 	}
 
-	// 계산 CPU에서 GPU로 넘어가는건 안정화다음 작업 최적화 할떄 고치기
-
-
+	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+	m_qRootMotionRotationDelta = _float4{ 0.f, 0.f, 0.f, 1.f };
+	if (m_CurAnimState.iAnimIndex != iPreviousAnimIndex ||
+		m_CurAnimState.fTrackPosition < fPrevTrackPosition)
+	{
+		Invalidate_RootMotionCache();
+		Prepare_RootMotionCache(pResAnim.get(), m_CurAnimState.fTrackPosition);
+	}
+	else
+	{
+		Prepare_RootMotionCache(pResAnim.get(), fPrevTrackPosition);
+	}
 	Build_BoneMatrices_CPU(fTimeDelta);
 
 	if (pResAnim->GetDuration() > 0.f)
@@ -387,43 +320,7 @@ HRESULT CComAnimator::Update_Anim_GPU(_float fTimeDelta) {
 	Update_AnimState(fTimeDelta, m_CurAnimState);
 	Advance_GPUBlend(fTimeDelta);
 
-	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
-	m_qRootMotionRotationDelta = _float4{ 0.f, 0.f, 0.f, 1.f };
-
-	if (m_bRootMotion && m_iRootBoneIndex >= 0)
-	{
-		auto pRootChannel = pAnim->FindRootChannel(m_iRootBoneIndex);
-
-		if (pRootChannel)
-		{
-			_matrix matPrev = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), fPrevTrackPosition);
-			_matrix matCurr = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), m_CurAnimState.fTrackPosition);
-
-			_float3 vPrevPos{};
-			_float3 vCurrPos{};
-
-			XMStoreFloat3(&vPrevPos, matPrev.r[3]);
-			XMStoreFloat3(&vCurrPos, matCurr.r[3]);
-
-			m_vRootMotionDelta.x = vCurrPos.x - vPrevPos.x;
-			m_vRootMotionDelta.y = 0.f;
-			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
-
-
-			_vector vPrevScale;
-			_vector qPrevRotation;
-			_vector vPrevTranslation;
-			_vector vCurrScale;
-			_vector qCurrRotation;
-			_vector vCurrTranslation;
-			if (XMMatrixDecompose(&vPrevScale, &qPrevRotation, &vPrevTranslation, matPrev) &&XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
-			{
-				const _vector qDeltaRotation = XMQuaternionNormalize(
-					XMQuaternionMultiply(qCurrRotation, XMQuaternionInverse(qPrevRotation)));
-				XMStoreFloat4(&m_qRootMotionRotationDelta, qDeltaRotation);
-			}
-		}
-	}
+	Update_RootMotion_GPU(pAnim.get(), fPrevTrackPosition);
 
 
 	if (pAnim->GetDuration() > 0.f)
@@ -462,73 +359,25 @@ HRESULT	CComAnimator::Update_Action_GPU(_float fTimeDelta) {
 
 
 	_float fPrevTrackPosition = m_CurAnimState.fTrackPosition;
+	const int32_t iPreviousAnimIndex = m_CurAnimState.iAnimIndex;
 
 	Update_ActionState(fTimeDelta, m_CurAnimState);
 	Advance_GPUBlend(fTimeDelta);
-
-	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
-	m_qRootMotionRotationDelta = _float4{ 0.f, 0.f, 0.f, 1.f };
-
-	if (m_bRootMotion && m_iRootBoneIndex >= 0)
+	if (m_CurAnimState.iAnimIndex != iPreviousAnimIndex)
 	{
-		auto pRootChannel = pResAnim->FindRootChannel(m_iRootBoneIndex);
-
-		if (pRootChannel)
+		Invalidate_RootMotionCache();
+		if (m_CurAnimState.iAnimIndex < 0 ||
+			m_CurAnimState.iAnimIndex >= static_cast<int32_t>(Anims.size()))
 		{
-			_matrix matPrev = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), fPrevTrackPosition);
-			_matrix matCurr = Evaluate_ChannelMatrix_CPU(pRootChannel.get(), m_CurAnimState.fTrackPosition);
-
-			_float3 vPrevPos{};
-			_float3 vCurrPos{};
-
-			XMStoreFloat3(&vPrevPos, matPrev.r[3]);
-			XMStoreFloat3(&vCurrPos, matCurr.r[3]);
-
-			m_vRootMotionDelta.x = vCurrPos.x - vPrevPos.x;
-			m_vRootMotionDelta.y = 0.f;
-			m_vRootMotionDelta.z = vCurrPos.z - vPrevPos.z;
-
-
-			/*		_vector qPrevRotation{};
-
-
-					_vector vCurrScale;
-					_vector qCurrRotation;
-					_vector vCurrTranslation;
-
-					if (XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
-					{
-						qPrevRotation = XMQuaternionNormalize(qPrevRotation);
-						qCurrRotation = XMQuaternionNormalize(qCurrRotation);
-
-
-						_vector qDeltaRotation = XMQuaternionMultiply(XMQuaternionInverse(qPrevRotation), qCurrRotation);
-
-						qDeltaRotation = XMQuaternionNormalize(qDeltaRotation);
-
-
-						_vector qYawDelta = XMVectorSet(0.f, XMVectorGetY(qDeltaRotation), 0.f, XMVectorGetW(qDeltaRotation));
-					}*/
-
-			_vector vPrevScale;
-			_vector qPrevRotation;
-			_vector vPrevTranslation;
-			_vector vCurrScale;
-			_vector qCurrRotation;
-			_vector vCurrTranslation;
-			if (XMMatrixDecompose(&vPrevScale, &qPrevRotation, &vPrevTranslation, matPrev) &&
-				XMMatrixDecompose(&vCurrScale, &qCurrRotation, &vCurrTranslation, matCurr))
-			{
-				const _vector qDeltaRotation = XMQuaternionNormalize(
-					XMQuaternionMultiply(qCurrRotation, XMQuaternionInverse(qPrevRotation)));
-				XMStoreFloat4(&m_qRootMotionRotationDelta, qDeltaRotation);
-			}
+			return E_FAIL;
 		}
+		pResAnim = Anims[m_CurAnimState.iAnimIndex];
+		if (pResAnim == nullptr)
+			return E_FAIL;
+		fPrevTrackPosition = m_CurAnimState.fTrackPosition;
 	}
 
-	// 계산 CPU에서 GPU로 넘어가는건 안정화다음 작업 최적화 할떄 고치기
-
-
+	Update_RootMotion_GPU(pResAnim.get(), fPrevTrackPosition);
 	if (pResAnim->GetDuration() > 0.f)
 	{
 		m_fRatio = m_CurAnimState.fTrackPosition / pResAnim->GetDuration();
@@ -537,6 +386,8 @@ HRESULT	CComAnimator::Update_Action_GPU(_float fTimeDelta) {
 	{
 		m_fRatio = 0.f;
 	}
+
+	return S_OK;
 }
 
 void CComAnimator::Play_Anim(int32_t iAnimIndex, _bool bLoop, _float fBlendDuration)
@@ -592,6 +443,7 @@ void CComAnimator::Play_Anim(int32_t iAnimIndex, _bool bLoop, _float fBlendDurat
 	m_fRatio = 0.f;
 	m_iPlayAnimationType = ANIMTYPE::ANIM;
 	m_bPlay = true;
+	Invalidate_RootMotionCache();
 }
 
 void CComAnimator::Play_Action(int32_t iActionIndex, _float fBlendDuration)
@@ -656,6 +508,7 @@ void CComAnimator::Play_Action(int32_t iActionIndex, _float fBlendDuration)
 
 	m_iPlayAnimationType = ANIMTYPE::ACTION;
 	m_bPlay = true;
+	Invalidate_RootMotionCache();
 
 }
 
@@ -857,6 +710,7 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 	}
 
 	const auto& Channels = pAnim->GetChannels();
+	m_bRawRootLocalValid = false;
 
 	if (m_CurAnimState.KeyFrameIndices.size() != Channels.size())
 		m_CurAnimState.KeyFrameIndices.resize(Channels.size(), 0);
@@ -889,6 +743,26 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 
 		XMStoreFloat4x4(&m_CombinedBoneMatrices[i], XMLoadFloat4x4(&m_LocalBoneMatrices[i]) * XMLoadFloat4x4(&m_CombinedBoneMatrices[iParentIndex]));
 
+	}
+
+	if (m_bRootMotion && m_bRawRootLocalValid && m_iRootBoneIndex >= 0)
+	{
+		const int32_t iParentIndex =
+			Bones[m_iRootBoneIndex]->GetParendBoneIndex();
+		_matrix currentRootCombined =
+			XMLoadFloat4x4(&m_RawRootLocalMatrix);
+
+		if (iParentIndex >= 0)
+		{
+			currentRootCombined *=
+				XMLoadFloat4x4(&m_CombinedBoneMatrices[iParentIndex]);
+		}
+		else
+		{
+			currentRootCombined *= matPreTransform;
+		}
+
+		Apply_RootMotionFromCombined(currentRootCombined);
 	}
 
 	
@@ -1038,10 +912,16 @@ void CComAnimator::Sample_Channel_CPU( CResModelChanel* pChannel,_float fTrackPo
 
 
 
+	_matrix matRawLocal = XMMatrixAffineTransformation(
+		vScale,
+		XMVectorSet(0.f, 0.f, 0.f, 1.f),
+		vRotation,
+		vTranslation);
+
 	if (m_bRootMotion && iBoneIndex == m_iRootBoneIndex)
 	{
-		//matLocal.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
-
+		XMStoreFloat4x4(&m_RawRootLocalMatrix, matRawLocal);
+		m_bRawRootLocalValid = true;
 		vTranslation = XMVectorZero();
 		vRotation = RemoveYRotation(vRotation);
 	}
@@ -1115,6 +995,150 @@ _matrix CComAnimator::Evaluate_ChannelMatrix_CPU(CResModelChanel* pChannel, _flo
 
 	return XMMatrixAffineTransformation(vScale, XMVectorSet(0.f, 0.f, 0.f, 1.f), vRotation, vTranslation);
 
+}
+
+_matrix CComAnimator::Evaluate_RootCombinedMatrix_CPU(const CResModelAnim* pAnim,_float fTrackPosition) const
+{
+	if (!pAnim || !m_pModelInstance || m_iRootBoneIndex < 0)
+		return XMMatrixIdentity();
+
+	auto pModel = m_pModelInstance->GetModel();
+	if (!pModel)
+		return XMMatrixIdentity();
+
+	const auto& Bones = pModel->GetBones();
+	if ((size_t)(m_iRootBoneIndex) >= Bones.size())
+		return XMMatrixIdentity();
+
+	std::vector<uint32_t> boneChain;
+	int32_t iBoneIndex = m_iRootBoneIndex;
+	while (iBoneIndex >= 0 &&(size_t)(iBoneIndex) < Bones.size())
+	{
+		boneChain.push_back((uint32_t)(iBoneIndex));
+		iBoneIndex = Bones[iBoneIndex]->GetParendBoneIndex();
+	}
+	std::reverse(boneChain.begin(), boneChain.end());
+
+	_matrix combined = XMMatrixIdentity();
+	for (uint32_t iChainBoneIndex : boneChain)
+	{
+		_matrix local = Bones[iChainBoneIndex]->Get_TransformationMatrix();
+		if (auto* pChannel = pAnim->GetChannelByBoneIndex(iChainBoneIndex))
+			local = Evaluate_ChannelMatrix_CPU(pChannel, fTrackPosition);
+
+		combined = local * combined;
+	}
+
+	return combined * XMLoadFloat4x4(&pModel->Get_PreTransformMatrix());
+}
+
+void CComAnimator::Invalidate_RootMotionCache()
+{
+	m_bRawRootLocalValid = false;
+	m_bPreviousRootCombinedValid = false;
+	m_iRootMotionCacheAnimIndex = -1;
+	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+	m_qRootMotionRotationDelta = _float4{ 0.f, 0.f, 0.f, 1.f };
+}
+
+void CComAnimator::Prepare_RootMotionCache(
+	const CResModelAnim* pAnim,
+	_float fTrackPosition)
+{
+	if (!m_bRootMotion || m_iRootBoneIndex < 0 || pAnim == nullptr)
+		return;
+
+	if (m_bPreviousRootCombinedValid &&
+		m_iRootMotionCacheAnimIndex == m_CurAnimState.iAnimIndex)
+	{
+		return;
+	}
+
+	const _matrix previousRootCombined =
+		Evaluate_RootCombinedMatrix_CPU(pAnim, fTrackPosition);
+	XMStoreFloat4x4(
+		&m_PreviousRootCombinedMatrix,
+		previousRootCombined);
+	m_bPreviousRootCombinedValid = true;
+	m_iRootMotionCacheAnimIndex = m_CurAnimState.iAnimIndex;
+}
+
+void CComAnimator::Apply_RootMotionFromCombined(_fmatrix currentRootCombined)
+{
+	if (m_bPreviousRootCombinedValid &&
+		m_iRootMotionCacheAnimIndex == m_CurAnimState.iAnimIndex)
+	{
+		const _matrix previousRootCombined =
+			XMLoadFloat4x4(&m_PreviousRootCombinedMatrix);
+		_float3 previousPosition{};
+		_float3 currentPosition{};
+		XMStoreFloat3(&previousPosition, previousRootCombined.r[3]);
+		XMStoreFloat3(&currentPosition, currentRootCombined.r[3]);
+
+		m_vRootMotionDelta.x = currentPosition.x - previousPosition.x;
+		m_vRootMotionDelta.y = 0.f;
+		m_vRootMotionDelta.z = currentPosition.z - previousPosition.z;
+
+		_vector previousScale;
+		_vector previousRotation;
+		_vector previousTranslation;
+		_vector currentScale;
+		_vector currentRotation;
+		_vector currentTranslation;
+		if (XMMatrixDecompose(
+				&previousScale,
+				&previousRotation,
+				&previousTranslation,
+				previousRootCombined) &&
+			XMMatrixDecompose(
+				&currentScale,
+				&currentRotation,
+				&currentTranslation,
+				currentRootCombined))
+		{
+			const _vector deltaRotation = XMQuaternionNormalize(
+				XMQuaternionMultiply(
+					currentRotation,
+					XMQuaternionInverse(previousRotation)));
+			XMStoreFloat4(
+				&m_qRootMotionRotationDelta,
+				deltaRotation);
+		}
+	}
+
+	XMStoreFloat4x4(
+		&m_PreviousRootCombinedMatrix,
+		currentRootCombined);
+	m_bPreviousRootCombinedValid = true;
+	m_iRootMotionCacheAnimIndex = m_CurAnimState.iAnimIndex;
+}
+
+void CComAnimator::Update_RootMotion_GPU(
+	const CResModelAnim* pAnim,
+	_float fPreviousTrackPosition)
+{
+	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
+	m_qRootMotionRotationDelta = _float4{ 0.f, 0.f, 0.f, 1.f };
+
+	if (!m_bRootMotion || m_iRootBoneIndex < 0 || pAnim == nullptr ||
+		pAnim->GetChannelByBoneIndex(m_iRootBoneIndex) == nullptr)
+	{
+		return;
+	}
+
+	// A loop wrap must not subtract the end pose from the beginning pose.
+	if (m_CurAnimState.fTrackPosition < fPreviousTrackPosition)
+	{
+		Invalidate_RootMotionCache();
+		Prepare_RootMotionCache(pAnim, m_CurAnimState.fTrackPosition);
+		return;
+	}
+
+	Prepare_RootMotionCache(pAnim, fPreviousTrackPosition);
+	const _matrix currentRootCombined = Evaluate_RootCombinedMatrix_CPU(
+		pAnim,
+		m_CurAnimState.fTrackPosition);
+	Apply_RootMotionFromCombined(currentRootCombined);
 }
 
 _vector CComAnimator::RemoveYRotation(_vector qRotation) const
@@ -1242,6 +1266,7 @@ void CComAnimator::SetTrackPosition(
 	fTrackPosition = std::clamp(fTrackPosition, 0.f, fDuration);
 
 	m_CurAnimState.fTrackPosition = fTrackPosition;
+	Invalidate_RootMotionCache();
 
 	std::fill(
 		m_CurAnimState.KeyFrameIndices.begin(),
@@ -1249,8 +1274,6 @@ void CComAnimator::SetTrackPosition(
 		0
 	);
 
-
-	m_vRootMotionDelta = _float3{ 0.f, 0.f, 0.f };
 
 	if (!bPreserveBlend)
 	{
