@@ -158,12 +158,6 @@ public:
 	CSoundManager* GetSoundManager() const { return m_pSoundManager.get(); }
 #pragma endregion
 
-#pragma region LIGHT_MANAGER
-public:
-	// LSY 변경: 콘텐츠 코드가 별칭 기반 배치 라이트 조회 및 런타임 제어 API를 사용한다.
-	CLightManager* GetLightManager() const { return m_pLightManager.get(); }
-#pragma endregion
-
 #pragma region FONT_MANAGER
 	void FontDraw(const StringID& fontName, const _tchar* pText, const _float2& vPosition, float fScale = 1.f, _fvector vColor = XMVectorSet(1.f, 1.f, 1.f, 1.f), _float fRotation = 0.f, const _float2& vOrigin = { 0.f, 0.f });
 	void FontAddLateDraw(RENDERGROUP eRenderGroup, const StringID& fontName, const _wstring& pText, const _float2& vPosition, float fScale = 1.f, _fvector vColor = XMVectorSet(1.f, 1.f, 1.f, 1.f), _float fRotation = 0.f, const _float2& vOrigin = { 0.f, 0.f });
@@ -296,8 +290,7 @@ public:
 	VOID	Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale);
 	VOID	Set_ChromaticRingOpacity(_float _Opacity);
 
-	VOID	Set_VolumetricFog(_float3 _Center, _float3 _Color, _float _Intensity, _float _Height, _float _StartPos, _float _EndPos, _float _Density);
-
+	VOID	Apply_OutlineEffect(std::optional<CHandle> targetHandle);
 #pragma endregion
 
 
@@ -333,6 +326,12 @@ public:
 	HRESULT	Capture_ShadowMap();
 
 	VOID	Notify_StaticShadowSceneChanged(const BoundingBox& ChangedBounds);
+
+	_bool		Evaluate_DirectionalLightCount();
+
+	XMMATRIX	Get_CascadeShadowViewProj(uint32_t _Index);
+	XMFLOAT4	Get_CascadeShadowSplits();
+	CSM_DATA&	Get_MainDirectionalLightData();
 
 #pragma endregion
 

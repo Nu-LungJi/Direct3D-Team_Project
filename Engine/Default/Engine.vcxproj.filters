@@ -460,9 +460,6 @@
     <Filter Include="ShaderFiles\TestModel\Compute">
       <UniqueIdentifier>{0464bfd6-5af4-491a-81f0-6208e5bb7163}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Volumetric">
-      <UniqueIdentifier>{3a4a0639-9eae-4888-8957-77e469aa351d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\Camera\ShadowCamera">
       <UniqueIdentifier>{794170c2-61af-41b9-a487-94d95b3cc2f3}</UniqueIdentifier>
     </Filter>
@@ -1138,9 +1135,6 @@
     <ClInclude Include="..\Public\ShadowCamera.h">
       <Filter>GameObject\Camera\ShadowCamera</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\VolumetricFog.h">
-      <Filter>GameObject\Volumetric</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Beam_CPU.h">
       <Filter>Particle\Beam</Filter>
     </ClInclude>
@@ -1786,9 +1780,6 @@
     <ClCompile Include="..\Private\ShadowCamera.cpp">
       <Filter>GameObject\Camera\ShadowCamera</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\VolumetricFog.cpp">
-      <Filter>GameObject\Volumetric</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\LuaManager.cpp">
       <Filter>Lua</Filter>
     </ClCompile>
@@ -2053,6 +2044,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\Cursor.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\RayMarching\PS_Volumetric.hlsl">
+      <Filter>ShaderFiles\RayMarching</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced_Foliage.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>

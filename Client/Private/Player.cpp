@@ -471,7 +471,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 	m_hAutoTarget = CHandle{};
 
 	return S_OK;
-
 }
 
 #pragma region RAGDOLL

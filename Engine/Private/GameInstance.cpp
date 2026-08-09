@@ -1166,10 +1166,8 @@ VOID	CGameInstance::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Durati
 	m_pRenderer->Render_ChromaticRing(_WorldPosition, _Duration, _Scale);
 }
 VOID	CGameInstance::Set_ChromaticRingOpacity(_float _Opacity) { m_pRenderer->Set_ChromaticRingOpacity(_Opacity); }
+VOID	CGameInstance::Apply_OutlineEffect(std::optional<CHandle> targetHandle) { m_pRenderer->Apply_OutlineEffect(targetHandle); }
 
-VOID	CGameInstance::Set_VolumetricFog(_float3 _Center, _float3 _Color, _float _Intensity, _float _Height, _float _StartPos, _float _EndPos, _float _Density) {
-	m_pRenderer->Set_VolumetricFog(_Center, _Color, _Intensity, _Height, _StartPos, _EndPos, _Density);
-}
 
 #pragma endregion
 
@@ -1296,6 +1294,20 @@ HRESULT	CGameInstance::Capture_ShadowMap() {
 }
 VOID	CGameInstance::Notify_StaticShadowSceneChanged(const BoundingBox& ChangedBounds) {
 	m_pLightManager->Notify_StaticShadowSceneChanged(ChangedBounds);
+}
+
+_bool	CGameInstance::Evaluate_DirectionalLightCount() {
+	return m_pLightManager->Evaluate_DirectionalLightCount();
+}
+
+XMMATRIX CGameInstance::Get_CascadeShadowViewProj(uint32_t _Index) {
+	return m_pLightManager->Get_CascadeShadowViewProj(_Index);
+}
+XMFLOAT4 CGameInstance::Get_CascadeShadowSplits() {
+	return m_pLightManager->Get_CascadeShadowSplits();
+}
+CSM_DATA& CGameInstance::Get_MainDirectionalLightData() {
+	return m_pLightManager->Get_MainDirectionalLightData();
 }
 #pragma endregion
 #pragma endregion
