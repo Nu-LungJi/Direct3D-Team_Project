@@ -30,7 +30,6 @@ HRESULT CResLuaScript::Load(const std::any& arg)
 		auto pLuaManager = CGameInstance::Get().GetLuaManager();
 		if (!pLuaManager || FAILED(pLuaManager->Compile(m_Source)))
 		{
-			MSG_BOX("Lua Compile Failed See Log");
 			m_Source.clear();
 			m_eState = STATE::LOADFAIL;
 			return E_FAIL;
@@ -75,6 +74,15 @@ SPtr<CResLuaScript> CResLuaScript::CreateAndLoad(const _string& sPath)
 
 HRESULT CResLuaScript::Reload()
 {
-	Unload();
-	return Load();
+	std::string PreviousSource = m_Source;
+	const STATE ePreviousState = m_eState.load();
+
+	m_eState = STATE::UNLOAD;
+	if (SUCCEEDED(Load()))
+		return S_OK;
+
+	// 핫리로드 실패 시 현재 실행 중인 인스턴스가 마지막 정상 소스를 계속 사용한다.
+	m_Source = std::move(PreviousSource);
+	m_eState = ePreviousState;
+	return E_FAIL;
 }

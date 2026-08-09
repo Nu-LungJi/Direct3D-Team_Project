@@ -26,8 +26,12 @@ public:
 	void Update(_float fTimeDelta) override;
 	void LateUpdate(_float fTimeDelta) override;
 
+protected:
+	void OnRegisteredToManager() override;
+
 private:
 	SPtr<CLuaScriptInstance> m_pLuaScript{};
+	_bool m_bLuaCreated{};
 
 public:
 	static UPtr<CLuaTestObject> Create();

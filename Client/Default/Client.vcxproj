@@ -279,6 +279,7 @@
     <ClInclude Include="..\Public\Level_Defines.h" />
     <ClInclude Include="..\Public\MainApp.h" />
     <ClInclude Include="..\public\MainAppLoader.h" />
+    <ClInclude Include="..\public\ClientLuaBindings.h" />
     <ClInclude Include="..\Public\Client_Resources.h" />
     <ClInclude Include="..\public\MonEffectBall.h" />
     <ClInclude Include="..\Public\Monster.h" />
@@ -415,6 +416,7 @@
     <ClCompile Include="..\Private\LevelUIEditorLoader.cpp" />
     <ClCompile Include="..\Private\MainApp.cpp" />
     <ClCompile Include="..\private\MainAppLoader.cpp" />
+    <ClCompile Include="..\private\ClientLuaBindings.cpp" />
     <ClCompile Include="..\Private\MiniMap.cpp" />
     <ClCompile Include="..\private\MonEffectBall.cpp" />
     <ClCompile Include="..\Private\Monster.cpp" />

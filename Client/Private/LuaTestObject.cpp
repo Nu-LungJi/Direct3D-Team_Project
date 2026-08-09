@@ -4,8 +4,6 @@
 #include "GameInstance.h"
 #include "LuaManager.h"
 #include "LuaScriptInstance.h"
-#include "ResLuaScript.h"
-#include "Resources.h"
 
 NS_USING(Client)
 
@@ -21,17 +19,13 @@ HRESULT CLuaTestObject::Initialize(void* pArg)
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
 
-	auto pLuaResource = CGameInstance::Get().GetResourceFirst<CResLuaScript>(
-		ES_EngineResMajorType::PERMANENT_LUA,
-		ES_EngineResLuaScript::LUA_TEST);
-	if (!pLuaResource)
-		return E_FAIL;
-
 	auto* pLuaManager = CGameInstance::Get().GetLuaManager();
 	if (!pLuaManager)
 		return E_FAIL;
 
-	m_pLuaScript = pLuaManager->CreateScriptInstance(pLuaResource, "LuaTestObject");
+	m_pLuaScript = pLuaManager->CreateScriptInstanceByPath(
+		"./LuaFiles/Test.lua",
+		"LuaTestObject");
 	if (!m_pLuaScript)
 		return E_FAIL;
 
@@ -39,20 +33,35 @@ HRESULT CLuaTestObject::Initialize(void* pArg)
 	if (FAILED(m_pLuaScript->Load()))
 		return E_FAIL;
 
-	const auto eCreateResult = m_pLuaScript->Call("OnCreate");
+	return S_OK;
+}
+
+void CLuaTestObject::OnRegisteredToManager()
+{
+	if (!m_pLuaScript)
+	{
+		SetPendingDestroyCascade();
+		return;
+	}
+
+	// [LSY] Manager의 슬롯과 레이어 등록이 끝난 시점이므로 Lua에서 ownerHandle을 안전하게 조회할 수 있다.
+	const LUA_CALL_RESULT eCreateResult = m_pLuaScript->Call("OnCreate");
 	if (eCreateResult == LUA_CALL_RESULT::SCRIPT_ERROR ||
 		eCreateResult == LUA_CALL_RESULT::INVALID_INSTANCE)
 	{
-		return E_FAIL;
+		SetPendingDestroyCascade();
+		return;
 	}
 
-	return S_OK;
+	m_bLuaCreated = true;
 }
 
 void CLuaTestObject::PriorityUpdate(_float fTimeDelta)
 {
-	if (m_pLuaScript)
-		m_pLuaScript->Call("PriorityUpdate", fTimeDelta);
+	if (!m_pLuaScript)
+		return;
+
+	m_pLuaScript->Call("PriorityUpdate", fTimeDelta);
 }
 
 void CLuaTestObject::FixedUpdate(_float fTimeDelta)
@@ -100,7 +109,7 @@ UPtr<CPrototype> CLuaTestObject::Clone(void* pArg)
 
 void CLuaTestObject::Free()
 {
-	if (m_pLuaScript)
+	if (m_pLuaScript && m_bLuaCreated)
 		m_pLuaScript->Call("OnDestroy");
 	m_pLuaScript.reset();
 

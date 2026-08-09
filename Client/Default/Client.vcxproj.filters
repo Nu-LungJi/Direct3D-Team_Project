@@ -363,6 +363,9 @@
     <ClInclude Include="..\public\MainAppLoader.h">
       <Filter>Loader\MainApp</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\ClientLuaBindings.h">
+      <Filter>MainApp</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\LevelCharlesRookwood.h">
       <Filter>Level\CharlesRookwood</Filter>
     </ClInclude>
@@ -785,6 +788,9 @@
     </ClCompile>
     <ClCompile Include="..\private\MainAppLoader.cpp">
       <Filter>Loader\MainApp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ClientLuaBindings.cpp">
+      <Filter>MainApp</Filter>
     </ClCompile>
     <ClCompile Include="..\private\LevelCharlesRookwood.cpp">
       <Filter>Level\CharlesRookwood</Filter>

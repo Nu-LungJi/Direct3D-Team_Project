@@ -661,6 +661,8 @@
     <ClCompile Include="..\private\GameInstanceInitLoader.cpp" />
     <ClCompile Include="..\private\LuaScriptInstance.cpp" />
     <ClCompile Include="..\private\LuaManager.cpp" />
+    <ClCompile Include="..\private\LuaBindingsCore.cpp" />
+    <ClCompile Include="..\private\LuaBindingsEngine.cpp" />
     <ClCompile Include="..\private\LuaWatcher.cpp" />
     <ClCompile Include="..\private\ParticleShaderCache.cpp" />
     <ClCompile Include="..\Private\ShaderWatcher.cpp" />

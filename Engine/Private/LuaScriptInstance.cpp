@@ -50,7 +50,17 @@ HRESULT CLuaScriptInstance::Load()
 
 HRESULT CLuaScriptInstance::Reload()
 {
-	return Load();
+	if (FAILED(Load()))
+		return E_FAIL;
+
+	const LUA_CALL_RESULT eReloadResult = Call("OnReload");
+	if (eReloadResult == LUA_CALL_RESULT::SCRIPT_ERROR ||
+		eReloadResult == LUA_CALL_RESULT::INVALID_INSTANCE)
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
 }
 
 void CLuaScriptInstance::RemoveContext(std::string_view sName)

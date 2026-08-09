@@ -1786,6 +1786,12 @@
     <ClCompile Include="..\private\LuaManager.cpp">
       <Filter>Lua</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\LuaBindingsCore.cpp">
+      <Filter>Lua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\LuaBindingsEngine.cpp">
+      <Filter>Lua</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\ResLua.cpp">
       <Filter>Resource\Lua</Filter>
     </ClCompile>
