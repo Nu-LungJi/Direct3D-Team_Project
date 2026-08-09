@@ -499,7 +499,7 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 			p.vVelocity = { 0.f, 0.f, 0.f };
 			return;
 		}
-	}
+	}	
 	{
 		///////////////////////////////////////////// Velocity Control
 		_float DragFactor = 2.f;
@@ -639,6 +639,7 @@ HRESULT CParticle_CPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 		pContext->Unmap(m_pComTimeCBuffer->GetCBuffer().Get(), 0);
 	}
 
+	pContext->VSSetConstantBuffers(11, 1, m_pComTimeCBuffer->GetCBuffer().GetAddressOf());
 
 	pContext->PSSetConstantBuffers(11, 1, m_pComTimeCBuffer->GetCBuffer().GetAddressOf());
 
@@ -720,6 +721,7 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	{
 		ID3D11ShaderResourceView* distortionSRV = m_pDistortionTexture->GetSRV().Get();
 		pContext->PSSetShaderResources(6, 1, &distortionSRV);
+		pContext->VSSetShaderResources(6, 1, &distortionSRV);
 	}
 
 	if (m_pAnyTexture)
