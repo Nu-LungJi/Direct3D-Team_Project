@@ -131,6 +131,7 @@ void CLevelLoading::Update(E::_float fTimeDelta)
 			m_bLoadUiResource = true;
 			break;
 		case LEVEL::LAST_BOSS_RANROK:
+			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon2");
 			m_bLoadUiResource = true;
 			break;
 		default:
@@ -322,8 +323,6 @@ void CLevelLoading::CheckLoad()
 		}
 	}
 }
-
-
 
 Engine::UPtr<CLevelLoading> CLevelLoading::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex)
 {
