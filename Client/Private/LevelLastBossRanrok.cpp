@@ -68,9 +68,8 @@ HRESULT CLevelLastBossRanrok::Initialize()
 	if (FAILED(SpawnPlayerCamera(hPlayer)))
 		return E_FAIL;
 
-	//플레이어가 옮겨지면 풀어다오
-	//if (FAILED(SpawnMonster(hPlayer)))
-	//	return E_FAIL;
+	if (FAILED(SpawnMonster(hPlayer)))
+		return E_FAIL;
 
 	if (FAILED(SpawnLightPlacement()))
 		return E_FAIL;

@@ -21,7 +21,7 @@ HRESULT CEdg_Spawn::Initialize()
 	m_PhasePos.push_back(_float3(45.920f, 216.792f, -32.945f));
 	m_PhasePos.push_back(_float3(41.621f, 191.567f, -24.108f));
 	m_PhasePos.push_back(_float3(5.958f, 180.466f,  -33.356f));
-	m_PhasePos.push_back(_float3(-32.252f,  201.250f, -41.125f));
+	m_PhasePos.push_back(_float3(-14.889,  185.132f, -38.296f));
 
 	
 	
@@ -49,7 +49,15 @@ void CEdg_Spawn::Enter(CStateMachine* pStateMachine)
 	// 
 	//5.958     180.466  -33.356
 	//-32.252  201.250  -41.125
-
+	
+	//스폰용
+	//m_iEffectID = CGameInstance::Get().PlayEffect(SkillName, *pDragon->GetTransform().GetWorldMatrix(), _vector{},
+	//	[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+	//	{
+	//		if (effectId != m_iEffectID)
+	//			return;
+	//		m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
+	//	});
 	
 }
 
@@ -65,8 +73,8 @@ void CEdg_Spawn::Exit(CStateMachine* pStateMachine)
 	//좌우 무빙
 	_float3 vPos = pDragon->GetTransform().GetPosition();
 	_vector vDir = XMVector3Normalize(pDragon->GetTransform().GetState(STATE::RIGHT));
-	XMStoreFloat3(&vLeftPos, XMLoadFloat3(&vPos)  + -vDir * 25.f);
-	XMStoreFloat3(&vRightPos, XMLoadFloat3(&vPos) + vDir * 25.f);
+	XMStoreFloat3(&vLeftPos, XMLoadFloat3(&vPos)  + -vDir * 15.f);
+	XMStoreFloat3(&vRightPos, XMLoadFloat3(&vPos) + vDir * 15.f);
 
 	pBB->Set_Value<_float3>(EDG_KEY::LPATROL, vLeftPos);
 	pBB->Set_Value<_float3>(EDG_KEY::RPATROL, vRightPos);
@@ -88,7 +96,7 @@ void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	if (nullptr == pBB) return;
 
 	//이거 뺴야지 나중에
-	if (false == pDragon->Is_StateFinished()) return;
+	//if (false == pDragon->Is_StateFinished()) return;
 	//카메라랑 샤바샤바 하고 전환
 
 	switch (m_eSpawn)
@@ -100,19 +108,24 @@ void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		Play_Anim(pDragon, fTimeDelta);
 		break;
 	case EDG_SPAWN_NUMBER::THIRD:
+		pDragonFsm->Request_State(EDG_STATE::COMBAT);
 		break;
 	}
-	pDragonFsm->Request_State(EDG_STATE::COMBAT);
+	//pDragonFsm->Request_State(EDG_STATE::COMBAT);
 }
 
 _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
 {
 	auto pMoveIntent = pDragon->Get_MoveIntent();
 	if (nullptr == pMoveIntent)return false;
+	
+	if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
+		CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, *pDragon->GetTransform().GetWorldMatrix());
 
 	if (m_PhasePos.empty())
 	{
 		m_eSpawn = EDG_SPAWN_NUMBER::SECOND;
+		CGameInstance::Get().StopEffect(m_iEffectID);
 		return true;
 	}
 
@@ -143,8 +156,11 @@ _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
 	_float3 vLerpDir{};
 	XMStoreFloat3(&vLerpDir, XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vLastDir), XMLoadFloat3(&m_vNextDir), t)));
 
-	pMoveIntent->SetMoveIntent(vLerpDir, 15.f);
-	pMoveIntent->SetFacingIntent(vLerpDir, 6.f);
+	pMoveIntent->SetMoveIntent(vLerpDir, 25.f);
+	pMoveIntent->SetFacingIntent(vLerpDir, 25.f);
+
+
+
 	return false;
 }
 void CEdg_Spawn::Play_Anim(CEnderDragon* pDragon, _float fTimeDelta)
@@ -158,7 +174,8 @@ void CEdg_Spawn::Play_Anim(CEnderDragon* pDragon, _float fTimeDelta)
 		if (pAnimator->GetFinish())
 			m_Anims.pop_front();
 	}
-	else
+	
+	if(m_Anims.empty())
 	{
 		m_eSpawn = EDG_SPAWN_NUMBER::THIRD;
 		return;

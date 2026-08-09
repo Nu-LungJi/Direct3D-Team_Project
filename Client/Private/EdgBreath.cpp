@@ -110,8 +110,8 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	_vector vLerpDir = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), t));
 	if (MoveSweep(matBone.r[3], vLerpDir))
 	{
-		if (m_iBoneIndex != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().SetEffectWorldMatrix(m_iBoneIndex, *GetTransform().GetWorldMatrix());
+		if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
 		GetTransform().SetPosition(matBone.r[3]);
 		GetTransform().SetQuaternion(vQuat);
 		GetTransform().Update();

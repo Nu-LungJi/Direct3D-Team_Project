@@ -29,12 +29,12 @@ private:
 	_bool		MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Play_Anim(CEnderDragon* pDragon, _float fTimeDelta);
 private:
-	uint32_t				m_iNext{0};
+	uint32_t				m_iEffectID{};
 
 	_bool					m_bNext{};
 	_float					m_fTick{};
 	_float3					m_vNextDir{}, m_vLastDir{};
-	EDG_SPAWN_NUMBER		m_eSpawn{};
+	EDG_SPAWN_NUMBER		m_eSpawn{EDG_SPAWN_NUMBER::FIRST};
 
 	std::list<EDG_ANIM_FSM> m_Anims;
 	std::list<_float3>	m_PhasePos;

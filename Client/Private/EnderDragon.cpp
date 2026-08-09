@@ -264,10 +264,11 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	auto BreathHandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, "03.Breath", &SkillDesc);
 	if (!BreathHandle) return E_FAIL;
 
+	///Pulse///
 	SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_Main");
-	
 	auto PulseHandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Pulse, "03.Pulse", &SkillDesc);
 	if (!PulseHandle) return E_FAIL;
+	///////////
 
 	int32_t iOffsetBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Mouth");
 	m_SkillHandle[ETOUI(DRAGON_SKILL::FIREBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iFireBall,
@@ -287,6 +288,12 @@ void CEnderDragon::Ready_BBKeyValue()
 }
 void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_L))
+		m_bDebug = !m_bDebug;
+
+	if (!m_bDebug) return;
+
+
 	Phase_Debug();
 	Check_Phase();
 	m_pFsm->PriorityUpdate(fTimeDelta);
@@ -297,16 +304,19 @@ void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 
 void CEnderDragon::Update(E::_float fTimeDelta)
 {
+	if (!m_bDebug) return;
 	__super::Update(fTimeDelta);
 	//m_pFsm->Update(fTimeDelta);
 }
 
 void CEnderDragon::FixedUpdate(E::_float fTimeDelta)
 {
+	if (!m_bDebug) return;
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 void CEnderDragon::LateUpdate(E::_float fTimeDelta)
 {
+	if (!m_bDebug) return;
 	m_pFsm->LateUpdate(fTimeDelta);
 	__super::LateUpdate(fTimeDelta);
 
