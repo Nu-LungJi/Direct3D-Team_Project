@@ -2,10 +2,12 @@
 
 #include "UITex.h"
 #include "Client_Defines.h"
+#include "UI_Structs.h"
 
 NS_BEGIN(Engine)
 class CComConstantBuffer;
 class CButtonComponent;
+class CCameraObject;
 NS_END
 
 NS_BEGIN(Client)
@@ -14,73 +16,6 @@ class CMiniMap final : public E::CUITex
 {
 public:
 	DECLARE_DERIVED_TYPE(CMiniMap, E::CUITex)
-
-	enum class MINIMAP_MODE : uint32_t
-	{
-		WORLD_MAP,
-		DUNGEON_FOG
-	};
-
-	struct MINIMAP_PROFILE
-	{
-		MINIMAP_MODE Mode{ MINIMAP_MODE::WORLD_MAP };
-		std::string TextureTag{ "TEX_UI_T_MapMini_Sanctuary_03_D" };
-		_float2 WorldMinXZ{};
-		_float2 WorldMaxXZ{};
-		_float2 UVMin{};
-		_float2 UVMax{ 1.f, 1.f };
-		_float MapScale{ 0.6f };
-		_float SmokeIntensity{ 0.65f };
-		_float SmokeSpeed{ 1.f };
-		_float FogAlphaMultiplier{ 1.f };
-		_float PlayerScrollScale{ 0.003f };
-	};
-
-	struct BATTLE_ZONE_INFO
-	{
-		_float3 Center{};
-		_float WorldRadius{ 15.f };
-		_float VisibleDistance{ 60.f };
-		_float Alpha{ 0.25f };
-		uint32_t LevelID{ static_cast<uint32_t>(-1) };
-	};
-
-	enum class OBJECTIVE_ACTIVE_RULE : uint8_t
-	{
-		MANUAL,
-		PROXIMITY,
-		MANUAL_OR_PROXIMITY,
-		MANUAL_AND_PROXIMITY
-	};
-
-	struct OBJECTIVE_VISUAL_PHASE
-	{
-		_float MinDistance{};
-		_float MaxDistance{}; // 0: no upper limit
-		std::string TextureTag;
-		std::string PrototypeTag{ "Prototype_GameObject_TextureUI" };
-		_float IconSize{ 24.f };
-		_float3 TintColor{}; // zero keeps the original texture color
-		int WeightOffset{ 4 };
-		_float FadeInTime{ 0.5f };
-		_float FadeOutTime{ 0.5f };
-		_float DistanceHysteresis{ 1.f };
-		_bool DesiredVisible{ false };
-		CHandle MarkerHandle{};
-	};
-
-	struct MINIMAP_OBJECTIVE_INFO
-	{
-		std::string Key;
-		_float3 WorldPosition{};
-		uint32_t LevelID{ static_cast<uint32_t>(-1) };
-		OBJECTIVE_ACTIVE_RULE ActiveRule{ OBJECTIVE_ACTIVE_RULE::MANUAL };
-		_float AutoActivateDistance{};
-		_float ActivationHysteresis{ 5.f };
-		_bool ManualActive{ false };
-		_bool ProximityActive{ false };
-		std::vector<OBJECTIVE_VISUAL_PHASE> VisualPhases;
-	};
 
 private:
 	CMiniMap();
@@ -97,6 +32,7 @@ public:
 	void AddBattleZone(const BATTLE_ZONE_INFO& battleZone);
 	void AddObjective(MINIMAP_OBJECTIVE_INFO objective);
 	_bool SetObjectiveActive(const std::string& key, _bool active);
+	_bool SetContentGroupActive(QUEST_UI_GROUP group, _bool active);
 
 private:
 	virtual void PlayEffect(uint32_t uiState);
@@ -156,13 +92,21 @@ private:
 	void UpdateWorldMapOffset(const _float3& playerPosition);
 	void UpdateFogMovementOffset(const _float3& playerPosition);
 	void UpdateBattleZones(const _float3& playerPosition);
-	void UpdateObjectiveMarkers(const _float3& playerPosition);
+	void UpdateObjectiveMarkers(
+		const _float3& playerPosition,
+		E::CCameraObject* camera);
 	void HideObjectiveMarkers();
 	_bool IsObjectiveActive(MINIMAP_OBJECTIVE_INFO& objective,
 		_float distanceSq) const;
 	void SetObjectiveMarkerVisible(E::CUIObject* marker, _bool visible);
 	void SetObjectivePhaseVisible(
 		OBJECTIVE_VISUAL_PHASE& phase, _bool visible);
+	void SetScreenObjectivePhaseVisible(
+		OBJECTIVE_VISUAL_PHASE& phase, _bool visible);
+	_bool UpdateScreenObjectiveMarkerPosition(
+		OBJECTIVE_VISUAL_PHASE& phase,
+		const _float3& worldPosition,
+		E::CCameraObject* camera);
 
 	void InitRookwoodBattleZone();
 	void InitBossRookwoodBattleZone();

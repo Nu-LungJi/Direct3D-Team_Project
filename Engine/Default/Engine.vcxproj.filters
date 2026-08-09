@@ -582,6 +582,9 @@
     <ClInclude Include="..\Public\Engine_Base.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Engine_BuildConfig.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\TimeProvider.h">
       <Filter>Time</Filter>
     </ClInclude>
@@ -775,6 +778,9 @@
       <Filter>Collider\Sphere</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\GameObjectManager.h">
+      <Filter>GameObject\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\GameObjectPoolManager.h">
       <Filter>GameObject\Manager</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\CameraObject.h">
@@ -1252,6 +1258,9 @@
     <ClInclude Include="..\public\BTBlackBoard.h">
       <Filter>Component\BeHavior\BlackBoard</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTSubTreeNode.h">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode\ActionNode</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1410,6 +1419,9 @@
     <ClCompile Include="..\Private\FontManager.cpp">
       <Filter>Font</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Engine_BuildConfig.cpp">
+      <Filter>99.Defines</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\WorkerManager.cpp">
       <Filter>Worker</Filter>
     </ClCompile>
@@ -1453,6 +1465,9 @@
       <Filter>Collider\Sphere</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\GameObjectManager.cpp">
+      <Filter>GameObject\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\GameObjectPoolManager.cpp">
       <Filter>GameObject\Manager</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\CameraObject.cpp">
@@ -1873,6 +1888,9 @@
     <ClCompile Include="..\private\ComBeHavior.cpp">
       <Filter>Component\BeHavior</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\BTSubTreeNode.cpp">
+      <Filter>Component\BeHavior\Root\Composite\CompositeNode\ActionNode</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -2041,6 +2059,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\RayMarching\PS_Volumetric.hlsl">
       <Filter>ShaderFiles\RayMarching</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced_Foliage.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

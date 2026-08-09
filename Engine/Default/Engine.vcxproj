@@ -244,6 +244,7 @@
     <ClInclude Include="..\public\BTDecorator.h" />
     <ClInclude Include="..\public\BTRandSelector.h" />
     <ClInclude Include="..\public\BTReactiveSelector.h" />
+    <ClInclude Include="..\public\BTSubTreeNode.h" />
     <ClInclude Include="..\Public\CinematicAsset.h" />
     <ClInclude Include="..\Public\CinematicCamera.h" />
     <ClInclude Include="..\Public\CinematicSystem.h" />
@@ -338,6 +339,7 @@
     <ClInclude Include="..\Public\DInputManager.h" />
     <ClInclude Include="..\Public\Engine_Assimp_Enum.h" />
     <ClInclude Include="..\Public\Engine_Base.h" />
+    <ClInclude Include="..\Public\Engine_BuildConfig.h" />
     <ClInclude Include="..\Public\Engine_Defines.h" />
     <ClInclude Include="..\Public\Engine_Enum.h" />
     <ClInclude Include="..\Public\Engine_Function.h" />
@@ -354,6 +356,7 @@
     <ClInclude Include="..\public\GameInstance.h" />
     <ClInclude Include="..\Public\GameObject.h" />
     <ClInclude Include="..\Public\GameObjectManager.h" />
+    <ClInclude Include="..\Public\GameObjectPoolManager.h" />
     <ClInclude Include="..\Public\GraphicDevice.h" />
     <ClInclude Include="..\Public\Handle.h" />
     <ClInclude Include="..\Public\ImguiManager.h" />
@@ -588,6 +591,7 @@
     <ClCompile Include="..\private\BTDecorator.cpp" />
     <ClCompile Include="..\private\BTRandSelector.cpp" />
     <ClCompile Include="..\private\BTReactiveSelector.cpp" />
+    <ClCompile Include="..\private\BTSubTreeNode.cpp" />
     <ClCompile Include="..\Private\CinematicAsset.cpp" />
     <ClCompile Include="..\Private\CinematicCamera.cpp" />
     <ClCompile Include="..\Private\CinematicSystem.cpp" />
@@ -686,9 +690,11 @@
     <ClCompile Include="..\Private\DInputManager.cpp" />
     <ClCompile Include="..\Private\FlyCamera.cpp" />
     <ClCompile Include="..\Private\FontManager.cpp" />
+    <ClCompile Include="..\Private\Engine_BuildConfig.cpp" />
     <ClCompile Include="..\private\GameInstance.cpp" />
     <ClCompile Include="..\Private\GameObject.cpp" />
     <ClCompile Include="..\Private\GameObjectManager.cpp" />
+    <ClCompile Include="..\Private\GameObjectPoolManager.cpp" />
     <ClCompile Include="..\Private\GraphicDevice.cpp" />
     <ClCompile Include="..\Private\ImguiManager.cpp" />
     <ClCompile Include="..\Private\Level.cpp" />
@@ -902,6 +908,7 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced_Foliage.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxPartObject.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\9SliceUI.hlsl" />
