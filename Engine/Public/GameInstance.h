@@ -342,6 +342,9 @@ public:
 
 	VOID	Notify_StaticShadowSceneChanged(const BoundingBox& ChangedBounds);
 
+	VOID	Bind_VolumetricLocalLightResources();
+	VOID	UnBind_VolumetricLocalLightResources();
+
 	_bool		Evaluate_DirectionalLightCount();
 
 	XMMATRIX	Get_CascadeShadowViewProj(uint32_t _Index);
