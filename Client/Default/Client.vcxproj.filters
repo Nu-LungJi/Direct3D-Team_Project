@@ -735,6 +735,9 @@
     <ClInclude Include="..\public\EdgBreath.h">
       <Filter>GameObject\Monster\EnderDragon\Skill\Bress</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\UI_Structs.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">

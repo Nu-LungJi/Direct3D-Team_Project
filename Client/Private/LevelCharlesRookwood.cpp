@@ -106,8 +106,22 @@ void CLevelCharlesRookwood::Update(E::_float fTimeDelta)
 			CGameObject::GAMEOBJECT_DESC Desc{};
 			Desc.sObjectTag = "UIController";
 
-			GET_SINGLE(UIManager)->SetUIController(E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController",
-				"UIController", &Desc));
+			auto uiControllerHandle = E::CGameInstance::Get().
+				AddGameObjectToLayer(
+					"LEVEL_CHARLES_ROOKWOOD",
+					"Prototype_GameObject_UIController",
+					"UIController",
+					&Desc);
+			GET_SINGLE(UIManager)->SetUIController(uiControllerHandle);
+
+			if (uiControllerHandle)
+			{
+				E::CGameInstance::Get().EventPublish(
+					FQuestUIGroupChanged{
+						.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_01,
+						.Active = true
+					});
+			}
 		}
 	}
 
