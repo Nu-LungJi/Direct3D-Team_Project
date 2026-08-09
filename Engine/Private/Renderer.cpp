@@ -1777,7 +1777,6 @@ HRESULT CRenderer::Render_PostProcess_Focusing(){
 
 		for (auto pBatch : Batches) {
 			if (nullptr == pBatch)	continue;
-			pBatch->ObjectHandle.
 			CGameObject* pBatchObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle);
 
 			if (pBatchObject != OutLineObject) continue;
