@@ -171,6 +171,13 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
+
+	m_pGameObjectPoolManager = CGameObjectPoolManager::Create(
+		m_pGameObjectManager.get());
+	if (m_pGameObjectPoolManager == nullptr)
+	{
+		return E_FAIL;
+	}
 	LOG_MEMORY("Start m_pRenderer()");
 	m_pRenderer = CRenderer::Create(ppDevice.Get(), ppContext.Get());
 	if (m_pRenderer == nullptr)
@@ -332,6 +339,12 @@ void CGameInstance::UpdateGUI()
 	{
 		ZoneScopedN("GameObjectManager_UpdateGUI");
 		m_pGameObjectManager->UpdateGUI();
+	}
+
+	{
+		ZoneScopedN("GameObjectPoolManager_UpdateGUI");
+		if (m_pGameObjectPoolManager)
+			m_pGameObjectPoolManager->UpdateGUI();
 	}
 
 	{
@@ -536,6 +549,7 @@ void CGameInstance::Release_Engine()
 	m_pActionManager.reset();
 	m_pAnimEdit_Manager.reset();
 	m_pModel_Instance_Manager.reset();
+	m_pGameObjectPoolManager.reset();
 	if (m_pGameObjectManager)
 	{
 		m_pGameObjectManager->AllReset();
@@ -612,6 +626,7 @@ void CGameInstance::FrameStart(_float fTimeDelta)
 void CGameInstance::FrameEnd(_float fTimeDelta)
 {
 	m_pGameObjectManager->FrameEnd();
+	m_pGameObjectPoolManager->FrameEnd();
 	m_pLevelManager->FrameEnd(fTimeDelta);
 	m_pEventManager->FrameEnd();
 
@@ -1005,6 +1020,18 @@ std::vector<StringID> CGameInstance::GetPrototypeTags(const StringID& svGroupTag
 void CGameInstance::GameObjectAllReset()
 {
 	m_pGameObjectManager->AllReset();
+}
+
+size_t CGameInstance::GameObjectResetLayers(
+	std::span<const std::string_view> layerNames)
+{
+	return m_pGameObjectManager->ResetObjectsInLayers(layerNames);
+}
+
+size_t CGameInstance::GameObjectAllResetExceptLayers(
+	std::span<const std::string_view> excludedLayerNames)
+{
+	return m_pGameObjectManager->ResetAllObjectsExceptLayers(excludedLayerNames);
 }
 
 inline CGameObject* CGameInstance::GetGameObjectByHandle(const CHandle& handle)

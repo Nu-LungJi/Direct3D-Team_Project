@@ -582,6 +582,9 @@
     <ClInclude Include="..\Public\Engine_Base.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Engine_BuildConfig.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\TimeProvider.h">
       <Filter>Time</Filter>
     </ClInclude>
@@ -775,6 +778,9 @@
       <Filter>Collider\Sphere</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\GameObjectManager.h">
+      <Filter>GameObject\Manager</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\GameObjectPoolManager.h">
       <Filter>GameObject\Manager</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\CameraObject.h">
@@ -1413,6 +1419,9 @@
     <ClCompile Include="..\Private\FontManager.cpp">
       <Filter>Font</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Engine_BuildConfig.cpp">
+      <Filter>99.Defines</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\WorkerManager.cpp">
       <Filter>Worker</Filter>
     </ClCompile>
@@ -1456,6 +1465,9 @@
       <Filter>Collider\Sphere</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\GameObjectManager.cpp">
+      <Filter>GameObject\Manager</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\GameObjectPoolManager.cpp">
       <Filter>GameObject\Manager</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\CameraObject.cpp">
