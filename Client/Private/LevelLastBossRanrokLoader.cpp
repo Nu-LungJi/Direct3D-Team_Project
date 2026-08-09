@@ -238,7 +238,7 @@ _bool CLevelLastBossRanrokLoader::UILoad_InWorker()
 							std::string resTag = "TEX_" + fileName;
 							std::string fullPath = entry.path().generic_string();
 
-							if (auto res = E::CGameInstance::Get().AddResource(CURR_LEVEL, resTag, E::CResTexture2D::Create(fullPath)))
+							if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LAST_BOSS_RANROK", resTag, E::CResTexture2D::Create(fullPath)))
 							{
 								res->Load();
 							}
@@ -248,47 +248,47 @@ _bool CLevelLastBossRanrokLoader::UILoad_InWorker()
 			}
 		}
 
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, "Prototype_GameObject_TextureUI", CTextureUI::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_TextureUI", CTextureUI::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, "Prototype_GameObject_EffectUI", CEffectUI::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_EffectUI", CEffectUI::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, "Prototype_GameObject_TextBox", CTextBox::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_TextBox", CTextBox::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, "Prototype_GameObject_Button", CButton::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_Button", CButton::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, "Prototype_GameObject_SpellMeter", CSpellMeter::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_SpellMeter", CSpellMeter::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, "Prototype_GameObject_HPBar", CHPBar::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_HPBar", CHPBar::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, "Prototype_GameObject_MiniMap", CMiniMap::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_MiniMap", CMiniMap::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, "Prototype_GameObject_UIController", CUIController::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_UIController", CUIController::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, "Prototype_GameObject_GameOverMask", CGameOverMask::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_GameOverMask", CGameOverMask::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, "Prototype_GameObject_VideoObject", CVideoObject::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_VideoObject", CVideoObject::Create())))
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, "Prototype_GameObject_Cursor", CCursor::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_Cursor", CCursor::Create())))
 		{
 			return false;
 		}
