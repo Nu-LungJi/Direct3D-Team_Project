@@ -51,9 +51,7 @@ NS_USING(Client)
 
 void CPlayer::UpdateGUI()
 {
-	//static _float4 weaponColor;
-	//static _float3 weaponEmissiveColor;
-	//static _float weaponEIntensity;
+	
 	__super::UpdateGUI();
 
 
@@ -82,15 +80,7 @@ void CPlayer::UpdateGUI()
 	if (m_pRagdollController)
 		m_pRagdollController->UpdateGUI();
 
-	//ImGui::ColorEdit4("Color", &weaponColor.x);
-	//ImGui::ColorEdit3("Emissive", &weaponEmissiveColor.x);
-	//ImGui::DragFloat("Emissive Intensity", &weaponEIntensity);
 
-	//if (ImGui::Button("Apply DashTrail")) {
-	//	auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
-	//	static_cast<CTrail_CPU*>(a)->SetColor(weaponColor);
-	//	static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(weaponEmissiveColor.x, weaponEmissiveColor.y, weaponEmissiveColor.z, weaponEIntensity));
-	//}
 
 }
 
@@ -442,6 +432,31 @@ HRESULT CPlayer::Initialize(void* pArg)
 			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
 		}
+		{
+			auto a = CGameInstance::Get().GetParticle("RanrokTrail1", "RanrokTrail1");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
+		}
+		{
+			auto a = CGameInstance::Get().GetParticle("RanrokTrail2", "RanrokTrail2");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
+		}
+		{
+			auto a = CGameInstance::Get().GetParticle("RanrokTrail3", "RanrokTrail3");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
+		}
+		{
+			auto a = CGameInstance::Get().GetParticle("RanrokTrail4", "RanrokTrail4");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
+		}
+		{
+			auto a = CGameInstance::Get().GetParticle("RanrokTrail5", "RanrokTrail5");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
+		}
 
 	}
 
@@ -460,8 +475,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	m_hAutoTarget = CHandle{};
-	return S_OK;
 
+	return S_OK;
 }
 
 #pragma region RAGDOLL
@@ -1330,6 +1345,57 @@ void CPlayer::PrepareLocomotionResume()
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
+	{
+
+
+		_float4 fpos = _float4(GetTransform().GetPosition().x, GetTransform().GetPosition().y, GetTransform().GetPosition().z, 1);
+		_vector pos = XMVectorSet(fpos.x, fpos.y, fpos.z, fpos.w);
+		_vector lastSpawnPos = XMVectorSet(m_vSpwanPos.x, m_vSpwanPos.y, m_vSpwanPos.z, 1.f);
+		_float distance = XMVectorGetX(
+			XMVector3Length(pos - lastSpawnPos));
+		_float3 deltaPos;
+		XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
+		if (distance > m_fDistanceOffeset) {
+
+			CGameInstance::Get().PlayEffect(
+				"RanrokMoveSmoke", *GetTransform().GetWorldMatrix(), pos);
+			m_vSpwanPos = GetTransform().GetPosition();
+
+		}
+
+		const _matrix playerWorld = GetTransform().GetLoadedWorldMatrix();
+
+		auto TransformTrailPoint = [&playerWorld](const _float3& localPoint)
+			{
+				_float3 worldPoint{};
+				XMStoreFloat3(&worldPoint, XMVector3TransformCoord(XMLoadFloat3(&localPoint), playerWorld));
+				return worldPoint;
+			};
+
+		_float3 vstart{};
+		_float3 vend{};
+
+		vstart = TransformTrailPoint({ 0.f, 3.5f, 0.f });
+		vend = TransformTrailPoint({ 0.f, 2.5f, 0.f });
+		CGameInstance::Get().AddTrailPoint("RanrokTrail1", "RanrokTrail1", vstart, vend);
+
+		vstart = TransformTrailPoint({ 0.f, 1.5f, -3.f });
+		vend = TransformTrailPoint({ 0.f, 0.5f, -3.f });
+		CGameInstance::Get().AddTrailPoint("RanrokTrail2", "RanrokTrail2", vstart, vend);
+
+		vstart = TransformTrailPoint({ 0.f, 1.5f, 3.f });
+		vend = TransformTrailPoint({ 0.f, 0.5f, 3.f });
+		CGameInstance::Get().AddTrailPoint("RanrokTrail3", "RanrokTrail3", vstart, vend);
+
+		vstart = TransformTrailPoint({ 0.f, -0.5f, -2.f });
+		vend = TransformTrailPoint({ 0.f, -1.5f, -2.f });
+		CGameInstance::Get().AddTrailPoint("RanrokTrail4", "RanrokTrail4", vstart, vend);
+
+		vstart = TransformTrailPoint({ 0.f, -0.5f, 2.f });
+		vend = TransformTrailPoint({ 0.f, -1.5f, 2.f });
+		CGameInstance::Get().AddTrailPoint("RanrokTrail5", "RanrokTrail5", vstart, vend);
+
+	}
 
 
 	if (nullptr == CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))

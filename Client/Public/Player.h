@@ -300,6 +300,13 @@ public:
 public:
 	static E::UPtr<CPlayer> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
+
+private:
+	//성민 지울거임
+	uint32_t testEffectID = 0;
+	_float	m_fDistanceOffeset = 1.6f;
+	_float3	m_vSpwanPos{};
 };
 
 NS_END
