@@ -657,6 +657,9 @@
     <ClInclude Include="..\public\LevelLastBossRanrokLoader.h">
       <Filter>Loader\Level\LastBossRanrok</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\UI_Structs.h">
+      <Filter>99.Defines</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">

@@ -320,6 +320,7 @@
     <ClInclude Include="..\public\TmbGurdianDead.h" />
     <ClInclude Include="..\public\TriggerCRW_ToBoss.h" />
     <ClInclude Include="..\Public\Mon_Weapon.h" />
+    <ClInclude Include="..\Public\UI_Structs.h" />
     <ClInclude Include="..\Public\VideoObject.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
