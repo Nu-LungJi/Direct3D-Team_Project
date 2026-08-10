@@ -8,7 +8,6 @@ Texture3D<float>		VoxelDensityColor		: register(t3);
 Texture3D<float4>		VoxelLightingColor		: register(t4);
 
 Texture2DArray<float>	ShadowMapArray			: register(t5);
-Texture2D<float4>		PreviousTexture			: register(t6);
 
 Texture2DArray<float>	DynamicShadowMaps		: register(t10);
 TextureCubeArray<float> DynamicShadowCubeMaps	: register(t12);
@@ -26,8 +25,8 @@ const static float		GodRayStrength			= { 1.5f };
 static const float		SpotVolumetricShadowBias	= { 0.0001f };
 static const float		PointVolumetricShadowBias	= { 0.002f };
 
-static const float		LocalScatteringStrength = { 10.f };
-
+static const float		LocalScatteringStrength = { 2.f };
+static const float FroxelDepthExponent = 1.5f;
 static const float2 PCFOffsets[4] =
 {
 	float2(-0.5f, -0.5f),
@@ -83,24 +82,17 @@ cbuffer CB_CSM : register(b12)
 	float2	ShadowMapSize;
 	float2	ShadowBias;
 };
-cbuffer CB_VLTEMPORAL : register(b13)
-{
-	matrix	PrevViewProj;
-	uint	FrameIndex;
-	float	HistoryWeight;
-	uint	HistoryValid;
-	float	Padding;
-};
 
 float ViewDepthToFroxelZ(float _Depth, float _Near, float _Far)
 {
-	return log(max(_Depth, _Near) / _Near) / log(_Far / _Near);
+	float LinearDepth = saturate((_Depth - _Near) / max(_Far - _Near, 0.0001f));
+	return pow(LinearDepth,1.f / FroxelDepthExponent);
 }
 
 float3 FroxelZToWorldPos(float3 _TexCoord)
 {
-	float	ViewDepth = NearZ * pow(FarZ / NearZ, _TexCoord.z);
-		
+	float ViewDepth = lerp(NearZ, FarZ, pow(saturate(_TexCoord.z), FroxelDepthExponent));
+	
 	float2 ScreenSpaceNDC;
 	ScreenSpaceNDC.x = _TexCoord.x * +2.f - 1.f;
 	ScreenSpaceNDC.y = _TexCoord.y * -2.f + 1.f;
@@ -115,9 +107,12 @@ float3 FroxelZToWorldPos(float3 _TexCoord)
 
 float GetSliceDeltaZ(uint _ZSlice, float _MaxSlice, float _Near, float _Far)
 {
-	float NearSlice = _Near * pow(_Far / _Near, (float) _ZSlice / _MaxSlice);
-	float FarSlice  = _Near * pow(_Far / _Near, ((float) _ZSlice + 1.f) / _MaxSlice);
-	
+	float Z0 = (float) _ZSlice / _MaxSlice;
+	float Z1 = ((float) _ZSlice + 1.f) / _MaxSlice;
+
+	float NearSlice = lerp(_Near, _Far, pow(Z0, FroxelDepthExponent));
+	float FarSlice  = lerp(_Near, _Far, pow(Z1, FroxelDepthExponent));
+
 	return FarSlice - NearSlice;
 }
 
@@ -350,7 +345,7 @@ float3 Compute_LocalScattering(float3 _WorldPos, float3 _RayDirection, float _De
 		}
 		
 		float CosTheta = dot(_RayDirection, L);
-		float Phase = Henyey_Greenstein_Phase(CosTheta, FogAnisotropyGA);
+		float Phase = Henyey_Greenstein_Phase(CosTheta, 0.f); //FogAnisotropyGA);
 		
 		LocalScattering += FogColor * Radiance * _Density * Phase * ShadowFactor * Light.VolumetricIntensity * LocalScatteringStrength;
 	}
@@ -390,16 +385,16 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 		return;
 	}
 	
-	uint2	FrameOffset = uint2(FrameIndex * 47u, FrameIndex * 113u) & 255u;
 
-	float2	NoiseUV = (float2(ID.xy + FrameOffset) + 0.5f) / NoiseResolution;
-	float	Jitter = BlueNoiseTexture.SampleLevel(PointWrap, NoiseUV, 0).r;
-	float	JitteredZ = (float) ID.z + 0.5f + (Jitter - 0.5f);
-	JitteredZ = clamp(JitteredZ, 0.5f, FroxelGridSize.z - 0.5f);
+	//float2	NoiseUV = (float2(ID.xy + FrameOffset) + 0.5f) / NoiseResolution;
+	//float	Jitter = BlueNoiseTexture.SampleLevel(PointWrap, NoiseUV, 0).r;
+	//float	JitteredZ = (float) ID.z + 0.5f + (Jitter - 0.5f);
+	//JitteredZ = clamp(JitteredZ, 0.5f, FroxelGridSize.z - 0.5f);
 	
-	float3 TexCoord;
-	TexCoord.xy = (float2(ID.xy) + 0.5f) / FroxelGridSize.xy;
-	TexCoord.z	= JitteredZ / FroxelGridSize.z;
+	//float3 TexCoord;
+	//TexCoord.xy = (float2(ID.xy) + 0.5f) / FroxelGridSize.xy;
+	//TexCoord.z	= JitteredZ / FroxelGridSize.z;
+	float3 TexCoord = (float3(ID.xyz) + 0.5f) / FroxelGridSize;
 	
 	float3	VoxelWorldPos = FroxelZToWorldPos(TexCoord);
 	float3	RayDirection  = normalize(VoxelWorldPos - g_vCamPos);
@@ -447,6 +442,8 @@ void CSMain_FroxelZAccumulation(uint3 ID : SV_DispatchThreadID)
 		float	StepTransmittance = exp(-StepExtinction);
 		
 		float3 IntegratedScattering = float3(0.f, 0.f, 0.f);
+		float WeightedScatteringDistance = 0.f;
+		float ScatteringWeightSum = 0.f;
 		
 		if (Extinction > 0.00001f)
 		{
@@ -570,79 +567,152 @@ void CSMain_RayMarching(uint3 ID : SV_DispatchThreadID)
 		return;
 	}
 	float3	RayDirection = RayVector / RayLength;
-	
-	if (PixelViewZ > FarZ)
+	/*
+ * Scene Depth 또는 볼류메트릭 최대 거리까지만 적분한다.
+ */
+	float MaxViewDepth =
+    min(PixelViewZ, FarZ);
+
+/*
+ * View Z 간격을 실제 ray 이동 거리로 변환하기 위한 값.
+ */
+	float3 ViewRayDirection =
+    mul(
+        float4(RayDirection, 0.f),
+        g_matView).xyz;
+
+	float RayViewZ =
+    max(
+        abs(ViewRayDirection.z),
+        0.0001f);
+
+	float MaxRayDistance =
+    MaxViewDepth / RayViewZ;
+
+	float3 AccumulatedScattering =
+    float3(0.f, 0.f, 0.f);
+
+	float AccumulatedTransmittance =
+    1.f;
+
+
+[loop]
+	for (uint z = 0;
+     z < (uint) FroxelGridSize.z;
+     ++z)
 	{
-		RayLength *= (FarZ / max(PixelViewZ, 0.0001f));
-	}
-	
-	float StepSize = RayLength / (float) GodRayMaxStep;
-	
-	float3	AccumulatedScattering = float3(0.f, 0.f, 0.f);
-	float	AccumulatedTransmittance = 1.f;
-	
-	uint2	FrameOffset = uint2(FrameIndex * 47u, FrameIndex * 113u) & 255u;
-	float2	NoiseUV = (float2(ID.xy + FrameOffset) + 0.5f) / NoiseResolution;
-	float	Jitter = BlueNoiseTexture.SampleLevel(PointWrap, NoiseUV, 0).r;
-	
-	[loop]
-	for (uint i = 0; i < GodRayMaxStep; ++i)
-	{
-		float	SampleDistance = (i + Jitter) * StepSize;
-		float3	SampleWorldPos = g_vCamPos + RayDirection * SampleDistance;
-		
-		float	SampleViewZ = abs(mul(float4(SampleWorldPos, 1.f), g_matView).z);
-			
-		float	SampleFroxelZ = ViewDepthToFroxelZ(SampleViewZ, NearZ, FarZ);
-		float3	SampleFroxelTexCoord = float3(TexCoord, saturate(SampleFroxelZ));
-		
-		float4	LightingData = VoxelLightingColor.SampleLevel(LinearClamp, SampleFroxelTexCoord, 0);
-		float3	Scattering = LightingData.rgb;
-		float	Extinction = LightingData.a;
-		
-		float	StepTransmittance = exp(-Extinction * StepSize);
-		
-		float3	IntegratedScattering = float3(0.f, 0.f, 0.f);
-		
-		if (Extinction > 0.0001f) {
-			IntegratedScattering = (Scattering / Extinction) * (1.f - StepTransmittance);
+		float NormalizedZ0 =
+        (float) z /
+        FroxelGridSize.z;
+
+		float NormalizedZ1 =
+        ((float) z + 1.f) /
+        FroxelGridSize.z;
+
+    /*
+     * 현재 적용한 power depth distribution과 동일한 방식으로
+     * 슬라이스의 View Z 범위를 구한다.
+     */
+		float SliceNear =
+        lerp(
+            NearZ,
+            FarZ,
+            pow(
+                NormalizedZ0,
+                FroxelDepthExponent));
+
+    /*
+     * 현재 오브젝트의 Scene Depth보다 뒤에 있는 슬라이스는
+     * 적분할 필요가 없다.
+     */
+		if (SliceNear >= MaxViewDepth)
+		{
+			break;
 		}
-        
-		AccumulatedScattering += IntegratedScattering * AccumulatedTransmittance;
+
+		float SliceFar =
+        lerp(
+            NearZ,
+            FarZ,
+            pow(
+                NormalizedZ1,
+                FroxelDepthExponent));
+
+    /*
+     * 마지막 슬라이스가 Scene Depth를 넘어가면
+     * Scene Depth까지만 적분한다.
+     */
+		SliceFar =
+        min(
+            SliceFar,
+            MaxViewDepth);
+
+		float SampleViewDepth =
+        (SliceNear + SliceFar) *
+        0.5f;
+
+    /*
+     * View Depth를 현재 power froxel의 정규화된 Z로 변환한다.
+     */
+		float SampleFroxelZ =
+        ViewDepthToFroxelZ(
+            SampleViewDepth,
+            NearZ,
+            FarZ);
+
+		float3 SampleFroxelTexCoord =
+        float3(
+            TexCoord,
+            saturate(SampleFroxelZ));
+
+		float4 LightingData =
+        VoxelLightingColor.SampleLevel(
+            LinearClamp,
+            SampleFroxelTexCoord,
+            0);
+
+		float3 Scattering =
+        LightingData.rgb;
+
+		float Extinction =
+        LightingData.a;
+
+
+		float RayStepSize =
+        (SliceFar - SliceNear) /
+        RayViewZ;
+
+		float StepTransmittance =
+        exp(
+            -Extinction *
+            RayStepSize);
+
+		float3 IntegratedScattering =
+        float3(0.f, 0.f, 0.f);
+
+		if (Extinction > 0.0001f)
+		{
+			IntegratedScattering =
+            (Scattering / Extinction) *
+            (1.f - StepTransmittance);
+		}
+		else
+		{
+			IntegratedScattering = Scattering * RayStepSize;
+		}
+
+		float3 StepContribution = IntegratedScattering * AccumulatedTransmittance;
+
+		AccumulatedScattering +=StepContribution;
 		AccumulatedTransmittance *= StepTransmittance;
-        
+
 		if (AccumulatedTransmittance < 0.001f) {
 			AccumulatedTransmittance = 0.f;
 			break;
 		}
 	}
 
-	float4 CurrentFog = float4(AccumulatedScattering, AccumulatedTransmittance);
-	if (HistoryValid != 0) {
-		float3 ReprojectionWorldPos = g_vCamPos + RayDirection * RayLength;
-		float4 PrevClipPos = mul(float4(ReprojectionWorldPos, 1.f), PrevViewProj);
-		
-		if (PrevClipPos.w > 0.0001f) {
-			float3 PrevNDC = PrevClipPos.xyz / PrevClipPos.w;
-
-			float2 PrevUV;
-			PrevUV.x = PrevNDC.x * 0.5f + 0.5f;
-			PrevUV.y = PrevNDC.y * -0.5f + 0.5f;
-
-			bool IsInside = PrevNDC.z >= 0.f && PrevNDC.z <= 1.f &&
-				all(PrevUV >= 0.f) && all(PrevUV <= 1.f);
-
-			if (IsInside)
-			{
-				float4 HistoryFog =
-                PreviousTexture.SampleLevel(LinearClamp, PrevUV, 0);
-
-				CurrentFog = lerp(CurrentFog, HistoryFog, HistoryWeight);
-			}
-		}
-	}
-	
-	OUTPUT[ID.xy] = CurrentFog;
+	OUTPUT[ID.xy] = float4(AccumulatedScattering, AccumulatedTransmittance);
 	return;
 }
 //
@@ -682,24 +752,3 @@ void CSMain_RayMarching(uint3 ID : SV_DispatchThreadID)
 //	OUTPUT[ID.xy] = float4(FinalGodRay.rrr, 1.f);
 //	return;
 //}
-
-[numthreads(16, 16, 1)]
-void CSMain_DownsampleDepth(uint3 ID : SV_DispatchThreadID)
-{
-	if (ID.x >= (uint) HalfScreenResolution.x || ID.y >= (uint) HalfScreenResolution.y)
-		return;
-	
-	float2 InverseFullResolution = float2(1.f / FullScreenResolution.x, 1.f / FullScreenResolution.y);
-	float2 BaseTexCoord = (float2(ID.xy) * 2.f + 1.f) * InverseFullResolution;
-	float2 TexelSize = InverseFullResolution;
-	
-	float DepthArea1 = DepthTexture.SampleLevel(PointClamp, BaseTexCoord + float2(0.f, 0.f) * TexelSize, 0).r;
-	float DepthArea2 = DepthTexture.SampleLevel(PointClamp, BaseTexCoord + float2(1.f, 0.f) * TexelSize, 0).r;
-	float DepthArea3 = DepthTexture.SampleLevel(PointClamp, BaseTexCoord + float2(0.f, 1.f) * TexelSize, 0).r;
-	float DepthArea4 = DepthTexture.SampleLevel(PointClamp, BaseTexCoord + float2(1.f, 1.f) * TexelSize, 0).r;
-	
-	float MinDepth = min(min(DepthArea1, DepthArea2), min(DepthArea3, DepthArea4));
-	
-	OUTPUT[ID.xy] = MinDepth;
-	return;
-}

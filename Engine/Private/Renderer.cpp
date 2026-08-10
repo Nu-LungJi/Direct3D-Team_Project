@@ -456,8 +456,7 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 
 	m_pResDynTexTargetVolumetric = Generate_RenderTarget("DynTex2D_Volumetric", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
 
-	m_pResDynTexUAVVolumetric[0] = Generate_UnorderedAccessView("UAV_VolumetricA", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
-	m_pResDynTexUAVVolumetric[1] = Generate_UnorderedAccessView("UAV_VolumetricB", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
+	m_pResDynTexUAVVolumetric = Generate_UnorderedAccessView("UAV_Volumetric", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
 	
 	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/BlueNoiseTexture.dds", nullptr, m_pBlueNoiseTexture.GetAddressOf()))) {
 		MSG_BOX("Cannot Create BlueNoise Texture File.");
@@ -1549,9 +1548,9 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 			CB_VLTEMPORAL cbTemporal{};
 
 			cbTemporal.g_mPrevViewProj	= XMLoadFloat4x4(&m_matPrevViewProj);
-			cbTemporal.g_iFrameIndex	= m_iVolumetricFrameIndex;
-			cbTemporal.g_fHistoryWeight = 0.75f; 
-			cbTemporal.g_iHistoryValid	= m_bHistoryValid ? 1u : 0u;
+			cbTemporal.g_iFrameIndex	= 0u;//m_iVolumetricFrameIndex;
+			cbTemporal.g_fHistoryWeight = 0.5f; 
+			cbTemporal.g_iHistoryValid	= 0u;//m_bHistoryValid ? 1u : 0u;
 
 			memcpy(MRES.pData, &cbTemporal, sizeof(CB_VLTEMPORAL));
 			m_pContext->Unmap(m_pVolumetricTemporalCBuffer->GetCBuffer().Get(), 0);
@@ -1660,10 +1659,9 @@ HRESULT CRenderer::Render_RayMarching() {
 		pSRVs[0] = m_pResDynTexTargetDepth->GetSRV().Get();
 		pSRVs[1] = m_pBlueNoiseTexture.Get();
 		pSRVs[4] = m_pVoxelLighting.pSRV.Get();
-		pSRVs[6] = m_pResDynTexUAVVolumetric[PreviousIndex]->GetSRV().Get();
 		m_pContext->CSSetShaderResources(0, 7, pSRVs);
 
-		ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexUAVVolumetric[CurrentIndex]->GetUAV().Get()};
+		ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexUAVVolumetric->GetUAV().Get()};
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 	}
 	{
@@ -1708,9 +1706,9 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 		ID3D11ShaderResourceView* pSRVs[5] = { nullptr };
 		pSRVs[0] = m_pResDynTexTargetDepth->GetSRV().Get();
 		pSRVs[1] = m_pResDynTexTargetPreviousRenderView->GetSRV().Get();
+		pSRVs[2] = m_pResDynTexUAVVolumetric->GetSRV().Get();
 		//pSRVs[2] = m_pVoxelAccumulated.pSRV.Get();
 		//pSRVs[3] = m_pBlueNoiseTexture.Get();
-		pSRVs[4] = m_pResDynTexUAVVolumetric[CurrentIndex]->GetSRV().Get();
 		m_pContext->PSSetShaderResources(0, 5, pSRVs);
 	}
 

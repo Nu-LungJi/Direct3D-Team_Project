@@ -2,13 +2,14 @@
 
 Texture2D DepthTexture				: register(t0);
 Texture2D SceneColorTexture			: register(t1);
-Texture3D VoxelAccumulatedTexture	: register(t2);
-Texture2D BlueNoiseTexture			: register(t3);
-Texture2D GodRayTexture				: register(t4);
+Texture2D GodRayTexture				: register(t2);
 
 const static float2		NoiseResolution = { 256.f, 256.f };
 const static float		DepthThreshold	= { 25.f };
 const static float		AnalyticSkyDistance = 1000.f;
+
+const static float		FroxelDepthExponent = 1.5f;
+
 const static float2		Offsets[5] =
 {
 	float2(0.f, 0.f), float2(-1.f, 0.f), float2(1.f, 0.f), float2(0.f, -1.f), float2(0.f, 1.f)
@@ -53,10 +54,10 @@ cbuffer CB_VLFOG : register(b11)
 	float	FogPadding;
 };
 
-
 float ViewDepthToFroxelZ(float _Depth, float _Near, float _Far)
 {
-	return log(max(_Depth, _Near) / _Near) / log(_Far / _Near);
+	float LinearDepth = saturate((_Depth - _Near) / max(_Far - _Near, 0.0001f));
+	return pow(LinearDepth, 1.f / FroxelDepthExponent);
 }
 
 float4 CalculateAnalyticFog(float ViewDepth, float3 WorldPos)
@@ -95,10 +96,8 @@ float4 PSMain(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_T
 	float4	AnalyticFog		= CalculateAnalyticFog(ViewDepth, WorldPos);
 	float	AnalyticWeight	= smoothstep(AnalyticBlendStart, AnalyticBlendEnd, ViewDepth);
 	
-	float3	FinalScattering = lerp(RayMarchedFog.rgb, AnalyticFog.rgb, AnalyticWeight);
-	float	FinalTransmittance = lerp(RayMarchedFog.a, AnalyticFog.a, AnalyticWeight);
+	float3	FinalScattering		= lerp(RayMarchedFog.rgb, AnalyticFog.rgb, AnalyticWeight);
+	float	FinalTransmittance	= lerp(RayMarchedFog.a, AnalyticFog.a, AnalyticWeight);
 	
-	float3	FinalColor = SceneColor.rgb * FinalTransmittance + FinalScattering;
-
-	return float4(FinalColor, SceneColor.a);
+	return float4(SceneColor.rgb * FinalTransmittance + FinalScattering, SceneColor.a);
 }

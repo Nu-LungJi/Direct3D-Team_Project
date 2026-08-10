@@ -13,7 +13,7 @@ class CMyFSR2_2;
 
 #define FROXELX	320
 #define FROXELY	180
-#define FROXELZ	64
+#define FROXELZ	96
 
 class CRenderer final : public CEngineBase
 {
@@ -116,7 +116,7 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloomResult{};	
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetVolumetric{};		// Volumetric
-	SPtr<CResDynamicTexture2D>	m_pResDynTexUAVVolumetric[2]{};
+	SPtr<CResDynamicTexture2D>	m_pResDynTexUAVVolumetric{};
 
 	SPtr<CResDynamicTexture2D> m_pResDynTexTargetPreviousRenderView{};
 
