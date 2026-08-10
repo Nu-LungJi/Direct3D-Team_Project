@@ -24,9 +24,13 @@
 #include "Cursor.h"
 
 
-#include "TmbGurdian.h"
-#include "TmbGurdianDead.h"
-#include "GurdianWeapon.h"
+#include "EnderDragon.h"
+#include "BossMace.h"
+#include "EnderDragon_State.h"
+#include "EdgFireBall.h"
+#include "EdgBreath.h"
+#include "EdgPulse.h"
+
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
 NS_USING(Client)
@@ -67,7 +71,7 @@ std::future<bool> CLevelLastBossRanrokLoader::Load()
 
 			if (FAILED(MonsterLoad_InWorker()))
 			{
-				MSG_BOX("Create Failed Monster in CharlesRookwood");
+				MSG_BOX("Create Failed Monster in LOADING_LastBossRanrok");
 				return false;
 			}
 
@@ -297,107 +301,30 @@ _bool CLevelLastBossRanrokLoader::UILoad_InWorker()
 }
 HRESULT CLevelLastBossRanrokLoader::MonsterLoad_InWorker()
 {
-	//TombGurDian
+	//Dragon	
 	{
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(CURR_LEVEL, "Model_Resource_TMBGurdian",
-			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Tomb_Grunt/SK_Tomb_Grunt.bin")))
-		{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::LAST_BOSS_RANROK, "Model_Resource_Dragon",
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_Dragon.bin"))) {
+
 			E::CResModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
-			if (FAILED(res->Load(pDesc)))
-			{
-				MSG_BOX("CHARLES_ROOKWOOD Failed Model_Resource_TMBGurdian");
-				return E_FAIL;
-			}
-		}
-
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, CTmbGurdian::Create())))
-		{
-			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TMBGurdian");
-			return E_FAIL;
-		}
-
-	}
-
-	//TombGurDianDead
-	{
-		for (uint32_t i = 0; i < 13; ++i)
-		{
-			std::string path = "./Resources/SampleClient/Models/Static/SM_Med_" + std::to_string(i) + ".bin";
-			StringID resTag = "Static_Med_Debris_" + std::to_string(i);
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(CURR_LEVEL, resTag,
-				CResStaticModel::Create(path))) {
-
-				E::CResStaticModel::DESC pDesc{};
-				pDesc.PreTransformMatrix = XMMatrixIdentity();
-
-				if (FAILED(res->Load(pDesc)))
-				{
-					MSG_BOX("CHARLES_ROOKWOOD Failed Static_Med_Debris");
-				}
-			}
-		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(
-			CURR_LEVEL, PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead, CTmbGurdianDead::Create())))
-		{
-			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_TmbGurdianDead");
-			return E_FAIL;
-		}
-	}
-
-	//Weapon
-	{
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(CURR_LEVEL, "Model_Resource_Axe",
-			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Axe.bin"))) {
-
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.8f, 1.8f, 1.8f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 
 			if (FAILED(res->Load(pDesc)))
 			{
-				MSG_BOX("CHARLES_ROOKWOOD Failed Static_Axe_Model_Resource");
+				MSG_BOX("TERRAIN Failed Model_Resource_Dragon");
 				return E_FAIL;
 			}
 		}
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(CURR_LEVEL, "Model_Resource_Sword",
-			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Sword.bin"))) {
-
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-
-			if (FAILED(res->Load(pDesc)))
-			{
-				MSG_BOX("CHARLES_ROOKWOOD Failed Static_Sword_Model_Resource");
-				return E_FAIL;
-			}
-		}
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(CURR_LEVEL, "Model_Resource_Mace",
-			CResStaticModel::Create("./Resources/SampleClient/Models/Static/SM_Tomb_Mace.bin"))) {
-
-			E::CResStaticModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(0.01f, 0.01f, 0.01f);
-
-			if (FAILED(res->Load(pDesc)))
-			{
-				MSG_BOX("CHARLES_ROOKWOOD Failed Static_Mace_Model_Resource");
-				return E_FAIL;
-			}
-		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, PROTO_GAMEOBJECT::Prototype_GameObject_Axe, CGurdianWeapon::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon, CEnderDragon::Create())))
 		{
-			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Axe");
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_Dragon");
 			return E_FAIL;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, PROTO_GAMEOBJECT::Prototype_GameObject_Sword, CGurdianWeapon::Create())))
-		{
-			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Sword");
-			return E_FAIL;
-		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype(CURR_LEVEL, PROTO_GAMEOBJECT::Prototype_GameObject_Mace, CGurdianWeapon::Create())))
-		{
-			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Mace");
-			return E_FAIL;
-		}
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, "Prototype_Component_Dragon_FSM", CEnderDragon_State::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, CEdgFireBall::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, CEdgBreath::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Pulse, CEdgPulse::Create()))) return E_FAIL;
+
 	}
 
 	return S_OK;

@@ -72,8 +72,8 @@ void CEdgBreath::Active(const _string& SkillName)
 	auto pDest = pSrc->Get_Target();
 	if (nullptr == pDest) return;
 
-	const _float4x4* pBoneMatrix = Get_BoneMatrix();
-	_matrix matBone = XMLoadFloat4x4(pBoneMatrix);
+	 _float4x4 BoneMatrix = Get_BoneMatrix(m_iBoneIndex);
+	_matrix matBone = XMLoadFloat4x4(&BoneMatrix); 
 	_vector vDestPos = XMLoadFloat3(&pDest->GetTransform().GetPosition());
 
 
@@ -98,8 +98,9 @@ void CEdgBreath::Cancle()
 
 void CEdgBreath::MoveBreath(_float fTimeDelta)
 {
-	const _float4x4* pBoneMatrix = Get_BoneMatrix();
-	_matrix matBone = XMLoadFloat4x4(pBoneMatrix);
+	 _float4x4 BoneMatrix = Get_BoneMatrix(m_iBoneIndex);
+	_matrix matBone = XMLoadFloat4x4(&BoneMatrix);
+	_vector vQuat = XMQuaternionRotationMatrix(matBone);
 
 	m_fBreathTick += fTimeDelta;
 
@@ -121,9 +122,12 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 
 	if (MoveSweep(matBone.r[3], vForward))
 	{
-		_float4x4 breathWorldData{};
-		XMStoreFloat4x4(&breathWorldData, breathWorld);
-		CGameInstance::Get().PlayEffect("DragonBreath", breathWorldData);
+		if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
+		GetTransform().SetPosition(matBone.r[3]);
+		GetTransform().SetQuaternion(vQuat);
+		GetTransform().Update();
+	
 	}
 	
 }
