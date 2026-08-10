@@ -4,17 +4,6 @@ Texture2D DepthTexture				: register(t0);
 Texture2D SceneColorTexture			: register(t1);
 Texture2D GodRayTexture				: register(t2);
 
-const static float2		NoiseResolution = { 256.f, 256.f };
-const static float		DepthThreshold	= { 25.f };
-const static float		AnalyticSkyDistance = 1000.f;
-
-const static float		FroxelDepthExponent = 1.5f;
-
-const static float2		Offsets[5] =
-{
-	float2(0.f, 0.f), float2(-1.f, 0.f), float2(1.f, 0.f), float2(0.f, -1.f), float2(0.f, 1.f)
-};
-
 cbuffer CB_FroxelConfig : register(b10)
 {
 	float3	FroxelGridSize;
@@ -51,14 +40,8 @@ cbuffer CB_VLFOG : register(b11)
 	
 	float	FogBaseHeight;
 	float	FogHeightFallOff;
-	float	FogPadding;
+	float	FogTime;
 };
-
-float ViewDepthToFroxelZ(float _Depth, float _Near, float _Far)
-{
-	float LinearDepth = saturate((_Depth - _Near) / max(_Far - _Near, 0.0001f));
-	return pow(LinearDepth, 1.f / FroxelDepthExponent);
-}
 
 float4 CalculateAnalyticFog(float ViewDepth, float3 WorldPos)
 {
@@ -80,7 +63,7 @@ float4 CalculateAnalyticFog(float ViewDepth, float3 WorldPos)
 float4 PSMain(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
 {
 	float4	SceneColor	= SceneColorTexture.Sample(PointClamp, TexCoord);
-	float	DepthTex = DepthTexture.Sample(PointClamp, TexCoord).r;
+	float	DepthTex	= DepthTexture.Sample(PointClamp, TexCoord).r;
 	
 	float4	RayMarchedFog = GodRayTexture.SampleLevel(LinearClamp, TexCoord, 0);
 	

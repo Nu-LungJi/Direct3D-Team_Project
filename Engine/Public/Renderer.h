@@ -144,12 +144,10 @@ private:
 
 	SPtr<CResCBuffer>			m_pBloomCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricFroxelCBuffer{};
-	SPtr<CResCBuffer>			m_pVolumetricTemporalCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricVFogCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricCSMCBuffer{};
 	SPtr<CResCBuffer>			m_pLensFlareCBuffer{};
 
-	SPtr<CResComputeShader>		m_pVolumetricComputeShader{};
 	SPtr<CResComputeShader>		m_pLensFlareComputeShader{};
 	SPtr<CResComputeShader>		m_pPostProcessComputeShader{};
 
@@ -185,7 +183,6 @@ private:
 	SPtr<CResVIBuffer> m_pFullscreenVIBuffer{};
 
 	ComPtr<ID3D11ShaderResourceView>	m_pLookUpTableTexture = { nullptr };
-	ComPtr<ID3D11UnorderedAccessView>	m_pUAVVolumetric = { nullptr };
 
 	ComPtr<ID3D11UnorderedAccessView>	m_pUAVLensFlare = { nullptr };
 
@@ -208,9 +205,7 @@ private:
 
 	HRESULT	Render_VolumetricEffect();
 	HRESULT Update_VolumetricConstantBuffer();
-	HRESULT Render_FroxelCell();
 	HRESULT Render_LightIntegration();
-	HRESULT Render_FroxelAccumulation();
 	HRESULT Render_RayMarching();
 	HRESULT Render_VolumetricComposite();
 
@@ -258,9 +253,8 @@ private:
 
 	ComPtr<ID3D11ShaderResourceView>	m_pBlueNoiseTexture = { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pVolumeTexture = { nullptr };
-	ComPtr<ID3D11UnorderedAccessView>	VolumeUAV = { nullptr };
 
-	_float								m_fChromaticRingAlpha{};
+
 private:
 	HRESULT RenderPriority();
 	HRESULT RenderNonBlend();
@@ -277,51 +271,45 @@ private:
 private:
 	_bool			ApplyFilter		= { true };		// 필터 적용 ON-OFF
 	_bool			ApplyVolumetric = { false };	// 볼류메트릭 효과 ON-OFF
-	_bool			ApplyShadow		= { false };		// 그림자 ON-OFF
+	_bool			ApplyShadow		= { false };	// 그림자 ON-OFF
 
+private:
 	RENDER_CTX		RenderContext = {};
-	XMMATRIX		ShadowLightVP{};
+	XMMATRIX		ShadowLightViewProj{};
 	SPtr<CResRasterizerState>	Rasterizer{};
 
+private:	// ChromaticRing
 	_float2			m_fScreenPosition{};
 	_float			m_fExpandDuration{};
 	_float			m_fCurrentLifeTime{};
-	_float			m_fScale{};
+	_float			m_fRingScale{};
 	_float			m_fDeltaTime{};
 	_float			m_fTimeAccumulation{};
-	
-// Hi-Z buffer ownership
-private:
-	UPtr<CHizBuffer> m_pCurrentHizBuffer = {}; // 이번 프레임에서 새로 만든 자료
-	UPtr<CHizBuffer> m_pPrevHizBuffer = {}; // 컬링에 사용할 자료
-	_bool m_bHasPrevHizBuffer = false;
+	_float			m_fChromaticRingAlpha{};
 
+private:	// Volumetric Fog
+	SPtr<CResComputeShader>		m_pLightIntegrationCS{};
+	SPtr<CResComputeShader>		m_pRayMarchingCS{};
+	SPtr<CResPixelShader>		m_pVolumetricCompositePS{};
+
+	ComPtr<ID3D11ShaderResourceView>	CSMShadowMapSRV{};
+
+	TEXTURE3D		m_pVoxelLighting{};
+
+	CB_VLFOG		m_fFogInfo{};
+
+private:	// Outline
+	std::optional<CHandle>	m_pOutlineTargetHandle{};
+
+// Hi-Z buffer ownership
 private:
 	HRESULT InitializeHizBuffer();
 	HRESULT BuildCurrentHizBuffer(); // 다 그려진 후 depth를 Hiz버퍼에 copy & mipChain 구성
 
-	_float			TimeAccumulation{};
-
-	CB_VLFOG		m_fFogInfo{};
-
-	SPtr<CResComputeShader>		m_pFroxeInjectionCS{};
-	SPtr<CResComputeShader>		m_pLightIntegrationCS{};
-	SPtr<CResComputeShader>		m_pFroxelAccumulationCS{};
-	SPtr<CResComputeShader>		m_pRayMarchingCS{};
-	SPtr<CResPixelShader>		m_pVolumetricCompositePS{};
-
-	TEXTURE3D		m_pVoxelDensityColor{};
-	TEXTURE3D		m_pVoxelLighting{};
-	TEXTURE3D		m_pVoxelAccumulated{};
-
-	ComPtr<ID3D11ShaderResourceView>	CSMShadowMapSRV{};
-
-	_bool m_bHistoryValid{ false };
-	uint32_t m_iVolumetricFrameIndex{};
-	XMFLOAT4X4 m_matPrevViewProj{};
-
 private:
-	std::optional<CHandle>	m_pOutlineTargetHandle{};
+	UPtr<CHizBuffer> m_pCurrentHizBuffer = {}; // 이번 프레임에서 새로 만든 자료
+	UPtr<CHizBuffer> m_pPrevHizBuffer = {}; // 컬링에 사용할 자료
+	_bool m_bHasPrevHizBuffer = false;
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
