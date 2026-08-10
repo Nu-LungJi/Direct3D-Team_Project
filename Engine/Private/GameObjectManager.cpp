@@ -22,6 +22,11 @@ void CGameObjectManager::UpdateGUI()
 		return;
 	}
 
+	ImGui::Checkbox(
+		"Tracy Detailed Object Profiling",
+		&m_bTracyDetailedObjectProfiling);
+	ImGui::Separator();
+
 	std::vector<uint32_t> vecFreeSlotReferences(m_Objects.size(), 0);
 	size_t iInvalidFreeSlotCount = 0;
 	for (const size_t iFreeSlotIndex : m_FreeSlots)
@@ -599,8 +604,12 @@ std::optional<CHandle> CGameObjectManager::GetFreeHandle()
 
 std::optional<CHandle> CGameObjectManager::AddGameObjectToLayer(const StringID& siProtoGroupTag, const StringID& siPrototypeTag, std::string_view sLayerName, void* pArg)
 {
-	const _bool bTracyConnected = TracyIsConnected;
-	ZoneNamedN(tObjectZone, "CGameObjectManager_AddGameObjectToLayer", bTracyConnected);
+	const _bool bTracyConnected =
+		m_bTracyDetailedObjectProfiling && TracyIsConnected;
+	ZoneNamedN(
+		tObjectZone,
+		"CGameObjectManager_AddGameObjectToLayer",
+		bTracyConnected);
 
 	auto pDesc = static_cast<CGameObject::GAMEOBJECT_DESC*>(pArg);
 	auto allocHandle = GetFreeHandle();
@@ -738,15 +747,16 @@ void CGameObjectManager::DelLayer(std::string_view sLayerName)
 void CGameObjectManager::FixedUpdate(_float fTimeDelta)
 {
 	ZoneScopedN("CGameObjectManager_FixedUpdate");
-	const _bool bTracyConnected = TracyIsConnected;
+	const _bool bTraceObjects =
+		m_bTracyDetailedObjectProfiling && TracyIsConnected;
 
 	for (auto& pObj : m_Tree)
 	{
 		if (!pObj->GetPendingDestroy() &&
 			pObj->IsManagedUpdateEnabled())
 		{
-			ZoneNamedN(tObjectZone, "GameObject_FixedUpdate", bTracyConnected);
-			if (bTracyConnected)
+			ZoneNamedN(tObjectZone, "GameObject_FixedUpdate", bTraceObjects);
+			if (bTraceObjects)
 			{
 				const std::string sDebugLabel = GetGameObjectDebugLabel(pObj);
 				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
@@ -760,15 +770,16 @@ void CGameObjectManager::FixedUpdate(_float fTimeDelta)
 void CGameObjectManager::PriorityUpdate(_float fTimeDelta)
 {
 	ZoneScopedN("CGameObjectManager_PriorityUpdate");
-	const _bool bTracyConnected = TracyIsConnected;
+	const _bool bTraceObjects =
+		m_bTracyDetailedObjectProfiling && TracyIsConnected;
 
 	for (auto& pObj : m_Tree)
 	{
 		if (!pObj->GetPendingDestroy() &&
 			pObj->IsManagedUpdateEnabled())
 		{
-			ZoneNamedN(tObjectZone, "GameObject_PriorityUpdate", bTracyConnected);
-			if (bTracyConnected)
+			ZoneNamedN(tObjectZone, "GameObject_PriorityUpdate", bTraceObjects);
+			if (bTraceObjects)
 			{
 				const std::string sDebugLabel = GetGameObjectDebugLabel(pObj);
 				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
@@ -782,15 +793,16 @@ void CGameObjectManager::PriorityUpdate(_float fTimeDelta)
 void CGameObjectManager::Update(_float fTimeDelta)
 {
 	ZoneScopedN("CGameObjectManager_Update");
-	const _bool bTracyConnected = TracyIsConnected;
+	const _bool bTraceObjects =
+		m_bTracyDetailedObjectProfiling && TracyIsConnected;
 
 	for (auto& pObj : m_Tree)
 	{
 		if (!pObj->GetPendingDestroy() &&
 			pObj->IsManagedUpdateEnabled())
 		{
-			ZoneNamedN(tObjectZone, "GameObject_Update", bTracyConnected);
-			if (bTracyConnected)
+			ZoneNamedN(tObjectZone, "GameObject_Update", bTraceObjects);
+			if (bTraceObjects)
 			{
 				const std::string sDebugLabel = GetGameObjectDebugLabel(pObj);
 				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
@@ -804,15 +816,16 @@ void CGameObjectManager::Update(_float fTimeDelta)
 void CGameObjectManager::LateUpdate(_float fTimeDelta)
 {
 	ZoneScopedN("CGameObjectManager_LateUpdate");
-	const _bool bTracyConnected = TracyIsConnected;
+	const _bool bTraceObjects =
+		m_bTracyDetailedObjectProfiling && TracyIsConnected;
 
 	for (auto& pObj : m_Tree)
 	{
 		if (!pObj->GetPendingDestroy() &&
 			pObj->IsManagedUpdateEnabled())
 		{
-			ZoneNamedN(tObjectZone, "GameObject_LateUpdate", bTracyConnected);
-			if (bTracyConnected)
+			ZoneNamedN(tObjectZone, "GameObject_LateUpdate", bTraceObjects);
+			if (bTraceObjects)
 			{
 				const std::string sDebugLabel = GetGameObjectDebugLabel(pObj);
 				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
@@ -947,7 +960,8 @@ size_t CGameObjectManager::RequestResetByLayers(
 _bool CGameObjectManager::DestroyAllPendingObjects()
 {
 	ZoneScopedN("CGameObjectManager_DestroyAllPendingObjectsInternal");
-	const _bool bTracyConnected = TracyIsConnected;
+	const _bool bTracyConnected =
+		m_bTracyDetailedObjectProfiling && TracyIsConnected;
 	_bool bAnyObjectDestroyed = false;
 
 	for (auto& slot : m_Objects)
@@ -977,7 +991,8 @@ _bool CGameObjectManager::DestroyAllPendingObjects()
 
 _bool CGameObjectManager::DestroyPendingObjectsInTree()
 {
-	const _bool bTracyConnected = TracyIsConnected;
+	const _bool bTracyConnected =
+		m_bTracyDetailedObjectProfiling && TracyIsConnected;
 	_bool bAnyObjectDestroyed = false;
 
 	for (auto iter = m_Tree.rbegin(); iter != m_Tree.rend(); ++iter)
