@@ -45,6 +45,9 @@ public:
 public:
 	CGameObject* GetGameObjectByHandle(const CHandle& handle) { return const_cast<CGameObject*>(_GetGameObjectByHandle(handle)); }
 	const CGameObject* GetGameObjectByHandle(const CHandle& handle) const { return _GetGameObjectByHandle(handle); }
+	_bool SetGameObjectParent(
+		const CHandle& hChild,
+		const std::optional<CHandle>& hParent = std::nullopt);
 	template<typename T> T* GetGameObjectByHandleT(const CHandle& handle);
 	template<typename T> const T* GetGameObjectByHandleT(const CHandle& handle) const;
 	std::optional<CHandle> GetHandleByGameObject(CGameObject* pObj) const;
