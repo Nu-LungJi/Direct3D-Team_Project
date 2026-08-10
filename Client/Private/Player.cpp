@@ -475,7 +475,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	m_hAutoTarget = CHandle{};
-
 	return S_OK;
 }
 
@@ -1573,7 +1572,12 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 	const auto& ps = m_pResPixelShader;
 	pContext->IASetInputLayout(vs->GetInputLayout().Get());
 	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+	if (ctx.pass == RENDERPASS::DEFAULT) {
+		pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+	}
+	else if (ctx.pass == RENDERPASS::DEPTH) {
+		pContext->PSSetShader(nullptr, nullptr, 0);
+	}
 
 	const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
 	if (iInstanceCount == 0 || iInstanceCount > 512 || Batch.CombinedBoneMatrices.size() != iInstanceCount)
