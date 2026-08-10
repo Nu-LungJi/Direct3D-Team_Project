@@ -355,6 +355,8 @@ public:
 #pragma region ANIMATIONEDTIOR_MANAGER
 	_string GetAnimName(uint32_t iIndex, CHandle Handle);
 	int32_t GetAnimIndex(CHandle Handle);
+	void SetAnimationEditorTarget(const CHandle& Handle);
+	_bool IsAnimationEditorTarget(const CHandle& Handle) const;
 #pragma endregion
 #pragma region PARTICLE_MANAGER
 public:

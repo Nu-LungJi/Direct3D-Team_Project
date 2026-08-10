@@ -4,6 +4,8 @@
 #include "ComModelInstance.h"
 #include "ComAnimator.h"
 #include "ResModel.h"
+#include "ResModelBone.h"
+#include "DbgLineRender.h"
 #include "JsonSerializer.h"
 #include "JsonDeSerializer.h"
 
@@ -566,6 +568,45 @@ void CAnimEdit_Manager::IMGUI_Select_Animation()
 
     ImGui::Begin("Animation List");
 
+	ImGui::SetNextItemWidth(-70.f);
+	ImGui::InputTextWithHint(
+		"##AnimationSearch",
+		"Search animation name...",
+		m_szAnimationSearch,
+		IM_ARRAYSIZE(m_szAnimationSearch));
+	ImGui::SameLine();
+	if (ImGui::Button("Clear"))
+		m_szAnimationSearch[0] = '\0';
+
+	std::string searchText = m_szAnimationSearch;
+	std::ranges::transform(searchText, searchText.begin(),
+		[](_char character)
+		{
+			return static_cast<_char>(
+				std::tolower(static_cast<unsigned char>(character)));
+		});
+
+	uint32_t iMatchCount{};
+	for (const auto& animation : animations)
+	{
+		if (!animation)
+			continue;
+
+		std::string animationName = animation->GetAnimName();
+		std::ranges::transform(animationName, animationName.begin(),
+			[](_char character)
+			{
+				return static_cast<_char>(
+					std::tolower(static_cast<unsigned char>(character)));
+			});
+		if (searchText.empty() || animationName.find(searchText) != std::string::npos)
+			++iMatchCount;
+	}
+	ImGui::TextDisabled(
+		"Showing %u of %u animations",
+		iMatchCount,
+		static_cast<uint32_t>(animations.size()));
+
     if (ImGui::TreeNode("Animation"))
     {
         for (uint32_t i = 0; i < animations.size(); ++i)
@@ -574,6 +615,17 @@ void CAnimEdit_Manager::IMGUI_Select_Animation()
 
             if (!pAnim)
                 continue;
+
+			std::string animationNameLower = pAnim->GetAnimName();
+			std::ranges::transform(animationNameLower, animationNameLower.begin(),
+				[](_char character)
+				{
+					return static_cast<_char>(
+						std::tolower(static_cast<unsigned char>(character)));
+				});
+			if (!searchText.empty() &&
+				animationNameLower.find(searchText) == std::string::npos)
+				continue;
 
             bool bSelected = (pComAnimator->GetPlayAnimIndex() == i);
 
@@ -843,17 +895,149 @@ float CAnimEdit_Manager::GetSpeedAtTime(float fTrackPos)
 
 void CAnimEdit_Manager::UpdateGUI()
 {
-    if (&m_hTestModel == nullptr)
-        return;
-
-	IMGUI_Select_AnimType();
-    
 	auto pSampleObj = CGameInstance::Get().GetGameObjectByHandle(m_hTestModel);
 	if (pSampleObj == nullptr)
 		return;
 
 	auto pComAnimator =
 		pSampleObj->GetComponent<CComAnimator>("ComCModelAnimator");
+	if (pComAnimator == nullptr)
+		return;
+
+	ImGui::Begin("Animation Editor Target");
+	ImGui::TextUnformatted("Editor control is active.");
+	ImGui::TextDisabled("Gameplay animation updates are paused for this target.");
+	if (ImGui::Button("Release Target"))
+	{
+		// Timeline scrubbing pauses the animator. Returning control to gameplay
+		// must not leave the target frozen.
+		pComAnimator->SetPlay(true);
+		ClearTarget();
+		ImGui::End();
+		return;
+	}
+	ImGui::End();
+
+	auto pModelInstance =
+		pSampleObj->GetComponent<CComModelInstance>("ComCModelIntance");
+	if (pModelInstance && pModelInstance->GetModel())
+	{
+		const auto& bones = pModelInstance->GetModel()->GetBones();
+		const auto& combinedMatrices =
+			pModelInstance->Get_CombinedBoneMatrices();
+
+		ImGui::Begin("Animation Bone Viewer");
+		ImGui::Checkbox("Draw Skeleton", &m_bDrawSkeleton);
+		ImGui::DragFloat(
+			"Max Link Length", &m_fMaxBoneLinkLength,
+			0.01f, 0.05f, 5.f, "%.2f m");
+		ImGui::InputTextWithHint(
+			"##BoneSearch", "Search bone name...",
+			m_szBoneSearch, IM_ARRAYSIZE(m_szBoneSearch));
+
+		std::string boneSearch = m_szBoneSearch;
+		std::ranges::transform(boneSearch, boneSearch.begin(),
+			[](_char character)
+			{
+				return static_cast<_char>(
+					std::tolower(static_cast<unsigned char>(character)));
+			});
+
+		ImGui::BeginChild("BoneList", ImVec2(0.f, 240.f), true);
+		for (int32_t i = 0; i < static_cast<int32_t>(bones.size()); ++i)
+		{
+			if (!bones[i])
+				continue;
+			const std::string boneName = bones[i]->GetBoneName();
+			std::string lowerName = boneName;
+			std::ranges::transform(lowerName, lowerName.begin(),
+				[](_char character)
+				{
+					return static_cast<_char>(
+						std::tolower(static_cast<unsigned char>(character)));
+				});
+			if (!boneSearch.empty() &&
+				lowerName.find(boneSearch) == std::string::npos)
+				continue;
+
+			const std::string label =
+				std::to_string(i) + " : " + boneName;
+			if (ImGui::Selectable(
+				label.c_str(), m_iSelectedBoneIndex == i))
+				m_iSelectedBoneIndex = i;
+		}
+		ImGui::EndChild();
+
+		if (m_iSelectedBoneIndex >= 0 &&
+			m_iSelectedBoneIndex < static_cast<int32_t>(bones.size()) &&
+			bones[m_iSelectedBoneIndex])
+		{
+			const int32_t parentIndex =
+				bones[m_iSelectedBoneIndex]->GetParendBoneIndex();
+			ImGui::Text("Selected: %s",
+				bones[m_iSelectedBoneIndex]->GetBoneName().c_str());
+			ImGui::Text("Index: %d  Parent: %d",
+				m_iSelectedBoneIndex, parentIndex);
+		}
+		ImGui::End();
+
+		if (m_bDrawSkeleton &&
+			combinedMatrices.size() >= bones.size())
+		{
+			auto* debugDraw = CGameInstance::Get().GetDbgLineRender();
+			if (debugDraw)
+			{
+				const auto previousColor = debugDraw->GetColor();
+				const auto previousDepth = debugDraw->GetDepthMode();
+				debugDraw->SetDepthTest(false);
+				// Match the exact transform used by the model renderer. The plain
+				// world matrix omits inherited/model scale for attached objects.
+				const _matrix world =
+					pSampleObj->GetTransform().GetLoadedCombinedWorldMatrix();
+				for (int32_t i = 0;
+					i < static_cast<int32_t>(bones.size()); ++i)
+				{
+					if (!bones[i])
+						continue;
+					const _matrix boneWorld =
+						XMLoadFloat4x4(&combinedMatrices[i]) * world;
+					_float3 bonePosition{};
+					XMStoreFloat3(&bonePosition, boneWorld.r[3]);
+					const int32_t parent = bones[i]->GetParendBoneIndex();
+					if (parent >= 0 &&
+						parent < static_cast<int32_t>(combinedMatrices.size()))
+					{
+						const _matrix parentWorld =
+							XMLoadFloat4x4(&combinedMatrices[parent]) * world;
+						_float3 parentPosition{};
+						XMStoreFloat3(&parentPosition, parentWorld.r[3]);
+						const _float linkLength = XMVectorGetX(
+							XMVector3Length(
+								XMLoadFloat3(&bonePosition) -
+								XMLoadFloat3(&parentPosition)));
+						if (linkLength <= m_fMaxBoneLinkLength)
+						{
+							debugDraw->AddLine(
+								parentPosition, bonePosition,
+								{ 0.2f, 0.7f, 1.f, 1.f });
+						}
+					}
+					if (m_iSelectedBoneIndex == i)
+					{
+						debugDraw->SetColor({ 1.f, 0.2f, 0.1f, 1.f });
+						const _matrix markerWorld = XMMatrixTranslation(
+							bonePosition.x, bonePosition.y, bonePosition.z);
+						debugDraw->AddSphere(0.025f, markerWorld);
+						debugDraw->AddAxis(0.08f, markerWorld);
+					}
+				}
+				debugDraw->SetColor(previousColor);
+				debugDraw->SetDepthMode(previousDepth);
+			}
+		}
+	}
+
+	IMGUI_Select_AnimType();
 
 	if (pComAnimator->GetAnimationTYPE() == CComAnimator::ANIM) {
 

@@ -1154,6 +1154,16 @@ VOID	CGameInstance::Apply_OutlineEffect(std::optional<CHandle> targetHandle) { m
 HRESULT CGameInstance::SetupTestModel() {
 	return m_pAnimEdit_Manager->SetupTestModel();
 }
+void CGameInstance::SetAnimationEditorTarget(const CHandle& Handle)
+{
+	if (m_pAnimEdit_Manager)
+		m_pAnimEdit_Manager->SetTestModelHandle(Handle);
+}
+_bool CGameInstance::IsAnimationEditorTarget(const CHandle& Handle) const
+{
+	return m_pAnimEdit_Manager &&
+		m_pAnimEdit_Manager->IsEditingTarget(Handle);
+}
 _string CGameInstance::GetAnimName(uint32_t iIndex, CHandle Handle)
 {
 	return m_pAnimEdit_Manager->GetAnimName(iIndex, Handle);
