@@ -19,6 +19,7 @@
 #include "ComPxRigidBody.h"
 #include "OilBarrel.h"
 #include "TestPathPlaybackObject.h"
+#include "LuaTestObject.h"
 #include "TombBossBullet.h"
 #include "RagdollTest.h"
 #include "NvClothCape.h"
@@ -86,6 +87,19 @@ HRESULT CLevelTerrain::Initialize()
 
 	if (FAILED(InitializePathPlaybackTests()))
 		return E_FAIL;
+
+	{
+		CGameObject::GAMEOBJECT_DESC Desc{};
+		Desc.sObjectTag = "LuaTestObject";
+		if (!CGameInstance::Get().AddGameObjectToLayer(
+			LEVEL::TERRAIN,
+			PROTO_GAMEOBJECT::Prototype_GameObject_LuaTest,
+			"00_LuaTest",
+			&Desc))
+		{
+			return E_FAIL;
+		}
+	}
 
 	if (FAILED(InitializeOilBarrelPool()))
 		return E_FAIL;

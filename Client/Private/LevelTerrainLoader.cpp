@@ -6,6 +6,7 @@
 #include "Client_Resources.h"
 #include "OilBarrel.h"
 #include "TestPathPlaybackObject.h"
+#include "LuaTestObject.h"
 #include "RagdollTest.h"
 #include "TombBossBullet.h"
 #include "NvClothCape.h"
@@ -92,6 +93,15 @@ std::future<bool> CLevelTerrainLoader::Load()
 				CTestPathPlaybackObject::Create())))
 			{
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_TestPathPlayback");
+				return false;
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_LuaTest,
+				CLuaTestObject::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_LuaTest");
 				return false;
 			}
 
