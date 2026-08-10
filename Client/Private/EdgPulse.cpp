@@ -95,8 +95,8 @@ void CEdgPulse::Pulse(_float fTimeDelta)
 	m_fRadius += m_fSpeed * fTimeDelta;
 	if (PulseSweep(matBone.r[3]))
 	{
-		if (m_iBoneIndex != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().SetEffectWorldMatrix(m_iBoneIndex, *GetTransform().GetWorldMatrix());
+		if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
 		GetTransform().SetPosition(matBone.r[3]);
 		GetTransform().Update();
 	}

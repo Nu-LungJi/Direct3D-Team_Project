@@ -26,9 +26,18 @@ private:
 	_bool		MovePhase(CEnderDragon* pDragon, _float fTimeDelta);
 
 	_bool		MovePhase3(CEnderDragon* pDragon, _float fTimeDelta);
+	void		Befor_Action2(CEnderDragon* pDragon, _float fTimeDelta);
+	void		After_Action2(CEnderDragon* pDragon, _float fTimeDelta);
+
+	void		Phase_Before_Action(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Phase_Change_Action(CEnderDragon* pDragon, _float fTimeDelta);
-	void		Effect(CEnderDragon* pDragon, _float fTimeDelta);
+	void		Phase_After_Action(CEnderDragon* pDragon, _float fTimeDelta);
 	
+	
+	void		Effect_All(CEnderDragon* pDragon, _float fTimeDelta);
+	void		Effect_Single(CEnderDragon* pDragon, const _string& strName);
+
+	void		End(CEnderDragon_State* pStateMachine, CBTBlackBoard* pBlackBoard);
 private:
 	DRAGON_PHASE			m_ePhase{};
 	DRAGON_PHASE			m_eNextPhase{};
@@ -37,6 +46,8 @@ private:
 	_bool					m_bNext{};
 	_float					m_fTick{}, m_fSpawnTick{}, m_fAngle{};
 	_float3					m_vNextDir{}, m_vLastDir{};
+	EDG_SPAWN_NUMBER		m_eNum{EDG_SPAWN_NUMBER::FIRST};
+
 	std::list<_float3>	m_PhasePos[ETOUI(DRAGON_PHASE::END)];
 
 	std::list<EDG_ANIM_FSM> m_Anims[ETOUI(DRAGON_PHASE::END)];

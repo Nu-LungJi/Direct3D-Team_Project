@@ -93,6 +93,7 @@ void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	{
 	case EDG_SPAWN_NUMBER::FIRST:
 		SpawnSkill(pDragon,"RanrokMoveSmoke");
+		m_eSpawn = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	case EDG_SPAWN_NUMBER::SECOND:
 		MoveSpawn(pDragon, fTimeDelta);
@@ -116,7 +117,6 @@ void CEdg_Spawn::SpawnSkill(CEnderDragon* pDragon, const _string& strName)
 				return;
 			m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
 		});
-	m_eSpawn = EDG_SPAWN_NUMBER::SECOND;
 }
 
 _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
@@ -160,7 +160,7 @@ _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
 		{
 			CGameInstance::Get().StopEffect(m_iEffectID);
 			SpawnSkill(pDragon, "RanrokStaySmoke");
-
+			
 			m_eSpawn = EDG_SPAWN_NUMBER::THIRD;
 			return true;
 		}

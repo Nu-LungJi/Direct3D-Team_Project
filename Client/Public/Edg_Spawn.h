@@ -3,7 +3,6 @@
 #include "StateMachine.h"
 
 NS_BEGIN(Client)
-enum class EDG_SPAWN_NUMBER { FIRST, SECOND, THIRD,FOUR };
 
 class CEdg_Spawn : public CState
 {

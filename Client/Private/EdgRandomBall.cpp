@@ -1,25 +1,25 @@
 #include "pch.h"
-#include "EdgFireBall.h"
+#include "EdgRandomBall.h"
 #include "PhysXManager.h"
 NS_USING(Client)
-CEdgFireBall::CEdgFireBall()
+CEdgRandomBall::CEdgRandomBall()
 {
 }
 
-CEdgFireBall::CEdgFireBall(const CEdgFireBall& rhs) : CDragonSkill(rhs)
+CEdgRandomBall::CEdgRandomBall(const CEdgRandomBall& rhs) : CDragonSkill(rhs)
 {
 }
 
-CEdgFireBall::~CEdgFireBall()
+CEdgRandomBall::~CEdgRandomBall()
 {
 }
 
-HRESULT CEdgFireBall::InitializePrototype(void* pArg)
+HRESULT CEdgRandomBall::InitializePrototype(void* pArg)
 {
 	return S_OK;
 }
 
-HRESULT CEdgFireBall::Initialize(void* pArg)
+HRESULT CEdgRandomBall::Initialize(void* pArg)
 {
 	if (FAILED(__super::Initialize(pArg)))
 	{
@@ -33,7 +33,7 @@ HRESULT CEdgFireBall::Initialize(void* pArg)
 	return S_OK;
 }
 
-void CEdgFireBall::PriorityUpdate(E::_float fTimeDelta)
+void CEdgRandomBall::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
 
@@ -43,7 +43,7 @@ void CEdgFireBall::PriorityUpdate(E::_float fTimeDelta)
 		SetPendingDestroy();
 }
 
-void CEdgFireBall::FixedUpdate(E::_float fTimeDelta)
+void CEdgRandomBall::FixedUpdate(E::_float fTimeDelta)
 {
 	if (!m_bActive) return;
 
@@ -51,21 +51,21 @@ void CEdgFireBall::FixedUpdate(E::_float fTimeDelta)
 	MoveBall(fTimeDelta);
 }
 
-void CEdgFireBall::Update(E::_float fTimeDelta)
+void CEdgRandomBall::Update(E::_float fTimeDelta)
 {
 	if (!m_bActive) return;
 
 	__super::Update(fTimeDelta);
 }
 
-void CEdgFireBall::LateUpdate(E::_float fTimeDelta)
+void CEdgRandomBall::LateUpdate(E::_float fTimeDelta)
 {
 	if (!m_bActive) return;
 
 	__super::LateUpdate(fTimeDelta);
 }
 
-void CEdgFireBall::Active(const _string& SkillName)
+void CEdgRandomBall::Active(const _string& SkillName)
 {
 	_float4x4 matB = Get_BoneMatrix(m_iBoneIndex);
 	_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
@@ -73,7 +73,7 @@ void CEdgFireBall::Active(const _string& SkillName)
 	_matrix matOffset = XMLoadFloat4x4(&matOffB);
 
 	_vector vQuat = XMQuaternionRotationMatrix(matBone);
-	
+
 	GetTransform().SetPosition(matBone.r[3]);
 	GetTransform().SetQuaternion(vQuat);
 	GetTransform().Update();
@@ -85,53 +85,40 @@ void CEdgFireBall::Active(const _string& SkillName)
 	Spawn_Skill_Effect(SkillName);
 }
 
-void CEdgFireBall::Cancle()
+void CEdgRandomBall::Cancle()
 {
 	ResetValue();
 }
 
-void CEdgFireBall::MoveBall(_float fTimeDelta)
+void CEdgRandomBall::Ball(_float fTimeDelta)
 {
-	_vector vPos = GetTransform().GetLoadedPostion();
+	_vector vPos = XMLoadFloat3(&GetTransform().GetPosition());
 
-	_vector vDir = XMLoadFloat3(&m_vTargetDir);
-
-	_vector vNextPos = vPos + vDir * m_fSpeed * fTimeDelta;
-
-	if (MoveSweep(vNextPos))
+	if (Sweep(vPos))
 	{
 		if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
 			CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
-		GetTransform().SetPosition(vNextPos);
+		GetTransform().SetPosition(vPos);
 		GetTransform().Update();
 	}
 
 }
 
-_bool CEdgFireBall::MoveSweep(_vector vNextPos)
+_bool CEdgRandomBall::Sweep(_vector vNextPos)
 {
 	_float3 vPos = GetTransform().GetPosition();
-
-	_vector vDisPlacement = vNextPos - XMLoadFloat3(&vPos);
-
-	_float fDist = XMVectorGetX(XMVector3Length(vDisPlacement));
-
-	_float3 vDir = {};
-	XMStoreFloat3(&vDir, XMVector3Normalize(vDisPlacement));
 
 	PX_SWEEP_DESC SweepDesc{};
 	SweepDesc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
 	SweepDesc.tGeometry.fRadius = m_fRadius;
 	SweepDesc.tPose.vPosition = vPos;
-	SweepDesc.vDirection = vDir;
 	SweepDesc.tFilter = m_pxQueryFilter;
-	SweepDesc.fMaxDistance = fDist;
 
 	////////////////////////////////////
 	DebugLine(SweepDesc.tPose.vPosition);
 	/////////////////////////////////////
 
-	PX_SWEEP_RESULT SweepResult{} ;
+	PX_SWEEP_RESULT SweepResult{};
 	auto pPhysX = CGameInstance::Get().GetPhysXManager();
 	if (nullptr == pPhysX) return false;
 
@@ -144,23 +131,23 @@ _bool CEdgFireBall::MoveSweep(_vector vNextPos)
 	return true;
 }
 
-E::UPtr<CEdgFireBall> CEdgFireBall::Create()
+E::UPtr<CEdgRandomBall> CEdgRandomBall::Create()
 {
-	auto pInstance = E::ToUPtr(new CEdgFireBall{});
+	auto pInstance = E::ToUPtr(new CEdgRandomBall{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CEdgFireBall");
+		MSG_BOX("Failed to Created : CEdgRandomBall");
 		return nullptr;
 	}
 	return pInstance;
 }
 
-E::UPtr<E::CPrototype> CEdgFireBall::Clone(void* pArg)
+E::UPtr<E::CPrototype> CEdgRandomBall::Clone(void* pArg)
 {
-	auto pInstance = E::ToUPtr(new CEdgFireBall{ *this });
+	auto pInstance = E::ToUPtr(new CEdgRandomBall{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CEdgFireBall");
+		MSG_BOX("Failed to Cloned : CEdgRandomBall");
 		return nullptr;
 	}
 

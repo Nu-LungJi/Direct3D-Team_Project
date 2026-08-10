@@ -27,6 +27,7 @@
 #include "EdgFireBall.h"
 #include "EdgBreath.h"
 #include "EdgPulse.h"
+#include "EdgRandomBall.h"
 // UI
 #include "UIController.h"
 #include "EffectUI.h"
@@ -511,6 +512,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, CEdgFireBall::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, CEdgBreath::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Pulse, CEdgPulse::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_RandomBall, CEdgRandomBall::Create()))) return E_FAIL;
 
 	}
 
