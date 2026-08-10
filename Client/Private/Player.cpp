@@ -475,7 +475,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	m_hAutoTarget = CHandle{};
-	CGameInstance::Get().Apply_OutlineEffect(GetHandle());
 	return S_OK;
 }
 
