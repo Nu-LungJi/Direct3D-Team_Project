@@ -311,13 +311,13 @@ HRESULT CLevelLastBossRanrokLoader::MonsterLoad_InWorker()
 
 			if (FAILED(res->Load(pDesc)))
 			{
-				MSG_BOX("TERRAIN Failed Model_Resource_Dragon");
+				MSG_BOX("LAST_BOSS_RANROK Failed Model_Resource_Dragon");
 				return E_FAIL;
 			}
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon, CEnderDragon::Create())))
 		{
-			MSG_BOX("TERRAIN Failed Prototype_GameObject_Dragon");
+			MSG_BOX("LAST_BOSS_RANROK Failed Prototype_GameObject_Dragon");
 			return E_FAIL;
 		}
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, "Prototype_Component_Dragon_FSM", CEnderDragon_State::Create()))) return E_FAIL;
