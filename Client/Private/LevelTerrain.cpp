@@ -753,67 +753,67 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 			return E_FAIL;
 		}
 	}
-	//{
-	//	CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
-	//	TmbGurdianDesc.sObjectTag = "TmbGurdian";
-	//	TmbGurdianDesc.TargetHandle = hPlayer.value();
-	//	TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
-	//	XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
-	//	TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
-	//
-	//	TmbGurdianDesc.resBeHaviorMajor = "BTJSON";
-	//	TmbGurdianDesc.resBeHaviorMinor = "TOMB_BT_GURDIAN3";
-	//	TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
-	//	TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
-	//	TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
-	//
-	//	XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
-	//	auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
-	//
-	//	if (!BossTmb)
-	//	{
-	//		MSG_BOX("Create TmbGurdian Failed in Terrain");
-	//		return E_FAIL;
-	//	}
-	//}
+	{
+		CTmbGurdian::TMBGURDIAN_DESC TmbGurdianDesc{};
+		TmbGurdianDesc.sObjectTag = "TmbGurdian";
+		TmbGurdianDesc.TargetHandle = hPlayer.value();
+		TmbGurdianDesc.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
+		XMStoreFloat3(&TmbGurdianDesc.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
+		TmbGurdianDesc.ReSourceTag = "Model_Resource_TMBGurdian";
+	
+		TmbGurdianDesc.resBeHaviorMajor = "BTJSON";
+		TmbGurdianDesc.resBeHaviorMinor = "TOMB_BT_GURDIAN3";
+		TmbGurdianDesc.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Mace);
+		TmbGurdianDesc.WeaponResourceName = "Model_Resource_Mace";
+		TmbGurdianDesc.MonType = MONSTER_TYPE::NORMAL;
+	
+		XMStoreFloat3(&TmbGurdianDesc.vScale, XMVectorSet(2.f, 2.f, 2.f, 1));
+		auto BossTmb = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, "02_TmbGurdian", &TmbGurdianDesc);
+	
+		if (!BossTmb)
+		{
+			MSG_BOX("Create TmbGurdian Failed in Terrain");
+			return E_FAIL;
+		}
+	}
 
-	//{
-	//	CEnderDragon::DRAGON_DESC Dragon{};
-	//	Dragon.sObjectTag = "Dragon";
-	//	Dragon.TargetHandle = hPlayer.value();
-	//	Dragon.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
-	//	XMStoreFloat3(&Dragon.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
-	//	Dragon.ReSourceTag = "Model_Resource_Dragon";
-	//	Dragon.resBeHaviorMajor = "BTJSON";
-	//	Dragon.resBeHaviorMinor = "ENDERDRAGON";
-	//	Dragon.MonType = MONSTER_TYPE::BOSS;
-	//
-	//	auto pDragon = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon, "02_Dragon", &Dragon);
-	//
-	//	if (!pDragon)
-	//	{
-	//		MSG_BOX("Create Dragon Failed in Terrain");
-	//		return E_FAIL;
-	//	}
-	//
-	//}
+	{
+		CEnderDragon::DRAGON_DESC Dragon{};
+		Dragon.sObjectTag = "Dragon";
+		Dragon.TargetHandle = hPlayer.value();
+		Dragon.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
+		XMStoreFloat3(&Dragon.vPos, XMVectorSet(44.f, 15.f, 65.f, 1.f));
+		Dragon.ReSourceTag = "Model_Resource_Dragon";
+		Dragon.resBeHaviorMajor = "BTJSON";
+		Dragon.resBeHaviorMinor = "ENDERDRAGON";
+		Dragon.MonType = MONSTER_TYPE::BOSS;
+	
+		auto pDragon = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon, "02_Dragon", &Dragon);
+	
+		if (!pDragon)
+		{
+			MSG_BOX("Create Dragon Failed in Terrain");
+			return E_FAIL;
+		}
+	
+	}
 	
 	
-	//{
-	//	CLightPlacementObject::DESC desc{};
-	//	desc.sObjectTag = "TerrainLightPlacement";
-	//	desc.sLightFileName = "Level_Terrain";
-	//
-	//	if (!CGameInstance::Get().AddGameObjectToLayer(
-	//		ES_EngineProtoMajorType::PERMANENT,
-	//		ES_EngineProtoGameObject::
-	//		Prototype_GameObject_LightPlacement,
-	//		"Layer_LightPlacement",
-	//		&desc))
-	//	{
-	//		return E_FAIL;
-	//	}
-	//}
+	{
+		CLightPlacementObject::DESC desc{};
+		desc.sObjectTag = "TerrainLightPlacement";
+		desc.sLightFileName = "Level_Terrain";
+	
+		if (!CGameInstance::Get().AddGameObjectToLayer(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoGameObject::
+			Prototype_GameObject_LightPlacement,
+			"Layer_LightPlacement",
+			&desc))
+		{
+			return E_FAIL;
+		}
+	}
 	return S_OK;
 }
 

@@ -1322,7 +1322,12 @@ HRESULT	CGameInstance::Capture_ShadowMap() {
 VOID	CGameInstance::Notify_StaticShadowSceneChanged(const BoundingBox& ChangedBounds) {
 	m_pLightManager->Notify_StaticShadowSceneChanged(ChangedBounds);
 }
-
+VOID	CGameInstance::Bind_VolumetricLocalLightResources() {
+	m_pLightManager->Bind_VolumetricLocalLightResources();
+}
+VOID	CGameInstance::UnBind_VolumetricLocalLightResources() {
+	m_pLightManager->UnBind_VolumetricLocalLightResources();
+}
 _bool	CGameInstance::Evaluate_DirectionalLightCount() {
 	return m_pLightManager->Evaluate_DirectionalLightCount();
 }

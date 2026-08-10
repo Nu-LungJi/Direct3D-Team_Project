@@ -475,7 +475,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	m_hAutoTarget = CHandle{};
-	CGameInstance::Get().Apply_OutlineEffect(GetHandle());
 	return S_OK;
 }
 
@@ -1346,54 +1345,57 @@ void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
 	{
+		// 연기 제거 요청by SM
+		if constexpr (false)
+		{
+			_float4 fpos = _float4(GetTransform().GetPosition().x, GetTransform().GetPosition().y, GetTransform().GetPosition().z, 1);
+			_vector pos = XMVectorSet(fpos.x, fpos.y, fpos.z, fpos.w);
+			_vector lastSpawnPos = XMVectorSet(m_vSpwanPos.x, m_vSpwanPos.y, m_vSpwanPos.z, 1.f);
+			_float distance = XMVectorGetX(
+				XMVector3Length(pos - lastSpawnPos));
+			_float3 deltaPos;
+			XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
+			if (distance > m_fDistanceOffeset) {
 
+				CGameInstance::Get().PlayEffect(
+					"RanrokMoveSmoke", *GetTransform().GetWorldMatrix(), pos);
+				m_vSpwanPos = GetTransform().GetPosition();
 
-		_float4 fpos = _float4(GetTransform().GetPosition().x, GetTransform().GetPosition().y, GetTransform().GetPosition().z, 1);
-		_vector pos = XMVectorSet(fpos.x, fpos.y, fpos.z, fpos.w);
-		_vector lastSpawnPos = XMVectorSet(m_vSpwanPos.x, m_vSpwanPos.y, m_vSpwanPos.z, 1.f);
-		_float distance = XMVectorGetX(
-			XMVector3Length(pos - lastSpawnPos));
-		_float3 deltaPos;
-		XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
-		if (distance > m_fDistanceOffeset) {
+			}
 
-			CGameInstance::Get().PlayEffect(
-				"RanrokMoveSmoke", *GetTransform().GetWorldMatrix(), pos);
-			m_vSpwanPos = GetTransform().GetPosition();
+			const _matrix playerWorld = GetTransform().GetLoadedWorldMatrix();
 
+			auto TransformTrailPoint = [&playerWorld](const _float3& localPoint)
+				{
+					_float3 worldPoint{};
+					XMStoreFloat3(&worldPoint, XMVector3TransformCoord(XMLoadFloat3(&localPoint), playerWorld));
+					return worldPoint;
+				};
+
+			_float3 vstart{};
+			_float3 vend{};
+
+			vstart = TransformTrailPoint({ 0.f, 3.5f, 0.f });
+			vend = TransformTrailPoint({ 0.f, 2.5f, 0.f });
+			CGameInstance::Get().AddTrailPoint("RanrokTrail1", "RanrokTrail1", vstart, vend);
+
+			vstart = TransformTrailPoint({ 0.f, 1.5f, -3.f });
+			vend = TransformTrailPoint({ 0.f, 0.5f, -3.f });
+			CGameInstance::Get().AddTrailPoint("RanrokTrail2", "RanrokTrail2", vstart, vend);
+
+			vstart = TransformTrailPoint({ 0.f, 1.5f, 3.f });
+			vend = TransformTrailPoint({ 0.f, 0.5f, 3.f });
+			CGameInstance::Get().AddTrailPoint("RanrokTrail3", "RanrokTrail3", vstart, vend);
+
+			vstart = TransformTrailPoint({ 0.f, -0.5f, -2.f });
+			vend = TransformTrailPoint({ 0.f, -1.5f, -2.f });
+			CGameInstance::Get().AddTrailPoint("RanrokTrail4", "RanrokTrail4", vstart, vend);
+
+			vstart = TransformTrailPoint({ 0.f, -0.5f, 2.f });
+			vend = TransformTrailPoint({ 0.f, -1.5f, 2.f });
+			CGameInstance::Get().AddTrailPoint("RanrokTrail5", "RanrokTrail5", vstart, vend);
 		}
-
-		const _matrix playerWorld = GetTransform().GetLoadedWorldMatrix();
-
-		auto TransformTrailPoint = [&playerWorld](const _float3& localPoint)
-			{
-				_float3 worldPoint{};
-				XMStoreFloat3(&worldPoint, XMVector3TransformCoord(XMLoadFloat3(&localPoint), playerWorld));
-				return worldPoint;
-			};
-
-		_float3 vstart{};
-		_float3 vend{};
-
-		vstart = TransformTrailPoint({ 0.f, 3.5f, 0.f });
-		vend = TransformTrailPoint({ 0.f, 2.5f, 0.f });
-		CGameInstance::Get().AddTrailPoint("RanrokTrail1", "RanrokTrail1", vstart, vend);
-
-		vstart = TransformTrailPoint({ 0.f, 1.5f, -3.f });
-		vend = TransformTrailPoint({ 0.f, 0.5f, -3.f });
-		CGameInstance::Get().AddTrailPoint("RanrokTrail2", "RanrokTrail2", vstart, vend);
-
-		vstart = TransformTrailPoint({ 0.f, 1.5f, 3.f });
-		vend = TransformTrailPoint({ 0.f, 0.5f, 3.f });
-		CGameInstance::Get().AddTrailPoint("RanrokTrail3", "RanrokTrail3", vstart, vend);
-
-		vstart = TransformTrailPoint({ 0.f, -0.5f, -2.f });
-		vend = TransformTrailPoint({ 0.f, -1.5f, -2.f });
-		CGameInstance::Get().AddTrailPoint("RanrokTrail4", "RanrokTrail4", vstart, vend);
-
-		vstart = TransformTrailPoint({ 0.f, -0.5f, 2.f });
-		vend = TransformTrailPoint({ 0.f, -1.5f, 2.f });
-		CGameInstance::Get().AddTrailPoint("RanrokTrail5", "RanrokTrail5", vstart, vend);
+		
 
 	}
 

@@ -371,7 +371,7 @@ float3 LUT_Filtering(float3 _Color)
     //float3 LUT_Mapping = _Color * ((LUT_Size - 1.f) / LUT_Size) + (0.5f / LUT_Size);
     //return LUT_Texture.Sample(SamplerClamp, LUT_Mapping);
     
-	return lerp(LUT_ColorA, LUT_ColorA, frac(BlueValue));
+	return lerp(LUT_ColorA, LUT_ColorB, frac(BlueValue));
 }
 
 // ToneMapping : Reinhard / ACESFilmic / AGXFilmic
