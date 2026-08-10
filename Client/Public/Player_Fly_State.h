@@ -61,6 +61,7 @@ public:
 
 	enum class FLIGHT_PHASE : uint32_t
 	{
+		LIFTING,
 		MOUNTING,
 		HOVER,
 		INTO_FLY,
@@ -106,7 +107,18 @@ private:
 	int32_t m_iActiveAnimation{ -1 };
 	_bool m_bAnimationIndicesCached{};
 	FLIGHT_PHASE m_eFlightPhase{ FLIGHT_PHASE::MOUNTING };
+	_float m_fLiftElapsed{};
+	_float m_fAppliedLiftHeight{};
+	_float3 m_vFlightDirection{};
+	_float3 m_vLastFlightDirection{ 0.f, 0.f, 1.f };
+	_float m_fCurrentFlightSpeed{};
 
+	_float m_fMountLiftHeight{ 1.2f };
+	_float m_fMountLiftDuration{ 0.45f };
+	_float m_fCruiseFlightSpeed{ 12.f };
+	_float m_fBoostFlightSpeed{ 25.f };
+	_float m_fFlightAcceleration{ 10.f };
+	_float m_fFlightDeceleration{ 7.f };
 	_float m_fHoverSpeedThreshold{ 0.25f };
 	_float m_fFastSpeedThreshold{ 6.f };
 	_float m_fVerticalInputThreshold{ 0.35f };

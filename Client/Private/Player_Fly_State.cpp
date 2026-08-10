@@ -24,10 +24,19 @@ void CPlayer_Fly_State::Enter(CStateMachine* pStateMachine)
 
 	CacheAnimationIndices(*pPlayer);
 	m_iActiveAnimation = -1;
-	m_eFlightPhase = FLIGHT_PHASE::MOUNTING;
+	m_eFlightPhase = FLIGHT_PHASE::LIFTING;
+	m_fLiftElapsed = 0.f;
+	m_fAppliedLiftHeight = 0.f;
+	m_fCurrentFlightSpeed = 0.f;
+	m_vFlightDirection = {};
 	pPlayer->SetMovementLocked(true);
-	pPlayer->SetRootMotionTranslationActive(true);
+	// Broom mount clips contain vertical root motion authored around their
+	// original scene origin. Applying that delta to the CCT makes the player
+	// animate below the current ground. Flight entry owns its world height.
+	pPlayer->SetRootMotionTranslationActive(false);
 	pPlayer->SetRootMotionRotationActive(false);
+	if (auto* pMoveIntent = pPlayer->GetMoveIntent())
+		pMoveIntent->ClearMoveIntent();
 	if (auto* pMotor = pPlayer->GetCharacterMotor())
 	{
 		_float3 vVelocity = pMotor->GetVelocity();
@@ -36,24 +45,10 @@ void CPlayer_Fly_State::Enter(CStateMachine* pStateMachine)
 		pMotor->SetUseGravity(false);
 	}
 
-	const int32_t iMountAnimation = pPlayer->HasRawMoveInput() && m_iMountJogAnimation >= 0 ? m_iMountJogAnimation : m_iMountHoverAnimation;
 	auto* pAnimator = pPlayer->GetAnimator();
 	if (!pAnimator)
 	{
 		return;
-	}
-
-	if (iMountAnimation >= 0)
-	{
-		pAnimator->Play_Anim(iMountAnimation, false, 0.15f);
-		m_iActiveAnimation = iMountAnimation;
-	}
-	else if (m_iHoverAnimation >= 0)
-	{
-		pPlayer->SetMovementLocked(false);
-		m_eFlightPhase = FLIGHT_PHASE::HOVER;
-		pAnimator->Play_Anim(m_iHoverAnimation, true, 0.15f); 
-		m_iActiveAnimation = m_iHoverAnimation; 
 	}
 }
 
@@ -68,6 +63,8 @@ void CPlayer_Fly_State::Exit(CStateMachine* pStateMachine)
 	pPlayer->SetMovementLocked(false);
 	pPlayer->SetRootMotionTranslationActive(false);
 	pPlayer->SetRootMotionRotationActive(false);
+	if (auto* pMoveIntent = pPlayer->GetMoveIntent())
+		pMoveIntent->ClearMoveIntent();
 	if (auto* pMotor = pPlayer->GetCharacterMotor())
 	{
 		pMotor->SetUseGravity(true);
@@ -90,7 +87,10 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		return;
 	}
 
-	if (!pPlayer->IsFlyRequested() && m_eFlightPhase != FLIGHT_PHASE::MOUNTING && m_eFlightPhase != FLIGHT_PHASE::DISMOUNTING)
+	if (!pPlayer->IsFlyRequested() &&
+		m_eFlightPhase != FLIGHT_PHASE::LIFTING &&
+		m_eFlightPhase != FLIGHT_PHASE::MOUNTING &&
+		m_eFlightPhase != FLIGHT_PHASE::DISMOUNTING)
 	{
 		m_eFlightPhase = FLIGHT_PHASE::DISMOUNTING;
 		pPlayer->SetMovementLocked(true);
@@ -101,18 +101,166 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		}
 	}
 
-	if (pPlayer->HasRawMoveInput())
+	// Flight owns the final movement intent. Ground locomotion only supplies a
+	// horizontal direction, so rebuild a camera-relative 3D input here.
+	_float fForwardInput{};
+	_float fRightInput{};
+	_float fVerticalInput{};
+	if (CGameInstance::Get().KeyPressing(DIK_W) ||
+		CGameInstance::Get().KeyPressing(DIK_UP))
+		fForwardInput += 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_S) ||
+		CGameInstance::Get().KeyPressing(DIK_DOWN))
+		fForwardInput -= 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_D) ||
+		CGameInstance::Get().KeyPressing(DIK_RIGHT))
+		fRightInput += 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_A) ||
+		CGameInstance::Get().KeyPressing(DIK_LEFT))
+		fRightInput -= 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_SPACE))
+		fVerticalInput += 1.f;
+	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL))
+		fVerticalInput -= 1.f;
+
+	_vector vCameraForward = pPlayer->GetTransform().GetState(STATE::LOOK);
+	_vector vCameraRight = pPlayer->GetTransform().GetState(STATE::RIGHT);
+	if (auto* pCamera = CGameInstance::Get().GetActiveCamera("PlayerCamera"))
 	{
-		pMoveIntent->SetFacingIntent(pPlayer->GetRawMoveDirection(), m_fFacingTurnSpeed);
+		vCameraForward = pCamera->GetTransform().GetState(STATE::LOOK);
+		vCameraRight = pCamera->GetTransform().GetState(STATE::RIGHT);
+	}
+	// Keep the camera pitch while flying: looking up/down and pressing W/S
+	// must climb/dive instead of being forced onto the ground plane.
+	vCameraRight = XMVectorSetY(vCameraRight, 0.f);
+	if (XMVectorGetX(XMVector3LengthSq(vCameraForward)) > FLT_EPSILON)
+		vCameraForward = XMVector3Normalize(vCameraForward);
+	if (XMVectorGetX(XMVector3LengthSq(vCameraRight)) > FLT_EPSILON)
+		vCameraRight = XMVector3Normalize(vCameraRight);
+
+	_vector vFlightInput =
+		vCameraForward * fForwardInput +
+		vCameraRight * fRightInput +
+		XMVectorSet(0.f, fVerticalInput, 0.f, 0.f);
+	const _bool bHasFlightInput =
+		XMVectorGetX(XMVector3LengthSq(vFlightInput)) > FLT_EPSILON;
+	if (bHasFlightInput)
+	{
+		vFlightInput = XMVector3Normalize(vFlightInput);
+		XMStoreFloat3(&m_vFlightDirection, vFlightInput);
+		m_vLastFlightDirection = m_vFlightDirection;
 	}
 	else
 	{
-		pMoveIntent->ClearFacingIntent();
+		m_vFlightDirection = {};
 	}
-	const _bool bWantsToFly = pPlayer->HasRawMoveInput() && pPlayer->GetCurrentMoveSpeed() > m_fHoverSpeedThreshold;
+
+	const _bool bCanControlFlight =
+		m_eFlightPhase == FLIGHT_PHASE::HOVER ||
+		m_eFlightPhase == FLIGHT_PHASE::INTO_FLY ||
+		m_eFlightPhase == FLIGHT_PHASE::FLYING ||
+		m_eFlightPhase == FLIGHT_PHASE::INTO_HOVER;
+	if (bCanControlFlight)
+	{
+		const _bool bBoost =
+			CGameInstance::Get().KeyPressing(DIK_LSHIFT);
+		const _float fTargetSpeed = bHasFlightInput
+			? (bBoost ? m_fBoostFlightSpeed : m_fCruiseFlightSpeed)
+			: 0.f;
+		const _float fSpeedStep =
+			(bHasFlightInput ? m_fFlightAcceleration : m_fFlightDeceleration) *
+			std::max(fTimeDelta, 0.f);
+		if (m_fCurrentFlightSpeed < fTargetSpeed)
+			m_fCurrentFlightSpeed = std::min(
+				m_fCurrentFlightSpeed + fSpeedStep, fTargetSpeed);
+		else
+			m_fCurrentFlightSpeed = std::max(
+				m_fCurrentFlightSpeed - fSpeedStep, fTargetSpeed);
+
+		if (m_fCurrentFlightSpeed > FLT_EPSILON)
+		{
+			pMoveIntent->SetMoveIntent(
+				bHasFlightInput ? m_vFlightDirection : m_vLastFlightDirection,
+				m_fCurrentFlightSpeed);
+			_float3 vFacingDirection = bHasFlightInput
+				? m_vFlightDirection
+				: m_vLastFlightDirection;
+			vFacingDirection.y = 0.f;
+			if (vFacingDirection.x * vFacingDirection.x +
+				vFacingDirection.z * vFacingDirection.z > FLT_EPSILON)
+			{
+				pMoveIntent->SetFacingIntent(
+					vFacingDirection, m_fFacingTurnSpeed);
+			}
+		}
+		else
+		{
+			m_fCurrentFlightSpeed = 0.f;
+			pMoveIntent->ClearMoveIntent();
+			pMoveIntent->ClearFacingIntent();
+		}
+	}
+	const _bool bWantsToFly =
+		bHasFlightInput || m_fCurrentFlightSpeed > m_fHoverSpeedThreshold;
 
 	switch (m_eFlightPhase)
 	{
+	case FLIGHT_PHASE::LIFTING:
+	{
+		if (!pPlayer->IsFlyRequested())
+		{
+			if (auto* pMotor = pPlayer->GetCharacterMotor())
+				pMotor->SetUseGravity(true);
+			if (auto* pPlayerStateMachine =
+				Cast<CPlayer_StateMachine>(pStateMachine))
+			{
+				pPlayerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
+			}
+			return;
+		}
+
+		m_fLiftElapsed += std::max(fTimeDelta, 0.f);
+		const _float fLiftRatio = m_fMountLiftDuration > 0.f
+			? std::clamp(m_fLiftElapsed / m_fMountLiftDuration, 0.f, 1.f)
+			: 1.f;
+		// Smoothly rise fast at first and settle onto the fixed mount height.
+		const _float fSmoothedRatio =
+			fLiftRatio * fLiftRatio * (3.f - 2.f * fLiftRatio);
+		const _float fDesiredLiftHeight =
+			m_fMountLiftHeight * fSmoothedRatio;
+		const _float fLiftDelta =
+			fDesiredLiftHeight - m_fAppliedLiftHeight;
+		if (std::abs(fLiftDelta) > std::numeric_limits<_float>::epsilon())
+		{
+			pMoveIntent->AddExternalDisplacement({ 0.f, fLiftDelta, 0.f });
+			m_fAppliedLiftHeight = fDesiredLiftHeight;
+		}
+
+		if (fLiftRatio < 1.f)
+			return;
+
+		m_eFlightPhase = FLIGHT_PHASE::MOUNTING;
+		const int32_t iMountAnimation =
+			pPlayer->HasRawMoveInput() && m_iMountJogAnimation >= 0
+			? m_iMountJogAnimation
+			: m_iMountHoverAnimation;
+		if (iMountAnimation >= 0)
+		{
+			pAnimator->Play_Anim(iMountAnimation, false, 0.15f);
+			m_iActiveAnimation = iMountAnimation;
+			return;
+		}
+
+		pPlayer->SetMovementLocked(false);
+		m_eFlightPhase = FLIGHT_PHASE::HOVER;
+		if (m_iHoverAnimation >= 0)
+		{
+			pAnimator->Play_Anim(m_iHoverAnimation, true, 0.15f);
+			m_iActiveAnimation = m_iHoverAnimation;
+		}
+		return;
+	}
+
 	case FLIGHT_PHASE::MOUNTING:
 		if (!pAnimator->GetFinish()) 
 		{
@@ -225,14 +373,19 @@ void CPlayer_Fly_State::CacheAnimationIndices(const CPlayer& player)
 
 int32_t CPlayer_Fly_State::ResolveAnimation(const CPlayer& player) const
 {
-	const _float fSpeed = player.GetCurrentMoveSpeed();
-	if (!player.HasRawMoveInput() || fSpeed <= m_fHoverSpeedThreshold) 
+	const _float fSpeed = m_fCurrentFlightSpeed;
+	if (fSpeed <= m_fHoverSpeedThreshold)
 	{
 		return m_iHoverAnimation;
 	}
 
-	const _float3& vInput = player.GetRawMoveDirection();
-	const _bool bFast = player.IsSprintRequested() || fSpeed >= m_fFastSpeedThreshold;
+	const _float3& vInput =
+		(m_vFlightDirection.x != 0.f ||
+		 m_vFlightDirection.y != 0.f ||
+		 m_vFlightDirection.z != 0.f)
+		? m_vFlightDirection
+		: m_vLastFlightDirection;
+	const _bool bFast = fSpeed >= m_fFastSpeedThreshold;
 	if (vInput.y >= m_fVerticalInputThreshold) 
 	{
 		return bFast ? m_iFastUpAnimation : m_iSlowUpAnimation;
