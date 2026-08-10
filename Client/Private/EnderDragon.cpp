@@ -346,10 +346,10 @@ void CEnderDragon::Ready_BBKeyValue()
 }
 void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 {
-	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_L))
-		m_bDebug = !m_bDebug;
-
-	if (!m_bDebug) return;
+	//if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_L))
+	//	m_bDebug = !m_bDebug;
+	//
+	//if (!m_bDebug) return;
 
 
 
@@ -362,19 +362,19 @@ void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 
 void CEnderDragon::Update(E::_float fTimeDelta)
 {
-	if (!m_bDebug) return;
+	//if (!m_bDebug) return;
 	__super::Update(fTimeDelta);
 	//m_pFsm->Update(fTimeDelta);
 }
 
 void CEnderDragon::FixedUpdate(E::_float fTimeDelta)
 {
-	if (!m_bDebug) return;
+	//if (!m_bDebug) return;
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 void CEnderDragon::LateUpdate(E::_float fTimeDelta)
 {
-	if (!m_bDebug) return;
+	//if (!m_bDebug) return;
 	m_pFsm->LateUpdate(fTimeDelta);
 	__super::LateUpdate(fTimeDelta);
 
