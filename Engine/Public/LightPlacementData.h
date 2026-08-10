@@ -51,21 +51,23 @@ struct LIGHT_PLACEMENT_ENTRY final : public ISerializable
 	_float fRange{ 10.f };
 	_float fInnerAttenuation{ 20.f };
 	_float fOuterAttenuation{ 30.f };
+	_float fVolumetricIntensity{ 10.f };
 	_bool bActive{ true };
 	_bool bCastShadow{ true };
+	_bool bScattering{ true };
 
 	void Serialize(ISerializer& serializer) const override
 	{
 		WRITE_ALL(serializer, sName, sAlias, eType, vPosition, vDirection,
-			vColor, fIntensity, fRange, fInnerAttenuation,
-			fOuterAttenuation, bActive, bCastShadow);
+			vColor, fIntensity, fRange, fInnerAttenuation, fVolumetricIntensity,
+			fOuterAttenuation, bActive, bCastShadow, bScattering);
 	}
 
 	void Deserialize(IDeserializer& deserializer) override
 	{
 		READ_ALL(deserializer, sName, sAlias, eType, vPosition, vDirection,
-			vColor, fIntensity, fRange, fInnerAttenuation,
-			fOuterAttenuation, bActive, bCastShadow);
+			vColor, fIntensity, fRange, fInnerAttenuation, fVolumetricIntensity,
+			fOuterAttenuation, bActive, bCastShadow, bScattering);
 	}
 };
 

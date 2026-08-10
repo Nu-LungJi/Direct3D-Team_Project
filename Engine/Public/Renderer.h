@@ -206,6 +206,7 @@ private:
 	HRESULT	Render_VolumetricEffect();
 	HRESULT Update_VolumetricConstantBuffer();
 	HRESULT Render_LightIntegration();
+	HRESULT Render_FroxelZAccumulation();
 	HRESULT Render_RayMarching();
 	HRESULT Render_VolumetricComposite();
 
@@ -289,12 +290,14 @@ private:	// ChromaticRing
 
 private:	// Volumetric Fog
 	SPtr<CResComputeShader>		m_pLightIntegrationCS{};
+	SPtr<CResComputeShader>		m_pFroxelAccumulationCS{};
 	SPtr<CResComputeShader>		m_pRayMarchingCS{};
 	SPtr<CResPixelShader>		m_pVolumetricCompositePS{};
 
 	ComPtr<ID3D11ShaderResourceView>	CSMShadowMapSRV{};
 
 	TEXTURE3D		m_pVoxelLighting{};
+	TEXTURE3D		m_pVoxelAccumulated{};
 
 	CB_VLFOG		m_fFogInfo{};
 

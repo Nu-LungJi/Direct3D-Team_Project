@@ -20,6 +20,9 @@ static const float		PointVolumetricShadowBias	= { 0.002f };
 static const float3		BaseWindDirection			= float3(1.f, 0.1f, 0.4f);
 static const float3		DetailWindDirection			= float3(-0.4f, 0.25f, 1.f);
 
+static const float		BaseFlowSpeed				= { 0.10f };
+static const float		DetailFlowSpeed				= { 0.22f };
+
 static const float		LocalScatteringStrength		= { 2.f };
 static const float		FroxelDepthExponent			= { 1.5f };
 static const float2		PCFOffsets[4] =
@@ -120,8 +123,8 @@ float Henyey_Greenstein_DualPhase(float3 _RayDirection, float3 _FogLightDirectio
 float Compute_FogFlow(float3 _WorldPos)
 {
 	float3	NoiseCoord	= (_WorldPos - FogCenterPos) * FogNoiseScale;
-	float3	BaseCoord	= NoiseCoord + BaseWindDirection * FogTime * 0.1f;
-	float3	DetailCoord	= NoiseCoord * 2.7f + DetailWindDirection * FogTime * 0.22f;
+	float3	BaseCoord	= (NoiseCoord + BaseWindDirection) * (FogTime * BaseFlowSpeed);
+	float3	DetailCoord = (NoiseCoord * 2.7f + DetailWindDirection) * (FogTime * DetailFlowSpeed);
 	
 	float	BaseNoise	= VolumeTexture.SampleLevel(LinearWrap, BaseCoord, 0.f).r;
 	float	DetailNoise	= VolumeTexture.SampleLevel(LinearWrap, DetailCoord, 0.f).g;
@@ -318,7 +321,7 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 	
 	float	PhaseValue = Henyey_Greenstein_DualPhase(RayDirection, FogLightDirection, FogAnisotropyGA, FogAnisotropyGB, FogScatteringWeight);
 	
-	float	ShadowBrightness	= Compute_CascadeShadow(VoxelWorldPos);
+	float ShadowBrightness = Compute_CascadeShadow(VoxelWorldPos);
 	
 	float3	DirectScattering	= FogColor * FogLightColor * FogIntensity * FogDensity * ShadowBrightness * PhaseValue * GodRayStrength;
 	float3	AmbientScattering	= FogColor * FogDensity * 0.002f;
@@ -329,6 +332,55 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 
 	OUTPUT3D[ID] = float4(Scattering, Extinction);
 	return;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain_FroxelZAccumulation(uint3 ID : SV_DispatchThreadID)
+{
+	if (ID.x >= (uint) FroxelGridSize.x || ID.y >= (uint) FroxelGridSize.y)	return;
+	float2	TexCoord = (float2(ID.xy) + 0.5f) / FroxelGridSize.xy;
+	
+	float2	ScreenSpaceNDC;
+	ScreenSpaceNDC.x = TexCoord.x * +2.f - 1.f;
+	ScreenSpaceNDC.y = TexCoord.y * -2.f + 1.f;
+	
+	float3	ViewRayDirection = normalize(float3(
+		ScreenSpaceNDC.x / g_matProj[0][0],
+		ScreenSpaceNDC.y / g_matProj[1][1],
+		1.f));
+	
+	float	ViewRayZ = max(abs(ViewRayDirection.z), 0.0001f);
+	
+	float3	AccumulatedScattering = float3(0.f, 0.f, 0.f);
+	float	AccumulatedTransmittance = 1.f;
+	
+	OUTPUT3D[uint3(ID.xy, 0)] = float4(0.f, 0.f, 0.f, 1.f);
+
+	float	SliceNear = NearZ;
+	for (uint z = 0; z < (uint) FroxelGridSize.z; ++z)
+	{
+		float	NormalizedFarZ = ((float) z + 1.f) / FroxelGridSize.z;
+		
+		float	SliceFar = lerp(NearZ, FarZ, pow(NormalizedFarZ, FroxelDepthExponent));
+		
+		float	RayStepSize = (SliceFar - SliceNear) / ViewRayZ;
+		float4	LightingData = VoxelLightingColor.Load(int4(ID.xy, z, 0));
+		
+		float3	Scattering = LightingData.rgb;
+		float	Extinction = LightingData.a;
+		
+		float	StepTransmittance = exp(-Extinction * RayStepSize);
+		float3	IntegratedScattering = Extinction > 0.0001f ? (Scattering / Extinction) * (1.f - StepTransmittance) : Scattering * RayStepSize;
+		
+		float3 StepContribution = IntegratedScattering * AccumulatedTransmittance;
+
+		AccumulatedScattering += StepContribution;
+		AccumulatedTransmittance *= StepTransmittance;
+		
+		OUTPUT3D[uint3(ID.xy, z + 1)] = float4(AccumulatedScattering, AccumulatedTransmittance);
+		
+		SliceNear = SliceFar;
+	}
 }
 
 [numthreads(16, 16, 1)]

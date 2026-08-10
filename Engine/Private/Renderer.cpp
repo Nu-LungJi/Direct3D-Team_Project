@@ -161,6 +161,10 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_LightIntegration", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_FroxelZAccumulation", "./ShaderFiles/RayMarching/CS_Volumetric.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_FroxelZAccumulation", .sTarget = "cs_5_0" })))    return E_FAIL;
+	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_RayMarching", "./ShaderFiles/RayMarching/CS_Volumetric.hlsl"))
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_RayMarching", .sTarget = "cs_5_0" })))    return E_FAIL;
@@ -470,13 +474,14 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 	}
 	
 	m_pLightIntegrationCS	 = CGameInstance::Get().GetResourceFirst<CResComputeShader>	(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_LightIntegration");
+	m_pFroxelAccumulationCS  = CGameInstance::Get().GetResourceFirst<CResComputeShader> (TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_FroxelZAccumulation");
 	m_pRayMarchingCS		 = CGameInstance::Get().GetResourceFirst<CResComputeShader>	(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_RayMarching");
 	m_pVolumetricCompositePS = CGameInstance::Get().GetResourceFirst<CResPixelShader>	(TAG_RES_GRP_PERMANENT_SHADER, "PS_Volumetric_Composite");
 
-	if (!m_pLightIntegrationCS || !m_pRayMarchingCS || !m_pVolumetricCompositePS) return E_FAIL;
+	if (!m_pLightIntegrationCS || !m_pFroxelAccumulationCS || !m_pRayMarchingCS || !m_pVolumetricCompositePS) return E_FAIL;
 
 	m_pVoxelLighting		= Create_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
-	
+	m_pVoxelAccumulated		= Create_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ + 1);
 	
 	m_fFogInfo.g_fFogColor = _float3(0.8f, 0.85f, 0.9f);
 	m_fFogInfo.g_fFogIntensity = 1.f;
@@ -1414,7 +1419,9 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 
 	if (FAILED(Render_LightIntegration()))			{ Unbind_Resources(); return S_OK; }
 
-	if (FAILED(Render_RayMarching()))				{ Unbind_Resources(); return S_OK; }
+	if (FAILED(Render_FroxelZAccumulation()))		{ Unbind_Resources(); return S_OK; }
+
+	//if (FAILED(Render_RayMarching()))				{ Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_VolumetricComposite()))		{ Unbind_Resources(); return S_OK; }
 
@@ -1561,6 +1568,32 @@ HRESULT CRenderer::Render_LightIntegration() {
 	return S_OK;
 }
 
+HRESULT CRenderer::Render_FroxelZAccumulation()
+{
+	{
+		m_pContext->CSSetShader(m_pFroxelAccumulationCS->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11ShaderResourceView* pSRVs[1] = { m_pVoxelLighting.pSRV.Get() };
+		m_pContext->CSSetShaderResources(3, 1, pSRVs);
+
+		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVoxelAccumulated.pUAV.Get() };
+		m_pContext->CSSetUnorderedAccessViews(1, 1, pUAVs, nullptr);
+	}
+	{
+		uint32_t FroxelX = (FROXELX + 7) / 8;
+		uint32_t FroxelY = (FROXELY + 7) / 8;
+
+		m_pContext->Dispatch(FroxelX, FroxelY, 1);
+
+		ID3D11ShaderResourceView* pNullSRVs[1] = { nullptr };
+		m_pContext->CSSetShaderResources(3, 1, pNullSRVs);
+
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(1, 1, pNullUAVs, nullptr);
+	}
+	return S_OK;
+}
+
 HRESULT CRenderer::Render_RayMarching() {
 	{
 		m_pContext->CSSetShader(m_pRayMarchingCS->GetComputeShader().Get(), nullptr, 0);
@@ -1614,7 +1647,7 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 		ID3D11ShaderResourceView* pSRVs[3] = { nullptr };
 		pSRVs[0] = m_pResDynTexTargetDepth->GetSRV().Get();
 		pSRVs[1] = m_pResDynTexTargetPreviousRenderView->GetSRV().Get();
-		pSRVs[2] = m_pResDynTexUAVVolumetric->GetSRV().Get();
+		pSRVs[2] = m_pVoxelAccumulated.pSRV.Get();
 		//pSRVs[3] = m_pBlueNoiseTexture.Get();
 		m_pContext->PSSetShaderResources(0, 3, pSRVs);
 	}
@@ -2535,7 +2568,7 @@ HRESULT CRenderer::Render_VerticalBlurPass(const SPtr<CResDynamicTexture2D>& _Ou
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
 		ID3D11ShaderResourceView* pBloomTex[1] = { _BlurPassTexture->GetSRV().Get() };
-		m_pContext->CSSetShaderResources(0, 1, pBloomTex);
+		m_pContext->CSSetShaderResources(1, 1, pBloomTex);
 	}
 	{
 		m_pContext->Dispatch((_ScreenX + 7) / 8, (_ScreenY + 7) / 8, 1);
@@ -2544,7 +2577,7 @@ HRESULT CRenderer::Render_VerticalBlurPass(const SPtr<CResDynamicTexture2D>& _Ou
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
 
 		ID3D11ShaderResourceView* NULLSRV[1] = { nullptr };
-		m_pContext->CSSetShaderResources(0, 1, NULLSRV);
+		m_pContext->CSSetShaderResources(1, 1, NULLSRV);
 	}
 
 	return S_OK;
@@ -2563,7 +2596,7 @@ HRESULT CRenderer::Render_HorizontalBlurPass(const SPtr<CResDynamicTexture2D>& _
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
 		ID3D11ShaderResourceView* pBloomTex[1] = { _BlurPassTexture->GetSRV().Get() };
-		m_pContext->CSSetShaderResources(0, 1, pBloomTex);
+		m_pContext->CSSetShaderResources(1, 1, pBloomTex);
 	}
 	{
 		m_pContext->Dispatch((_ScreenX + 7) / 8, (_ScreenY + 7) / 8, 1);
@@ -2572,7 +2605,7 @@ HRESULT CRenderer::Render_HorizontalBlurPass(const SPtr<CResDynamicTexture2D>& _
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
 
 		ID3D11ShaderResourceView* NULLSRV[1] = { nullptr };
-		m_pContext->CSSetShaderResources(0, 1, NULLSRV);
+		m_pContext->CSSetShaderResources(1, 1, NULLSRV);
 	}
 
 	return S_OK;
