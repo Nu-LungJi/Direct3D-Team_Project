@@ -120,10 +120,15 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	breathWorld.r[2] = XMVectorSetW(vForward, 0.f);
 	breathWorld.r[3] = XMVectorSetW(matBone.r[3], 1.f);
 
+
+	_float4x4 breathWorldData{};
+	XMStoreFloat4x4(&breathWorldData, breathWorld);
+
+	CGameInstance::Get().PlayEffect("DragonBreath", breathWorldData);
 	if (MoveSweep(matBone.r[3], vForward))
 	{
-		if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
+		//if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
+		//	CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
 		GetTransform().SetPosition(matBone.r[3]);
 		GetTransform().SetQuaternion(vQuat);
 		GetTransform().Update();
