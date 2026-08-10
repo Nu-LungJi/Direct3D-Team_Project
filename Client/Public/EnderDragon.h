@@ -4,7 +4,11 @@
 enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,SKIP,END};
 enum class DRAGON_PHASE{PHASE1, PHASE2, PHASE3, PHASE4, PHASE5, PHASE6, PHASE7, END};
 // 투명 드래곤이 울부 짖었다
-
+typedef struct stredganimfsm
+{
+	int32_t iAnimIndex{};
+	_float	fBlend{};
+}EDG_ANIM_FSM;
 NS_BEGIN(Client)
 typedef struct stredgskillInfo
 {
@@ -64,12 +68,12 @@ private:
 	void						Picking(_float3& vPos,uint32_t iID);
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
-
+	
 	_string			m_EffectNames[ETOUI(DRAGON_SKILL::END)]{};
 	EDG_SKILL_INFO	m_SkillHandle[ETOUI(DRAGON_SKILL::END)]{};
 	DRAGON_SKILL	m_eDragonSkill{};
 	DRAGON_PHASE	m_ePhase{};
-	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false };
+	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false }, m_bPopupL{ false };
 
 	_string						m_WayName{};
 	std::list<_float3>			m_DebugPoint;

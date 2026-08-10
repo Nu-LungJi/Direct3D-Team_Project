@@ -494,7 +494,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_Dragon.bin"))) {
 		
 			E::CResModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(2.f, 2.f, 2.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.6f, 1.6f, 1.6f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 		
 			if (FAILED(res->Load(pDesc)))
 			{

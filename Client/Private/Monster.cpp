@@ -176,6 +176,9 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 	const _float3 vControllerPosition = m_pCharacterController->GetPosition();
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
+
+	if (m_bHide) return;
+
 	const auto& pModel = m_pComModelInstance->GetModel();
 
 	if (!pModel)

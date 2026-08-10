@@ -4,6 +4,7 @@
 #include "BlackBoardKey.h"
 #include "EnderDragon_State.h"
 #include "ComCharacterMoveIntent.h"
+#include "ComAnimator.h"
 NS_USING(Client)
 CEdg_Phase::CEdg_Phase()
 {
@@ -12,14 +13,23 @@ CEdg_Phase::CEdg_Phase()
 CEdg_Phase::~CEdg_Phase()
 {
 }
-HRESULT CEdg_Phase::Initialize()
+HRESULT CEdg_Phase::Initialize(const _string& strLevelTag)
 {
+	if (strLevelTag != MagicEnumToStringView(LEVEL::LAST_BOSS_RANROK))
+		return S_OK;
 
-	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(20, 0, 20));
-	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(40, 0, 40));
-	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(80, 0, 80));
-	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(40, 0, 40));
-	m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)].push_back(_float3(20, 0, 20));
+	if (FAILED(Load_Phase("PHASE2", m_PhasePos[ETOUI(DRAGON_PHASE::PHASE2)])))
+		return E_FAIL;
+	if (FAILED(Load_Phase("PHASE3", m_PhasePos[ETOUI(DRAGON_PHASE::PHASE3)])))
+		return E_FAIL;
+	if (FAILED(Load_Phase("PHASE4", m_PhasePos[ETOUI(DRAGON_PHASE::PHASE4)])))
+		return E_FAIL;
+	if (FAILED(Load_Phase("PHASE5", m_PhasePos[ETOUI(DRAGON_PHASE::PHASE5)])))
+		return E_FAIL;
+	//if (FAILED(Load_Phase("PHASE6", m_PhasePos[ETOUI(DRAGON_PHASE::PHASE6)])))
+	//	return E_FAIL;
+
+
 
 	return S_OK;
 }
@@ -38,6 +48,20 @@ void CEdg_Phase::Enter(CStateMachine* pStateMachine)
 	m_ePhase = *pPhase;
 	m_eNextPhase = DRAGON_PHASE::END;
 	m_bNext = false;
+	switch (m_ePhase)
+	{
+	case DRAGON_PHASE::PHASE2:
+		pDragon->Set_HideOnBush(true);
+		break;
+	case DRAGON_PHASE::PHASE3:
+		m_Anims[ETOUI(DRAGON_PHASE::PHASE3)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
+		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Hover_Loop_anm.bin"),.fBlend = 0.1f });
+		break;
+	case DRAGON_PHASE::PHASE4:
+		pDragon->Set_HideOnBush(true);
+	case DRAGON_PHASE::PHASE5:
+		pDragon->Set_HideOnBush(true);
+	}
 
 }
 
@@ -46,8 +70,25 @@ void CEdg_Phase::Exit(CStateMachine* pStateMachine)
 	auto pDragon = pStateMachine->GetOwner<CEnderDragon>();
 	if (nullptr == pDragon) return;
 
+	auto pBB = pDragon->Get_BlackBoard();
+	if (nullptr == pBB) return;
+
 	pDragon->ReActiveTable();
 	pDragon->Set_StateFinished(false);
+	pDragon->Set_HideOnBush(false);
+
+	if (m_ePhase != DRAGON_PHASE::PHASE2)
+	{
+		_float3 vLeftPos{}, vRightPos{};
+		//좌우 무빙
+		_float3 vPos = pDragon->GetTransform().GetPosition();
+		_vector vDir = XMVector3Normalize(pDragon->GetTransform().GetState(STATE::RIGHT));
+		XMStoreFloat3(&vLeftPos, XMLoadFloat3(&vPos) + -vDir * 15.f);
+		XMStoreFloat3(&vRightPos, XMLoadFloat3(&vPos) + vDir * 15.f);
+
+		pBB->Set_Value<_float3>(EDG_KEY::LPATROL, vLeftPos);
+		pBB->Set_Value<_float3>(EDG_KEY::RPATROL, vRightPos);
+	}
 }
 
 void CEdg_Phase::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -75,6 +116,18 @@ void CEdg_Phase::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		pDragonFsm->Request_State(EDG_STATE::COMBAT);
 	}
 }
+HRESULT CEdg_Phase::Load_Phase(const _string& PhaseName, std::list<_float3>& PhasePoses)
+{
+	auto pRes = CGameInstance::Get().GetResourceFirst<CResJson>("EDGWAYPT", PhaseName);
+	if (nullptr == pRes)
+	{
+		MSG_BOX("Load Failed Json To EDGWAYPT Phase");
+		return E_FAIL;
+	}
+	auto json = pRes->Get_Json();
+	JsonSaveLoadManager::LoadJsonTypeFloat3list(json, PhaseName, PhasePoses);
+	return S_OK;
+}
 _bool CEdg_Phase::MovePhase(CEnderDragon* pDragon, _float fTimeDelta)
 {
 	auto pMoveIntent = pDragon->Get_MoveIntent();
@@ -86,6 +139,7 @@ _bool CEdg_Phase::MovePhase(CEnderDragon* pDragon, _float fTimeDelta)
 	_vector vCurPos  = XMLoadFloat3(&pDragon->GetTransform().GetPosition());
 
 	_vector vToNext = vNextPos - vCurPos;
+	Effect(pDragon, fTimeDelta);
 	if (!m_bNext)
 	{
 		XMStoreFloat3(&m_vLastDir, XMVector3Normalize(pDragon->GetTransform().GetState(STATE::LOOK)));
@@ -102,26 +156,136 @@ _bool CEdg_Phase::MovePhase(CEnderDragon* pDragon, _float fTimeDelta)
 	}
 
 	m_fTick += fTimeDelta;
-	_float t = m_fTick / 1.5f;
-	if (t >= 1.f)
-		t = 1.f;
+	_float t = std::min(m_fTick / 0.5f, 1.f);
 
 	_float3 vLerpDir{};
 	XMStoreFloat3(&vLerpDir, XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vLastDir), XMLoadFloat3(&m_vNextDir), t)));
 	
-	pMoveIntent->SetMoveIntent(vLerpDir, 15.f);
-	pMoveIntent->SetFacingIntent(vLerpDir, 6.f);
+	pMoveIntent->SetMoveIntent(vLerpDir, 25.f);
+	pMoveIntent->SetFacingIntent(vLerpDir, 60.f);
+	return false;
+}
+_bool CEdg_Phase::MovePhase3(CEnderDragon* pDragon, _float fTimeDelta)
+{
+	auto pMoveIntent = pDragon->Get_MoveIntent();
+	if (nullptr == pMoveIntent)return false;
+	auto pAnimator = pDragon->Get_Animator();
+	if (nullptr == pAnimator) return false;
+	
+	auto pTarget = pDragon->Get_Target();
+	if (nullptr == pTarget) return false;
+
+	if (m_PhasePos[ETOUI(m_ePhase)].empty()) return true;
+
+
+	_vector vNextPos = XMLoadFloat3(&m_PhasePos[ETOUI(m_ePhase)].front());
+	_vector vCurPos = XMLoadFloat3(&pDragon->GetTransform().GetPosition());
+	_vector vToNext = vNextPos - vCurPos;
+	_vector vTargetPos = XMLoadFloat3(&pTarget->GetTransform().GetPosition());
+	_float3 vTargetDir{};
+	XMStoreFloat3(&vTargetDir, XMVector3Normalize(vTargetPos - vCurPos));
+	if (!m_Anims[ETOUI(m_ePhase)].empty())
+	{
+		pAnimator->Play_Anim(m_Anims[ETOUI(m_ePhase)].front().iAnimIndex, true, m_Anims[ETOUI(m_ePhase)].front().fBlend);
+	}
+		
+	if (!m_bNext)
+	{
+		XMStoreFloat3(&m_vLastDir, XMVector3Normalize(pDragon->GetTransform().GetState(STATE::LOOK)));
+		XMStoreFloat3(&m_vNextDir, XMVector3Normalize(vNextPos - vCurPos));
+		m_bNext = true;
+	}
+	_float fDot = XMVectorGetX(XMVector3Dot(XMVector3Normalize(vToNext), XMLoadFloat3(&m_vNextDir)));
+	_float fDist = XMVectorGetX(XMVector3Length(vNextPos - vCurPos));
+	if (fDist <= 0.5f || fDot < 0.f)
+	{
+		m_PhasePos[ETOUI(m_ePhase)].pop_front();
+		m_bNext = false;
+		m_fTick = 0.f;
+	}
+
+	m_fTick += fTimeDelta;
+	_float t = std::min(m_fTick / 0.5f, 1.f);
+
+	_float3 vLerpDir{};
+	XMStoreFloat3(&vLerpDir, XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vLastDir), XMLoadFloat3(&m_vNextDir), t)));
+
+	pMoveIntent->SetMoveIntent(vLerpDir, 25.f);
+	pMoveIntent->SetFacingIntent(vTargetDir, 60.f);
 	return false;
 }
 void CEdg_Phase::Phase_Change_Action(CEnderDragon* pDragon, _float fTimeDelta)
 {
-	if (MovePhase(pDragon, fTimeDelta))
-		m_eNextPhase = m_ePhase;
+	if (m_ePhase == DRAGON_PHASE::PHASE3)
+	{
+		if (MovePhase3(pDragon, fTimeDelta))
+			m_eNextPhase = m_ePhase;
+	}
+	else
+	{
+		if(MovePhase(pDragon, fTimeDelta))
+			m_eNextPhase = m_ePhase;
+	}
 }
-SPtr<CEdg_Phase> CEdg_Phase::Create()
+void CEdg_Phase::Effect(CEnderDragon* pDragon, _float fTimeDelta)
+{
+	m_fAngle += 180.f * fTimeDelta * 2.f;
+
+	_matrix matWorld = XMMatrixRotationZ(XMConvertToRadians(m_fAngle)) * pDragon->GetTransform().GetLoadedWorldMatrix();
+
+	auto TransformTrailPoint = [&matWorld](const _float3& localPoint)
+		{
+			_float3 worldPoint{};
+			XMStoreFloat3(&worldPoint, XMVector3TransformCoord(XMLoadFloat3(&localPoint), matWorld));
+			return worldPoint;
+		};
+
+	_float3 vstart{};
+	_float3 vend{};
+
+	vstart = TransformTrailPoint({ 0.f, 3.5f, 0.f });
+	vend = TransformTrailPoint({ 0.f, 2.5f, 0.f });
+	CGameInstance::Get().AddTrailPoint("RanrokTrail1", "RanrokTrail1", vstart, vend);
+
+	vstart = TransformTrailPoint({ 0.f, 1.5f, -3.f });
+	vend = TransformTrailPoint({ 0.f, 0.5f, -3.f });
+	CGameInstance::Get().AddTrailPoint("RanrokTrail2", "RanrokTrail2", vstart, vend);
+
+	vstart = TransformTrailPoint({ 0.f, 1.5f, 3.f });
+	vend = TransformTrailPoint({ 0.f, 0.5f, 3.f });
+	CGameInstance::Get().AddTrailPoint("RanrokTrail3", "RanrokTrail3", vstart, vend);
+
+	vstart = TransformTrailPoint({ 0.f, -0.5f, -2.f });
+	vend = TransformTrailPoint({ 0.f, -1.5f, -2.f });
+	CGameInstance::Get().AddTrailPoint("RanrokTrail4", "RanrokTrail4", vstart, vend);
+
+	vstart = TransformTrailPoint({ 0.f, -0.5f, 2.f });
+	vend = TransformTrailPoint({ 0.f, -1.5f, 2.f });
+	CGameInstance::Get().AddTrailPoint("RanrokTrail5", "RanrokTrail5", vstart, vend);
+
+	m_fSpawnTick += fTimeDelta;
+
+	if (m_fSpawnTick > 0.1f)
+	{
+		m_iEffectID = CGameInstance::Get().PlayEffect("RanrokMoveSmoke", *pDragon->GetTransform().GetWorldMatrix(), _vector{},
+			[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+			{
+				if (effectId != m_iEffectID)
+					return;
+				m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
+			});
+		m_fSpawnTick = 0.f;
+	}
+	else
+	{
+		if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, *pDragon->GetTransform().GetWorldMatrix());
+	}
+}
+SPtr<CEdg_Phase> CEdg_Phase::Create(const _string& strLevelTag)
 {
 	auto pInstance = ToSPtr(new CEdg_Phase{});
-	if (FAILED(pInstance->Initialize()))
+	if (FAILED(pInstance->Initialize(strLevelTag)))
 	{
 		MSG_BOX("Failed to create CEdg_Phase");
 		return nullptr;

@@ -24,10 +24,15 @@ public:
 	virtual nlohmann::json		Save_Node()override;
 	HRESULT						Load_json(const nlohmann::json& j) override;
 private:
+	void					Abort() override;
+	void					OnEnter() override;
+	void					OnExit(EVALUATE eResult) override;
 	EVALUATE						Patroll(MOVE eState, CBTBlackBoard* pBB);
-	EVALUATE							Moving(_float3& vOutDir, _float3 vSrcPos,  const StringID ArrowKey, CBTBlackBoard* pBB);
+	EVALUATE						Moving(_float3& vOutDir, _float3 vSrcPos,  const StringID ArrowKey, CBTBlackBoard* pBB);
 private:
 	MOVE							m_eState{};
+	_bool							m_bDot{};
+	_float3							m_vDotDir{};
 public:
 	static UPtr<CBTDecEdgPatroll> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;
