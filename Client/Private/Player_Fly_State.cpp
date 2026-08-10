@@ -205,21 +205,21 @@ void CPlayer_Fly_State::CacheAnimationIndices(const CPlayer& player)
 		return;
 	}
 
-	m_iHoverAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Hover_Idle_anm.bin");
-	m_iMountHoverAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_Mount_Hover_anm.bin");
-	m_iMountJogAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_Mount_Fly_fJog_anm.bin");
-	m_iDismountAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_NoStirrups_Dismount_anm.bin");
-	m_iIntoFlyAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Hover_IntoFly_anm.bin");
-	m_iIntoHoverAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Fly_IntoHover_anm.bin");
-	m_iForwardAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Idle_Fwd_anm.bin");
-	m_iSlowUpAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Slow_Up_anm.bin");
-	m_iSlowDownAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Slow_Dn_anm.bin");
-	m_iSlowLeftAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Slow_Lft_anm.bin");
-	m_iSlowRightAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Slow_Rht_anm.bin");
-	m_iFastUpAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Fast_Up_anm.bin");
-	m_iFastDownAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Fast_Dn_anm.bin");
-	m_iFastLeftAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Fast_Lft_anm.bin");
-	m_iFastRightAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Broom_FlyNoStirrups_Fast_Rht_anm.bin");
+	m_iHoverAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Hover_Idle_anm.bin");
+	m_iMountHoverAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_Mount_Hover_anm.bin");
+	m_iMountJogAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_Mount_Fly_fJog_anm.bin");
+	m_iDismountAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_NoStirrups_Dismount_anm.bin");
+	m_iIntoFlyAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Hover_IntoFly_anm.bin");
+	m_iIntoHoverAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Fly_IntoHover_anm.bin");
+	m_iForwardAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Idle_Fwd_anm.bin");
+	m_iSlowUpAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Slow_Up_anm.bin");
+	m_iSlowDownAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Slow_Dn_anm.bin");
+	m_iSlowLeftAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Slow_Lft_anm.bin");
+	m_iSlowRightAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Slow_Rht_anm.bin");
+	m_iFastUpAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Fast_Up_anm.bin");
+	m_iFastDownAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Fast_Dn_anm.bin");
+	m_iFastLeftAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Fast_Lft_anm.bin");
+	m_iFastRightAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Broom_FlyNoStirrups_Fast_Rht_anm.bin");
 	m_bAnimationIndicesCached = true;
 }
 
