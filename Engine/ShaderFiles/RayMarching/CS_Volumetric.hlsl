@@ -150,7 +150,7 @@ float GetVolumeFogDensity(float3 _WorldPos)
     float	SubNoise	= NoiseSet.g * 0.5f + NoiseSet.b * 0.3f + NoiseSet.a * 0.2f;
     float	FinalNoise	= saturate(MainNoise * 0.7f + SubNoise * 0.3f);
 	
-	return	HeightFactor * FinalNoise * FogDensity * HeightLimit;
+	return	HeightFactor * FogDensity * HeightLimit;
 }
 
 //float Compute_ShadowBrightness(float4 _Position)
