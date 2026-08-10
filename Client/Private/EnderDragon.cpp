@@ -249,7 +249,7 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 
 	//////////////////////파티클 넣는곳/////////////////////////
 	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)] = "FireBall";
-	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)] = "Breath";
+	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)] = "DragonBreath";
 	////////////////////////////////////////////////////////////
 	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
 	

@@ -1437,7 +1437,7 @@ void CParticleManager::UpdateGUI()
 
 		int countInput = (int)pendingStandard.count;
 		ImGui::InputInt("Count", &countInput);
-		pendingStandard.count = (uint32_t)std::clamp(countInput, 1, (int)MAX_SPAWN_PER_CALL);
+		pendingStandard.count = static_cast<uint32_t>(std::max(countInput, 1));
 
 		ImGui::Checkbox("RandomPos?", &pendingStandard.bRandomPos);
 		if (pendingStandard.bRandomPos) {
@@ -3553,6 +3553,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeSmoke(param);
 			else if constexpr (std::is_same_v<T, SLightning>)
 				return ParticlePattern::MakeLightning(param);
+			else if constexpr (std::is_same_v<T, SConeParam>)
+				return ParticlePattern::MakeCone(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
@@ -3621,6 +3623,10 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
 			else if constexpr (std::is_same_v<T, SLightning>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SConeParam>)
 			{
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
