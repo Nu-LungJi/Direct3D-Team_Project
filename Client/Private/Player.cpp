@@ -34,6 +34,10 @@
 #include "Player_AccioSkill_State.h"
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
+#include "Player_BombardaSkill_State.h"
+#include "Player_ConfringoSkill_State.h"
+#include "Player_AvadaKedavraSkill_State.h"
+#include "Player_LumosSkill_State.h"
 #include "Player_RepairoSkill_State.h"
 #include "Monster.h"
 #include "ComSound.h"
@@ -389,6 +393,30 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::DESCENDO_SKILL,
 			CPlayer_DescendoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::BOMBARDA_SKILL,
+			CPlayer_BombardaSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::CONFRINGO_SKILL,
+			CPlayer_ConfringoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::AVADA_KEDAVRA_SKILL,
+			CPlayer_AvadaKedavraSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::LUMOS_SKILL,
+			CPlayer_LumosSkill_State::Create()))
 		{
 			return E_FAIL;
 		}

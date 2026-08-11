@@ -144,6 +144,10 @@ uint32_t CPlayer_StateMachine::GetTransitionPriority(PLAYER_STATE eState) const
 	case PLAYER_STATE::ACCIO_SKILL: return 45;
 	case PLAYER_STATE::DEPULSO_SKILL: return 45;
 	case PLAYER_STATE::DESCENDO_SKILL: return 45;
+	case PLAYER_STATE::BOMBARDA_SKILL: return 45;
+	case PLAYER_STATE::CONFRINGO_SKILL: return 45;
+	case PLAYER_STATE::AVADA_KEDAVRA_SKILL: return 45;
+	case PLAYER_STATE::LUMOS_SKILL: return 45;
 	case PLAYER_STATE::REVELIO_SKILL: return 45;
 	case PLAYER_STATE::REPAIRO_SKILL: return 45;
 	case PLAYER_STATE::ATTACK: return 40;

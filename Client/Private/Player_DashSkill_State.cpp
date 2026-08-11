@@ -99,11 +99,11 @@ void CPlayer_DashSkill_State::CacheAnimationIndices(const CPlayer& player)
 	if (m_bAnimationIndicesCached)
 		return;
 
-	m_iDashAnimIndex = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_DdgeRll_Blink_2Cmbt_anm.bin");
-	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_DdgeRll_Blink_anm.bin");
-	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_DdgeRll_Blink1_anm.bin");
-	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_DdgeRll_Blink1_Loop_anm.bin");
-	m_iDashEndAnimIndex = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_DdgeRll_Blink1_anm.bin");
+	m_iDashAnimIndex = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_DdgeRll_Blink_2Cmbt_anm.bin");
+	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_DdgeRll_Blink_anm.bin");
+	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_DdgeRll_Blink1_anm.bin");
+	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_DdgeRll_Blink1_Loop_anm.bin");
+	m_iDashEndAnimIndex = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_DdgeRll_Blink1_anm.bin");
 
 	m_bAnimationIndicesCached =
 		m_iDashAnimIndex >= 0 &&

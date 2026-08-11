@@ -44,7 +44,7 @@ void CPlayer_Roll_State::Enter(CStateMachine* pStateMachine)
 		moveIntent->SetFacingIntentImmediate(m_vRollDirection);
 	}
 
-	m_iRollAnimation = FindAnimationIndex(*player,"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_DdgeRll_Fwd_anm.bin");
+	m_iRollAnimation = FindAnimationIndex(*player,"AN_ProfessorSharp_MasterRig_Hu_Cmbt_DdgeRll_Fwd_anm.bin");
 
 	if (!animator || m_iRollAnimation < 0)
 	{
