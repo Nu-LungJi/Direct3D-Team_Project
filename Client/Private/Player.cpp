@@ -453,36 +453,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(1.f, 44 / 255.f, 44 / 255.f, 5.f));
 		}
 
-		{
-			auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
-		}
-		{
-			auto a = CGameInstance::Get().GetParticle("RanrokTrail1", "RanrokTrail1");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
-		}
-		{
-			auto a = CGameInstance::Get().GetParticle("RanrokTrail2", "RanrokTrail2");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
-		}
-		{
-			auto a = CGameInstance::Get().GetParticle("RanrokTrail3", "RanrokTrail3");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
-		}
-		{
-			auto a = CGameInstance::Get().GetParticle("RanrokTrail4", "RanrokTrail4");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
-		}
-		{
-			auto a = CGameInstance::Get().GetParticle("RanrokTrail5", "RanrokTrail5");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
-		}
+
 
 	}
 

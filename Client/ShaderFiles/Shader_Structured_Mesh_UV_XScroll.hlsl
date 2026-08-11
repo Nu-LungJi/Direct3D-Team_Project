@@ -23,6 +23,8 @@ Texture2D NormalMap : register(t1);
 Texture2D SMROMap : register(t2);
 Texture2D EmissiveMap : register(t3);
 Texture2D NoiseMap : register(t5);
+Texture2D AnyTextureMap : register(t8);
+
 
 
 
@@ -106,30 +108,18 @@ PS_OUT PSMain(VS_OUT In)
     
     
     float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, scrolledUV) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
-    //if (AlbedoTex.a < 0.05f)
-    //    discard;
+
     float ratio = 1.0f - (In.life / In.maxLife);
     float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
     float lengthMask = In.vTexcoord.y;
 	
 	float bandWidth = 0.35f;
-// ratio(0~1)를 -bandWidth ~ (1+bandWidth) 범위로 확장해서 매핑
 	float leadingEdge = lerp(-bandWidth, 1.0f + bandWidth, ratio);
 	float trailingEdge = leadingEdge - bandWidth;
 
 	if (lengthMask > leadingEdge || lengthMask < trailingEdge)
 		discard;
-// 길이 그라디언트 위주 + 노이즈로 가장자리에 자연스러운 디테일만 살짝
-    //float revealValue = saturate(lengthMask * 0.7f + noise.r * 0.3f);
 
-	// 다 안보였다가 보이게 됨
-	//if (lengthMask > ratio)
-	//	discard;
-	//
-	//if (lengthMask < mask2)
-	//	discard;
-    //if (noise.r > ratio) 
-    //    discard;
     float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
 
     float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
@@ -269,3 +259,38 @@ PS_OUT PSTexScrollMain(VS_OUT In)
 	return Out;
 }
 
+
+
+
+
+
+PS_OUT PSMarble(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float lifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float remainingRatio = 1.f - lifeRatio;
+
+	float lengthMask = In.vTexcoord.y;
+	float bandWidth = 0.35f;
+	float leadingEdge = lerp(-bandWidth, 1.f + bandWidth, remainingRatio);
+	float trailingEdge = leadingEdge - bandWidth;
+
+	if (lengthMask > leadingEdge || lengthMask < trailingEdge)
+		discard;
+
+	float2 crackUV = In.vTexcoord;
+	crackUV.y += g_fTime * 0.1f;
+
+	float crackSource = AnyTextureMap.Sample(LinearWrap, crackUV).g;
+	float crackCore = pow(saturate(crackSource), 2.f);
+	float crackGlow = smoothstep(0.05f, 0.55f, crackSource);
+
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, lifeRatio);	
+	float3 baseColor = In.vColor.rgb;
+	float3 crackEmissive = lerpedEmissive.rgb * lerpedEmissive.a * (crackCore * 4.f + crackGlow * 1.5f);
+	float3 finalColor = baseColor + crackEmissive;
+
+	Out.vDiffuse = float4(finalColor, In.vColor.a);
+	return Out;
+}
