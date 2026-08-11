@@ -322,6 +322,9 @@
     <Filter Include="GameObject\Monster\EnderDragon\Skill\Pulse">
       <UniqueIdentifier>{09992e54-522b-43d3-906d-2a40796d13e4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\UI\SpellMiniGame">
+      <UniqueIdentifier>{ef6f213f-529f-4d34-abc2-dc6e985e85c9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -753,6 +756,9 @@
     <ClInclude Include="..\public\EdgPulse.h">
       <Filter>GameObject\Monster\EnderDragon\Skill\Pulse</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\SpellMiniGame.h">
+      <Filter>GameObject\UI\SpellMiniGame</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1132,6 +1138,9 @@
     </ClCompile>
     <ClCompile Include="..\private\EdgPulse.cpp">
       <Filter>GameObject\Monster\EnderDragon\Skill\Pulse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\SpellMiniGame.cpp">
+      <Filter>GameObject\UI\SpellMiniGame</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

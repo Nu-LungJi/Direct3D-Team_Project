@@ -2006,6 +2006,9 @@
     <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\SpellPathProgress.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\MiniMap.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
