@@ -617,6 +617,14 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "PHASE3COPY", CResJson::Create("./Resources/json/BeHavior/SubTree/Phase3Copy.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED PHASE3COPY JSON");
+			return E_FAIL;
+		}
+	}
 	return S_OK; 
 }
 

@@ -31,7 +31,7 @@
 #include "EdgFireBall.h"
 #include "EdgBreath.h"
 #include "EdgPulse.h"
-
+#include "EdgRandomBall.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
 NS_USING(Client)
@@ -313,7 +313,7 @@ HRESULT CLevelLastBossRanrokLoader::MonsterLoad_InWorker()
 			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_Dragon.bin"))) {
 
 			E::CResModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(1.8f, 1.8f, 1.8f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.6f, 1.6f, 1.6f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 
 			if (FAILED(res->Load(pDesc)))
 			{
@@ -330,7 +330,49 @@ HRESULT CLevelLastBossRanrokLoader::MonsterLoad_InWorker()
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, CEdgFireBall::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, CEdgBreath::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Pulse, CEdgPulse::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_RandomBall, CEdgRandomBall::Create()))) return E_FAIL;
 
+
+		if (auto res = CGameInstance::Get().AddResource("EDGWAYPT", "SPAWN", CResJson::Create("./Resources/json/WayPoint/SPAWN.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT SPAWN JSON");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResource("EDGWAYPT", "PHASE2", CResJson::Create("./Resources/json/WayPoint/PHASE2.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT PHASE2 JSON");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResource("EDGWAYPT", "PHASE3", CResJson::Create("./Resources/json/WayPoint/PHASE3.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT PHASE3 JSON");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResource("EDGWAYPT", "PHASE4", CResJson::Create("./Resources/json/WayPoint/PHASE4.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT PHASE4 JSON");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResource("EDGWAYPT", "PHASE5", CResJson::Create("./Resources/json/WayPoint/PHASE5.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT PHASE5 JSON");
+				return E_FAIL;
+			}
+		}
 	}
 
 	return S_OK;

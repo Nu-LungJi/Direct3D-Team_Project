@@ -99,6 +99,18 @@ HRESULT CBTDecEdgPatroll::Load_json(const nlohmann::json& j)
 	LoadJsonEnum(j, "Patroll", m_eState);
 	return S_OK;
 }
+void CBTDecEdgPatroll::Abort()
+{
+	__super::Abort();
+	m_bDot = false;
+}
+void CBTDecEdgPatroll::OnEnter()
+{
+	m_bDot = false;
+}
+void CBTDecEdgPatroll::OnExit(EVALUATE eResult)
+{
+}
 EVALUATE CBTDecEdgPatroll::Patroll(MOVE eState, CBTBlackBoard* pBB)
 {
 	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
@@ -128,7 +140,13 @@ EVALUATE CBTDecEdgPatroll::Moving(_float3& vOutDir, _float3 vSrcPos, const Strin
 	_float3* vDestPos = pBB->Get_Value<_float3>(ArrowKey);
 	XMStoreFloat3(&vOutDir, XMLoadFloat3(vDestPos) - XMLoadFloat3(&vSrcPos));
 	_float fDistance = XMVectorGetX(XMVector3Length(XMLoadFloat3(&vOutDir)));
-	if (fDistance <= 0.5f)
+
+	if (!m_bDot)
+	{
+		m_vDotDir = vOutDir;
+		m_bDot = true;
+	}
+	if (fDistance <= 0.5f || XMVectorGetX(XMVector3Dot(XMLoadFloat3(&m_vDotDir),XMLoadFloat3(&vOutDir))) < 0.f)
 		return EVALUATE::SUCCESS;
 	
 	return  EVALUATE::FAILED;

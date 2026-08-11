@@ -108,7 +108,7 @@ void CEdgFireBall::MoveBall(_float fTimeDelta)
 
 	if (MoveSweep(vNextPos))
 	{
-		if (m_iBoneIndex != INVALID_EFFECT_INSTANCE_ID)
+		if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
 			CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, *GetTransform().GetWorldMatrix());
 		GetTransform().SetPosition(vNextPos);
 		GetTransform().Update();
