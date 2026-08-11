@@ -17,7 +17,10 @@ public:
 private:
 	static HRESULT LoadPlayerResources();
 	static HRESULT LoadPlayerCape();
-	static _bool UILoad();
+	static _bool UILoad_InWorker();
+
+private:
+	constexpr static LEVEL CURR_LEVEL = LEVEL::HOGWART_WORLD;
 };
 
 NS_END

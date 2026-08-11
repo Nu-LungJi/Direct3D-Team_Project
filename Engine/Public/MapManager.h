@@ -150,6 +150,7 @@ private:
 private:
 	static constexpr int64_t STREAM_LOAD_RADIUS = 2;   // 5 x 5 x 5
 	static constexpr int64_t STREAM_UNLOAD_RADIUS = 3; // 7 x 7 x 7
+	static constexpr uint32_t MAX_CONCURRENT_CHUNK_LOADS = 4;
 	_float3 m_vChunkSize = DEFAULT_MAP_CHUNK_SIZE;
 	std::string m_sMapRootPath;
 
