@@ -32,8 +32,11 @@ private:
 
 public:
 	void SetMouseTracking(_bool isTracking) { m_bMouseTracking = isTracking; }
+	void SetPathProgressMode(_bool enabled) { m_bPathProgressMode = enabled; }
+	void SetPathProgress(_float progress) { m_fAmount = std::clamp(progress, 0.f, 1.f); }
 private:
 	_bool m_bMouseTracking{false};
+	_bool m_bPathProgressMode{ false };
 
 private:
 	bool m_bOutline{};

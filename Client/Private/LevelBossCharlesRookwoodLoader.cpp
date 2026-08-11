@@ -18,6 +18,7 @@
 #include "GameOverMask.h"
 #include "VideoObject.h"
 #include "Cursor.h"
+#include "SpellMiniGame.h"
 
 #include "DebugPlayer.h"
 #include "DebugPlayerThirdPersonCamera.h"
@@ -281,7 +282,8 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 				"./Resources/SampleClient/Textures/UI/UITexture/PlayScreen",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
-				"./Resources/SampleClient/Textures/UI/UITexture/Cursor"
+				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
+				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame"
 			};
 
 			// 배열을 순회하며 기존 로직을 한 번만 작성하여 처리합니다.
@@ -336,6 +338,10 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 			return false;
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_UIController", CUIController::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_SpellMiniGame", CSpellMiniGame::Create())))
 		{
 			return false;
 		}

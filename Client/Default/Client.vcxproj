@@ -309,6 +309,7 @@
     <ClInclude Include="..\Public\Player_SkillStateBase.h" />
     <ClInclude Include="..\Public\Player_StateMachine.h" />
     <ClInclude Include="..\Public\SpellMeter.h" />
+    <ClInclude Include="..\Public\SpellMiniGame.h" />
     <ClInclude Include="..\Public\StarBurst.h" />
     <ClInclude Include="..\Public\TextBox.h" />
     <ClInclude Include="..\Public\TextureUI.h" />
@@ -442,6 +443,7 @@
     <ClCompile Include="..\Private\Player_SkillStateBase.cpp" />
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
     <ClCompile Include="..\Private\SpellMeter.cpp" />
+    <ClCompile Include="..\Private\SpellMiniGame.cpp" />
     <ClCompile Include="..\Private\StarBurst.cpp" />
     <ClCompile Include="..\Private\TextBox.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />

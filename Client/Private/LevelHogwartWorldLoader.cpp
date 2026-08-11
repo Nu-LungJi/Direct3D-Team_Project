@@ -22,6 +22,7 @@
 #include "GameOverMask.h"
 #include "VideoObject.h"
 #include "Cursor.h"
+#include "SpellMiniGame.h"
 
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
@@ -213,7 +214,8 @@ _bool CLevelHogwartWorldLoader::UILoad()
 		"./Resources/SampleClient/Textures/UI/UITexture/PlayScreen",
 		"./Resources/SampleClient/Textures/UI/UITexture/SpellType",
 		"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
-		"./Resources/SampleClient/Textures/UI/UITexture/Cursor"
+		"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
+		"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame"
 	};
 
 	for (const char* directory : directories)
@@ -246,6 +248,7 @@ _bool CLevelHogwartWorldLoader::UILoad()
 		SUCCEEDED(gameInstance.AddPrototype(UI_GROUP, "Prototype_GameObject_HPBar", CHPBar::Create())) &&
 		SUCCEEDED(gameInstance.AddPrototype(UI_GROUP, "Prototype_GameObject_MiniMap", CMiniMap::Create())) &&
 		SUCCEEDED(gameInstance.AddPrototype(UI_GROUP, "Prototype_GameObject_UIController", CUIController::Create())) &&
+		SUCCEEDED(gameInstance.AddPrototype(UI_GROUP, "Prototype_GameObject_SpellMiniGame", CSpellMiniGame::Create())) &&
 		SUCCEEDED(gameInstance.AddPrototype(UI_GROUP, "Prototype_GameObject_GameOverMask", CGameOverMask::Create())) &&
 		SUCCEEDED(gameInstance.AddPrototype(UI_GROUP, "Prototype_GameObject_VideoObject", CVideoObject::Create())) &&
 		SUCCEEDED(gameInstance.AddPrototype(UI_GROUP, "Prototype_GameObject_Cursor", CCursor::Create()));
