@@ -29,6 +29,9 @@ private:
 public:
 	static E::UPtr<CEdgFireBall> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
+private:
+	uint32_t		m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
 };
 
 NS_END

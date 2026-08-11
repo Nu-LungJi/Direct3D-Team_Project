@@ -29,6 +29,7 @@
 #include "EdgFireBall.h"
 #include "EdgBreath.h"
 #include "EdgPulse.h"
+#include "Trail_CPU.h"
 NS_USING(Client)
 
 CEnderDragon::CEnderDragon()
@@ -667,6 +668,44 @@ void CEnderDragon::Picking(_float3& vPos, uint32_t iID)
 	vPos ={ World._41, World._42, World._43};
 
 	return ;
+}
+void CEnderDragon::InitializeEffects()
+{
+	{
+		auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
+	}
+	{
+		auto a = CGameInstance::Get().GetParticle("RanrokTrail1", "RanrokTrail1");
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+	}
+	{
+		auto a = CGameInstance::Get().GetParticle("RanrokTrail2", "RanrokTrail2");
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+	}
+	{
+		auto a = CGameInstance::Get().GetParticle("RanrokTrail3", "RanrokTrail3");
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+	}
+	{
+		auto a = CGameInstance::Get().GetParticle("RanrokTrail4", "RanrokTrail4");
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+	}
+	{
+		auto a = CGameInstance::Get().GetParticle("RanrokTrail5", "RanrokTrail5");
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+	}
+	{
+		auto a = CGameInstance::Get().GetParticle("SpitTrail", "SpitTrail");
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f,0.35f,0.35f,1.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(1.0f,0.28f,0.28f,100.f));
+	}
 }
 E::UPtr<CEnderDragon> CEnderDragon::Create()
 {

@@ -108,69 +108,6 @@ static const float DistortSpeedV = 1.4875f;
 static const float DistortStrength = 0.91f;
 static const float DistortMipLevel = 0.0f; // VS는 자동 밉 계산이 없어서 명시 지정 필수
 
-VS_OUT VSSwirlDistortTex_Old(VS_IN In)
-{
-	VS_OUT Out = (VS_OUT) 0;
-
-	float4x4 matWorld = float4x4(In.vWorld0, In.vWorld1, In.vWorld2, In.vWorld3);
-
-	float lifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
-	float bodyPosition = saturate(In.vTexcoord.y);
-
-	// 뿌리는 고정하고 끝으로 갈수록 강하게 움직인다.
-	float rootMask = smoothstep(0.05f, 0.3f, bodyPosition);
-	float tipMask = bodyPosition * bodyPosition;
-	float flexMask = rootMask * tipMask;
-
-	// 인스턴스마다 움직임이 겹치지 않도록 월드 위치로 Phase를 만든다.
-	float instancePhase = dot(matWorld[3].xyz, float3(0.173f, 0.317f, 0.271f));
-
-	float2 noiseUV = In.vTexcoord * float2(DistortTilingU, DistortTilingV);
-	noiseUV += float2(g_fAccumulationTime * DistortSpeedU, -g_fAccumulationTime * DistortSpeedV);
-	noiseUV += instancePhase;
-
-	float2 noise = AnyTextureMap.SampleLevel(LinearWrap, noiseUV, DistortMipLevel).rg;
-	noise = noise * 2.f - 1.f;
-		
-	float wavePhase = bodyPosition * 8.f - g_fAccumulationTime * 4.f + instancePhase;
-	float waveX = sin(wavePhase + noise.x * 2.f);
-	float waveZ = cos(wavePhase * 0.73f + noise.y * 2.f);
-
-	float3 localTangent = normalize(In.vTangent);
-	float3 localBinormal = normalize(In.vBinormal);
-	float3 localNormal = normalize(In.vNormal);
-
-	float3 localPosition = In.vPosition;
-
-	// 문어발처럼 좌우와 앞뒤 방향으로 휘어진다.
-	localPosition += localTangent * waveX * DistortStrength * flexMask;
-	localPosition += localBinormal * waveZ * DistortStrength * 0.65f * flexMask;
-
-	// 표면도 작게 꿈틀거리게 만든다.
-	localPosition += localNormal * noise.x * DistortStrength * 0.15f * flexMask;
-
-	float4 worldPosition = mul(float4(localPosition, 1.f), matWorld);
-
-	Out.vPosition = mul(worldPosition, g_matViewProj);
-	Out.vWorldPos = worldPosition.xyz;
-	Out.vScreenPos = Out.vPosition;
-	Out.vTexcoord = In.uvOffset + In.vTexcoord * In.uvSize;
-
-	float3x3 world3x3 = (float3x3) matWorld;
-
-	Out.vNormal = normalize(mul(In.vNormal, world3x3));
-	Out.vTangent = normalize(mul(In.vTangent, world3x3));
-	Out.vBinormal = normalize(mul(In.vBinormal, world3x3));
-
-	Out.vColor = In.vColor;
-	Out.vEmissive = In.vInstEmissive;
-	Out.vEndEmissive = In.vInstEndEmissive;
-	Out.life = In.life;
-	Out.maxLife = In.maxLife;
-	Out.iBehaviorType = In.iBehaviorType;
-
-	return Out;
-}
 
 VS_OUT VSSwirlDistortTex(VS_IN In)
 {
@@ -479,5 +416,134 @@ PS_OUT PSBreathe(VS_OUT In)
 	float alpha = lerp(0.4f, 0.9f, pattern) * In.vColor.a;
 
 	Out.vDiffuse = float4(finalColor, alpha);
+	return Out;
+}
+PS_OUT PSDrgonProj(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float2 uv = In.vTexcoord;
+	uv.x += g_fAccumulationTime * 1.13f;
+	uv.y -= g_fAccumulationTime * 1.13f;
+
+	float4 surfaceTex = AlbedoMap.Sample(LinearWrap, uv);
+	float3 emissiveTex = EmissiveMap.Sample(LinearWrap, uv).rgb;
+	float surfaceValue = max(surfaceTex.r, max(surfaceTex.g, surfaceTex.b));
+	float emissiveValue = max(emissiveTex.r, max(emissiveTex.g, emissiveTex.b));
+	float veinMask = pow(saturate(surfaceValue * emissiveValue), 2.f);
+
+	float2 normalUV1 = In.vTexcoord + float2(g_fAccumulationTime * 0.035f, -g_fAccumulationTime * 0.055f);
+	float2 normalUV2 = In.vTexcoord * 1.7f + float2(-g_fAccumulationTime * 0.045f, g_fAccumulationTime * 0.025f);
+	float2 normal1 = NormalMap.Sample(LinearWrap, normalUV1).rg * 2.f - 1.f;
+	float2 normal2 = NormalMap.Sample(LinearWrap, normalUV2).rg * 2.f - 1.f;
+	float2 distortion = (normal1 + normal2) * 0.007f;
+
+	float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+	screenUV = screenUV * float2(0.5f, -0.5f) + 0.5f;
+
+	float3 N = normalize(In.vNormal);
+	float3 V = normalize(g_vCamPos - In.vWorldPos);
+	float fresnel = pow(1.f - saturate(dot(N, V)), 3.f);
+
+	distortion *= 0.5f + fresnel;
+	float3 background = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion).rgb;
+
+	float lifeRatio = saturate(1.f - In.life / max(In.maxLife, 0.0001f));
+	float4 emissive = lerp(In.vEmissive, In.vEndEmissive, lifeRatio);
+	float shellMask = smoothstep(0.05f, 0.65f, surfaceValue);
+	float3 liquidTint = In.vColor.rgb * shellMask * In.vColor.a * 0.15f;
+	float3 rimColor = emissive.rgb * emissive.a * fresnel * 0.2f;
+	float3 veinColor = emissive.rgb * emissive.a * veinMask;
+	float3 finalColor = background + liquidTint + rimColor + veinColor;
+
+	Out.vDiffuse = float4(finalColor, 1.f);
+	return Out;
+}
+PS_OUT PSWater(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float2 surfaceUV1 = In.vTexcoord + float2(-g_fAccumulationTime * 0.02f, -g_fAccumulationTime * 0.12f);
+	float2 surfaceUV2 = In.vTexcoord * 1.7f + float2(g_fAccumulationTime * 0.08f, g_fAccumulationTime * 0.08f);
+	float surface1 = AlbedoMap.Sample(LinearWrap, surfaceUV1).r;
+	float surface2 = AlbedoMap.Sample(LinearWrap, surfaceUV2).r;
+	float surfaceFlow = saturate(surface1 * 0.65f + surface2 * 0.35f);
+
+	float2 normalUV1 = In.vTexcoord + float2(-g_fAccumulationTime * 0.1f, -g_fAccumulationTime * 1.2f);
+	float2 normalUV2 = In.vTexcoord * 1.6f + float2(g_fAccumulationTime * 0.07f, g_fAccumulationTime * 0.6f);
+	float2 normal1 = NormalMap.Sample(LinearWrap, normalUV1).rg * 2.f - 1.f;
+	float2 normal2 = NormalMap.Sample(LinearWrap, normalUV2).rg * 2.f - 1.f;
+	float2 waterNormal = normalize(normal1 + normal2 + 0.0001f);
+
+	float3 N = normalize(In.vNormal);
+	float3 V = normalize(g_vCamPos - In.vWorldPos);
+	float NdotV = saturate(dot(N, V));
+	float fresnel = pow(1.f - NdotV, 4.f);
+	float thinRim = pow(1.f - NdotV, 10.f);
+
+	float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;    
+	screenUV = screenUV * float2(0.5f, -0.5f) + 0.5f;
+	float2 distortion = waterNormal * 0.012f * lerp(0.4f, 1.f, fresnel);
+	float3 background = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion).rgb;
+
+	float lifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float4 emissive = lerp(In.vEmissive, In.vEndEmissive, lifeRatio);
+	float gradientMask = AnyTextureMap.Sample(LinearWrap, In.vTexcoord).r;
+	float interiorMask = saturate(surfaceFlow * 0.6f + gradientMask * 0.4f);
+	float absorption = interiorMask * In.vColor.a * 0.08f;
+	float3 waterTint = lerp(float3(1.f, 1.f, 1.f), In.vColor.rgb, 0.2f);
+	float3 transparentWater = background * lerp(float3(1.f, 1.f, 1.f), waterTint, absorption);
+	float emissiveIntensity = min(emissive.a, 1.5f);
+	float3 surfaceColor = In.vColor.rgb * surfaceFlow * In.vColor.a * 0.02f;
+	float3 rimColor = emissive.rgb * emissiveIntensity * fresnel * 0.45f;
+	float3 whiteRim = lerp(emissive.rgb, float3(1.f, 0.9f, 0.85f), 0.7f) * thinRim * 1.2f;
+	float3 finalColor = transparentWater + surfaceColor + rimColor + whiteRim;
+
+	Out.vDiffuse = float4(finalColor, In.vColor.a);
+	
+	return Out;
+}
+PS_OUT PSOuterSphere(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+
+	float lifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float4 emissive = lerp(In.vEmissive, In.vEndEmissive, lifeRatio);
+
+	float2 diffuseUV1 = In.vTexcoord + float2(-g_fAccumulationTime * 0.02f, -g_fAccumulationTime * 0.12f);
+	float2 diffuseUV2 = In.vTexcoord * 1.7f + float2(g_fAccumulationTime * 0.06f, g_fAccumulationTime * 0.08f);
+	float3 diffuseTex1 = AlbedoMap.Sample(LinearWrap, diffuseUV1).rgb;
+	float3 diffuseTex2 = AlbedoMap.Sample(LinearWrap, diffuseUV2).rgb;
+	float3 diffuseTex = diffuseTex1 * 0.65f + diffuseTex2 * 0.35f;
+	float diffuseMask = dot(diffuseTex, float3(0.299f, 0.587f, 0.114f));
+
+	float3 geometryNormal = normalize(In.vNormal);
+	float3 viewDirection = normalize(g_vCamPos - In.vWorldPos);
+	float NdotV = saturate(dot(geometryNormal, viewDirection));
+	float rim = 1.f - NdotV;
+
+	float redHaloMask = smoothstep(0.15f, 0.82f, rim);
+	float outerLineMask = smoothstep(0.6f, 0.96f, rim);
+	float whiteCoreMask = smoothstep(0.96f, 0.99f, rim);
+
+	
+	
+	float textureMask = smoothstep(0.15f, 0.8f, diffuseMask);
+	float3 bodyColor = In.vColor.rgb * lerp(0.15f, 0.8f, textureMask);
+	float bodyAlpha = In.vColor.a * lerp(0.35f, 1.f, textureMask);
+	
+	
+	float3 redHaloColor = In.vColor.rgb * redHaloMask * 0.8f;
+	float3 outerLineColor = emissive.rgb * emissive.a * outerLineMask * 1.2f;
+	float3 whiteCoreColor = lerp(emissive.rgb, float3(1.f, 0.95f, 0.9f), 0.8f) * emissive.a * whiteCoreMask * 2.f;
+	float3 finalColor = bodyColor + redHaloColor + outerLineColor + whiteCoreColor;
+
+	float redHaloAlpha = redHaloMask * 0.18f;
+	float outerLineAlpha = outerLineMask * 0.65f;
+	float whiteCoreAlpha = whiteCoreMask * 0.35f;
+	float finalAlpha = saturate(bodyAlpha + redHaloAlpha + outerLineAlpha + whiteCoreAlpha);
+
+	Out.vDiffuse = float4(finalColor, finalAlpha);
 	return Out;
 }

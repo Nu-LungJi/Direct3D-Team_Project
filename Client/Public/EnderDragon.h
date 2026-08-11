@@ -62,6 +62,8 @@ private:
 	
 	void						Phase_Debug();
 	void						Picking(_float3& vPos,uint32_t iID);
+
+	void						InitializeEffects();
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
 
