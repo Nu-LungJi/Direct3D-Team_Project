@@ -325,6 +325,8 @@ public:
 	void	Stop_UpperAnim(_float fFadeDuration = 0.1f);
 	_bool	Set_UpperBodyRootBone(const _char* pBoneName, uint32_t iBlendDepth = 3);
 	_bool	IsUpperLayerActive() const { return m_UpperAnimState.IsValid() && m_fUpperLayerWeight > 0.f; }
+	_bool	HasUpperAnimation() const { return m_UpperAnimState.IsValid(); }
+	_float	GetUpperLayerWeight() const { return m_fUpperLayerWeight; }
 	void	Build_BoneMatrices_CPU(_float fTimeDelta);
 	_bool Sample_CombinedBoneMatrices(int32_t iAnimIndex, _float fTrackPosition, const std::vector<uint32_t>& boneChain, _float4x4& outMatrix) const;
 

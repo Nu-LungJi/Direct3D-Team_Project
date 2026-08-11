@@ -65,10 +65,10 @@ void CPlayer_AccioSkill_State::CacheAnimationIndices(const CPlayer& player)
 		return;
 
 
-	//m_AccioCast_Animation = FindAnimationIndex( player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Accio_anm.bin");
-	m_AccioCast_Animation = FindAnimationIndex( player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_AccioPull_anm.bin");
-	m_AccioEnd_Animation = FindAnimationIndex( player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_AccioPull_anm.bin");
-	m_AttackFail_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_LF_Atk_Heavy_Fail_anm.bin");
+	//m_AccioCast_Animation = FindAnimationIndex( player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_RF_Cast_Casual_Fwd_Accio_anm.bin");
+	m_AccioCast_Animation = FindAnimationIndex( player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_AccioPull_anm.bin");
+	m_AccioEnd_Animation = FindAnimationIndex( player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_AccioPull_anm.bin");
+	m_AttackFail_Animation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_LF_Atk_Heavy_Fail_anm.bin");
 
 	m_bAnimationIndicesCached =m_AccioCast_Animation >= 0 &&m_AccioEnd_Animation >= 0 &&m_AttackFail_Animation >= 0;
 }

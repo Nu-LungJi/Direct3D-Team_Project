@@ -465,6 +465,11 @@ void CComAnimator::Play_UpperAnim(int32_t iAnimIndex, _bool bLoop, _float fFadeD
 	m_fUpperFadeDuration = std::max(fFadeDuration, 0.f);
 	if (m_fUpperFadeDuration <= 0.f)
 		m_fUpperLayerWeight = 1.f;
+
+	// The animation editor can leave the animator paused after timeline
+	// scrubbing.  The upper layer is advanced from Update(), so make sure a
+	// gameplay upper-body request can actually progress its track and fade.
+	m_bPlay = true;
 }
 
 void CComAnimator::Stop_UpperAnim(_float fFadeDuration)

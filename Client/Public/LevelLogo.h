@@ -33,8 +33,10 @@ public:
 private:
 	CUIObject* SafeGetOBJ(CHandle pHandle)
 	{
-		if (nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle))
-			return E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle);
+		if (auto* pObject = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle))
+			return pObject;
+
+		return nullptr;
 	}
 	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
 	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);

@@ -1,3 +1,4 @@
+
 #include "pch.h"
 #include "LevelCharlesRookwoodLoader.h"
 #include "GameInstance.h"
@@ -85,10 +86,10 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				}
 			}
 
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/ElegantStudent_PrettyGirl2_RigCorrectedFinal/SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin"))) {
 
 				E::CResModel::DESC pDesc{};
-				pDesc.PreTransformMatrix = XMMatrixScaling(3.f , 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.5f, 0.f);
+				pDesc.PreTransformMatrix = XMMatrixScaling(3.f , 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.8f, 0.f);
 				if (FAILED(res->Load(pDesc))) {
 					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_MODEL_RESROUCE");
 					return false;
@@ -459,6 +460,8 @@ _bool CLevelCharlesRookwoodLoader::UILoad()
 			return false;
 		}
 	}
+
+	return true;
 }
 HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 {
@@ -564,4 +567,6 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 			return E_FAIL;
 		}
 	}
+
+	return S_OK;
 }

@@ -60,13 +60,13 @@ void CPlayer_RepairoSkill_State::CacheAnimationIndices(const CPlayer& player)
 
 	m_iRepairoStartAnimation = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_AOE_Repairo_Start_anm.bin");
+		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_AOE_Repairo_Start_anm.bin");
 	m_iRepairoLoopAnimation = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_AOE_Repairo_Loop_anm.bin");
+		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_AOE_Repairo_Loop_anm.bin");
 	m_iRepairoEndAnimation = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_AOE_Repairo_End_anm.bin");
+		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_AOE_Repairo_End_anm.bin");
 
 	m_bAnimationIndicesCached =
 		m_iRepairoStartAnimation >= 0 &&

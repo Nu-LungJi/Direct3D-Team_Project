@@ -49,25 +49,25 @@ void CPlayer_Locomotion_State::CacheAnimationIndices(const CPlayer& player)
 	if (m_bAnimationIndicesCached)
 		return;
 
-	m_iIdleAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_anm.bin");
+	m_iIdleAnimation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_LF_Idle_anm.bin");
 	m_iJogStartForwardAnimation = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Jog_Start_Fwd_anm.bin");
+		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_RF_Jog_Start_Fwd_anm.bin");
 	m_iJogForwardAnimation = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Jog_Loop_Fwd_anm.bin");
+		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_Jog_Loop_Fwd_anm.bin");
 	m_iJogStopForwardAnimation = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Jog_Turn_Stop_Fwd_RU_anm.bin");
+		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_RF_Jog_Turn_Stop_Fwd_RU_anm.bin");
 	m_iSprintForwardAnimation = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Fwd_anm.bin");
+		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_Sprint_Loop_Fwd_anm.bin");
 	m_iSprintLeanLeftAnimation = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Lft_anm.bin");
+		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_Sprint_Loop_Lean_Lft_anm.bin");
 	m_iSprintLeanRightAnimation = FindAnimationIndex(
 		player,
-		"AN_ProfessorSharp_MasterRig_Hu_BM_Sprint_Loop_Lean_Rht_anm.bin");
+		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_Sprint_Loop_Lean_Rht_anm.bin");
 
 	m_bAnimationIndicesCached = true;
 }

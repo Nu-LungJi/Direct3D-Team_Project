@@ -98,13 +98,13 @@ HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
 		LEVEL::HOGWART_WORLD,
 		"PLAYER_MODEL_RESROUCE",
 		E::CResModel::Create(
-			"./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin")))
+			"./Resources/SampleClient/Models/Skeleton/ElegantStudent_PrettyGirl2_RigCorrectedFinal/SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin")))
 	{
 		E::CResModel::DESC desc{};
 		desc.PreTransformMatrix =
 			XMMatrixScaling(3.f, 3.f, 3.f) *
 			XMMatrixRotationY(XMConvertToRadians(180.f)) *
-			XMMatrixTranslation(0.f, -1.5f, 0.f);
+			XMMatrixTranslation(0.f, -1.8f, 0.f);
 		if (FAILED(model->Load(desc)))
 			return E_FAIL;
 	}
