@@ -12,7 +12,7 @@ TextureCubeArray<float> DynamicShadowCubeMaps	: register(t12);
 RWTexture2D<float4>		OUTPUT					: register(u0);
 RWTexture3D<float4>		OUTPUT3D				: register(u1);
 
-static const float		GodRayStrength				= { 2.5f };
+static const float		GodRayStrength				= { 3.5f };
 
 static const float		SpotVolumetricShadowBias	= { 0.0001f };
 static const float		PointVolumetricShadowBias	= { 0.002f };
@@ -147,6 +147,36 @@ float GetVolumeFogDensity(float3 _WorldPos)
 	return	HeightFactor * FogDensity * HeightLimit * FinalFlowNoise;
 }
 
+float Sample_CascadeShadow(float3 _WorldPos, uint _CascadeIndex)
+{
+	float4 ShadowSpacePos = mul(float4(_WorldPos, 1.f), ShadowViewProj[_CascadeIndex]);
+	ShadowSpacePos.xyz /= ShadowSpacePos.w;
+	
+	float2 ShadowMapUV;
+	ShadowMapUV.x = ShadowSpacePos.x * +0.5f + 0.5f;
+	ShadowMapUV.y = ShadowSpacePos.y * -0.5f + 0.5f;
+	
+	if (ShadowMapUV.x < 0.f || ShadowMapUV.x > 1.f ||
+        ShadowMapUV.y < 0.f || ShadowMapUV.y > 1.f ||
+		ShadowSpacePos.z > 1.f || ShadowSpacePos.z < 0.f)
+		return 1.f;
+
+	float	CurrentDepth = ShadowSpacePos.z - ShadowBias.x;
+	
+	float2	TexelSize = 1.f / max(ShadowMapSize, float2(1.f, 1.f));
+
+	float	ShadowFactor = 0.f;
+	
+	[unroll]
+	for (uint i = 0; i < 4; ++i)
+	{
+		float2 SampleUV = ShadowMapUV + TexelSize * PCFOffsets[i];
+		ShadowFactor += ShadowMapArray.SampleCmpLevelZero(ShadowSampler, float3(SampleUV, _CascadeIndex), CurrentDepth);
+	}
+	
+	return	ShadowFactor * 0.25f;
+}
+
 float Compute_CascadeShadow(float3 _WorldPos)
 {
 	float4	ViewPos = mul(float4(_WorldPos, 1.f), g_matView);
@@ -160,30 +190,22 @@ float Compute_CascadeShadow(float3 _WorldPos)
 	else if (ViewDepth < CascadeSplits.z)	CascadeIndex = 2;
 	else if (ViewDepth < CascadeSplits.w)	CascadeIndex = 3;
 
-	float4	ShadowSpacePos = mul(float4(_WorldPos, 1.f), ShadowViewProj[CascadeIndex]);
-	ShadowSpacePos.xyz /= ShadowSpacePos.w;
+	float CurrentShadow = Sample_CascadeShadow(_WorldPos, CascadeIndex);
 	
-	float2	ShadowMapUV;
-	ShadowMapUV.x = ShadowSpacePos.x * +0.5f + 0.5f;
-	ShadowMapUV.y = ShadowSpacePos.y * -0.5f + 0.5f;
+	if (CascadeIndex >= 3)	return CurrentShadow;
 	
-	if (ShadowMapUV.x < 0.f || ShadowMapUV.x > 1.f ||
-        ShadowMapUV.y < 0.f || ShadowMapUV.y > 1.f ||
-		ShadowSpacePos.z > 1.f || ShadowSpacePos.z < 0.f)	return 1.f;
-
-	float	CurrentDepth = ShadowSpacePos.z - ShadowBias.x;
+	float CascadeNear = CascadeIndex == 0 ? 0.f : CascadeSplits[CascadeIndex - 1];
+	float CascadeFar  = CascadeSplits[CascadeIndex];
 	
-	float2	TexelSize = 1.f / max(ShadowMapSize, float2(1.f, 1.f));
-
-	float	ShadowFactor = 0.f;
-	[unroll]
-	for (uint i = 0; i < 4; ++i)
-	{
-		float2 SampleUV = ShadowMapUV + TexelSize * PCFOffsets[i];
-		ShadowFactor += ShadowMapArray.SampleCmpLevelZero(ShadowSampler, float3(SampleUV, CascadeIndex), CurrentDepth);
-	}
+	float CascadeBlendStart = lerp(CascadeNear, CascadeFar, 0.85f);
 	
-	return ShadowFactor * 0.25f;
+	if (ViewDepth <= CascadeBlendStart)	return CurrentShadow;
+	
+	float NextShadow = Sample_CascadeShadow(_WorldPos, CascadeIndex + 1);
+	
+	float BlendWeight = smoothstep(CascadeBlendStart, CascadeFar, ViewDepth);
+	
+	return lerp(CurrentShadow, NextShadow, BlendWeight);
 }
 
 float Compute_PointVolumetricShadow(float3 _WorldPos, uint _LightIndex)
