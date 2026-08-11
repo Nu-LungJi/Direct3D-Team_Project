@@ -237,7 +237,7 @@ namespace Engine
 		_float	g_fFogScatteringWeight;
 		_float	g_fFogBaseHeight;
 		_float	g_fFogHeightFallOff;
-		_float	g_fFogPadding;
+		_float	g_fFogTime;
 	};
 	static_assert(sizeof(CB_VLFOG) % 16 == 0);
 
@@ -249,16 +249,6 @@ namespace Engine
 		_float2 g_fShadowBias;
 	};
 	static_assert(sizeof(CB_CSM) % 16 == 0);
-
-	struct CB_VLTEMPORAL
-	{
-		_matrix	 g_mPrevViewProj;
-		uint32_t g_iFrameIndex;
-		_float   g_fHistoryWeight;
-		uint32_t g_iHistoryValid;
-		_float   Padding;
-	};
-	static_assert(sizeof(CB_VLTEMPORAL) % 16 == 0);
 
 	struct CB_LENSFLARE
 	{

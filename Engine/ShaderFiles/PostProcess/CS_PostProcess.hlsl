@@ -152,9 +152,23 @@ void CSMain_LensFlare(uint3 ID : SV_DispatchThreadID)
 }
 
 /////////////////////////// BLOOM Main Shader Function
+
+bool GetOutputTexCoord(uint2 _PixelCoord, out float2 _TexCoord)
+{
+	uint OutputWidth, OutputHeight;
+	OUTPUT.GetDimensions(OutputWidth, OutputHeight);
+	
+	if (_PixelCoord.x >= OutputWidth || _PixelCoord.y >= OutputHeight) {
+		_TexCoord = 0.f; return false;
+	}
+	_TexCoord = (float2(_PixelCoord) + 0.5f) / float2(OutputWidth, OutputHeight);
+	
+	return true;
+}
+
 float KarisWeight(float3 _Color)
 {
-	float3 Luminance = dot(_Color, float3(0.2126f, 0.7152f, 0.0722f));
+	float Luminance = dot(_Color, float3(0.2126f, 0.7152f, 0.0722f));
 	return 1.f / (1.f + max(Luminance, 0.0001f));
 }
 
@@ -163,10 +177,10 @@ float3 CustomDownSampling(Texture2D _Texture, float2 _TexCoord, float2 _TexelSiz
 	float2 SamplingOffset = _TexelSize * 0.5f; // Sampling Near Pixel
 	
 	float3 Color = 0.f;
-	float ColorA = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(-SamplingOffset.x, -SamplingOffset.y), 0).rgb;
-	float ColorB = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(+SamplingOffset.x, -SamplingOffset.y), 0).rgb;
-	float ColorC = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(-SamplingOffset.x, +SamplingOffset.y), 0).rgb;
-	float ColorD = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(+SamplingOffset.x, +SamplingOffset.y), 0).rgb;
+	float3 ColorA = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(-SamplingOffset.x, -SamplingOffset.y), 0).rgb;
+	float3 ColorB = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(+SamplingOffset.x, -SamplingOffset.y), 0).rgb;
+	float3 ColorC = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(-SamplingOffset.x, +SamplingOffset.y), 0).rgb;
+	float3 ColorD = _Texture.SampleLevel(LinearClamp, _TexCoord + float2(+SamplingOffset.x, +SamplingOffset.y), 0).rgb;
 
 	float WeightA = KarisWeight(ColorA);
 	float WeightB = KarisWeight(ColorB);
@@ -222,14 +236,17 @@ float SoftKneeCurve(float _Luminance, float _Threshold, float _Knee)
 [numthreads(8, 8, 1)]
 void CSMain_BrightPass(uint3 ID : SV_DispatchThreadID)
 {
+	float2 TexCoord;
+
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY)	return;
-	
-	float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY); 
-	
+	if (!GetOutputTexCoord(ID.xy, TexCoord)) return;
+
 	float3	DownSampledColor = CustomDownSampling(OriginalTexture, TexCoord, TexelSize);
 
 	float	Luminance = dot(DownSampledColor, float3(0.2126f, 0.7152f, 0.0722f));
+	
+	float MaxChannel = max(DownSampledColor.r, max(DownSampledColor.g, DownSampledColor.b));
+	Luminance = max(Luminance, MaxChannel * 0.5f);
 	
 	float	SoftKneeCurveValue = SoftKneeCurve(Luminance, BrightThreshold, 0.2f);
 	float	Contribution = max(SoftKneeCurveValue, Luminance - BrightThreshold) / max(Luminance, 0.0001f);
@@ -241,11 +258,10 @@ void CSMain_BrightPass(uint3 ID : SV_DispatchThreadID)
 [numthreads(8, 8, 1)]
 void CSMain_VerticalBlur(uint3 ID : SV_DispatchThreadID)
 {
+	float2 TexCoord;
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY) return;
-	
-	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
-	
+	if (!GetOutputTexCoord(ID.xy, TexCoord)) return;
+
 	OUTPUT[ID.xy] = float4(GaussianBlur(TexCoord, float2(0.f, TexelSize.y)), 1.f);
 	return;
 }
@@ -253,11 +269,10 @@ void CSMain_VerticalBlur(uint3 ID : SV_DispatchThreadID)
 [numthreads(8, 8, 1)]
 void CSMain_HorizontalBlur(uint3 ID : SV_DispatchThreadID)
 {
+	float2 TexCoord;
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY) return;
-	
-	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
-	
+	if (!GetOutputTexCoord(ID.xy, TexCoord)) return;
+
 	OUTPUT[ID.xy] = float4(GaussianBlur(TexCoord, float2(TexelSize.x, 0.f)), 1.f);
 	return;
 }
@@ -265,14 +280,13 @@ void CSMain_HorizontalBlur(uint3 ID : SV_DispatchThreadID)
 [numthreads(8, 8, 1)]
 void CSMain_Combined(uint3 ID : SV_DispatchThreadID)
 {
+	float2 TexCoord;
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY) return;
-	
-	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
+	if (!GetOutputTexCoord(ID.xy, TexCoord)) return;
 	
 	float3 OriginalColor	= OriginalTexture.SampleLevel(LinearClamp, TexCoord, 0).rgb;
 	float3 BloomBlurColor	= BlurPassTexture.SampleLevel(LinearClamp, TexCoord, 0).rgb;
-    
+	
 	OUTPUT[ID.xy] = float4(OriginalColor + BloomBlurColor * BloomIntensity, 1.f);
 	return;
 }
@@ -280,11 +294,10 @@ void CSMain_Combined(uint3 ID : SV_DispatchThreadID)
 [numthreads(8, 8, 1)]
 void CSMain_UpSampling(uint3 ID : SV_DispatchThreadID)
 {
+	float2 TexCoord;
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY) return;
-	
-	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
-	
+	if (!GetOutputTexCoord(ID.xy, TexCoord)) return;
+
 	float3 HalfBloom = OriginalTexture.SampleLevel(LinearClamp, TexCoord, 0).rgb;
 	float3 QuarterBloom = BlurPassTexture.SampleLevel(LinearClamp, TexCoord, 0).rgb;
 	
@@ -295,11 +308,10 @@ void CSMain_UpSampling(uint3 ID : SV_DispatchThreadID)
 [numthreads(8, 8, 1)]
 void CSMain_DownSampling(uint3 ID : SV_DispatchThreadID)
 {
+	float2 TexCoord;
 	[branch]
-	if (ID.x >= SCREENX || ID.y >= SCREENY) return;
-	
-	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
-    
+	if (!GetOutputTexCoord(ID.xy, TexCoord)) return;
+
 	OUTPUT[ID.xy] = float4(DownSampling(OriginalTexture, TexCoord, TexelSize), 1.f);
 	return;
 }

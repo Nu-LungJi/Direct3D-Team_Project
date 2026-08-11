@@ -67,6 +67,9 @@ HRESULT CLightManager::Initialize_PBRResources() {
 		if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_EffectLight", E::CResCBuffer::Create())) {
 			if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_EFFECT_LIGHT) })))    return E_FAIL;
 		}
+		if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_VolumetricLight", E::CResCBuffer::Create())) {
+			if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LIGHT) })))    return E_FAIL;
+		}
 		if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CS_PBR_CSM", E::CResCBuffer::Create())) {
 			if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_CSM) })))    return E_FAIL;
 		}
@@ -79,6 +82,9 @@ HRESULT CLightManager::Initialize_PBRResources() {
 
 		m_pEffectLightConstantBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_EffectLight");
 		if (nullptr == m_pEffectLightConstantBuffer)	return E_FAIL;
+
+		m_pVolumetricLightConstantBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_VolumetricLight");
+		if (nullptr == m_pVolumetricLightConstantBuffer)	return E_FAIL;
 
 		m_pPBRCSMConstantBuffer		 = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CS_PBR_CSM");
 		if (nullptr == m_pPBRCSMConstantBuffer)	return E_FAIL;
@@ -987,7 +993,10 @@ HRESULT CLightManager::Copy_StaticShadowToFinal(LIGHT_TYPE _LightType, uint32_t 
 }
 
 VOID CLightManager::Bind_VolumetricLocalLightResources() {
-	m_pContext->CSSetConstantBuffers(static_cast<uint32_t>(B_SLOTNUMBER::LIGHT), 1, m_pNormalLightConstantBuffer->GetCBuffer().GetAddressOf());
+
+	Update_VolumetricLightData();
+
+	m_pContext->CSSetConstantBuffers(static_cast<uint32_t>(B_SLOTNUMBER::LIGHT), 1, m_pVolumetricLightConstantBuffer->GetCBuffer().GetAddressOf());
 
 	m_pContext->CSSetShaderResources(10, 1, m_pDynamicDirectionalShadowList.SRV.GetAddressOf());
 	m_pContext->CSSetShaderResources(12, 1, m_pDynamicPointShadowList.SRV.GetAddressOf());
@@ -1005,6 +1014,7 @@ VOID CLightManager::UnBind_VolumetricLocalLightResources() {
 }
 
 #pragma region EFFECT_LIGHT
+
 VOID CLightManager::Update_EffectLightData() {
 	if (!m_pEffectLightConstantBuffer)	return;
 
@@ -1554,6 +1564,70 @@ VOID	CLightManager::Update_LightData() {
 		m_pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pNormalLightConstantBuffer->GetCBuffer().GetAddressOf());
 		m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pNormalLightConstantBuffer->GetCBuffer().GetAddressOf());
 		m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pNormalLightConstantBuffer->GetCBuffer().GetAddressOf());
+	}
+}
+
+VOID CLightManager::Update_VolumetricLightData() {
+	CB_LIGHT VolumetricLightBuffer{};
+	uint32_t WriteIndex = 0;
+
+	for (const auto& LightHandle : m_pActiveLightList) {
+		if (WriteIndex >= MAX_VOLUMETRIC_LIGHT_RENDER_COUNT) break;
+
+		if (!LightHandle) continue;
+
+		auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
+		if (nullptr == LightOBJ || false == LightOBJ->Get_LightActivateState()) continue;
+
+		LIGHT_TYPE LightType = LightOBJ->Get_LightType();
+		if (LightType == LIGHT_TYPE::DIRECTIONAL) continue;
+
+		_float VolumetricIntensity = LightOBJ->Get_VolumetricIntensity();
+		if (VolumetricIntensity <= 0.0001f) continue;
+
+		auto& DestLight = VolumetricLightBuffer.AffectedLight[WriteIndex];
+
+		_bool IsPointLight = LightType == LIGHT_TYPE::POINT;
+
+		if (IsPointLight) {
+			DestLight.InnerAttanuation = LightOBJ->Get_PointLightInnerAttenuation();
+			DestLight.OuterAttanuation = LightOBJ->Get_PointLightOuterAttenuation();
+		}
+		else {
+			DestLight.InnerAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightInnerAttenuation()));
+			DestLight.OuterAttanuation = cosf(XMConvertToRadians(LightOBJ->Get_LightOuterAttenuation()));
+		}
+
+		DestLight.LightType				= ETOUI(LightType);
+		DestLight.LightDirection		= LightOBJ->Get_LightDirection();
+		DestLight.LightColor			= LightOBJ->Get_LightColor();
+		DestLight.LightIntensity		= LightOBJ->Get_LightIntensity();
+		DestLight.LightRange			= LightOBJ->Get_LightRange();
+		DestLight.Position				= LightOBJ->Get_LightPosition();
+		DestLight.VolumetricIntensity	= VolumetricIntensity;
+
+		if (LightOBJ->Get_LightShadowCast() && LightOBJ->Get_ShadowSlotNumb() >= 0) {
+			DestLight.ShadowSlot = LightOBJ->Get_ShadowSlotNumb();
+			LightOBJ->PrepareShadowMapMatrices();
+
+			uint32_t MatrixCount = IsPointLight ? POINT_SHADOW_MAPCOUNT : 1u;
+			for (uint32_t MatrixIndex = 0; MatrixIndex < MatrixCount; ++MatrixIndex) {
+				DestLight.g_LightViewProj[MatrixIndex] = LightOBJ->Get_LightViewProj(MatrixIndex);
+			}
+		}
+		else { DestLight.ShadowSlot = -1; }
+		++WriteIndex;
+	}
+
+	VolumetricLightBuffer.LightCount = WriteIndex;
+	if (auto ActiveCamera = CGameInstance::Get().GetActiveCamera()) {
+		XMStoreFloat4x4(&VolumetricLightBuffer.g_InvViewProj, XMMatrixInverse(nullptr, ActiveCamera->GetView() * ActiveCamera->GetProj()));
+	}
+
+	D3D11_MAPPED_SUBRESOURCE MRES{};
+	if (SUCCEEDED(m_pContext->Map(m_pVolumetricLightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES))) {
+		memcpy(MRES.pData, &VolumetricLightBuffer, sizeof(CB_LIGHT));
+		m_pContext->Unmap(m_pVolumetricLightConstantBuffer->GetCBuffer().Get(), 0);
 	}
 }
 

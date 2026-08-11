@@ -77,6 +77,7 @@ public:
 
 	VOID	Update_ActiveLights();
 	VOID	Update_LightData();
+	VOID	Update_VolumetricLightData();
 	VOID	Allocate_ShadowSlot();
 
 	VOID	Invalidate_DynamicShadowMaps();
@@ -150,7 +151,7 @@ private:
 	CB_SHADOW							m_pShadowConstantVariable{};
 
 
-
+	SPtr<CResCBuffer> m_pVolumetricLightConstantBuffer = { nullptr };
 
 	std::vector<IRenderable*>			m_pStaticShadowCasterScratch{};
 

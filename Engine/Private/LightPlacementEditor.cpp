@@ -504,6 +504,10 @@ void CLightPlacementEditor::DrawSelectedLightInspector()
 	if (ImGui::Checkbox("Cast Shadow", &castShadow))
 		light->Set_LightShadowCast(castShadow);
 
+	_bool scattering = light->Get_VolumetricScattering();
+	if (ImGui::Checkbox("Scattering", &scattering))
+		light->Set_VolumetricScattering(scattering);
+
 	_float3 position = light->Get_LightPosition();
 	if (ImGui::DragFloat3(
 		"Position",
@@ -640,12 +644,24 @@ void CLightPlacementEditor::DrawSelectedLightInspector()
 		}
 	}
 
+	_float volumeintensity = light->Get_VolumetricIntensity();
+	if (ImGui::DragFloat(
+		"Volumetric Intensity",
+		&volumeintensity,
+		0.1f,
+		0.f,
+		100.f,
+		"%.2f"))
+	{
+		light->Set_VolumetricIntensity(volumeintensity);
+	}
+
 	ImGui::Separator();
 	if (ImGui::Button("T", ImVec2(34.f, 0.f)))
 		m_eGizmoOperation = ImGuizmo::TRANSLATE;
 	ImGui::SameLine();
 	if (ImGui::Button("R", ImVec2(34.f, 0.f)))
-		m_eGizmoOperation = ImGuizmo::ROTATE;
+	 	m_eGizmoOperation = ImGuizmo::ROTATE;
 	ImGui::SameLine();
 	if (ImGui::RadioButton(
 		"Local",
@@ -1047,38 +1063,18 @@ std::optional<CHandle> CLightPlacementEditor::CreateLight(
 	switch (data.eType)
 	{
 	case LIGHT_TYPE::DIRECTIONAL:
-		handle = m_pLightManager->Add_DirectionalLight(
-			data.vDirection,
-			data.vColor,
-			data.fIntensity);
+		handle = m_pLightManager->Add_DirectionalLight(data.vDirection, data.vColor, data.fIntensity);
 		break;
 	case LIGHT_TYPE::POINT:
 	{
-		const _float outerRange = std::max(
-			data.fOuterAttenuation,
-			LightPlacementEditorDetail::MIN_RANGE);
-		const _float innerRange = std::clamp(
-			data.fInnerAttenuation,
-			0.f,
-			outerRange);
-		handle = m_pLightManager->Add_PointLight(
-			data.vPosition,
-			data.vColor,
-			data.fIntensity,
-			innerRange,
-			outerRange);
+		const _float outerRange = std::max(data.fOuterAttenuation, LightPlacementEditorDetail::MIN_RANGE);
+		const _float innerRange = std::clamp(data.fInnerAttenuation, 0.f, outerRange);
+		handle = m_pLightManager->Add_PointLight(data.vPosition, data.vColor, data.fIntensity, innerRange, outerRange);
 		break;
 	}
 	case LIGHT_TYPE::SPOTLIGHT:
-		handle = m_pLightManager->Add_SpotLight(
-			data.vPosition,
-			data.vColor,
-			data.fIntensity,
-			std::max(
-				data.fRange,
-				LightPlacementEditorDetail::MIN_RANGE),
-			data.fInnerAttenuation,
-			data.fOuterAttenuation);
+		handle = m_pLightManager->Add_SpotLight(data.vPosition, data.vColor, data.fIntensity, std::max(data.fRange, LightPlacementEditorDetail::MIN_RANGE),
+			data.fInnerAttenuation, data.fOuterAttenuation);
 		break;
 	default:
 		return std::nullopt;
@@ -1095,11 +1091,13 @@ std::optional<CHandle> CLightPlacementEditor::CreateLight(
 		light->SetObjectTag(data.sName);
 		light->Set_LightAlias(data.sAlias);
 		light->Set_LightPosition(data.vPosition);
-		light->Set_LightDirection(
-			LightPlacementEditorDetail::NormalizeDirection(
-				data.vDirection));
+		light->Set_LightDirection(LightPlacementEditorDetail::NormalizeDirection(data.vDirection));
+
+		light->Set_VolumetricIntensity(data.fVolumetricIntensity);
+
 		light->Set_LightActivateState(data.bActive);
 		light->Set_LightShadowCast(data.bCastShadow);
+		light->Set_VolumetricScattering(data.bScattering);
 	}
 
 	return handle;
@@ -1138,26 +1136,23 @@ CLightPlacementEditor::BuildFileData() const
 		entry.vDirection = light->Get_LightDirection();
 		entry.vColor = light->Get_LightColor();
 		entry.fIntensity = light->Get_LightIntensity();
+		entry.fVolumetricIntensity = light->Get_VolumetricIntensity();
 		entry.bCastShadow = light->Get_LightShadowCast();
 		if (entry.eType == LIGHT_TYPE::POINT)
 		{
-			entry.fInnerAttenuation =
-				light->Get_PointLightInnerAttenuation();
-			entry.fOuterAttenuation =
-				light->Get_PointLightOuterAttenuation();
-			entry.fRange =
-				entry.fOuterAttenuation;
+			entry.fInnerAttenuation = light->Get_PointLightInnerAttenuation();
+			entry.fOuterAttenuation = light->Get_PointLightOuterAttenuation();
+			entry.fRange = entry.fOuterAttenuation;
 		}
 		else
 		{
 			entry.fRange = light->Get_LightRange();
-			entry.fInnerAttenuation =
-				light->Get_LightInnerAttenuation();
-			entry.fOuterAttenuation =
-				light->Get_LightOuterAttenuation();
+			entry.fInnerAttenuation = light->Get_LightInnerAttenuation();
+			entry.fOuterAttenuation = light->Get_LightOuterAttenuation();
 		}
-		entry.bActive =
-			light->Get_LightActivateState();
+		entry.bActive = light->Get_LightActivateState();
+		entry.bCastShadow = light->Get_LightShadowCast();
+		entry.bScattering = light->Get_VolumetricScattering();
 		file.lights.push_back(std::move(entry));
 	}
 
