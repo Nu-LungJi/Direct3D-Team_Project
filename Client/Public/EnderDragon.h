@@ -1,10 +1,16 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
-enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,SKIP,END};
+enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL,SKIP,END};
 enum class DRAGON_PHASE{PHASE1, PHASE2, PHASE3, PHASE4, PHASE5, PHASE6, PHASE7, END};
-// 투명 드래곤이 울부 짖었다
+enum class EDG_SPAWN_NUMBER { FIRST, SECOND, THIRD, FOUR };
 
+// 투명 드래곤이 울부 짖었다
+typedef struct stredganimfsm
+{
+	int32_t iAnimIndex{};
+	_float	fBlend{};
+}EDG_ANIM_FSM;
 NS_BEGIN(Client)
 typedef struct stredgskillInfo
 {
@@ -55,6 +61,7 @@ public:
 	_bool						Check_Table(PLAYER_SKILL_TYPE eType) override;
 	void						Check_Phase();
 	void						Set_AttTable(ATTMON eType, _float2 fSkillRatio) override;
+	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
 private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
@@ -62,14 +69,16 @@ private:
 	
 	void						Phase_Debug();
 	void						Picking(_float3& vPos,uint32_t iID);
+
+	void						InitializeEffects();
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
-
+	
 	_string			m_EffectNames[ETOUI(DRAGON_SKILL::END)]{};
 	EDG_SKILL_INFO	m_SkillHandle[ETOUI(DRAGON_SKILL::END)]{};
 	DRAGON_SKILL	m_eDragonSkill{};
 	DRAGON_PHASE	m_ePhase{};
-	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false };
+	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false }, m_bPopupL{ false };
 
 	_string						m_WayName{};
 	std::list<_float3>			m_DebugPoint;

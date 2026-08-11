@@ -9,6 +9,7 @@
 #include "Monster.h"
 #include "MiniMap.h"
 #include "ClientEvents.h"
+#include "SpellMiniGame.h"
 
 NS_USING(Client)
 
@@ -70,6 +71,21 @@ void CUIController::Update(E::_float fTimeDelta)
 {
 	BindMiniMap();
 	ApplyPendingQuestUIGroups();
+
+	if (m_hSpellMiniGame && !E::CGameInstance::Get().
+		GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
+	{
+		m_hSpellMiniGame = std::nullopt;
+	}
+
+	// Temporary test entry. F8 opens/closes the Incendio mini game.
+	if (E::CGameInstance::Get().KeyDown(DIK_F7))
+	{
+		if (m_hSpellMiniGame)
+			StopSpellMiniGame();
+		else
+			StartSpellMiniGame();
+	}
 
 	if (!CursorCreate)
 	{
@@ -187,6 +203,59 @@ void CUIController::LateUpdate(E::_float fTimeDelta)
 HRESULT CUIController::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	return S_OK;
+}
+
+_bool CUIController::StartSpellMiniGame()
+{
+	if (m_hSpellMiniGame && E::CGameInstance::Get().
+		GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
+	{
+		return false;
+	}
+
+	m_hSpellMiniGame = std::nullopt;
+	const std::string currentLevel = _string("LEVEL_") +
+		MagicEnumToStringView(static_cast<LEVEL>(
+			E::CGameInstance::Get().GetCurrentLevelID())).data();
+
+	CGameObject::GAMEOBJECT_DESC desc{};
+	desc.sObjectTag = "SpellMiniGame_Incendio";
+	auto handle = E::CGameInstance::Get().AddGameObjectToLayer(
+		currentLevel,
+		"Prototype_GameObject_SpellMiniGame",
+		"Layer_UI",
+		&desc);
+	if (!handle)
+		return false;
+
+	m_hSpellMiniGame = *handle;
+	E::CGameInstance::Get().SetMouseFix(false);
+	if (m_Cursor)
+	{
+		if (auto* cursor = SafeGetOBJ(*m_Cursor))
+			cursor->SetAlpha(1.f);
+	}
+	return true;
+}
+
+void CUIController::StopSpellMiniGame()
+{
+	if (m_hSpellMiniGame)
+	{
+		if (auto* miniGame = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
+		{
+			miniGame->SetPendingDestroyCascade();
+		}
+	}
+
+	m_hSpellMiniGame = std::nullopt;
+	E::CGameInstance::Get().SetMouseFix(true);
+	if (m_Cursor)
+	{
+		if (auto* cursor = SafeGetOBJ(*m_Cursor))
+			cursor->SetAlpha(0.f);
+	}
 }
 
 void CUIController::CreatePlayScreen()
@@ -922,6 +991,16 @@ void CUIController::PlayAlphaUP(CHandle pHandle, float delaytime, float playTime
 
 void CUIController::Free()
 {
+	if (m_hSpellMiniGame)
+	{
+		if (auto* miniGame = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
+		{
+			miniGame->SetPendingDestroyCascade();
+		}
+		m_hSpellMiniGame = std::nullopt;
+	}
+
 	if (m_iQuestUIListenerID != 0)
 	{
 		E::CGameInstance::Get().

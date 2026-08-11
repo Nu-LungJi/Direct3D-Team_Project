@@ -3,15 +3,15 @@
 
 
 NS_BEGIN(Client)
-class CEdgFireBall : public CDragonSkill
+class CEdgRandomBall : public CDragonSkill
 {
 public:
-	DECLARE_DERIVED_TYPE(CEdgFireBall, CDragonSkill)
+	DECLARE_DERIVED_TYPE(CEdgRandomBall, CDragonSkill)
 
 protected:
-	explicit CEdgFireBall();
-	explicit CEdgFireBall(const CEdgFireBall& rhs);
-	~CEdgFireBall() override;
+	explicit CEdgRandomBall();
+	explicit CEdgRandomBall(const CEdgRandomBall& rhs);
+	~CEdgRandomBall() override;
 
 public:
 	HRESULT			InitializePrototype(void* pArg = nullptr) override;
@@ -24,14 +24,11 @@ public:
 	void			Active(const _string& SkillName) override;
 	void			Cancle() override;
 private:
-	void			MoveBall(_float fTimeDelta);
-	_bool			MoveSweep(_vector vNextPos);
+	void			Ball(_float fTimeDelta);
+	_bool			Sweep(_vector vNextPos);
 public:
-	static E::UPtr<CEdgFireBall> Create();
+	static E::UPtr<CEdgRandomBall> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
-
-private:
-	uint32_t		m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
 };
 
 NS_END

@@ -78,8 +78,8 @@ _bool CDragonSkill::Life_Check(_float fTimeDelta)
 
 	if (m_fLife >= m_fMaxLife || m_bHit)
 	{
-		if (m_iBoneIndex != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().StopEffect(m_iBoneIndex);
+		if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().StopEffect(m_iSkillEffID);
 		ResetValue();
 		return true;
 	}

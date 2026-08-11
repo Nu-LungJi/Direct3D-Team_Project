@@ -145,6 +145,8 @@ public:
 	CComCharacterMoveIntent*	Get_MoveIntent();
 	CBTBlackBoard*				Get_BlackBoard();
 	int32_t						Find_AnimIndex(const _string& AnimName);
+
+	void						Set_HideOnBush(_bool bHide) { m_bHide = bHide; }
 protected:
 	uint32_t					Find_SkillNum(ATTMON eType);
 	 _bool						Check_Flag(uint32_t iFlag);
@@ -189,9 +191,9 @@ protected:
 
 	_float2								m_fSkillRatio{ };
 	uint32_t							m_iCurrentInstanceCount{}, m_iHitCnt{}, m_iNormalHitCnt{}, m_iCurEffectID{}, m_iPreSkill{}, m_iCurSkill{};
-	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{}, m_fDamage{};
+	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{}, m_fDamage{}, m_fDissolve{};
 	int32_t								m_iHp{}, m_iMaxHp{}, m_iColliderBoneIndex{}, m_iEventBoneIndex{-1};
-	_bool								m_bEmissive{ false }, m_bWork{ false },m_bSkillLoop{ false }, m_bSkipAtt{false};
+	_bool								m_bEmissive{ false }, m_bWork{ false }, m_bSkillLoop{ false }, m_bSkipAtt{ false }, m_bHide{false};
 	_string								m_SocketName{}, m_CurEffectName{};
 	ATTMON								m_eAttType{ ATTMON::END },m_eLastSkillTable{ ATTMON::END };
 	

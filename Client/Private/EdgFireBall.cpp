@@ -30,6 +30,9 @@ HRESULT CEdgFireBall::Initialize(void* pArg)
 	m_fSpeed = 100.f;
 	m_fRadius = 0.5f;
 	m_fMaxLife = 3.f;
+
+	m_iEffectID = CGameInstance::Get().PlayEffect("DragonSpit",*m_pComTransform->GetWorldMatrix());
+
 	return S_OK;
 }
 
@@ -39,8 +42,11 @@ void CEdgFireBall::PriorityUpdate(E::_float fTimeDelta)
 
 	if (!m_bActive) return;
 
-	if (Life_Check(fTimeDelta))
+	if (Life_Check(fTimeDelta)) {
 		SetPendingDestroy();
+		if(m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().StopEffect(m_iEffectID);
+	}
 }
 
 void CEdgFireBall::FixedUpdate(E::_float fTimeDelta)
@@ -49,6 +55,8 @@ void CEdgFireBall::FixedUpdate(E::_float fTimeDelta)
 
 	__super::FixedUpdate(fTimeDelta);
 	MoveBall(fTimeDelta);
+
+
 }
 
 void CEdgFireBall::Update(E::_float fTimeDelta)
@@ -100,11 +108,17 @@ void CEdgFireBall::MoveBall(_float fTimeDelta)
 
 	if (MoveSweep(vNextPos))
 	{
-		if (m_iBoneIndex != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().SetEffectWorldMatrix(m_iBoneIndex, *GetTransform().GetWorldMatrix());
+		if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
+			CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, *GetTransform().GetWorldMatrix());
 		GetTransform().SetPosition(vNextPos);
 		GetTransform().Update();
 	}
+
+
+	_float3 vstart{GetTransform().GetPosition().x,GetTransform().GetPosition().y -1.5f,GetTransform().GetPosition().z };
+	_float3 vend{GetTransform().GetPosition().x,GetTransform().GetPosition().y +1.5f ,GetTransform().GetPosition().z };
+	CGameInstance::Get().AddTrailPoint("SpitTrail", "SpitTrail", vstart, vend);
+	//CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, *m_pComTransform->GetWorldMatrix());
 
 }
 

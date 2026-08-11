@@ -991,6 +991,13 @@ inline CGameObject* CGameInstance::GetGameObjectByHandle(const CHandle& handle)
 	return m_pGameObjectManager->GetGameObjectByHandle(handle);
 }
 
+_bool CGameInstance::SetGameObjectParent(
+	const CHandle& hChild,
+	const std::optional<CHandle>& hParent)
+{
+	return m_pGameObjectManager->SetGameObjectParent(hChild, hParent);
+}
+
 const std::vector<std::pair<std::string, std::vector<CHandle>>>& CGameInstance::GetGameObjectLayers() const
 {
 	return m_pGameObjectManager->GetLayers();
@@ -1153,6 +1160,16 @@ VOID	CGameInstance::Apply_OutlineEffect(std::optional<CHandle> targetHandle) { m
 #pragma region ANIMEDIT_MANAGER
 HRESULT CGameInstance::SetupTestModel() {
 	return m_pAnimEdit_Manager->SetupTestModel();
+}
+void CGameInstance::SetAnimationEditorTarget(const CHandle& Handle)
+{
+	if (m_pAnimEdit_Manager)
+		m_pAnimEdit_Manager->SetTestModelHandle(Handle);
+}
+_bool CGameInstance::IsAnimationEditorTarget(const CHandle& Handle) const
+{
+	return m_pAnimEdit_Manager &&
+		m_pAnimEdit_Manager->IsEditingTarget(Handle);
 }
 _string CGameInstance::GetAnimName(uint32_t iIndex, CHandle Handle)
 {

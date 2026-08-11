@@ -22,6 +22,7 @@
 #include "GameOverMask.h"
 #include "VideoObject.h"
 #include "Cursor.h"
+#include "SpellMiniGame.h"
 
 
 #include "EnderDragon.h"
@@ -30,7 +31,7 @@
 #include "EdgFireBall.h"
 #include "EdgBreath.h"
 #include "EdgPulse.h"
-
+#include "EdgRandomBall.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
 NS_USING(Client)
@@ -81,10 +82,10 @@ std::future<bool> CLevelLastBossRanrokLoader::Load()
 
 HRESULT CLevelLastBossRanrokLoader::LoadPlayer_InWorker()
 {
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(CURR_LEVEL, "PLAYER_MODEL_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(CURR_LEVEL, "PLAYER_MODEL_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/ElegantStudent_PrettyGirl2_RigCorrectedFinal/SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin"))) {
 
 		E::CResModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.5f, 0.f);
+		pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.8f, 0.f);
 		if (FAILED(res->Load(pDesc))) {
 			MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_MODEL_RESROUCE");
 			return false;
@@ -226,7 +227,8 @@ _bool CLevelLastBossRanrokLoader::UILoad_InWorker()
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellType",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
-				"./Resources/SampleClient/Textures/UI/UITexture/Cursor"
+				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
+				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame"
 			};
 
 			// 배열을 순회하며 기존 로직을 한 번만 작성하여 처리합니다.
@@ -284,6 +286,10 @@ _bool CLevelLastBossRanrokLoader::UILoad_InWorker()
 		{
 			return false;
 		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_SpellMiniGame", CSpellMiniGame::Create())))
+		{
+			return false;
+		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_GameOverMask", CGameOverMask::Create())))
 		{
 			return false;
@@ -307,7 +313,7 @@ HRESULT CLevelLastBossRanrokLoader::MonsterLoad_InWorker()
 			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_Dragon.bin"))) {
 
 			E::CResModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(1.8f, 1.8f, 1.8f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.6f, 1.6f, 1.6f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 
 			if (FAILED(res->Load(pDesc)))
 			{
@@ -324,7 +330,49 @@ HRESULT CLevelLastBossRanrokLoader::MonsterLoad_InWorker()
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, CEdgFireBall::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, CEdgBreath::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Pulse, CEdgPulse::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_RandomBall, CEdgRandomBall::Create()))) return E_FAIL;
 
+
+		if (auto res = CGameInstance::Get().AddResource("EDGWAYPT", "SPAWN", CResJson::Create("./Resources/json/WayPoint/SPAWN.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT SPAWN JSON");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResource("EDGWAYPT", "PHASE2", CResJson::Create("./Resources/json/WayPoint/PHASE2.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT PHASE2 JSON");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResource("EDGWAYPT", "PHASE3", CResJson::Create("./Resources/json/WayPoint/PHASE3.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT PHASE3 JSON");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResource("EDGWAYPT", "PHASE4", CResJson::Create("./Resources/json/WayPoint/PHASE4.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT PHASE4 JSON");
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResource("EDGWAYPT", "PHASE5", CResJson::Create("./Resources/json/WayPoint/PHASE5.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT PHASE5 JSON");
+				return E_FAIL;
+			}
+		}
 	}
 
 	return S_OK;

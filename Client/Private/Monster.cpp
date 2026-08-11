@@ -41,6 +41,7 @@ void CMonster::UpdateGUI()
 	CGameObject::UpdateGUI();
 	ImGui::DragInt("HP", &m_iHp, 0, 1);
 	ImGui::DragFloat("EE", &m_fIntensive, 0.1f,0.f,100.f);
+	ImGui::DragFloat("DD", &m_fDissolve, 0.1f, 0.f, 1.f);
 	ImGui::DragFloat3("ff", reinterpret_cast<_float*>(&m_fEMissiveColor), 0.1f,0.f, 1.f);
 	ImGui::Text("NoramlAtt : %d", m_iNormalHitCnt);
 	
@@ -176,6 +177,9 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 	const _float3 vControllerPosition = m_pCharacterController->GetPosition();
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
+
+	if (m_bHide) return;
+
 	const auto& pModel = m_pComModelInstance->GetModel();
 
 	if (!pModel)
@@ -282,7 +286,7 @@ HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
+		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
@@ -456,6 +460,7 @@ _bool CMonster::Is_Grounded()
 {
 	return m_pCharacterController->IsGrounded();
 }
+
 
 uint32_t CMonster::Find_SkillNum(ATTMON eType)
 {

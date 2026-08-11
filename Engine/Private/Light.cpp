@@ -15,13 +15,13 @@ VOID	CLight::UpdateGUI() {
 
 HRESULT CLight::InitializePrototype(VOID* pArg) {
 	{
-		m_pDynamicLight.LightDirection = { 1.f, -1.f, 1.f };
+		m_pDynamicLight.LightDirection = { 0.f, -1.f, 0.f };
 		m_pDynamicLight.LightIntensity = { 10.f };
 		m_pDynamicLight.LightColor = { 1.f, 1.f, 1.f };
 		m_pDynamicLight.LightRange = { 100.f };
 
 		m_pDynamicLight.Position = { 0.f, 0.f, 0.f };
-		m_pDynamicLight.LightType = ETOUI(LIGHT_TYPE::DIRECTIONAL);
+		m_pDynamicLight.LightType = ETOUI(LIGHT_TYPE::SPOTLIGHT);
 
 		m_pDynamicLight.InnerAttanuation = { 20.f };
 		m_pDynamicLight.OuterAttanuation = { 30.f };
@@ -55,10 +55,10 @@ HRESULT CLight::Initialize(VOID* pArg)
 	if (FAILED(CGameObject::Initialize(pArg)))			return E_FAIL;
 
 	{
-		m_pColliderSphere = CCollSphere::Create(m_pComTransform->GetPosition(), 10.f);
+		m_pColliderSphere	= CCollSphere::Create(m_pComTransform->GetPosition(), 10.f);
 		if (nullptr == m_pColliderSphere) return E_FAIL;
 
-		m_pColliderFrustum = CCollFrustum::Create(XMMatrixIdentity());
+		m_pColliderFrustum	= CCollFrustum::Create(XMMatrixIdentity());
 		if (nullptr == m_pColliderFrustum) return E_FAIL;
 	}
 	{
@@ -91,25 +91,22 @@ VOID CLight::Update_ObjectConstantBuffer(ID3D11DeviceContext* pContext){
 	if (m_bActivate_State == false) return;
 
 	XMMATRIX LightWorldMatrix = XMLoadFloat4x4(m_pComTransform->GetWorldMatrix());
-	XMMATRIX LightViewMatrix = XMLoadFloat4x4(&LightView);
-	XMMATRIX LightProjMatrix = XMLoadFloat4x4(&LightProj);
+	XMMATRIX LightViewMatrix{}, LightProjMatrix{};
 
 	if (m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::POINT))
 	{
 		XMVECTOR PositionOffset = XMVectorSet(0.f, 0.0001f, 0.f, 0.f);
 
 		XMVECTOR LightPosition  = LightWorldMatrix.r[3] + PositionOffset;
-		XMVECTOR LightDirection = XMVectorSet(1.f, 0.f, 0.f, 0.f);
-		XMVECTOR WorldUpVector  = XMVectorSet(0.f, 1.f, 0.f, 0.f);
 
-		_float	 fNearZ = 0.01f;
-		LightViewMatrix = XMMatrixLookAtLH(LightPosition, LightPosition + LightDirection, WorldUpVector);
+		_float NearZ = 0.01f;
+		_float OuterRange = std::max(m_fPointLightOuterAttenuation, 0.02f);
 
-		const _float OuterRange = std::max(m_fPointLightOuterAttenuation, 0.02f);
-		LightProjMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, fNearZ, OuterRange);
+		LightViewMatrix = XMMatrixLookAtLH(LightPosition, LightPosition + XMVectorSet(1.f, 0.f, 0.f, 0.f), XMVectorSet(0.f, 1.f, 0.f, 0.f));
+		LightProjMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV2, 1.f, NearZ, OuterRange);
 	}
 	{
-		E::CB_PER_PASS pCbPerPass{};
+		CB_PER_PASS pCbPerPass{};
 
 		XMMATRIX LightViewProj{};
 		LightViewProj = m_pDynamicLight.LightType == ETOUI(LIGHT_TYPE::DIRECTIONAL) ?
@@ -234,14 +231,8 @@ VOID CLight::Update_DirectionalShadowMatrices() {
 	XMVECTOR LightDirection = XMLoadFloat3(&m_pDynamicLight.LightDirection);
 	_float LightDirectionLength = XMVectorGetX(XMVector3Length(LightDirection));
 
-	if (LightDirectionLength <= 0.0001f)
-	{
-		LightDirection = XMVectorSet(0.f, -1.f, 0.f, 0.f);
-	}
-	else
-	{
-		LightDirection = XMVector3Normalize(LightDirection);
-	}
+	LightDirection = LightDirectionLength <= 0.0001f ? XMVectorSet(0.f, -1.f, 0.f, 0.f) : XMVector3Normalize(LightDirection);
+
 
 	for (uint32_t i = 0; i < MAX_CASCADE_COUNT; ++i) {
 		_float NearSplit = CSM_SplitDistance[i];
@@ -368,22 +359,20 @@ HRESULT CLight::Update_Collider() {
 	return S_OK;
 }
 
-_bool CLight::Intersects_ShadowBounds(const BoundingBox& _Bounds) const{
+_bool	CLight::Intersects_ShadowBounds(const BoundingBox& _Bounds) const{
 	switch (static_cast<LIGHT_TYPE>(m_pDynamicLight.LightType)) {
 		case LIGHT_TYPE::POINT :{
-			const auto Sphere = std::static_pointer_cast<CCollSphere>(m_pColliderSphere);
-
-			return Sphere->GetBoundingSphere().Intersects(_Bounds);
+			return std::static_pointer_cast<CCollSphere>(m_pColliderSphere)->GetBoundingSphere().Intersects(_Bounds);
 		}
 		case LIGHT_TYPE::SPOTLIGHT: {
-			const auto Frustum = std::static_pointer_cast<CCollFrustum>(m_pColliderFrustum);
-			return Frustum->GetBoundingFrustum().Intersects(_Bounds);
+			return std::static_pointer_cast<CCollFrustum>(m_pColliderFrustum)->GetBoundingFrustum().Intersects(_Bounds);
 		}
 		case LIGHT_TYPE::DIRECTIONAL: {
-			return true;
+			return true;	// Always Intersect
 		}
 	}
-	return true;
+
+	return false;
 }
 
 HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& RCTX, const std::vector<IRenderable*>& _ObjectHandleList, int32_t _PointFaceIndex) {
@@ -480,10 +469,10 @@ HRESULT	CLight::Set_LightType(LIGHT_TYPE _LTYPE) {
 
 	m_pDynamicLight.LightType = ETOUI(_LTYPE);
 
-	m_bShadowMatrixDirty = true;
-	m_bCullBoundsDirty = true;
-	m_bStaticShadowDirty = true;
-	m_bDynamicShadowDirty = true;
+	m_bShadowMatrixDirty	= true;
+	m_bCullBoundsDirty		= true;
+	m_bStaticShadowDirty	= true;
+	m_bDynamicShadowDirty	= true;
 
 	m_fPointLightInnerAttenuation = 0.f;
 	m_fPointLightOuterAttenuation = 0.02f;

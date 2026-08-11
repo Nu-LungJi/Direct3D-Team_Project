@@ -183,6 +183,8 @@ private:
 	uint32_t m_iDebugSelectedBone = 0;
 	uint32_t m_iCurrentInstanceCount = 0;
 	uint32_t m_iDashBodyEffectID = INVALID_EFFECT_INSTANCE_ID;
+	int32_t m_iDebugWandReadyUpperAnim{ -1 };
+	_bool m_bDebugWandReadyPlaying{};
 
 private:
 	_bool	 m_bRenderInfluence{ false	 };

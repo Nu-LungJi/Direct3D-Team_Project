@@ -93,7 +93,7 @@ PS_OUT PSMain(PS_IN IN)
 	Out.vDiffuse	= fDiffuse;
     Out.vNormal     = float4(fNormal * 0.5f + 0.5f, 1.f);
     Out.vSMRO       = float4(fFinalMetallic, fFinalRoughness, fFinalAO, 1.f);
-	Out.vEmissive	= float4(fFinalEmissive, 1.f);
+	Out.vEmissive = float4(fEmissive, 1.f);
     
     return Out;
 }

@@ -40,6 +40,8 @@ public:
 	void CreateSpellType();  // b눌렀을때 스펠 슬롯 설정 생성
 	void DeleteSpellType(); // b눌렀을때 스펠 슬롯 설정 해제
 	void CreateDeathScene(); // 죽는 화면
+	_bool StartSpellMiniGame();
+	void StopSpellMiniGame();
 
 	// ******** HP
 	void SetHPMax(_float maxHP);  // 최대 hp
@@ -125,6 +127,9 @@ private:
 	std::array<_bool, QUEST_UI_GROUP_COUNT> m_QuestUIGroupStates{};
 	std::array<_bool, QUEST_UI_GROUP_COUNT> m_QuestUIGroupDirty{};
 	uint64_t m_iQuestUIListenerID{};
+
+	// Spell learning mini game
+	std::optional<CHandle> m_hSpellMiniGame{ std::nullopt };
 
 	//*********내부함수*************//
 private:

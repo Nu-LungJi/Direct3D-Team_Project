@@ -149,4 +149,5 @@ X(GROGY,   0x0004000)\
 
 /////// -- Volumetric Rendering -- ///////
 #define VOLUME_MAXFAR	200
+#define MAX_VOLUMETRIC_LIGHT_RENDER_COUNT 8
 //////////////////////////////////////////

@@ -364,8 +364,10 @@ void CMapManager::UnloadChunksOutsideRange(const std::vector<MAPCHUNK_COORD>& ne
 
 void CMapManager::RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& neededChunks)
 {
-	if (m_AsyncChunkLoadsInFlight.load(std::memory_order_acquire) != 0)
+	const uint32_t inFlight = m_AsyncChunkLoadsInFlight.load(std::memory_order_acquire);
+	if (inFlight >= MAX_CONCURRENT_CHUNK_LOADS)
 		return;
+	uint32_t availableSlots = MAX_CONCURRENT_CHUNK_LOADS - inFlight;
 
 	std::vector<MAPCHUNK_COORD> prioritizedChunks = neededChunks;
 	if (const auto* camera = CGameInstance::Get().GetActiveCamera())
@@ -388,6 +390,9 @@ void CMapManager::RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& nee
 
 	for (const auto& coord : prioritizedChunks)
 	{
+		if (availableSlots == 0)
+			break;
+
 		auto iter = m_Chunks.find(coord);
 		if (iter == m_Chunks.end())
 		{
@@ -396,9 +401,10 @@ void CMapManager::RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& nee
 
 		if (CanAutoLoad(iter->second))
 		{
-			RequestLoadChunkAsync(coord);
-			//LoadChunk(coord);
-			return;
+			// 각 요청은 워커풀내의 독립적인 작업
+			// 가장 가까운 청크부터 제출됨
+			if (SUCCEEDED(RequestLoadChunkAsync(coord)))
+				--availableSlots;
 		}
 	}
 }

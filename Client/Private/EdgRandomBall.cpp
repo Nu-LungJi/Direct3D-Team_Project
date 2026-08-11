@@ -1,112 +1,112 @@
 #include "pch.h"
-#include "EdgPulse.h"
+#include "EdgRandomBall.h"
 #include "PhysXManager.h"
-#include "Player.h"
 NS_USING(Client)
-CEdgPulse::CEdgPulse()
+CEdgRandomBall::CEdgRandomBall()
 {
 }
 
-CEdgPulse::CEdgPulse(const CEdgPulse& rhs) : CDragonSkill(rhs)
+CEdgRandomBall::CEdgRandomBall(const CEdgRandomBall& rhs) : CDragonSkill(rhs)
 {
 }
 
-CEdgPulse::~CEdgPulse()
+CEdgRandomBall::~CEdgRandomBall()
 {
 }
 
-HRESULT CEdgPulse::InitializePrototype(void* pArg)
+HRESULT CEdgRandomBall::InitializePrototype(void* pArg)
 {
 	return S_OK;
 }
 
-HRESULT CEdgPulse::Initialize(void* pArg)
+HRESULT CEdgRandomBall::Initialize(void* pArg)
 {
 	if (FAILED(__super::Initialize(pArg)))
 	{
-		MSG_BOX("Create Failed EDG CEdgPulse");
+		MSG_BOX("Create Failed EDG FireBall");
 		return E_FAIL;
 	}
-	m_fDamage = 70.f;
-	m_fSpeed = 20.f;
-	m_fRadius = 1.5f;
+	m_fDamage = 30.f;
+	m_fSpeed = 100.f;
+	m_fRadius = 0.5f;
 	m_fMaxLife = 3.f;
 	return S_OK;
 }
 
-void CEdgPulse::PriorityUpdate(E::_float fTimeDelta)
+void CEdgRandomBall::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
 
 	if (!m_bActive) return;
 
-	Life_Check(fTimeDelta);
+	if (Life_Check(fTimeDelta))
+		SetPendingDestroy();
 }
 
-void CEdgPulse::FixedUpdate(E::_float fTimeDelta)
+void CEdgRandomBall::FixedUpdate(E::_float fTimeDelta)
 {
 	if (!m_bActive) return;
 
 	__super::FixedUpdate(fTimeDelta);
-	Pulse(fTimeDelta);
+	Ball(fTimeDelta);
 }
 
-void CEdgPulse::Update(E::_float fTimeDelta)
+void CEdgRandomBall::Update(E::_float fTimeDelta)
 {
 	if (!m_bActive) return;
 
 	__super::Update(fTimeDelta);
 }
 
-void CEdgPulse::LateUpdate(E::_float fTimeDelta)
+void CEdgRandomBall::LateUpdate(E::_float fTimeDelta)
 {
 	if (!m_bActive) return;
 
 	__super::LateUpdate(fTimeDelta);
 }
 
-void CEdgPulse::Active(const _string& SkillName)
+void CEdgRandomBall::Active(const _string& SkillName)
 {
-	_float4x4 BoneMatrix = Get_BoneMatrix(m_iBoneIndex);
+	_float4x4 matB = Get_BoneMatrix(m_iBoneIndex);
+	_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
+	_matrix matBone = XMLoadFloat4x4(&matB);
+	_matrix matOffset = XMLoadFloat4x4(&matOffB);
 
-	_matrix matBone = XMLoadFloat4x4(&BoneMatrix);
 	_vector vQuat = XMQuaternionRotationMatrix(matBone);
 
 	GetTransform().SetPosition(matBone.r[3]);
 	GetTransform().SetQuaternion(vQuat);
 	GetTransform().Update();
+	//Set_TargetDir(matBone.r[3]);
+	XMStoreFloat3(&m_vTargetDir, XMVector3Normalize(matOffset.r[3] - matBone.r[3]));
 	m_bActive = true;
 	m_bHit = false;
 	m_fLife = 0.f;
-	m_fRadius = 1.5f;
 	Spawn_Skill_Effect(SkillName);
 }
 
-void CEdgPulse::Cancle()
+void CEdgRandomBall::Cancle()
 {
 	ResetValue();
 }
 
-void CEdgPulse::Pulse(_float fTimeDelta)
+void CEdgRandomBall::Ball(_float fTimeDelta)
 {
-	 _float4x4 BoneMatrix = Get_BoneMatrix(m_iBoneIndex);
-	_matrix matBone = XMLoadFloat4x4(&BoneMatrix);
-	_vector vQuat = XMQuaternionRotationMatrix(matBone);
-	m_fRadius += m_fSpeed * fTimeDelta;
-	if (PulseSweep(matBone.r[3]))
+	_vector vPos = XMLoadFloat3(&GetTransform().GetPosition());
+
+	if (Sweep(vPos))
 	{
 		if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
 			CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
-		GetTransform().SetPosition(matBone.r[3]);
+		GetTransform().SetPosition(vPos);
 		GetTransform().Update();
 	}
 
 }
 
-_bool CEdgPulse::PulseSweep(_vector vNextPos)
+_bool CEdgRandomBall::Sweep(_vector vNextPos)
 {
-	_float3 vPos = {};
-	XMStoreFloat3(&vPos, vNextPos);
+	_float3 vPos = GetTransform().GetPosition();
 
 	PX_SWEEP_DESC SweepDesc{};
 	SweepDesc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
@@ -124,32 +124,30 @@ _bool CEdgPulse::PulseSweep(_vector vNextPos)
 
 	if (pPhysX->Sweep(SweepDesc, SweepResult) && SweepResult.bHit)
 	{
-		//auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(SweepResult.hGameObject);
-		//pTarget->OnQueryHit(m_fDamage);
-
 		m_bHit = true;
+		//펑
 		return false;
 	}
 	return true;
 }
 
-E::UPtr<CEdgPulse> CEdgPulse::Create()
+E::UPtr<CEdgRandomBall> CEdgRandomBall::Create()
 {
-	auto pInstance = E::ToUPtr(new CEdgPulse{});
+	auto pInstance = E::ToUPtr(new CEdgRandomBall{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CEdgPulse");
+		MSG_BOX("Failed to Created : CEdgRandomBall");
 		return nullptr;
 	}
 	return pInstance;
 }
 
-E::UPtr<E::CPrototype> CEdgPulse::Clone(void* pArg)
+E::UPtr<E::CPrototype> CEdgRandomBall::Clone(void* pArg)
 {
-	auto pInstance = E::ToUPtr(new CEdgPulse{ *this });
+	auto pInstance = E::ToUPtr(new CEdgRandomBall{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CEdgPulse");
+		MSG_BOX("Failed to Cloned : CEdgRandomBall");
 		return nullptr;
 	}
 

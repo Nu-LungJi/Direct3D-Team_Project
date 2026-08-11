@@ -81,7 +81,9 @@ PS_OUT PSMain(PS_IN IN)
     
     float4 fDiffuse = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord) * float4(AlbedoColor, ObjectAlpha);
     
-    if (fDiffuse.a == 0.0f) discard;
+    // Hair and eyelash cards use filtered alpha.  Testing only for an exact zero
+    // leaves the compressed/filtered transparent texels visible as rectangles.
+    clip(fDiffuse.a - 0.35f);
     
     float3 fNormal = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
     float3 fMRO = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);
@@ -98,7 +100,7 @@ PS_OUT PSMain(PS_IN IN)
 	Out.vDiffuse	= fDiffuse;
     Out.vNormal		= float4(fNormal * 0.5f + 0.5f, 1.f);
     Out.vSMRO		= float4(fFinalMetallic, fFinalRoughness, fFinalAO, 1.f);
-	Out.vEmissive   = float4(fFinalEmissive, 1.f);
+	Out.vEmissive = float4(fEmissive, 1.f);
     
     return Out;
 }

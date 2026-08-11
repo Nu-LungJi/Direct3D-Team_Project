@@ -204,7 +204,7 @@ void CBTSubTreeNode::ConnectNode(CBTRoot* pRoot,  int32_t iPreIndex , class CCom
 
 	BEHAVIOR eType = pRoot->Get_GuiNodeInfo().eMyType;
 
-	if (pParent != nullptr)
+	if (pParent != nullptr && pParent->Get_GuiNodeInfo().eMyType != BEHAVIOR::ACTION)
 	{
 		pParent->Get_GuiNodeLink().SlotEnd[iPreIndex] = pRoot->Get_GuiNodeInfo().Get_DestInfo();
 	}
@@ -235,7 +235,13 @@ void CBTSubTreeNode::ConnectNode(CBTRoot* pRoot,  int32_t iPreIndex , class CCom
 		pChild->Get_GuiNodeLink().ParentNode = pRoot->Get_GuiNodeInfo().Get_DestInfo();
 		pRoot->Get_GuiNodeLink().SlotEnd.resize(1);
 	
-		ConnectNode(pChild.get(), iPreIndex, pBehavior, pRoot);
+		ConnectNode(pChild.get(), 0, pBehavior, pRoot);
+	}
+	else if (eType == BEHAVIOR::ACTION && pRoot->GetMasterName() == "BTSubTree")
+	{
+		auto pSubNode = static_cast<CBTSubTreeNode*>(pRoot);
+		if(nullptr != pSubNode->Get_SubTreeNode())
+			ConnectNode(pSubNode->Get_SubTreeNode(), -1, pBehavior, pRoot);
 	}
 }
 

@@ -35,6 +35,8 @@ public:
 	void Update(_float fTimeDelta);
 
 	void SetTestModelHandle(const CHandle& handle) { m_hTestModel = handle; }
+	_bool IsEditingTarget(const CHandle& handle) const { return m_hTestModel == handle; }
+	void ClearTarget() { m_hTestModel = {}; }
 
 
 public:
@@ -101,6 +103,11 @@ private:
 
 	std::string oldPath;
 	std::string newPath;
+	_char m_szAnimationSearch[256]{};
+	_char m_szBoneSearch[128]{};
+	int32_t m_iSelectedBoneIndex{ -1 };
+	_bool m_bDrawSkeleton{ true };
+	_float m_fMaxBoneLinkLength{ 0.6f };
 
 	std::vector<SPEED_KEY> m_SpeedKeys;
 

@@ -664,27 +664,14 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 	if (!pContext || m_vecInstancedData.empty() || !m_pComModelInstance || !m_pResInstancedBuffer)
 		return S_OK;
 
-	auto rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(
-		TAG_RES_GRP_PERMANENT_STATE,
-		TAG_RES_STATE_RS_SOLID_NOCULL);
-
-	if (!rasterizer)
-		return E_FAIL;
-
-	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
-
 	if (!m_pBlendState)
 		return E_FAIL;
 
 	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+	auto rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
 
-	auto depthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(
-		TAG_RES_GRP_PERMANENT_STATE,
-		"DS_DEPTHREAD");
-
-	if (!depthState)
-		return E_FAIL;
-
+	auto depthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH");
 	pContext->OMSetDepthStencilState(depthState->GetDepthStencilState().Get(), 0);
 
 	const auto& vs = m_pResVertexShader;

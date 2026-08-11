@@ -27,6 +27,7 @@
 #include "EdgFireBall.h"
 #include "EdgBreath.h"
 #include "EdgPulse.h"
+#include "EdgRandomBall.h"
 // UI
 #include "UIController.h"
 #include "EffectUI.h"
@@ -39,6 +40,7 @@
 #include "GameOverMask.h"
 #include "VideoObject.h"
 #include "Cursor.h"
+#include "SpellMiniGame.h"
 
 NS_USING(Client)
 
@@ -199,10 +201,10 @@ std::future<bool> CLevelTerrainLoader::Load()
 			}
 
 
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "PLAYER_MODEL_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "PLAYER_MODEL_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/ElegantStudent_PrettyGirl2_RigCorrectedFinal/SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin"))) {
 
 				E::CResModel::DESC pDesc{};
-				pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.5f, 0.f);
+				pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.8f, 0.f);
 				if (FAILED(res->Load(pDesc))) {
 					MSG_BOX("TERRAIN Failed PLAYER_MODEL_RESROUCE");
 					return false;
@@ -272,7 +274,8 @@ _bool CLevelTerrainLoader::UILoad()
 				"./Resources/SampleClient/Textures/UI/UITexture/PlayScreen",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
-				"./Resources/SampleClient/Textures/UI/UITexture/Cursor"
+				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
+				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame"
 			};
 
 			// 배열을 순회하며 기존 로직을 한 번만 작성하여 처리합니다.
@@ -327,6 +330,10 @@ _bool CLevelTerrainLoader::UILoad()
 			return false;
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TERRAIN", "Prototype_GameObject_UIController", CUIController::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TERRAIN", "Prototype_GameObject_SpellMiniGame", CSpellMiniGame::Create())))
 		{
 			return false;
 		}
@@ -494,7 +501,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_Dragon.bin"))) {
 		
 			E::CResModel::DESC pDesc{};
-			pDesc.PreTransformMatrix = XMMatrixScaling(2.f, 2.f, 2.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.6f, 1.6f, 1.6f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 		
 			if (FAILED(res->Load(pDesc)))
 			{
@@ -511,6 +518,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, CEdgFireBall::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, CEdgBreath::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Pulse, CEdgPulse::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_RandomBall, CEdgRandomBall::Create()))) return E_FAIL;
 
 	}
 

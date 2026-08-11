@@ -1,3 +1,4 @@
+
 #include "pch.h"
 #include "LevelCharlesRookwoodLoader.h"
 #include "GameInstance.h"
@@ -22,6 +23,7 @@
 #include "GameOverMask.h"
 #include "VideoObject.h"
 #include "Cursor.h"
+#include "SpellMiniGame.h"
 
 #include "TriggerCRW_SpawnStep.h"
 #include "TriggerCRW_StairStep.h"
@@ -84,10 +86,10 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				}
 			}
 
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/ElegantStudent_PrettyGirl2_RigCorrectedFinal/SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin"))) {
 
 				E::CResModel::DESC pDesc{};
-				pDesc.PreTransformMatrix = XMMatrixScaling(3.f , 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.5f, 0.f);
+				pDesc.PreTransformMatrix = XMMatrixScaling(3.f , 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.8f, 0.f);
 				if (FAILED(res->Load(pDesc))) {
 					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_MODEL_RESROUCE");
 					return false;
@@ -382,7 +384,8 @@ _bool CLevelCharlesRookwoodLoader::UILoad()
 				"./Resources/SampleClient/Textures/UI/UITexture/PlayScreen",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
-				"./Resources/SampleClient/Textures/UI/UITexture/Cursor"
+				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
+				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame"
 			};
 
 			// 배열을 순회하며 기존 로직을 한 번만 작성하여 처리합니다.
@@ -440,6 +443,10 @@ _bool CLevelCharlesRookwoodLoader::UILoad()
 		{
 			return false;
 		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_SpellMiniGame", CSpellMiniGame::Create())))
+		{
+			return false;
+		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_GameOverMask", CGameOverMask::Create())))
 		{
 			return false;
@@ -453,6 +460,8 @@ _bool CLevelCharlesRookwoodLoader::UILoad()
 			return false;
 		}
 	}
+
+	return true;
 }
 HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 {
@@ -558,4 +567,6 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 			return E_FAIL;
 		}
 	}
+
+	return S_OK;
 }

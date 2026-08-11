@@ -75,6 +75,20 @@ void CPlayer::UpdateGUI()
 	ImGui::Text("HP : %d", m_iHp);
 
 	ImGui::DragInt("HP : ",&m_iHp,0.1f,0,100000);
+	ImGui::Text("RMB Wand Ready: %s (Anim Index: %d)",
+		m_bDebugWandReadyPlaying ? "Playing" : "Stopped",
+		m_iDebugWandReadyUpperAnim);
+	if (m_pModelAnimator)
+	{
+		ImGui::Text("Upper Layer: %s / Weight: %.2f / Animator: %s",
+			m_pModelAnimator->HasUpperAnimation() ? "Loaded" : "Empty",
+			m_pModelAnimator->GetUpperLayerWeight(),
+			m_pModelAnimator->GetPlay() ? "Playing" : "Paused");
+	}
+	if (ImGui::Button("Open Player in Animation Editor"))
+		CGameInstance::Get().SetAnimationEditorTarget(GetHandle());
+	ImGui::SameLine();
+	ImGui::TextDisabled("SampleClient-compatible");
 
 
 	if (m_pRagdollController)
@@ -180,10 +194,21 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 		// TestModel은 생성 직후부터 CPU pose + VS skinning 경로를 사용한다.
 		m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
-
-		if (!m_pModelAnimator->Set_UpperBodyRootBone("SKT_Spine",3))
+		if (!m_pModelAnimator->Set_UpperBodyRootBone("RightArm", 1))
 		{
 			MSG_BOX("FAILED to Set UpperBodyRootBone");
+		}
+
+		const auto& animations = m_pComModelInstance->GetModel()->GetAnimations();
+		constexpr _string_view debugWandReadyAnimation =
+			"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_RMB_WandReady_POSE_anm.bin";
+		for (size_t i = 0; i < animations.size(); ++i)
+		{
+			if (animations[i] && animations[i]->GetAnimName() == debugWandReadyAnimation)
+			{
+				m_iDebugWandReadyUpperAnim = (int32_t)(i);
+				break;
+			}
 		}
 
 	}
@@ -428,36 +453,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(1.f, 44 / 255.f, 44 / 255.f, 5.f));
 		}
 
-		{
-			auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
-		}
-		{
-			auto a = CGameInstance::Get().GetParticle("RanrokTrail1", "RanrokTrail1");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
-		}
-		{
-			auto a = CGameInstance::Get().GetParticle("RanrokTrail2", "RanrokTrail2");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
-		}
-		{
-			auto a = CGameInstance::Get().GetParticle("RanrokTrail3", "RanrokTrail3");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
-		}
-		{
-			auto a = CGameInstance::Get().GetParticle("RanrokTrail4", "RanrokTrail4");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
-		}
-		{
-			auto a = CGameInstance::Get().GetParticle("RanrokTrail5", "RanrokTrail5");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0/ 255.f, 15.f));
-		}
+
 
 	}
 
@@ -536,11 +532,60 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (m_pRagdollController)
 	{
 		if (m_pRagdollController->PrePriorityUpdate())
+		{
+			if (m_pModelAnimator && m_bDebugWandReadyPlaying)
+			{
+				m_pModelAnimator->Stop_UpperAnim(0.1f);
+				m_bDebugWandReadyPlaying = false;
+			}
 			return;
+		}
+	}
+
+	if (CGameInstance::Get().IsAnimationEditorTarget(GetHandle()))
+	{
+		if (m_pModelAnimator && m_bDebugWandReadyPlaying)
+		{
+			m_pModelAnimator->Stop_UpperAnim(0.1f);
+			m_bDebugWandReadyPlaying = false;
+		}
+		m_bRawMoveInput = false;
+		m_bSprintRequested = false;
+		m_vRawMoveDirection = {};
+		m_fCurrentMoveSpeed = 0.f;
+		m_bRootMotionTranslationActive = false;
+		m_bRootMotionRotationActive = false;
+		if (m_pComMoveIntent)
+			m_pComMoveIntent->ClearMoveIntent();
+		return;
 	}
 
 	if (m_pStateMachine)
 		m_pStateMachine->PriorityUpdate(fTimeDelta);
+
+	if (m_pModelAnimator && m_iDebugWandReadyUpperAnim >= 0)
+	{
+		constexpr _float debugUpperBodyFadeDuration = 0.2f;
+		const _bool bWandReadyRequested =
+			CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB) &&
+			m_pStateMachine &&
+			m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION;
+		if (bWandReadyRequested &&
+			(!m_bDebugWandReadyPlaying ||
+				!m_pModelAnimator->HasUpperAnimation()))
+		{
+			m_pModelAnimator->Play_UpperAnim(
+				m_iDebugWandReadyUpperAnim,
+				true,
+				debugUpperBodyFadeDuration);
+			m_bDebugWandReadyPlaying = true;
+		}
+		else if (!bWandReadyRequested && m_bDebugWandReadyPlaying)
+		{
+			m_pModelAnimator->Stop_UpperAnim(debugUpperBodyFadeDuration);
+			m_bDebugWandReadyPlaying = false;
+		}
+	}
 
 	if (m_pStateMachine &&
 		m_pStateMachine->GetCurrentState() == PLAYER_STATE::ACIENTATTACK_SKILL)
@@ -1467,7 +1512,8 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 	// Animator를 먼저 진행해야 Locomotion State가 현재 프레임의
 	// 재생 비율과 종료 상태로 Turn 회전을 맞출 수 있다.
-	if (m_pStateMachine &&
+	if (!CGameInstance::Get().IsAnimationEditorTarget(GetHandle()) &&
+		m_pStateMachine &&
 		!IsRagdollTransitioning())
 		m_pStateMachine->Update(fTimeDelta);
 
@@ -1492,7 +1538,8 @@ void CPlayer::Update(E::_float fTimeDelta)
 
 void CPlayer::LateUpdate(E::_float fTimeDelta)
 {
-	if (m_pStateMachine &&
+	if (!CGameInstance::Get().IsAnimationEditorTarget(GetHandle()) &&
+		m_pStateMachine &&
 		!IsRagdollTransitioning())
 		m_pStateMachine->LateUpdate(fTimeDelta);
 
