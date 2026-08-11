@@ -48,7 +48,7 @@ void CEdgRandomBall::FixedUpdate(E::_float fTimeDelta)
 	if (!m_bActive) return;
 
 	__super::FixedUpdate(fTimeDelta);
-	MoveBall(fTimeDelta);
+	Ball(fTimeDelta);
 }
 
 void CEdgRandomBall::Update(E::_float fTimeDelta)
