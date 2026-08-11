@@ -531,8 +531,7 @@ void CGameObjectManager::FrameStart()
 		}
 	}
 
-	// TODO: 플래그 완성되면
-	//m_bTreeReBuild = false;
+	m_bTreeReBuild = false;
 }
 
 void CGameObjectManager::FrameEnd()
@@ -682,6 +681,39 @@ std::optional<CHandle> CGameObjectManager::GetHandleByGameObject(CGameObject* pO
 	}
 
 	return CHandle{ i, m_Objects[i].GetGeneration() };
+}
+
+_bool CGameObjectManager::SetGameObjectParent(
+	const CHandle& hChild,
+	const std::optional<CHandle>& hParent)
+{
+	CGameObject* pChild = GetGameObjectByHandle(hChild);
+	if (!pChild || pChild->GetPendingDestroy())
+		return false;
+
+	CGameObject* pParent = nullptr;
+	if (hParent)
+	{
+		pParent = GetGameObjectByHandle(*hParent);
+		if (!pParent || pParent->GetPendingDestroy() || pParent == pChild)
+			return false;
+
+		// [LSY] 새 부모의 상위 경로에 자식이 있으면 순환 트리가 되므로 거부한다.
+		for (CGameObject* pNode = pParent;
+			pNode;
+			pNode = pNode->GetParentNode())
+		{
+			if (pNode == pChild)
+				return false;
+		}
+	}
+
+	if (pChild->GetParentNode() == pParent)
+		return true;
+
+	pChild->SetParentNode(pParent);
+	m_bTreeReBuild = true;
+	return true;
 }
 
 void CGameObjectManager::SortLayer()

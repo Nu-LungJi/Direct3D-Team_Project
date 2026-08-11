@@ -21,10 +21,16 @@ class ENGINE_DLL CGameObject : public CPrototype,
 								public IPhysicsSync,
 								public CMyTreeNode<CGameObject>
 {
+	friend class CGameObjectManager;
+	friend class CMyTreeNode<CGameObject>;
+
 public:
 	DECLARE_DERIVED_TYPE(CGameObject, CPrototype)
 	// ENGINE_DLL 인애들은 반드시 명시적으로 복사 생성자, 복사 대입연산자 딜리트하거나 재정의해주어야함
 	CGameObject& operator=(const CGameObject&) = delete;
+
+private:
+	using CMyTreeNode<CGameObject>::SetParentNode;
 
 public:
 	typedef struct tagGameObjectDesc
