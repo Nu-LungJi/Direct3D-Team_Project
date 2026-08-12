@@ -21,7 +21,7 @@ public:
 	void			Update(E::_float fTimeDelta) override;
 	void			LateUpdate(E::_float fTimeDelta) override;
 public:
-	void			Active(const _string& SkillName) override;
+	void			Active(EDG_ACSKT_DESC& SkillTable) override;
 	void			Cancle() override;
 private:
 	void			MoveBreath(_float fTimeDelta);

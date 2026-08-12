@@ -65,7 +65,7 @@ void CEdgRandomBall::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 }
 
-void CEdgRandomBall::Active(const _string& SkillName)
+void CEdgRandomBall::Active(EDG_ACSKT_DESC& SkillTable)
 {
 	_float4x4 matB = Get_BoneMatrix(m_iBoneIndex);
 	_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
@@ -82,7 +82,8 @@ void CEdgRandomBall::Active(const _string& SkillName)
 	m_bActive = true;
 	m_bHit = false;
 	m_fLife = 0.f;
-	Spawn_Skill_Effect(SkillName);
+	m_fMaxLife = SkillTable.fLifeTime;
+	Spawn_Skill_Effect(SkillTable.SkillName);
 }
 
 void CEdgRandomBall::Cancle()

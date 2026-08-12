@@ -5,6 +5,7 @@
 //찾아라 드래곤볼
 
 NS_BEGIN(Client)
+ 
 class CDragonSkill abstract : public CGameObject
 {
 public:
@@ -35,7 +36,7 @@ public:
 	void						Update(E::_float fTimeDelta) override;
 	void						LateUpdate(E::_float fTimeDelta) override;
 public:
-	virtual void Active(const _string& SkillName) PURE;
+	virtual void Active(EDG_ACSKT_DESC& SkillTable) PURE;
 	virtual void Cancle();
 protected:
 	void						 Spawn_Skill_Effect(const _string& SkillName);

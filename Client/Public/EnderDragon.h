@@ -1,7 +1,7 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
-enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL,SKIP,THREEBALL, BLACKBALL, END};
+enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL, TURNBREATH,THREEBALL, BLACKBALL,LONGBREATH, END};
 enum class DRAGON_PHASE{PHASE1, PHASE2, PHASE3, PHASE4, PHASE5, PHASE6, PHASE7, END};
 enum class EDG_SPAWN_NUMBER { FIRST, SECOND, THIRD, FOUR };
 
@@ -11,6 +11,14 @@ typedef struct stredganimfsm
 	int32_t iAnimIndex{};
 	_float	fBlend{};
 }EDG_ANIM_FSM;
+typedef struct stractiveskilltable
+{
+	_string		  SkillName{};
+	_float		  fLifeTime{};
+	int32_t		  iBoneOffset{};
+	DRAGON_SKILL eType{};
+}EDG_ACSKT_DESC;
+
 NS_BEGIN(Client)
 typedef struct stredgskillInfo
 {

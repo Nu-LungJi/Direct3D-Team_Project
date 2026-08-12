@@ -208,7 +208,7 @@ void CBTTurnAnimation::OnEnter()
 	__super::OnEnter();
 
 	m_fTick = 0.f;
-	m_Value.iAnimIndex = -1;
+	//m_Value.iAnimIndex = -1;
 	m_bTurn = false;
 }
 void CBTTurnAnimation::OnExit(EVALUATE eResult)

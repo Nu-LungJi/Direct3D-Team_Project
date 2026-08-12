@@ -354,19 +354,25 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_MonSkillLists[ATTMON::SLOT4] = ETOUI(DRAGON_SKILL::RANDOMBALL);
 	m_MonSkillLists[ATTMON::SLOT5] = ETOUI(DRAGON_SKILL::THREEBALL);
 	m_MonSkillLists[ATTMON::SLOT6] = ETOUI(DRAGON_SKILL::BLACKBALL);
+	m_MonSkillLists[ATTMON::SLOT7] = ETOUI(DRAGON_SKILL::TURNBREATH);
+	m_MonSkillLists[ATTMON::SLOT8] = ETOUI(DRAGON_SKILL::LONGBREATH);
 	//////////////////////파티클 넣는곳/////////////////////////
 	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)] = "FireBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)] = "DragonBreath";
+	m_EffectNames[ETOUI(DRAGON_SKILL::TURNBREATH)] = "DragonBreath";
+	m_EffectNames[ETOUI(DRAGON_SKILL::LONGBREATH)] = "DragonBreath";
 	m_EffectNames[ETOUI(DRAGON_SKILL::PULSE)] = "Pulse";
 	m_EffectNames[ETOUI(DRAGON_SKILL::RANDOMBALL)] = "RandomBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::THREEBALL)] = "FireBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::BLACKBALL)] = "BlackBall";
 	////////////////////////////////////////////////////////////
 	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
-	int32_t iBoneIndex{};
-	
-	iBoneIndex = SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Head");
-	
+	int32_t iHeadBoneIndex{};
+
+	int32_t iOffsetBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Mouth");
+
+	iHeadBoneIndex = SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Head");
+	SkillDesc.iOffsetBoneIndex = iOffsetBoneIndex;
 	SkillDesc.hOwner = GetHandle();
 	SkillDesc.eType = DRAGON_SKILL::BREATH;
 	auto BreathHandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, "03.Breath", &SkillDesc);
@@ -380,29 +386,31 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	if (!PulseHandle) return E_FAIL;
 	///////////
 
-	int32_t iOffsetBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Mouth");
 	
-	m_SkillHandle[ETOUI(DRAGON_SKILL::FIREBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iBoneIndex,
+	m_SkillHandle[ETOUI(DRAGON_SKILL::FIREBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iHeadBoneIndex,
 	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, .NameTag = "03.FireBall",.iOffsetBoneIndex = iOffsetBoneIndex,
 	.eType = DRAGON_SKILL::FIREBALL};
 	
-	m_SkillHandle[ETOUI(DRAGON_SKILL::THREEBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iBoneIndex,
+	m_SkillHandle[ETOUI(DRAGON_SKILL::THREEBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iHeadBoneIndex,
 	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, .NameTag = "03.ThreeBall",.iOffsetBoneIndex = iOffsetBoneIndex,
 	.eType = DRAGON_SKILL::THREEBALL };
 
-	m_SkillHandle[ETOUI(DRAGON_SKILL::BLACKBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iBoneIndex,
+	m_SkillHandle[ETOUI(DRAGON_SKILL::BLACKBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iHeadBoneIndex,
 	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, .NameTag = "03.BlackBall",.iOffsetBoneIndex = iOffsetBoneIndex,
 	.eType = DRAGON_SKILL::BLACKBALL };
 	
 
-	iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("wrist_right_target");
-	iOffsetBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("wrist_left_target");
+	int32_t wristiRightBoneIndex= m_pComModelInstance->GetModel()->Get_BoneIndex("wrist_right_target");
+	int32_t wristiLeftBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("wrist_left_target");
 	SkillDesc.eType = DRAGON_SKILL::RANDOMBALL;
-	m_SkillHandle[ETOUI(DRAGON_SKILL::RANDOMBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iBoneIndex,
-	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_RandomBall, .NameTag = "03.RandomBall",.iOffsetBoneIndex = iOffsetBoneIndex };
+
+	m_SkillHandle[ETOUI(DRAGON_SKILL::RANDOMBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = wristiRightBoneIndex,
+	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_RandomBall, .NameTag = "03.RandomBall",.iOffsetBoneIndex = wristiLeftBoneIndex };
 
 
-	m_SkillHandle[ETOUI(DRAGON_SKILL::BREATH)] = EDG_SKILL_INFO{.handle = BreathHandle.value(), .bPool = true,};
+	m_SkillHandle[ETOUI(DRAGON_SKILL::LONGBREATH)] = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true };
+	m_SkillHandle[ETOUI(DRAGON_SKILL::TURNBREATH)] = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true};
+	m_SkillHandle[ETOUI(DRAGON_SKILL::BREATH)]	   = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true,};
 	m_SkillHandle[ETOUI(DRAGON_SKILL::PULSE)]  = EDG_SKILL_INFO{.handle = PulseHandle.value() , .bPool = true,};
 	return S_OK;
 }
@@ -419,8 +427,6 @@ void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 		m_bDebug = !m_bDebug;
 	
 	if (!m_bDebug) return;
-
-
 
 	Check_Phase();
 	m_pFsm->PriorityUpdate(fTimeDelta);
@@ -578,12 +584,16 @@ void CEnderDragon::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(DRAGON_SKILL::END))
 		return;
 
+	EDG_ACSKT_DESC ACTable{};
+	ACTable.SkillName = m_EffectNames[iSkillNum];
+	ACTable.fLifeTime = fSkillRatio.y;
+	ACTable.eType = static_cast<DRAGON_SKILL>(iSkillNum);
 	if (true == m_SkillHandle[iSkillNum].bPool)
 	{
 		auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(m_SkillHandle[iSkillNum].handle);
 		if (nullptr == pSkill)
 			return;
-		pSkill->Active(m_EffectNames[iSkillNum]);
+		pSkill->Active(ACTable);
 	}
 	else
 	{
@@ -600,7 +610,7 @@ void CEnderDragon::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 		auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(SkillHandle.value());
 		if (nullptr == pSkill)
 			return;
-		pSkill->Active(m_EffectNames[iSkillNum]);
+		pSkill->Active(ACTable);
 	}
 	m_CurEffectName.clear();
 	m_eAttType = ATTMON::END;

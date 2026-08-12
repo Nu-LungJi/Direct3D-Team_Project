@@ -71,6 +71,7 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 						if (fAnimRatio >= iter.fRatio)
 						{
 							iter.bTrigger = true;
+							m_fSkillRatio.y = iter.fLifeTime;
 							ActiveTriggerSkill(iter.eSkill);
 						}
 							
@@ -223,6 +224,8 @@ void CBTAttackAnimation::Update_Gui()
 			{
 				ImGui::PushID(iButton);
 				DragFloat("StartRatio",(*iter).fRatio);
+				ImGui::Text("LifeTime");
+				ImGui::DragFloat("##LifeTime", &(*iter).fLifeTime,0.1f,0.f,100.f);
 				ImGui::SameLine();
 				ImGui::Text("AttMon Type:"); ImGui::SameLine();
 				if (ImGui::BeginCombo("##AttMon Type", pSrc->Get_SkillName((*iter).eSkill).c_str()))
@@ -373,6 +376,7 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 		{
 			SaveJsonEnum(j, "NewSkillType" + std::to_string(i), m_Skills[i].eSkill);
 			SaveJsonValue(j, "NewSkillRatio" + std::to_string(i), m_Skills[i].fRatio);
+			SaveJsonValue(j, "NewSkillLife" + std::to_string(i), m_Skills[i].fLifeTime);
 		}
 	}
 	return j;
@@ -400,6 +404,7 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 		{
 			LoadJsonEnum(j, "NewSkillType" + std::to_string(i), m_Skills[i].eSkill);
 			LoadJsonValue(j, "NewSkillRatio" + std::to_string(i), m_Skills[i].fRatio);
+			LoadJsonValue(j, "NewSkillLife" + std::to_string(i), m_Skills[i].fLifeTime);
 		}
 	}
 	return S_OK;
@@ -421,9 +426,12 @@ void CBTAttackAnimation::OnEnter()
 			iter.bTrigger = false;
 	}
 
+	
+
 }
 void CBTAttackAnimation::OnExit(EVALUATE eResult)
 {
+	__super::OnExit(eResult);
 	m_bDir = false;
 }
 _bool CBTAttackAnimation::ActiveTriggerSkill(ATTMON eAtt)
