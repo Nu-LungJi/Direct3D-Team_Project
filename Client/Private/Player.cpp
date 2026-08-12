@@ -918,6 +918,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			m_hMonsterHPUITarget = hDetectedTarget;
 		}
 	}
+	// 타겟 봐야 하는 곳 -----------------------------------------------------------------------------------------------------------
+	if (auto* pOutlineTarget =
+		CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
+		pOutlineTarget && !pOutlineTarget->GetPendingDestroy())
+	{
+		CGameInstance::Get().Apply_OutlineEffect(
+			std::optional<CHandle>{ m_hAutoTarget });
+	}
+	else
+	{
+		CGameInstance::Get().Apply_OutlineEffect(std::nullopt);
+	}
+
 	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))
 	{
 		m_fControlHoldTime = 0.f;
@@ -1697,6 +1710,17 @@ void CPlayer::UpdateAttachedEffects()
 		CGameInstance::Get().SetEffectWorldMatrix(
 			m_iProtegoShieldEffectID, shieldWorld);
 	}
+
+	if (m_iProtegoHitEffectID != INVALID_EFFECT_INSTANCE_ID)
+	{
+		_float4x4 hitWorld{};
+		XMStoreFloat4x4(
+			&hitWorld,
+			XMLoadFloat4x4(&m_ProtegoHitLocalMatrix) *
+			GetTransform().GetLoadedWorldMatrix());
+		CGameInstance::Get().SetEffectWorldMatrix(
+			m_iProtegoHitEffectID, hitWorld);
+	}
 }		
 
 // CPU + GPU 버전
@@ -2047,11 +2071,6 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 
 void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 {
-	// 실제 공격이 프로테고에 막힌 순간을 상태에 전달한다.
-	m_vLastProtegoHitPosition = vHitPosition;
-	++m_iProtegoParrySequence;
-	m_fParryCounterRemainTime = PARRY_COUNTER_WINDOW;
-
 	_float3 vShieldCenter = GetTransform().GetPosition();
 	vShieldCenter.y += 1.f;
 
@@ -2060,6 +2079,15 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 		vNormal = XMVectorSet(0.f, 0.f, 1.f, 0.f);
 	else
 		vNormal = XMVector3Normalize(vNormal);
+
+	// Sweep 접촉점, Overlap 투사체 중심 등 입력 의미가 달라도
+	// 최종 충돌 위치는 보호막 구 표면으로 통일한다.
+	constexpr _float PROTEGO_SHIELD_RADIUS = 2.5f;
+	const _vector vShieldSurfacePosition =
+		XMLoadFloat3(&vShieldCenter) + vNormal * PROTEGO_SHIELD_RADIUS;
+	XMStoreFloat3(&m_vLastProtegoHitPosition, vShieldSurfacePosition);
+	++m_iProtegoParrySequence;
+	m_fParryCounterRemainTime = PARRY_COUNTER_WINDOW;
 
 	_vector vReferenceUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
 	if (fabsf(XMVectorGetX(XMVector3Dot(vNormal, vReferenceUp))) > 0.96f)
@@ -2086,8 +2114,21 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._31), vNormal);
 	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._41), vPosition);
 
-	CGameInstance::Get().PlayEffect(
-		"Protego_Shield_Hit_Layered", hitWorld, XMVectorZero());
+	const _matrix playerWorld = GetTransform().GetLoadedWorldMatrix();
+	XMStoreFloat4x4(
+		&m_ProtegoHitLocalMatrix,
+		XMLoadFloat4x4(&hitWorld) * XMMatrixInverse(nullptr, playerWorld));
+
+	if (m_iProtegoHitEffectID != INVALID_EFFECT_INSTANCE_ID)
+		CGameInstance::Get().StopEffect(m_iProtegoHitEffectID);
+
+	m_iProtegoHitEffectID = CGameInstance::Get().PlayEffect(
+		"Protego_Shield_Hit_Layered", hitWorld, XMVectorZero(),
+		[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON)
+		{
+			if (effectId == m_iProtegoHitEffectID)
+				m_iProtegoHitEffectID = INVALID_EFFECT_INSTANCE_ID;
+		});
 }
 
 _bool CPlayer::PlayUpperBodyAnimation(

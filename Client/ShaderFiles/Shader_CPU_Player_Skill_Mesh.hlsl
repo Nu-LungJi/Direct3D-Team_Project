@@ -243,7 +243,9 @@ PS_OUT PSProtegoGlass(VS_OUT In)
 	float fresnel = pow(1.0f - NdotV, 3.6f);
 	float softRim = smoothstep(0.20f, 0.88f, fresnel);
 	float thinRim = pow(1.0f - NdotV, 11.0f);
-	float3 rippleCoord = In.vWorldPos * 1.18f;
+	// 월드 위치를 사용하면 보호막이 이동할 때 노이즈 표본이 바뀌어
+	// 외곽선이 프레임마다 드르륵거린다. 구체의 로컬 방향에 패턴을 고정한다.
+	float3 rippleCoord = N * 3.25f;
 	float slowTime = g_fAccumulationTime * 0.72f;
 
 	// Warp the sampling domain first so no wave keeps a straight, repeating path.
@@ -282,14 +284,16 @@ PS_OUT PSProtegoGlass(VS_OUT In)
 	float rimNoise = saturate(0.5f +
 		(rimFlowA * 0.48f + rimFlowB * 0.34f + rimFlowC * 0.18f) * 0.5f);
 	float brokenRim = smoothstep(0.40f, 0.72f, rimNoise);
-	float rimVisibility = lerp(0.025f, 1.0f, brokenRim);
+	// 외곽선을 끊었다 붙이는 대신 밝기만 부드럽게 흐르게 한다.
+	float rimVisibility = lerp(0.72f, 1.0f, brokenRim);
 	float edgeSpark = smoothstep(0.78f, 0.94f, rimNoise);
 
 	// Strong flowing sections grow inward and become visibly thicker. Weak
 	// sections collapse back to the hairline silhouette or disappear.
 	float thicknessFlow = smoothstep(0.40f, 0.78f,
 		saturate(rimNoise * 0.68f + surfaceRipple * 0.32f));
-	float dynamicRimStart = lerp(0.82f, 0.045f, thicknessFlow);
+	// 두께 변화 폭을 제한해 이동 중 실루엣이 계단처럼 튀지 않게 한다.
+	float dynamicRimStart = lerp(0.58f, 0.42f, thicknessFlow);
 	float variableThickRim = smoothstep(dynamicRimStart, 0.86f, fresnel);
 	variableThickRim *= rimVisibility;
 	float thickRimCrest = smoothstep(0.34f, 0.76f, variableThickRim);
