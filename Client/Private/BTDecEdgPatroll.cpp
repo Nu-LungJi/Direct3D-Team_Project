@@ -107,6 +107,13 @@ void CBTDecEdgPatroll::Abort()
 void CBTDecEdgPatroll::OnEnter()
 {
 	m_bDot = false;
+	auto pBT = Get_ComBT();
+	if (nullptr == pBT) return;
+
+	auto pSrc = pBT->GetGameObject();
+	if (nullptr == pSrc) return;
+
+	XMStoreFloat3(&m_vDotDir , XMVector3Normalize(pSrc->GetTransform().GetState(STATE::RIGHT)));
 }
 void CBTDecEdgPatroll::OnExit(EVALUATE eResult)
 {
@@ -141,12 +148,12 @@ EVALUATE CBTDecEdgPatroll::Moving(_float3& vOutDir, _float3 vSrcPos, const Strin
 	XMStoreFloat3(&vOutDir, XMLoadFloat3(vDestPos) - XMLoadFloat3(&vSrcPos));
 	_float fDistance = XMVectorGetX(XMVector3Length(XMLoadFloat3(&vOutDir)));
 
-	if (!m_bDot)
-	{
-		m_vDotDir = vOutDir;
-		m_bDot = true;
-	}
-	if (fDistance <= 0.5f || XMVectorGetX(XMVector3Dot(XMLoadFloat3(&m_vDotDir),XMLoadFloat3(&vOutDir))) < 0.f)
+	//if (!m_bDot)
+	//{
+	//	m_vDotDir = vSrcPos;
+	//	m_bDot = true;
+	//}
+	if (fDistance <= 3.f)
 		return EVALUATE::SUCCESS;
 	
 	return  EVALUATE::FAILED;

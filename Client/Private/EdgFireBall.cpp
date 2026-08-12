@@ -85,8 +85,12 @@ void CEdgFireBall::Active(const _string& SkillName)
 	GetTransform().SetPosition(matBone.r[3]);
 	GetTransform().SetQuaternion(vQuat);
 	GetTransform().Update();
-	//Set_TargetDir(matBone.r[3]);
-	XMStoreFloat3(&m_vTargetDir, XMVector3Normalize(matOffset.r[3] - matBone.r[3]));
+
+	if(m_eType == DRAGON_SKILL::FIREBALL || m_eType == DRAGON_SKILL::BLACKBALL)
+		Set_TargetDir(matBone.r[3]);
+	else if (m_eType == DRAGON_SKILL::THREEBALL)
+		XMStoreFloat3(&m_vTargetDir, XMVector3Normalize(matOffset.r[3] - matBone.r[3]));
+	
 	m_bActive = true;
 	m_bHit = false;
 	m_fLife = 0.f;

@@ -625,6 +625,22 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "BALLFIRST", CResJson::Create("./Resources/json/BeHavior/SubTree/BallFirst.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED BALLFIRST JSON");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "BALLSECOND", CResJson::Create("./Resources/json/BeHavior/SubTree/BallSecond.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED BALLSECOND JSON");
+			return E_FAIL;
+		}
+	}
 	return S_OK; 
 }
 
