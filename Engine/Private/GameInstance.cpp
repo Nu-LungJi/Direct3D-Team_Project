@@ -685,6 +685,9 @@ void CGameInstance::TranslateOwner(uint32_t ownerId, const _float3& delta) {
 HRESULT CGameInstance::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end) {
 	return m_pParticleManager->AddTrailPoint(groupTag, typeTag, start, end);
 }
+HRESULT CGameInstance::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const CHandle& hOwner, const _float3& start, const _float3& end) {
+	return m_pParticleManager->AddTrailPoint(groupTag, typeTag, hOwner, start, end);
+}
 std::optional<BEAM_HANDLE> CGameInstance::SpawnBeam(const StringID& groupTag,const StringID& typeTag,const BEAM_PARAMS& params)
 {
 	return m_pParticleManager->SpawnBeam(groupTag,typeTag,params);

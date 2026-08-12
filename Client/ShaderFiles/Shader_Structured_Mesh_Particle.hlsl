@@ -76,9 +76,9 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
 
     Out.vTexcoord = finalUV;
     
-
-    float3 localPos = In.vPosition * scale; 
-    float3 rotatedLocal = RotateXYZ(localPos, p.rotation); 
+	float3 localPos = In.vPosition * scale;
+	float3 spunLocal = RotateAxisAngle(localPos, p.roationAxis, p.rotation.w);
+	float3 rotatedLocal = RotateXYZ(spunLocal, p.rotation);
     float3 vWorldPos = rotatedLocal + p.position;
 
 
@@ -219,6 +219,42 @@ PS_OUT PSMaceSphere(VS_OUT In)
 	float3 finalColor = baseColor * In.vColor.rgb + instEmissive * emissiveMask;
 
 	Out.vDiffuse = float4(finalColor, 1.0f);
+	return Out;
+}
+
+PS_OUT PSMarble(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT)0;
+
+	float lifeRatio = saturate(1.f - In.life / max(In.maxLife, 0.0001f));
+
+	float2 crackUV = In.vTexcoord;
+	crackUV.y += g_fTime * 0.1f;
+	float crackSource = AnyTextureMap.Sample(LinearWrap, crackUV).g;
+	float crackMask = pow(saturate(crackSource), 2.f);
+
+	float2 noiseUV1 = In.vTexcoord * 1.2f + float2(g_fTime * 0.03f, -g_fTime * 0.07f);
+	float2 noiseUV2 = In.vTexcoord * 2.3f + float2(-g_fTime * 0.05f, g_fTime * 0.04f);
+	float noise1 = NoiseMap.Sample(LinearWrap, noiseUV1).r;
+	float noise2 = NoiseMap.Sample(LinearWrap, noiseUV2).g;
+	float dissolveNoise = saturate(noise1 * 0.65f + noise2 * 0.35f);
+
+	float dissolveAmount = smoothstep(0.55f, 1.f, lifeRatio);
+	float dissolveDistance = dissolveNoise - dissolveAmount;
+	clip(dissolveDistance);
+
+	float dissolveEdge = 1.f - smoothstep(0.f, 0.08f, dissolveDistance);
+	float dissolveActive = smoothstep(0.01f, 0.08f, dissolveAmount);
+	dissolveEdge *= dissolveActive;
+
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, lifeRatio);
+	float3 baseColor = In.vColor.rgb;
+	float3 crackEmissive = crackMask * lerpedEmissive.rgb * lerpedEmissive.a;
+	float3 dissolveEmissive = lerp(lerpedEmissive.rgb, float3(1.f, 0.35f, 0.15f), 0.45f) * lerpedEmissive.a * dissolveEdge * 2.f;
+	float3 finalColor = baseColor + crackEmissive + dissolveEmissive;
+	float endFade = 1.f - smoothstep(0.96f, 1.f, lifeRatio);
+
+	Out.vDiffuse = float4(finalColor, In.vColor.a * endFade);
 	return Out;
 }
 

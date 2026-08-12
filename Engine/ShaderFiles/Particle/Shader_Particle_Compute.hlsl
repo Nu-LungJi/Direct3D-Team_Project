@@ -81,15 +81,8 @@ void CSMain(uint id : SV_DispatchThreadID)
     
 	if ((p.iBehaviorType & BEHAVIOR_KEEPROTATE) != 0)
 	{
-		
-		const float deltaAngle = p.fRotationSpeed * g_fTimeDelta;
-
-		p.rotation.x += p.roationAxis.x * deltaAngle;
-
-		p.rotation.y += p.roationAxis.y * deltaAngle;
-
-		p.rotation.z += p.roationAxis.z * deltaAngle;
-
+		float deltaAngle = p.fRotationSpeed * g_fTimeDelta;
+		p.rotation.w = atan2(sin(p.rotation.w + deltaAngle), cos(p.rotation.w + deltaAngle));
 	}
 	if (g_iTotalFrames > 0)
 	{

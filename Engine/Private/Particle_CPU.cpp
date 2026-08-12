@@ -240,6 +240,16 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		
 		_matrix matScale = XMMatrixScaling(p.fSize.x, p.fSize.y, p.fSize.z);
 		_matrix matTrans = XMMatrixTranslation(p.vPosition.x, p.vPosition.y, p.vPosition.z);
+		_matrix matDirectionRotation = XMMatrixRotationRollPitchYaw(p.rotation.x, p.rotation.y, p.rotation.z);
+		_matrix matKeepRotation = XMMatrixIdentity();
+		_vector vRotationAxis = XMLoadFloat3(&p.roationAxis);
+		_float fAxisLengthSq = XMVectorGetX(XMVector3LengthSq(vRotationAxis));
+
+		if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0 && fAxisLengthSq > 0.000001f)
+		{
+			vRotationAxis = XMVector3Normalize(vRotationAxis);
+			matKeepRotation = XMMatrixRotationAxis(vRotationAxis, p.rotation.w);
+		}
 
 		_matrix matWorld;
 		if ((p.iBehaviorType & CParticle::BEHAVIOR_BILLBOARD) != 0 /*&& m_Desc.whatKind == MESHORTEXTURE::TEX*/)
@@ -262,23 +272,15 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			matBillboardRot.r[2] = camForward;
 			matBillboardRot.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
 
-			// 2. 파티클 자체의 회전 행렬 생성 (예: p.rotation이 Vector3(Pitch, Yaw, Roll)인 경우)
-			_matrix matParticleRot = XMMatrixRotationRollPitchYaw(p.rotation.x, p.rotation.y, p.rotation.z);
-
-			// 만약 p.rotation이 Quaternion(XMFLOAT4 / XMVECTOR)인 경우:
-			// _matrix matParticleRot = XMMatrixRotationQuaternion(XMLoadFloat4(&p.rotation));
-
-			// 3. 빌보드 회전과 파티클 오프셋 회전 결합
-			// (로컬 공간 회전 후 카메라 방향으로 정렬)
-			_matrix matFinalRot = matParticleRot * matBillboardRot;
+			// 로컬축 자전 후 파티클 방향을 적용하고 마지막으로 카메라를 향하게 한다.
+			_matrix matFinalRot = matKeepRotation * matDirectionRotation * matBillboardRot;
 
 			// 4. 최종 월드 행렬 계산
 			matWorld = matScale * matFinalRot * matTrans;
 		}
 		else
 		{
-			_matrix matRotation = XMMatrixRotationRollPitchYaw(p.rotation.x, p.rotation.y, p.rotation.z);
-			matWorld = matScale * matRotation * matTrans;
+			matWorld = matScale * matKeepRotation * matDirectionRotation * matTrans;
 		}
 
 		XMStoreFloat4x4(&inst.matWorld, matWorld);
@@ -475,15 +477,7 @@ void CParticle_CPU::SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 
 void CParticle_CPU::KeepRotate(PARTICLE_CPU_DATA& p,_float fTimeDelta)
 {
-	const float deltaAngle = p.fRotationSpeed * fTimeDelta;
-
-	p.rotation.x += p.roationAxis.x * deltaAngle;
-
-	p.rotation.y += p.roationAxis.y * deltaAngle;
-
-	p.rotation.z += p.roationAxis.z * deltaAngle;
-
-	p.rotation.w += p.roationAxis.z * deltaAngle;
+	p.rotation.w = std::remainder(p.rotation.w + p.fRotationSpeed * fTimeDelta, XM_2PI);
 }
 
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
@@ -1028,10 +1022,14 @@ void CParticle_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatri
 	if (!XMMatrixDecompose(&scale, &deltaRotation, &translation, deltaMatrix))
 		return;
 
+	deltaRotation = XMQuaternionNormalize(deltaRotation);
+
 	XMFLOAT4X4 rotationMatrix{};
 	XMStoreFloat4x4(&rotationMatrix, XMMatrixRotationQuaternion(deltaRotation));
 
-	const float deltaYaw = -std::atan2(rotationMatrix._31, rotationMatrix._33);
+	_vector vDeltaForward = XMVector3Normalize(XMVectorSet(rotationMatrix._31, rotationMatrix._32, rotationMatrix._33, 0.f));
+	_float fDeltaPitch = asinf(std::clamp(-XMVectorGetY(vDeltaForward), -1.f, 1.f));
+	_float fDeltaYaw = atan2f(XMVectorGetX(vDeltaForward), XMVectorGetZ(vDeltaForward));
 
 	for (auto& particle : m_Particles)
 	{
@@ -1040,10 +1038,10 @@ void CParticle_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatri
 
 		XMStoreFloat3(&particle.vPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.vPosition), deltaMatrix));
 		XMStoreFloat3(&particle.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.originalPosition), deltaMatrix));
-
 		XMStoreFloat3(&particle.vVelocity, XMVector3Rotate(XMLoadFloat3(&particle.vVelocity), deltaRotation));
 		XMStoreFloat3(&particle.originalVelocity, XMVector3Rotate(XMLoadFloat3(&particle.originalVelocity), deltaRotation));
 
-		particle.rotation.y = std::remainder(particle.rotation.y + deltaYaw, XM_2PI);
+		particle.rotation.x = std::remainder(particle.rotation.x + fDeltaPitch, XM_2PI);
+		particle.rotation.y = std::remainder(particle.rotation.y + fDeltaYaw, XM_2PI);
 	}
 }

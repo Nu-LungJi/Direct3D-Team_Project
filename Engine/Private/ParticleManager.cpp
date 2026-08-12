@@ -14,6 +14,36 @@ NS_USING(Engine)
 std::vector<std::string> ScanFbxFolder(const std::string& strFbxFolder);
 std::vector<std::string> ScanTextureFolder(const std::string& strFbxFolder);
 
+namespace
+{
+	_float4 ComposeParticleRotation(const _float4& localRotation, const _float4& worldRotation)
+	{
+		const XMMATRIX localMatrix = XMMatrixRotationRollPitchYaw(localRotation.x, localRotation.y, localRotation.z);
+		const XMMATRIX worldMatrix = XMMatrixRotationQuaternion(XMQuaternionNormalize(XMLoadFloat4(&worldRotation)));
+		const XMMATRIX finalMatrix = localMatrix * worldMatrix;
+		const XMVECTOR right = XMVector3Normalize(finalMatrix.r[0]);
+		const XMVECTOR up = XMVector3Normalize(finalMatrix.r[1]);
+		const XMVECTOR forward = XMVector3Normalize(finalMatrix.r[2]);
+		const _float sinYaw = std::clamp(-XMVectorGetZ(right), -1.f, 1.f);
+		const _float cosYaw = sqrtf(std::max(1.f - sinYaw * sinYaw, 0.f));
+		_float pitch = 0.f;
+		const _float yaw = asinf(sinYaw);
+		_float roll = 0.f;
+
+		if (cosYaw > 0.00001f)
+		{
+			pitch = atan2f(XMVectorGetZ(up), XMVectorGetZ(forward));
+			roll = atan2f(XMVectorGetY(right), XMVectorGetX(right));
+		}
+		else
+		{
+			pitch = atan2f(sinYaw * XMVectorGetX(up), XMVectorGetY(up));
+		}
+
+		return _float4(std::remainder(pitch, XM_2PI), std::remainder(yaw, XM_2PI), std::remainder(roll, XM_2PI), localRotation.w);
+	}
+}
+
 
 void DrawPatternEditor(PatternParamVariant& current)
 {
@@ -841,6 +871,7 @@ void CParticleManager::UpdateGUI()
 
 	static STANDARD_PARAMS pendingStandard{};
 	static BEAM_PARAMS     pendingBeam{};
+	static _bool pendingInheritWorldRotation = false;
 
 	if (ImGui::RadioButton("MESH", whatKindFilterIndex == 0)) { whatKindFilterIndex = 0; typeIndex = 0; }
 	ImGui::SameLine();
@@ -1477,8 +1508,6 @@ void CParticleManager::UpdateGUI()
 		}
 
 		ImGui::Checkbox("RandomRotation?", &pendingStandard.bRandomRot);
-
-
 		if (pendingStandard.bKeepRotate) {
 			ImGui::DragFloat3("Rotation Axis", &pendingStandard.rotationAxis.x, 0.01f);
 			ImGui::DragFloat("Rotation Speed", &pendingStandard.rotationSpeed, 0.01f);
@@ -1540,12 +1569,14 @@ void CParticleManager::UpdateGUI()
 		
 		DrawImGui(pendingPattern);
 	}
+	ImGui::Checkbox("Inherit World Rotation", &pendingInheritWorldRotation);
 	if (ImGui::Button("Add to List") && !matchedList.empty())
 	{
 		SPAWN_COMMAND cmd{};
 		cmd.sGroupTag_KindTag = currentKind;
 		cmd.sGroupTag = selectedGroup;
 		cmd.sTypeTag = selectedType;
+		cmd.bInheritWorldRotation = pendingInheritWorldRotation;
 	
 
 		if (currentKind == SPAWN_COMMAND_KIND::STANDARD)
@@ -1613,6 +1644,7 @@ void CParticleManager::UpdateGUI()
 			currentKind = cmd.sGroupTag_KindTag;
 			selectedGroup = cmd.sGroupTag;
 			selectedType = cmd.sTypeTag;
+			pendingInheritWorldRotation = cmd.bInheritWorldRotation;
 			
 			if (currentKind == SPAWN_COMMAND_KIND::STANDARD && std::holds_alternative<STANDARD_PARAMS>(cmd.params))
 			{
@@ -2081,7 +2113,7 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 					: p.fEndSize;
 				s.life = p.life;
 				s.fStopSizeTime = p.fStopSizeTime;
-				s.rotation = p.bRandomRot
+				const _float4 localRotation = p.bRandomRot
 					? _float4(XMConvertToRadians(Randf(p.rotMin.x, p.rotMax.x)),
 						XMConvertToRadians(Randf(p.rotMin.y, p.rotMax.y)),
 						XMConvertToRadians(Randf(p.rotMin.z, p.rotMax.z)),
@@ -2090,6 +2122,7 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 						XMConvertToRadians(p.rotation.y),
 						XMConvertToRadians(p.rotation.z),
 						0);
+				s.rotation = cmd.bInheritWorldRotation ? ComposeParticleRotation(localRotation, cmd.inheritedWorldRotation) : localRotation;
 
 				s.color = p.color;
 				s.emissive = p.emissive;
@@ -2785,6 +2818,7 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 		entry["kind"] = (int)cmd.sGroupTag_KindTag;
 		entry["sGroupTag"] = cmd.sGroupTag.GetDbgStr();
 		entry["sTypeTag"] = cmd.sTypeTag.GetDbgStr();
+		entry["bInheritWorldRotation"] = cmd.bInheritWorldRotation;
 
 		switch (cmd.sGroupTag_KindTag)
 		{
@@ -2909,6 +2943,7 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 		cmd.sGroupTag_KindTag = (SPAWN_COMMAND_KIND)entry.value("kind", 0);
 		cmd.sGroupTag = entry.value("sGroupTag", "");
 		cmd.sTypeTag = entry.value("sTypeTag", "");
+		cmd.bInheritWorldRotation = entry.value("bInheritWorldRotation", false);
 
 		switch (cmd.sGroupTag_KindTag)
 		{
@@ -3226,6 +3261,7 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 		cmd.sGroupTag_KindTag = (SPAWN_COMMAND_KIND)entry.value("kind", 0);
 		cmd.sGroupTag = entry.value("sGroupTag", "");
 		cmd.sTypeTag = entry.value("sTypeTag", "");
+		cmd.bInheritWorldRotation = entry.value("bInheritWorldRotation", false);
 
 		switch (cmd.sGroupTag_KindTag)
 		{
@@ -3387,6 +3423,14 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 	{
 		SPAWN_COMMAND cmd = srcCmd; // 복사본에만 변환, 원본(호출자가 들고 있는 벡터)은 그대로
 		cmd.ownerId = m_iNextOwnerId;
+		if (cmd.bInheritWorldRotation)
+		{
+			XMVECTOR worldScale{};
+			XMVECTOR worldRotation{};
+			XMVECTOR worldTranslation{};
+			if (XMMatrixDecompose(&worldScale, &worldRotation, &worldTranslation, matWorld))
+				XMStoreFloat4(&cmd.inheritedWorldRotation, XMQuaternionNormalize(worldRotation));
+		}
 
 		switch (cmd.sGroupTag_KindTag)
 		{
@@ -3479,6 +3523,8 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 			{
 				XMStoreFloat3(&spawnData.position, XMVector3TransformCoord(XMLoadFloat3(&spawnData.position), matWorld));
 				XMStoreFloat3(&spawnData.velocity, XMVector3TransformNormal(XMLoadFloat3(&spawnData.velocity), matWorld));
+				if (cmd.bInheritWorldRotation)
+					spawnData.rotation = ComposeParticleRotation(spawnData.rotation, cmd.inheritedWorldRotation);
 				spawnData.originalPosition = spawnData.position;
 				spawnData.originalVelocity = spawnData.velocity;
 			}
@@ -3781,6 +3827,22 @@ HRESULT CParticleManager::AddTrailPoint(const StringID& groupTag, const StringID
 		return E_FAIL;
 
 	trail->AddPoint(start, end);
+
+	return S_OK;
+}
+HRESULT CParticleManager::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const CHandle& hOwner, const _float3& start, const _float3& end)
+{
+	CParticle* particle = GetParticle(groupTag, typeTag);
+
+	if (!particle)
+		return E_FAIL;
+
+	CTrail_CPU* trail = dynamic_cast<CTrail_CPU*>(particle);
+
+	if (!trail)
+		return E_FAIL;
+
+	trail->AddPoint(hOwner, start, end);
 
 	return S_OK;
 }

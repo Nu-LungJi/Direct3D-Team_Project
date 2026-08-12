@@ -120,11 +120,20 @@ void CParticle::TransformPendingOwner(uint32_t ownerId, const _float4x4& deltaMa
 	const XMMATRIX deltaMatrix = XMLoadFloat4x4(&deltaMatrixData);
 
 	XMVECTOR scale{};
-	XMVECTOR rotation{};
+	XMVECTOR deltaRotation{};
 	XMVECTOR translation{};
 
-	if (!XMMatrixDecompose(&scale, &rotation, &translation, deltaMatrix))
+	if (!XMMatrixDecompose(&scale, &deltaRotation, &translation, deltaMatrix))
 		return;
+
+	deltaRotation = XMQuaternionNormalize(deltaRotation);
+
+	XMFLOAT4X4 rotationMatrix{};
+	XMStoreFloat4x4(&rotationMatrix, XMMatrixRotationQuaternion(deltaRotation));
+
+	_vector vDeltaForward = XMVector3Normalize(XMVectorSet(rotationMatrix._31, rotationMatrix._32, rotationMatrix._33, 0.f));
+	_float fDeltaPitch = asinf(std::clamp(-XMVectorGetY(vDeltaForward), -1.f, 1.f));
+	_float fDeltaYaw = atan2f(XMVectorGetX(vDeltaForward), XMVectorGetZ(vDeltaForward));
 
 	for (PENDING_SPAWN& pending : m_PendingSpawns)
 	{
@@ -135,8 +144,10 @@ void CParticle::TransformPendingOwner(uint32_t ownerId, const _float4x4& deltaMa
 
 		XMStoreFloat3(&data.position, XMVector3TransformCoord(XMLoadFloat3(&data.position), deltaMatrix));
 		XMStoreFloat3(&data.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&data.originalPosition), deltaMatrix));
+		XMStoreFloat3(&data.velocity, XMVector3Rotate(XMLoadFloat3(&data.velocity), deltaRotation));
+		XMStoreFloat3(&data.originalVelocity, XMVector3Rotate(XMLoadFloat3(&data.originalVelocity), deltaRotation));
 
-		XMStoreFloat3(&data.velocity, XMVector3Rotate(XMLoadFloat3(&data.velocity), rotation));
-		XMStoreFloat3(&data.originalVelocity, XMVector3Rotate(XMLoadFloat3(&data.originalVelocity), rotation));
+		data.rotation.x = std::remainder(data.rotation.x + fDeltaPitch, XM_2PI);
+		data.rotation.y = std::remainder(data.rotation.y + fDeltaYaw, XM_2PI);
 	}
 }
