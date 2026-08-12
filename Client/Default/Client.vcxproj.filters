@@ -681,9 +681,6 @@
     <ClInclude Include="..\public\EnderDragon_State.h">
       <Filter>GameObject\Monster\EnderDragon\FSM</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Edg_Spawn.h">
-      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Edg_Combat.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
@@ -764,6 +761,9 @@
     </ClInclude>
     <ClInclude Include="..\public\EdgRandomBall.h">
       <Filter>GameObject\Monster\EnderDragon\Skill\RandomBall</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Edg_Spawn.h">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -5,6 +5,7 @@
 #include "EnderDragon_State.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComAnimator.h"
+#include "ComBeHavior.h"
 NS_USING(Client)
 CEdg_Phase::CEdg_Phase()
 {
@@ -93,6 +94,12 @@ void CEdg_Phase::Exit(CStateMachine* pStateMachine)
 		pBB->Set_Value<_float3>(EDG_KEY::LPATROL, vLeftPos);
 		pBB->Set_Value<_float3>(EDG_KEY::RPATROL, vRightPos);
 	}
+	if (m_ePhase == DRAGON_PHASE::PHASE5)
+	{
+		auto pBT = pDragon->GetComponent<CComBeHavior>("Com_BT");
+		if (nullptr == pBT) return;
+		pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+	}
 }
 
 void CEdg_Phase::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -172,7 +179,7 @@ _bool CEdg_Phase::MovePhase(CEnderDragon* pDragon, _float fTimeDelta)
 	_float3 vLerpDir{};
 	XMStoreFloat3(&vLerpDir, XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vLastDir), XMLoadFloat3(&m_vNextDir), t)));
 	
-	pMoveIntent->SetMoveIntent(vLerpDir, 25.f);
+	pMoveIntent->SetMoveIntent(vLerpDir, 50.f);
 	pMoveIntent->SetFacingIntent(vLerpDir, 60.f);
 	return false;
 }
@@ -221,7 +228,7 @@ _bool CEdg_Phase::MovePhase3(CEnderDragon* pDragon, _float fTimeDelta)
 	_float3 vLerpDir{};
 	XMStoreFloat3(&vLerpDir, XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vLastDir), XMLoadFloat3(&m_vNextDir), t)));
 
-	pMoveIntent->SetMoveIntent(vLerpDir, 25.f);
+	pMoveIntent->SetMoveIntent(vLerpDir, 50.f);
 	pMoveIntent->SetFacingIntent(vTargetDir, 60.f);
 	return false;
 }

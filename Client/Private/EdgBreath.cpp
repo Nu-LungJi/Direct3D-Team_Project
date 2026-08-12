@@ -126,10 +126,11 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), t));
 	}
 	else if (m_eType == DRAGON_SKILL::TURNBREATH)
-	{
+	{ 
 		_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
 		_matrix matOffset = XMLoadFloat4x4(&matOffB);
-		vForward = XMVector3Normalize(matOffset.r[3] - matBone.r[3]);
+		vForward = XMVector3Normalize(matOffset.r[3]  - matBone.r[3]);
+		vForward -= XMVectorSet(0, 0.15f, 0, 0);
 	}
 	else if (m_eType == DRAGON_SKILL::LONGBREATH)
 	{
@@ -145,6 +146,7 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 		XMStoreFloat3(&m_vTargetDir, XMVector3Normalize(XMLoadFloat3(&pTarget->GetTransform().GetPosition()) - matOffset.r[3]));
 
 		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), 0.8f));
+		
 	}
 
 	_vector vUp = XMVector3Normalize(matBone.r[1]);
