@@ -1286,7 +1286,10 @@ HRESULT CRenderer::Render_Effect()
 
 HRESULT CRenderer::Render_VolumetricEffect() {
 	if (m_bApplyVolumetric == false) {
-		if (false == m_bBeingInitialized) { 
+		return S_OK;
+	}
+	else {
+		if (false == m_bBeingInitialized) {
 			if (FAILED(InitializeVolumetricEffect())) return E_FAIL;
 			m_bBeingInitialized = true;
 		}
