@@ -668,7 +668,11 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 		return E_FAIL;
 
 	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
-	auto rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	const char* rasterizerTag = m_Desc.bNoCull
+		? TAG_RES_STATE_RS_SOLID_NOCULL
+		: TAG_RES_STATE_RS_SOLID_BACKCULL;
+	auto rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(
+		TAG_RES_GRP_PERMANENT_STATE, rasterizerTag);
 	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
 
 	auto depthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH");

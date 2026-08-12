@@ -221,3 +221,275 @@ PS_OUT PSDepulso(VS_OUT In)
 
 	return Out;
 }
+
+VS_OUT VSProtegoHitSurface(VS_IN In)
+{
+	VS_OUT Out = VSMain(In);
+
+	// Keep the mesh-local direction. The particle instance now inherits the
+	// effect world's hit rotation, so this local cap rotates with the sphere.
+	Out.vBinormal = normalize(In.vNormal);
+	return Out;
+}
+
+PS_OUT PSProtegoGlass(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float lifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float3 N = normalize(In.vNormal);
+	float3 V = normalize(g_vCamPos - In.vWorldPos);
+	float NdotV = saturate(abs(dot(N, V)));
+	float fresnel = pow(1.0f - NdotV, 3.6f);
+	float softRim = smoothstep(0.20f, 0.88f, fresnel);
+	float thinRim = pow(1.0f - NdotV, 11.0f);
+	float3 rippleCoord = In.vWorldPos * 1.18f;
+	float slowTime = g_fAccumulationTime * 0.72f;
+
+	// Warp the sampling domain first so no wave keeps a straight, repeating path.
+	float3 domainWarp;
+	domainWarp.x = sin(rippleCoord.y * 1.13f + rippleCoord.z * 0.71f + slowTime * 1.07f);
+	domainWarp.y = sin(rippleCoord.z * 0.93f - rippleCoord.x * 1.37f - slowTime * 0.83f);
+	domainWarp.z = cos(rippleCoord.x * 0.79f + rippleCoord.y * 1.51f + slowTime * 0.61f);
+	float3 warpedCoord = rippleCoord + domainWarp * 0.52f;
+
+	float broadFlow = sin(warpedCoord.x * 1.47f + warpedCoord.y * 1.09f + slowTime * 1.31f);
+	broadFlow += sin(warpedCoord.z * 1.83f - warpedCoord.y * 1.27f - slowTime * 0.97f) * 0.72f;
+	float brokenFlow = sin(
+		warpedCoord.x * 3.17f - warpedCoord.z * 2.41f +
+		sin(warpedCoord.y * 2.23f - slowTime) * 1.35f + slowTime * 1.89f);
+	float fineFlow = cos(
+		(warpedCoord.x + warpedCoord.y - warpedCoord.z) * 4.61f -
+		slowTime * 2.17f + broadFlow * 0.9f);
+
+	float irregularFlow = broadFlow * 0.43f + brokenFlow * 0.37f + fineFlow * 0.20f;
+	float surfaceRipple = saturate(0.5f + irregularFlow * 0.32f);
+	float rippleHighlight = smoothstep(0.54f, 0.82f, surfaceRipple);
+	rippleHighlight *= 0.62f + 0.38f * smoothstep(-0.25f, 0.75f, brokenFlow);
+	float rippleValley = 1.0f - smoothstep(0.20f, 0.46f, surfaceRipple);
+
+	// Moving broken rim: independent frequencies keep the outline from forming
+	// one continuous, mechanically pulsing ring.
+	float rimFlowA = sin(
+		warpedCoord.x * 2.73f + warpedCoord.y * 3.91f -
+		warpedCoord.z * 1.67f + slowTime * 2.37f + irregularFlow * 1.25f);
+	float rimFlowB = cos(
+		warpedCoord.x * 5.21f - warpedCoord.y * 2.19f +
+		warpedCoord.z * 4.37f - slowTime * 1.63f + broadFlow * 0.74f);
+	float rimFlowC = sin(
+		(warpedCoord.x - warpedCoord.z) * 7.13f +
+		warpedCoord.y * 1.31f + slowTime * 3.11f);
+	float rimNoise = saturate(0.5f +
+		(rimFlowA * 0.48f + rimFlowB * 0.34f + rimFlowC * 0.18f) * 0.5f);
+	float brokenRim = smoothstep(0.40f, 0.72f, rimNoise);
+	float rimVisibility = lerp(0.025f, 1.0f, brokenRim);
+	float edgeSpark = smoothstep(0.78f, 0.94f, rimNoise);
+
+	// Strong flowing sections grow inward and become visibly thicker. Weak
+	// sections collapse back to the hairline silhouette or disappear.
+	float thicknessFlow = smoothstep(0.40f, 0.78f,
+		saturate(rimNoise * 0.68f + surfaceRipple * 0.32f));
+	float dynamicRimStart = lerp(0.82f, 0.045f, thicknessFlow);
+	float variableThickRim = smoothstep(dynamicRimStart, 0.86f, fresnel);
+	variableThickRim *= rimVisibility;
+	float thickRimCrest = smoothstep(0.34f, 0.76f, variableThickRim);
+
+	float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+	screenUV = screenUV * float2(0.5f, -0.5f) + 0.5f;
+	float breath = 0.5f + 0.5f * sin(g_fAccumulationTime * 1.65f);
+	float2 rippleDirection = normalize(N.xy + float2(0.001f, 0.001f));
+	float2 refraction = N.xy * lerp(0.0030f, 0.0048f, breath) *
+		(0.25f + fresnel * 0.75f);
+	refraction += rippleDirection * (surfaceRipple - 0.5f) * 0.0038f;
+	float3 background = g_BackgroundTex.Sample(LinearClamp, screenUV + refraction).rgb;
+
+	float3 glassTint = float3(0.30f, 0.08f, 0.62f);
+	float3 darkPurpleRim = float3(0.055f, 0.012f, 0.085f);
+	float3 blackVioletRim = float3(0.012f, 0.006f, 0.028f);
+	float3 violetGlint = float3(0.66f, 0.12f, 0.92f);
+	float3 whiteEdge = float3(0.42f, 0.20f, 0.52f);
+	float verticalBlend = saturate(0.5f + 0.5f * N.y);
+	float3 rimTint = lerp(blackVioletRim, darkPurpleRim, verticalBlend);
+
+	float3 finalColor = background;
+	float centerGlass = 1.0f - softRim * 0.72f;
+	float3 centerTint = lerp(float3(0.16f, 0.08f, 0.48f),
+		float3(0.42f, 0.10f, 0.68f), verticalBlend);
+	finalColor = lerp(finalColor, finalColor * 0.86f + centerTint * 0.14f,
+		0.62f * centerGlass);
+	finalColor += lerp(float3(0.30f, 0.18f, 1.0f),
+		float3(0.88f, 0.08f, 1.0f), surfaceRipple) *
+		rippleHighlight * centerGlass * 0.24f;
+	finalColor *= 1.0f - rippleValley * centerGlass * 0.055f;
+	finalColor += glassTint * fresnel * 0.12f;
+	finalColor += rimTint * softRim * (0.10f + rimVisibility * 1.38f);
+	finalColor += lerp(rimTint, violetGlint, thicknessFlow) *
+		variableThickRim * 1.38f;
+	finalColor += whiteEdge * thinRim * (0.025f + rimVisibility * 0.82f);
+	finalColor += violetGlint * edgeSpark *
+		(softRim * 0.24f + thickRimCrest * 0.62f);
+
+	float fadeIn = smoothstep(0.0f, 0.055f, lifeRatio);
+	float fadeOut = 1.0f - smoothstep(0.82f, 1.0f, lifeRatio);
+	float alpha = saturate(0.115f + centerGlass * 0.075f +
+		rippleHighlight * centerGlass * 0.11f +
+		rippleValley * centerGlass * 0.035f +
+		fresnel * 0.24f +
+		softRim * (0.008f + rimVisibility * 0.25f) +
+		variableThickRim * 0.52f +
+		thinRim * (0.01f + rimVisibility * 0.72f));
+	alpha *= fadeIn * fadeOut * In.vColor.a;
+
+	Out.vDiffuse = float4(finalColor, alpha);
+	return Out;
+}
+
+PS_OUT PSProtegoHitSurface(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float3 localDirection = normalize(In.vBinormal);
+
+	// Only retain a spherical cap around local +Z. Since these pixels are
+	// rendered by the shield sphere itself, the decal follows the surface
+	// exactly instead of floating on a tangent quad.
+	const float capCos = 0.72f;
+	float capMask = smoothstep(capCos, capCos + 0.055f, localDirection.z);
+	float capRadius = sqrt(1.0f - capCos * capCos);
+	float2 hitUV = localDirection.xy / capRadius * 0.5f + 0.5f;
+
+	float2 interferenceUV = hitUV * 1.31f +
+		float2(-g_fAccumulationTime * 0.13f, g_fAccumulationTime * 0.21f);
+	float3 interference = NoiseMap.Sample(LinearWrap, interferenceUV).rgb;
+	float interferenceWhite = saturate(dot(interference, float3(0.299f, 0.587f, 0.114f)));
+	float2 reverseFlowUV = hitUV * 1.73f +
+		float2(g_fAccumulationTime * 0.17f, -g_fAccumulationTime * 0.09f);
+	float reverseNoise = dot(NoiseMap.Sample(LinearWrap, reverseFlowUV).rgb,
+		float3(0.299f, 0.587f, 0.114f));
+
+	float2 centeredHitUV = hitUV - 0.5f;
+	float twist = (interferenceWhite - reverseNoise) * 0.34f +
+		sin(g_fAccumulationTime * 4.7f + reverseNoise * 5.0f) * 0.055f;
+	float sinTwist = sin(twist);
+	float cosTwist = cos(twist);
+	float2 twistedUV = float2(
+		centeredHitUV.x * cosTwist - centeredHitUV.y * sinTwist,
+		centeredHitUV.x * sinTwist + centeredHitUV.y * cosTwist);
+	float breathing = 1.0f + sin(g_fAccumulationTime * 5.3f + interferenceWhite * 3.0f) * 0.045f;
+	// Contracting sample coordinates make the white body spread across the
+	// spherical surface. Two independent noise flows curl its edge like smoke.
+	float smokeSpread = lerp(1.08f, 0.60f, smoothstep(0.0f, 0.78f, ratio));
+	float2 radialDirection = centeredHitUV / max(length(centeredHitUV), 0.025f);
+	float curl = (interferenceWhite - reverseNoise) * (0.045f + ratio * 0.075f);
+	float2 blastUV = twistedUV * breathing * smokeSpread + 0.5f;
+	blastUV += float2(interferenceWhite - 0.5f, reverseNoise - 0.5f) *
+		(0.055f + ratio * 0.085f);
+	blastUV += float2(-radialDirection.y, radialDirection.x) * curl;
+	float3 blast = AnyTextureMap.Sample(LinearWrap, blastUV).rgb;
+	float blastWhite = saturate(dot(blast, float3(0.299f, 0.587f, 0.114f)));
+	float smokyBody = saturate(blastWhite * (0.74f + interferenceWhite * 0.52f));
+	float wispyBreakup = smoothstep(0.24f, 0.76f,
+		saturate(interferenceWhite * 0.62f + reverseNoise * 0.38f));
+	float overlap = pow(saturate(smokyBody * interferenceWhite), 1.15f);
+
+	float radial = length(hitUV * 2.0f - 1.0f);
+	float brokenEdge = 1.0f - smoothstep(0.035f, 0.13f,
+		abs(radial - lerp(0.15f, 0.78f, ratio) - (interferenceWhite - 0.5f) * 0.10f));
+	float fadeIn = smoothstep(0.0f, 0.045f, ratio);
+	float fadeOut = 1.0f - smoothstep(0.91f, 1.0f, ratio);
+	float dissolveProgress = smoothstep(0.68f, 0.99f, ratio);
+	float dissolveNoise = saturate(interferenceWhite * 0.60f + reverseNoise * 0.40f);
+	float dissolveMask = smoothstep(dissolveProgress - 0.12f,
+		dissolveProgress + 0.13f, dissolveNoise);
+	float dissolveEdge = 1.0f - smoothstep(0.025f, 0.105f,
+		abs(dissolveNoise - dissolveProgress));
+	float lingeringWisps = smokyBody * wispyBreakup *
+		(1.0f - smoothstep(0.86f, 1.0f, ratio));
+	float alpha = saturate(smokyBody * (0.78f + wispyBreakup * 0.52f) +
+		lingeringWisps * 0.42f +
+		overlap * 0.52f + brokenEdge * 0.55f);
+	alpha *= capMask * fadeIn * fadeOut * dissolveMask * In.vColor.a;
+	clip(alpha - 0.018f);
+
+	float3 whiteBurst = blast * (0.92f + smokyBody * 2.05f) *
+		lerp(1.0f, 0.58f, ratio);
+	whiteBurst += float3(0.74f, 0.66f, 0.92f) * lingeringWisps * 0.48f;
+	float3 violetOverlap = lerp(float3(0.36f, 0.06f, 0.82f),
+		float3(0.98f, 0.22f, 1.0f), interferenceWhite) * overlap * 4.8f;
+	float3 edgeColor = float3(0.66f, 0.24f, 1.0f) * brokenEdge * 2.2f;
+	float3 dissolveColor = float3(0.78f, 0.38f, 1.0f) * dissolveEdge *
+		capMask * fadeOut * 1.65f;
+	Out.vDiffuse = float4(whiteBurst + violetOverlap + edgeColor + dissolveColor, alpha);
+	return Out;
+}
+
+PS_OUT PSProtegoHitPulse(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float2 flowUV1 = In.vTexcoord * 2.15f +
+		float2(g_fAccumulationTime * 0.19f, -g_fAccumulationTime * 0.11f);
+	float2 flowUV2 = In.vTexcoord * 1.43f +
+		float2(-g_fAccumulationTime * 0.12f, g_fAccumulationTime * 0.23f);
+	float noiseA = dot(NoiseMap.Sample(LinearWrap, flowUV1).rgb,
+		float3(0.299f, 0.587f, 0.114f));
+	float noiseB = dot(AnyTextureMap.Sample(LinearWrap, flowUV2).rgb,
+		float3(0.299f, 0.587f, 0.114f));
+	float irregular = saturate(noiseA * 0.58f + noiseB * 0.42f);
+	float3 localDirection = normalize(In.vBinormal);
+	float angularDistance = acos(clamp(localDirection.z, -1.0f, 1.0f)) / PI;
+
+	float pulseEnvelope = sin(saturate(ratio) * PI);
+	float movingVein = smoothstep(0.42f, 0.76f,
+		saturate(irregular + sin(In.vWorldPos.y * 2.7f - g_fAccumulationTime * 5.2f) * 0.16f));
+	float wholeShieldShimmer = movingVein * pulseEnvelope;
+
+	// A broad, noise-warped front reads as a wave without becoming a perfect ring.
+	float waveNoise = (noiseA - 0.5f) * 0.060f + (noiseB - 0.5f) * 0.038f;
+	float waveCenter = smoothstep(0.0f, 1.0f, ratio) * 0.90f;
+	float waveDistance = abs(angularDistance - waveCenter - waveNoise);
+	float broadWave = 1.0f - smoothstep(0.035f, 0.125f, waveDistance);
+	float brokenWave = smoothstep(0.25f, 0.76f,
+		saturate(irregular + sin(localDirection.x * 11.0f + localDirection.y * 8.0f - g_fAccumulationTime * 4.3f) * 0.14f));
+	float travellingWave = broadWave * lerp(0.38f, 1.0f, brokenWave) * pulseEnvelope;
+
+	float echoCenter = waveCenter - 0.115f;
+	float echoDistance = abs(angularDistance - echoCenter - waveNoise * 0.62f);
+	float softEcho = (1.0f - smoothstep(0.028f, 0.105f, echoDistance)) *
+		(0.35f + irregular * 0.30f) * pulseEnvelope;
+	float hitBloom = (1.0f - smoothstep(0.0f, 0.16f, angularDistance)) *
+		(1.0f - smoothstep(0.18f, 0.62f, ratio));
+	// After the wave passes, dissolve the temporary HIT sphere from the impact
+	// point toward the opposite pole. The base Protego sphere is a separate
+	// particle and remains untouched underneath this layer.
+	float dissolveRadius = smoothstep(0.44f, 1.0f, ratio) * 1.12f;
+	float dissolveWarp = (noiseA - 0.5f) * 0.105f +
+		(noiseB - 0.5f) * 0.072f;
+	float warpedDissolveDistance = angularDistance + dissolveWarp;
+	float surfaceDissolve = smoothstep(dissolveRadius - 0.075f,
+		dissolveRadius + 0.105f, warpedDissolveDistance);
+	float surfaceDissolveEdge = 1.0f - smoothstep(0.018f, 0.085f,
+		abs(warpedDissolveDistance - dissolveRadius));
+	surfaceDissolveEdge *= smoothstep(0.42f, 0.58f, ratio);
+
+	float3 N = normalize(In.vNormal);
+	float3 V = normalize(g_vCamPos - In.vWorldPos);
+	float fresnel = pow(1.0f - saturate(abs(dot(N, V))), 3.2f);
+	float alpha = saturate(
+		travellingWave * 0.52f + softEcho * 0.25f + hitBloom * 0.32f +
+		wholeShieldShimmer * 0.25f + fresnel * pulseEnvelope * 0.20f);
+	alpha *= surfaceDissolve * In.vColor.a;
+	clip(alpha - 0.012f);
+
+	float3 deepViolet = float3(0.20f, 0.025f, 0.68f);
+	float3 brightViolet = float3(0.82f, 0.16f, 1.0f);
+	float3 pulseColor = lerp(deepViolet, brightViolet, irregular);
+	pulseColor *= wholeShieldShimmer * 1.75f + travellingWave * 2.65f + softEcho * 1.10f + hitBloom * 1.80f;
+	pulseColor += float3(0.62f, 0.28f, 1.0f) * fresnel * pulseEnvelope * 1.05f;
+	pulseColor += float3(0.88f, 0.30f, 1.0f) * surfaceDissolveEdge *
+		(0.75f + irregular * 0.55f) * 1.35f;
+	Out.vDiffuse = float4(pulseColor, alpha);
+	return Out;
+}

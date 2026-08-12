@@ -37,6 +37,7 @@
 #include "Player_BombardaSkill_State.h"
 #include "Player_ConfringoSkill_State.h"
 #include "Player_AvadaKedavraSkill_State.h"
+#include "Player_ProtegoSkill_State.h"
 #include "Player_LumosSkill_State.h"
 #include "Player_RepairoSkill_State.h"
 #include "Monster.h"
@@ -415,6 +416,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		}
 		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::PROTEGO_SKILL,
+			CPlayer_ProtegoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::LUMOS_SKILL,
 			CPlayer_LumosSkill_State::Create()))
 		{
@@ -746,6 +753,14 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_pStateMachine->RequestState(PLAYER_STATE::JUMP);
 	}
 
+	if (m_pStateMachine && m_pComCharacterMotor &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
+		m_pComCharacterMotor->IsGrounded() &&
+		m_iHp > 0 && CGameInstance::Get().KeyDown(DIK_Q))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::PROTEGO_SKILL);
+	}
+
 	if (m_pStateMachine &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		const PLAYER_STATE eCurrentState =m_pStateMachine->GetCurrentState();
@@ -1001,7 +1016,25 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_H))
-		OnQueryHit(20);
+	{
+		// Protego HIT debug: sample the entire sphere uniformly so front, side,
+		// back, top, and bottom visibility can all be checked with repeated hits.
+		const _float fZ = Randf(-1.f, 1.f);
+		const _float fAzimuth = Randf(0.f, XM_2PI);
+		const _float fPlanarRadius = sqrtf(std::max(0.f, 1.f - fZ * fZ));
+		const _float3 vRandomDirection{
+			fPlanarRadius * cosf(fAzimuth),
+			fZ,
+			fPlanarRadius * sinf(fAzimuth)
+		};
+
+		_float3 vHitPosition = GetTransform().GetPosition();
+		vHitPosition.y += 1.f;
+		vHitPosition.x += vRandomDirection.x * 2.48f;
+		vHitPosition.y += vRandomDirection.y * 2.48f;
+		vHitPosition.z += vRandomDirection.z * 2.48f;
+		OnQueryHit(20, vHitPosition);
+	}
 }
 
 
@@ -1818,6 +1851,17 @@ HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISIO
 {
 	if (!pAttacker)
 		return E_INVALIDARG;
+	if (m_bProtegoActive)
+	{
+		_float3 vHitPosition = GetTransform().GetPosition();
+		vHitPosition.y += 1.f;
+		if (info.iContactCount > 0)
+			vHitPosition = info.Contacts[0].vWorldPosition;
+		TriggerProtegoHit(vHitPosition);
+		return S_OK;
+	}
+	if (m_bInvincible)
+		return S_OK;
 
 	if (info.iSelfShapeSubIndex == std::numeric_limits<uint32_t>::max())
 	{
@@ -1867,6 +1911,14 @@ HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISIO
 
 _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,int32_t iDamage,const _float3& vHitPosition)
 {
+	if (m_bProtegoActive)
+	{
+		TriggerProtegoHit(vHitPosition);
+		return false;
+	}
+	if (m_bInvincible)
+		return false;
+
 	if (!tHit.bHit ||
 		tHit.pGameObject != this ||
 		tHit.iShapeSubIndex != ETOUI(PLAYER_COLLISIONS::PLAYER_SHAPE_HURTBOX) ||
@@ -1900,6 +1952,13 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 {
 	if (iDamage <= 0 || m_iHp <= 0)
 		return false;
+	if (m_bProtegoActive)
+	{
+		TriggerProtegoHit(vHitPosition);
+		return false;
+	}
+	if (m_bInvincible)
+		return false;
 
 	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
 	m_iHp -= iAppliedDamage;
@@ -1919,15 +1978,32 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 
 _bool CPlayer::OnQueryHit(int32_t iDamage)
 {
-	if (iDamage <= 0 || m_iHp <= 0 || m_bInvincible)
+	if (iDamage <= 0 || m_iHp <= 0)
+		return false;
+	if (m_bProtegoActive)
+	{
+		_vector vLook = XMVector3Normalize(GetTransform().GetState(STATE::LOOK));
+		_vector vRight = XMVector3Normalize(GetTransform().GetState(STATE::RIGHT));
+		_vector vUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+		_vector vRandomDirection = XMVector3Normalize(
+			vLook +
+			vRight * Randf(-0.9f, 0.9f) +
+			vUp * Randf(-0.65f, 0.65f));
+		_vector vHit = GetTransform().GetState(STATE::POSITION) +
+			XMVectorSet(0.f, 1.f, 0.f, 0.f) + vRandomDirection * 2.48f;
+		_float3 vHitPosition{};
+		XMStoreFloat3(&vHitPosition, vHit);
+		TriggerProtegoHit(vHitPosition);
+		return false;
+	}
+	if (m_bInvincible)
 		return false;
 
 	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
 	m_iHp -= iAppliedDamage;
 	
 
-	if (auto* pUIController =
-		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
 	{
 		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
 	}
@@ -1936,6 +2012,46 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 	else if (m_pStateMachine)
 		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
 	return true;
+}
+
+void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
+{
+	_float3 vShieldCenter = GetTransform().GetPosition();
+	vShieldCenter.y += 1.f;
+
+	_vector vNormal = XMLoadFloat3(&vHitPosition) - XMLoadFloat3(&vShieldCenter);
+	if (XMVectorGetX(XMVector3LengthSq(vNormal)) <= FLT_EPSILON)
+		vNormal = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+	else
+		vNormal = XMVector3Normalize(vNormal);
+
+	_vector vReferenceUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	if (fabsf(XMVectorGetX(XMVector3Dot(vNormal, vReferenceUp))) > 0.96f)
+		vReferenceUp = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+
+	const _vector vBaseRight = XMVector3Normalize(XMVector3Cross(vReferenceUp, vNormal));
+	const _vector vBaseUp = XMVector3Normalize(XMVector3Cross(vNormal, vBaseRight));
+
+	// Rotate every impact around its surface normal. This keeps an asymmetric
+	// burst texture from appearing in exactly the same orientation every time.
+	static uint32_t s_iProtegoHitSequence = 0;
+	const _float fSurfaceRotation =
+		static_cast<_float>((s_iProtegoHitSequence++ * 137u) % 360u) * XM_PI / 180.f;
+	const _float fCos = cosf(fSurfaceRotation);
+	const _float fSin = sinf(fSurfaceRotation);
+	const _vector vRight = vBaseRight * fCos + vBaseUp * fSin;
+	const _vector vUp = vBaseUp * fCos - vBaseRight * fSin;
+	const _vector vPosition = XMLoadFloat3(&vShieldCenter);
+
+	_float4x4 hitWorld{};
+	XMStoreFloat4x4(&hitWorld, XMMatrixIdentity());
+	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._11), vRight);
+	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._21), vUp);
+	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._31), vNormal);
+	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._41), vPosition);
+
+	CGameInstance::Get().PlayEffect(
+		"Protego_Shield_Hit_Layered", hitWorld, XMVectorZero());
 }
 
 void CPlayer::HandleDeath()

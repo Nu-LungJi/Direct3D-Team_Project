@@ -340,6 +340,9 @@
     <Filter Include="GameObject\Monster\EnderDragon\Skill\RandomBall">
       <UniqueIdentifier>{e1391e4d-8475-4d6d-b876-e945739bb89d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State">
+      <UniqueIdentifier>{c2bc7a83-85f7-4724-8bc3-b2011caf5be4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -789,6 +792,9 @@
     <ClInclude Include="..\public\EdgRandomBall.h">
       <Filter>GameObject\Monster\EnderDragon\Skill\RandomBall</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_ProtegoSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1186,6 +1192,9 @@
     </ClCompile>
     <ClCompile Include="..\private\EdgRandomBall.cpp">
       <Filter>GameObject\Monster\EnderDragon\Skill\RandomBall</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

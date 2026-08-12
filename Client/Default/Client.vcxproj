@@ -291,6 +291,7 @@
     <ClInclude Include="..\public\OilBarrel.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h" />
+    <ClInclude Include="..\Public\Player_ProtegoSkill_State.h" />
     <ClInclude Include="..\public\RagdollTest.h" />
     <ClInclude Include="..\public\TestPathPlaybackObject.h" />
     <ClInclude Include="..\public\LuaTestObject.h" />
@@ -435,6 +436,7 @@
     <ClCompile Include="..\private\OilBarrel.cpp" />
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
     <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp" />
     <ClCompile Include="..\private\RagdollTest.cpp" />
     <ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
     <ClCompile Include="..\private\LuaTestObject.cpp" />

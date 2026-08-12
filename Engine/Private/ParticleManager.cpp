@@ -2445,6 +2445,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
 
 				desc.blendState = selectedBlend;
+				desc.bNoCull = entry.value("bNoCull", false);
 				desc.pShaderCache = m_pShaderCache;
 				particle = CParticle_CPU::Create(&desc);
 			}
@@ -2966,6 +2967,7 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 
 
 			p.bRandomRot = entry.value("bRandomRot", false);
+			p.bInheritWorldRotation = entry.value("bInheritWorldRotation", false);
 			auto rotMin = entry.value("rotMin", std::vector<float>{0, 0, 0});
 			p.rotMin = { rotMin[0], rotMin[1], rotMin[2] };
 			auto rotMax = entry.value("rotMax", std::vector<float>{0, 0, 0});
@@ -3234,6 +3236,7 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 			p.bRandomPos = entry.value("bRandomPos", false);
 			p.bRandomVel = entry.value("bRandomVel", false);
 			p.bRandomRot = entry.value("bRandomRot", false);
+			p.bInheritWorldRotation = entry.value("bInheritWorldRotation", false);
 			p.bLoop = entry.value("bLoop", false);
 
 			auto posMin = entry.value("posMin", std::vector<float>{0, 0, 0});
@@ -3412,6 +3415,34 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 			p.velocity = velT;
 
 		
+
+			//if (p.bInheritWorldRotation)
+			//{
+			//	XMVECTOR worldScale{};
+			//	XMVECTOR worldRotation{};
+			//	XMVECTOR worldTranslation{};
+			//	if (XMMatrixDecompose(&worldScale, &worldRotation, &worldTranslation, matWorld))
+			//	{
+			//		const XMVECTOR localRotation = XMQuaternionRotationRollPitchYaw(
+			//			p.rotation.x, p.rotation.y, p.rotation.z);
+			//		_float4 combined{};
+			//		XMStoreFloat4(&combined, XMQuaternionNormalize(
+			//			XMQuaternionMultiply(localRotation, worldRotation)));
+
+			//		const _float sinX = 2.f * (combined.w * combined.x + combined.y * combined.z);
+			//		const _float cosX = 1.f - 2.f * (combined.x * combined.x + combined.y * combined.y);
+			//		const _float sinY = std::clamp(
+			//			2.f * (combined.w * combined.y - combined.z * combined.x), -1.f, 1.f);
+			//		const _float sinZ = 2.f * (combined.w * combined.z + combined.x * combined.y);
+			//		const _float cosZ = 1.f - 2.f * (combined.y * combined.y + combined.z * combined.z);
+			//		p.rotation = {
+			//			XMConvertToDegrees(atan2f(sinX, cosX)),
+			//			XMConvertToDegrees(asinf(sinY)),
+			//			XMConvertToDegrees(atan2f(sinZ, cosZ)),
+			//			0.f
+			//		};
+			//	}
+			//}
 
 			// rotMin/rotMax는 변환하지 않음
 			break;
