@@ -73,7 +73,7 @@ void CEdgFireBall::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 }
 
-void CEdgFireBall::Active(EDG_ACSKT_DESC& SkillTable)
+void CEdgFireBall::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 {
 	_float4x4 matB = Get_BoneMatrix(m_iBoneIndex);
 	_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);

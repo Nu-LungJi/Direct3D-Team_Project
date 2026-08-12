@@ -36,7 +36,7 @@ public:
 	void						Update(E::_float fTimeDelta) override;
 	void						LateUpdate(E::_float fTimeDelta) override;
 public:
-	virtual void Active(EDG_ACSKT_DESC& SkillTable) PURE;
+	virtual void Active(EDG_ACSKT_DESC& SkillTable,_vector vOffsetPos = XMVectorSet(0,0,0,1)) PURE;
 	virtual void Cancle();
 protected:
 	void						 Spawn_Skill_Effect(const _string& SkillName);

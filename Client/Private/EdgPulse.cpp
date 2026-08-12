@@ -65,7 +65,7 @@ void CEdgPulse::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 }
 
-void CEdgPulse::Active(EDG_ACSKT_DESC& SkillTable)
+void CEdgPulse::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 {
 	_float4x4 BoneMatrix = Get_BoneMatrix(m_iBoneIndex);
 

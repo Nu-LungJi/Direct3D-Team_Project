@@ -65,7 +65,7 @@ void CEdgBreath::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 }
 
-void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable)
+void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 {
 	m_eType = SkillTable.eType;
 	auto pSrc = Get_Owner();

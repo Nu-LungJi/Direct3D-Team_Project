@@ -21,11 +21,12 @@ public:
 	void			Update(E::_float fTimeDelta) override;
 	void			LateUpdate(E::_float fTimeDelta) override;
 public:
-	void			Active(EDG_ACSKT_DESC& SkillTable) override;
+	void			Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos = XMVectorSet(0, 0, 0, 1)) override;
 	void			Cancle() override;
 private:
 	void			Ball(_float fTimeDelta);
 	_bool			Sweep(_vector vNextPos);
+
 public:
 	static E::UPtr<CEdgRandomBall> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
