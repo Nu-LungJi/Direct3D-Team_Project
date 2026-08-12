@@ -37,8 +37,8 @@ VS_OUT VSMain(VS_IN In)
 
 	Out.vPosition = mul(float4(In.vPosition, 1.f), matWVP);
     Out.vNormal = normalize(mul(float4(In.vNormal, 0.f), g_matWorld));
-		Out.vTangent = normalize(mul(float4(In.vTangent, 0.f), g_matWorld));
-		Out.vBinormal = normalize(mul(float4(In.vBinormal, 0.f), g_matWorld));
+	Out.vTangent = normalize(mul(float4(In.vTangent, 0.f), g_matWorld));
+	Out.vBinormal = normalize(mul(float4(In.vBinormal, 0.f), g_matWorld));
     Out.vTexcoord = In.vTexcoord;
     Out.vWorldPos = mul(float4(In.vPosition, 1.f), g_matWorld);
     Out.vProjPos = Out.vPosition;

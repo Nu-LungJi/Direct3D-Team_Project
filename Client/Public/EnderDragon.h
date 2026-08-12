@@ -50,6 +50,15 @@ public:
 	HRESULT						Ready_Fsm(const _string& LevelTag);
 	HRESULT						Ready_Skill(const _string& LevelTag);
 	void						Ready_BBKeyValue();
+
+	/*----------- 광윤 추가 -----------*/ // MaskMap Test
+	HRESULT						Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch);
+
+private:
+	SPtr<CResPixelShader>	m_pResDragonPixelShader{};
+	SPtr<CResCBuffer>		m_pResDragonCBuffer{};
+	/*---------------------------------*/
+
 public:
 	_string						Get_SkillName(ATTMON SkillNode)override;
 
@@ -71,6 +80,7 @@ private:
 	void						Picking(_float3& vPos,uint32_t iID);
 
 	void						InitializeEffects();
+
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
 	
