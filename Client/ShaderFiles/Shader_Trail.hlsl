@@ -256,18 +256,18 @@ PS_OUT PSMarble(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
 
-    // 1) 위습 텍스처 샘플링 — 필요하면 UV를 시간에 따라 흘러가듯 스크롤
 	float2 wispUV = In.vUV + float2(-g_fAccumulationTime * 0.3f, 0.f);
-	float wispMask = g_DiffuseTexture.Sample(LinearWrap, wispUV).r; // 검은 배경(0) + 흰 줄기(1)
+	float wispMask = g_DiffuseTexture.Sample(LinearWrap, wispUV).r;
 
+	float bodyMask = smoothstep(0.03f, 0.35f, wispMask);
+	float emissiveMask = smoothstep(0.55f, 0.9f, wispMask);
 
-    // 3) 색은 인스턴스 이미시브 컬러로 (또는 In.vColor.rgb로 바꿔도 됨)
-	float3 tintColor = In.vEmissive.rgb * In.vEmissive.a;
+	float3 baseColor = In.vColor.rgb;
+	float3 emissiveColor = In.vEmissive.rgb * In.vEmissive.a * emissiveMask;
+	float3 finalColor = baseColor + emissiveColor;
+	float finalAlpha = bodyMask * In.vColor.a;
 
-	float alpha = wispMask * In.vColor.a;
-	float3 finalColor = tintColor * wispMask;
-
-	Out.vDiffuse = float4(finalColor, alpha);
+	Out.vDiffuse = float4(finalColor, finalAlpha);
 	return Out;
 }
 PS_OUT PSDarkWispTrail(VS_OUT In)

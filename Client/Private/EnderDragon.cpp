@@ -321,6 +321,7 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
+	InitializeEffects();
 	return S_OK;
 }
 HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
@@ -755,6 +756,11 @@ void CEnderDragon::InitializeEffects()
 		auto a = CGameInstance::Get().GetParticle("SpitTrail", "SpitTrail");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f,0.35f,0.35f,1.f));
 		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(1.0f,0.28f,0.28f,100.f));
+	}
+	{
+		auto a = CGameInstance::Get().GetParticle("DragonProj2Trail", "DragonProj2Trail");
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(0.1f, 0.1f, 0.1f,1.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.0f, 0.0f, 0.0f,1.f));
 	}
 }
 E::UPtr<CEnderDragon> CEnderDragon::Create()
