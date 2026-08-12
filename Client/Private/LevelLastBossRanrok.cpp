@@ -222,7 +222,7 @@ std::optional<CHandle> CLevelLastBossRanrok::SpawnPlayer()
 {
 	CPlayer::DESC PlayerDesc{};
 	PlayerDesc.sObjectTag = "Player";
-	PlayerDesc.vInitialPosition = { -25.f, 228.f, -150.f };
+	PlayerDesc.vInitialPosition = { -37.5f, 342.f, -225.f };
 	PlayerDesc.vInitialRotation = { 0.f, 0.f, 0.f };
 	PlayerDesc.LevelTag = LEVEL::LAST_BOSS_RANROK;
 	PlayerDesc.tFilter = PX_FILTER_DESC{
@@ -277,7 +277,7 @@ HRESULT CLevelLastBossRanrok::SpawnMonster(std::optional<CHandle> hPlayer)
 		Dragon.sObjectTag = "Dragon";
 		Dragon.TargetHandle = hPlayer.value();
 		Dragon.LevelTag = MagicEnumToStringView(LEVEL::LAST_BOSS_RANROK);
-		XMStoreFloat3(&Dragon.vPos, XMVectorSet(16.775f, 227.104f, -91.734f, 1.f));
+		XMStoreFloat3(&Dragon.vPos, XMVectorSet(25.1625f, 340.656f, -137.601f, 1.f));
 		Dragon.ReSourceTag = "Model_Resource_Dragon";
 		Dragon.resBeHaviorMajor = "BTJSON";
 		Dragon.resBeHaviorMinor = "ENDERDRAGON";
