@@ -3799,6 +3799,22 @@ HRESULT CParticleManager::AddTrailPoint(const StringID& groupTag, const StringID
 
 	return S_OK;
 }
+HRESULT CParticleManager::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const CHandle& hOwner, const _float3& start, const _float3& end)
+{
+	CParticle* particle = GetParticle(groupTag, typeTag);
+
+	if (!particle)
+		return E_FAIL;
+
+	CTrail_CPU* trail = dynamic_cast<CTrail_CPU*>(particle);
+
+	if (!trail)
+		return E_FAIL;
+
+	trail->AddPoint(hOwner, start, end);
+
+	return S_OK;
+}
 void CParticleManager::SetColorByOwner(uint32_t ownerId, const _float4& color)
 {
 	for (auto& [groupTag, particleGroup] : m_Particles)

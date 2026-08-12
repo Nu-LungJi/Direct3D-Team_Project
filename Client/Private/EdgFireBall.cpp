@@ -150,11 +150,11 @@ void CEdgFireBall::MoveBall(_float fTimeDelta)
 	_float3 vend{GetTransform().GetPosition().x,GetTransform().GetPosition().y +1.5f ,GetTransform().GetPosition().z };
 
 	if (m_eType == DRAGON_SKILL::FIREBALL) {
-		CGameInstance::Get().AddTrailPoint("SpitTrail", "SpitTrail", vstart, vend);
+		CGameInstance::Get().AddTrailPoint("SpitTrail", "SpitTrail", GetHandle(), vstart, vend);
 
 	}
 	else if (m_eType == DRAGON_SKILL::BLACKBALL || m_eType == DRAGON_SKILL::THREEBALL) {
-		CGameInstance::Get().AddTrailPoint("DragonProj2Trail", "DragonProj2Trail", vstart, vend);
+		CGameInstance::Get().AddTrailPoint("DragonProj2Trail", "DragonProj2Trail", GetHandle(), vstart, vend);
 	}
 
 	//CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, *m_pComTransform->GetWorldMatrix());

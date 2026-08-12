@@ -141,7 +141,7 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 				_float3 vstart, vend;
 				vstart = _float3(spawnWorld._41, spawnWorld._42 + 0.2f, spawnWorld._43);
 				vend = _float3(spawnWorld._41, spawnWorld._42 - 0.2f, spawnWorld._43);
-				CGameInstance::Get().AddTrailPoint("Lightning_Trail", "Lightning_Trail", vstart, vend);
+				CGameInstance::Get().AddTrailPoint("Lightning_Trail", "Lightning_Trail", pPlayer->GetHandle(), vstart, vend);
 
 
 				if (m_fSpawnDelay > 0.03f) {

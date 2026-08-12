@@ -206,7 +206,7 @@ void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 
 		vstart = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y + 0.4f, m_pComTransform->GetPosition().z);
 		vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y - 0.4f, m_pComTransform->GetPosition().z);
-		CGameInstance::Get().AddTrailPoint("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU", vstart, vend);
+		CGameInstance::Get().AddTrailPoint("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU", GetHandle(), vstart, vend);
 	}
 }
 

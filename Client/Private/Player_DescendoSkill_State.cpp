@@ -165,7 +165,7 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 			_float3 vstart, vend;
 			vstart = _float3(spawnWorld._41, spawnWorld._42 + 0.1f, spawnWorld._43);
 			vend = _float3(spawnWorld._41, spawnWorld._42 - 0.1f, spawnWorld._43);
-			CGameInstance::Get().AddTrailPoint("Lightning_Trail", "Lightning_Trail", vstart, vend);
+			CGameInstance::Get().AddTrailPoint("Lightning_Trail", "Lightning_Trail", pPlayer->GetHandle(), vstart, vend);
 		}
 	
 		if (m_fAnimRatio >= ATTACK_END_RATIO && m_fAnimRatio != 1.f)
