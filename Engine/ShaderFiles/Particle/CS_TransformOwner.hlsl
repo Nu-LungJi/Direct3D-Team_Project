@@ -25,25 +25,31 @@ void CSMain(uint id : SV_DispatchThreadID)
 
 	p.position = mul(float4(p.position, 1.f), g_matDelta).xyz;
 	p.originalPosition = mul(float4(p.originalPosition, 1.f), g_matDelta).xyz;
-
 	p.velocity = mul(float4(p.velocity, 0.f), g_matDelta).xyz;
 	p.originalVelocity = mul(float4(p.originalVelocity, 0.f), g_matDelta).xyz;
 
-	float2 forwardXZ = float2(g_matDelta._31, g_matDelta._33);
-	float forwardLength = length(forwardXZ);
+	float3 rotatedRight = normalize(mul(float4(RotateXYZ(float3(1.f, 0.f, 0.f), p.rotation), 0.f), g_matDelta).xyz);
+	float3 rotatedUp = normalize(mul(float4(RotateXYZ(float3(0.f, 1.f, 0.f), p.rotation), 0.f), g_matDelta).xyz);
+	float3 rotatedForward = normalize(mul(float4(RotateXYZ(float3(0.f, 0.f, 1.f), p.rotation), 0.f), g_matDelta).xyz);
+	float sinYaw = clamp(-rotatedRight.z, -1.f, 1.f);
+	float cosYaw = sqrt(max(1.f - sinYaw * sinYaw, 0.f));
+	float pitch = 0.f;
+	float yaw = asin(sinYaw);
+	float roll = 0.f;
 
-	if (forwardLength > 0.000001f)
+	if (cosYaw > 0.00001f)
 	{
-		forwardXZ /= forwardLength;
-
-		float deltaYaw = atan2(forwardXZ.x, forwardXZ.y);
-		p.rotation.y += deltaYaw;
-
-		if (p.rotation.y > PI)
-			p.rotation.y -= 2.f * PI;
-		else if (p.rotation.y < -PI)
-			p.rotation.y += 2.f * PI;
+		pitch = atan2(rotatedUp.z, rotatedForward.z);
+		roll = atan2(rotatedRight.y, rotatedRight.x);
 	}
+	else
+	{
+		pitch = atan2(sinYaw * rotatedUp.x, rotatedUp.y);
+	}
+
+	p.rotation.x = atan2(sin(pitch), cos(pitch));
+	p.rotation.y = atan2(sin(yaw), cos(yaw));
+	p.rotation.z = atan2(sin(roll), cos(roll));
 
 	g_ParticleBuffer[id] = p;
 }

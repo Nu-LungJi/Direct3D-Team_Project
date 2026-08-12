@@ -100,6 +100,7 @@ public:
 		_string sVEntryPoint = "";
 		_string sPEntryPoint = "";
 		uint32_t blendState = 0;
+		_bool bNoCull = false;
 		SPtr<CParticleShaderCache> pShaderCache;
 
     };

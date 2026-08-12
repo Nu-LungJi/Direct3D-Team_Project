@@ -73,9 +73,9 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
 
     Out.vTexcoord = finalUV;
     
-
-    float3 localPos = In.vPosition * scale; 
-    float3 rotatedLocal = RotateXYZ(localPos, p.rotation); 
+	float3 localPos = In.vPosition * scale;
+	float3 spunLocal = RotateAxisAngle(localPos, p.roationAxis, p.rotation.w);
+	float3 rotatedLocal = RotateXYZ(spunLocal, p.rotation);
     float3 vWorldPos = rotatedLocal + p.position;
 
 

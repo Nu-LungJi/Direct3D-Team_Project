@@ -229,7 +229,7 @@ PS_OUT PSFlameRing(VS_OUT In)
 
 	//float3 flameColor = lerp(innerColor, outerColor, edgeProgress);
 	//flameColor += outerRing * float3(1.f, 1.f, 1.f);
-
+	
 	Out.vDiffuse = float4(finalRGB * finalMask, finalMask * In.vColor.a);
 
 	return Out;

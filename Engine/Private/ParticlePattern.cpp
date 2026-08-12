@@ -67,11 +67,11 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircle(const SCircleParam&
 			? _float4(XMConvertToRadians(Randf(param.vMinRot.x, param.vMaxRot.x)),
 				XMConvertToRadians(Randf(param.vMinRot.y, param.vMaxRot.y)),
 				XMConvertToRadians(Randf(param.vMinRot.z, param.vMaxRot.z)),
-				1.f)
+				0.f)
 			: _float4(XMConvertToRadians(param.vRotation.x),
 				XMConvertToRadians(param.vRotation.y),
 				XMConvertToRadians(param.vRotation.z),
-				1.f);
+				0.f);
 		s.fEndSize = param.fEndSize;
 		s.life = param.fLife;
 		s.fSize = param.fSize;
@@ -152,11 +152,11 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStra
 				? _float4(XMConvertToRadians(Randf(param.vMinRot.x, param.vMaxRot.x)),
 					XMConvertToRadians(Randf(param.vMinRot.y, param.vMaxRot.y)),
 					XMConvertToRadians(Randf(param.vMinRot.z, param.vMaxRot.z)),
-					1.f)
+					0.f)
 				: _float4(XMConvertToRadians(param.vRotation.x),
 					XMConvertToRadians(param.vRotation.y),
 					XMConvertToRadians(param.vRotation.z),
-					1.f);
+					0.f);
 		}
 	}
 	return spawnList;
@@ -304,11 +304,11 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCone(const SConeParam& par
 			? _float4(XMConvertToRadians(Randf(param.vMinRot.x, param.vMaxRot.x)),
 				XMConvertToRadians(Randf(param.vMinRot.y, param.vMaxRot.y)),
 				XMConvertToRadians(Randf(param.vMinRot.z, param.vMaxRot.z)),
-				1.f)
+				0.f)
 			: _float4(XMConvertToRadians(param.vRotation.x),
 				XMConvertToRadians(param.vRotation.y),
 				XMConvertToRadians(param.vRotation.z),
-				1.f);
+				0.f);
 
 	}
 

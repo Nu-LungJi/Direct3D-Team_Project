@@ -396,6 +396,7 @@ public:
 	// [LSY] 직접 Spawn한 파티클 묶음을 반환받은 Owner ID로 명시적으로 정리한다.
 	void ClearParticleOwner(uint32_t ownerId);
 	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end);
+	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const CHandle& hOwner, const _float3& start, const _float3& end);
 	std::optional<BEAM_HANDLE> SpawnBeam(const StringID& groupTag, const StringID& typeTag, const BEAM_PARAMS& params);
 	HRESULT SetBeamPositions(const BEAM_HANDLE& handle, const _float4& start, const _float4& end);
 	HRESULT StopBeam(const BEAM_HANDLE& handle);

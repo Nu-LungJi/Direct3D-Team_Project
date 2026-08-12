@@ -126,27 +126,35 @@ void CTrail_CPU::Update(_float fTimeDelta)
 		currentFrame = 0;
 	}
 
-	for (auto& trailFrame : m_dequeFrames)
-		trailFrame.fAge += fTimeDelta;
-
-	while (!m_dequeFrames.empty() && m_dequeFrames.back().fAge >= m_Desc.fMaxDuration)
-		m_dequeFrames.pop_back();
-
-	m_fTimeSinceLastAdd += fTimeDelta;
-	m_fIdleTime += fTimeDelta;
-
-	if (m_fIdleTime >= m_fIdleThreshold && !m_dequeFrames.empty())
+	for (auto iter = m_TrailStreams.begin(); iter != m_TrailStreams.end();)
 	{
-		m_fTimeSinceLastRetract += fTimeDelta;
+		auto& Stream = iter->second;
 
-		while (m_fTimeSinceLastRetract >= m_fRetractInterval && !m_dequeFrames.empty())
+		for (auto& TrailFrame : Stream.Frames)
+			TrailFrame.fAge += fTimeDelta;
+
+		while (!Stream.Frames.empty() && Stream.Frames.back().fAge >= m_Desc.fMaxDuration)
+			Stream.Frames.pop_back();
+
+		Stream.fTimeSinceLastAdd += fTimeDelta;
+		Stream.fIdleTime += fTimeDelta;
+
+		if (Stream.fIdleTime >= m_fIdleThreshold && !Stream.Frames.empty())
 		{
-			m_dequeFrames.pop_back();
-			m_fTimeSinceLastRetract -= m_fRetractInterval;
-		}
-	}
+			Stream.fTimeSinceLastRetract += fTimeDelta;
 
-	BuildTrailGeometry();
+			while (Stream.fTimeSinceLastRetract >= m_fRetractInterval && !Stream.Frames.empty())
+			{
+				Stream.Frames.pop_back();
+				Stream.fTimeSinceLastRetract -= m_fRetractInterval;
+			}
+		}
+
+		if (Stream.Frames.empty())
+			iter = m_TrailStreams.erase(iter);
+		else
+			++iter;
+	}
 }
 void CTrail_CPU::LateUpdate(_float fTimeDelta)
 {
@@ -162,15 +170,26 @@ _float CTrail_CPU::DistanceSq(const _float3& a, const _float3& b)
 }
 void CTrail_CPU::AddPoint(const _float3& vStart, const _float3& vEnd)
 {
-	if (m_bHasLastPoint && m_fTimeSinceLastAdd < m_fSampleInterval)
+	static const CHandle hDefaultOwner{};
+	AddPoint(hDefaultOwner, vStart, vEnd);
+}
+
+void CTrail_CPU::AddPoint(const CHandle& hOwner, const _float3& vStart, const _float3& vEnd)
+{
+	AddPoint(m_TrailStreams[hOwner], vStart, vEnd);
+}
+
+void CTrail_CPU::AddPoint(TRAIL_STREAM& Stream, const _float3& vStart, const _float3& vEnd)
+{
+	if (Stream.bHasLastPoint && Stream.fTimeSinceLastAdd < m_fSampleInterval)
 		return;
 
 
-	if (m_bHasLastPoint)
+	if (Stream.bHasLastPoint)
 	{
-		_float3 prevCenter = { (m_vLastStart.x + m_vLastEnd.x) * 0.5f,
-								(m_vLastStart.y + m_vLastEnd.y) * 0.5f,
-								(m_vLastStart.z + m_vLastEnd.z) * 0.5f };
+		_float3 prevCenter = { (Stream.vLastStart.x + Stream.vLastEnd.x) * 0.5f,
+								(Stream.vLastStart.y + Stream.vLastEnd.y) * 0.5f,
+								(Stream.vLastStart.z + Stream.vLastEnd.z) * 0.5f };
 		_float3 currCenter = { (vStart.x + vEnd.x) * 0.5f,
 								(vStart.y + vEnd.y) * 0.5f,
 								(vStart.z + vEnd.z) * 0.5f };
@@ -178,7 +197,7 @@ void CTrail_CPU::AddPoint(const _float3& vStart, const _float3& vEnd)
 
 		if (m_Desc.eBehaviorMode == TRAIL_BEHAVIOR_MODE::LEGACY)
 		{
-			m_fTotalDistance += centerDistance;
+			Stream.fTotalDistance += centerDistance;
 		}
 		else
 		{
@@ -194,28 +213,27 @@ void CTrail_CPU::AddPoint(const _float3& vStart, const _float3& vEnd)
 
 			if (horizontalDistance > maxConnectDistance)
 			{
-				Clear();
-				m_fTotalDistance = 0.f;
+				ResetStream(Stream);
 			}
 			else
 			{
-				m_fTotalDistance += centerDistance;
+				Stream.fTotalDistance += centerDistance;
 			}
 		}
 	}
-	m_bHasLastPoint = true;
-	m_vLastStart = vStart;
-	m_vLastEnd = vEnd;
-	m_fTimeSinceLastAdd = 0.f;
-	m_fIdleTime = 0.f;
-	m_fTimeSinceLastRetract = 0.f;
+	Stream.bHasLastPoint = true;
+	Stream.vLastStart = vStart;
+	Stream.vLastEnd = vEnd;
+	Stream.fTimeSinceLastAdd = 0.f;
+	Stream.fIdleTime = 0.f;
+	Stream.fTimeSinceLastRetract = 0.f;
 
 
 	TRAIL_FRAME frame;
 	frame.vStart = vStart;
 	frame.vEnd = vEnd;
 	frame.fAge = 0.f;
-	frame.fDistance = m_fTotalDistance;
+	frame.fDistance = Stream.fTotalDistance;
 	if (m_Desc.eAlignMode == TRAIL_ALIGN_MODE::VIEW)
 	{
 		XMMATRIX view = CGameInstance::Get().GetActiveCamera()->GetView();
@@ -232,9 +250,9 @@ void CTrail_CPU::AddPoint(const _float3& vStart, const _float3& vEnd)
 
 		XMVECTOR pathDir;
 
-		if (!m_dequeFrames.empty())
+		if (!Stream.Frames.empty())
 		{
-			const auto& prev = m_dequeFrames.front();
+			const auto& prev = Stream.Frames.front();
 
 			XMVECTOR prevMid =
 				(XMLoadFloat3(&prev.vStart) +
@@ -290,18 +308,26 @@ void CTrail_CPU::AddPoint(const _float3& vStart, const _float3& vEnd)
 		frame.vWidthDir = { 0.f,0.f,0.f };
 	}
 
-	m_dequeFrames.push_front(frame);
+	Stream.Frames.push_front(frame);
 
-	while (m_dequeFrames.size() > m_Desc.iMaxFrames)
-		m_dequeFrames.pop_back();
+	while (Stream.Frames.size() > m_Desc.iMaxFrames)
+		Stream.Frames.pop_back();
 }
 
 void CTrail_CPU::Clear()
 {
-	m_dequeFrames.clear();
+	m_TrailStreams.clear();
 	m_vecVertices.clear();
+}
 
-	m_bHasLastPoint = false;
+void CTrail_CPU::Clear(const CHandle& hOwner)
+{
+	m_TrailStreams.erase(hOwner);
+}
+
+void CTrail_CPU::ResetStream(TRAIL_STREAM& Stream)
+{
+	Stream = TRAIL_STREAM{};
 }
 
 void CTrail_CPU::SetBehaviorMode(TRAIL_BEHAVIOR_MODE eMode)
@@ -311,10 +337,14 @@ void CTrail_CPU::SetBehaviorMode(TRAIL_BEHAVIOR_MODE eMode)
 
 	m_Desc.eBehaviorMode = eMode;
 	Clear();
-	m_fTotalDistance = 0.f;
-	m_fTimeSinceLastAdd = 0.f;
-	m_fIdleTime = 0.f;
-	m_fTimeSinceLastRetract = 0.f;
+}
+
+uint32_t CTrail_CPU::Debug_GetFrameCount() const
+{
+	uint32_t iFrameCount = 0;
+	for (const auto& [hOwner, Stream] : m_TrailStreams)
+		iFrameCount += static_cast<uint32_t>(Stream.Frames.size());
+	return iFrameCount;
 }
 
 void CTrail_CPU::SetPosition(const _float3& pos)
@@ -354,7 +384,7 @@ void CTrail_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixDa
 
 HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
-    if (m_vecVertices.size() < 4) // 최소 프레임 2개(=4정점)는 있어야 스윕 면이 성립
+    if (m_TrailStreams.empty())
         return S_OK;
 
 	auto Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
@@ -396,16 +426,6 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
 
 
-    {
-        D3D11_MAPPED_SUBRESOURCE mapped{};
-        if (SUCCEEDED(pContext->Map(m_pResVertexBuffer->GetBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-        {
-            std::memcpy(mapped.pData, m_vecVertices.data(),
-                sizeof(TRAIL_VERTEX) * m_vecVertices.size());
-            pContext->Unmap(m_pResVertexBuffer->GetBuffer().Get(), 0);
-        }
-    }
-
     ID3D11Buffer* vertexBuffers[] = { m_pResVertexBuffer->GetBuffer().Get() };
     uint32_t strides[] = { sizeof(TRAIL_VERTEX) };
     uint32_t offsets[] = { 0 };
@@ -434,7 +454,20 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 		pContext->PSSetShaderResources(8, 1, &pAnyTextureSRV);
 	}
 
-    pContext->Draw((UINT)m_vecVertices.size(), 0);
+    for (const auto& [hOwner, Stream] : m_TrailStreams)
+    {
+        BuildTrailGeometry(Stream);
+        if (m_vecVertices.size() < 4)
+            continue;
+
+        D3D11_MAPPED_SUBRESOURCE mapped{};
+        if (FAILED(pContext->Map(m_pResVertexBuffer->GetBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+            continue;
+
+        std::memcpy(mapped.pData, m_vecVertices.data(), sizeof(TRAIL_VERTEX) * m_vecVertices.size());
+        pContext->Unmap(m_pResVertexBuffer->GetBuffer().Get(), 0);
+        pContext->Draw(static_cast<UINT>(m_vecVertices.size()), 0);
+    }
 
     ID3D11ShaderResourceView* nullSRV[] = { nullptr,nullptr ,nullptr,nullptr,nullptr ,nullptr };
     ID3D11ShaderResourceView* nullSRV2[] = { nullptr};
@@ -459,24 +492,24 @@ void CTrail_CPU::ClearByOwner(uint32_t ownerID)
 {
 }
 
-void CTrail_CPU::BuildTrailGeometry()
+void CTrail_CPU::BuildTrailGeometry(const TRAIL_STREAM& Stream)
 {
 	m_vecVertices.clear();
 
-	const uint32_t iCount = static_cast<uint32_t>(m_dequeFrames.size());
+	const uint32_t iCount = static_cast<uint32_t>(Stream.Frames.size());
 
 	if (iCount < 2 || !m_pParticleTexture)
 		return;
 
 	const _bool bBillboard = !m_Desc.bShrinkWidth || m_Desc.eAlignMode == TRAIL_ALIGN_MODE::VIEW;
 	const _bool bLegacy = m_Desc.eBehaviorMode == TRAIL_BEHAVIOR_MODE::LEGACY;
-	const float newestDistance = m_dequeFrames.front().fDistance;
-	const float oldestDistance = m_dequeFrames.back().fDistance;
+	const float newestDistance = Stream.Frames.front().fDistance;
+	const float oldestDistance = Stream.Frames.back().fDistance;
 	const float visibleDistance = std::max(newestDistance - oldestDistance, 0.001f);
 
 	for (uint32_t i = 0; i < iCount; ++i)
 	{
-		const auto& frame = m_dequeFrames[i];
+		const auto& frame = Stream.Frames[i];
 
 		float fAgeRatio = frame.fAge / m_Desc.fMaxDuration;
 		float fDeath = powf(fAgeRatio, 1.2f);

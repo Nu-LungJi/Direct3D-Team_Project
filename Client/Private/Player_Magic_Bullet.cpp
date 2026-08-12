@@ -206,7 +206,7 @@ void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 
 		vstart = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y + 0.4f, m_pComTransform->GetPosition().z);
 		vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y - 0.4f, m_pComTransform->GetPosition().z);
-		CGameInstance::Get().AddTrailPoint("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU", vstart, vend);
+		CGameInstance::Get().AddTrailPoint("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU", GetHandle(), vstart, vend);
 	}
 }
 
@@ -265,6 +265,10 @@ _bool CPlayer_Magic_Bullet::SweepSegment(
 void CPlayer_Magic_Bullet::HandleSweepHit(
 	const PX_SWEEP_RESULT& tHit)
 {
+	// [콘프링고 이펙트 4 - 피격 폭발]
+	// 추후 제작할 콘프링고 투사체의 Sweep 충돌 함수에도 같은 위치를 사용한다.
+	// 투사체를 제거하기 전에 tHit.vHitpos에서 폭발 파티클을 재생한다.
+
 	StopFlightSound();
 	DEBUG_LOG_STR(std::string("[PX][CPlayer_Magic_Bullet] Sweep Hit : ") +
 		(tHit.pGameObject ?

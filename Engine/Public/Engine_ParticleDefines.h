@@ -30,6 +30,7 @@ namespace Engine
 		_float3   fSize{ 1.f,1.f,1.f};
 		_float3   fEndSize{ 1.f,1.f,1.f};
 		bool bRandomRot = false;
+		bool bInheritWorldRotation = false;
 		_float3 rotMin = { 0,0,0 };
 		_float3 rotMax = { 0,0,0 };
 		_float4   rotation = { 0.f, 0.f, 0.f, 0.f };
@@ -360,6 +361,8 @@ struct StructName \
 		StringID sGroupTag{};
 		StringID sTypeTag{};
 		uint32_t ownerId = 0;
+		_bool bInheritWorldRotation = false;
+		_float4 inheritedWorldRotation = { 0.f, 0.f, 0.f, 1.f };
 		std::variant<STANDARD_PARAMS, BEAM_PARAMS, PatternParamVariant, std::vector<PARTICLE_SPAWN_DATA>> params;
 	};
 

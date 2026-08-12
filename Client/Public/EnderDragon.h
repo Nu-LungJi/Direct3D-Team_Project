@@ -1,7 +1,7 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
-enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL,SKIP,END};
+enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL,SKIP,THREEBALL, BLACKBALL, END};
 enum class DRAGON_PHASE{PHASE1, PHASE2, PHASE3, PHASE4, PHASE5, PHASE6, PHASE7, END};
 enum class EDG_SPAWN_NUMBER { FIRST, SECOND, THIRD, FOUR };
 
@@ -21,6 +21,7 @@ typedef struct stredgskillInfo
 	PROTO_GAMEOBJECT ProtoTag;
 	_string NameTag{};
 	int32_t iOffsetBoneIndex{-1};
+	DRAGON_SKILL eType{DRAGON_SKILL::END};
 
 }EDG_SKILL_INFO;
 class CEnderDragon final : public CMonster

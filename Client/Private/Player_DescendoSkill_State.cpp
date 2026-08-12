@@ -47,7 +47,9 @@ void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
 	}
 
 	CacheAnimationIndices(*pPlayer);
-	SetSkillControl(*pPlayer, true, true, false);
+	// Keep the player planted: this cast clip has vertical root motion that
+	// otherwise moves the character controller into the air.
+	SetSkillControl(*pPlayer, true, false, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::DESCENDO);
 
@@ -75,9 +77,9 @@ void CPlayer_DescendoSkill_State::CacheAnimationIndices(const CPlayer& player)
 		return;
 
 	// 고쳐야 할거 
-	m_DescendoCast_Animation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Slam_Dwn_anm.bin");
-	m_DescendoEnd_Animation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_RF_Cast_Casual_Fwd_Descendo_anm.bin");
-	m_AttackFail_Animation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_LF_Atk_Heavy_Fail_anm.bin");
+	m_DescendoCast_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Slam_Dwn_anm.bin");
+	m_DescendoEnd_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_RF_Cast_Casual_Fwd_Descendo_anm.bin");
+	m_AttackFail_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_LF_Atk_Heavy_Fail_anm.bin");
 
 	m_bAnimationIndicesCached =
 		m_DescendoCast_Animation >= 0 &&
@@ -165,7 +167,7 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 			_float3 vstart, vend;
 			vstart = _float3(spawnWorld._41, spawnWorld._42 + 0.1f, spawnWorld._43);
 			vend = _float3(spawnWorld._41, spawnWorld._42 - 0.1f, spawnWorld._43);
-			CGameInstance::Get().AddTrailPoint("Lightning_Trail", "Lightning_Trail", vstart, vend);
+			CGameInstance::Get().AddTrailPoint("Lightning_Trail", "Lightning_Trail", pPlayer->GetHandle(), vstart, vend);
 		}
 	
 		if (m_fAnimRatio >= ATTACK_END_RATIO && m_fAnimRatio != 1.f)
