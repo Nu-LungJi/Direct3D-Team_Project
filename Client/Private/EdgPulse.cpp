@@ -65,7 +65,7 @@ void CEdgPulse::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 }
 
-void CEdgPulse::Active(const _string& SkillName)
+void CEdgPulse::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 {
 	_float4x4 BoneMatrix = Get_BoneMatrix(m_iBoneIndex);
 
@@ -79,7 +79,7 @@ void CEdgPulse::Active(const _string& SkillName)
 	m_bHit = false;
 	m_fLife = 0.f;
 	m_fRadius = 1.5f;
-	Spawn_Skill_Effect(SkillName);
+	Spawn_Skill_Effect(SkillTable.SkillName);
 }
 
 void CEdgPulse::Cancle()

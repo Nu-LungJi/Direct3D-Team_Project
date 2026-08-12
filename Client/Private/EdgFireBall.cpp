@@ -85,7 +85,7 @@ void CEdgFireBall::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 }
 
-void CEdgFireBall::Active(const _string& SkillName)
+void CEdgFireBall::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 {
 	_float4x4 matB = Get_BoneMatrix(m_iBoneIndex);
 	_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
@@ -106,7 +106,7 @@ void CEdgFireBall::Active(const _string& SkillName)
 	m_bActive = true;
 	m_bHit = false;
 	m_fLife = 0.f;
-	Spawn_Skill_Effect(SkillName);
+	Spawn_Skill_Effect(SkillTable.SkillName);
 }
 
 void CEdgFireBall::Cancle()
