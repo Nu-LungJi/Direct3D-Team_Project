@@ -569,6 +569,14 @@ PS_OUT PSMarbleNoScroll(VS_OUT In)
 
 	float crackMask = AnyTextureMap.Sample(LinearWrap, uv).g;
 	crackMask = saturate(pow(crackMask, 2.0f));
+	
+	float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
+
+	float ratio = (In.life / In.maxLife);
+
+	if (noise.r < ratio) 
+		discard;
+	
     // 베이스는 인스턴스 컬러 그대로
 	float3 baseColor = In.vColor.rgb;
 
