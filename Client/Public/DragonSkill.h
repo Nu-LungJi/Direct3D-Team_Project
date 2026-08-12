@@ -17,6 +17,7 @@ public:
 		.bQueryStatic = true,
 		.bQueryDynamic = true,
 		.bIncludeTrigger = false };
+		DRAGON_SKILL	eType{};
 	}EDG_SKILL_DESC;
 public:
 	DECLARE_DERIVED_TYPE(CDragonSkill, CGameObject)
@@ -46,7 +47,7 @@ protected:
 	void						 DebugLine(_float3 vPos);
 protected:
 	CHandle						m_hOwner{};
-	
+	DRAGON_SKILL				m_eType{ DRAGON_SKILL::END };
 	uint32_t					m_iSkillEffID{};
 	int32_t						m_iBoneIndex{ -1 }, m_iOffsetBoneIdex{};
 

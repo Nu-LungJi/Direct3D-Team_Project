@@ -34,6 +34,7 @@ HRESULT CDragonSkill::Initialize(void* pArg)
 	m_iBoneIndex = pDesc->iBoneIndex;
 	m_iOffsetBoneIdex = pDesc->iOffsetBoneIndex;
 	m_pxQueryFilter = pDesc->tQueryFilter;
+	m_eType = pDesc->eType;
 	return S_OK;
 }
 
