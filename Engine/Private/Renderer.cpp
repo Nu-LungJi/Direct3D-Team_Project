@@ -1318,11 +1318,9 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 		const _float NearZ	= ActiveCam->GetNear();
 		const _float FarZ	= ActiveCam->GetFar();
 
-		const _float MaxDistance		= static_cast<_float>(VOLUME_MAXFAR);
-		const _float AnalyticBlendStart = 160.f;
-		const _float AnalyticBlendEnd	= 200.f;
+		const _float MaxDistance = static_cast<_float>(VOLUME_MAXFAR);
 
-		const _float VolumeFarZ = std::min(FarZ, MaxDistance);
+		const _float VolumeFarZ  = std::min(FarZ, MaxDistance);
 
 
 		D3D11_MAPPED_SUBRESOURCE MRES{};
