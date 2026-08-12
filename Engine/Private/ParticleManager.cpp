@@ -115,6 +115,9 @@ void CParticleManager::UpdateGUI()
 	static _bool bSizeStop = false;
 	static _bool bExtraLightning = false;
 	static _bool bKeepRotate = false;
+	// [LSY] CPU 파티클이 수명 종료 시 갑자기 사라지지 않도록 GUI에서 두 가지 페이드 옵션을 제공한다.
+	static _bool bFadeOut = false;
+	static _bool bFadeOutLate = false;
 
 	static _bool alphaBlend = false;
 	static _bool alphaAdd = false;
@@ -994,6 +997,12 @@ void CParticleManager::UpdateGUI()
 			bKeepRotate =
 				(preset.iBehaviorType &
 					CParticle::BEHAVIOR_KEEPROTATE) != 0;
+			bFadeOut =
+				(preset.iBehaviorType &
+					CParticle::BEHAVIOR_FADEOUT) != 0;
+			bFadeOutLate =
+				(preset.iBehaviorType &
+					CParticle::BEHAVIOR_FADEOUT_LATE) != 0;
 
 			previewParams.bKeepRotate =
 				bKeepRotate;
@@ -1050,6 +1059,10 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("SIZE STOP", &bSizeStop);
 	ImGui::SameLine();
 	ImGui::Checkbox("KEEP ROTATE", &bKeepRotate);
+	ImGui::SameLine();
+	ImGui::Checkbox("FADE OUT", &bFadeOut);
+	ImGui::SameLine();
+	ImGui::Checkbox("FADE OUT LATE", &bFadeOutLate);
 	ImGui::Separator();
 
 	ImGui::Text("Individiual Field");
@@ -1102,7 +1115,7 @@ void CParticleManager::UpdateGUI()
 	}
 	
 	if (none) {
-		bKeepRotate = bExtraLightning = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+		bFadeOutLate = bFadeOut = bKeepRotate = bExtraLightning = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	}
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
 
@@ -1120,6 +1133,14 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
 	if (bKeepRotate)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_KEEPROTATE;
+	if (bFadeOut)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_FADEOUT;
+	if (bFadeOutLate)
+	{
+		// [LSY] 두 페이드가 동시에 적용되지 않도록 Late 모드를 우선한다.
+		previewParams.iBehaviorType &= ~CParticle::BEHAVIOR_FADEOUT;
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_FADEOUT_LATE;
+	}
 
 
 	if(bSmoke)
@@ -1375,6 +1396,10 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("SIZE STOP", &bSizeStop);
 		ImGui::Separator();
 		ImGui::Checkbox("KEEP ROTATE", &bKeepRotate);
+		ImGui::SameLine();
+		ImGui::Checkbox("FADE OUT", &bFadeOut);
+		ImGui::SameLine();
+		ImGui::Checkbox("FADE OUT LATE", &bFadeOutLate);
 		ImGui::Separator();
 
 		ImGui::Text("Individiual Field");
@@ -1395,7 +1420,7 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("None", &none);
 
 		if (none)
-			bKeepRotate = bExtraLightning= bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+			bFadeOutLate = bFadeOut = bKeepRotate = bExtraLightning= bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
 		pendingStandard.bKeepRotate = bKeepRotate;
@@ -1427,6 +1452,14 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
 		if (bKeepRotate) 
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_KEEPROTATE;
+		if (bFadeOut)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_FADEOUT;
+		if (bFadeOutLate)
+		{
+			// [LSY] 저장되는 Standard 명령도 Preview와 동일한 상호 배타 정책을 사용한다.
+			pendingStandard.iBehaviorType &= ~CParticle::BEHAVIOR_FADEOUT;
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_FADEOUT_LATE;
+		}
 		
 	}
 	
