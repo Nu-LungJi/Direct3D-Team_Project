@@ -19,6 +19,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "PlayerRagdollController.h"
+#include "Player_ConfringoController.h"
 #include "PlayerThirdPersonCamera.h"
 #include "DbgLineRender.h"
 #include "Player_StateMachine.h"
@@ -94,6 +95,9 @@ void CPlayer::UpdateGUI()
 		CGameInstance::Get().SetAnimationEditorTarget(GetHandle());
 	ImGui::SameLine();
 	ImGui::TextDisabled("SampleClient-compatible");
+
+	if (m_pConfringoController)
+		m_pConfringoController->UpdateGUI();
 
 
 	if (m_pRagdollController)
@@ -510,6 +514,9 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	m_hAutoTarget = CHandle{};
+	if (FAILED(InitializeConfringo()))
+		return E_FAIL;
+
 	return S_OK;
 }
 
@@ -560,6 +567,35 @@ _bool CPlayer::IsRagdollTransitioning() const
 		return false;
 
 	return m_pRagdollController->IsTransitioning();
+}
+#pragma endregion
+
+#pragma region CONFRINGO
+HRESULT CPlayer::InitializeConfringo()
+{
+	// [LSY] 플레이어별 콘프링고 런타임 상태를 Clone 초기화에서 생성한다.
+	m_pConfringoController = CPlayer_ConfringoController::Create(*this);
+	return m_pConfringoController ? S_OK : E_FAIL;
+}
+
+void CPlayer::StartConfringoCastEffect()
+{
+	if (m_pConfringoController)
+		m_pConfringoController->StartCastEffect();
+}
+
+void CPlayer::StopConfringoCastEffect()
+{
+	if (m_pConfringoController)
+		m_pConfringoController->StopCastEffect();
+}
+
+_bool CPlayer::FireConfringoProjectile()
+{
+	if (!m_pConfringoController)
+		return false;
+
+	return m_pConfringoController->FireProjectile();
 }
 #pragma endregion
 
@@ -1014,8 +1050,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 				m_bCoolTime_Num4 = true;
 		}
 
-		// Confringo authoring preview. Keep this direct key until the spell-slot
-		// mapping supports CONFRINGO.
+		// [LSY] 스킬 슬롯에서 CONFRINGO를 연결하기 전까지 5번 키로 직접 테스트한다.
 		if (CGameInstance::Get().KeyDown(DIK_5))
 			m_pStateMachine->RequestState(PLAYER_STATE::CONFRINGO_SKILL);
 
@@ -1643,6 +1678,9 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 		pDbgLineRender->SetColor(vPreviousColor);
 		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 	}
+
+	if (m_pConfringoController)
+		m_pConfringoController->Update(fTimeDelta);
 	UpdateAttachedEffects();
 
 	const auto& pModel = m_pComModelInstance->GetModel();
@@ -1667,7 +1705,6 @@ void CPlayer::UpdateAttachedEffects()
 	if (m_iDashBodyEffectID == INVALID_EFFECT_INSTANCE_ID)
 		return;
 
-	auto a = GetTransform().GetWorldMatrix();
 	CGameInstance::Get().SetEffectWorldMatrix(
 		m_iDashBodyEffectID,
 		*GetTransform().GetWorldMatrix());
@@ -2326,4 +2363,11 @@ E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 	}
 
 	return pInstance;
+}
+
+void CPlayer::Free()
+{
+	// [LSY] 컨트롤러가 플레이어 참조를 사용하므로 기반 오브젝트 해제 전에 정리한다.
+	m_pConfringoController.reset();
+	CAnimationObject::Free();
 }

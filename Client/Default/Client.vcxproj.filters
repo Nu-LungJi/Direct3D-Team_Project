@@ -250,6 +250,9 @@
     <Filter Include="GameObject\Player\Player_Magic_Bullet">
       <UniqueIdentifier>{15e1e341-898d-42a9-b6c0-d22c4c66ba61}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\Player_Confringo_Bullet">
+      <UniqueIdentifier>{b632e874-a63c-4f32-a774-efdc9e8e3c45}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_Hit_State">
       <UniqueIdentifier>{d0adaf33-4a64-494f-9581-a01e2aa4035f}</UniqueIdentifier>
     </Filter>
@@ -342,6 +345,9 @@
     </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State">
       <UniqueIdentifier>{c2bc7a83-85f7-4724-8bc3-b2011caf5be4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\Player_ConfringoController">
+      <UniqueIdentifier>{6edd5ca2-a286-4ac1-b657-df90b1703e18}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -648,6 +654,9 @@
     <ClInclude Include="..\Public\Player_Magic_Bullet.h">
       <Filter>GameObject\Player\Player_Magic_Bullet</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Confringo_Bullet.h">
+      <Filter>GameObject\Player\Player_Confringo_Bullet</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_Hit_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
     </ClInclude>
@@ -794,6 +803,9 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_ProtegoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_ConfringoController.h">
+      <Filter>GameObject\Player\Player_ConfringoController</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1056,6 +1068,9 @@
     <ClCompile Include="..\Private\Player_Magic_Bullet.cpp">
       <Filter>GameObject\Player\Player_Magic_Bullet</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_Confringo_Bullet.cpp">
+      <Filter>GameObject\Player\Player_Confringo_Bullet</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Player_Hit_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
     </ClCompile>
@@ -1195,6 +1210,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_ConfringoController.cpp">
+      <Filter>GameObject\Player\Player_ConfringoController</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

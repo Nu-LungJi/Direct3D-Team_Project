@@ -10,6 +10,7 @@
 #include "Particle.h"
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
+#include "Player_Confringo_Bullet.h"
 #include "Mon_Weapon.h"
 #include "Client_Defines.h"
 #include "ComPxCharacterController.h"
@@ -292,6 +293,29 @@ HRESULT CLevelTerrain::InitializeTombBossBulletTest(CHandle hPlayer)
 		LEVEL::TERRAIN,
 		PROTO_GAMEOBJECT::Prototype_GameObject_TombBossBullet,
 		"03_PathPlaybackTest",
+		&Desc)
+		? S_OK
+		: E_FAIL;
+}
+
+HRESULT CLevelTerrain::SpawnConfringoBulletTest()
+{
+	CPlayer_Confringo_Bullet::DESC Desc{};
+	Desc.sObjectTag = "PlayerConfringoBullet_Test";
+	Desc.vStartPosition = { 0.f, 0.f, 0.f };
+	Desc.vEndPosition = { 0.f, 0.f, 30.f };
+	Desc.fSpeed = m_fConfringoBulletSpeed;
+	Desc.fLifeTime = m_fConfringoBulletLifeTime;
+	Desc.fRadius = m_fConfringoBulletRadius;
+	Desc.fCurveAmplitude = m_fConfringoBulletCurveAmplitude;
+	Desc.fCurveFrequency = m_fConfringoBulletCurveFrequency;
+	Desc.fTrailSpacing = m_fConfringoBulletTrailSpacing;
+	Desc.bDebugDraw = m_bConfringoBulletDebugDraw;
+
+	return CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::TERRAIN,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PlayerConfringoBullet,
+		"03_ConfringoTest",
 		&Desc)
 		? S_OK
 		: E_FAIL;
@@ -858,6 +882,70 @@ HRESULT CLevelTerrain::Render()
 void CLevelTerrain::UpdateGUI()
 {
 	ImGui::Begin("Terrain");
+	if (ImGui::CollapsingHeader("Confringo Projectile Test"))
+	{
+		ImGui::DragFloat(
+			"Projectile Speed",
+			&m_fConfringoBulletSpeed,
+			1.f,
+			1.f,
+			200.f,
+			"%.1f");
+		ImGui::DragFloat(
+			"Projectile Life Time",
+			&m_fConfringoBulletLifeTime,
+			0.1f,
+			0.1f,
+			30.f,
+			"%.1f sec");
+		ImGui::DragFloat(
+			"Projectile Sweep Radius",
+			&m_fConfringoBulletRadius,
+			0.01f,
+			0.01f,
+			5.f,
+			"%.2f");
+		ImGui::DragFloat(
+			"Projectile Curve Amplitude",
+			&m_fConfringoBulletCurveAmplitude,
+			0.01f,
+			0.f,
+			3.f,
+			"%.2f");
+		ImGui::DragFloat(
+			"Projectile Curve Frequency",
+			&m_fConfringoBulletCurveFrequency,
+			0.05f,
+			0.f,
+			6.f,
+			"%.2f");
+		ImGui::DragFloat(
+			"Projectile Trail Spacing",
+			&m_fConfringoBulletTrailSpacing,
+			0.01f,
+			0.05f,
+			1.f,
+			"%.2f");
+
+		const char* pDebugButtonLabel = m_bConfringoBulletDebugDraw
+			? "Debug Sphere: ON"
+			: "Debug Sphere: OFF";
+		if (ImGui::Button(pDebugButtonLabel))
+			m_bConfringoBulletDebugDraw = !m_bConfringoBulletDebugDraw;
+		ImGui::SameLine();
+		ImGui::TextDisabled("Applied when spawning");
+
+		if (ImGui::Button("Fire Confringo Projectile"))
+		{
+			if (FAILED(SpawnConfringoBulletTest()))
+			{
+				DEBUG_LOG(
+					"[Terrain] Failed to spawn Confringo projectile.\n");
+			}
+		}
+
+		ImGui::Separator();
+	}
 	if (ImGui::CollapsingHeader("Oil Barrel Pool"))
 	{
 		auto* pPoolManager =
