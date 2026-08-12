@@ -27,7 +27,7 @@ HRESULT CEdgFireBall::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	m_fDamage = 30.f;
-	m_fSpeed = 100.f;
+	m_fSpeed = 60.f;
 	m_fRadius = 0.5f;
 	m_fMaxLife = 3.f;
 

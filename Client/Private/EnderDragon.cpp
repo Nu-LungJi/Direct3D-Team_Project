@@ -722,11 +722,7 @@ void CEnderDragon::Picking(_float3& vPos, uint32_t iID)
 }
 void CEnderDragon::InitializeEffects()
 {
-	{
-		auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
-		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
-	}
+
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail1", "RanrokTrail1");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
@@ -759,8 +755,9 @@ void CEnderDragon::InitializeEffects()
 	}
 	{
 		auto a = CGameInstance::Get().GetParticle("DragonProj2Trail", "DragonProj2Trail");
-		static_cast<CTrail_CPU*>(a)->SetColor(_float4(0.1f, 0.1f, 0.1f,1.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(0.0f, 0.0f, 0.0f,1.f));
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(0.0f, 0.0f, 0.0f,1.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(1.0f, 0.28f, 0.28f, 10.f));
+
 	}
 }
 E::UPtr<CEnderDragon> CEnderDragon::Create()

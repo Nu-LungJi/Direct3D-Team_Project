@@ -257,13 +257,18 @@ PS_OUT PSMarble(VS_OUT In)
 	PS_OUT Out = (PS_OUT) 0;
 
 	float2 wispUV = In.vUV + float2(-g_fAccumulationTime * 0.3f, 0.f);
+	float2 crackUV = In.vUV + float2(g_fAccumulationTime * 0.1f, 0.f);
+
 	float wispMask = g_DiffuseTexture.Sample(LinearWrap, wispUV).r;
+	float crackMask = g_AnyTexture.Sample(LinearWrap, crackUV).g;
 
 	float bodyMask = smoothstep(0.03f, 0.35f, wispMask);
-	float emissiveMask = smoothstep(0.55f, 0.9f, wispMask);
+	float wispWhiteMask = smoothstep(0.55f, 0.9f, wispMask);
+	float crackWhiteMask = smoothstep(0.45f, 0.8f, crackMask);
+	float overlapMask = wispWhiteMask * crackWhiteMask;
 
-	float3 baseColor = In.vColor.rgb;
-	float3 emissiveColor = In.vEmissive.rgb * In.vEmissive.a * emissiveMask;
+	float3 baseColor = In.vColor.rgb * bodyMask;
+	float3 emissiveColor = In.vEmissive.rgb * In.vEmissive.a * overlapMask;
 	float3 finalColor = baseColor + emissiveColor;
 	float finalAlpha = bodyMask * In.vColor.a;
 
