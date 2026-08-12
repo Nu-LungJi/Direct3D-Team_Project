@@ -145,7 +145,8 @@ void CEnderDragon::UpdateGUI()
 			ImGui::EndPopup();
 		}
 	}
-	
+	if (ImGui::Button("Clear"))
+		m_DebugPoint.clear();
 	Phase_Debug();
 }
 

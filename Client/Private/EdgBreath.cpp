@@ -146,7 +146,7 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 		XMStoreFloat3(&m_vTargetDir, XMVector3Normalize(XMLoadFloat3(&pTarget->GetTransform().GetPosition()) - matOffset.r[3]));
 
 		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), 0.8f));
-		
+		vForward -= XMVectorSet(0, 0.15f, 0, 0);
 	}
 
 	_vector vUp = XMVector3Normalize(matBone.r[1]);
@@ -171,7 +171,7 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	if (MoveSweep(matBone.r[3], vForward))
 	{
 		//if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
-		//	CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
+		//	CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, breathWorldData);
 		GetTransform().SetPosition(matBone.r[3]);
 		GetTransform().SetQuaternion(vQuat);
 		GetTransform().Update();

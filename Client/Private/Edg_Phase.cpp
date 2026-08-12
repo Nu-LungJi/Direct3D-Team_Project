@@ -209,7 +209,6 @@ _bool CEdg_Phase::MovePhase3(CEnderDragon* pDragon, _float fTimeDelta)
 		
 	if (!m_bNext)
 	{
-		XMStoreFloat3(&m_vLastDir, XMVector3Normalize(pDragon->GetTransform().GetState(STATE::LOOK)));
 		XMStoreFloat3(&m_vNextDir, XMVector3Normalize(vNextPos - vCurPos));
 		m_bNext = true;
 	}
@@ -222,13 +221,8 @@ _bool CEdg_Phase::MovePhase3(CEnderDragon* pDragon, _float fTimeDelta)
 		m_fTick = 0.f;
 	}
 
-	m_fTick += fTimeDelta;
-	_float t = std::min(m_fTick / 0.5f, 1.f);
-
-	_float3 vLerpDir{};
-	XMStoreFloat3(&vLerpDir, XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vLastDir), XMLoadFloat3(&m_vNextDir), t)));
-
-	pMoveIntent->SetMoveIntent(vLerpDir, 50.f);
+	
+	pMoveIntent->SetMoveIntent(m_vNextDir, 20.f);
 	pMoveIntent->SetFacingIntent(vTargetDir, 60.f);
 	return false;
 }
