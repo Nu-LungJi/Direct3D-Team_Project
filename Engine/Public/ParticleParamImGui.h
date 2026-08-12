@@ -18,6 +18,7 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	bool bSmokegv = (flags & BEHAVIOR_SMOKEGV) != 0;
 	bool bSmokegw = (flags & BEHAVIOR_SMOKEGW) != 0;
 	bool bLightning = (flags & BEHAVIOR_LIGHTNING) != 0;
+	bool bEnergySphere = (flags & BEHAVIOR_ENERGYSPHERE) != 0;
 	bool bSizeStop = (flags & BEHAVIOR_SIZESTOP) != 0;
 
 	ImGui::Text("Common Pattern");
@@ -52,6 +53,8 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 		flags = bSmokegw ? (flags | BEHAVIOR_SMOKEGW) : (flags & ~BEHAVIOR_SMOKEGW);
 	if (ImGui::Checkbox("Lightning", &bLightning))
 		flags = bLightning ? (flags | BEHAVIOR_LIGHTNING) : (flags & ~BEHAVIOR_LIGHTNING);
+	if (ImGui::Checkbox("EnergySphere", &bEnergySphere))
+		flags = bEnergySphere ? (flags | BEHAVIOR_ENERGYSPHERE) : (flags & ~BEHAVIOR_ENERGYSPHERE);
 	ImGui::Separator();
 
 
@@ -131,17 +134,21 @@ inline void DrawImGui(SLightning& p) {
 inline void DrawImGui(SConeParam& p) {
 	CONE_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
 }
+inline void DrawImGui(SEnergySphere& p) {
+	ENERGY_SPHERE_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
+}
 #undef DRAW_PARAM_FIELD
 
 //8. save 추가
 inline void SaveParam(const SStairsParam& p, nlohmann::json& out) { STAIRS_FIELDS(SAVE_PARAM_FIELD) }
-inline void   SaveParam(const SCircleParam& p, nlohmann::json& out) { CIRCLE_FIELDS(SAVE_PARAM_FIELD) }
+inline void SaveParam(const SCircleParam& p, nlohmann::json& out) { CIRCLE_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SCircleSpreadParam& p, nlohmann::json& out) { CIRCLE_SPREAD_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SSpiralParam& p, nlohmann::json& out) { SPIRAL_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SStraightGroundParam& p, nlohmann::json& out) { STRAIGHT_GROUND_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SMOKE& p, nlohmann::json& out) { SMOKE_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SLightning& p, nlohmann::json& out) { LIGHTNING_STREIGHT(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SConeParam& p, nlohmann::json& out) { CONE_FIELDS(SAVE_PARAM_FIELD) }
+inline void SaveParam(const SEnergySphere& p, nlohmann::json& out) { ENERGY_SPHERE_FIELDS(SAVE_PARAM_FIELD) }
 
 //9. 로드 추가
 inline void LoadParam(SStairsParam& p, const nlohmann::json& in) { STAIRS_FIELDS(LOAD_PARAM_FIELD) }
@@ -152,6 +159,7 @@ inline void LoadParam(SStraightGroundParam& p, const nlohmann::json& in) { STRAI
 inline void LoadParam(SMOKE& p, const nlohmann::json& in) { SMOKE_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SLightning& p, const nlohmann::json& in) { LIGHTNING_STREIGHT(LOAD_PARAM_FIELD) }
 inline void LoadParam(SConeParam& p, const nlohmann::json& in) { CONE_FIELDS(LOAD_PARAM_FIELD) }
+inline void LoadParam(SEnergySphere& p, const nlohmann::json& in) { ENERGY_SPHERE_FIELDS(LOAD_PARAM_FIELD) }
 
 #undef SAVE_PARAM_FIELD
 #undef LOAD_PARAM_FIELD

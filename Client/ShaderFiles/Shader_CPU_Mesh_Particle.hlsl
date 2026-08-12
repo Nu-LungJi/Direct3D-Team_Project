@@ -559,6 +559,7 @@ PS_OUT PSColorEmissive(VS_OUT In)
 	Out.vDiffuse = float4(color, In.vColor.a);
 	return Out;
 }
+
 PS_OUT PSMarbleNoScroll(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
@@ -586,5 +587,30 @@ PS_OUT PSMarbleNoScroll(VS_OUT In)
 	float3 finalColor = baseColor + emissive;
 
 	Out.vDiffuse = float4(finalColor, In.vColor.a);
+	return Out;
+}
+
+PS_OUT PSRanrok_Sphere(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float3	ViewDirection = normalize(g_vCamPos.xyz - In.vWorldPos);
+	float3	WorldNormal = normalize(In.vNormal);
+	float	Fresnel = pow(1.f - saturate(dot(WorldNormal, ViewDirection)), 3.f);
+	
+	float2	NoiseUV = In.vTexcoord * 1.5f + In.life * float2(0.03f, 0.01f);
+	float	Noise = NoiseMap.Sample(LinearWrap, NoiseUV).r;
+
+	float	LifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float4	Emissive = lerp(In.vEmissive, In.vEndEmissive, LifeRatio);
+	
+	float3	InnerColor = In.vColor.rgb;
+	float3	RimColor = float3(1.f, 0.015f, 0.005f);
+	float3	SphereColor = lerp(InnerColor, RimColor, Fresnel);
+	float	EmissiveStrength = Emissive.a * lerp(0.7f, 1.5f, Fresnel) * lerp(0.65f, 1.f, Noise);
+	
+	float3	FinalColor = SphereColor + Emissive.rgb * EmissiveStrength;
+	float Opacity = In.vColor.a * (1.f - Noise);
+	Out.vDiffuse = float4(FinalColor, Opacity);
 	return Out;
 }

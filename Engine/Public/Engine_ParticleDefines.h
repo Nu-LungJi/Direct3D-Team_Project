@@ -93,6 +93,7 @@ namespace Engine
 	constexpr uint32_t BEHAVIOR_SMOKEGW = 1 << 8;
 	constexpr uint32_t BEHAVIOR_LIGHTNING = 1 << 9;
 	constexpr uint32_t BEHAVIOR_SIZESTOP = 1 << 10;
+	constexpr uint32_t BEHAVIOR_ENERGYSPHERE = 1 << 11;
 	// ============================================================
 	// X-매크로: 필드 목록을 한 곳에서만 정의
 	// X(타입, 이름, 기본값)
@@ -205,16 +206,26 @@ namespace Engine
     X(uint32_t, iCol, 3) \
     X(_float, fOffsetX, 1.f) \
     X(_float, fOffsetZ, 1.f) \
+    X(_bool, bRandomVel, false) \
+	X(_float3, fVelocity, _float3(0,0,0))\
+	X(_float3, fVelMin, _float3(0,0,0))\
+	X(_float3, fVelMax, _float3(0,0,0))\
+    X(_bool, bRandomSize, false) \
+    X(_float3, fSize, _float3(1.f,1.f,1.f)) \
+	X(_float3, fSizeMin, _float3(0, 0, 0))\
+	X(_float3, fSizeMax, _float3(0, 0, 0))\
+    X(_float3, fEndSize, _float3(1.f,1.f,1.f)) \
     X(_bool, bRandomRot, false) \
     X(_float3, vMinRot, _float3(0,0,0)) \
     X(_float3, vMaxRot, _float3(0,0,0)) \
     X(_float3, vRotation, _float3(0,0,0)) \
     X(_float, fSpawnDelay, 0.1f) \
-    X(_float3, fSize,_float3(1,1,1)) \
     X(_float, fLife, 1.f) \
     X(_float4, color, _float4(1,1,1,1)) \
-    X(_float4, startEmissive, _float4(0,0,0,0))\
-    X(_float4, endEmissive, _float4(0,0,0,0))\
+    X(_float4, emissive, _float4(0,0,0,0)) \
+    X(_float, startIntensity, 0.f) \
+    X(_float4, endEmissive, _float4(0,0,0,0)) \
+	X(_float, endIntensity, 0.f) \
    COMMON_PATTERN_FIELDS(X)
 
 
@@ -292,6 +303,17 @@ COMMON_PATTERN_FIELDS(X)
 	X(_float, endIntensity, 0.f) \
    COMMON_PATTERN_FIELDS(X)
 
+#define ENERGY_SPHERE_FIELDS(X) \
+    X(_float3, vCenter, _float3(0,0,0)) \
+    X(_float3, fSize	, _float3(1.f, 1.f, 1.f)) \
+    X(_float3, fEndSize , _float3(1.f, 1.f, 1.f)) \
+    X(_float , fLife, 1.f) \
+    X(_float4, color, _float4(1,1,1,1)) \
+    X(_float4, emissive, _float4(0,0,0,0)) \
+    X(_float , startIntensity, 0.f) \
+    X(_float4, endEmissive, _float4(0,0,0,0)) \
+	X(_float , endIntensity, 0.f) \
+   COMMON_PATTERN_FIELDS(X)
 // ============================================================
 // struct 자동 생성 매크로
 // ============================================================
@@ -299,7 +321,7 @@ COMMON_PATTERN_FIELDS(X)
 struct StructName \
 { \
     FIELD_LIST(DECLARE_PARAM_FIELD) \
-}; \
+};\
 
 #define DECLARE_PARAM_FIELD(type, name, defaultVal) type name = defaultVal;
 
@@ -312,17 +334,18 @@ struct StructName \
 	struct SMOKE { SMOKE_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SLightning { LIGHTNING_STREIGHT(DECLARE_PARAM_FIELD) };
 	struct SConeParam { CONE_FIELDS(DECLARE_PARAM_FIELD) };
+	struct SEnergySphere { ENERGY_SPHERE_FIELDS(DECLARE_PARAM_FIELD) };
 
 #undef DECLARE_PARAM_FIELD
 
 
 	//3. STRUCT 추가
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning, SConeParam>;
+	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning, SConeParam, SEnergySphere>;
 
 	// 4. 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
 	inline constexpr const char* PATTERN_KIND_NAMES[] =
 	{
-		"Stairs", "Circle",  "Spiral", "StraightGround", "CircleToWave", "SMOKE", "SLightning", "Cone"
+		"Stairs", "Circle",  "Spiral", "StraightGround", "CircleToWave", "SMOKE", "SLightning", "Cone", "EnergySphere"
 	};
 
 	//5. 여기에 CASE 추가
@@ -339,6 +362,7 @@ struct StructName \
 		case 5: return SMOKE{};
 		case 6: return SLightning{};
 		case 7: return SConeParam{};
+		case 8: return SEnergySphere{};
 			  
 		default: return SStairsParam{};
 		}

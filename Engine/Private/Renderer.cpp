@@ -1612,11 +1612,12 @@ HRESULT CRenderer::Render_PostProcess_Focusing(){
 
 		for (auto pBatch : Batches) {
 			if (nullptr == pBatch)	continue;
-			CGameObject* pBatchObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle);
 
+			CGameObject* pBatchObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle);
 			if (pBatchObject != OutLineObject) continue;
 
 			if (FAILED(OutLineObject->Render_Instanced(m_pContext.Get(), m_pRenderContext, *pBatch))) { Unbind_Resources(); return S_OK; }
+			break;
 		}
 	}
 	{

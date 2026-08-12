@@ -128,6 +128,8 @@ public:
 	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
 	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
 
+	float SmoothStep(float edge0, float edge1, float value);
+
 private:
     virtual void UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta);
 
@@ -137,7 +139,7 @@ private:
 	void		 GWWaveSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 
 	void		 Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta);
-	void		 ExtraLightning(PARTICLE_CPU_DATA& p, _float fTimeDelta);
+	void		 EnergySphere(PARTICLE_CPU_DATA& p, _float fTimeDelta);
     void		 SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta);
     void		 KeepRotate(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 private:

@@ -132,22 +132,45 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStra
 		for (uint32_t c = 0; c < param.iCol; ++c)
 		{
 			PARTICLE_SPAWN_DATA& s = spawnList[r * param.iCol + c];
-
 			_float dx = (_float)c - center;
-			s.position = _float3(
-				param.vStartPos.x + param.fOffsetX * dx,
-				param.vStartPos.y,
-				param.vStartPos.z + param.fOffsetZ * (_float)r
-			);
+			if (param.bRandomPos) {
+				s.position = _float3(
+					Randf(param.fVelMin.x, param.fVelMax.x) + param.fOffsetX * dx,
+					Randf(param.fVelMin.y, param.fVelMax.y), 
+					Randf(param.fVelMin.z, param.fVelMax.z) + param.fOffsetZ * (_float)r
+				);
+			}
+			else {
+				s.position = _float3(
+					param.vStartPos.x + param.fOffsetX * dx,
+					param.vStartPos.y,
+					param.vStartPos.z + param.fOffsetZ * (_float)r
+				);
+			}
 
-			s.velocity = _float3(Randf(-2.f, 2.f), Randf(1.f, 3.f), Randf(0.f, 2.f));
+			s.velocity = param.bRandomVel ?
+				_float3(Randf(param.fVelMin.x, param.fVelMax.x),
+					Randf(param.fVelMin.y, param.fVelMax.y),
+					Randf(param.fVelMin.z, param.fVelMax.z))
+				: param.fVelocity;
+
+			s.fSize = param.bRandomSize ?
+				_float3(Randf(param.fSizeMin.x, param.fSizeMax.x), 
+						Randf(param.fSizeMin.y, param.fSizeMax.y), 
+						Randf(param.fSizeMin.z, param.fSizeMax.z))
+						: param.fSize;
+
 			s.life = param.fLife;
-			s.fSize = param.fSize;
+			s.fEndSize = param.fEndSize;
 			s.color = param.color;
-			s.emissive = param.startEmissive;
-			s.endEmissive = param.endEmissive;
-			s.spawnDelay = param.fSpawnDelay * (_float)r;
 
+			s.emissive = _float4(param.emissive.x, param.emissive.y, param.emissive.z, param.startIntensity);
+			s.endEmissive = _float4(param.endEmissive.x, param.endEmissive.y, param.endEmissive.z, param.endIntensity);
+
+			s.spawnDelay = param.fSpawnDelay * (_float)r;
+			s.iBehaviorType = param.iBehaviorType;
+			s.originalEmissive = s.emissive;
+			s.originalPosition = param.vStartPos;
 			s.rotation = param.bRandomRot
 				? _float4(XMConvertToRadians(Randf(param.vMinRot.x, param.vMaxRot.x)),
 					XMConvertToRadians(Randf(param.vMinRot.y, param.vMaxRot.y)),
@@ -249,7 +272,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeLightning(const SLightning
 			s.fSize = param.fSize;
 		}
 		s.fEndSize = param.fEndSize;
-
+	
 		s.emissive = _float4(param.emissive.x, param.emissive.y, param.emissive.z, param.startIntensity);
 		s.rotation.z = atan2f(s.velocity.y, s.velocity.x) + XM_PIDIV2;
 		s.endEmissive = _float4(param.endEmissive.x, param.endEmissive.y, param.endEmissive.z, param.endIntensity);
@@ -307,6 +330,30 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCone(const SConeParam& par
 				XMConvertToRadians(param.vRotation.z),
 				1.f);
 
+	}
+
+	return spawnList;
+}
+
+std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeEnergySphere(const SEnergySphere& param){
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(1);
+
+	for (uint32_t i = 0; i < 1; ++i)
+	{
+		PARTICLE_SPAWN_DATA& spawnData = spawnList[i];
+		spawnData.color		= param.color;
+		spawnData.life		= param.fLife;
+
+		spawnData.fSize		= param.fSize;
+		spawnData.fEndSize	= param.fEndSize;
+
+		spawnData.emissive			= _float4(param.emissive.x, param.emissive.y, param.emissive.z, param.startIntensity);
+		spawnData.endEmissive		= _float4(param.endEmissive.x, param.endEmissive.y, param.endEmissive.z, param.endIntensity);
+		spawnData.originalEmissive	= spawnData.emissive;
+
+		spawnData.originalPosition	= spawnData.position;
+
+		spawnData.iBehaviorType		= param.iBehaviorType;
 	}
 
 	return spawnList;

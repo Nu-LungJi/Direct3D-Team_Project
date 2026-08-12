@@ -424,8 +424,8 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_LIGHTNING) != 0) {
 		Lightning(p, fTimeDelta);
 	}
-	if ((p.iBehaviorType & CParticle::BEHAVIOR_EXTRALIGHTNING) != 0) {
-		ExtraLightning(p, fTimeDelta);
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_ENERGYSPHERE) != 0) {
+		EnergySphere(p, fTimeDelta);
 	}
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0) {
 		KeepRotate(p, fTimeDelta);
@@ -580,8 +580,18 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 		}
 	}
 }
-void	CParticle_CPU::ExtraLightning(PARTICLE_CPU_DATA& p, _float fTimeDelta) {
-	
+
+void	CParticle_CPU::EnergySphere(PARTICLE_CPU_DATA& p, _float fTimeDelta) {
+	_float LifeTimeRatio = p.life / p.fMaxLife;
+
+	_float t = std::clamp(LifeTimeRatio, 0.f, 1.f);
+	_float EaseOut = 1.f - std::pow(1.f - t, 2.f);
+
+	_float ScaleX = std::lerp(p.fStartSize.x, p.fEndSize.x, EaseOut);
+	_float ScaleY = std::lerp(p.fStartSize.y, p.fEndSize.y, EaseOut);
+
+	_float ScaleZ = std::lerp(p.fStartSize.z, p.fEndSize.z, EaseOut);
+	p.fSize = _float3(ScaleX, ScaleY, ScaleZ);
 }
 
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
