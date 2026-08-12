@@ -10,6 +10,8 @@ typedef struct tagFlipbookInfo
 	uint32_t	cellsize = 4096;
 	_float		Padding = 2 / 4096;
 	uint32_t	TotalFrame = 64;
+	uint32_t	Columns = 8;
+	uint32_t	Rows = 8;
 	_float		Duration = 1.5f;
 }FLIP_INFO;
 
@@ -20,10 +22,12 @@ public:
 public:
 	typedef struct tagFlipbookDesc : public E::CUIObject::UIOBJECT_DESC
 	{
-		uint32_t	cellsize;
-		uint32_t	Padding;
-		uint32_t	TotalFrame;
-		_float 		Duration;
+		uint32_t	cellsize = 4096;
+		uint32_t	Padding = 2;
+		uint32_t	TotalFrame = 64;
+		uint32_t	Columns = 8;
+		uint32_t	Rows = 8;
+		_float 		Duration = 1.5f;
 	}FLIPBOOK_DESC;
 
 protected:
@@ -44,6 +48,7 @@ protected:
 public:
 	const FLIP_INFO& GetFlipInfo() const { return m_FLIPINFO; }
 	FLIP_INFO& GetFlipInfo() { return m_FLIPINFO; }
+	void Restart();
 
 protected:
 	uint32_t		m_CurrentFrame = 0;
