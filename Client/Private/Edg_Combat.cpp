@@ -108,7 +108,7 @@ void CEdg_Combat::RandomBall(CEnderDragon* pDragon, _vector vPos, _float fDis)
 	EDG_ACSKT_DESC ACTable{};
 	ACTable.fDist = fDis;
 	ACTable.eType = DRAGON_SKILL::RANDOMBALL;
-	ACTable.fLifeTime = 5.f;
+	ACTable.fLifeTime = m_fMaxTick;
 	ACTable.SkillName = pDragon->Get_SkillName(static_cast<ATTMON>(ACTable.eType));
 	pSkill->Active(ACTable, vPos);
 }

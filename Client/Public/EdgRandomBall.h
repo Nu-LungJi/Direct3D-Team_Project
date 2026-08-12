@@ -8,6 +8,7 @@ class CEdgRandomBall : public CDragonSkill
 public:
 	DECLARE_DERIVED_TYPE(CEdgRandomBall, CDragonSkill)
 
+	enum class COLOR {YELLOW, PURPLE, RED, END};
 protected:
 	explicit CEdgRandomBall();
 	explicit CEdgRandomBall(const CEdgRandomBall& rhs);
@@ -30,6 +31,10 @@ private:
 public:
 	static E::UPtr<CEdgRandomBall> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
+private:
+	COLOR			m_eColor = COLOR::END;
+	uint32_t		m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
 };
 
 NS_END

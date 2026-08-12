@@ -30,7 +30,9 @@ HRESULT CEdgRandomBall::Initialize(void* pArg)
 	m_fDamage = 30.f;
 	m_fSpeed = 100.f;
 	m_fRadius = 0.5f;
-	m_fMaxLife = 3.f;
+	m_fMaxLife = 8.f;
+
+	
 	return S_OK;
 }
 
@@ -91,6 +93,24 @@ void CEdgRandomBall::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 	m_bHit = false;
 	m_fLife = 0.f;
 	m_fMaxLife = SkillTable.fLifeTime;
+
+	uint32_t randomInt = RandInt(0, 2);
+
+	switch (randomInt) {
+	case 0:
+		m_eColor = COLOR::YELLOW;
+		m_iEffectID = CGameInstance::Get().PlayEffect("YellowSphere", *m_pComTransform->GetWorldMatrix());
+		break;
+	case 1:
+		m_eColor = COLOR::PURPLE;
+		m_iEffectID = CGameInstance::Get().PlayEffect("PurpleSphere", *m_pComTransform->GetWorldMatrix());
+		break;
+	case 2:
+		m_eColor = COLOR::RED;
+		m_iEffectID = CGameInstance::Get().PlayEffect("RedSphere", *m_pComTransform->GetWorldMatrix());
+		break;
+	}
+
 	Spawn_Skill_Effect(SkillTable.SkillName);
 }
 
