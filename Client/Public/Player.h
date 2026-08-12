@@ -120,6 +120,8 @@ public:
 	CComCharacterMoveIntent* GetMoveIntent() const { return m_pComMoveIntent; }
 	CComCharacterMotor* GetCharacterMotor() const { return m_pComCharacterMotor; }
 	CComAnimator* GetAnimator() const { return m_pModelAnimator; }
+	_bool PlayUpperBodyAnimation(int32_t iAnimation, const _char* pRootBoneName,
+		uint32_t iBlendDepth, _bool bLoop = false, _float fFadeDuration = 0.1f);
 	CComModelInstance* GetModelInstance() const { return m_pComModelInstance; }
 	CHandle GetTargetHandle() const { return m_hAutoTarget; }
 	CHandle GetUIControllerHandle() const { return m_UIHandle; }
@@ -155,7 +157,10 @@ public:
 	_bool GetInvincible() const { return m_bInvincible; }
 	void SetInvincible(_bool bInvincible) { m_bInvincible = bInvincible; }
 	_bool IsProtegoActive() const { return m_bProtegoActive; }
-	void SetProtegoActive(_bool bActive) { m_bProtegoActive = bActive; }
+	void ActivateProtego(_float fDuration);
+	_bool ConsumeParryCounter(_float3& outAttackPosition);
+	uint32_t GetProtegoParrySequence() const { return m_iProtegoParrySequence; }
+	const _float3& GetLastProtegoHitPosition() const { return m_vLastProtegoHitPosition; }
 private:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
@@ -238,6 +243,12 @@ private:
 	_float m_fGroundFollowProbeRadius{ 0.2f };
 	_bool  m_bInvincible{ false };
 	_bool  m_bProtegoActive{ false };
+	_float m_fProtegoRemainTime{};
+	_float m_fParryCounterRemainTime{};
+	static constexpr _float PARRY_COUNTER_WINDOW = 1.0f;
+	EFFECT_INSTANCE_ID m_iProtegoShieldEffectID{ INVALID_EFFECT_INSTANCE_ID };
+	uint32_t m_iProtegoParrySequence{};
+	_float3 m_vLastProtegoHitPosition{};
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
 	//[LSY] 테스트 로그니 지우셔도 됩니다.

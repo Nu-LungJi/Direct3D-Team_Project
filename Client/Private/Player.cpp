@@ -206,7 +206,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 		const auto& animations = m_pComModelInstance->GetModel()->GetAnimations();
 		constexpr _string_view debugWandReadyAnimation =
-			"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_RMB_WandReady_POSE_anm.bin";
+			"AN_ProfessorSharp_MasterRig_Hu_BM_Wand_Ready_RArmReplace_anm.bin";
 		for (size_t i = 0; i < animations.size(); ++i)
 		{
 			if (animations[i] && animations[i]->GetAnimName() == debugWandReadyAnimation)
@@ -566,6 +566,21 @@ _bool CPlayer::IsRagdollTransitioning() const
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_bProtegoActive)
+	{
+		m_fProtegoRemainTime = std::max(0.f, m_fProtegoRemainTime - fTimeDelta);
+		if (m_fProtegoRemainTime <= 0.f)
+		{
+			m_bProtegoActive = false;
+			if (m_iProtegoShieldEffectID != INVALID_EFFECT_INSTANCE_ID)
+			{
+				CGameInstance::Get().StopEffect(m_iProtegoShieldEffectID);
+				m_iProtegoShieldEffectID = INVALID_EFFECT_INSTANCE_ID;
+			}
+		}
+	}
+	m_fParryCounterRemainTime = std::max(0.f, m_fParryCounterRemainTime - fTimeDelta);
+
 	// [LSY] 랙돌 전환 중에는 입력과 상태 머신이 새로운 이동 명령을 만들지 않게 한다.
 	if (m_pRagdollController)
 	{
@@ -612,11 +627,12 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			(!m_bDebugWandReadyPlaying ||
 				!m_pModelAnimator->HasUpperAnimation()))
 		{
-			m_pModelAnimator->Play_UpperAnim(
+			m_bDebugWandReadyPlaying = PlayUpperBodyAnimation(
 				m_iDebugWandReadyUpperAnim,
+				"RightArm",
+				1,
 				true,
 				debugUpperBodyFadeDuration);
-			m_bDebugWandReadyPlaying = true;
 		}
 		else if (!bWandReadyRequested && m_bDebugWandReadyPlaying)
 		{
@@ -1664,13 +1680,23 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 void CPlayer::UpdateAttachedEffects()
 {
-	if (m_iDashBodyEffectID == INVALID_EFFECT_INSTANCE_ID)
-		return;
+	if (m_iDashBodyEffectID != INVALID_EFFECT_INSTANCE_ID)
+	{
+		CGameInstance::Get().SetEffectWorldMatrix(
+			m_iDashBodyEffectID,
+			*GetTransform().GetWorldMatrix());
+	}
 
-	auto a = GetTransform().GetWorldMatrix();
-	CGameInstance::Get().SetEffectWorldMatrix(
-		m_iDashBodyEffectID,
-		*GetTransform().GetWorldMatrix());
+	// 캐릭터의 이동과 회전이 모두 확정된 LateUpdate 시점에 보호막을 붙인다.
+	// PriorityUpdate에서 갱신하면 이전 프레임 위치를 따라가 외곽선이 떨릴 수 있다.
+	if (m_bProtegoActive &&
+		m_iProtegoShieldEffectID != INVALID_EFFECT_INSTANCE_ID)
+	{
+		_float4x4 shieldWorld = *GetTransform().GetWorldMatrix();
+		shieldWorld._42 += 1.f;
+		CGameInstance::Get().SetEffectWorldMatrix(
+			m_iProtegoShieldEffectID, shieldWorld);
+	}
 }		
 
 // CPU + GPU 버전
@@ -1990,15 +2016,12 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 		return false;
 	if (m_bProtegoActive)
 	{
-		_vector vLook = XMVector3Normalize(GetTransform().GetState(STATE::LOOK));
-		_vector vRight = XMVector3Normalize(GetTransform().GetState(STATE::RIGHT));
-		_vector vUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
-		_vector vRandomDirection = XMVector3Normalize(
-			vLook +
-			vRight * Randf(-0.9f, 0.9f) +
-			vUp * Randf(-0.65f, 0.65f));
+		// 위치 정보가 없는 레거시 공격은 현재 타깃 위치를 사용한다.
+		// 타깃도 없으면 캐릭터 정면 공격으로 안전하게 처리한다.
 		_vector vHit = GetTransform().GetState(STATE::POSITION) +
-			XMVectorSet(0.f, 1.f, 0.f, 0.f) + vRandomDirection * 2.48f;
+			XMVector3Normalize(GetTransform().GetState(STATE::LOOK)) * 2.48f;
+		if (auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget))
+			vHit = pTarget->GetTransform().GetState(STATE::POSITION);
 		_float3 vHitPosition{};
 		XMStoreFloat3(&vHitPosition, vHit);
 		TriggerProtegoHit(vHitPosition);
@@ -2024,6 +2047,11 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 
 void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 {
+	// 실제 공격이 프로테고에 막힌 순간을 상태에 전달한다.
+	m_vLastProtegoHitPosition = vHitPosition;
+	++m_iProtegoParrySequence;
+	m_fParryCounterRemainTime = PARRY_COUNTER_WINDOW;
+
 	_float3 vShieldCenter = GetTransform().GetPosition();
 	vShieldCenter.y += 1.f;
 
@@ -2060,6 +2088,44 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 
 	CGameInstance::Get().PlayEffect(
 		"Protego_Shield_Hit_Layered", hitWorld, XMVectorZero());
+}
+
+_bool CPlayer::PlayUpperBodyAnimation(
+	int32_t iAnimation, const _char* pRootBoneName,
+	uint32_t iBlendDepth, _bool bLoop, _float fFadeDuration)
+{
+	if (!m_pModelAnimator || !pRootBoneName ||
+		!m_pModelAnimator->Set_UpperBodyRootBone(pRootBoneName, iBlendDepth))
+	{
+		return false;
+	}
+
+	m_pModelAnimator->Play_UpperAnim(iAnimation, bLoop, fFadeDuration);
+	return true;
+}
+
+void CPlayer::ActivateProtego(_float fDuration)
+{
+	m_bProtegoActive = true;
+	m_fProtegoRemainTime = std::max(m_fProtegoRemainTime, fDuration);
+
+	if (m_iProtegoShieldEffectID == INVALID_EFFECT_INSTANCE_ID)
+	{
+		_float4x4 shieldWorld = *GetTransform().GetWorldMatrix();
+		shieldWorld._42 += 1.f;
+		m_iProtegoShieldEffectID = CGameInstance::Get().PlayEffect(
+			"Protego_Shield", shieldWorld, XMVectorZero());
+	}
+}
+
+_bool CPlayer::ConsumeParryCounter(_float3& outAttackPosition)
+{
+	if (m_fParryCounterRemainTime <= 0.f)
+		return false;
+
+	m_fParryCounterRemainTime = 0.f;
+	outAttackPosition = m_vLastProtegoHitPosition;
+	return true;
 }
 
 void CPlayer::HandleDeath()

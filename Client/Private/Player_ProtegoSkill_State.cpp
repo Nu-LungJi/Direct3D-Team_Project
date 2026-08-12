@@ -3,6 +3,8 @@
 
 #include "GameInstance.h"
 #include "Player.h"
+#include "ComAnimator.h"
+#include "PlayerAnimationRatioGuard.h"
 
 NS_USING(Client)
 
@@ -12,21 +14,35 @@ void CPlayer_ProtegoSkill_State::Enter(CStateMachine* pStateMachine)
 	if (!pPlayer)
 		return;
 
-	m_fElapsed = 0.f;
-	m_iShieldEffectID = INVALID_EFFECT_INSTANCE_ID;
+	m_fAnimRatio = 0.f;
 
-	SetSkillControl(*pPlayer, true, false, false);
-	pPlayer->SetProtegoActive(true);
+	auto* pAnimator = pPlayer->GetAnimator();
+	CacheAnimationIndices(*pPlayer);
+	if (!pAnimator || !m_bAnimationIndicesCached)
+	{
+		RequestLocomotion(pStateMachine);
+		return;
+	}
 
-	_float4x4 shieldWorld = *pPlayer->GetTransform().GetWorldMatrix();
-	shieldWorld._42 += 1.f;
-	m_iShieldEffectID = CGameInstance::Get().PlayEffect(
-		"Protego_Shield", shieldWorld, XMVectorZero(),
-		[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON)
-		{
-			if (effectId == m_iShieldEffectID)
-				m_iShieldEffectID = INVALID_EFFECT_INSTANCE_ID;
-		});
+	// 프로테고 준비/유지 중에는 이동 입력을 허용한다.
+	SetSkillControl(*pPlayer, false, false, false, false);
+	pPlayer->ActivateProtego(PROTEGO_DURATION);
+	// 하체 locomotion은 유지하고 몸통 위쪽으로만 프로테고를 시전한다.
+	if (!pPlayer->PlayUpperBodyAnimation(
+		m_iProtegoStartAnimation, "Spine1", 2, false, 0.1f))
+	{
+		RequestLocomotion(pStateMachine);
+	}
+}
+
+void CPlayer_ProtegoSkill_State::CacheAnimationIndices(const CPlayer& player)
+{
+	if (m_bAnimationIndicesCached)
+		return;
+
+	m_iProtegoStartAnimation = FindAnimationIndex(player,
+		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Protego_Start_anm.bin");
+	m_bAnimationIndicesCached = m_iProtegoStartAnimation >= 0;
 }
 
 void CPlayer_ProtegoSkill_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -35,37 +51,24 @@ void CPlayer_ProtegoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 	if (!pPlayer)
 		return;
 
-	m_fElapsed += fTimeDelta;
-
-	if (m_iShieldEffectID != INVALID_EFFECT_INSTANCE_ID)
+	auto* pAnimator = pPlayer->GetAnimator();
+	if (!pAnimator)
 	{
-		_float4x4 shieldWorld = *pPlayer->GetTransform().GetWorldMatrix();
-		shieldWorld._42 += 1.f;
-		CGameInstance::Get().SetEffectWorldMatrix(m_iShieldEffectID, shieldWorld);
-	}
-
-	if (m_fElapsed >= PROTEGO_DURATION)
-	{
-		pPlayer->PrepareLocomotionResume();
 		RequestLocomotion(pStateMachine);
+		return;
 	}
+
+	// 상체 레이어는 Animator가 끝까지 재생하고 자동 페이드한다.
+	// 상태는 즉시 locomotion으로 복귀시켜 이동 애니메이션을 계속 갱신한다.
+	RequestLocomotion(pStateMachine);
 }
 
 void CPlayer_ProtegoSkill_State::Exit(CStateMachine* pStateMachine)
 {
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (pPlayer)
-	{
-		pPlayer->SetProtegoActive(false);
 		ResetSkillControl(*pPlayer);
-	}
-
-	if (m_iShieldEffectID != INVALID_EFFECT_INSTANCE_ID)
-	{
-		const EFFECT_INSTANCE_ID oldEffectID = m_iShieldEffectID;
-		m_iShieldEffectID = INVALID_EFFECT_INSTANCE_ID;
-		CGameInstance::Get().StopEffect(oldEffectID);
-	}
+	m_fAnimRatio = 0.f;
 }
 
 SPtr<CPlayer_ProtegoSkill_State> CPlayer_ProtegoSkill_State::Create()

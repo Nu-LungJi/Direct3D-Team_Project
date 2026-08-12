@@ -41,6 +41,7 @@ private:
 	ATTACK_DIRECTION ResolveAttackDirection(const CPlayer& player) const;
 	int32_t GetAttackAnimation(ATTACK_DIRECTION eDirection,_bool bHeavy) const;
 	_bool PlayDirectionalAttack(CPlayer& player,_bool bHeavy);
+	_bool PlayParryCounterAttack(CPlayer& player, const _float3& vAttackPosition);
 
 	int32_t FindAnimationIndex(const CPlayer& player,_string_view sAnimationName) const;
 
@@ -58,6 +59,9 @@ private:
 	static constexpr _float LIGHT_FORWARD_MOVE_SPEED = 1.5f;
 	static constexpr _float LIGHT_MAGIC_BULLET_FIRE_RATIO = 0.15f;
 	static constexpr _float HEAVY_MAGIC_BULLET_FIRE_RATIO = 0.25f;
+	static constexpr _float PARRY_COUNTER_ANIMATION_SPEED = 0.85f;
+	static constexpr _float PARRY_COUNTER_TURN_END_RATIO = 0.08f;
+	static constexpr _float PARRY_COUNTER_ATTACK_SPEED = 1.5f;
 	static constexpr size_t ATTACK_DIRECTION_COUNT =static_cast<size_t>(ATTACK_DIRECTION::END);
 
 
@@ -66,6 +70,7 @@ private:
 
 	std::array<int32_t, ATTACK_DIRECTION_COUNT> m_DirectionalLightAnimations{};
 	std::array<int32_t, ATTACK_DIRECTION_COUNT> m_DirectionalHeavyAnimations{};
+	std::array<int32_t, 5> m_ParryCounterAnimations{};
 
 	size_t m_iCurrentForwardLightAnimation{};
 	size_t m_iCurrentForwardHvyAnimation{};
@@ -74,6 +79,8 @@ private:
 	_bool m_bAnimationIndicesCached{};
 	_bool m_bPlayingHeavy{};
 	_bool m_bMagicBulletFired{};
+	_bool m_bPlayingParryCounter{};
+	_bool m_bParryCounterSpeedRestored{};
 	_float m_fPreviousAnimRatio{};
 
 private:

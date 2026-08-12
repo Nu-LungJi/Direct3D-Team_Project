@@ -21,9 +21,12 @@ public:
 
 private:
 	static constexpr _float PROTEGO_DURATION = 1.5f;
+	static constexpr _float PHASE_EXIT_RATIO = 0.92f;
+	void CacheAnimationIndices(const CPlayer& player);
 
-	_float m_fElapsed{};
-	EFFECT_INSTANCE_ID m_iShieldEffectID{ INVALID_EFFECT_INSTANCE_ID };
+	_float m_fAnimRatio{};
+	int32_t m_iProtegoStartAnimation{ -1 };
+	_bool m_bAnimationIndicesCached{};
 };
 
 NS_END
