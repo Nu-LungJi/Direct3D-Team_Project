@@ -296,6 +296,9 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCone(const SConeParam& par
 		spawnData.originalPosition = spawnData.position;
 		spawnData.originalVelocity = spawnData.velocity;
 		spawnData.iBehaviorType = param.iBehaviorType;
+		// [LSY] Cone 파티클을 한 프레임에 모두 생성하지 않고 순차 분사할 수 있게 개별 지연을 계산한다.
+		spawnData.spawnDelay = param.fSpawnDelay +
+			static_cast<_float>(i) * param.fSpawnInterval;
 
 		spawnData.rotation = param.bRandomRot
 			? _float4(XMConvertToRadians(Randf(param.vMinRot.x, param.vMaxRot.x)),

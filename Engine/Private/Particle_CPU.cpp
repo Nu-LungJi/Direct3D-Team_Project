@@ -197,6 +197,8 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 				p.life = 0.f;
 				p.vPosition = p.originalPosition;
 				p.vVelocity = p.originalVelocity;
+				// [LSY] Fade가 적용된 Loop 파티클은 다음 주기 시작 시 원래 알파로 복원한다.
+				p.vColor.w = p.fStartAlpha;
 				p.fGravityVelocity = 0.f;
 				continue;
 			}
@@ -432,7 +434,38 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0) {
 		KeepRotate(p, fTimeDelta);
 	}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_FADEOUT_LATE) != 0) {
+		FadeOutLate(p);
+	}
+	else if ((p.iBehaviorType & CParticle::BEHAVIOR_FADEOUT) != 0) {
+		FadeOut(p);
+	}
 }
+
+void CParticle_CPU::FadeOut(PARTICLE_CPU_DATA& p)
+{
+	// [LSY] 최초 알파를 기준으로 전체 수명 동안 선형 감소시켜 수명 종료의 팝 현상을 줄인다.
+	const _float lifeRatio = std::clamp(
+		p.life / std::max(p.fMaxLife, 0.0001f), 0.f, 1.f);
+	p.vColor.w = std::lerp(p.fStartAlpha, 0.f, lifeRatio);
+}
+
+void CParticle_CPU::FadeOutLate(PARTICLE_CPU_DATA& p)
+{
+	// [LSY] 형상을 충분히 유지한 뒤 후반부만 부드럽게 사라지는 연출을 지원한다.
+	const _float fLifeRatio = std::clamp(
+		p.life / std::max(p.fMaxLife, 0.0001f), 0.f, 1.f);
+	constexpr _float fFadeStartRatio = 0.58f;
+	const _float fFadeRatio = std::clamp(
+		(fLifeRatio - fFadeStartRatio) /
+		(1.f - fFadeStartRatio),
+		0.f,
+		1.f);
+	const _float fSmoothFade =
+		fFadeRatio * fFadeRatio * (3.f - 2.f * fFadeRatio);
+	p.vColor.w = std::lerp(p.fStartAlpha, 0.f, fSmoothFade);
+}
+
 void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
 {
 	_float fSpeed = 1.5f;
@@ -601,6 +634,8 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		m_Particles[i].fStartSize = src.fSize;
 		m_Particles[i].fEndSize = src.fEndSize;
 		m_Particles[i].vColor = src.color;
+		// [LSY] Fade 계산과 Loop 재시작에 사용할 생성 당시의 알파를 별도로 보존한다.
+		m_Particles[i].fStartAlpha = src.color.w;
 		m_Particles[i].originalEmissive = src.originalEmissive;
 		m_Particles[i].emissive = src.emissive;
 		m_Particles[i].endEmissive = src.endEmissive;
@@ -962,6 +997,7 @@ void CParticle_CPU::SetColor(const _float4& color)
 		return;
 	for (auto& particle : m_Particles) {
 		particle.vColor = color;
+		particle.fStartAlpha = color.w;
 	}
 }
 void CParticle_CPU::SetColorByOwner(uint32_t ownerId, const _float4& color)
@@ -975,6 +1011,7 @@ void CParticle_CPU::SetColorByOwner(uint32_t ownerId, const _float4& color)
 			continue;
 
 		particle.vColor = color;
+		particle.fStartAlpha = color.w;
 	}
 }
 void CParticle_CPU::SetEmissive(const _float4& emissive)

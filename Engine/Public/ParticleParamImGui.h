@@ -19,6 +19,9 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	bool bSmokegw = (flags & BEHAVIOR_SMOKEGW) != 0;
 	bool bLightning = (flags & BEHAVIOR_LIGHTNING) != 0;
 	bool bSizeStop = (flags & BEHAVIOR_SIZESTOP) != 0;
+	// [LSY] GUI에서 파티클 종료 방식을 선택하고 JSON의 Behavior 플래그에 반영한다.
+	bool bFadeOut = (flags & BEHAVIOR_FADEOUT) != 0;
+	bool bFadeOutLate = (flags & BEHAVIOR_FADEOUT_LATE) != 0;
 
 	ImGui::Text("Common Pattern");
 	if (ImGui::Checkbox("Distortion", &bDistortion))
@@ -32,6 +35,32 @@ inline void DrawBehaviorTypeFlags(uint32_t& flags)
 	ImGui::SameLine();
 	if (ImGui::Checkbox("SizeStop", &bSizeStop))
 		flags = bSizeStop ? (flags | BEHAVIOR_SIZESTOP) : (flags & ~BEHAVIOR_SIZESTOP);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("FadeOut", &bFadeOut))
+	{
+		if (bFadeOut)
+		{
+			flags |= BEHAVIOR_FADEOUT;
+			flags &= ~BEHAVIOR_FADEOUT_LATE;
+		}
+		else
+		{
+			flags &= ~BEHAVIOR_FADEOUT;
+		}
+	}
+	ImGui::SameLine();
+	if (ImGui::Checkbox("FadeOut Late", &bFadeOutLate))
+	{
+		if (bFadeOutLate)
+		{
+			flags |= BEHAVIOR_FADEOUT_LATE;
+			flags &= ~BEHAVIOR_FADEOUT;
+		}
+		else
+		{
+			flags &= ~BEHAVIOR_FADEOUT_LATE;
+		}
+	}
 	ImGui::Separator();
 
 
