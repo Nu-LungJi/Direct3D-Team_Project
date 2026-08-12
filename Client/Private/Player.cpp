@@ -1011,6 +1011,11 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 				m_bCoolTime_Num4 = true;
 		}
 
+		// Confringo authoring preview. Keep this direct key until the spell-slot
+		// mapping supports CONFRINGO.
+		if (CGameInstance::Get().KeyDown(DIK_5))
+			m_pStateMachine->RequestState(PLAYER_STATE::CONFRINGO_SKILL);
+
 	}
 	
 

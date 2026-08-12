@@ -28,6 +28,8 @@ protected:
 	_bool HasTarget(const CPlayer& player) const;
 	_bool TryApplySkillToTarget(CPlayer& player, PLAYER_SKILL_TYPE eSkillType) const;
 	_bool PlayRandomTargetAttack(CPlayer& player, _float fBlendDuration = 0.24f);
+	_bool PlayTargetAttack(CPlayer& player, _bool bHeavy,
+		_float fBlendDuration = 0.24f);
 
 	int32_t FindAnimationIndex(const CPlayer& player, _string_view sAnimationName) const;
 

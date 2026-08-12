@@ -183,6 +183,13 @@ CPlayer_SkillStateBase::ResolveTargetAttackDirection(const CPlayer& player) cons
 
 _bool CPlayer_SkillStateBase::PlayRandomTargetAttack(CPlayer& player, _float fBlendDuration)
 {
+	return PlayTargetAttack(
+		player, Engine::RandInt(0, 1) == 1, fBlendDuration);
+}
+
+_bool CPlayer_SkillStateBase::PlayTargetAttack(
+	CPlayer& player, _bool bHeavy, _float fBlendDuration)
+{
 	auto* pAnimator = player.GetAnimator();
 	if (!pAnimator)
 		return false;
@@ -190,7 +197,6 @@ _bool CPlayer_SkillStateBase::PlayRandomTargetAttack(CPlayer& player, _float fBl
 	CacheDirectionalAttackAnimations(player);
 	const ATTACK_DIRECTION eDirection = ResolveTargetAttackDirection(player);
 	const size_t iDirection = static_cast<size_t>(eDirection);
-	const _bool bHeavy = Engine::RandInt(0, 1) == 1;
 
 	int32_t iAnimation = bHeavy
 		? m_DirectionalHeavyAnimations[iDirection]
