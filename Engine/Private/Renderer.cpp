@@ -1576,7 +1576,8 @@ HRESULT CRenderer::Render_PostProcess() {
 
 HRESULT CRenderer::Render_PostProcess_Focusing(){
 	ZoneScopedN("Render_PostProcess_FocusingDepth");
-	
+	m_pContext->ClearDepthStencilView(m_pResDynTexTargetFocusingDepthMap->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+
 	if (!m_pOutlineTargetHandle)	return S_OK;
 
 	auto OutLineObject = CGameInstance::Get().GetGameObjectByHandle(m_pOutlineTargetHandle.value());
@@ -1590,7 +1591,7 @@ HRESULT CRenderer::Render_PostProcess_Focusing(){
 		if (nullptr == DepthWriteState) return S_OK;
 
 		m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
-		m_pContext->ClearDepthStencilView(m_pResDynTexTargetFocusingDepthMap->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+
 	}
 	{
 		ID3D11DepthStencilView* pFocusingDSV = m_pResDynTexTargetFocusingDepthMap->GetDSV().Get();
@@ -1608,8 +1609,7 @@ HRESULT CRenderer::Render_PostProcess_Focusing(){
 
 		if (FAILED(Bind_CameraAttribute(pGameCam)))						{ Unbind_Resources(); return S_OK; }
 
-		if (FAILED(CGameInstance::Get().Render_OutlineInstance(
-			m_pContext.Get(), m_pRenderContext, m_pOutlineTargetHandle.value())))
+		if (FAILED(CGameInstance::Get().Render_OutlineInstance(m_pContext.Get(), m_pRenderContext, m_pOutlineTargetHandle.value())))
 		{
 			Unbind_Resources();
 			return S_OK;
