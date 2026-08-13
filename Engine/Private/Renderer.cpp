@@ -932,6 +932,9 @@ HRESULT CRenderer::Draw() {
 	// Diffuse + Normal + SMRO + Emissive
 	if (FAILED(Render_NonAlpha()))       return E_FAIL;
 
+	// Opaque G-buffer projection decals
+	if (FAILED(Render_Decal()))			 return E_FAIL;
+
 	// Hi-Z build: opaque depth 기반
 	if (FAILED(BuildCurrentHizBuffer())) return E_FAIL;
 
@@ -1086,6 +1089,72 @@ HRESULT CRenderer::Render_NonAlpha() {
 	}
 	
 	Unbind_Resources();
+
+	return S_OK;
+}
+
+HRESULT CRenderer::Render_Decal()
+{
+	ZoneScopedN("Render_Decal");
+
+	auto& decals = m_pRenderObject[ETOUI(RENDERGROUP::DECAL)];
+	if (decals.empty())
+		return S_OK;
+
+	auto& gameInstance = CGameInstance::Get();
+	const auto blendState = gameInstance.GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+	const auto noBlendState = gameInstance.GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+	const auto depthDisabled = gameInstance.GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL");
+	const auto frontCull = gameInstance.GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_FRONTCULL);
+	const auto backCull = gameInstance.GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+
+	if (!blendState || !noBlendState || !depthDisabled || !frontCull || !backCull)
+		return E_FAIL;
+
+	ID3D11RenderTargetView* renderTargets[2] = {
+		m_pResDynTexTargetDiffuse->GetRTV().Get(),
+		m_pResDynTexTargetEmissive->GetRTV().Get()
+	};
+
+	m_pContext->OMSetRenderTargets(2, renderTargets, nullptr);
+	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+
+	ID3D11ShaderResourceView* gBufferResources[2] = {
+		m_pResDynTexTargetDepth->GetSRV().Get(),
+		m_pResDynTexTargetNormal->GetSRV().Get()
+	};
+
+	m_pContext->PSSetShaderResources(0, 2, gBufferResources);
+	m_pContext->OMSetBlendState(blendState->GetBlendState().Get(), nullptr, 0xffffffff);
+	m_pContext->OMSetDepthStencilState(depthDisabled->GetDepthStencilState().Get(), 0);
+	m_pContext->RSSetState(frontCull->GetRasterizerState().Get());
+
+	auto* activeCamera = gameInstance.GetActiveCamera();
+	if (!activeCamera ||
+		FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, activeCamera)) ||
+		FAILED(Bind_CameraAttribute(activeCamera)))
+	{
+		Unbind_Resources();
+		return E_FAIL;
+	}
+
+	for (auto* decal : decals)
+	{
+		if (!decal || !decal->HasRenderPass(m_pRenderContext.pass))
+			continue;
+
+		if (FAILED(decal->Render(m_pContext.Get(), m_pRenderContext)))
+		{
+			Unbind_Resources();
+			m_pContext->OMSetBlendState(noBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+			m_pContext->RSSetState(backCull->GetRasterizerState().Get());
+			return E_FAIL;
+		}
+	}
+
+	Unbind_Resources();
+	m_pContext->OMSetBlendState(noBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+	m_pContext->RSSetState(backCull->GetRasterizerState().Get());
 
 	return S_OK;
 }

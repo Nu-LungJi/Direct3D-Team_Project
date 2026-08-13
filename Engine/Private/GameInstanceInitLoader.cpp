@@ -22,6 +22,7 @@
 #include "Light.h"
 #include "ComCollider.h"
 #include "MapMeshObject.h"
+#include "DecalVolume.h"
 #include "PhysXCollisionProxyObject.h"
 #include "AmbientSound2DObject.h"
 #include "AmbientSound3DObject.h"
@@ -148,6 +149,10 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeGameObject()
 		return E_FAIL;
 	}
 
+	if (CGameInstance::Get().AddPrototype("PERMANENT", "Prototype_GameObject_DecalVolume", CDecalVolume::Create()))
+	{
+		return E_FAIL;
+	}
 	if (CGameInstance::Get().AddPrototype(
 		"PERMANENT", "Prototype_GameObject_PhysXCollisionProxy",
 		CPhysXCollisionProxyObject::Create()))

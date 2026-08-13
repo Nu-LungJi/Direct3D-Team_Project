@@ -3,6 +3,7 @@
 #include "ComTransform.h"
 #include "GameInstance.h"
 #include "MapMeshObject.h"
+#include "DecalVolume.h"
 #include "Resources.h"
 
 NS_USING(Client)
@@ -177,6 +178,69 @@ namespace
 		}
 	}
 }
+	void DrawDecalVolumeInspector(E::CDecalVolume& decal)
+	{
+		const std::string currentGroup = SafeDbgStr(decal.GetMaskTextureGroup());
+		const std::string currentTag = SafeDbgStr(decal.GetMaskTextureTag());
+		const std::string preview = currentGroup + " / " + currentTag;
+
+		if (ImGui::BeginCombo("Mask Texture", preview.c_str()))
+		{
+			for (const auto& [groupId, resources] : E::CGameInstance::Get().GetResources())
+			{
+				if (groupId.hash != E::StringID{ E::TAG_RES_GRP_MAP_DECAL_TEXTURE }.hash)
+					continue;
+
+				for (const auto& [resourceId, resourceList] : resources)
+				{
+					const bool hasTexture = std::any_of(resourceList.begin(), resourceList.end(),
+						[](const E::SPtr<E::CResource>& resource)
+						{
+							return resource && resource->IsA(E::CResTexture2D::StaticType);
+						});
+					if (!hasTexture)
+						continue;
+
+					const std::string groupName = SafeDbgStr(groupId);
+					const std::string resourceName = SafeDbgStr(resourceId);
+					const bool selected = groupId.hash == decal.GetMaskTextureGroup().hash
+						&& resourceId.hash == decal.GetMaskTextureTag().hash;
+					const std::string label = groupName + " / " + resourceName;
+					if (ImGui::Selectable(label.c_str(), selected))
+						decal.SetMaskTexture(groupId, resourceId);
+					if (selected)
+						ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::TextWrapped("Path: %s", decal.GetMaskTexturePath().c_str());
+
+		E::_float4 albedo = decal.GetAlbedoColor();
+		if (ImGui::ColorEdit4("Albedo", reinterpret_cast<float*>(&albedo)))
+			decal.SetAlbedoColor(albedo);
+
+		E::_float3 emissive = decal.GetEmissiveColor();
+		if (ImGui::ColorEdit3("Emissive", reinterpret_cast<float*>(&emissive)))
+			decal.SetEmissiveColor(emissive);
+
+		float emissiveIntensity = decal.GetEmissiveIntensity();
+		if (ImGui::DragFloat("Emissive Intensity", &emissiveIntensity, 0.1f, 0.f, 100.f))
+			decal.SetEmissiveIntensity(emissiveIntensity);
+
+		float opacity = decal.GetOpacity();
+		if (ImGui::SliderFloat("Opacity", &opacity, 0.f, 1.f))
+			decal.SetOpacity(opacity);
+
+		float normalThreshold = decal.GetNormalThreshold();
+		if (ImGui::SliderFloat("Normal Threshold", &normalThreshold, 0.f, 0.999f))
+			decal.SetNormalThreshold(normalThreshold);
+
+		float edgeSoftness = decal.GetEdgeSoftness();
+		if (ImGui::SliderFloat("Edge Softness", &edgeSoftness, 0.001f, 0.49f))
+			decal.SetEdgeSoftness(edgeSoftness);
+	}
+
 
 CInspector::CInspector()
 {
@@ -217,6 +281,14 @@ void CInspector::UpdateGUI(E::_float fTimeDelta)
 		if (ImGui::CollapsingHeader("MapMeshObject", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			DrawMapMeshObjectInspector(*pMapMeshObject);
+		}
+	}
+
+	if (auto* decal = E::CGameInstance::Get().GetGameObjectByHandleT<E::CDecalVolume>(*pSelectedHandle))
+	{
+		if (ImGui::CollapsingHeader("Decal Volume", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			DrawDecalVolumeInspector(*decal);
 		}
 	}
 

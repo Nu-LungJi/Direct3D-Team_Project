@@ -55,6 +55,7 @@ private:		// Render Setting
 	HRESULT		Render_Shadow();
 	HRESULT		Render_DepthMap();
 	HRESULT		Render_NonAlpha();
+	HRESULT		Render_Decal();
 	HRESULT		Render_HBAO();
 	HRESULT		Render_Lighting();
 	HRESULT		Render_Alpha();

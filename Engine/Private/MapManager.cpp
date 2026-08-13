@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "MapManager.h"
 #include "MapMeshObject.h"
+#include "DecalVolume.h"
+#include "ResTexture2D.h"
 #include <fstream>
 #include <filesystem>
 
@@ -202,6 +204,110 @@ namespace
 		/*---------------------------------*/
 
 		return hObject;
+	}
+
+	_float4 ReadFloat4(const nlohmann::ordered_json& objectJson, const char* key, const _float4& fallback)
+	{
+		if (!objectJson.contains(key) || !objectJson[key].is_array() || objectJson[key].size() < 4)
+			return fallback;
+		const auto& value = objectJson[key];
+		return { value[0], value[1], value[2], value[3] };
+	}
+
+	_float3 ReadFloat3(const nlohmann::ordered_json& objectJson, const char* key, const _float3& fallback)
+	{
+		if (!objectJson.contains(key) || !objectJson[key].is_array() || objectJson[key].size() < 3)
+			return fallback;
+		const auto& value = objectJson[key];
+		return { value[0], value[1], value[2] };
+	}
+
+	nlohmann::ordered_json MakeDecalJson(CDecalVolume* decal, const std::string& layerName)
+	{
+		const auto& transform = decal->GetTransform();
+		const auto position = transform.GetPosition();
+		const auto rotation = transform.GetQuaternion();
+		const auto scale = transform.GetScale();
+		const auto albedo = decal->GetAlbedoColor();
+		const auto emissive = decal->GetEmissiveColor();
+
+		return nlohmann::ordered_json
+		{
+			{ "type", "DecalVolume" },
+			{ "objectTag", std::string(decal->GetObjectTag()) },
+			{ "protoGroup", "PERMANENT" },
+			{ "prototype", "Prototype_GameObject_DecalVolume" },
+			{ "layer", layerName },
+			{ "position", { position.x, position.y, position.z } },
+			{ "rotation", { rotation.x, rotation.y, rotation.z, rotation.w } },
+			{ "scale", { scale.x, scale.y, scale.z } },
+			{ "albedo", { albedo.x, albedo.y, albedo.z, albedo.w } },
+			{ "emissive", { emissive.x, emissive.y, emissive.z } },
+			{ "emissiveIntensity", decal->GetEmissiveIntensity() },
+			{ "opacity", decal->GetOpacity() },
+			{ "normalThreshold", decal->GetNormalThreshold() },
+			{ "edgeSoftness", decal->GetEdgeSoftness() },
+			{ "textureGroup", std::string(decal->GetMaskTextureGroup().GetDbgStr()) },
+			{ "textureTag", std::string(decal->GetMaskTextureTag().GetDbgStr()) },
+			{ "texturePath", decal->GetMaskTexturePath() }
+		};
+	}
+
+	std::optional<CHandle> CreateDecalFromJson(const nlohmann::ordered_json& objectJson)
+	{
+		if (!objectJson.is_object() || objectJson.value("type", std::string{}) != "DecalVolume")
+			return std::nullopt;
+
+		const std::string textureGroup = objectJson.value(
+			"textureGroup", std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE));
+		const std::string textureTag = objectJson.value("textureTag", std::string{});
+		const std::string texturePath = objectJson.value("texturePath", std::string{});
+		if (textureTag.empty())
+			return std::nullopt;
+
+		auto& gameInstance = CGameInstance::Get();
+		if (!gameInstance.GetResourceFirst<CResTexture2D>(textureGroup, textureTag))
+		{
+			if (texturePath.empty())
+				return std::nullopt;
+			auto texture = gameInstance.AddResourceT<CResTexture2D>(
+				textureGroup, textureTag, CResTexture2D::Create(texturePath));
+			if (!texture || FAILED(texture->Load()))
+				return std::nullopt;
+		}
+
+		CDecalVolume::DECAL_VOLUME_DESC desc{};
+		desc.sObjectTag = objectJson.value("objectTag", std::string("MapDecal"));
+		desc.vAlbedoColor = ReadFloat4(objectJson, "albedo", desc.vAlbedoColor);
+		desc.vEmissiveColor = ReadFloat3(objectJson, "emissive", desc.vEmissiveColor);
+		desc.fEmissiveIntensity = objectJson.value("emissiveIntensity", desc.fEmissiveIntensity);
+		desc.fOpacity = objectJson.value("opacity", desc.fOpacity);
+		desc.fNormalThreshold = objectJson.value("normalThreshold", desc.fNormalThreshold);
+		desc.fEdgeSoftness = objectJson.value("edgeSoftness", desc.fEdgeSoftness);
+		desc.sTextureGroup = textureGroup;
+		desc.sMaskTextureTag = textureTag;
+
+		auto handle = gameInstance.AddGameObjectToLayer(
+			objectJson.value("protoGroup", std::string("PERMANENT")),
+			objectJson.value("prototype", std::string("Prototype_GameObject_DecalVolume")),
+			MAPDECALOBJECTLAYER,
+			&desc);
+		if (!handle)
+			return std::nullopt;
+
+		auto* decal = gameInstance.GetGameObjectByHandleT<CDecalVolume>(*handle);
+		if (!decal)
+			return std::nullopt;
+
+		const auto position = ReadFloat3(objectJson, "position", {});
+		const auto rotation = ReadFloat4(objectJson, "rotation", { 0.f, 0.f, 0.f, 1.f });
+		const auto scale = ReadFloat3(objectJson, "scale", { 10.f, 2.f, 10.f });
+		auto& transform = decal->GetTransform();
+		transform.SetPosition(position);
+		transform.SetQuaternion(rotation);
+		transform.SetScale(scale);
+		transform.Update();
+		return handle;
 	}
 
 }
@@ -723,6 +829,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 	rootJson["chunkSize"] = { m_vChunkSize.x, m_vChunkSize.y, m_vChunkSize.z };
 	rootJson["chunks"] = nlohmann::ordered_json::array();
 	rootJson["objects"] = nlohmann::ordered_json::array();
+	rootJson["decals"] = nlohmann::ordered_json::array();
 
 	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
 
@@ -768,6 +875,12 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 
 		for(const auto& objectHandle : objects)
 		{
+			if (auto* decal = CGameInstance::Get().GetGameObjectByHandleT<CDecalVolume>(objectHandle))
+			{
+				rootJson["decals"].push_back(MakeDecalJson(decal, pair.first));
+				continue;
+			}
+
 			CMapMeshObject* pMeshObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
 			
 			if (pMeshObj == nullptr)
@@ -805,6 +918,7 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 		m_MapGeneration.fetch_add(1, std::memory_order_acq_rel);
 		CGameInstance::Get().DelGameObjectLayer(E::MAPMESHOBJECTLAYER);
 		QueueAllChunkModelReleases();
+		CGameInstance::Get().DelGameObjectLayer(E::MAPDECALOBJECTLAYER);
 		m_Chunks.clear();
 	}
 
@@ -1012,6 +1126,16 @@ HRESULT CMapManager::LoadMapData(const std::string& path)
 	m_MapGeneration.fetch_add(1, std::memory_order_acq_rel);
 	QueueAllChunkModelReleases();
 	m_Chunks.clear();
+	CGameInstance::Get().DelGameObjectLayer(E::MAPDECALOBJECTLAYER);
+	if (rootJson.contains("decals") && rootJson["decals"].is_array())
+	{
+		for (const auto& decalJson : rootJson["decals"])
+		{
+			if (!CreateDecalFromJson(decalJson))
+				return E_FAIL;
+		}
+	}
+
 
 	if (rootJson.contains("chunkSize"))
 	{
