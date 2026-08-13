@@ -328,6 +328,9 @@
     <Filter Include="GameObject\Monster\EnderDragon\Skill\RandomBall">
       <UniqueIdentifier>{e1391e4d-8475-4d6d-b876-e945739bb89d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\GameObject">
+      <UniqueIdentifier>{9a45fcfc-7add-40b1-8b4a-34c6753d1cfa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -1239,6 +1242,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Texture.hlsl">
       <Filter>ShaderFiles\Particle</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Shader_EnderDragon.hlsl">
+      <Filter>ShaderFiles\GameObject</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

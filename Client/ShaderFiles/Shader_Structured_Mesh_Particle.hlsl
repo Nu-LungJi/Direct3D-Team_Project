@@ -106,16 +106,13 @@ PS_OUT PSMain(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
 
-	float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord) * float4(AlbedoColor, ObjectAlpha) * In.vColor;
-	if (AlbedoTex.a < 0.05f)
-		discard;
-	float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
-    
-	float ratio = 1.0f - (In.life / In.maxLife);
+	float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord);
+	AlbedoTex *= In.vColor;
 
-	if (noise.r < ratio) 
-		discard;
-	float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
+	clip(AlbedoTex.a - 0.05f);
+
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float3 Albedo = pow(max(AlbedoTex.rgb, 0.f), 2.2f);
 
 	float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
 	WorldNormal = normalize(WorldNormal * NormalIntensity);
@@ -129,52 +126,120 @@ PS_OUT PSMain(VS_OUT In)
 	float fAmbient = SMRO.b * AmbientIntensity;
 
 	float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
-
 	float3 LightAccumulation = float3(0.f, 0.f, 0.f);
 
     [unroll(MAX_LIGHT_COUNT)]
 	for (int i = 0; i < LightCount; ++i)
 	{
-		float3 L, Radiance;
+		float3 L;
+		float3 Radiance;
 
-        [branch]
 		if (!Compute_DynamicLight(AffectedLight[i], In.vWorldPos, L, Radiance))
 			continue;
 
 		float RawNDL = dot(WorldNormal, L);
 
-        [branch]
-		if (RawNDL > 0.f)
-		{
-			float NDL = clamp(RawNDL, 0.f, 1.f);
+		if (RawNDL <= 0.f)
+			continue;
 
-			float3 H = normalize(V + L);
-			float D = DistributionGGX(WorldNormal, H, fRoughness);
-			float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
-			float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
+		float NDL = saturate(RawNDL);
+		float3 H = normalize(V + L);
 
-			float3 Specular = D * F * V_Spec * SpecularIntensity;
+		float D = DistributionGGX(WorldNormal, H, fRoughness);
+		float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
+		float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
 
-			float3 kS = F;
-			float3 kD = (1.0 - kS) * (1.0 - fMetallic);
-			float3 Diffuse = kD * Albedo / PI;
+		float3 Specular = D * F * V_Spec * SpecularIntensity;
+		float3 kS = F;
+		float3 kD = (1.f - kS) * (1.f - fMetallic);
+		float3 Diffuse = kD * Albedo / PI;
 
-			LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
-		}
+		LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
 	}
 
-    // 인스턴스(파티클)별 이미시브 + 오브젝트 이미시브 텍스처 둘 다 반영
-	float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb + EmissiveColor * EmissiveIntensity;
-	texEmissive = pow(texEmissive, 2.2f);
-	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, saturate(ratio * 1.5f));
-	float3 instEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
+	float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb;
+	texEmissive = pow(max(texEmissive, 0.f), 2.2f);
 
-	float3 ConstantAmbient = Albedo * 0.05f * fAmbient;
-	float3 FinalColor = ConstantAmbient + LightAccumulation + texEmissive + instEmissive;
-	
-	Out.vDiffuse = float4(FinalColor, AlbedoTex.a);
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	float3 instanceEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
+
+	float3 constantAmbient = Albedo * 1.f * fAmbient;
+	float3 finalColor = constantAmbient + LightAccumulation + texEmissive + instanceEmissive;
+
+	Out.vDiffuse = float4(finalColor, AlbedoTex.a);
+
 	return Out;
 }
+
+PS_OUT PSMain_Stone(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord);
+	AlbedoTex *= In.vColor;
+
+	clip(AlbedoTex.a - 0.05f);
+
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float3 Albedo = pow(max(AlbedoTex.rgb, 0.f), 2.2f);
+
+	float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
+	WorldNormal = normalize(WorldNormal * NormalIntensity);
+
+	float3 V = normalize(g_vCamPos - In.vWorldPos);
+	float NDV = max(dot(WorldNormal, V), 0.f);
+
+	float3 SMRO = SMROMap.Sample(LinearWrap, In.vTexcoord).rgb;
+	float fMetallic = SMRO.r * MetallicIntensity;
+	float fRoughness = SMRO.g * RoughnessIntensity;
+	float fAmbient = SMRO.b * AmbientIntensity;
+
+	float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
+	float3 LightAccumulation = float3(0.f, 0.f, 0.f);
+
+    [unroll(MAX_LIGHT_COUNT)]
+	for (int i = 0; i < LightCount; ++i)
+	{
+		float3 L;
+		float3 Radiance;
+
+		if (!Compute_DynamicLight(AffectedLight[i], In.vWorldPos, L, Radiance))
+			continue;
+
+		float RawNDL = dot(WorldNormal, L);
+
+		if (RawNDL <= 0.f)
+			continue;
+
+		float NDL = saturate(RawNDL);
+		float3 H = normalize(V + L);
+
+		float D = DistributionGGX(WorldNormal, H, fRoughness);
+		float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
+		float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
+
+		float3 Specular = D * F * V_Spec * SpecularIntensity;
+		float3 kS = F;
+		float3 kD = (1.f - kS) * (1.f - fMetallic);
+		float3 Diffuse = kD * Albedo / PI;
+
+		LightAccumulation += (Diffuse + Specular) * Radiance * NDL;
+	}
+
+	float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb;
+	texEmissive = pow(max(texEmissive, 0.f), 2.2f);
+
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	float3 instanceEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
+
+	float3 constantAmbient = Albedo * 1.f * fAmbient;
+	float3 finalColor = constantAmbient + LightAccumulation + texEmissive + instanceEmissive;
+
+	Out.vDiffuse = float4(finalColor, AlbedoTex.a);
+
+	return Out;
+}
+
 PS_OUT PSMaceSphere(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
@@ -219,6 +284,42 @@ PS_OUT PSMaceSphere(VS_OUT In)
 	float3 finalColor = baseColor * In.vColor.rgb + instEmissive * emissiveMask;
 
 	Out.vDiffuse = float4(finalColor, 1.0f);
+	return Out;
+}
+
+PS_OUT PSMarble(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT)0;
+
+	float lifeRatio = saturate(1.f - In.life / max(In.maxLife, 0.0001f));
+
+	float2 crackUV = In.vTexcoord;
+	crackUV.y += g_fTime * 0.1f;
+	float crackSource = AnyTextureMap.Sample(LinearWrap, crackUV).g;
+	float crackMask = pow(saturate(crackSource), 2.f);
+
+	float2 noiseUV1 = In.vTexcoord * 1.2f + float2(g_fTime * 0.03f, -g_fTime * 0.07f);
+	float2 noiseUV2 = In.vTexcoord * 2.3f + float2(-g_fTime * 0.05f, g_fTime * 0.04f);
+	float noise1 = NoiseMap.Sample(LinearWrap, noiseUV1).r;
+	float noise2 = NoiseMap.Sample(LinearWrap, noiseUV2).g;
+	float dissolveNoise = saturate(noise1 * 0.65f + noise2 * 0.35f);
+
+	float dissolveAmount = smoothstep(0.55f, 1.f, lifeRatio);
+	float dissolveDistance = dissolveNoise - dissolveAmount;
+	clip(dissolveDistance);
+
+	float dissolveEdge = 1.f - smoothstep(0.f, 0.08f, dissolveDistance);
+	float dissolveActive = smoothstep(0.01f, 0.08f, dissolveAmount);
+	dissolveEdge *= dissolveActive;
+
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, lifeRatio);
+	float3 baseColor = In.vColor.rgb;
+	float3 crackEmissive = crackMask * lerpedEmissive.rgb * lerpedEmissive.a;
+	float3 dissolveEmissive = lerp(lerpedEmissive.rgb, float3(1.f, 0.35f, 0.15f), 0.45f) * lerpedEmissive.a * dissolveEdge * 2.f;
+	float3 finalColor = baseColor + crackEmissive + dissolveEmissive;
+	float endFade = 1.f - smoothstep(0.96f, 1.f, lifeRatio);
+
+	Out.vDiffuse = float4(finalColor, In.vColor.a * endFade);
 	return Out;
 }
 

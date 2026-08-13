@@ -154,7 +154,7 @@ private:
 	_bool								m_bActivate_State			= { true };
 	_bool								m_bCastShadow				= { true };
 	_bool								m_bHadDynamicShadowCaster	= { false };
-	_bool								m_bVolumetricScattering		= { true };
+	_bool								m_bVolumetricScattering		= { false };
 
 	_bool								m_bEffectLightFlag			= { false };
 	// LSY 변경: 별칭은 식별 편의용이며, 배치 그룹은 런타임 로더 단위 정리에 사용한다.

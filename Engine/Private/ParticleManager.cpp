@@ -113,7 +113,7 @@ void CParticleManager::UpdateGUI()
 	static _bool bSmokegw = false;
 	static _bool bLightning = false;
 	static _bool bSizeStop = false;
-	static _bool bExtraLightning = false;
+	static _bool bEnergySphere = false;
 	static _bool bKeepRotate = false;
 
 	static _bool alphaBlend = false;
@@ -1064,7 +1064,7 @@ void CParticleManager::UpdateGUI()
 	ImGui::Separator();
 	ImGui::Checkbox("LIGHTNING", &bLightning);
 	ImGui::SameLine();
-	ImGui::Checkbox("EXTRALIGHTNING", &bExtraLightning);
+	ImGui::Checkbox("EnergySphere", &bEnergySphere);
 	ImGui::Separator();
 
 	ImGui::Checkbox("None", &none);
@@ -1102,7 +1102,7 @@ void CParticleManager::UpdateGUI()
 	}
 	
 	if (none) {
-		bKeepRotate = bExtraLightning = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+		bKeepRotate = bEnergySphere = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	}
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
 
@@ -1132,8 +1132,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
 	if (bLightning)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
-	if (bExtraLightning)
-		previewParams.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
+	if (bEnergySphere)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_ENERGYSPHERE;
 	ImGui::Separator();
 
 	ImGui::Checkbox("RandomPos?", &previewParams.bRandomPos);
@@ -1388,14 +1388,14 @@ void CParticleManager::UpdateGUI()
 		ImGui::Separator();
 		ImGui::Checkbox("LIGHTNING", &bLightning);
 		ImGui::SameLine();
-		ImGui::Checkbox("EXTRALIGHTNING", &bExtraLightning);
+		ImGui::Checkbox("ENERGYSPHERE", &bEnergySphere);
 		ImGui::Separator();
 		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
 		ImGui::Separator();
 		ImGui::Checkbox("None", &none);
 
 		if (none)
-			bKeepRotate = bExtraLightning= bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+			bKeepRotate = bEnergySphere = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
 		pendingStandard.bKeepRotate = bKeepRotate;
@@ -1423,8 +1423,8 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
 		if (bSizeStop)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
-		if (bExtraLightning)
-			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
+		if (bEnergySphere)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_ENERGYSPHERE;
 		if (bKeepRotate) 
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_KEEPROTATE;
 		
@@ -3555,6 +3555,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeLightning(param);
 			else if constexpr (std::is_same_v<T, SConeParam>)
 				return ParticlePattern::MakeCone(param);
+			else if constexpr (std::is_same_v<T, SEnergySphere>)
+				return ParticlePattern::MakeEnergySphere(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
@@ -3627,6 +3629,10 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
 			else if constexpr (std::is_same_v<T, SConeParam>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SEnergySphere>)
 			{
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}

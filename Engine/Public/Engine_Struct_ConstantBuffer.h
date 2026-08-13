@@ -38,8 +38,8 @@ namespace Engine
 		_float   DissolveIntensity;
 
 		_float	 ObjectAlpha;
-
-		_float3  ObjectPadding;
+		_float	 RoughnessIntensity;
+		_float2  ObjectPadding;
 
 	} CB_MATERIAL;
 	static_assert(sizeof(CB_MATERIAL) % 16 == 0);

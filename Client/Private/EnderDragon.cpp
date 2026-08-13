@@ -152,6 +152,13 @@ void CEnderDragon::UpdateGUI()
 HRESULT CEnderDragon::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
+	/*----------- 광윤 추가 -----------*/
+	if (m_pResDragonPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_EnderDragon", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
+		if (FAILED(m_pResDragonPixelShader->Load()))    return E_FAIL;
+	}
+	if (!(m_pResDragonCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_GPU_SKIN_MESH")))	return E_FAIL;
+	// 드래곤 날개, 눈 마스크 텍스쳐 적용 테스트 중
+	/*---------------------------------*/
 	return S_OK;
 }
 
@@ -433,8 +440,98 @@ void CEnderDragon::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 
 }
+/*----------- 광윤 추가 -----------*/
+// 마스크 텍스쳐 테스트 중
+HRESULT	CEnderDragon::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) {
+	__super::Render_Instanced(pContext, ctx, Batch);
+	return S_OK;
 
+	{
+		if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResDragonPixelShader)	return E_FAIL;
 
+		pContext->IASetInputLayout(m_pResVertexCPUSkinningInstancedShader->GetInputLayout().Get());
+		pContext->VSSetShader(m_pResVertexCPUSkinningInstancedShader->GetVertexShader().Get(), nullptr, 0);
+		pContext->PSSetShader(m_pResDragonPixelShader->GetPixelShader().Get(), nullptr, 0);
+
+		const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
+		if (iInstanceCount == 0 || iInstanceCount > 512 || Batch.CombinedBoneMatrices.size() != iInstanceCount)	return E_FAIL;
+
+		if (FAILED(Update_InstanceBuffer(pContext, Batch.Instances)))	return E_FAIL;
+
+		auto pModel = CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup, Batch.Key.modelTag);
+		auto pCPUBonePaletteBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_CPU_BONEMATRIX");
+		if (!pModel || !pCPUBonePaletteBuffer)	return E_FAIL;
+
+		_float4x4 identity{};
+		XMStoreFloat4x4(&identity, XMMatrixIdentity());
+		std::vector<_float4x4> combinedPalette(iInstanceCount * 512, identity);
+		for (uint32_t instanceIndex = 0; instanceIndex < iInstanceCount; ++instanceIndex)
+		{
+			const auto& combinedMatrices = Batch.CombinedBoneMatrices[instanceIndex];
+			if (combinedMatrices.empty() || combinedMatrices.size() > 512)	return E_FAIL;
+
+			for (uint32_t boneIndex = 0; boneIndex < static_cast<uint32_t>(combinedMatrices.size()); ++boneIndex)
+			{
+				XMStoreFloat4x4(
+					&combinedPalette[instanceIndex * 512 + boneIndex],
+					XMMatrixTranspose(
+						XMLoadFloat4x4(&combinedMatrices[boneIndex])));
+			}
+		}
+
+		// CPU가 계산한 CombinedBone palette는 batch당 한 번만 갱신한다.
+		ID3D11ShaderResourceView* nullPaletteSRV = nullptr;
+		pContext->VSSetShaderResources(7, 1, &nullPaletteSRV);
+		if (FAILED(pCPUBonePaletteBuffer->UpdateData(combinedPalette.data(), static_cast<uint32_t>(combinedPalette.size() * sizeof(_float4x4))))) return E_FAIL;
+
+		if (FAILED(Bind_InstanceBuffer(pContext))) return E_FAIL;
+
+		ID3D11ShaderResourceView* cpuBonePaletteSRV = pCPUBonePaletteBuffer->GetSRV().Get();
+		if (!cpuBonePaletteSRV) return E_FAIL;
+
+		ID3D11ShaderResourceView* skinBonesSRV = pModel->Get_GPUSkinBoneSRV();
+		if (!skinBonesSRV) return E_FAIL;
+
+		pContext->VSSetShaderResources(7, 1, &cpuBonePaletteSRV);
+		pContext->VSSetShaderResources(8, 1, &skinBonesSRV);
+
+		for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
+		{
+			const auto& mesh = pModel->GetMeshes()[iMeshIndex];
+			if (!mesh) continue;
+
+			const auto& skinRange = pModel->Get_GPUMeshSkinRange(iMeshIndex);
+			if (skinRange.iSkinBoneCount == 0) return E_FAIL;
+
+			E::GPU_SKIN_MESH_CONSTANTS skinningConstants{};
+			skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
+			skinningConstants.iVertexCount = mesh->GetNumVertices();
+			skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+			D3D11_MAPPED_SUBRESOURCE mapped{};
+			if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+				return E_FAIL;
+			memcpy(mapped.pData, &skinningConstants, sizeof(skinningConstants));
+			pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
+			ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
+			pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+			ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
+			const UINT stride = mesh->GetVertexStride();
+			const UINT offset = 0;
+			pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+			pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+			pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+			m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
+			m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
+			pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
+		}
+
+		ID3D11ShaderResourceView* nullVSSRVs[3]{};
+		pContext->VSSetShaderResources(6, 3, nullVSSRVs);
+
+	}
+	return S_OK;
+}
+/*---------------------------------*/
 void CEnderDragon::Set_StateFinished(_bool bFinished)
 {
 	//스테이트가 완료된 판정에 대해서 다시 초기회

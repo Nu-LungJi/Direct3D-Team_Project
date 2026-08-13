@@ -3,8 +3,7 @@ const static float PI = 3.14159265359f;
 
 const static float3 AlbedoColor = { 1.f, 1.f, 1.f };
 
-const static float NormalIntensity = 1.f;
-const static float RoughnessIntensity = 1.f;
+const static float NormalIntensity		= 1.f;
 const static float MetallicIntensity = 1.f;
 const static float AmbientIntensity = 1.f;
 const static float SpecularIntensity = 1.f;
@@ -144,8 +143,9 @@ cbuffer CB_MATERIAL : register(b3)
     float   DissolveIntensity;
     
     float   ObjectAlpha;
-    
-    float3  MaterialPadding;
+	float	RoughnessIntensity;
+
+    float2  MaterialPadding;
 }
 
 cbuffer CB_LIGHT_BUFFER : register(b4) 

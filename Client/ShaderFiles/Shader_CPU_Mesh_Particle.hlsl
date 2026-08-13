@@ -507,7 +507,6 @@ PS_OUT PSOuterSphere(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
 
-
 	float lifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
 	float4 emissive = lerp(In.vEmissive, In.vEndEmissive, lifeRatio);
 
@@ -518,32 +517,100 @@ PS_OUT PSOuterSphere(VS_OUT In)
 	float3 diffuseTex = diffuseTex1 * 0.65f + diffuseTex2 * 0.35f;
 	float diffuseMask = dot(diffuseTex, float3(0.299f, 0.587f, 0.114f));
 
-	float3 geometryNormal = normalize(In.vNormal);
-	float3 viewDirection = normalize(g_vCamPos - In.vWorldPos);
-	float NdotV = saturate(dot(geometryNormal, viewDirection));
+	float flowMask = smoothstep(0.18f, 0.7f, diffuseMask);
+	float hotFlowMask = smoothstep(0.58f, 0.9f, diffuseMask);
+
+	float3 N = normalize(In.vNormal);
+	float3 V = normalize(g_vCamPos - In.vWorldPos);
+	float NdotV = saturate(dot(N, V));
 	float rim = 1.f - NdotV;
 
-	float redHaloMask = smoothstep(0.15f, 0.82f, rim);
-	float outerLineMask = smoothstep(0.6f, 0.96f, rim);
-	float whiteCoreMask = smoothstep(0.96f, 0.99f, rim);
+	float rimGlowMask = pow(rim, 4.f);
+	float rimLineMask = pow(rim, 9.f);
+	float whiteLineMask = pow(rim, 10.f);
 
-	
-	
-	float textureMask = smoothstep(0.15f, 0.8f, diffuseMask);
-	float3 bodyColor = In.vColor.rgb * lerp(0.15f, 0.8f, textureMask);
-	float bodyAlpha = In.vColor.a * lerp(0.35f, 1.f, textureMask);
-	
-	
-	float3 redHaloColor = In.vColor.rgb * redHaloMask * 0.8f;
-	float3 outerLineColor = emissive.rgb * emissive.a * outerLineMask * 1.2f;
-	float3 whiteCoreColor = lerp(emissive.rgb, float3(1.f, 0.95f, 0.9f), 0.8f) * emissive.a * whiteCoreMask * 2.f;
-	float3 finalColor = bodyColor + redHaloColor + outerLineColor + whiteCoreColor;
+	float3 bodyColor = In.vColor.rgb * (0.015f + flowMask * 0.18f);
+	float3 flowColor = In.vColor.rgb * flowMask * 0.25f;
+	float3 flowEmissive = emissive.rgb * emissive.a * hotFlowMask * NdotV * 0.12f;
+	float3 rimGlowColor = In.vColor.rgb * rimGlowMask * 0.7f;
+	float3 rimLineColor = lerp(emissive.rgb, float3(1.f, 0.35f, 0.25f), 0.6f) * emissive.a * rimLineMask * 0.8f;
+	float3 whiteLineColor = float3(1.f, 0.92f, 0.86f) * emissive.a * whiteLineMask * 1.5f;
+	float3 finalColor = bodyColor + flowColor + flowEmissive + rimGlowColor + rimLineColor + whiteLineColor;
 
-	float redHaloAlpha = redHaloMask * 0.18f;
-	float outerLineAlpha = outerLineMask * 0.65f;
-	float whiteCoreAlpha = whiteCoreMask * 0.35f;
-	float finalAlpha = saturate(bodyAlpha + redHaloAlpha + outerLineAlpha + whiteCoreAlpha);
+	float bodyAlpha = In.vColor.a * (0.08f + flowMask * 0.35f);
+	float flowAlpha = hotFlowMask * 0.04f;
+	float rimGlowAlpha = rimGlowMask * 0.08f;
+	float rimLineAlpha = rimLineMask * 0.45f;
+	float whiteLineAlpha = whiteLineMask * 0.45f;
+	float finalAlpha = saturate(bodyAlpha + flowAlpha + rimGlowAlpha + rimLineAlpha + whiteLineAlpha);
 
 	Out.vDiffuse = float4(finalColor, finalAlpha);
+	return Out;
+}
+
+PS_OUT PSColorEmissive(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float lifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float4 emissive = lerp(In.vEmissive, In.vEndEmissive, lifeRatio);
+	
+	float3 color = In.vColor.rgb + emissive.rgb * emissive.a;
+	Out.vDiffuse = float4(color, In.vColor.a);
+	return Out;
+}
+
+PS_OUT PSMarbleNoScroll(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+    // 크랙 마스크 샘플링 (마블 텍스처: 검은 배경 + 흰 균열선)
+	
+	float2 uv = In.vTexcoord;
+
+	float crackMask = AnyTextureMap.Sample(LinearWrap, uv).g;
+	crackMask = saturate(pow(crackMask, 2.0f));
+	
+	float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
+
+	float ratio = (In.life / In.maxLife);
+
+	if (noise.r < ratio) 
+		discard;
+	
+    // 베이스는 인스턴스 컬러 그대로
+	float3 baseColor = In.vColor.rgb;
+
+    // 마스크 있는 부분만 In.vEmissive 색으로 발광 (알파를 강도로 사용)
+	float3 emissive = crackMask * In.vEmissive.rgb * In.vEmissive.a;
+
+	float3 finalColor = baseColor + emissive;
+
+	Out.vDiffuse = float4(finalColor, In.vColor.a);
+	return Out;
+}
+
+PS_OUT PSRanrok_Sphere(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float3	ViewDirection = normalize(g_vCamPos.xyz - In.vWorldPos);
+	float3	WorldNormal = normalize(In.vNormal);
+	float	Fresnel = pow(1.f - saturate(dot(WorldNormal, ViewDirection)), 3.f);
+	
+	float2	NoiseUV = In.vTexcoord * 1.5f + In.life * float2(0.03f, 0.01f);
+	float	Noise = NoiseMap.Sample(LinearWrap, NoiseUV).r;
+
+	float	LifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float4	Emissive = lerp(In.vEmissive, In.vEndEmissive, LifeRatio);
+	
+	float3	InnerColor = In.vColor.rgb;
+	float3	RimColor = float3(1.f, 0.015f, 0.005f);
+	float3	SphereColor = lerp(InnerColor, RimColor, Fresnel);
+	float	EmissiveStrength = Emissive.a * lerp(0.7f, 1.5f, Fresnel) * lerp(0.65f, 1.f, Noise);
+	
+	float3	FinalColor = SphereColor + Emissive.rgb * EmissiveStrength;
+	float Opacity = In.vColor.a * (1.f - Noise);
+	Out.vDiffuse = float4(FinalColor, Opacity);
 	return Out;
 }

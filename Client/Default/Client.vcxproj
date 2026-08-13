@@ -494,6 +494,9 @@
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Mesh.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Texture.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Shader_EnderDragon.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_SkyCloudy.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl" />
