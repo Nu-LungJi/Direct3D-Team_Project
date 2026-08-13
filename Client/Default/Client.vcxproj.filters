@@ -349,6 +349,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State">
       <UniqueIdentifier>{c2bc7a83-85f7-4724-8bc3-b2011caf5be4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State">
+      <UniqueIdentifier>{e8c271b5-81f6-4fe9-9552-77c3802e87d2}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\Player_ConfringoController">
       <UniqueIdentifier>{6edd5ca2-a286-4ac1-b657-df90b1703e18}</UniqueIdentifier>
     </Filter>
@@ -807,6 +810,9 @@
     <ClInclude Include="..\Public\Player_ProtegoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_StupefySkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_ConfringoController.h">
       <Filter>GameObject\Player\Player_ConfringoController</Filter>
     </ClInclude>
@@ -1213,6 +1219,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_StupefySkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_ConfringoController.cpp">
       <Filter>GameObject\Player\Player_ConfringoController</Filter>

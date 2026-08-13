@@ -246,6 +246,7 @@ private:
 	_bool  m_bProtegoActive{ false };
 	_float m_fProtegoRemainTime{};
 	_float m_fParryCounterRemainTime{};
+	_bool  m_bStupefyCounterRequested{};
 	static constexpr _float PARRY_COUNTER_WINDOW = 1.0f;
 	EFFECT_INSTANCE_ID m_iProtegoShieldEffectID{ INVALID_EFFECT_INSTANCE_ID };
 	struct PROTEGO_HIT_EFFECT

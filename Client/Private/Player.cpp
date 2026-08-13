@@ -39,6 +39,7 @@
 #include "Player_ConfringoSkill_State.h"
 #include "Player_AvadaKedavraSkill_State.h"
 #include "Player_ProtegoSkill_State.h"
+#include "Player_StupefySkill_State.h"
 #include "Player_LumosSkill_State.h"
 #include "Player_RepairoSkill_State.h"
 #include "Monster.h"
@@ -426,6 +427,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		}
 		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::STUPEFY_SKILL,
+			CPlayer_StupefySkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::LUMOS_SKILL,
 			CPlayer_LumosSkill_State::Create()))
 		{
@@ -616,6 +623,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 	}
 	m_fParryCounterRemainTime = std::max(0.f, m_fParryCounterRemainTime - fTimeDelta);
+	if (m_fParryCounterRemainTime <= 0.f)
+		m_bStupefyCounterRequested = false;
 
 	// [LSY] 랙돌 전환 중에는 입력과 상태 머신이 새로운 이동 명령을 만들지 않게 한다.
 	if (m_pRagdollController)
@@ -815,6 +824,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		CGameInstance::Get().KeyDown(DIK_Q))
 	{
 		m_pStateMachine->RequestState(PLAYER_STATE::PROTEGO_SKILL);
+	}
+
+	// 프로테고가 실제 공격을 막은 뒤에도 Q를 유지하고 있을 때만
+	// 스투피파이 반격 애니메이션을 요청한다. 단순 방어 후 Q를 놓으면 방어만 종료된다.
+	if (m_pStateMachine &&
+		m_fParryCounterRemainTime > 0.f &&
+		!m_bStupefyCounterRequested &&
+		CGameInstance::Get().KeyPressing(DIK_Q))
+	{
+		m_bStupefyCounterRequested = true;
+		if (!m_pStateMachine->RequestState(PLAYER_STATE::STUPEFY_SKILL))
+			m_bStupefyCounterRequested = false;
 	}
 
 	if (m_pStateMachine &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
@@ -2218,9 +2239,12 @@ void CPlayer::ActivateProtego(_float fDuration)
 
 _bool CPlayer::ConsumeParryCounter(_float3& outAttackPosition)
 {
-	if (m_fParryCounterRemainTime <= 0.f)
+	// 패링 성공만으로는 소비하지 않는다. Q 유지로 스투피파이가 명시적으로
+	// 요청된 경우에만 Attack State가 카운터 애니메이션을 가져간다.
+	if (!m_bStupefyCounterRequested || m_fParryCounterRemainTime <= 0.f)
 		return false;
 
+	m_bStupefyCounterRequested = false;
 	m_fParryCounterRemainTime = 0.f;
 	outAttackPosition = m_vLastProtegoHitPosition;
 	return true;
