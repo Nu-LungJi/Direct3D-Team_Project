@@ -197,6 +197,8 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 				p.life = 0.f;
 				p.vPosition = p.originalPosition;
 				p.vVelocity = p.originalVelocity;
+				// [LSY] Fade가 적용된 Loop 파티클은 다음 주기 시작 시 원래 알파로 복원한다.
+				p.vColor.w = p.fStartAlpha;
 				p.fGravityVelocity = 0.f;
 				continue;
 			}
@@ -240,6 +242,16 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		
 		_matrix matScale = XMMatrixScaling(p.fSize.x, p.fSize.y, p.fSize.z);
 		_matrix matTrans = XMMatrixTranslation(p.vPosition.x, p.vPosition.y, p.vPosition.z);
+		_matrix matDirectionRotation = XMMatrixRotationRollPitchYaw(p.rotation.x, p.rotation.y, p.rotation.z);
+		_matrix matKeepRotation = XMMatrixIdentity();
+		_vector vRotationAxis = XMLoadFloat3(&p.roationAxis);
+		_float fAxisLengthSq = XMVectorGetX(XMVector3LengthSq(vRotationAxis));
+
+		if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0 && fAxisLengthSq > 0.000001f)
+		{
+			vRotationAxis = XMVector3Normalize(vRotationAxis);
+			matKeepRotation = XMMatrixRotationAxis(vRotationAxis, p.rotation.w);
+		}
 
 		_matrix matWorld;
 		if ((p.iBehaviorType & CParticle::BEHAVIOR_BILLBOARD) != 0 /*&& m_Desc.whatKind == MESHORTEXTURE::TEX*/)
@@ -262,23 +274,15 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			matBillboardRot.r[2] = camForward;
 			matBillboardRot.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
 
-			// 2. 파티클 자체의 회전 행렬 생성 (예: p.rotation이 Vector3(Pitch, Yaw, Roll)인 경우)
-			_matrix matParticleRot = XMMatrixRotationRollPitchYaw(p.rotation.x, p.rotation.y, p.rotation.z);
-
-			// 만약 p.rotation이 Quaternion(XMFLOAT4 / XMVECTOR)인 경우:
-			// _matrix matParticleRot = XMMatrixRotationQuaternion(XMLoadFloat4(&p.rotation));
-
-			// 3. 빌보드 회전과 파티클 오프셋 회전 결합
-			// (로컬 공간 회전 후 카메라 방향으로 정렬)
-			_matrix matFinalRot = matParticleRot * matBillboardRot;
+			// 로컬축 자전 후 파티클 방향을 적용하고 마지막으로 카메라를 향하게 한다.
+			_matrix matFinalRot = matKeepRotation * matDirectionRotation * matBillboardRot;
 
 			// 4. 최종 월드 행렬 계산
 			matWorld = matScale * matFinalRot * matTrans;
 		}
 		else
 		{
-			_matrix matRotation = XMMatrixRotationRollPitchYaw(p.rotation.x, p.rotation.y, p.rotation.z);
-			matWorld = matScale * matRotation * matTrans;
+			matWorld = matScale * matKeepRotation * matDirectionRotation * matTrans;
 		}
 
 		XMStoreFloat4x4(&inst.matWorld, matWorld);
@@ -424,13 +428,44 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_LIGHTNING) != 0) {
 		Lightning(p, fTimeDelta);
 	}
-	if ((p.iBehaviorType & CParticle::BEHAVIOR_EXTRALIGHTNING) != 0) {
-		ExtraLightning(p, fTimeDelta);
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_ENERGYSPHERE) != 0) {
+		EnergySphere(p, fTimeDelta);
 	}
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0) {
 		KeepRotate(p, fTimeDelta);
 	}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_FADEOUT_LATE) != 0) {
+		FadeOutLate(p);
+	}
+	else if ((p.iBehaviorType & CParticle::BEHAVIOR_FADEOUT) != 0) {
+		FadeOut(p);
+	}
 }
+
+void CParticle_CPU::FadeOut(PARTICLE_CPU_DATA& p)
+{
+	// [LSY] 최초 알파를 기준으로 전체 수명 동안 선형 감소시켜 수명 종료의 팝 현상을 줄인다.
+	const _float lifeRatio = std::clamp(
+		p.life / std::max(p.fMaxLife, 0.0001f), 0.f, 1.f);
+	p.vColor.w = std::lerp(p.fStartAlpha, 0.f, lifeRatio);
+}
+
+void CParticle_CPU::FadeOutLate(PARTICLE_CPU_DATA& p)
+{
+	// [LSY] 형상을 충분히 유지한 뒤 후반부만 부드럽게 사라지는 연출을 지원한다.
+	const _float fLifeRatio = std::clamp(
+		p.life / std::max(p.fMaxLife, 0.0001f), 0.f, 1.f);
+	constexpr _float fFadeStartRatio = 0.58f;
+	const _float fFadeRatio = std::clamp(
+		(fLifeRatio - fFadeStartRatio) /
+		(1.f - fFadeStartRatio),
+		0.f,
+		1.f);
+	const _float fSmoothFade =
+		fFadeRatio * fFadeRatio * (3.f - 2.f * fFadeRatio);
+	p.vColor.w = std::lerp(p.fStartAlpha, 0.f, fSmoothFade);
+}
+
 void CParticle_CPU::MakeSmoke(PARTICLE_CPU_DATA& p,_float fTimeDelta)
 {
 	_float fSpeed = 1.5f;
@@ -475,15 +510,7 @@ void CParticle_CPU::SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 
 void CParticle_CPU::KeepRotate(PARTICLE_CPU_DATA& p,_float fTimeDelta)
 {
-	const float deltaAngle = p.fRotationSpeed * fTimeDelta;
-
-	p.rotation.x += p.roationAxis.x * deltaAngle;
-
-	p.rotation.y += p.roationAxis.y * deltaAngle;
-
-	p.rotation.z += p.roationAxis.z * deltaAngle;
-
-	p.rotation.w += p.roationAxis.z * deltaAngle;
+	p.rotation.w = std::remainder(p.rotation.w + p.fRotationSpeed * fTimeDelta, XM_2PI);
 }
 
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
@@ -580,8 +607,18 @@ void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
 		}
 	}
 }
-void	CParticle_CPU::ExtraLightning(PARTICLE_CPU_DATA& p, _float fTimeDelta) {
-	
+
+void	CParticle_CPU::EnergySphere(PARTICLE_CPU_DATA& p, _float fTimeDelta) {
+	_float LifeTimeRatio = p.life / p.fMaxLife;
+
+	_float t = std::clamp(LifeTimeRatio, 0.f, 1.f);
+	_float EaseOut = 1.f - std::pow(1.f - t, 2.f);
+
+	_float ScaleX = std::lerp(p.fStartSize.x, p.fEndSize.x, EaseOut);
+	_float ScaleY = std::lerp(p.fStartSize.y, p.fEndSize.y, EaseOut);
+
+	_float ScaleZ = std::lerp(p.fStartSize.z, p.fEndSize.z, EaseOut);
+	p.fSize = _float3(ScaleX, ScaleY, ScaleZ);
 }
 
 HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData)
@@ -607,6 +644,8 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		m_Particles[i].fStartSize = src.fSize;
 		m_Particles[i].fEndSize = src.fEndSize;
 		m_Particles[i].vColor = src.color;
+		// [LSY] Fade 계산과 Loop 재시작에 사용할 생성 당시의 알파를 별도로 보존한다.
+		m_Particles[i].fStartAlpha = src.color.w;
 		m_Particles[i].originalEmissive = src.originalEmissive;
 		m_Particles[i].emissive = src.emissive;
 		m_Particles[i].endEmissive = src.endEmissive;
@@ -668,7 +707,11 @@ HRESULT CParticle_CPU::Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDE
 		return E_FAIL;
 
 	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
-	auto rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	const char* rasterizerTag = m_Desc.bNoCull
+		? TAG_RES_STATE_RS_SOLID_NOCULL
+		: TAG_RES_STATE_RS_SOLID_BACKCULL;
+	auto rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(
+		TAG_RES_GRP_PERMANENT_STATE, rasterizerTag);
 	pContext->RSSetState(rasterizer->GetRasterizerState().Get());
 
 	auto depthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH");
@@ -968,6 +1011,7 @@ void CParticle_CPU::SetColor(const _float4& color)
 		return;
 	for (auto& particle : m_Particles) {
 		particle.vColor = color;
+		particle.fStartAlpha = color.w;
 	}
 }
 void CParticle_CPU::SetColorByOwner(uint32_t ownerId, const _float4& color)
@@ -981,6 +1025,7 @@ void CParticle_CPU::SetColorByOwner(uint32_t ownerId, const _float4& color)
 			continue;
 
 		particle.vColor = color;
+		particle.fStartAlpha = color.w;
 	}
 }
 void CParticle_CPU::SetEmissive(const _float4& emissive)
@@ -1024,10 +1069,14 @@ void CParticle_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatri
 	if (!XMMatrixDecompose(&scale, &deltaRotation, &translation, deltaMatrix))
 		return;
 
+	deltaRotation = XMQuaternionNormalize(deltaRotation);
+
 	XMFLOAT4X4 rotationMatrix{};
 	XMStoreFloat4x4(&rotationMatrix, XMMatrixRotationQuaternion(deltaRotation));
 
-	const float deltaYaw = -std::atan2(rotationMatrix._31, rotationMatrix._33);
+	_vector vDeltaForward = XMVector3Normalize(XMVectorSet(rotationMatrix._31, rotationMatrix._32, rotationMatrix._33, 0.f));
+	_float fDeltaPitch = asinf(std::clamp(-XMVectorGetY(vDeltaForward), -1.f, 1.f));
+	_float fDeltaYaw = atan2f(XMVectorGetX(vDeltaForward), XMVectorGetZ(vDeltaForward));
 
 	for (auto& particle : m_Particles)
 	{
@@ -1036,10 +1085,10 @@ void CParticle_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatri
 
 		XMStoreFloat3(&particle.vPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.vPosition), deltaMatrix));
 		XMStoreFloat3(&particle.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.originalPosition), deltaMatrix));
-
 		XMStoreFloat3(&particle.vVelocity, XMVector3Rotate(XMLoadFloat3(&particle.vVelocity), deltaRotation));
 		XMStoreFloat3(&particle.originalVelocity, XMVector3Rotate(XMLoadFloat3(&particle.originalVelocity), deltaRotation));
 
-		particle.rotation.y = std::remainder(particle.rotation.y + deltaYaw, XM_2PI);
+		particle.rotation.x = std::remainder(particle.rotation.x + fDeltaPitch, XM_2PI);
+		particle.rotation.y = std::remainder(particle.rotation.y + fDeltaYaw, XM_2PI);
 	}
 }

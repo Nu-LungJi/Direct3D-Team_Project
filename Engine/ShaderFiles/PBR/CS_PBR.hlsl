@@ -33,7 +33,7 @@ static const float		ShadowBrightness		= 0.f;
 static const float		PointShadowDepthBias	= 0.002f;
 static const float		SpotShadowDepthBias		= 0.00001f;
 
-static const float		EnviromentIntensity		= 0.00f;			// 환경광 밝기
+static const float		EnviromentIntensity		= 0.75f;			// 환경광 밝기
 static const float		FillLightBrightness		= 0.25f;			// 등지는 영역의 밝기
 static const float		DirectLightBrightness	= 0.60f;			// 빛받는 영역의 밝기
 
@@ -463,21 +463,21 @@ void CSMain_NonBlend(uint3 ID : SV_DispatchThreadID)
 
 				float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
 
-				float3 Specular = D * F * V_Spec / 10.f;
+				float3 Specular = D * F * V_Spec;
 
 				float3 kS = F;
-				float3 kD = (1.0f - kS) * (1.0f - Metallic);
+				float3 kD = (1.f - kS) * (1.f - Metallic);
 				float3 Diffuse = kD * Albedo / PI;
 				
 				EffectAccumulation += (Diffuse + Specular) * Radiance * NDL;
 			}
 		}
 	}
-	//float3	BaseEmissive = EmissiveMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
 	float3	BaseEmissive = EmissiveMap.Load(PixelCoord).rgb;
     
-	//float	AmbientOcclusion = AmbientMap.SampleLevel(LinearWrap, TexCoord, 0.f).r;
-	float	AmbientOcclusion = AmbientMap.Load(PixelCoord).r;
+	float	MaterialAO = MultipleTex.b;
+	float	ScreenAO = AmbientMap.Load(PixelCoord).r;
+	float	AmbientOcclusion = MaterialAO * ScreenAO;
 	float3	Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
 	
 	float3	EnviromentLight = Ambient * AmbientOcclusion * EnviromentIntensity;		// Enviroment Light

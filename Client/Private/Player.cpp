@@ -19,6 +19,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "PlayerRagdollController.h"
+#include "Player_ConfringoController.h"
 #include "PlayerThirdPersonCamera.h"
 #include "DbgLineRender.h"
 #include "Player_StateMachine.h"
@@ -34,6 +35,11 @@
 #include "Player_AccioSkill_State.h"
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
+#include "Player_BombardaSkill_State.h"
+#include "Player_ConfringoSkill_State.h"
+#include "Player_AvadaKedavraSkill_State.h"
+#include "Player_ProtegoSkill_State.h"
+#include "Player_LumosSkill_State.h"
 #include "Player_RepairoSkill_State.h"
 #include "Monster.h"
 #include "ComSound.h"
@@ -89,6 +95,9 @@ void CPlayer::UpdateGUI()
 		CGameInstance::Get().SetAnimationEditorTarget(GetHandle());
 	ImGui::SameLine();
 	ImGui::TextDisabled("SampleClient-compatible");
+
+	if (m_pConfringoController)
+		m_pConfringoController->UpdateGUI();
 
 
 	if (m_pRagdollController)
@@ -201,7 +210,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 
 		const auto& animations = m_pComModelInstance->GetModel()->GetAnimations();
 		constexpr _string_view debugWandReadyAnimation =
-			"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_RMB_WandReady_POSE_anm.bin";
+			"AN_ProfessorSharp_MasterRig_Hu_BM_Wand_Ready_RArmReplace_anm.bin";
 		for (size_t i = 0; i < animations.size(); ++i)
 		{
 			if (animations[i] && animations[i]->GetAnimName() == debugWandReadyAnimation)
@@ -393,6 +402,36 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		}
 		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::BOMBARDA_SKILL,
+			CPlayer_BombardaSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::CONFRINGO_SKILL,
+			CPlayer_ConfringoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::AVADA_KEDAVRA_SKILL,
+			CPlayer_AvadaKedavraSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::PROTEGO_SKILL,
+			CPlayer_ProtegoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::LUMOS_SKILL,
+			CPlayer_LumosSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::REVELIO_SKILL,
 			CPlayer_RevelioSkill_State::Create()))
 		{
@@ -452,8 +491,11 @@ HRESULT CPlayer::Initialize(void* pArg)
 			static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.f, 113/255.f, 113 / 255.f, 1.f));
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(1.f, 44 / 255.f, 44 / 255.f, 5.f));
 		}
-
-
+		{
+			auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
+		}
 
 	}
 
@@ -472,6 +514,9 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	m_hAutoTarget = CHandle{};
+	if (FAILED(InitializeConfringo()))
+		return E_FAIL;
+
 	return S_OK;
 }
 
@@ -525,9 +570,53 @@ _bool CPlayer::IsRagdollTransitioning() const
 }
 #pragma endregion
 
+#pragma region CONFRINGO
+HRESULT CPlayer::InitializeConfringo()
+{
+	// [LSY] 플레이어별 콘프링고 런타임 상태를 Clone 초기화에서 생성한다.
+	m_pConfringoController = CPlayer_ConfringoController::Create(*this);
+	return m_pConfringoController ? S_OK : E_FAIL;
+}
+
+void CPlayer::StartConfringoCastEffect()
+{
+	if (m_pConfringoController)
+		m_pConfringoController->StartCastEffect();
+}
+
+void CPlayer::StopConfringoCastEffect()
+{
+	if (m_pConfringoController)
+		m_pConfringoController->StopCastEffect();
+}
+
+_bool CPlayer::FireConfringoProjectile()
+{
+	if (!m_pConfringoController)
+		return false;
+
+	return m_pConfringoController->FireProjectile();
+}
+#pragma endregion
+
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_bProtegoActive)
+	{
+		m_fProtegoRemainTime = std::max(0.f, m_fProtegoRemainTime - fTimeDelta);
+		if (m_fProtegoRemainTime <= 0.f)
+		{
+			m_bProtegoActive = false;
+			if (m_iProtegoShieldEffectID != INVALID_EFFECT_INSTANCE_ID)
+			{
+				CGameInstance::Get().StopEffect(m_iProtegoShieldEffectID);
+				m_iProtegoShieldEffectID = INVALID_EFFECT_INSTANCE_ID;
+			}
+		}
+	}
+	m_fParryCounterRemainTime = std::max(0.f, m_fParryCounterRemainTime - fTimeDelta);
+
 	// [LSY] 랙돌 전환 중에는 입력과 상태 머신이 새로운 이동 명령을 만들지 않게 한다.
 	if (m_pRagdollController)
 	{
@@ -574,11 +663,12 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			(!m_bDebugWandReadyPlaying ||
 				!m_pModelAnimator->HasUpperAnimation()))
 		{
-			m_pModelAnimator->Play_UpperAnim(
+			m_bDebugWandReadyPlaying = PlayUpperBodyAnimation(
 				m_iDebugWandReadyUpperAnim,
+				"RightArm",
+				1,
 				true,
 				debugUpperBodyFadeDuration);
-			m_bDebugWandReadyPlaying = true;
 		}
 		else if (!bWandReadyRequested && m_bDebugWandReadyPlaying)
 		{
@@ -716,6 +806,14 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (m_pStateMachine &&m_pComCharacterMotor &&m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&m_pComCharacterMotor->IsGrounded() &&CGameInstance::Get().KeyDown(DIK_SPACE))
 	{
 		m_pStateMachine->RequestState(PLAYER_STATE::JUMP);
+	}
+
+	if (m_pStateMachine && m_pComCharacterMotor &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
+		m_pComCharacterMotor->IsGrounded() &&
+		m_iHp > 0 && CGameInstance::Get().KeyDown(DIK_Q))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::PROTEGO_SKILL);
 	}
 
 	if (m_pStateMachine &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
@@ -856,6 +954,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			m_hMonsterHPUITarget = hDetectedTarget;
 		}
 	}
+	// 타겟 봐야 하는 곳 -----------------------------------------------------------------------------------------------------------
+	if (auto* pOutlineTarget =
+		CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
+		pOutlineTarget && !pOutlineTarget->GetPendingDestroy())
+	{
+		CGameInstance::Get().Apply_OutlineEffect(
+			std::optional<CHandle>{ m_hAutoTarget });
+	}
+	else
+	{
+		CGameInstance::Get().Apply_OutlineEffect(std::nullopt);
+	}
+
 	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))
 	{
 		m_fControlHoldTime = 0.f;
@@ -968,12 +1079,34 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 				m_bCoolTime_Num4 = true;
 		}
 
+		// [LSY] 스킬 슬롯에서 CONFRINGO를 연결하기 전까지 5번 키로 직접 테스트한다.
+		if (CGameInstance::Get().KeyDown(DIK_5))
+			m_pStateMachine->RequestState(PLAYER_STATE::CONFRINGO_SKILL);
+
 	}
 	
 
 
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_H))
-		OnQueryHit(20);
+	{
+		// Protego HIT debug: sample the entire sphere uniformly so front, side,
+		// back, top, and bottom visibility can all be checked with repeated hits.
+		const _float fZ = Randf(-1.f, 1.f);
+		const _float fAzimuth = Randf(0.f, XM_2PI);
+		const _float fPlanarRadius = sqrtf(std::max(0.f, 1.f - fZ * fZ));
+		const _float3 vRandomDirection{
+			fPlanarRadius * cosf(fAzimuth),
+			fZ,
+			fPlanarRadius * sinf(fAzimuth)
+		};
+
+		_float3 vHitPosition = GetTransform().GetPosition();
+		vHitPosition.y += 1.f;
+		vHitPosition.x += vRandomDirection.x * 2.48f;
+		vHitPosition.y += vRandomDirection.y * 2.48f;
+		vHitPosition.z += vRandomDirection.z * 2.48f;
+		OnQueryHit(20, vHitPosition);
+	}
 }
 
 
@@ -1574,6 +1707,9 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 		pDbgLineRender->SetColor(vPreviousColor);
 		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 	}
+
+	if (m_pConfringoController)
+		m_pConfringoController->Update(fTimeDelta);
 	UpdateAttachedEffects();
 
 	const auto& pModel = m_pComModelInstance->GetModel();
@@ -1598,10 +1734,32 @@ void CPlayer::UpdateAttachedEffects()
 	if (m_iDashBodyEffectID == INVALID_EFFECT_INSTANCE_ID)
 		return;
 
-	auto a = GetTransform().GetWorldMatrix();
 	CGameInstance::Get().SetEffectWorldMatrix(
 		m_iDashBodyEffectID,
 		*GetTransform().GetWorldMatrix());
+	
+
+	// 캐릭터의 이동과 회전이 모두 확정된 LateUpdate 시점에 보호막을 붙인다.
+	// PriorityUpdate에서 갱신하면 이전 프레임 위치를 따라가 외곽선이 떨릴 수 있다.
+	if (m_bProtegoActive &&
+		m_iProtegoShieldEffectID != INVALID_EFFECT_INSTANCE_ID)
+	{
+		_float4x4 shieldWorld = *GetTransform().GetWorldMatrix();
+		shieldWorld._42 += 1.f;
+		CGameInstance::Get().SetEffectWorldMatrix(
+			m_iProtegoShieldEffectID, shieldWorld);
+	}
+
+	if (m_iProtegoHitEffectID != INVALID_EFFECT_INSTANCE_ID)
+	{
+		_float4x4 hitWorld{};
+		XMStoreFloat4x4(
+			&hitWorld,
+			XMLoadFloat4x4(&m_ProtegoHitLocalMatrix) *
+			GetTransform().GetLoadedWorldMatrix());
+		CGameInstance::Get().SetEffectWorldMatrix(
+			m_iProtegoHitEffectID, hitWorld);
+	}
 }		
 
 // CPU + GPU 버전
@@ -1790,6 +1948,17 @@ HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISIO
 {
 	if (!pAttacker)
 		return E_INVALIDARG;
+	if (m_bProtegoActive)
+	{
+		_float3 vHitPosition = GetTransform().GetPosition();
+		vHitPosition.y += 1.f;
+		if (info.iContactCount > 0)
+			vHitPosition = info.Contacts[0].vWorldPosition;
+		TriggerProtegoHit(vHitPosition);
+		return S_OK;
+	}
+	if (m_bInvincible)
+		return S_OK;
 
 	if (info.iSelfShapeSubIndex == std::numeric_limits<uint32_t>::max())
 	{
@@ -1839,6 +2008,14 @@ HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISIO
 
 _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,int32_t iDamage,const _float3& vHitPosition)
 {
+	if (m_bProtegoActive)
+	{
+		TriggerProtegoHit(vHitPosition);
+		return false;
+	}
+	if (m_bInvincible)
+		return false;
+
 	if (!tHit.bHit ||
 		tHit.pGameObject != this ||
 		tHit.iShapeSubIndex != ETOUI(PLAYER_COLLISIONS::PLAYER_SHAPE_HURTBOX) ||
@@ -1872,6 +2049,13 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 {
 	if (iDamage <= 0 || m_iHp <= 0)
 		return false;
+	if (m_bProtegoActive)
+	{
+		TriggerProtegoHit(vHitPosition);
+		return false;
+	}
+	if (m_bInvincible)
+		return false;
 
 	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
 	m_iHp -= iAppliedDamage;
@@ -1891,15 +2075,29 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 
 _bool CPlayer::OnQueryHit(int32_t iDamage)
 {
-	if (iDamage <= 0 || m_iHp <= 0 || m_bInvincible)
+	if (iDamage <= 0 || m_iHp <= 0)
+		return false;
+	if (m_bProtegoActive)
+	{
+		// 위치 정보가 없는 레거시 공격은 현재 타깃 위치를 사용한다.
+		// 타깃도 없으면 캐릭터 정면 공격으로 안전하게 처리한다.
+		_vector vHit = GetTransform().GetState(STATE::POSITION) +
+			XMVector3Normalize(GetTransform().GetState(STATE::LOOK)) * 2.48f;
+		if (auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget))
+			vHit = pTarget->GetTransform().GetState(STATE::POSITION);
+		_float3 vHitPosition{};
+		XMStoreFloat3(&vHitPosition, vHit);
+		TriggerProtegoHit(vHitPosition);
+		return false;
+	}
+	if (m_bInvincible)
 		return false;
 
 	const int32_t iAppliedDamage = std::min(iDamage, m_iHp);
 	m_iHp -= iAppliedDamage;
 	
 
-	if (auto* pUIController =
-		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
+	if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
 	{
 		pUIController->AddHP(-static_cast<_float>(iAppliedDamage));
 	}
@@ -1907,6 +2105,106 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 		HandleDeath();
 	else if (m_pStateMachine)
 		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	return true;
+}
+
+void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
+{
+	_float3 vShieldCenter = GetTransform().GetPosition();
+	vShieldCenter.y += 1.f;
+
+	_vector vNormal = XMLoadFloat3(&vHitPosition) - XMLoadFloat3(&vShieldCenter);
+	if (XMVectorGetX(XMVector3LengthSq(vNormal)) <= FLT_EPSILON)
+		vNormal = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+	else
+		vNormal = XMVector3Normalize(vNormal);
+
+	// Sweep 접촉점, Overlap 투사체 중심 등 입력 의미가 달라도
+	// 최종 충돌 위치는 보호막 구 표면으로 통일한다.
+	constexpr _float PROTEGO_SHIELD_RADIUS = 2.5f;
+	const _vector vShieldSurfacePosition =
+		XMLoadFloat3(&vShieldCenter) + vNormal * PROTEGO_SHIELD_RADIUS;
+	XMStoreFloat3(&m_vLastProtegoHitPosition, vShieldSurfacePosition);
+	++m_iProtegoParrySequence;
+	m_fParryCounterRemainTime = PARRY_COUNTER_WINDOW;
+
+	_vector vReferenceUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	if (fabsf(XMVectorGetX(XMVector3Dot(vNormal, vReferenceUp))) > 0.96f)
+		vReferenceUp = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+
+	const _vector vBaseRight = XMVector3Normalize(XMVector3Cross(vReferenceUp, vNormal));
+	const _vector vBaseUp = XMVector3Normalize(XMVector3Cross(vNormal, vBaseRight));
+
+	// Rotate every impact around its surface normal. This keeps an asymmetric
+	// burst texture from appearing in exactly the same orientation every time.
+	static uint32_t s_iProtegoHitSequence = 0;
+	const _float fSurfaceRotation =
+		static_cast<_float>((s_iProtegoHitSequence++ * 137u) % 360u) * XM_PI / 180.f;
+	const _float fCos = cosf(fSurfaceRotation);
+	const _float fSin = sinf(fSurfaceRotation);
+	const _vector vRight = vBaseRight * fCos + vBaseUp * fSin;
+	const _vector vUp = vBaseUp * fCos - vBaseRight * fSin;
+	const _vector vPosition = XMLoadFloat3(&vShieldCenter);
+
+	_float4x4 hitWorld{};
+	XMStoreFloat4x4(&hitWorld, XMMatrixIdentity());
+	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._11), vRight);
+	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._21), vUp);
+	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._31), vNormal);
+	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._41), vPosition);
+
+	const _matrix playerWorld = GetTransform().GetLoadedWorldMatrix();
+	XMStoreFloat4x4(
+		&m_ProtegoHitLocalMatrix,
+		XMLoadFloat4x4(&hitWorld) * XMMatrixInverse(nullptr, playerWorld));
+
+	if (m_iProtegoHitEffectID != INVALID_EFFECT_INSTANCE_ID)
+		CGameInstance::Get().StopEffect(m_iProtegoHitEffectID);
+
+	m_iProtegoHitEffectID = CGameInstance::Get().PlayEffect(
+		"Protego_Shield_Hit_Layered", hitWorld, XMVectorZero(),
+		[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON)
+		{
+			if (effectId == m_iProtegoHitEffectID)
+				m_iProtegoHitEffectID = INVALID_EFFECT_INSTANCE_ID;
+		});
+}
+
+_bool CPlayer::PlayUpperBodyAnimation(
+	int32_t iAnimation, const _char* pRootBoneName,
+	uint32_t iBlendDepth, _bool bLoop, _float fFadeDuration)
+{
+	if (!m_pModelAnimator || !pRootBoneName ||
+		!m_pModelAnimator->Set_UpperBodyRootBone(pRootBoneName, iBlendDepth))
+	{
+		return false;
+	}
+
+	m_pModelAnimator->Play_UpperAnim(iAnimation, bLoop, fFadeDuration);
+	return true;
+}
+
+void CPlayer::ActivateProtego(_float fDuration)
+{
+	m_bProtegoActive = true;
+	m_fProtegoRemainTime = std::max(m_fProtegoRemainTime, fDuration);
+
+	if (m_iProtegoShieldEffectID == INVALID_EFFECT_INSTANCE_ID)
+	{
+		_float4x4 shieldWorld = *GetTransform().GetWorldMatrix();
+		shieldWorld._42 += 1.f;
+		m_iProtegoShieldEffectID = CGameInstance::Get().PlayEffect(
+			"Protego_Shield", shieldWorld, XMVectorZero());
+	}
+}
+
+_bool CPlayer::ConsumeParryCounter(_float3& outAttackPosition)
+{
+	if (m_fParryCounterRemainTime <= 0.f)
+		return false;
+
+	m_fParryCounterRemainTime = 0.f;
+	outAttackPosition = m_vLastProtegoHitPosition;
 	return true;
 }
 
@@ -2174,4 +2472,11 @@ E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 	}
 
 	return pInstance;
+}
+
+void CPlayer::Free()
+{
+	// [LSY] 컨트롤러가 플레이어 참조를 사용하므로 기반 오브젝트 해제 전에 정리한다.
+	m_pConfringoController.reset();
+	CAnimationObject::Free();
 }

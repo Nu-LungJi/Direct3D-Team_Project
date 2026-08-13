@@ -21,7 +21,7 @@ public:
 	void			Update(E::_float fTimeDelta) override;
 	void			LateUpdate(E::_float fTimeDelta) override;
 public:
-	void			Active(const _string& SkillName) override;
+	void			Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos = XMVectorSet(0, 0, 0, 1)) override;
 	void			Cancle() override;
 private:
 	void			MoveBall(_float fTimeDelta);

@@ -30,6 +30,8 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 	m_iComboCount = 1;
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
+	m_bPlayingParryCounter = false;
+	m_bParryCounterSpeedRestored = false;
 	m_bMagicBulletFired = false;
 	m_fPreviousAnimRatio = 0.f;
 
@@ -39,6 +41,8 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		return;
 	}
+	if (animator->HasUpperAnimation())
+		animator->Stop_UpperAnim(0.08f);
 
 	player->SetCurrentMoveSpeed(0.f);
 	player->SetMovementLocked(true);
@@ -50,7 +54,11 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 		moveIntent->ClearFacingIntent();
 	}
 
-	if (!PlayDirectionalAttack(*player, false))
+	_float3 vParryAttackPosition{};
+	const _bool bHasParryCounter = player->ConsumeParryCounter(vParryAttackPosition);
+	if (bHasParryCounter
+		? !PlayParryCounterAttack(*player, vParryAttackPosition)
+		: !PlayDirectionalAttack(*player, false))
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 
 	pTarget = CGameInstance::Get().GetGameObjectByHandle(player->GetTargetHandle());
@@ -70,6 +78,8 @@ void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
 	m_iComboCount = 0;
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
+	m_bPlayingParryCounter = false;
+	m_bParryCounterSpeedRestored = false;
 	m_bMagicBulletFired = false;
 	m_fPreviousAnimRatio = 0.f;
 }
@@ -103,6 +113,13 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 		? HEAVY_MAGIC_BULLET_FIRE_RATIO
 		: LIGHT_MAGIC_BULLET_FIRE_RATIO;
 
+	if (m_bPlayingParryCounter && !m_bParryCounterSpeedRestored &&
+		fAnimRatio >= PARRY_COUNTER_TURN_END_RATIO)
+	{
+		animator->GetCurAnimState().fSpeed = PARRY_COUNTER_ATTACK_SPEED;
+		m_bParryCounterSpeedRestored = true;
+	}
+
 	if (!m_bMagicBulletFired &&
 		fPreviousAnimRatio < fMagicBulletFireRatio &&
 		fAnimRatio >= fMagicBulletFireRatio)
@@ -126,7 +143,7 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 			COMBO_INPUT_START_RATIO,
 			COMBO_INPUT_END_RATIO);
 
-	if (bInComboInputWindow &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	if (!m_bPlayingParryCounter && bInComboInputWindow &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		m_bAttackQueued = true;
 	}
@@ -157,6 +174,63 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 	if (animator->GetFinish())
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
+}
+
+_bool CPlayer_Attack_State::PlayParryCounterAttack(
+	CPlayer& player, const _float3& vAttackPosition)
+{
+	auto* pAnimator = player.GetAnimator();
+	if (!pAnimator)
+		return false;
+
+	_vector vLook = XMVectorSetY(player.GetTransform().GetState(STATE::LOOK), 0.f);
+	_vector vRight = XMVectorSetY(player.GetTransform().GetState(STATE::RIGHT), 0.f);
+	const _vector vPlayerPosition = player.GetTransform().GetState(STATE::POSITION);
+	_vector vDirection{};
+	if (auto* pCurrentTarget = CGameInstance::Get().GetGameObjectByHandle(
+		player.GetTargetHandle());
+		pCurrentTarget && !pCurrentTarget->GetPendingDestroy())
+	{
+		// 반격을 누르는 순간의 실제 타깃 방향을 우선한다.
+		vDirection = XMVectorSetY(
+			pCurrentTarget->GetTransform().GetState(STATE::POSITION) - vPlayerPosition, 0.f);
+	}
+	else
+	{
+		// 타깃이 사라진 경우에만 패링 당시 공격 위치를 사용한다.
+		vDirection = XMVectorSetY(XMLoadFloat3(&vAttackPosition) - vPlayerPosition, 0.f);
+	}
+	if (XMVectorGetX(XMVector3LengthSq(vDirection)) <= FLT_EPSILON)
+		vDirection = vLook;
+
+	vLook = XMVector3Normalize(vLook);
+	vRight = XMVector3Normalize(vRight);
+	vDirection = XMVector3Normalize(vDirection);
+	const _float fAngle = XMConvertToDegrees(std::atan2(
+		XMVectorGetX(XMVector3Dot(vRight, vDirection)),
+		XMVectorGetX(XMVector3Dot(vLook, vDirection))));
+	const _float fAbsAngle = std::abs(fAngle);
+
+	size_t iDirection = 0;
+	if (fAbsAngle >= 135.f)
+		iDirection = fAngle < 0.f ? 3 : 4;
+	else if (fAbsAngle >= 45.f)
+		iDirection = fAngle < 0.f ? 1 : 2;
+
+	const int32_t iAnimation = m_ParryCounterAnimations[iDirection];
+	if (iAnimation < 0)
+		return false;
+
+	m_bPlayingParryCounter = true;
+	m_bParryCounterSpeedRestored = false;
+	m_bPlayingHeavy = true;
+	m_bMagicBulletFired = false;
+	m_fPreviousAnimRatio = 0.f;
+	player.SetRootMotionTranslationActive(true);
+	player.SetRootMotionRotationActive(true);
+	pAnimator->Play_Anim(iAnimation, false, ATTACK_BLEND_DURATION);
+	pAnimator->GetCurAnimState().fSpeed = PARRY_COUNTER_ANIMATION_SPEED;
+	return true;
 }
 
 CPlayer_Attack_State::ATTACK_DIRECTION
@@ -289,53 +363,59 @@ void CPlayer_Attack_State::CacheAnimationIndices(const CPlayer& player)
 	if (m_bAnimationIndicesCached)
 		return;
 
-	m_ForwardLightAnimations[0] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_01_anm.bin");
-	m_ForwardLightAnimations[1] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_02_anm.bin");
-	m_ForwardLightAnimations[2] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_03_Uppercut_anm.bin");
-	m_ForwardLightAnimations[3] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_04_anm.bin");
-	m_ForwardLightAnimations[4] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_05_anm.bin");
-	m_ForwardLightAnimations[5] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_06_anm.bin");
-	m_ForwardLightAnimations[6] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_07_anm.bin");
-	m_ForwardLightAnimations[7] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_08_anm.bin");
-	m_ForwardLightAnimations[8] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_09_anm.bin");
-	m_ForwardLightAnimations[9] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_StepBwd_01_anm.bin");
-	m_ForwardLightAnimations[10] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_StepBwd_02_anm.bin");
-	m_ForwardLightAnimations[11] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_StepBwd_03_anm.bin");
-	m_ForwardLightAnimations[12] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_StepBwd_04_anm.bin");
+	m_ForwardLightAnimations[0] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_01_anm.bin");
+	m_ForwardLightAnimations[1] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_02_anm.bin");
+	m_ForwardLightAnimations[2] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_03_Uppercut_anm.bin");
+	m_ForwardLightAnimations[3] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_04_anm.bin");
+	m_ForwardLightAnimations[4] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_05_anm.bin");
+	m_ForwardLightAnimations[5] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_06_anm.bin");
+	m_ForwardLightAnimations[6] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_07_anm.bin");
+	m_ForwardLightAnimations[7] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_08_anm.bin");
+	m_ForwardLightAnimations[8] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_09_anm.bin");
+	m_ForwardLightAnimations[9] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_StepBwd_01_anm.bin");
+	m_ForwardLightAnimations[10] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_StepBwd_02_anm.bin");
+	m_ForwardLightAnimations[11] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_StepBwd_03_anm.bin");
+	m_ForwardLightAnimations[12] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_StepBwd_04_anm.bin");
 
-	m_ForwardHvyAnimations[0] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Hvy_01_Spin_anm.bin");
-	m_ForwardHvyAnimations[1] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Hvy_02_anm.bin");
-	m_ForwardHvyAnimations[2] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Hvy_03_anm.bin");
-	m_ForwardHvyAnimations[3] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Hvy_04_anm.bin");
-	m_ForwardHvyAnimations[4] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Hvy_05_anm.bin");
-	m_ForwardHvyAnimations[5] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Hvy_06_anm.bin");
-	m_ForwardHvyAnimations[6] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Hvy_08_anm.bin");
-	m_ForwardHvyAnimations[7] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Hvy_09_anm.bin");
-	m_ForwardHvyAnimations[8] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Hvy_frmLft_anm.bin");
-	m_ForwardHvyAnimations[9] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Hvy_frmRht_anm.bin");
+	m_ForwardHvyAnimations[0] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_01_Spin_anm.bin");
+	m_ForwardHvyAnimations[1] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_02_anm.bin");
+	m_ForwardHvyAnimations[2] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_03_anm.bin");
+	m_ForwardHvyAnimations[3] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_04_anm.bin");
+	m_ForwardHvyAnimations[4] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_05_anm.bin");
+	m_ForwardHvyAnimations[5] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_06_anm.bin");
+	m_ForwardHvyAnimations[6] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_08_anm.bin");
+	m_ForwardHvyAnimations[7] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_09_anm.bin");
+	m_ForwardHvyAnimations[8] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_frmLft_anm.bin");
+	m_ForwardHvyAnimations[9] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_frmRht_anm.bin");
 
 	m_DirectionalLightAnimations.fill(-1);
 	m_DirectionalHeavyAnimations.fill(-1);
 
 	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::FWD)] =m_ForwardLightAnimations.front();
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_45)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_45_Lht_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_90)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_90_Lht_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_135)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_135_Lht_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_180)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_180_Lht_Spin_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_45)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_45_Lht_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_90)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_90_Lht_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_135)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_135_Lht_frmLft_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_180)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_180_Lht_Spin_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_45_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_90_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_135_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_180_Lht_Spin_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_45_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_90_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_135_Lht_frmLft_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_180_Lht_Spin_anm.bin");
 
 	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::FWD)] = m_ForwardHvyAnimations.front();
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_45)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_45_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_90)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_90_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_135)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_135_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_180)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_180_Hvy_SpinRht_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_45)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_45_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_90)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_90_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_135)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_135_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_180)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_180_Hvy_Spin_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_45_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_90_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_135_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_180_Hvy_SpinRht_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_45_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_90_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_135_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_180_Hvy_Spin_anm.bin");
+
+	m_ParryCounterAnimations[0] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Fwd_2_Spin_Rht_anm.bin");
+	m_ParryCounterAnimations[1] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Lft_90_Spin_Lft_Slam_anm.bin");
+	m_ParryCounterAnimations[2] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Rht_90_Spin_Rht_Slam_anm.bin");
+	m_ParryCounterAnimations[3] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Lft_180_Spin_Rht_Send_anm.bin");
+	m_ParryCounterAnimations[4] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Rht_180_Spin_Rht_anm.bin");
 
 	m_bAnimationIndicesCached = true;
 }

@@ -230,3 +230,17 @@ float3 ReconstructWorldPos(float2 uv, float depth)
     float4 worldPos = mul(ndcPos, g_matInvViewProj);
     return worldPos.xyz / worldPos.w;
 }
+float3 RotateAxisAngle(float3 position, float3 axis, float angle)
+{
+	float axisLength = length(axis);
+
+	if (axisLength < 0.00001f)
+		return position;
+
+	axis /= axisLength;
+
+	float sinAngle = sin(angle);
+	float cosAngle = cos(angle);
+
+	return position * cosAngle + cross(axis, position) * sinAngle + axis * dot(axis, position) * (1.f - cosAngle);
+}

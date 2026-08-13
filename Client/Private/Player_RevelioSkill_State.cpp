@@ -60,7 +60,7 @@ void CPlayer_RevelioSkill_State::CacheAnimationIndices(const CPlayer& player)
 
 	m_iRevelioAnimation = FindAnimationIndex(
 		player,
-		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_Spell_Revelio_anm.bin");
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Spell_Revelio_anm.bin");
 
 	m_bAnimationIndicesCached = m_iRevelioAnimation >= 0;
 }

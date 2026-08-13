@@ -29,15 +29,15 @@ void CPlayer_Jump_State::Enter(CStateMachine* pStateMachine)
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		return;
 	}
-	m_StartAnimations[(size_t)JUMP_STATE::IDLE] = FindAnimationIndex(*player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_JumpStart_anm.bin");
-	m_StartAnimations[(size_t)JUMP_STATE::JOG] = FindAnimationIndex(*player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_Jump_LF_anm.bin");
-	m_StartAnimations[(size_t)JUMP_STATE::SPRINT] = FindAnimationIndex(*player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_Jump_Fwd_LU_anm.bin");
+	m_StartAnimations[(size_t)JUMP_STATE::IDLE] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_JumpStart_anm.bin");
+	m_StartAnimations[(size_t)JUMP_STATE::JOG] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_Jump_LF_anm.bin");
+	m_StartAnimations[(size_t)JUMP_STATE::SPRINT] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_Jump_Fwd_LU_anm.bin");
 
-	m_iFallAnimation = FindAnimationIndex(*player,"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_Jump_Fall_anm.bin");
+	m_iFallAnimation = FindAnimationIndex(*player,"AN_ProfessorSharp_MasterRig_Hu_BM_Jump_Fall_anm.bin");
 
-	m_LandAnimations[(size_t)JUMP_STATE::IDLE] = FindAnimationIndex(*player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_Land_Soft_v2_anm.bin");
-	m_LandAnimations[(size_t)JUMP_STATE::JOG] = FindAnimationIndex(*player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Sneak_Land_2Jog_v4_anm.bin");
-	m_LandAnimations[(size_t)JUMP_STATE::SPRINT] = FindAnimationIndex(*player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_BM_Land_2Sprint_v2_anm.bin");
+	m_LandAnimations[(size_t)JUMP_STATE::IDLE] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_Land_Soft_v2_anm.bin");
+	m_LandAnimations[(size_t)JUMP_STATE::JOG] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_Sneak_Land_2Jog_v4_anm.bin");
+	m_LandAnimations[(size_t)JUMP_STATE::SPRINT] = FindAnimationIndex(*player, "AN_ProfessorSharp_MasterRig_Hu_BM_Land_2Sprint_v2_anm.bin");
 	player->SetMovementLocked(false);
 	player->SetRootMotionRotationActive(false);
 	player->SetRootMotionTranslationActive(false);

@@ -216,7 +216,7 @@ HRESULT CParticle_GPU::Initialize(void* pArg)
 
     }
     else if (m_Desc.whatKind == MESHORTEXTURE::MESH) {
-		if (m_pNoiseTexture) {
+		if (m_Desc.noiseTextureID.first != "") {
 			m_pNoiseTexture = CGameInstance::Get().GetResourceFirst<CResTexture2D>(m_Desc.noiseTextureID.first, m_Desc.noiseTextureID.second);
 		}
 		else {

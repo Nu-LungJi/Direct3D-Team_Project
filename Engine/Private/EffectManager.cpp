@@ -223,7 +223,10 @@ void CEffectManager::UpdateGUI()
 	ImGui::Separator();
 
 	if (ImGui::Button("Reload Effects")) {
-
+		// EFFECT_INSTANCE stores a pointer to an entry in m_Presets.
+		// Stop every live instance before clearing the preset map so that
+		// Update() cannot dereference an invalid pPreset after a reload.
+		ClearAllRunningEffect();
 		m_Presets.clear();
 
 		auto k = Load_FilePath_ByExtension("./Resources/json/Effect", ".json");
@@ -799,6 +802,9 @@ _float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_
 		return 0.f;
 
 	_float totalLife = 0.f;
+	// [LSY] Loop 파티클을 발견해도 아래 Spawn까지 진행해야 하므로 무한 수명 여부만 기록한다.
+	// 기존의 즉시 반환 방식은 Effect 인스턴스만 남기고 실제 파티클을 생성하지 못했다.
+	_bool bHasInfiniteParticle = false;
 	const _float3 worldPosition = TransformPosition(command.vLocalPosition, instance.matWorld);
 	instance.matWorld._41 = worldPosition.x;
 	instance.matWorld._42 = worldPosition.y;
@@ -813,7 +819,10 @@ _float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_
 			const auto& param = std::get<STANDARD_PARAMS>(particle.params);
 
 			if (param.bLoop)
-				return -1.f;
+			{
+				bHasInfiniteParticle = true;
+				continue;
+			}
 
 			const uint32_t intervalCount = param.count > 0 ? param.count - 1 : 0;
 			life = param.fSpawnDelay + param.fSpawnInterval * static_cast<_float>(intervalCount) + param.life;
@@ -831,7 +840,10 @@ _float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_
 			for (const PARTICLE_SPAWN_DATA& spawnData : spawnList)
 			{
 				if (spawnData.loop)
-					return -1.f;
+				{
+					bHasInfiniteParticle = true;
+					continue;
+				}
 
 				life = std::max(life, spawnData.spawnDelay + spawnData.life);
 			}
@@ -843,6 +855,10 @@ _float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_
 
 	if (ownerId != INVALID_PARTICLE_OWNER_ID)
 		instance.vecParticleOwnerId.push_back(ownerId);
+
+	// [LSY] 실제 생성이 끝난 뒤 Effect에만 무한 수명을 알려 StopEffect()로 정리되게 한다.
+	if (bHasInfiniteParticle)
+		return -1.f;
 
 	return totalLife;
 }

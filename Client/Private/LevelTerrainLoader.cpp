@@ -16,6 +16,7 @@
 #include "PlayerThirdPersonCamera.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
+#include "Player_Confringo_Bullet.h"
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
 #include "GurdianWeapon.h"
@@ -201,7 +202,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 			}
 
 
-			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "PLAYER_MODEL_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/ElegantStudent_PrettyGirl2_RigCorrectedFinal/SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin"))) {
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "PLAYER_MODEL_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
 
 				E::CResModel::DESC pDesc{};
 				pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.8f, 0.f);
@@ -241,6 +242,14 @@ std::future<bool> CLevelTerrainLoader::Load()
 				LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerMagicBullet, CPlayer_Magic_Bullet::Create())))
 			{
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_PlayerMagicBullet");
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_PlayerConfringoBullet,
+				CPlayer_Confringo_Bullet::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_PlayerConfringoBullet");
 				return false;
 			}
 			MonsterLoad_InWorker();

@@ -34,6 +34,7 @@
 #include "EdgRandomBall.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
+#include "Player_Confringo_Bullet.h"
 NS_USING(Client)
 
 std::future<bool> CLevelLastBossRanrokLoader::Load()
@@ -82,7 +83,7 @@ std::future<bool> CLevelLastBossRanrokLoader::Load()
 
 HRESULT CLevelLastBossRanrokLoader::LoadPlayer_InWorker()
 {
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(CURR_LEVEL, "PLAYER_MODEL_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/ElegantStudent_PrettyGirl2_RigCorrectedFinal/SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin"))) {
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(CURR_LEVEL, "PLAYER_MODEL_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
 
 		E::CResModel::DESC pDesc{};
 		pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.8f, 0.f);
@@ -126,6 +127,14 @@ HRESULT CLevelLastBossRanrokLoader::LoadPlayer_InWorker()
 		CURR_LEVEL, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerMagicBullet, CPlayer_Magic_Bullet::Create())))
 	{
 		MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerMagicBullet");
+		return false;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(
+		CURR_LEVEL,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PlayerConfringoBullet,
+		CPlayer_Confringo_Bullet::Create())))
+	{
+		MSG_BOX("LAST_BOSS_RANROK Failed Prototype_GameObject_PlayerConfringoBullet");
 		return false;
 	}
 	return S_OK;

@@ -92,7 +92,12 @@ void CEffectUI::LateUpdate(E::_float fTimeDelta)
 	CUIObject::LateUpdate(fTimeDelta);
 
 	// 쉐이더 분기
-	if (m_UIINFO.Restag == "TEX_VFX_T_TMB_SmokeWispy_D")
+	if (m_UIINFO.Restag == "TEX_T_FX_Stupify_Core_Center_D")
+	{
+		m_VSShaderTag = "VS_QuadTexFlipBook";
+		m_PSShaderTag = "PS_SpellBoostCore";
+	}
+	else if (m_UIINFO.Restag == "TEX_VFX_T_TMB_SmokeWispy_D")
 	{
 		m_VSShaderTag = "VS_TwoTone";
 		m_PSShaderTag = "PS_TwoTone";

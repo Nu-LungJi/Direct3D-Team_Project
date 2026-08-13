@@ -1,4 +1,8 @@
-#include "../../Engine/ShaderFiles/Particle/Particle_Common_Struct_Func.hlsl"
+#include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
+
+#define BEHAVIOR_NONE       0
+#define BEHAVIOR_DISTORTION (1u << 1)
+#define BEHAVIOR_BILLBOARD  (1u << 2)
 
 cbuffer CB_TIMEACCUMULATION : register(b11)
 {
@@ -185,6 +189,121 @@ PS_OUT PSDepulso(VS_OUT In)
 	
 	PS_OUT Out = (PS_OUT) 0;
 	
+	return Out;
+}
+
+PS_OUT PSProtegoImpact(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float2 centeredUV = In.vTexcoord * 2.0f - 1.0f;
+	float radius = length(centeredUV);
+	float angle = atan2(centeredUV.y, centeredUV.x);
+
+	float2 membraneUV = In.vTexcoord;
+	membraneUV += float2(
+		sin(angle * 5.0f + g_fAccumulationTime * 11.0f),
+		cos(angle * 7.0f - g_fAccumulationTime * 9.0f)) * 0.018f;
+	float3 membrane = g_DiffuseTexture.Sample(LinearWrap, membraneUV).rgb;
+	float membraneDetail = dot(membrane, float3(0.299f, 0.587f, 0.114f));
+
+	float impactRadius = lerp(0.08f, 0.72f, smoothstep(0.0f, 0.65f, ratio));
+	float irregularity = (membraneDetail - 0.5f) * 0.16f +
+		sin(angle * 9.0f + g_fAccumulationTime * 8.0f) * 0.025f;
+	float distanceFromImpact = abs(radius - impactRadius - irregularity);
+	float tornRim = 1.0f - smoothstep(0.025f, 0.105f, distanceFromImpact);
+
+	float rippleA = 1.0f - smoothstep(0.015f, 0.07f,
+		abs(radius - impactRadius - 0.15f));
+	float rippleB = 1.0f - smoothstep(0.012f, 0.055f,
+		abs(radius - impactRadius - 0.29f));
+	float rippleFade = saturate(1.0f - ratio);
+
+	float hole = 1.0f - smoothstep(impactRadius * 0.32f,
+		impactRadius * 0.72f + 0.001f, radius);
+	float membraneWave = smoothstep(0.28f, 0.8f, membraneDetail) *
+		saturate(1.0f - radius) * (1.0f - hole);
+
+	float fadeIn = smoothstep(0.0f, 0.06f, ratio);
+	float fadeOut = 1.0f - smoothstep(0.58f, 1.0f, ratio);
+	float mask = saturate(tornRim + rippleA * 0.55f + rippleB * 0.3f + membraneWave * 0.16f);
+	mask *= fadeIn * fadeOut;
+
+	clip(mask - 0.015f);
+	float3 violet = float3(0.30f, 0.42f, 1.0f);
+	float3 cyanWhite = float3(0.72f, 0.91f, 1.0f);
+	float3 impactColor = lerp(violet, cyanWhite, saturate(tornRim + membraneDetail * 0.3f));
+	impactColor *= tornRim * 4.2f + rippleA * 1.8f + rippleB + membraneWave * 0.55f;
+	impactColor += In.vEmissive.rgb * In.vEmissive.a * mask * 0.35f;
+
+	Out.vDiffuse = float4(impactColor * In.vColor.rgb, saturate(mask * In.vColor.a));
+	return Out;
+}
+
+PS_OUT PSProtegoImpactLayered(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float2 centeredUV = In.vTexcoord * 2.0f - 1.0f;
+	float radius = length(centeredUV);
+	float angle = atan2(centeredUV.y, centeredUV.x);
+
+
+	float pulseScale = lerp(1.18f, 0.82f, smoothstep(0.0f, 0.72f, ratio));
+	float2 diffuseUV = centeredUV * pulseScale * 0.5f + 0.5f;
+	diffuseUV += float2(
+		g_fAccumulationTime * 0.035f,
+		-g_fAccumulationTime * 0.022f);
+	diffuseUV += float2(sin(angle * 7.0f), cos(angle * 9.0f)) * 0.012f;
+
+	float2 anyUV = In.vTexcoord * 1.37f + float2(
+		-g_fAccumulationTime * 0.11f,
+		g_fAccumulationTime * 0.23f);
+	anyUV += float2(
+		sin(In.vTexcoord.y * 12.0f + g_fAccumulationTime * 1.7f),
+		cos(In.vTexcoord.x * 10.0f - g_fAccumulationTime * 1.3f)) * 0.025f;
+
+	float3 diffuseColor = g_DiffuseTexture.Sample(LinearWrap, diffuseUV).rgb;
+	float3 anyColor = g_AnyTexture.Sample(LinearWrap, anyUV).rgb;
+	float diffuseWhite = saturate(dot(diffuseColor, float3(0.299f, 0.587f, 0.114f)));
+	float anyWhite = saturate(dot(anyColor, float3(0.299f, 0.587f, 0.114f)));
+	float overlap = pow(saturate(diffuseWhite * anyWhite), 1.15f);
+
+	float expansion = smoothstep(0.0f, 0.72f, ratio);
+	float impactRadius = lerp(0.06f, 0.78f, expansion);
+	float irregularity = (anyWhite - 0.5f) * 0.20f +
+		sin(angle * 8.0f + anyWhite * 5.0f + g_fAccumulationTime * 6.0f) * 0.035f;
+	float tornRim = 1.0f - smoothstep(0.025f, 0.12f,
+		abs(radius - impactRadius - irregularity));
+	float shockWave = 1.0f - smoothstep(0.018f, 0.075f,
+		abs(radius - impactRadius - 0.19f - anyWhite * 0.06f));
+	float outerWave = 1.0f - smoothstep(0.015f, 0.065f,
+		abs(radius - impactRadius - 0.36f));
+
+	float localDisc = 1.0f - smoothstep(0.72f, 1.05f, radius);
+	float fadeIn = smoothstep(0.0f, 0.045f, ratio);
+	float fadeOut = 1.0f - smoothstep(0.62f, 1.0f, ratio);
+	float blastMask = smoothstep(0.055f, 0.56f, diffuseWhite) * localDisc;
+	float membraneMask = saturate(diffuseWhite * 0.62f + anyWhite * 0.16f) * localDisc;
+	float alpha = saturate(
+		blastMask * 1.15f + membraneMask * 0.35f + tornRim * 0.72f +
+		shockWave * 0.46f + outerWave * 0.24f + overlap * localDisc * 0.55f);
+	alpha *= fadeIn * fadeOut * In.vColor.a;
+
+	clip(alpha - 0.012f);
+	float3 diffuseOriginal = diffuseColor;
+	float3 violetTint = float3(0.40f, 0.06f, 0.78f);
+	float3 magentaFlash = float3(0.96f, 0.12f, 1.0f);
+	float3 overlapEmissive = lerp(violetTint, magentaFlash, anyWhite) *
+		overlap * In.vEmissive.a * 5.4f;
+	float3 rimEmissive = magentaFlash * tornRim * 2.8f +
+		float3(0.48f, 0.28f, 1.0f) * (shockWave * 1.5f + outerWave * 0.75f);
+
+	Out.vDiffuse = float4(
+		diffuseOriginal * (0.85f + blastMask * 2.2f) + overlapEmissive + rimEmissive,
+		alpha);
 	return Out;
 }
 

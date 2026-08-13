@@ -14,6 +14,36 @@ NS_USING(Engine)
 std::vector<std::string> ScanFbxFolder(const std::string& strFbxFolder);
 std::vector<std::string> ScanTextureFolder(const std::string& strFbxFolder);
 
+namespace
+{
+	_float4 ComposeParticleRotation(const _float4& localRotation, const _float4& worldRotation)
+	{
+		const XMMATRIX localMatrix = XMMatrixRotationRollPitchYaw(localRotation.x, localRotation.y, localRotation.z);
+		const XMMATRIX worldMatrix = XMMatrixRotationQuaternion(XMQuaternionNormalize(XMLoadFloat4(&worldRotation)));
+		const XMMATRIX finalMatrix = localMatrix * worldMatrix;
+		const XMVECTOR right = XMVector3Normalize(finalMatrix.r[0]);
+		const XMVECTOR up = XMVector3Normalize(finalMatrix.r[1]);
+		const XMVECTOR forward = XMVector3Normalize(finalMatrix.r[2]);
+		const _float sinYaw = std::clamp(-XMVectorGetZ(right), -1.f, 1.f);
+		const _float cosYaw = sqrtf(std::max(1.f - sinYaw * sinYaw, 0.f));
+		_float pitch = 0.f;
+		const _float yaw = asinf(sinYaw);
+		_float roll = 0.f;
+
+		if (cosYaw > 0.00001f)
+		{
+			pitch = atan2f(XMVectorGetZ(up), XMVectorGetZ(forward));
+			roll = atan2f(XMVectorGetY(right), XMVectorGetX(right));
+		}
+		else
+		{
+			pitch = atan2f(sinYaw * XMVectorGetX(up), XMVectorGetY(up));
+		}
+
+		return _float4(std::remainder(pitch, XM_2PI), std::remainder(yaw, XM_2PI), std::remainder(roll, XM_2PI), localRotation.w);
+	}
+}
+
 
 void DrawPatternEditor(PatternParamVariant& current)
 {
@@ -113,8 +143,11 @@ void CParticleManager::UpdateGUI()
 	static _bool bSmokegw = false;
 	static _bool bLightning = false;
 	static _bool bSizeStop = false;
-	static _bool bExtraLightning = false;
+	static _bool bEnergySphere = false;
 	static _bool bKeepRotate = false;
+	// [LSY] CPU 파티클이 수명 종료 시 갑자기 사라지지 않도록 GUI에서 두 가지 페이드 옵션을 제공한다.
+	static _bool bFadeOut = false;
+	static _bool bFadeOutLate = false;
 
 	static _bool alphaBlend = false;
 	static _bool alphaAdd = false;
@@ -841,6 +874,7 @@ void CParticleManager::UpdateGUI()
 
 	static STANDARD_PARAMS pendingStandard{};
 	static BEAM_PARAMS     pendingBeam{};
+	static _bool pendingInheritWorldRotation = false;
 
 	if (ImGui::RadioButton("MESH", whatKindFilterIndex == 0)) { whatKindFilterIndex = 0; typeIndex = 0; }
 	ImGui::SameLine();
@@ -994,6 +1028,12 @@ void CParticleManager::UpdateGUI()
 			bKeepRotate =
 				(preset.iBehaviorType &
 					CParticle::BEHAVIOR_KEEPROTATE) != 0;
+			bFadeOut =
+				(preset.iBehaviorType &
+					CParticle::BEHAVIOR_FADEOUT) != 0;
+			bFadeOutLate =
+				(preset.iBehaviorType &
+					CParticle::BEHAVIOR_FADEOUT_LATE) != 0;
 
 			previewParams.bKeepRotate =
 				bKeepRotate;
@@ -1050,6 +1090,10 @@ void CParticleManager::UpdateGUI()
 	ImGui::Checkbox("SIZE STOP", &bSizeStop);
 	ImGui::SameLine();
 	ImGui::Checkbox("KEEP ROTATE", &bKeepRotate);
+	ImGui::SameLine();
+	ImGui::Checkbox("FADE OUT", &bFadeOut);
+	ImGui::SameLine();
+	ImGui::Checkbox("FADE OUT LATE", &bFadeOutLate);
 	ImGui::Separator();
 
 	ImGui::Text("Individiual Field");
@@ -1064,7 +1108,7 @@ void CParticleManager::UpdateGUI()
 	ImGui::Separator();
 	ImGui::Checkbox("LIGHTNING", &bLightning);
 	ImGui::SameLine();
-	ImGui::Checkbox("EXTRALIGHTNING", &bExtraLightning);
+	ImGui::Checkbox("EnergySphere", &bEnergySphere);
 	ImGui::Separator();
 
 	ImGui::Checkbox("None", &none);
@@ -1102,7 +1146,7 @@ void CParticleManager::UpdateGUI()
 	}
 	
 	if (none) {
-		bKeepRotate = bExtraLightning = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+		bFadeOutLate = bFadeOut = bKeepRotate = bEnergySphere = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	}
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
 
@@ -1120,6 +1164,14 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
 	if (bKeepRotate)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_KEEPROTATE;
+	if (bFadeOut)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_FADEOUT;
+	if (bFadeOutLate)
+	{
+		// [LSY] 두 페이드가 동시에 적용되지 않도록 Late 모드를 우선한다.
+		previewParams.iBehaviorType &= ~CParticle::BEHAVIOR_FADEOUT;
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_FADEOUT_LATE;
+	}
 
 
 	if(bSmoke)
@@ -1132,8 +1184,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SMOKEGW;
 	if (bLightning)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
-	if (bExtraLightning)
-		previewParams.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
+	if (bEnergySphere)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_ENERGYSPHERE;
 	ImGui::Separator();
 
 	ImGui::Checkbox("RandomPos?", &previewParams.bRandomPos);
@@ -1375,6 +1427,10 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("SIZE STOP", &bSizeStop);
 		ImGui::Separator();
 		ImGui::Checkbox("KEEP ROTATE", &bKeepRotate);
+		ImGui::SameLine();
+		ImGui::Checkbox("FADE OUT", &bFadeOut);
+		ImGui::SameLine();
+		ImGui::Checkbox("FADE OUT LATE", &bFadeOutLate);
 		ImGui::Separator();
 
 		ImGui::Text("Individiual Field");
@@ -1388,14 +1444,14 @@ void CParticleManager::UpdateGUI()
 		ImGui::Separator();
 		ImGui::Checkbox("LIGHTNING", &bLightning);
 		ImGui::SameLine();
-		ImGui::Checkbox("EXTRALIGHTNING", &bExtraLightning);
+		ImGui::Checkbox("ENERGYSPHERE", &bEnergySphere);
 		ImGui::Separator();
 		ImGui::Checkbox("CIRCLE_TO_WAVE", &circleToWave);
 		ImGui::Separator();
 		ImGui::Checkbox("None", &none);
 
 		if (none)
-			bKeepRotate = bExtraLightning= bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+			bFadeOutLate = bFadeOut = bKeepRotate = bEnergySphere = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
 		pendingStandard.bKeepRotate = bKeepRotate;
@@ -1423,10 +1479,18 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_LIGHTNING;
 		if (bSizeStop)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
-		if (bExtraLightning)
-			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_EXTRALIGHTNING;
+		if (bEnergySphere)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_ENERGYSPHERE;
 		if (bKeepRotate) 
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_KEEPROTATE;
+		if (bFadeOut)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_FADEOUT;
+		if (bFadeOutLate)
+		{
+			// [LSY] 저장되는 Standard 명령도 Preview와 동일한 상호 배타 정책을 사용한다.
+			pendingStandard.iBehaviorType &= ~CParticle::BEHAVIOR_FADEOUT;
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_FADEOUT_LATE;
+		}
 		
 	}
 	
@@ -1477,8 +1541,6 @@ void CParticleManager::UpdateGUI()
 		}
 
 		ImGui::Checkbox("RandomRotation?", &pendingStandard.bRandomRot);
-
-
 		if (pendingStandard.bKeepRotate) {
 			ImGui::DragFloat3("Rotation Axis", &pendingStandard.rotationAxis.x, 0.01f);
 			ImGui::DragFloat("Rotation Speed", &pendingStandard.rotationSpeed, 0.01f);
@@ -1540,12 +1602,14 @@ void CParticleManager::UpdateGUI()
 		
 		DrawImGui(pendingPattern);
 	}
+	ImGui::Checkbox("Inherit World Rotation", &pendingInheritWorldRotation);
 	if (ImGui::Button("Add to List") && !matchedList.empty())
 	{
 		SPAWN_COMMAND cmd{};
 		cmd.sGroupTag_KindTag = currentKind;
 		cmd.sGroupTag = selectedGroup;
 		cmd.sTypeTag = selectedType;
+		cmd.bInheritWorldRotation = pendingInheritWorldRotation;
 	
 
 		if (currentKind == SPAWN_COMMAND_KIND::STANDARD)
@@ -1613,6 +1677,7 @@ void CParticleManager::UpdateGUI()
 			currentKind = cmd.sGroupTag_KindTag;
 			selectedGroup = cmd.sGroupTag;
 			selectedType = cmd.sTypeTag;
+			pendingInheritWorldRotation = cmd.bInheritWorldRotation;
 			
 			if (currentKind == SPAWN_COMMAND_KIND::STANDARD && std::holds_alternative<STANDARD_PARAMS>(cmd.params))
 			{
@@ -2081,7 +2146,7 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 					: p.fEndSize;
 				s.life = p.life;
 				s.fStopSizeTime = p.fStopSizeTime;
-				s.rotation = p.bRandomRot
+				const _float4 localRotation = p.bRandomRot
 					? _float4(XMConvertToRadians(Randf(p.rotMin.x, p.rotMax.x)),
 						XMConvertToRadians(Randf(p.rotMin.y, p.rotMax.y)),
 						XMConvertToRadians(Randf(p.rotMin.z, p.rotMax.z)),
@@ -2090,6 +2155,7 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 						XMConvertToRadians(p.rotation.y),
 						XMConvertToRadians(p.rotation.z),
 						0);
+				s.rotation = cmd.bInheritWorldRotation ? ComposeParticleRotation(localRotation, cmd.inheritedWorldRotation) : localRotation;
 
 				s.color = p.color;
 				s.emissive = p.emissive;
@@ -2445,6 +2511,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				LoadAuxTexture(entry, "AnyTexturePath", "AnyTextureID1", "AnyTextureID2", desc.anyTextureID);
 
 				desc.blendState = selectedBlend;
+				desc.bNoCull = entry.value("bNoCull", false);
 				desc.pShaderCache = m_pShaderCache;
 				particle = CParticle_CPU::Create(&desc);
 			}
@@ -2784,6 +2851,7 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 		entry["kind"] = (int)cmd.sGroupTag_KindTag;
 		entry["sGroupTag"] = cmd.sGroupTag.GetDbgStr();
 		entry["sTypeTag"] = cmd.sTypeTag.GetDbgStr();
+		entry["bInheritWorldRotation"] = cmd.bInheritWorldRotation;
 
 		switch (cmd.sGroupTag_KindTag)
 		{
@@ -2908,6 +2976,7 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 		cmd.sGroupTag_KindTag = (SPAWN_COMMAND_KIND)entry.value("kind", 0);
 		cmd.sGroupTag = entry.value("sGroupTag", "");
 		cmd.sTypeTag = entry.value("sTypeTag", "");
+		cmd.bInheritWorldRotation = entry.value("bInheritWorldRotation", false);
 
 		switch (cmd.sGroupTag_KindTag)
 		{
@@ -2966,6 +3035,7 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 
 
 			p.bRandomRot = entry.value("bRandomRot", false);
+			p.bInheritWorldRotation = entry.value("bInheritWorldRotation", false);
 			auto rotMin = entry.value("rotMin", std::vector<float>{0, 0, 0});
 			p.rotMin = { rotMin[0], rotMin[1], rotMin[2] };
 			auto rotMax = entry.value("rotMax", std::vector<float>{0, 0, 0});
@@ -3224,6 +3294,7 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 		cmd.sGroupTag_KindTag = (SPAWN_COMMAND_KIND)entry.value("kind", 0);
 		cmd.sGroupTag = entry.value("sGroupTag", "");
 		cmd.sTypeTag = entry.value("sTypeTag", "");
+		cmd.bInheritWorldRotation = entry.value("bInheritWorldRotation", false);
 
 		switch (cmd.sGroupTag_KindTag)
 		{
@@ -3234,6 +3305,7 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 			p.bRandomPos = entry.value("bRandomPos", false);
 			p.bRandomVel = entry.value("bRandomVel", false);
 			p.bRandomRot = entry.value("bRandomRot", false);
+			p.bInheritWorldRotation = entry.value("bInheritWorldRotation", false);
 			p.bLoop = entry.value("bLoop", false);
 
 			auto posMin = entry.value("posMin", std::vector<float>{0, 0, 0});
@@ -3384,6 +3456,14 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 	{
 		SPAWN_COMMAND cmd = srcCmd; // 복사본에만 변환, 원본(호출자가 들고 있는 벡터)은 그대로
 		cmd.ownerId = m_iNextOwnerId;
+		if (cmd.bInheritWorldRotation)
+		{
+			XMVECTOR worldScale{};
+			XMVECTOR worldRotation{};
+			XMVECTOR worldTranslation{};
+			if (XMMatrixDecompose(&worldScale, &worldRotation, &worldTranslation, matWorld))
+				XMStoreFloat4(&cmd.inheritedWorldRotation, XMQuaternionNormalize(worldRotation));
+		}
 
 		switch (cmd.sGroupTag_KindTag)
 		{
@@ -3448,6 +3528,8 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 			{
 				XMStoreFloat3(&spawnData.position, XMVector3TransformCoord(XMLoadFloat3(&spawnData.position), matWorld));
 				XMStoreFloat3(&spawnData.velocity, XMVector3TransformNormal(XMLoadFloat3(&spawnData.velocity), matWorld));
+				if (cmd.bInheritWorldRotation)
+					spawnData.rotation = ComposeParticleRotation(spawnData.rotation, cmd.inheritedWorldRotation);
 				spawnData.originalPosition = spawnData.position;
 				spawnData.originalVelocity = spawnData.velocity;
 			}
@@ -3555,6 +3637,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeLightning(param);
 			else if constexpr (std::is_same_v<T, SConeParam>)
 				return ParticlePattern::MakeCone(param);
+			else if constexpr (std::is_same_v<T, SEnergySphere>)
+				return ParticlePattern::MakeEnergySphere(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
@@ -3630,6 +3714,10 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 			{
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
+			else if constexpr (std::is_same_v<T, SEnergySphere>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
 		}, pv);
 }
 std::vector<std::string> CParticleManager::ScanBinFolder(const std::string& strBinFolder)
@@ -3662,7 +3750,12 @@ void CParticleManager::ClearByOwner(uint32_t ownerId)
 		for (auto& [typeTag, particle] : particleGroup)
 		{
 			if (particle)
+			{
+				// [LSY] 활성 파티클뿐 아니라 SpawnDelay 대기 항목까지
+				// Owner 단위로 정리해야 StopEffect 이후 다시 생성되지 않는다.
+				particle->ClearPendingSpawnsByOwner(ownerId);
 				particle->ClearByOwner(ownerId);
+			}
 		}
 	}
 
@@ -3750,6 +3843,22 @@ HRESULT CParticleManager::AddTrailPoint(const StringID& groupTag, const StringID
 		return E_FAIL;
 
 	trail->AddPoint(start, end);
+
+	return S_OK;
+}
+HRESULT CParticleManager::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const CHandle& hOwner, const _float3& start, const _float3& end)
+{
+	CParticle* particle = GetParticle(groupTag, typeTag);
+
+	if (!particle)
+		return E_FAIL;
+
+	CTrail_CPU* trail = dynamic_cast<CTrail_CPU*>(particle);
+
+	if (!trail)
+		return E_FAIL;
+
+	trail->AddPoint(hOwner, start, end);
 
 	return S_OK;
 }

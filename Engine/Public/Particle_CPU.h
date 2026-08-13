@@ -15,6 +15,8 @@ struct PARTICLE_CPU_DATA
     _float3 vPosition;
     _float3 vVelocity;
     _float4 vColor = { 1.f, 1.f, 1.f, 1.f };
+	// [LSY] Fade 진행 중 변하는 현재 알파와 분리하여 원본 알파를 보존한다.
+	_float fStartAlpha = 1.f;
     _float3  fSize = { 0.f, 0.f, 0.f};
     _float3  fStartSize = { 0.f, 0.f, 0.f};
     _float3  fEndSize = { 0.f, 0.f, 0.f };
@@ -98,6 +100,7 @@ public:
 		_string sVEntryPoint = "";
 		_string sPEntryPoint = "";
 		uint32_t blendState = 0;
+		_bool bNoCull = false;
 		SPtr<CParticleShaderCache> pShaderCache;
 
     };
@@ -128,6 +131,8 @@ public:
 	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
 	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
 
+	float SmoothStep(float edge0, float edge1, float value);
+
 private:
     virtual void UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta);
 
@@ -137,9 +142,11 @@ private:
 	void		 GWWaveSmoke(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 
 	void		 Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta);
-	void		 ExtraLightning(PARTICLE_CPU_DATA& p, _float fTimeDelta);
+	void		 EnergySphere(PARTICLE_CPU_DATA& p, _float fTimeDelta);
     void		 SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta);
     void		 KeepRotate(PARTICLE_CPU_DATA& p, _float fTimeDelta);
+	void		 FadeOut(PARTICLE_CPU_DATA& p);
+	void		 FadeOutLate(PARTICLE_CPU_DATA& p);
 private:
     // m_Particles를 순회하며 수명/UpdateBehavior 처리 후 m_vecInstancedData 재구성
     void Simulate(E::_float fTimeDelta);

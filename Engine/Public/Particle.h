@@ -24,8 +24,11 @@ public:
 		BEHAVIOR_SMOKEGW			= 1 << 8,
 		BEHAVIOR_LIGHTNING			= 1 << 9,
 		BEHAVIOR_SIZESTOP			= 1 << 10,
-		BEHAVIOR_EXTRALIGHTNING		= 1 << 11,
+		BEHAVIOR_ENERGYSPHERE		= 1 << 11,
 		BEHAVIOR_KEEPROTATE			= 1 << 12,
+		// [LSY] CPU 파티클의 종료 알파 정책. Late는 수명 후반부터 감소한다.
+		BEHAVIOR_FADEOUT				= 1 << 13,
+		BEHAVIOR_FADEOUT_LATE			= 1 << 14,
 	};
 
 protected:
@@ -39,6 +42,7 @@ public:
 	virtual HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) = 0;
 	virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) = 0;
 	virtual void ClearByOwner(uint32_t ownerID) = 0;
+	void ClearPendingSpawnsByOwner(uint32_t ownerID);
 	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta);
 	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData);
 	void TransformPendingOwner(uint32_t ownerId, const _float4x4& deltaMatrixData);

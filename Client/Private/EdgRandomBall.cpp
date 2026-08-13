@@ -23,13 +23,16 @@ HRESULT CEdgRandomBall::Initialize(void* pArg)
 {
 	if (FAILED(__super::Initialize(pArg)))
 	{
-		MSG_BOX("Create Failed EDG FireBall");
+		MSG_BOX("Create Failed EDG RandomBall");
 		return E_FAIL;
 	}
+
 	m_fDamage = 30.f;
 	m_fSpeed = 100.f;
 	m_fRadius = 0.5f;
-	m_fMaxLife = 3.f;
+	m_fMaxLife = 8.f;
+
+	
 	return S_OK;
 }
 
@@ -65,24 +68,50 @@ void CEdgRandomBall::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 }
 
-void CEdgRandomBall::Active(const _string& SkillName)
+void CEdgRandomBall::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 {
+	m_eType = SkillTable.eType;
+	auto pOwner = Get_Owner();
+	if (nullptr == pOwner) return;
+
+	auto pTarget = pOwner->Get_Target();
+	if (nullptr == pTarget) return;
+
+	_vector vTarget = XMLoadFloat3(&pTarget->GetTransform().GetPosition())+ vOffsetPos;
+
 	_float4x4 matB = Get_BoneMatrix(m_iBoneIndex);
-	_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
 	_matrix matBone = XMLoadFloat4x4(&matB);
-	_matrix matOffset = XMLoadFloat4x4(&matOffB);
-
 	_vector vQuat = XMQuaternionRotationMatrix(matBone);
-
-	GetTransform().SetPosition(matBone.r[3]);
+	_vector vDir = XMVector3Normalize(vTarget - matBone.r[3]);
+	
+	GetTransform().SetPosition(matBone.r[3] + vDir * SkillTable.fDist);
 	GetTransform().SetQuaternion(vQuat);
 	GetTransform().Update();
-	//Set_TargetDir(matBone.r[3]);
-	XMStoreFloat3(&m_vTargetDir, XMVector3Normalize(matOffset.r[3] - matBone.r[3]));
+
+	
 	m_bActive = true;
 	m_bHit = false;
 	m_fLife = 0.f;
-	Spawn_Skill_Effect(SkillName);
+	m_fMaxLife = SkillTable.fLifeTime;
+
+	uint32_t randomInt = RandInt(0, 2);
+
+	switch (randomInt) {
+	case 0:
+		m_eColor = COLOR::YELLOW;
+		m_iEffectID = CGameInstance::Get().PlayEffect("YellowSphere", *m_pComTransform->GetWorldMatrix());
+		break;
+	case 1:
+		m_eColor = COLOR::PURPLE;
+		m_iEffectID = CGameInstance::Get().PlayEffect("PurpleSphere", *m_pComTransform->GetWorldMatrix());
+		break;
+	case 2:
+		m_eColor = COLOR::RED;
+		m_iEffectID = CGameInstance::Get().PlayEffect("RedSphere", *m_pComTransform->GetWorldMatrix());
+		break;
+	}
+
+	Spawn_Skill_Effect(SkillTable.SkillName);
 }
 
 void CEdgRandomBall::Cancle()

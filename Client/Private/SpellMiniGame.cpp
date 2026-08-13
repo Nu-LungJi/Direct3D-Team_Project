@@ -2,10 +2,12 @@
 #include "SpellMiniGame.h"
 
 #include "GameInstance.h"
+#include "EffectUI.h"
 #include "Level_Defines.h"
 #include "SpellMeter.h"
 #include "TextureUI.h"
 #include "UI_Enums.h"
+#include "UIManager.h"
 
 NS_USING(Client)
 
@@ -85,6 +87,16 @@ void CSpellMiniGame::Update(_float fTimeDelta)
 		return;
 
 	const _float safeDelta = std::min(fTimeDelta, 0.05f);
+	const _float movementDelta = std::min(
+		fTimeDelta,
+		MAX_MOVEMENT_DELTA);
+	UpdateTransientEffects(safeDelta);
+	if (m_eState == STATE::INTRO)
+	{
+		UpdateIntro(fTimeDelta);
+		return;
+	}
+
 	if (m_fBoostTimeRemaining > 0.f)
 	{
 		m_fBoostTimeRemaining = std::max(
@@ -100,14 +112,11 @@ void CSpellMiniGame::Update(_float fTimeDelta)
 	{
 		m_eState = STATE::RUNNING;
 		ActivateBoost();
-		SetStartPadVisible(false);
+		PlayMagicBurst(m_StartPadSuccessEffect, m_hStartPad);
 	}
 	else if (m_eState == STATE::COMPLETED && aPressed)
 	{
 		ResetToStart();
-		m_eState = STATE::RUNNING;
-		ActivateBoost();
-		SetStartPadVisible(false);
 	}
 
 	if (m_eState == STATE::RUNNING)
@@ -144,18 +153,7 @@ void CSpellMiniGame::Update(_float fTimeDelta)
 			fabsf(rawAlignment);
 		if (absoluteAlignment > ALIGNMENT_DEAD_ZONE)
 		{
-			const _float normalizedAlignment = std::clamp(
-				(absoluteAlignment - ALIGNMENT_DEAD_ZONE) /
-				(MAX_SPEED_ALIGNMENT - ALIGNMENT_DEAD_ZONE),
-				0.f,
-				1.f);
-			const _float speedRatio =
-				normalizedAlignment * normalizedAlignment *
-				(3.f - 2.f * normalizedAlignment);
-			const _float baseSpeed = std::lerp(
-				MIN_MOVE_SPEED,
-				MAX_MOVE_SPEED,
-				speedRatio);
+			const _float baseSpeed = MAX_MOVE_SPEED;
 			_float boostRatio = std::clamp(
 				m_fBoostTimeRemaining / BOOST_DURATION,
 				0.f,
@@ -170,7 +168,7 @@ void CSpellMiniGame::Update(_float fTimeDelta)
 				rawAlignment >= 0.f ? 1.f : -1.f;
 
 			m_fPathDistance = std::clamp(
-				m_fPathDistance + direction * speed * safeDelta,
+				m_fPathDistance + direction * speed * movementDelta,
 				0.f,
 				m_fTotalPathDistance);
 		}
@@ -185,7 +183,7 @@ void CSpellMiniGame::Update(_float fTimeDelta)
 		}
 	}
 
-	UpdateChaser(safeDelta);
+	UpdateChaser(movementDelta, fTimeDelta);
 
 	UpdateArrowVisual(
 		EvaluatePosition(m_fPathDistance),
@@ -221,20 +219,230 @@ _float CSpellMiniGame::GetProgress() const
 	return m_fPathDistance / m_fTotalPathDistance;
 }
 
+void CSpellMiniGame::UpdateIntro(_float fTimeDelta)
+{
+	m_fIntroElapsed = std::min(
+		INTRO_TOTAL_DURATION,
+		m_fIntroElapsed + std::max(0.f, fTimeDelta));
+
+	const _float fadeRatio = std::clamp(
+		m_fIntroElapsed / INTRO_FADE_DURATION,
+		0.f,
+		1.f);
+	SetIntroAlpha(fadeRatio * fadeRatio * (3.f - 2.f * fadeRatio));
+
+	const _float pathRatio = std::clamp(
+		m_fIntroElapsed / INTRO_PATH_DURATION,
+		0.f,
+		1.f);
+	if (auto* introPath = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextureUI>(m_hIntroPathProgress))
+	{
+		introPath->SetPathProgress(pathRatio);
+	}
+	UpdateIntroPadScales(m_fIntroElapsed);
+
+	if (m_fIntroElapsed >= INTRO_PATH_DURATION)
+	{
+		if (!m_bStartPadIntroRevealed)
+		{
+			m_bStartPadIntroRevealed = true;
+			PlayCreateButtonSound();
+			CreateBoostSuccessSmoke(
+				m_StartPadSuccessEffect.SmokeHandle,
+				m_hStartPad,
+				905,
+				INTRO_SMOKE_SIZE_SCALE,
+				{ 0.05f, 0.24f, 1.f },
+				INTRO_SMOKE_DURATION);
+		}
+
+		const _float startPadFadeRatio = std::clamp(
+			(m_fIntroElapsed - INTRO_PATH_DURATION) /
+			INTRO_START_PAD_FADE_DURATION,
+			0.f,
+			1.f);
+		const _float easedFadeRatio = startPadFadeRatio * startPadFadeRatio *
+			(3.f - 2.f * startPadFadeRatio);
+		if (auto* backdrop = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(m_hStartPadBackdrop))
+		{
+			backdrop->SetAlpha(easedFadeRatio);
+		}
+		if (auto* icon = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(m_hStartPad))
+		{
+			icon->SetAlpha(easedFadeRatio);
+		}
+	}
+
+	UpdateArrowVisual(
+		EvaluatePosition(0.f),
+		m_vLastFacingDirection);
+
+	if (m_fIntroElapsed >= INTRO_TOTAL_DURATION)
+	{
+		SetIntroAlpha(1.f);
+		UpdateIntroPadScales(INTRO_TOTAL_DURATION);
+		m_eState = STATE::WAITING;
+	}
+}
+
+void CSpellMiniGame::SetIntroAlpha(_float alpha)
+{
+	alpha = std::clamp(alpha, 0.f, 1.f);
+	const CHandle handles[] = {
+		m_hPath,
+		m_hIntroPathProgress,
+		m_hCursor,
+		m_hArrow
+	};
+
+	for (const CHandle handle : handles)
+	{
+		if (auto* ui = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(handle))
+		{
+			ui->SetAlpha(alpha);
+		}
+	}
+
+	const _float meterRatio = std::clamp(
+		m_fIntroElapsed / INTRO_SPELL_METER_DURATION,
+		0.f,
+		1.f);
+	const _float easedMeterRatio = 1.f -
+		(1.f - meterRatio) * (1.f - meterRatio);
+	if (auto* spellMeter = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_hDestinationSpellMeter))
+	{
+		const _float size = DESTINATION_SPELL_METER_SIZE * easedMeterRatio;
+		spellMeter->SetAlpha(1.f);
+		spellMeter->SetSize({ size, size });
+		spellMeter->CalcUICoord();
+	}
+	if (auto* border = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_hDestinationSpellMeterBorder))
+	{
+		const _float size = DESTINATION_SPELL_METER_BORDER_SIZE * easedMeterRatio;
+		border->SetAlpha(1.f);
+		border->SetSize({ size, size });
+		border->CalcUICoord();
+	}
+}
+
+void CSpellMiniGame::UpdateIntroPadScales(_float elapsedTime)
+{
+	auto updatePadScale = [this, elapsedTime](
+		CHandle backdropHandle,
+		CHandle iconHandle,
+		CHandle smokeHandle,
+		_float revealTime,
+		_bool& revealed)
+		{
+			if (elapsedTime >= revealTime && !revealed)
+			{
+				revealed = true;
+				PlayCreateButtonSound();
+				CreateBoostSuccessSmoke(
+					smokeHandle,
+					iconHandle,
+					905,
+					INTRO_SMOKE_SIZE_SCALE,
+					{ 0.05f, 0.24f, 1.f },
+					INTRO_SMOKE_DURATION);
+			}
+
+			const _float ratio = std::clamp(
+				(elapsedTime - revealTime) / INTRO_PAD_SCALE_DURATION,
+				0.f,
+				1.f);
+			const _float easedRatio = 1.f - (1.f - ratio) * (1.f - ratio);
+
+			if (auto* backdrop = E::CGameInstance::Get().
+				GetGameObjectByHandleT<E::CUIObject>(backdropHandle))
+			{
+				const _float size = BOOST_PAD_BACKDROP_SIZE * easedRatio;
+				backdrop->SetSize({ size, size });
+				backdrop->CalcUICoord();
+			}
+			if (auto* icon = E::CGameInstance::Get().
+				GetGameObjectByHandleT<E::CUIObject>(iconHandle))
+			{
+				const _float size = BOOST_PAD_ICON_SIZE * easedRatio;
+				icon->SetSize({ size, size });
+				icon->CalcUICoord();
+			}
+		};
+
+	for (BOOST_PAD& pad : m_BoostPads)
+	{
+		const _float progress = m_fTotalPathDistance > FLT_EPSILON ?
+			pad.PathDistance / m_fTotalPathDistance : 0.f;
+		updatePadScale(
+			pad.BackdropHandle,
+			pad.Handle,
+			pad.SuccessEffect.SmokeHandle,
+			progress * INTRO_PATH_DURATION,
+			pad.IntroRevealed);
+	}
+}
+
+void CSpellMiniGame::PlayCreateButtonSound()
+{
+	E::CGameInstance::Get().GetSoundManager()->Play2D(
+		"./Resources/SampleClient/Sound/UI/CreateButton.wav",
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::UI,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = false
+		});
+}
+
 void CSpellMiniGame::ResetToStart()
 {
-	m_eState = STATE::WAITING;
+	m_eState = STATE::INTRO;
+	m_fIntroElapsed = 0.f;
+	m_bStartPadIntroRevealed = false;
 	m_fPathDistance = 0.f;
 	m_fBoostTimeRemaining = 0.f;
 	m_vLastFacingDirection = EvaluateForward(0.f);
 	ResetChaser();
 	ResetBoostPads();
-	SetCursorVisible(true);
+	ClearTransientEffects();
+	SetMagicBurstVisible(m_StartPadSuccessEffect, false);
+	SetBoostPadHighlight(m_hStartPad, false);
 	SetStartPadVisible(true);
+	SetIntroAlpha(0.f);
+	if (auto* backdrop = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_hStartPadBackdrop))
+	{
+		backdrop->SetSize({ BOOST_PAD_BACKDROP_SIZE, BOOST_PAD_BACKDROP_SIZE });
+		backdrop->SetAlpha(0.f);
+		backdrop->CalcUICoord();
+	}
+	if (auto* icon = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_hStartPad))
+	{
+		icon->SetSize({ BOOST_PAD_ICON_SIZE, BOOST_PAD_ICON_SIZE });
+		icon->SetAlpha(0.f);
+		icon->CalcUICoord();
+	}
+	for (BOOST_PAD& pad : m_BoostPads)
+		pad.IntroRevealed = false;
+	UpdateIntroPadScales(0.f);
+	if (auto* introPath = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextureUI>(m_hIntroPathProgress))
+	{
+		introPath->SetPathProgress(0.f);
+	}
 	if (auto* pathProgress = E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextureUI>(m_hPathProgress))
 	{
 		pathProgress->SetPathProgress(0.f);
+		pathProgress->SetAlpha(1.f);
 	}
 	if (auto* spellMeter = E::CGameInstance::Get().
 		GetGameObjectByHandleT<CSpellMeter>(m_hDestinationSpellMeter))
@@ -302,13 +510,26 @@ _bool CSpellMiniGame::CreateVisuals()
 		screenCenter,
 		{ m_fPathSize, m_fPathSize },
 		900,
-		{ 0.82f, 0.68f, 0.22f });
+		{ 0.20f, 0.20f, 0.20f });
+	m_hIntroPathProgress = createTexture(
+		"SpellMiniGame_IncendioPathIntro",
+		"TEX_UI_T_SU_Incendio_Path",
+		screenCenter,
+		{ m_fPathSize, m_fPathSize },
+		901,
+		{ 0.62f, 0.54f, 0.28f });
+	if (auto* introPath = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextureUI>(m_hIntroPathProgress))
+	{
+		introPath->SetPathProgressMode(true);
+		introPath->SetPathProgress(0.f);
+	}
 	m_hPathProgress = createTexture(
 		"SpellMiniGame_IncendioPathProgress",
 		"TEX_UI_T_SU_Incendio_Path",
 		screenCenter,
 		{ m_fPathSize, m_fPathSize },
-		901,
+		902,
 		{ 0.04f, 0.38f, 1.f });
 	if (auto* pathProgress = E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextureUI>(m_hPathProgress))
@@ -321,7 +542,7 @@ _bool CSpellMiniGame::CreateVisuals()
 		"TEX_UI_T_SU_Incendio_Path",
 		screenCenter,
 		{ m_fPathSize, m_fPathSize },
-		902,
+		903,
 		{ 1.f, 0.02f, 0.01f });
 	if (auto* chaserPath = E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextureUI>(m_hChaserPathProgress))
@@ -378,14 +599,14 @@ _bool CSpellMiniGame::CreateVisuals()
 		"TEX_UI_T_SU_Cursor",
 		startPosition,
 		{ CURSOR_SIZE, CURSOR_SIZE },
-		906,
+		910,
 		{ 0.f, 0.f, 0.f });
 	m_hArrow = createTexture(
 		"SpellMiniGame_CursorArrow",
 		"TEX_UI_T_SU_CursorArrow",
 		startPosition,
 		{ CURSOR_ARROW_SIZE, CURSOR_ARROW_SIZE },
-		906,
+		910,
 		{ 0.f, 0.f, 0.f });
 	m_hChaserCursor = createTexture(
 		"SpellMiniGame_ChaserCursor",
@@ -406,12 +627,14 @@ _bool CSpellMiniGame::CreateVisuals()
 		{ BOOST_PAD_BACKDROP_SIZE, BOOST_PAD_BACKDROP_SIZE },
 		906,
 		{ 0.f, 0.f, 0.f });
+	m_StartPadSuccessEffect = CreateMagicBurst(startPosition);
+	SetMagicBurstVisible(m_StartPadSuccessEffect, false);
 	m_hStartPad = createTexture(
 		"SpellMiniGame_StartPad",
 		"TEX_UI_T_cbi_button_Abutton",
 		startPosition,
 		{ BOOST_PAD_ICON_SIZE, BOOST_PAD_ICON_SIZE },
-		907,
+		908,
 		{ 0.f, 0.f, 0.f });
 
 	struct BOOST_PAD_DESC
@@ -433,27 +656,32 @@ _bool CSpellMiniGame::CreateVisuals()
 	{
 		const _float pathDistance =
 			m_fTotalPathDistance * padDesc.Progress;
+		const _float2 padPosition = EvaluatePosition(pathDistance);
 		const std::string backdropTag =
 			std::string{ padDesc.ObjectTag } + "_Backdrop";
 		const CHandle backdropHandle = createTexture(
 			backdropTag,
 			"TEX_UI_T_SU_ButtonCalloutRing",
-			EvaluatePosition(pathDistance),
+			padPosition,
 			{ BOOST_PAD_BACKDROP_SIZE, BOOST_PAD_BACKDROP_SIZE },
-			903,
+			906,
 			{ 0.f, 0.f, 0.f });
+		const SUCCESS_EFFECT successEffect =
+			CreateMagicBurst(padPosition);
+		SetMagicBurstVisible(successEffect, false);
 		const CHandle handle = createTexture(
 			padDesc.ObjectTag,
 			padDesc.ResourceTag,
-			EvaluatePosition(pathDistance),
+			padPosition,
 			{ BOOST_PAD_ICON_SIZE, BOOST_PAD_ICON_SIZE },
-			904,
+			908,
 			{ 0.f, 0.f, 0.f });
 		m_BoostPads.push_back({
 			.PathDistance = pathDistance,
 			.KeyCode = padDesc.KeyCode,
 			.BackdropHandle = backdropHandle,
-			.Handle = handle
+			.Handle = handle,
+			.SuccessEffect = successEffect
 			});
 	}
 
@@ -466,11 +694,21 @@ _bool CSpellMiniGame::CreateVisuals()
 				return E::CGameInstance::Get().
 					GetGameObjectByHandleT<E::CUIObject>(pad.BackdropHandle) != nullptr &&
 					E::CGameInstance::Get().
-					GetGameObjectByHandleT<E::CUIObject>(pad.Handle) != nullptr;
+					GetGameObjectByHandleT<E::CUIObject>(pad.Handle) != nullptr &&
+					E::CGameInstance::Get().
+					GetGameObjectByHandleT<E::CUIObject>(pad.SuccessEffect.WispyHandle) != nullptr &&
+					E::CGameInstance::Get().
+					GetGameObjectByHandleT<E::CUIObject>(pad.SuccessEffect.FireHandle) != nullptr &&
+					E::CGameInstance::Get().
+					GetGameObjectByHandleT<E::CUIObject>(pad.SuccessEffect.CoreHandle) != nullptr &&
+					E::CGameInstance::Get().
+					GetGameObjectByHandleT<E::CUIObject>(pad.SuccessEffect.SmokeHandle) != nullptr;
 			});
 
 	return boostPadsCreated && E::CGameInstance::Get().
 		GetGameObjectByHandleT<E::CUIObject>(m_hPath) &&
+		E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_hIntroPathProgress) &&
 		E::CGameInstance::Get().
 		GetGameObjectByHandleT<E::CUIObject>(m_hPathProgress) &&
 		E::CGameInstance::Get().
@@ -488,18 +726,29 @@ _bool CSpellMiniGame::CreateVisuals()
 		E::CGameInstance::Get().
 		GetGameObjectByHandleT<E::CUIObject>(m_hStartPadBackdrop) &&
 		E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_StartPadSuccessEffect.WispyHandle) &&
+		E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_StartPadSuccessEffect.FireHandle) &&
+		E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_StartPadSuccessEffect.CoreHandle) &&
+		E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_StartPadSuccessEffect.SmokeHandle) &&
+		E::CGameInstance::Get().
 		GetGameObjectByHandleT<E::CUIObject>(m_hStartPad);
 }
 
 void CSpellMiniGame::DestroyVisuals()
 {
+	ClearTransientEffects();
 	for (BOOST_PAD& pad : m_BoostPads)
 	{
+		DestroyMagicBurst(pad.SuccessEffect);
 		DestroyUIHandle(pad.BackdropHandle);
 		DestroyUIHandle(pad.Handle);
 	}
 	m_BoostPads.clear();
 	DestroyUIHandle(m_hStartPad);
+	DestroyMagicBurst(m_StartPadSuccessEffect);
 	DestroyUIHandle(m_hStartPadBackdrop);
 	DestroyUIHandle(m_hArrow);
 	DestroyUIHandle(m_hCursor);
@@ -508,6 +757,7 @@ void CSpellMiniGame::DestroyVisuals()
 	DestroyUIHandle(m_hDestinationSpellMeter);
 	DestroyUIHandle(m_hChaserPathProgress);
 	DestroyUIHandle(m_hPathProgress);
+	DestroyUIHandle(m_hIntroPathProgress);
 	DestroyUIHandle(m_hPath);
 }
 
@@ -731,18 +981,7 @@ void CSpellMiniGame::TryActivateBoostPad(
 
 		pad.Consumed = true;
 		ActivateBoost();
-		if (auto* backdropUI = E::CGameInstance::Get().
-			GetGameObjectByHandleT<E::CUIObject>(pad.BackdropHandle))
-		{
-			backdropUI->SetActive(false);
-			backdropUI->SetVisible(false);
-		}
-		if (auto* padUI = E::CGameInstance::Get().
-			GetGameObjectByHandleT<E::CUIObject>(pad.Handle))
-		{
-			padUI->SetActive(false);
-			padUI->SetVisible(false);
-		}
+		PlayMagicBurst(pad.SuccessEffect, pad.Handle);
 		break;
 	}
 }
@@ -752,14 +991,19 @@ void CSpellMiniGame::ActivateBoost()
 	m_fBoostTimeRemaining = BOOST_DURATION;
 }
 
-void CSpellMiniGame::UpdateChaser(_float fTimeDelta)
+void CSpellMiniGame::UpdateChaser(
+	_float movementDelta,
+	_float timerDelta)
 {
-	if (m_eState != STATE::RUNNING || m_BoostPads.empty())
+	if (m_eState != STATE::RUNNING)
 		return;
 
 	if (!m_bChaserActive)
 	{
-		if (m_fPathDistance < m_BoostPads.front().PathDistance)
+		m_fChaserStartDelayRemaining = std::max(
+			0.f,
+			m_fChaserStartDelayRemaining - timerDelta);
+		if (m_fChaserStartDelayRemaining > 0.f)
 			return;
 
 		m_bChaserActive = true;
@@ -769,7 +1013,7 @@ void CSpellMiniGame::UpdateChaser(_float fTimeDelta)
 
 	m_fChaserPathDistance = std::min(
 		m_fTotalPathDistance,
-		m_fChaserPathDistance + CHASER_MOVE_SPEED * fTimeDelta);
+		m_fChaserPathDistance + CHASER_MOVE_SPEED * movementDelta);
 
 	if (auto* chaserPath = E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextureUI>(m_hChaserPathProgress))
@@ -797,6 +1041,7 @@ void CSpellMiniGame::ResetChaser()
 {
 	m_bChaserActive = false;
 	m_fChaserPathDistance = 0.f;
+	m_fChaserStartDelayRemaining = CHASER_START_DELAY;
 	if (auto* chaserPath = E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextureUI>(m_hChaserPathProgress))
 	{
@@ -826,12 +1071,9 @@ void CSpellMiniGame::ResetBoostPads()
 	for (BOOST_PAD& pad : m_BoostPads)
 	{
 		pad.Consumed = false;
-		if (auto* backdropUI = E::CGameInstance::Get().
-			GetGameObjectByHandleT<E::CUIObject>(pad.BackdropHandle))
-		{
-			backdropUI->SetActive(true);
-			backdropUI->SetVisible(true);
-		}
+		SetMagicBurstVisible(pad.SuccessEffect, false);
+		SetBoostPadHighlight(pad.Handle, false);
+		SetUIHierarchyVisible(pad.BackdropHandle, true);
 		if (auto* padUI = E::CGameInstance::Get().
 			GetGameObjectByHandleT<E::CUIObject>(pad.Handle))
 		{
@@ -843,12 +1085,7 @@ void CSpellMiniGame::ResetBoostPads()
 
 void CSpellMiniGame::SetStartPadVisible(_bool visible)
 {
-	if (auto* startPadBackdrop = E::CGameInstance::Get().
-		GetGameObjectByHandleT<E::CUIObject>(m_hStartPadBackdrop))
-	{
-		startPadBackdrop->SetActive(visible);
-		startPadBackdrop->SetVisible(visible);
-	}
+	SetUIHierarchyVisible(m_hStartPadBackdrop, visible);
 
 	if (auto* startPad = E::CGameInstance::Get().
 		GetGameObjectByHandleT<E::CUIObject>(m_hStartPad))
@@ -872,6 +1109,309 @@ void CSpellMiniGame::SetCursorVisible(_bool visible)
 	{
 		arrow->SetAlpha(alpha);
 	}
+}
+
+CSpellMiniGame::SUCCESS_EFFECT CSpellMiniGame::CreateMagicBurst(
+	const _float2& position)
+{
+	SUCCESS_EFFECT effect{};
+	const std::vector<CHandle> burstRoots =
+		GET_SINGLE(UIManager)->LoadPrefab("MagicBurst");
+	for (const CHandle handle : burstRoots)
+	{
+		auto* ui = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(handle);
+		if (!ui)
+			continue;
+
+		ui->SetPos(position);
+		ui->CalcUICoord();
+		SetUIHierarchyInputLocked(handle);
+		if (ui->GetUIInfo().Restag ==
+			"TEX_VFX_T_FX_Smoke_Wispy2LiteSoftened01_D")
+		{
+			effect.WispyHandle = handle;
+			ui->GetUIInfo().Weight = 910;
+			ui->SetSize({ 88.f, 88.f });
+			ui->SetAlpha(0.27f);
+			ui->SetColor({ 2.65f, 2.65f, 2.65f });
+		}
+		else if (ui->GetUIInfo().Restag ==
+			"TEX_UI_T_SpellMinigame_SpeedBurstDropDot")
+		{
+			effect.CoreHandle = handle;
+			ui->SetResTag("TEX_T_FX_Stupify_Core_Center_D");
+			ui->GetUIInfo().Weight = 914;
+			ui->SetSize({ MAGIC_BURST_CORE_SIZE, MAGIC_BURST_CORE_SIZE });
+			ui->SetAlpha(1.f);
+			ui->SetColor({ 3.4f, 3.4f, 3.4f });
+		}
+		ui->CalcUICoord();
+	}
+
+	const std::vector<CHandle> fireRoots =
+		GET_SINGLE(UIManager)->LoadPrefab("FireEffect");
+	if (!fireRoots.empty())
+	{
+		effect.FireHandle = fireRoots.front();
+		if (auto* fire = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(effect.FireHandle))
+		{
+			fire->SetPos({ position.x + 15.f, position.y - 30.f });
+			fire->GetUIInfo().Weight = 912;
+			fire->GetUIInfo().Rot = -15.f;
+			fire->SetSize({ 32.f, 58.f });
+			fire->SetAlpha(0.88f);
+			fire->SetColor({ 0.9f, 1.65f, 2.35f });
+			fire->CalcUICoord();
+			SetUIHierarchyInputLocked(effect.FireHandle);
+		}
+	}
+
+	const std::vector<CHandle> smokeRoots =
+		GET_SINGLE(UIManager)->LoadPrefab("SmokeBurst");
+	if (!smokeRoots.empty())
+	{
+		effect.SmokeHandle = smokeRoots.front();
+		if (auto* smoke = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CEffectUI>(effect.SmokeHandle))
+		{
+			smoke->SetPos(position);
+			smoke->SetSize({
+				BOOST_SUCCESS_SMOKE_SIZE,
+				BOOST_SUCCESS_SMOKE_SIZE
+				});
+			smoke->GetUIInfo().Weight = 916;
+			smoke->SetAlpha(0.f);
+			smoke->SetColor({ 0.f, 0.f, 0.f });
+			smoke->CalcUICoord();
+			SetUIHierarchyInputLocked(effect.SmokeHandle);
+			SetUIHierarchyVisible(effect.SmokeHandle, false);
+		}
+	}
+
+	return effect;
+}
+
+void CSpellMiniGame::PlayMagicBurst(
+	const SUCCESS_EFFECT& effect,
+	CHandle padHandle)
+{
+	E::CGameInstance::Get().GetSoundManager()->Play2D(
+		"./Resources/SampleClient/Sound/UI/SpellClose.wav",
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::UI,
+			.fVolume = 0.3f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = false
+		});
+
+	if (auto* wispy = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(effect.WispyHandle))
+	{
+		wispy->SetAlpha(0.27f);
+	}
+	if (auto* fire = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(effect.FireHandle))
+	{
+		fire->SetAlpha(0.88f);
+	}
+	if (auto* core = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(effect.CoreHandle))
+	{
+		core->SetAlpha(1.f);
+		core->SetSize({ MAGIC_BURST_CORE_SIZE, MAGIC_BURST_CORE_SIZE });
+		core->CalcUICoord();
+
+		if (auto* tween = core->GetTweenCom())
+		{
+			tween->ClearTweens();
+			tween->PlayTween(
+				MAGIC_BURST_CORE_SIZE,
+				MAGIC_BURST_CORE_PULSE_SIZE,
+				MAGIC_BURST_CORE_GROW_TIME,
+				[core](_float currentSize)
+				{
+					core->SetSize({ currentSize, currentSize });
+					core->CalcUICoord();
+				},
+				nullptr,
+				EEaseType::EaseOutQuad);
+
+			tween->PlayTween(
+				MAGIC_BURST_CORE_PULSE_SIZE,
+				MAGIC_BURST_CORE_SIZE,
+				MAGIC_BURST_CORE_RETURN_TIME,
+				[core](_float currentSize)
+				{
+					core->SetSize({ currentSize, currentSize });
+					core->CalcUICoord();
+				},
+				nullptr,
+				EEaseType::EaseOutQuad,
+				MAGIC_BURST_CORE_GROW_TIME);
+		}
+	}
+	SetBoostPadHighlight(padHandle, true);
+	CreateBoostSuccessSmoke(effect.SmokeHandle, padHandle);
+	SetMagicBurstVisible(effect, true);
+}
+
+void CSpellMiniGame::CreateBoostSuccessSmoke(
+	CHandle smokeHandle,
+	CHandle padHandle,
+	int weight,
+	_float sizeScale,
+	const _float3& color,
+	_float duration)
+{
+	auto* pad = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(padHandle);
+	auto* smoke = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CEffectUI>(smokeHandle);
+	if (!pad || !smoke)
+		return;
+
+	std::erase_if(
+		m_TransientEffects,
+		[smokeHandle](const TRANSIENT_EFFECT& effect)
+		{
+			return effect.Handle == smokeHandle;
+		});
+
+	// The intro smoke uses a shorter lifetime, so speed up the flipbook as well
+	// instead of cutting the animation off before its final frame.
+	smoke->GetFlipInfo().Duration = duration;
+	smoke->Restart();
+	smoke->SetPos(pad->GetPos());
+	smoke->SetSize({
+		BOOST_SUCCESS_SMOKE_SIZE * sizeScale,
+		BOOST_SUCCESS_SMOKE_SIZE * sizeScale
+		});
+	smoke->GetUIInfo().Weight = weight;
+	smoke->SetAlpha(1.f);
+	smoke->SetColor(color);
+	smoke->SetInputLcok(true);
+	smoke->SetActive(true);
+	smoke->SetVisible(true);
+	smoke->CalcUICoord();
+	m_TransientEffects.push_back({
+		.Handle = smokeHandle,
+		.RemainingTime = duration,
+		.Duration = duration
+		});
+}
+
+void CSpellMiniGame::UpdateTransientEffects(_float fTimeDelta)
+{
+	for (auto iterator = m_TransientEffects.begin();
+		iterator != m_TransientEffects.end();)
+	{
+		auto* effect = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(iterator->Handle);
+		if (!effect || effect->GetPendingDestroy())
+		{
+			iterator = m_TransientEffects.erase(iterator);
+			continue;
+		}
+
+		iterator->RemainingTime = std::max(
+			0.f,
+			iterator->RemainingTime - fTimeDelta);
+		const _float lifeRatio = std::clamp(
+			iterator->Duration > FLT_EPSILON ?
+			iterator->RemainingTime / iterator->Duration : 0.f,
+			0.f,
+			1.f);
+		effect->SetAlpha(lifeRatio);
+
+		if (iterator->RemainingTime <= 0.f)
+		{
+			effect->SetAlpha(0.f);
+			effect->SetActive(false);
+			effect->SetVisible(false);
+			iterator = m_TransientEffects.erase(iterator);
+		}
+		else
+		{
+			++iterator;
+		}
+	}
+}
+
+void CSpellMiniGame::ClearTransientEffects()
+{
+	for (const TRANSIENT_EFFECT& effect : m_TransientEffects)
+	{
+		if (auto* ui = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(effect.Handle))
+		{
+			if (!ui->GetPendingDestroy())
+			{
+				ui->SetAlpha(0.f);
+				ui->SetActive(false);
+				ui->SetVisible(false);
+			}
+		}
+	}
+	m_TransientEffects.clear();
+}
+
+void CSpellMiniGame::SetBoostPadHighlight(
+	CHandle padHandle,
+	_bool highlighted)
+{
+	if (auto* pad = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextureUI>(padHandle))
+	{
+		pad->SetColor({ 0.f, 0.f, 0.f });
+		pad->SetAlpha(highlighted ? 0.f : 1.f);
+	}
+}
+
+void CSpellMiniGame::SetMagicBurstVisible(
+	const SUCCESS_EFFECT& effect,
+	_bool visible)
+{
+	SetUIHierarchyVisible(effect.WispyHandle, visible);
+	SetUIHierarchyVisible(effect.FireHandle, visible);
+	SetUIHierarchyVisible(effect.CoreHandle, visible);
+}
+
+void CSpellMiniGame::DestroyMagicBurst(SUCCESS_EFFECT& effect)
+{
+	DestroyUIHandle(effect.WispyHandle);
+	DestroyUIHandle(effect.FireHandle);
+	DestroyUIHandle(effect.CoreHandle);
+	DestroyUIHandle(effect.SmokeHandle);
+}
+
+void CSpellMiniGame::SetUIHierarchyVisible(
+	CHandle rootHandle,
+	_bool visible)
+{
+	auto* root = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(rootHandle);
+	if (!root)
+		return;
+
+	root->SetActive(visible);
+	root->SetVisible(visible);
+	for (const CHandle childHandle : root->GetChildren())
+		SetUIHierarchyVisible(childHandle, visible);
+}
+
+void CSpellMiniGame::SetUIHierarchyInputLocked(CHandle rootHandle)
+{
+	auto* root = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(rootHandle);
+	if (!root)
+		return;
+
+	root->SetInputLcok(true);
+	for (const CHandle childHandle : root->GetChildren())
+		SetUIHierarchyInputLocked(childHandle);
 }
 
 void CSpellMiniGame::DestroyUIHandle(CHandle& handle)

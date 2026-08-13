@@ -76,6 +76,8 @@ void CUIController::Update(E::_float fTimeDelta)
 		GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
 	{
 		m_hSpellMiniGame = std::nullopt;
+		FadeOutSpellMiniGameBackground();
+		FadeInPotionCountAfterSpellMiniGame();
 	}
 
 	// Temporary test entry. F8 opens/closes the Incendio mini game.
@@ -229,6 +231,43 @@ _bool CUIController::StartSpellMiniGame()
 		return false;
 
 	m_hSpellMiniGame = *handle;
+	E::CGameInstance::Get().GetSoundManager()->Play2D(
+		"./Resources/SampleClient/Sound/UI/Book.wav",
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::UI,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = false
+		});
+	const std::vector<CHandle> backgroundRoots =
+		GET_SINGLE(UIManager)->LoadPrefab("BlackBG250");
+	if (!backgroundRoots.empty())
+	{
+		m_hSpellMiniGameBackground = backgroundRoots.front();
+		if (auto* background = SafeGetOBJ(*m_hSpellMiniGameBackground))
+		{
+			const _float targetAlpha = background->GetAlpha();
+			background->SetAlpha(0.f);
+			background->SetInputLcok(true);
+			background->CalcUICoord();
+			background->GetTweenCom()->PlayTween(
+				0.f,
+				targetAlpha,
+				0.3f,
+				[background](_float currentAlpha)
+				{
+					background->SetAlpha(currentAlpha);
+				},
+				nullptr,
+				EEaseType::EaseOutQuad);
+		}
+		else
+		{
+			m_hSpellMiniGameBackground = std::nullopt;
+		}
+	}
+	FadeOutPotionCountForSpellMiniGame();
 	E::CGameInstance::Get().SetMouseFix(false);
 	if (m_Cursor)
 	{
@@ -250,12 +289,83 @@ void CUIController::StopSpellMiniGame()
 	}
 
 	m_hSpellMiniGame = std::nullopt;
+	FadeOutSpellMiniGameBackground();
+	FadeInPotionCountAfterSpellMiniGame();
 	E::CGameInstance::Get().SetMouseFix(true);
 	if (m_Cursor)
 	{
 		if (auto* cursor = SafeGetOBJ(*m_Cursor))
 			cursor->SetAlpha(0.f);
 	}
+}
+
+void CUIController::FadeOutSpellMiniGameBackground()
+{
+	if (!m_hSpellMiniGameBackground)
+		return;
+
+	const CHandle backgroundHandle = *m_hSpellMiniGameBackground;
+	m_hSpellMiniGameBackground = std::nullopt;
+	if (auto* background = SafeGetOBJ(backgroundHandle))
+	{
+		const _float startAlpha = background->GetAlpha();
+		background->SetInputLcok(true);
+		background->GetTweenCom()->PlayTween(
+			startAlpha,
+			0.f,
+			0.5f,
+			[backgroundHandle](_float currentAlpha)
+			{
+				if (auto* background = GetSafeUI(backgroundHandle))
+					background->SetAlpha(currentAlpha);
+			},
+			[backgroundHandle]()
+			{
+				if (GetSafeUI(backgroundHandle))
+					GET_SINGLE(UIManager)->DeleteUIRecursive(backgroundHandle);
+			},
+			EEaseType::EaseOutQuad);
+	}
+}
+
+void CUIController::FadeOutPotionCountForSpellMiniGame()
+{
+	auto* potionCount = SafeGetOBJ(m_PotionCount);
+	if (!potionCount)
+		return;
+
+	potionCount->GetTweenCom()->ClearTweens();
+	const _float startAlpha = potionCount->GetAlpha();
+	potionCount->GetTweenCom()->PlayTween(
+		startAlpha,
+		0.f,
+		0.3f,
+		[potionCount](_float currentAlpha)
+		{
+			potionCount->SetAlpha(currentAlpha);
+		},
+		nullptr,
+		EEaseType::EaseOutQuad);
+}
+
+void CUIController::FadeInPotionCountAfterSpellMiniGame()
+{
+	auto* potionCount = SafeGetOBJ(m_PotionCount);
+	if (!potionCount)
+		return;
+
+	potionCount->GetTweenCom()->ClearTweens();
+	const _float startAlpha = potionCount->GetAlpha();
+	potionCount->GetTweenCom()->PlayTween(
+		startAlpha,
+		1.f,
+		0.5f,
+		[potionCount](_float currentAlpha)
+		{
+			potionCount->SetAlpha(currentAlpha);
+		},
+		nullptr,
+		EEaseType::EaseOutQuad);
 }
 
 void CUIController::CreatePlayScreen()

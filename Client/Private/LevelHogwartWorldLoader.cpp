@@ -8,6 +8,7 @@
 #include "PlayerThirdPersonCamera.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
+#include "Player_Confringo_Bullet.h"
 #include "NvClothCape.h"
 #include "ResNvClothMesh.h"
 
@@ -98,7 +99,7 @@ HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
 		LEVEL::HOGWART_WORLD,
 		"PLAYER_MODEL_RESROUCE",
 		E::CResModel::Create(
-			"./Resources/SampleClient/Models/Skeleton/ElegantStudent_PrettyGirl2_RigCorrectedFinal/SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin")))
+			"./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin")))
 	{
 		E::CResModel::DESC desc{};
 		desc.PreTransformMatrix =
@@ -141,6 +142,10 @@ HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
 			LEVEL::HOGWART_WORLD,
 			PROTO_GAMEOBJECT::Prototype_GameObject_PlayerMagicBullet,
 			CPlayer_Magic_Bullet::Create())) ||
+		FAILED(gameInstance.AddPrototype(
+			LEVEL::HOGWART_WORLD,
+			PROTO_GAMEOBJECT::Prototype_GameObject_PlayerConfringoBullet,
+			CPlayer_Confringo_Bullet::Create())) ||
 		FAILED(gameInstance.AddPrototype(
 			LEVEL::HOGWART_WORLD,
 			PROTO_GAMEOBJECT::Prototype_GameObject_Player,

@@ -164,6 +164,7 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx
 		CMMAT.EmissiveColor = _float3(1.f, 1.f, 1.f);
 		CMMAT.EmissiveIntensity = 0.f;
 		CMMAT.ObjectAlpha = 1.f;
+		CMMAT.RoughnessIntensity = 1.f;
 
 		memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
 		pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);

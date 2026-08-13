@@ -122,25 +122,25 @@ void CPlayer_SkillStateBase::CacheDirectionalAttackAnimations(const CPlayer& pla
 	m_DirectionalLightAnimations.fill(-1);
 	m_DirectionalHeavyAnimations.fill(-1);
 
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::FWD)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_01_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_45)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_45_Lht_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_90)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_90_Lht_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_135)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_135_Lht_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_180)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_180_Lht_Spin_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_45)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_45_Lht_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_90)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_90_Lht_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_135)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_135_Lht_frmLft_anm.bin");
-	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_180)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_180_Lht_Spin_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::FWD)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_01_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_45_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_90_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_135_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_180_Lht_Spin_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_45_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_90_Lht_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_135_Lht_frmLft_anm.bin");
+	m_DirectionalLightAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_180_Lht_Spin_anm.bin");
 
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::FWD)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Hvy_01_Spin_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_45)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_45_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_90)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_90_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_135)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_135_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_180)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Lft_180_Hvy_SpinRht_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_45)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_45_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_90)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_90_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_135)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_135_Hvy_anm.bin");
-	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_180)] = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Rht_180_Hvy_Spin_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::FWD)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Hvy_01_Spin_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_45_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_90_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_135_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::LFT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Lft_180_Hvy_SpinRht_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_45)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_45_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_90_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_135_Hvy_anm.bin");
+	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_180_Hvy_Spin_anm.bin");
 
 	m_bDirectionalAttackAnimationsCached = true;
 }
@@ -183,6 +183,13 @@ CPlayer_SkillStateBase::ResolveTargetAttackDirection(const CPlayer& player) cons
 
 _bool CPlayer_SkillStateBase::PlayRandomTargetAttack(CPlayer& player, _float fBlendDuration)
 {
+	return PlayTargetAttack(
+		player, Engine::RandInt(0, 1) == 1, fBlendDuration);
+}
+
+_bool CPlayer_SkillStateBase::PlayTargetAttack(
+	CPlayer& player, _bool bHeavy, _float fBlendDuration)
+{
 	auto* pAnimator = player.GetAnimator();
 	if (!pAnimator)
 		return false;
@@ -190,7 +197,6 @@ _bool CPlayer_SkillStateBase::PlayRandomTargetAttack(CPlayer& player, _float fBl
 	CacheDirectionalAttackAnimations(player);
 	const ATTACK_DIRECTION eDirection = ResolveTargetAttackDirection(player);
 	const size_t iDirection = static_cast<size_t>(eDirection);
-	const _bool bHeavy = Engine::RandInt(0, 1) == 1;
 
 	int32_t iAnimation = bHeavy
 		? m_DirectionalHeavyAnimations[iDirection]

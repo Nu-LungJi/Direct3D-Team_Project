@@ -435,19 +435,23 @@ void CBTAnimRoot::OnEnter()
 	}
 		
 	auto pBT = Get_ComBT();
+	if (nullptr == pBT) return;
 
-	if (!pBT) return;
+	auto pSrc = static_cast<CMonster*>(pBT->GetGameObject());
+	if (nullptr == pSrc) return;
 
-	auto pOwner = pBT->GetGameObject();
+	auto pAnim = pSrc->Get_Animator();
+	if (nullptr == pAnim) return;
 
-	if (!pOwner) return;
+	auto& pA = pAnim->GetCurAnimState();
+	if (m_Value.iAnimIndex == pA.iAnimIndex)
+	{
+		pA.bFinished = false;
+		pA.bLoop = m_bLoop;
 
-	auto pAnimator = pOwner->GetComponent<CComAnimator>("ComCModelAnimator");
-
-	if (!pAnimator) return;
-
-	auto& animState = pAnimator->GetCurAnimState();
-	
+		pAnim->SetPlay(true);
+		pAnim->SetTrackPosition(0.f);
+	}
 
 }
 

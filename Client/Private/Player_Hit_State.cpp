@@ -82,13 +82,13 @@ void CPlayer_Hit_State::CacheAnimationIndices(const CPlayer& player)
 
 	m_HitAnimations.fill(-1);
 	m_HitAnimations[static_cast<size_t>(HIT_DIRECTION::FWD)] =
-		FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Rct_Hit_Fwd_anm.bin");
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Rct_Hit_Fwd_anm.bin");
 	m_HitAnimations[static_cast<size_t>(HIT_DIRECTION::BWD)] =
-		FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Rct_Hit_Bwd_anm.bin");
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Rct_Hit_Bwd_anm.bin");
 	m_HitAnimations[static_cast<size_t>(HIT_DIRECTION::LFT)] =
-		FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Rct_Hit_Lft_anm.bin");
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Rct_Hit_Lft_anm.bin");
 	m_HitAnimations[static_cast<size_t>(HIT_DIRECTION::RHT)] =
-		FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Rct_Hit_Rht_anm.bin");
+		FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Rct_Hit_Rht_anm.bin");
 
 	m_bAnimationIndicesCached = true;
 }

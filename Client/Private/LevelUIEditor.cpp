@@ -24,6 +24,32 @@ NS_USING(Client)
 
 static int selectedParent = -1;
 
+namespace
+{
+	void LoadFlipInfoCompatible(
+		const nlohmann::ordered_json& obj,
+		FLIP_INFO& flipInfo)
+	{
+		flipInfo.cellsize = obj.value("CellSize", 4096u);
+		flipInfo.TotalFrame = std::max(
+			1u,
+			obj.value("TotalFrame", 64u));
+		flipInfo.Padding = obj.value("Padding", 2.f);
+		flipInfo.Duration = obj.value("Duration", 1.5f);
+
+		const uint32_t legacyGridSize = std::max(
+			1u,
+			static_cast<uint32_t>(std::round(
+				std::sqrt(static_cast<_float>(flipInfo.TotalFrame)))));
+		flipInfo.Columns = std::max(
+			1u,
+			obj.value("Columns", legacyGridSize));
+		flipInfo.Rows = std::max(
+			1u,
+			obj.value("Rows", legacyGridSize));
+	}
+}
+
 CLevelUIEditor::CLevelUIEditor()
 	: CLevel{ ETOUI(LEVEL::UIEDITOR) }
 {
@@ -61,20 +87,8 @@ HRESULT CLevelUIEditor::Initialize()
 		m_vResTag.push_back(pair.first.GetDbgStr());
 	}
 
-	m_vFlipBookResTag.push_back("Flipbook_LoadingWidget_Flame");
-	m_vFlipBookResTag.push_back("Flipbook_LoadingWidget_Houses");
-	m_vFlipBookResTag.push_back("Flipbook_VFXSmokeSim_D");
-	m_vFlipBookResTag.push_back("Flipbook_VFX_T_ItemSpark_8x8_D");
-	m_vFlipBookResTag.push_back("Flipbook_VFX_T_PopVFX_8x8_D");
-	m_vFlipBookResTag.push_back("Flipbook_VFX_BlinkingStars");
-	m_vFlipBookResTag.push_back("Flipbook_UI_T_MagicEffect1");
-	m_vFlipBookResTag.push_back("Flipbook_UI_T_SmokeWispy_D");
-	m_vFlipBookResTag.push_back("TEX_VFX_T_ImpactDust_FB_D"); 
-	m_vFlipBookResTag.push_back("TEX_VFX_T_TMB_SmokeWispy_D");
-	m_vFlipBookResTag.push_back("TEX_VFX_T_Fireball_Dir_01_D");
-	m_vFlipBookResTag.push_back("TEX_VFX_T_FireballB_01_D");
-	m_vFlipBookResTag.push_back("TEX_VFX_T_Fireball_Stream_D");
-	
+	RefreshFlipbookResources();
+
 	if (std::nullopt == Target_UI)
 	{
 		m_UIINFO.fX	= clientSize.x * 0.5f;
@@ -999,25 +1013,44 @@ void CLevelUIEditor::FlipbookMode()
 	
 			int cellsize = m_FLIPINFO.cellsize;
 			int TotalFrame = m_FLIPINFO.TotalFrame;
-			int Padding = m_FLIPINFO.Padding;
+			int Columns = m_FLIPINFO.Columns;
+			int Rows = m_FLIPINFO.Rows;
+			int Padding = static_cast<int>(m_FLIPINFO.Padding);
 
 			ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 			ImGui::Text("Cell Size"); ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(100);
 			ImGui::InputInt("##CellSize", &cellsize);
-			m_FLIPINFO.cellsize = cellsize;
+			m_FLIPINFO.cellsize = std::max(1, cellsize);
+
+			ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+			ImGui::Text("Columns"); ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(100);
+			ImGui::InputInt("##FlipbookColumns", &Columns);
+			m_FLIPINFO.Columns = std::max(1, Columns);
+
+			ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+			ImGui::Text("Rows"); ImGui::TableNextColumn();
+			ImGui::SetNextItemWidth(100);
+			ImGui::InputInt("##FlipbookRows", &Rows);
+			m_FLIPINFO.Rows = std::max(1, Rows);
 	
 			ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 			ImGui::Text("Total Frame"); ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(100);
 			ImGui::InputInt("##TotalFrame", &TotalFrame);
-			m_FLIPINFO.TotalFrame = TotalFrame;
+			const uint32_t frameCapacity =
+				m_FLIPINFO.Columns * m_FLIPINFO.Rows;
+			m_FLIPINFO.TotalFrame = std::clamp(
+				TotalFrame,
+				1,
+				static_cast<int>(frameCapacity));
 	
 			ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 			ImGui::Text("Padding"); ImGui::TableNextColumn();
 			ImGui::SetNextItemWidth(100);
 			ImGui::InputInt("##Padding", &Padding);
-			m_FLIPINFO.Padding = Padding;
+			m_FLIPINFO.Padding = static_cast<_float>(Padding);
 	
 			ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 			ImGui::Text("Duration"); ImGui::TableNextColumn();
@@ -1041,6 +1074,8 @@ void CLevelUIEditor::FlipbookMode()
 			FLIP_INFO& flipInfo = static_cast<CFlipbookUI*>(selectUI)->GetFlipInfo();
 			flipInfo.cellsize = m_FLIPINFO.cellsize;
 			flipInfo.TotalFrame = m_FLIPINFO.TotalFrame;
+			flipInfo.Columns = m_FLIPINFO.Columns;
+			flipInfo.Rows = m_FLIPINFO.Rows;
 			flipInfo.Padding = m_FLIPINFO.Padding;
 			flipInfo.Duration = m_FLIPINFO.Duration;
 	
@@ -1064,6 +1099,11 @@ void CLevelUIEditor::FlipbookMode()
 	// ---------------------------------------------------------
 	if (ImGui::CollapsingHeader("Texture Resources", ImGuiTreeNodeFlags_DefaultOpen))
 	{
+		ImGui::Text("FlipBook textures: %zu", m_vFlipBookResTag.size());
+		ImGui::SameLine();
+		if (ImGui::Button("Refresh FlipBook Textures"))
+			RefreshFlipbookResources();
+
 		// 잘림 방지용 내부 패딩
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 10));
 	
@@ -1079,6 +1119,13 @@ void CLevelUIEditor::FlipbookMode()
 				ImGui::PushID((int)i);
 	
 				const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>("LEVEL_UIEDITOR", m_vFlipBookResTag[i]);
+				if (!srv || !srv->GetSRV())
+				{
+					ImGui::TextDisabled("Load failed");
+					ImGui::TextWrapped("%s", m_vFlipBookResTag[i].c_str());
+					ImGui::PopID();
+					continue;
+				}
 	
 				if (ImGui::ImageButton((ImTextureID)srv->GetSRV().Get(), ImVec2(60, 60)))
 				{
@@ -1093,6 +1140,7 @@ void CLevelUIEditor::FlipbookMode()
 					ImGui::Image((ImTextureID)srv->GetSRV().Get(), ImVec2(256, 256));
 					ImGui::EndTooltip();
 				}
+				ImGui::TextWrapped("%s", m_vFlipBookResTag[i].c_str());
 	
 				ImGui::PopID();
 			}
@@ -1243,6 +1291,8 @@ void CLevelUIEditor::PickingOnlyRoot()
 			m_FLIPINFO.cellsize = flipInfo.cellsize;
 			m_FLIPINFO.Duration = flipInfo.Duration;
 			m_FLIPINFO.TotalFrame = flipInfo.TotalFrame;
+			m_FLIPINFO.Columns = flipInfo.Columns;
+			m_FLIPINFO.Rows = flipInfo.Rows;
 			m_FLIPINFO.Padding = flipInfo.Padding;
 		}
 	}
@@ -1416,6 +1466,79 @@ void CLevelUIEditor::PrefabLoad()
 	}
 }
 
+void CLevelUIEditor::RefreshFlipbookResources()
+{
+	m_vFlipBookResTag.clear();
+	const fs::path flipbookDirectory =
+		"./Resources/SampleClient/Textures/UI/FlipBook";
+	std::error_code error{};
+	if (!fs::exists(flipbookDirectory, error) ||
+		!fs::is_directory(flipbookDirectory, error))
+	{
+		return;
+	}
+
+	for (fs::directory_iterator iterator{
+			flipbookDirectory,
+			fs::directory_options::skip_permission_denied,
+			error }, end;
+		iterator != end;
+		iterator.increment(error))
+	{
+		if (error)
+		{
+			error.clear();
+			continue;
+		}
+		if (!iterator->is_regular_file(error))
+			continue;
+
+		std::string extension = iterator->path().extension().string();
+		std::ranges::transform(
+			extension,
+			extension.begin(),
+			[](unsigned char character)
+			{
+				return static_cast<char>(std::tolower(character));
+			});
+		if (extension != ".png" && extension != ".dds" &&
+			extension != ".jpg" && extension != ".jpeg" &&
+			extension != ".tga")
+		{
+			continue;
+		}
+
+		const std::string resourceTag =
+			"TEX_" + iterator->path().stem().string();
+		auto resource = E::CGameInstance::Get().
+			GetResourceFirst<E::CResTexture2D>(
+				"LEVEL_UIEDITOR",
+				resourceTag);
+		if (!resource)
+		{
+			resource = std::dynamic_pointer_cast<E::CResTexture2D>(
+				E::CGameInstance::Get().AddResource(
+					"LEVEL_UIEDITOR",
+					resourceTag,
+					E::CResTexture2D::Create(
+						iterator->path().generic_string())));
+		}
+		if (!resource)
+			continue;
+		if (!resource->GetSRV() && FAILED(resource->Load()))
+			continue;
+
+		m_vFlipBookResTag.push_back(resourceTag);
+	}
+
+	std::ranges::sort(m_vFlipBookResTag);
+	m_vFlipBookResTag.erase(
+		std::unique(
+			m_vFlipBookResTag.begin(),
+			m_vFlipBookResTag.end()),
+		m_vFlipBookResTag.end());
+}
+
 void CLevelUIEditor::FlipBookMake()
 {
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
@@ -1431,6 +1554,12 @@ void CLevelUIEditor::FlipBookMake()
 	Desc.ResTag = m_UIINFO.Restag;
 	Desc.ResWeight = count;
 	Desc.UIType = ETOUI(UI_TYPE::FLIPBOOK);
+	Desc.cellsize = m_FLIPINFO.cellsize;
+	Desc.TotalFrame = m_FLIPINFO.TotalFrame;
+	Desc.Columns = m_FLIPINFO.Columns;
+	Desc.Rows = m_FLIPINFO.Rows;
+	Desc.Padding = static_cast<uint32_t>(m_FLIPINFO.Padding);
+	Desc.Duration = m_FLIPINFO.Duration;
 
 	std::optional<CHandle> handle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_EffectUI", "Layer_UI", &Desc);
 	CEffectUI* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*handle);
@@ -1438,6 +1567,8 @@ void CLevelUIEditor::FlipBookMake()
 	FLIP_INFO& flipInfo = pUI->GetFlipInfo();
 	flipInfo.cellsize = m_FLIPINFO.cellsize;
 	flipInfo.TotalFrame = m_FLIPINFO.TotalFrame;
+	flipInfo.Columns = m_FLIPINFO.Columns;
+	flipInfo.Rows = m_FLIPINFO.Rows;
 	flipInfo.Padding = m_FLIPINFO.Padding;
 	flipInfo.Duration = m_FLIPINFO.Duration;
 
@@ -1497,6 +1628,8 @@ void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& 
 		const FLIP_INFO& flipInfo = static_cast<CFlipbookUI*>(pUI)->GetFlipInfo();
 		obj["CellSize"] = flipInfo.cellsize;
 		obj["TotalFrame"] = flipInfo.TotalFrame;
+		obj["Columns"] = flipInfo.Columns;
+		obj["Rows"] = flipInfo.Rows;
 		obj["Padding"] = flipInfo.Padding;
 		obj["Duration"] = flipInfo.Duration;
 		break;
@@ -1551,16 +1684,25 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
 		break;
 	case ETOUI(UI_TYPE::FLIPBOOK):
-		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_EffectUI", "Layer_UI", &Desc);
+	{
+		FLIP_INFO loadedFlipInfo{};
+		LoadFlipInfoCompatible(obj, loadedFlipInfo);
+		CFlipbookUI::FLIPBOOK_DESC flipDesc{};
+		flipDesc.sObjectTag = Desc.sObjectTag;
+		flipDesc.cellsize = loadedFlipInfo.cellsize;
+		flipDesc.TotalFrame = loadedFlipInfo.TotalFrame;
+		flipDesc.Columns = loadedFlipInfo.Columns;
+		flipDesc.Rows = loadedFlipInfo.Rows;
+		flipDesc.Padding = static_cast<uint32_t>(loadedFlipInfo.Padding);
+		flipDesc.Duration = loadedFlipInfo.Duration;
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_EffectUI", "Layer_UI", &flipDesc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*uiHandle);
 		{
 			FLIP_INFO& flipInfo = static_cast<CEffectUI*>(pUI)->GetFlipInfo();
-			flipInfo.cellsize	= obj["CellSize"];
-			flipInfo.TotalFrame = obj["TotalFrame"];
-			flipInfo.Padding	= obj["Padding"];
-			flipInfo.Duration	= obj["Duration"];
+			flipInfo = loadedFlipInfo;
 		}
 		break;
+	}
 	case ETOUI(UI_TYPE::TEXT):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextBox", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*uiHandle);
@@ -2121,6 +2263,8 @@ void CLevelUIEditor::UpdateTargetState()
 			m_FLIPINFO.cellsize = flipInfo.cellsize;
 			m_FLIPINFO.Duration = flipInfo.Duration;
 			m_FLIPINFO.TotalFrame = flipInfo.TotalFrame;
+			m_FLIPINFO.Columns = flipInfo.Columns;
+			m_FLIPINFO.Rows = flipInfo.Rows;
 			m_FLIPINFO.Padding = flipInfo.Padding;
 		}
 		selectUI->CalcUICoord();

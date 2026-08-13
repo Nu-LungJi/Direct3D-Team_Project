@@ -89,6 +89,7 @@ private:
 	void PrefabSave();
 	void PrefabLoad();
 	void FlipBookMake();
+	void RefreshFlipbookResources();
 
 	void SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& obj);
 	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);

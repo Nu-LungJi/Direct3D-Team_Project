@@ -113,9 +113,11 @@ HRESULT CBTAnimation::Load_json(const nlohmann::json& j)
 void CBTAnimation::OnEnter()
 {
 	__super::OnEnter();
+	
 }
 void CBTAnimation::OnExit(EVALUATE eResult)
 {
+	__super::OnExit(eResult);
 }
 E::UPtr<CBTAnimation> CBTAnimation::Create()
 {

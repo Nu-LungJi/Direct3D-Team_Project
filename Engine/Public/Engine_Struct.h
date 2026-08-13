@@ -548,6 +548,7 @@ namespace Engine
 		MODEL_INSTANCE_KEY Key{};
 		
 		CHandle		ObjectHandle;
+		std::vector<CHandle> InstanceObjectHandles;
 		std::vector<GPU_ANIM_INSTANCE_DATA>Instances;
 		std::vector<GPU_PART_INSTANCE_DATA> PartInstances;
 		std::vector<std::vector<_float4x4>> CombinedBoneMatrices;

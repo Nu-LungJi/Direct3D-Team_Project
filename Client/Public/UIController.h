@@ -130,6 +130,7 @@ private:
 
 	// Spell learning mini game
 	std::optional<CHandle> m_hSpellMiniGame{ std::nullopt };
+	std::optional<CHandle> m_hSpellMiniGameBackground{ std::nullopt };
 
 	//*********내부함수*************//
 private:
@@ -148,6 +149,9 @@ private:
 	void BindMiniMap();
 	void SubscribeQuestUIEvents();
 	void ApplyPendingQuestUIGroups();
+	void FadeOutSpellMiniGameBackground();
+	void FadeOutPotionCountForSpellMiniGame();
+	void FadeInPotionCountAfterSpellMiniGame();
 
 	/**********모션************/
 	private:

@@ -5,6 +5,7 @@
 #include "EnderDragon_State.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComAnimator.h"
+#include "ComBeHavior.h"
 NS_USING(Client)
 CEdg_Phase::CEdg_Phase()
 {
@@ -93,6 +94,12 @@ void CEdg_Phase::Exit(CStateMachine* pStateMachine)
 		pBB->Set_Value<_float3>(EDG_KEY::LPATROL, vLeftPos);
 		pBB->Set_Value<_float3>(EDG_KEY::RPATROL, vRightPos);
 	}
+	if (m_ePhase == DRAGON_PHASE::PHASE5)
+	{
+		auto pBT = pDragon->GetComponent<CComBeHavior>("Com_BT");
+		if (nullptr == pBT) return;
+		pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+	}
 }
 
 void CEdg_Phase::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -172,7 +179,7 @@ _bool CEdg_Phase::MovePhase(CEnderDragon* pDragon, _float fTimeDelta)
 	_float3 vLerpDir{};
 	XMStoreFloat3(&vLerpDir, XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vLastDir), XMLoadFloat3(&m_vNextDir), t)));
 	
-	pMoveIntent->SetMoveIntent(vLerpDir, 25.f);
+	pMoveIntent->SetMoveIntent(vLerpDir, 50.f);
 	pMoveIntent->SetFacingIntent(vLerpDir, 60.f);
 	return false;
 }
@@ -202,7 +209,6 @@ _bool CEdg_Phase::MovePhase3(CEnderDragon* pDragon, _float fTimeDelta)
 		
 	if (!m_bNext)
 	{
-		XMStoreFloat3(&m_vLastDir, XMVector3Normalize(pDragon->GetTransform().GetState(STATE::LOOK)));
 		XMStoreFloat3(&m_vNextDir, XMVector3Normalize(vNextPos - vCurPos));
 		m_bNext = true;
 	}
@@ -215,13 +221,8 @@ _bool CEdg_Phase::MovePhase3(CEnderDragon* pDragon, _float fTimeDelta)
 		m_fTick = 0.f;
 	}
 
-	m_fTick += fTimeDelta;
-	_float t = std::min(m_fTick / 0.5f, 1.f);
-
-	_float3 vLerpDir{};
-	XMStoreFloat3(&vLerpDir, XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vLastDir), XMLoadFloat3(&m_vNextDir), t)));
-
-	pMoveIntent->SetMoveIntent(vLerpDir, 25.f);
+	
+	pMoveIntent->SetMoveIntent(m_vNextDir, 20.f);
 	pMoveIntent->SetFacingIntent(vTargetDir, 60.f);
 	return false;
 }
@@ -358,23 +359,23 @@ void CEdg_Phase::Effect_All(CEnderDragon* pDragon, _float fTimeDelta)
 	{
 		vstart = TransformTrailPoint({ 0.f, 3.5f, 0.f });
 		vend = TransformTrailPoint({ 0.f, 2.5f, 0.f });
-		CGameInstance::Get().AddTrailPoint("RanrokTrail1", "RanrokTrail1", vstart, vend);
+		CGameInstance::Get().AddTrailPoint("RanrokTrail1", "RanrokTrail1", pDragon->GetHandle(), vstart, vend);
 
 		vstart = TransformTrailPoint({ 0.f, 1.5f, -3.f });
 		vend = TransformTrailPoint({ 0.f, 0.5f, -3.f });
-		CGameInstance::Get().AddTrailPoint("RanrokTrail2", "RanrokTrail2", vstart, vend);
+		CGameInstance::Get().AddTrailPoint("RanrokTrail2", "RanrokTrail2", pDragon->GetHandle(), vstart, vend);
 
 		vstart = TransformTrailPoint({ 0.f, 1.5f, 3.f });
 		vend = TransformTrailPoint({ 0.f, 0.5f, 3.f });
-		CGameInstance::Get().AddTrailPoint("RanrokTrail3", "RanrokTrail3", vstart, vend);
+		CGameInstance::Get().AddTrailPoint("RanrokTrail3", "RanrokTrail3", pDragon->GetHandle(), vstart, vend);
 
 		vstart = TransformTrailPoint({ 0.f, -0.5f, -2.f });
 		vend = TransformTrailPoint({ 0.f, -1.5f, -2.f });
-		CGameInstance::Get().AddTrailPoint("RanrokTrail4", "RanrokTrail4", vstart, vend);
+		CGameInstance::Get().AddTrailPoint("RanrokTrail4", "RanrokTrail4", pDragon->GetHandle(), vstart, vend);
 
 		vstart = TransformTrailPoint({ 0.f, -0.5f, 2.f });
 		vend = TransformTrailPoint({ 0.f, -1.5f, 2.f });
-		CGameInstance::Get().AddTrailPoint("RanrokTrail5", "RanrokTrail5", vstart, vend);
+		CGameInstance::Get().AddTrailPoint("RanrokTrail5", "RanrokTrail5", pDragon->GetHandle(), vstart, vend);
 	}
 	
 

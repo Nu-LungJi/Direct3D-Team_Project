@@ -1,7 +1,7 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
-enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL,SKIP,END};
+enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL, TURNBREATH, THREEBALL, BLACKBALL,LONGBREATH,END};
 enum class DRAGON_PHASE{PHASE1, PHASE2, PHASE3, PHASE4, PHASE5, PHASE6, PHASE7, END};
 enum class EDG_SPAWN_NUMBER { FIRST, SECOND, THIRD, FOUR };
 
@@ -11,6 +11,14 @@ typedef struct stredganimfsm
 	int32_t iAnimIndex{};
 	_float	fBlend{};
 }EDG_ANIM_FSM;
+typedef struct stractiveskilltable
+{
+	_string		  SkillName{};
+	_float		  fLifeTime{}, fDist{};
+	int32_t		  iBoneOffset{};
+	DRAGON_SKILL eType{};
+}EDG_ACSKT_DESC;
+
 NS_BEGIN(Client)
 typedef struct stredgskillInfo
 {
@@ -21,6 +29,7 @@ typedef struct stredgskillInfo
 	PROTO_GAMEOBJECT ProtoTag;
 	_string NameTag{};
 	int32_t iOffsetBoneIndex{-1};
+	DRAGON_SKILL eType{DRAGON_SKILL::END};
 
 }EDG_SKILL_INFO;
 class CEnderDragon final : public CMonster
@@ -50,6 +59,15 @@ public:
 	HRESULT						Ready_Fsm(const _string& LevelTag);
 	HRESULT						Ready_Skill(const _string& LevelTag);
 	void						Ready_BBKeyValue();
+
+	/*----------- 광윤 추가 -----------*/ // MaskMap Test
+	HRESULT						Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch);
+
+private:
+	SPtr<CResPixelShader>	m_pResDragonPixelShader{};
+	SPtr<CResCBuffer>		m_pResDragonCBuffer{};
+	/*---------------------------------*/
+
 public:
 	_string						Get_SkillName(ATTMON SkillNode)override;
 
@@ -62,6 +80,7 @@ public:
 	void						Check_Phase();
 	void						Set_AttTable(ATTMON eType, _float2 fSkillRatio) override;
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
+	EDG_SKILL_INFO&				 Get_SkillInfo(DRAGON_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
 private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
@@ -71,6 +90,7 @@ private:
 	void						Picking(_float3& vPos,uint32_t iID);
 
 	void						InitializeEffects();
+
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
 	

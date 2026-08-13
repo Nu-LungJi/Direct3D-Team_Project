@@ -99,11 +99,11 @@ void CPlayer_DashSkill_State::CacheAnimationIndices(const CPlayer& player)
 	if (m_bAnimationIndicesCached)
 		return;
 
-	m_iDashAnimIndex = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_DdgeRll_Blink_2Cmbt_anm.bin");
-	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_DdgeRll_Blink_anm.bin");
-	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_DdgeRll_Blink1_anm.bin");
-	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_DdgeRll_Blink1_Loop_anm.bin");
-	m_iDashEndAnimIndex = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_DdgeRll_Blink1_anm.bin");
+	m_iDashAnimIndex = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_DdgeRll_Blink_2Cmbt_anm.bin");
+	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_DdgeRll_Blink_anm.bin");
+	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_DdgeRll_Blink1_anm.bin");
+	//m_iDashAnimIndex = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_DdgeRll_Blink1_Loop_anm.bin");
+	m_iDashEndAnimIndex = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_DdgeRll_Blink1_anm.bin");
 
 	m_bAnimationIndicesCached =
 		m_iDashAnimIndex >= 0 &&
@@ -203,7 +203,7 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 			_float3 vstart, vend;
 			vstart = _float3(fpos.x, fpos.y + 2.5f, fpos.z);
 			vend = _float3(fpos.x, fpos.y - 2.5f, fpos.z);
-			CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU", vstart, vend);
+			CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU", pPlayer->GetHandle(), vstart, vend);
 			_float3 deltaPos;
 			XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
 			if (distance > m_fDistanceOffeset) {

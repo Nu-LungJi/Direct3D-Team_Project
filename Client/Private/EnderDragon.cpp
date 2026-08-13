@@ -145,13 +145,21 @@ void CEnderDragon::UpdateGUI()
 			ImGui::EndPopup();
 		}
 	}
-	
+	if (ImGui::Button("Clear"))
+		m_DebugPoint.clear();
 	Phase_Debug();
 }
 
 HRESULT CEnderDragon::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
+	/*----------- 광윤 추가 -----------*/
+	if (m_pResDragonPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_EnderDragon", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
+		if (FAILED(m_pResDragonPixelShader->Load()))    return E_FAIL;
+	}
+	if (!(m_pResDragonCBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_GPU_SKIN_MESH")))	return E_FAIL;
+	// 드래곤 날개, 눈 마스크 텍스쳐 적용 테스트 중
+	/*---------------------------------*/
 	return S_OK;
 }
 
@@ -321,6 +329,7 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
+	InitializeEffects();
 	return S_OK;
 }
 HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
@@ -352,43 +361,60 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_MonSkillLists[ATTMON::SLOT2] = ETOUI(DRAGON_SKILL::FIREBALL);
 	m_MonSkillLists[ATTMON::SLOT3] = ETOUI(DRAGON_SKILL::PULSE);
 	m_MonSkillLists[ATTMON::SLOT4] = ETOUI(DRAGON_SKILL::RANDOMBALL);
-
+	m_MonSkillLists[ATTMON::SLOT5] = ETOUI(DRAGON_SKILL::THREEBALL);
+	m_MonSkillLists[ATTMON::SLOT6] = ETOUI(DRAGON_SKILL::BLACKBALL);
+	m_MonSkillLists[ATTMON::SLOT7] = ETOUI(DRAGON_SKILL::TURNBREATH);
+	m_MonSkillLists[ATTMON::SLOT8] = ETOUI(DRAGON_SKILL::LONGBREATH);
 	//////////////////////파티클 넣는곳/////////////////////////
-	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)] = "FireBall";
-	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)] = "DragonBreath";
-	m_EffectNames[ETOUI(DRAGON_SKILL::PULSE)] = "Pulse";
+	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)]   = "FireBall";
+	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)]	   = "DragonBreath";
+	m_EffectNames[ETOUI(DRAGON_SKILL::TURNBREATH)] = "DragonBreath";
+	m_EffectNames[ETOUI(DRAGON_SKILL::LONGBREATH)] = "DragonBreath";
+	m_EffectNames[ETOUI(DRAGON_SKILL::PULSE)]	   = "Pulse";
 	m_EffectNames[ETOUI(DRAGON_SKILL::RANDOMBALL)] = "RandomBall";
+	m_EffectNames[ETOUI(DRAGON_SKILL::THREEBALL)]  = "FireBall";
+	m_EffectNames[ETOUI(DRAGON_SKILL::BLACKBALL)]  = "BlackBall";
 	////////////////////////////////////////////////////////////
 	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
-	int32_t iBoneIndex{};
-	
-	iBoneIndex = SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Head");
-	
+	int32_t iHeadBoneIndex{};
+
+	int32_t iOffsetBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Mouth");
+
+	iHeadBoneIndex = SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Head");
+	SkillDesc.iOffsetBoneIndex = iOffsetBoneIndex;
 	SkillDesc.hOwner = GetHandle();
-	
+	SkillDesc.eType = DRAGON_SKILL::BREATH;
 	auto BreathHandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, "03.Breath", &SkillDesc);
 	if (!BreathHandle) return E_FAIL;
-	//wrist_right_target
-	//wrist_left_target
-	///Pulse///
+
 	SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_Main");
+	SkillDesc.eType = DRAGON_SKILL::PULSE;
 	auto PulseHandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Pulse, "03.Pulse", &SkillDesc);
 	if (!PulseHandle) return E_FAIL;
 	///////////
 
-	int32_t iOffsetBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Mouth");
-	m_SkillHandle[ETOUI(DRAGON_SKILL::FIREBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iBoneIndex,
-	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, .NameTag = "03.FireBall",.iOffsetBoneIndex = iOffsetBoneIndex };
 	
-	iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("wrist_right_target");
-	iOffsetBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("wrist_left_target");
-	m_SkillHandle[ETOUI(DRAGON_SKILL::RANDOMBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iBoneIndex,
-	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_RandomBall, .NameTag = "03.RandomBall",.iOffsetBoneIndex = iOffsetBoneIndex };
+	m_SkillHandle[ETOUI(DRAGON_SKILL::FIREBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iHeadBoneIndex,
+	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, .NameTag = "03.FireBall",.iOffsetBoneIndex = iOffsetBoneIndex,
+	.eType = DRAGON_SKILL::FIREBALL};
+	
+	m_SkillHandle[ETOUI(DRAGON_SKILL::THREEBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iHeadBoneIndex,
+	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, .NameTag = "03.ThreeBall",.iOffsetBoneIndex = iOffsetBoneIndex,
+	.eType = DRAGON_SKILL::THREEBALL };
 
-	m_SkillHandle[ETOUI(DRAGON_SKILL::BREATH)] = EDG_SKILL_INFO{.handle = BreathHandle.value(), .bPool = true,};
+	m_SkillHandle[ETOUI(DRAGON_SKILL::BLACKBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iHeadBoneIndex,
+	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, .NameTag = "03.BlackBall",.iOffsetBoneIndex = iOffsetBoneIndex,
+	.eType = DRAGON_SKILL::BLACKBALL };
+	
+	int32_t iBallBone = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_Main");
+	m_SkillHandle[ETOUI(DRAGON_SKILL::RANDOMBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iBallBone,
+	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_RandomBall, .NameTag = "03.RandomBall", };
+
+
+	m_SkillHandle[ETOUI(DRAGON_SKILL::LONGBREATH)] = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true };
+	m_SkillHandle[ETOUI(DRAGON_SKILL::TURNBREATH)] = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true};
+	m_SkillHandle[ETOUI(DRAGON_SKILL::BREATH)]	   = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true,};
 	m_SkillHandle[ETOUI(DRAGON_SKILL::PULSE)]  = EDG_SKILL_INFO{.handle = PulseHandle.value() , .bPool = true,};
-
-
 	return S_OK;
 }
 void CEnderDragon::Ready_BBKeyValue()
@@ -404,8 +430,6 @@ void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 		m_bDebug = !m_bDebug;
 	
 	if (!m_bDebug) return;
-
-
 
 	Check_Phase();
 	m_pFsm->PriorityUpdate(fTimeDelta);
@@ -433,8 +457,98 @@ void CEnderDragon::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 
 }
+/*----------- 광윤 추가 -----------*/
+// 마스크 텍스쳐 테스트 중
+HRESULT	CEnderDragon::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) {
+	__super::Render_Instanced(pContext, ctx, Batch);
+	return S_OK;
 
+	{
+		if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResDragonPixelShader)	return E_FAIL;
 
+		pContext->IASetInputLayout(m_pResVertexCPUSkinningInstancedShader->GetInputLayout().Get());
+		pContext->VSSetShader(m_pResVertexCPUSkinningInstancedShader->GetVertexShader().Get(), nullptr, 0);
+		pContext->PSSetShader(m_pResDragonPixelShader->GetPixelShader().Get(), nullptr, 0);
+
+		const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
+		if (iInstanceCount == 0 || iInstanceCount > 512 || Batch.CombinedBoneMatrices.size() != iInstanceCount)	return E_FAIL;
+
+		if (FAILED(Update_InstanceBuffer(pContext, Batch.Instances)))	return E_FAIL;
+
+		auto pModel = CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup, Batch.Key.modelTag);
+		auto pCPUBonePaletteBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_CPU_BONEMATRIX");
+		if (!pModel || !pCPUBonePaletteBuffer)	return E_FAIL;
+
+		_float4x4 identity{};
+		XMStoreFloat4x4(&identity, XMMatrixIdentity());
+		std::vector<_float4x4> combinedPalette(iInstanceCount * 512, identity);
+		for (uint32_t instanceIndex = 0; instanceIndex < iInstanceCount; ++instanceIndex)
+		{
+			const auto& combinedMatrices = Batch.CombinedBoneMatrices[instanceIndex];
+			if (combinedMatrices.empty() || combinedMatrices.size() > 512)	return E_FAIL;
+
+			for (uint32_t boneIndex = 0; boneIndex < static_cast<uint32_t>(combinedMatrices.size()); ++boneIndex)
+			{
+				XMStoreFloat4x4(
+					&combinedPalette[instanceIndex * 512 + boneIndex],
+					XMMatrixTranspose(
+						XMLoadFloat4x4(&combinedMatrices[boneIndex])));
+			}
+		}
+
+		// CPU가 계산한 CombinedBone palette는 batch당 한 번만 갱신한다.
+		ID3D11ShaderResourceView* nullPaletteSRV = nullptr;
+		pContext->VSSetShaderResources(7, 1, &nullPaletteSRV);
+		if (FAILED(pCPUBonePaletteBuffer->UpdateData(combinedPalette.data(), static_cast<uint32_t>(combinedPalette.size() * sizeof(_float4x4))))) return E_FAIL;
+
+		if (FAILED(Bind_InstanceBuffer(pContext))) return E_FAIL;
+
+		ID3D11ShaderResourceView* cpuBonePaletteSRV = pCPUBonePaletteBuffer->GetSRV().Get();
+		if (!cpuBonePaletteSRV) return E_FAIL;
+
+		ID3D11ShaderResourceView* skinBonesSRV = pModel->Get_GPUSkinBoneSRV();
+		if (!skinBonesSRV) return E_FAIL;
+
+		pContext->VSSetShaderResources(7, 1, &cpuBonePaletteSRV);
+		pContext->VSSetShaderResources(8, 1, &skinBonesSRV);
+
+		for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
+		{
+			const auto& mesh = pModel->GetMeshes()[iMeshIndex];
+			if (!mesh) continue;
+
+			const auto& skinRange = pModel->Get_GPUMeshSkinRange(iMeshIndex);
+			if (skinRange.iSkinBoneCount == 0) return E_FAIL;
+
+			E::GPU_SKIN_MESH_CONSTANTS skinningConstants{};
+			skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
+			skinningConstants.iVertexCount = mesh->GetNumVertices();
+			skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+			D3D11_MAPPED_SUBRESOURCE mapped{};
+			if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+				return E_FAIL;
+			memcpy(mapped.pData, &skinningConstants, sizeof(skinningConstants));
+			pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
+			ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
+			pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+			ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
+			const UINT stride = mesh->GetVertexStride();
+			const UINT offset = 0;
+			pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+			pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+			pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+			m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
+			m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
+			pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
+		}
+
+		ID3D11ShaderResourceView* nullVSSRVs[3]{};
+		pContext->VSSetShaderResources(6, 3, nullVSSRVs);
+
+	}
+	return S_OK;
+}
+/*---------------------------------*/
 void CEnderDragon::Set_StateFinished(_bool bFinished)
 {
 	//스테이트가 완료된 판정에 대해서 다시 초기회
@@ -563,27 +677,33 @@ void CEnderDragon::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(DRAGON_SKILL::END))
 		return;
 
+	EDG_ACSKT_DESC ACTable{};
+	ACTable.SkillName = m_EffectNames[iSkillNum];
+	ACTable.fLifeTime = fSkillRatio.y;
+	ACTable.eType = static_cast<DRAGON_SKILL>(iSkillNum);
 	if (true == m_SkillHandle[iSkillNum].bPool)
 	{
 		auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(m_SkillHandle[iSkillNum].handle);
 		if (nullptr == pSkill)
 			return;
-		pSkill->Active(m_EffectNames[iSkillNum]);
+		pSkill->Active(ACTable);
 	}
 	else
 	{
+		EDG_SKILL_INFO SkillInfo = m_SkillHandle[iSkillNum];
 		CDragonSkill::EDG_SKILL_DESC SkillDesc{};
 		SkillDesc.hOwner = GetHandle();
-		SkillDesc.iBoneIndex = m_SkillHandle[iSkillNum].iBoneIndex;
-		SkillDesc.iOffsetBoneIndex = m_SkillHandle[iSkillNum].iOffsetBoneIndex;
-		auto SkillHandle = CGameInstance::Get().AddGameObjectToLayer(m_SkillHandle[iSkillNum].LevelTag, 
-			m_SkillHandle[iSkillNum].ProtoTag, m_SkillHandle[iSkillNum].NameTag, &SkillDesc);
+		SkillDesc.iBoneIndex = SkillInfo.iBoneIndex;
+		SkillDesc.iOffsetBoneIndex = SkillInfo.iOffsetBoneIndex;
+		SkillDesc.eType = SkillInfo.eType;
+		auto SkillHandle = CGameInstance::Get().AddGameObjectToLayer(SkillInfo.LevelTag,
+			SkillInfo.ProtoTag, SkillInfo.NameTag, &SkillDesc);
 		if (!SkillHandle) return;
 
 		auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(SkillHandle.value());
 		if (nullptr == pSkill)
 			return;
-		pSkill->Active(m_EffectNames[iSkillNum]);
+		pSkill->Active(ACTable);
 	}
 	m_CurEffectName.clear();
 	m_eAttType = ATTMON::END;
@@ -645,32 +765,32 @@ void CEnderDragon::Phase_Debug()
 	}
 	auto pBB = Get_BlackBoard();
 	if (nullptr == pBB) return;
-	if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_Q))
-	{
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
-		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE1);
-
-	}
-	else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_W))
-	{
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
-		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE2);
-	}
-	else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_E))
-	{
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
-		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE3);
-	}
-	else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_R))
-	{
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
-		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
-	}
-	else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_T))
-	{
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
-		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
-	}
+	//if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_Q))
+	//{
+	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE1);
+	//
+	//}
+	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_W))
+	//{
+	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE2);
+	//}
+	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_E))
+	//{
+	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE3);
+	//}
+	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_R))
+	//{
+	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
+	//}
+	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_T))
+	//{
+	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
+	//}
 }
 void CEnderDragon::Picking(_float3& vPos, uint32_t iID)
 {
@@ -704,11 +824,7 @@ void CEnderDragon::Picking(_float3& vPos, uint32_t iID)
 }
 void CEnderDragon::InitializeEffects()
 {
-	{
-		auto a = CGameInstance::Get().GetParticle("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU");
-		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
-	}
+
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail1", "RanrokTrail1");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
@@ -738,6 +854,12 @@ void CEnderDragon::InitializeEffects()
 		auto a = CGameInstance::Get().GetParticle("SpitTrail", "SpitTrail");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(1.0f,0.35f,0.35f,1.f));
 		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(1.0f,0.28f,0.28f,100.f));
+	}
+	{
+		auto a = CGameInstance::Get().GetParticle("DragonProj2Trail", "DragonProj2Trail");
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(0.0f, 0.0f, 0.0f,1.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(1.0f, 0.28f, 0.28f, 10.f));
+
 	}
 }
 E::UPtr<CEnderDragon> CEnderDragon::Create()

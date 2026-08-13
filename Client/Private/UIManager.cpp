@@ -19,6 +19,33 @@
 
 NS_USING(Client)
 
+namespace
+{
+	void LoadFlipInfoCompatible(
+		const nlohmann::ordered_json& obj,
+		FLIP_INFO& flipInfo)
+	{
+		flipInfo.cellsize = obj.value("CellSize", 4096u);
+		flipInfo.TotalFrame = std::max(
+			1u,
+			obj.value("TotalFrame", 64u));
+		flipInfo.Padding = obj.value("Padding", 2.f);
+		flipInfo.Duration = obj.value("Duration", 1.5f);
+
+		// Legacy files only stored TotalFrame and assumed a square sheet.
+		const uint32_t legacyGridSize = std::max(
+			1u,
+			static_cast<uint32_t>(std::round(
+				std::sqrt(static_cast<_float>(flipInfo.TotalFrame)))));
+		flipInfo.Columns = std::max(
+			1u,
+			obj.value("Columns", legacyGridSize));
+		flipInfo.Rows = std::max(
+			1u,
+			obj.value("Rows", legacyGridSize));
+	}
+}
+
 UIManager::~UIManager()
 {
 	MFShutdown();
@@ -1424,14 +1451,22 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		pUI->SetUIType(ETOUI(UI_TYPE::DISOLVE));
 		break;
 	case ETOUI(UI_TYPE::FLIPBOOK):
-		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_EffectUI", "Layer_UI", &Desc);
+	{
+		FLIP_INFO loadedFlipInfo{};
+		LoadFlipInfoCompatible(obj, loadedFlipInfo);
+		CFlipbookUI::FLIPBOOK_DESC flipDesc{};
+		flipDesc.sObjectTag = Desc.sObjectTag;
+		flipDesc.cellsize = loadedFlipInfo.cellsize;
+		flipDesc.TotalFrame = loadedFlipInfo.TotalFrame;
+		flipDesc.Columns = loadedFlipInfo.Columns;
+		flipDesc.Rows = loadedFlipInfo.Rows;
+		flipDesc.Padding = static_cast<uint32_t>(loadedFlipInfo.Padding);
+		flipDesc.Duration = loadedFlipInfo.Duration;
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_EffectUI", "Layer_UI", &flipDesc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CEffectUI>(*uiHandle);
 		{
 			FLIP_INFO& flipInfo = static_cast<CEffectUI*>(pUI)->GetFlipInfo();
-			flipInfo.cellsize = obj["CellSize"];
-			flipInfo.TotalFrame = obj["TotalFrame"];
-			flipInfo.Padding = obj["Padding"];
-			flipInfo.Duration = obj["Duration"];
+			flipInfo = loadedFlipInfo;
 		}
 
 		if (EffectType == ETOUI(UI_EFFECT_TYPE::HOVER))
@@ -1453,6 +1488,7 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 			}
 		}
 		break;
+	}
 	case ETOUI(UI_TYPE::TEXT):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextBox", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*uiHandle);

@@ -6,10 +6,11 @@
     "assimp",
     "directxtex",
     "directxtk",
-    "recastnavigation",
+    "lua",
     "magic-enum",
-	"lua",
-	"sol2"
+    "recastnavigation",
+    "sol2",
+    "meshoptimizer"
   ],
   "overrides": [
     {
