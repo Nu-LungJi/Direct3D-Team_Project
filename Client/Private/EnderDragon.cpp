@@ -145,7 +145,8 @@ void CEnderDragon::UpdateGUI()
 			ImGui::EndPopup();
 		}
 	}
-	
+	if (ImGui::Button("Clear"))
+		m_DebugPoint.clear();
 	Phase_Debug();
 }
 
@@ -365,14 +366,14 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_MonSkillLists[ATTMON::SLOT7] = ETOUI(DRAGON_SKILL::TURNBREATH);
 	m_MonSkillLists[ATTMON::SLOT8] = ETOUI(DRAGON_SKILL::LONGBREATH);
 	//////////////////////파티클 넣는곳/////////////////////////
-	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)] = "FireBall";
-	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)] = "DragonBreath";
+	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)]   = "FireBall";
+	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)]	   = "DragonBreath";
 	m_EffectNames[ETOUI(DRAGON_SKILL::TURNBREATH)] = "DragonBreath";
 	m_EffectNames[ETOUI(DRAGON_SKILL::LONGBREATH)] = "DragonBreath";
-	m_EffectNames[ETOUI(DRAGON_SKILL::PULSE)] = "Pulse";
+	m_EffectNames[ETOUI(DRAGON_SKILL::PULSE)]	   = "Pulse";
 	m_EffectNames[ETOUI(DRAGON_SKILL::RANDOMBALL)] = "RandomBall";
-	m_EffectNames[ETOUI(DRAGON_SKILL::THREEBALL)] = "FireBall";
-	m_EffectNames[ETOUI(DRAGON_SKILL::BLACKBALL)] = "BlackBall";
+	m_EffectNames[ETOUI(DRAGON_SKILL::THREEBALL)]  = "FireBall";
+	m_EffectNames[ETOUI(DRAGON_SKILL::BLACKBALL)]  = "BlackBall";
 	////////////////////////////////////////////////////////////
 	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
 	int32_t iHeadBoneIndex{};

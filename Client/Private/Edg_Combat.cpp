@@ -42,7 +42,7 @@ void CEdg_Combat::Enter(CStateMachine* pStateMachine)
 	switch (m_ePhase)
 	{
 	case DRAGON_PHASE::PHASE1:
-		m_fMaxTick = 8.f;
+		m_fMaxTick = 2.f;
 		break;
 	case DRAGON_PHASE::PHASE3:
 		m_fMaxTick = 6.f;
