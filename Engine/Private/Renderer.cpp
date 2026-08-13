@@ -1609,7 +1609,7 @@ HRESULT CRenderer::Render_PostProcess_Focusing(){
 		if (FAILED(Bind_CameraAttribute(pGameCam)))						{ Unbind_Resources(); return S_OK; }
 
 		if (FAILED(CGameInstance::Get().Render_OutlineInstance(
-			m_pContext.Get(), RenderContext, m_pOutlineTargetHandle.value())))
+			m_pContext.Get(), m_pRenderContext, m_pOutlineTargetHandle.value())))
 		{
 			Unbind_Resources();
 			return S_OK;
