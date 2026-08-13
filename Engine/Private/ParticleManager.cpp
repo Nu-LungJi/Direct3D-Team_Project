@@ -3778,7 +3778,12 @@ void CParticleManager::ClearByOwner(uint32_t ownerId)
 		for (auto& [typeTag, particle] : particleGroup)
 		{
 			if (particle)
+			{
+				// [LSY] 활성 파티클뿐 아니라 SpawnDelay 대기 항목까지
+				// Owner 단위로 정리해야 StopEffect 이후 다시 생성되지 않는다.
+				particle->ClearPendingSpawnsByOwner(ownerId);
 				particle->ClearByOwner(ownerId);
+			}
 		}
 	}
 

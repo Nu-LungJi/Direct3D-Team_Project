@@ -51,6 +51,18 @@ void CParticle::RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList)
 	}
 }
 
+void CParticle::ClearPendingSpawnsByOwner(uint32_t ownerID)
+{
+	// [LSY] StopEffect 이후 지연 스폰이 다시 살아나지 않도록
+	// 아직 생성되지 않은 동일 Owner 요청도 함께 제거한다.
+	std::erase_if(
+		m_PendingSpawns,
+		[ownerID](const PENDING_SPAWN& pending)
+		{
+			return pending.data.ownerID == ownerID;
+		});
+}
+
 HRESULT CParticle::Set_BlendState(BLENDTYPE blendType)
 {
 	switch (ETOUI(blendType)){

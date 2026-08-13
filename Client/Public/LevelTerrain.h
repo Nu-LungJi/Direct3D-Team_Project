@@ -33,6 +33,7 @@ private:
 		const std::optional<CHandle>& hPlayer);
 	HRESULT InitializePathPlaybackTests();
 	HRESULT InitializeTombBossBulletTest(CHandle hPlayer);
+	HRESULT SpawnConfringoBulletTest();
 	HRESULT InitializeOilBarrelPool();
 
 	HRESULT SpawnMonster(const std::optional<CHandle>& hPlayer);
@@ -53,6 +54,13 @@ private:
 	_bool m_bCreatePlayScreenUI{ false };
 	CHandle m_hPlayer{};
 	_float m_fTombBossBulletSpawnYawDegrees{};
+	_float m_fConfringoBulletSpeed{ 35.f };
+	_float m_fConfringoBulletLifeTime{ 5.f };
+	_float m_fConfringoBulletRadius{ 0.25f };
+	_float m_fConfringoBulletCurveAmplitude{ 0.35f };
+	_float m_fConfringoBulletCurveFrequency{ 1.75f };
+	_float m_fConfringoBulletTrailSpacing{ 0.14f };
+	_bool m_bConfringoBulletDebugDraw{ true };
 	_float3 m_vOilBarrelPoolSpawnPosition{ 10.f, 100.f, 10.f };
 
 private:
