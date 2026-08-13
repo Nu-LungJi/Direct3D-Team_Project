@@ -268,6 +268,13 @@ HRESULT CRenderer::InitializeBaseTarget() {
 
 	m_pResDynTexTargetDepth = Generate_DepthStencil_RenderTarget("DynTex2D_Target_Depth", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS);
 	if (nullptr == m_pResDynTexTargetDepth)         return E_FAIL;
+	{
+		D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
+		m_pResDynTexTargetDepth->GetDSV()->GetDesc(&dsvDesc);
+		dsvDesc.Flags = D3D11_DSV_READ_ONLY_DEPTH | D3D11_DSV_READ_ONLY_STENCIL;
+		if (FAILED(m_pDevice->CreateDepthStencilView(m_pResDynTexTargetDepth->GetTexture().Get(), &dsvDesc, m_pDecalReadOnlyDSV.GetAddressOf())))
+			return E_FAIL;
+	}
 
 	m_pResDynTexTargetFocusingDepthMap = Generate_DepthStencil_RenderTarget("DynTex2D_Target_FocusingDepth", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS);
 	if (nullptr == m_pResDynTexTargetFocusingDepthMap)        return E_FAIL;
@@ -1086,6 +1093,8 @@ HRESULT CRenderer::Render_NonAlpha() {
 		if (FAILED(RenderNonBlend_Instanced()))							{ Unbind_Resources(); return S_OK; }
 																		
 		if (FAILED(RenderLight()))										{ Unbind_Resources(); return S_OK; }
+		
+		if (FAILED(RenderMapMesh()))									{ Unbind_Resources(); return S_OK; }
 	}
 	
 	Unbind_Resources();
@@ -1105,10 +1114,12 @@ HRESULT CRenderer::Render_Decal()
 	const auto blendState = gameInstance.GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
 	const auto noBlendState = gameInstance.GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
 	const auto depthDisabled = gameInstance.GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL");
+	const auto mapMeshOnly = gameInstance.GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DECAL_MAPMESH_ONLY");
 	const auto frontCull = gameInstance.GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_FRONTCULL);
 	const auto backCull = gameInstance.GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
 
-	if (!blendState || !noBlendState || !depthDisabled || !frontCull || !backCull)
+	if (!blendState || !noBlendState || !depthDisabled || !mapMeshOnly ||
+		!frontCull || !backCull || !m_pDecalReadOnlyDSV)
 		return E_FAIL;
 
 	ID3D11RenderTargetView* renderTargets[2] = {
@@ -1116,7 +1127,7 @@ HRESULT CRenderer::Render_Decal()
 		m_pResDynTexTargetEmissive->GetRTV().Get()
 	};
 
-	m_pContext->OMSetRenderTargets(2, renderTargets, nullptr);
+	m_pContext->OMSetRenderTargets(2, renderTargets, m_pDecalReadOnlyDSV.Get());
 	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
 	ID3D11ShaderResourceView* gBufferResources[2] = {
@@ -1126,15 +1137,23 @@ HRESULT CRenderer::Render_Decal()
 
 	m_pContext->PSSetShaderResources(0, 2, gBufferResources);
 	m_pContext->OMSetBlendState(blendState->GetBlendState().Get(), nullptr, 0xffffffff);
-	m_pContext->OMSetDepthStencilState(depthDisabled->GetDepthStencilState().Get(), 0);
+	m_pContext->OMSetDepthStencilState(mapMeshOnly->GetDepthStencilState().Get(), STENCIL_MASK::DECAL_RECEIVER);
 	m_pContext->RSSetState(frontCull->GetRasterizerState().Get());
+
+	const auto RestoreRenderState = [&]()
+	{
+		Unbind_Resources();
+		m_pContext->OMSetBlendState(noBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+		m_pContext->OMSetDepthStencilState(depthDisabled->GetDepthStencilState().Get(), 0);
+		m_pContext->RSSetState(backCull->GetRasterizerState().Get());
+	};
 
 	auto* activeCamera = gameInstance.GetActiveCamera();
 	if (!activeCamera ||
 		FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, activeCamera)) ||
 		FAILED(Bind_CameraAttribute(activeCamera)))
 	{
-		Unbind_Resources();
+		RestoreRenderState();
 		return E_FAIL;
 	}
 
@@ -1145,16 +1164,12 @@ HRESULT CRenderer::Render_Decal()
 
 		if (FAILED(decal->Render(m_pContext.Get(), m_pRenderContext)))
 		{
-			Unbind_Resources();
-			m_pContext->OMSetBlendState(noBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
-			m_pContext->RSSetState(backCull->GetRasterizerState().Get());
+			RestoreRenderState();
 			return E_FAIL;
 		}
 	}
 
-	Unbind_Resources();
-	m_pContext->OMSetBlendState(noBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
-	m_pContext->RSSetState(backCull->GetRasterizerState().Get());
+	RestoreRenderState();
 
 	return S_OK;
 }
@@ -2028,6 +2043,38 @@ HRESULT CRenderer::RenderNonBlend_Instanced() {
 
 	return S_OK;
 
+}
+
+HRESULT CRenderer::RenderMapMesh()
+{
+	ZoneScopedN("RenderMapMesh");
+
+	auto& gameInstance = CGameInstance::Get();
+	const auto stencilWrite = gameInstance.GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_MAPMESH_DECAL_WRITE");
+	if (!stencilWrite)
+		return E_FAIL;
+
+	ComPtr<ID3D11DepthStencilState> previousDepthState{};
+	UINT previousStencilRef = 0;
+	m_pContext->OMGetDepthStencilState(previousDepthState.GetAddressOf(), &previousStencilRef);
+	m_pContext->OMSetDepthStencilState(stencilWrite->GetDepthStencilState().Get(), STENCIL_MASK::DECAL_RECEIVER);
+
+	HRESULT result = S_OK;
+	for (auto* renderObject : m_pRenderObject[ETOUI(RENDERGROUP::MAPMESH)])
+	{
+		if (!renderObject || !renderObject->HasRenderPass(m_pRenderContext.pass))
+			continue;
+
+		if (FAILED(renderObject->Render(m_pContext.Get(), m_pRenderContext)))
+		{
+			result = E_FAIL;
+			break;
+		}
+	}
+
+	m_pContext->OMSetDepthStencilState(previousDepthState.Get(), previousStencilRef);
+	
+	return result;
 }
 
 HRESULT CRenderer::RenderBlend()

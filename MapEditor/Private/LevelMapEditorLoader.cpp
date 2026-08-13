@@ -25,7 +25,7 @@ namespace
 
 	_bool LoadDecalTextures()
 	{
-		const std::filesystem::path root = R"(.\Resources\RanrokBoss_DecalResources\DDS_512)";
+		const std::filesystem::path root = R"(.\Resources\SampleClient\Textures\DecalResources\DDS_512)";
 		if (!std::filesystem::exists(root))
 			return false;
 

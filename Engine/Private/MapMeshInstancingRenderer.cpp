@@ -177,7 +177,7 @@ void CMapMeshInstancingRenderer::Update()
 {
 	// 인스턴싱 ON 일 때
 	if (s_bInstancingEnabled)
-		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+		CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
 }
 
 void CMapMeshInstancingRenderer::FrameEnd()

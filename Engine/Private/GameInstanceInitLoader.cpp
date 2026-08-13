@@ -768,6 +768,41 @@ HRESULT CGameInstanceInitLoader::LoadDepthStencilState()
 		depthDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
 		if (FAILED(res->Load(depthDesc))) return E_FAIL;
 	}
+	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_MAPMESH_DECAL_WRITE", E::CResDepthStencilState::Create()))
+	{
+		D3D11_DEPTH_STENCIL_DESC depthDesc{};
+		depthDesc.DepthEnable = TRUE;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
+		depthDesc.StencilEnable = TRUE;
+		depthDesc.StencilReadMask = static_cast<UINT8>(STENCIL_MASK::DECAL_RECEIVER);
+		depthDesc.StencilWriteMask = static_cast<UINT8>(STENCIL_MASK::DECAL_RECEIVER);
+		depthDesc.FrontFace = {
+			D3D11_STENCIL_OP_KEEP,
+			D3D11_STENCIL_OP_KEEP,
+			D3D11_STENCIL_OP_REPLACE,
+			D3D11_COMPARISON_ALWAYS };
+		depthDesc.BackFace = depthDesc.FrontFace;
+		if (FAILED(res->Load(depthDesc))) return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_DECAL_MAPMESH_ONLY", E::CResDepthStencilState::Create()))
+	{
+		D3D11_DEPTH_STENCIL_DESC depthDesc{};
+		depthDesc.DepthEnable = FALSE;
+		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		depthDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+		depthDesc.StencilEnable = TRUE;
+		depthDesc.StencilReadMask = static_cast<UINT8>(STENCIL_MASK::DECAL_RECEIVER);
+		depthDesc.StencilWriteMask = 0;
+		depthDesc.FrontFace = {
+			D3D11_STENCIL_OP_KEEP,
+			D3D11_STENCIL_OP_KEEP,
+			D3D11_STENCIL_OP_KEEP,
+			D3D11_COMPARISON_EQUAL };
+		depthDesc.BackFace = depthDesc.FrontFace;
+		if (FAILED(res->Load(depthDesc))) return E_FAIL;
+	}
+
 
 	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL", E::CResDepthStencilState::Create()))
 	{

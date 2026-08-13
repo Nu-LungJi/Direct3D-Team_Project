@@ -6,7 +6,15 @@ namespace Engine
 	enum class NVCLOTH_BACKEND { CPU, DX11 };
 	enum class MOUSEKEYSTATE { LB, RB, MB, END };
 	enum class MOUSEMOVESTATE { X, Y, Z, END };
-	enum class RENDERGROUP { PRIORITY, NONBLEND_INSTANCED, NONBLEND, DECAL, BLEND, LIGHT, EFFECT, SKYBOX, COLLIDER, UI3D, UI, END };
+	enum class RENDERGROUP { PRIORITY, NONBLEND_INSTANCED, NONBLEND, MAPMESH, DECAL, BLEND, LIGHT, EFFECT, SKYBOX, COLLIDER, UI3D, UI, END };
+
+	// Stencil bit allocation table (D24S8, 8 bits total)
+	// bit 0: Decal receiver mask
+	// bit 1-7: Unassigned
+	namespace STENCIL_MASK
+	{
+		inline constexpr uint32_t DECAL_RECEIVER = 1u << 0;
+	}
 	enum class RENDERPASS : uint32_t
 	{
 		DEFAULT = 1 << 0,	// 1
