@@ -7,7 +7,7 @@ class CBTAttackAnimation final : public CBTAnimRoot
 {
 typedef struct strattskillevent
 {
-	_float fRatio{};
+	_float fRatio{}, fLifeTime{};
 	ATTMON eSkill{ATTMON::END};
 	_bool bTrigger{ false };
 }ATT_SKILL_EVENT;

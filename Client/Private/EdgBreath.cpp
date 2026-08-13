@@ -65,30 +65,46 @@ void CEdgBreath::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 }
 
-void CEdgBreath::Active(const _string& SkillName)
+void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 {
+	m_eType = SkillTable.eType;
 	auto pSrc = Get_Owner();
 	if (nullptr == pSrc) return;
 	auto pDest = pSrc->Get_Target();
 	if (nullptr == pDest) return;
 
 	 _float4x4 BoneMatrix = Get_BoneMatrix(m_iBoneIndex);
-	_matrix matBone = XMLoadFloat4x4(&BoneMatrix); 
+	 _matrix matBone = XMLoadFloat4x4(&BoneMatrix);
 	_vector vDestPos = XMLoadFloat3(&pDest->GetTransform().GetPosition());
 
 
 	_vector vLength = vDestPos - matBone.r[3];
 	_vector vDir = XMVector3Normalize(vLength);
 	_float fHalfDis = XMVectorGetX(XMVector3Length(vLength)) * 0.5f;
-	
-	
-	XMStoreFloat3(&m_vTargetDir, vDir);
-	XMStoreFloat3(&m_vDir, XMVector3Normalize((matBone.r[3] + vDir * fHalfDis) - matBone.r[3]));
 
+
+
+
+	if (m_eType == DRAGON_SKILL::BREATH)
+	{
+		XMStoreFloat3(&m_vTargetDir, vDir);
+		XMStoreFloat3(&m_vDir, XMVector3Normalize((matBone.r[3] + vDir * fHalfDis) - matBone.r[3]));
+	}
+	else if (m_eType == DRAGON_SKILL::TURNBREATH)
+	{
+
+	}
+	else if (m_eType == DRAGON_SKILL::LONGBREATH)
+	{
+
+	}
+		
+	
 	m_bActive = true;
 	m_bHit = false;
 	m_fBreathTick = m_fLife = 0.f;
-	Spawn_Skill_Effect(SkillName);
+	m_fMaxLife = SkillTable.fLifeTime;
+	Spawn_Skill_Effect(SkillTable.SkillName);
 }
 
 void CEdgBreath::Cancle()
@@ -103,9 +119,34 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	_vector vQuat = XMQuaternionRotationMatrix(matBone);
 
 	m_fBreathTick += fTimeDelta;
-
+	_vector vForward{};
 	_float t = std::min(m_fBreathTick / 3.f, 1.f);
-	_vector vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), t));
+	if (m_eType == DRAGON_SKILL::BREATH)
+	{
+		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), t));
+	}
+	else if (m_eType == DRAGON_SKILL::TURNBREATH)
+	{
+		_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
+		_matrix matOffset = XMLoadFloat4x4(&matOffB);
+		vForward = XMVector3Normalize(matOffset.r[3] - matBone.r[3]);
+	}
+	else if (m_eType == DRAGON_SKILL::LONGBREATH)
+	{
+		auto pSrc = Get_Owner();
+		if (nullptr == pSrc) return;
+		auto pTarget = pSrc->Get_Target();
+		if (nullptr == pTarget) return;
+
+		_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
+		_matrix matOffset = XMLoadFloat4x4(&matOffB);
+		
+		XMStoreFloat3(&m_vDir, XMVector3Normalize(matOffset.r[3] - matBone.r[3]));
+		XMStoreFloat3(&m_vTargetDir, XMVector3Normalize(XMLoadFloat3(&pTarget->GetTransform().GetPosition()) - matOffset.r[3]));
+
+		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), 0.8f));
+	}
+
 	_vector vUp = XMVector3Normalize(matBone.r[1]);
 
 	if (fabsf(XMVectorGetX(XMVector3Dot(vForward, vUp))) > 0.98f)

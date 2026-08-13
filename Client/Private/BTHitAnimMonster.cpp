@@ -248,6 +248,7 @@ void CBTHitAnimMonster::OnEnter()
 }
 void CBTHitAnimMonster::OnExit(EVALUATE eResult)
 {
+	__super::OnExit(eResult);
 }
 _bool CBTHitAnimMonster::HitType()
 {

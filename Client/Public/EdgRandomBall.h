@@ -8,6 +8,7 @@ class CEdgRandomBall : public CDragonSkill
 public:
 	DECLARE_DERIVED_TYPE(CEdgRandomBall, CDragonSkill)
 
+	enum class COLOR {YELLOW, PURPLE, RED, END};
 protected:
 	explicit CEdgRandomBall();
 	explicit CEdgRandomBall(const CEdgRandomBall& rhs);
@@ -21,14 +22,19 @@ public:
 	void			Update(E::_float fTimeDelta) override;
 	void			LateUpdate(E::_float fTimeDelta) override;
 public:
-	void			Active(const _string& SkillName) override;
+	void			Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos = XMVectorSet(0, 0, 0, 1)) override;
 	void			Cancle() override;
 private:
 	void			Ball(_float fTimeDelta);
 	_bool			Sweep(_vector vNextPos);
+
 public:
 	static E::UPtr<CEdgRandomBall> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
+private:
+	COLOR			m_eColor = COLOR::END;
+	uint32_t		m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
 };
 
 NS_END

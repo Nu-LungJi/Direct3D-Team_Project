@@ -656,6 +656,15 @@ HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag
 	return m_pParticleManager->Spawn(sGroupTag, sTypeTag, count, pSpawnData, bLoop, fSpawnInterval);
 }
 
+uint32_t CGameInstance::Spawn(
+	const std::string& strJsonPath,
+	const _float4x4& worldMat,
+	const _fvector endPos)
+{
+	// [LSY] 콘텐츠에서 파티클 큐 경로만으로 재생하고 Owner ID를 추적할 수 있게 전달한다.
+	return m_pParticleManager->Spawn(strJsonPath, worldMat, endPos);
+}
+
 std::vector<SPAWN_COMMAND>  CGameInstance::Parse_Command(const std::string& strJsonFile)
 {
 	return m_pParticleManager->Parse_Command(strJsonFile);
@@ -682,8 +691,17 @@ void CGameInstance::TranslateOwner(uint32_t ownerId, const _float3& delta) {
 	m_pParticleManager->TranslateOwner(ownerId, delta);
 }
 
+void CGameInstance::ClearParticleOwner(uint32_t ownerId)
+{
+	// [LSY] 직접 Spawn한 지속 파티클을 생성 주체가 수명 종료 시 명시적으로 정리한다.
+	m_pParticleManager->ClearByOwner(ownerId);
+}
+
 HRESULT CGameInstance::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end) {
 	return m_pParticleManager->AddTrailPoint(groupTag, typeTag, start, end);
+}
+HRESULT CGameInstance::AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const CHandle& hOwner, const _float3& start, const _float3& end) {
+	return m_pParticleManager->AddTrailPoint(groupTag, typeTag, hOwner, start, end);
 }
 std::optional<BEAM_HANDLE> CGameInstance::SpawnBeam(const StringID& groupTag,const StringID& typeTag,const BEAM_PARAMS& params)
 {

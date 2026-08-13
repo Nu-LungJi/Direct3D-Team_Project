@@ -94,6 +94,9 @@ namespace Engine
 	constexpr uint32_t BEHAVIOR_LIGHTNING = 1 << 9;
 	constexpr uint32_t BEHAVIOR_SIZESTOP = 1 << 10;
 	constexpr uint32_t BEHAVIOR_ENERGYSPHERE = 1 << 11;
+	// [LSY] CPU 파티클의 수명 종료를 자연스럽게 표현하기 위한 알파 감소 정책이다.
+	constexpr uint32_t BEHAVIOR_FADEOUT = 1 << 13;
+	constexpr uint32_t BEHAVIOR_FADEOUT_LATE = 1 << 14;
 	// ============================================================
 	// X-매크로: 필드 목록을 한 곳에서만 정의
 	// X(타입, 이름, 기본값)
@@ -301,6 +304,9 @@ COMMON_PATTERN_FIELDS(X)
     X(_float, startIntensity, 0.f) \
     X(_float4, endEmissive, _float4(0,0,0,0)) \
 	X(_float, endIntensity, 0.f) \
+	/* [LSY] GUI에서 Cone을 연속 분사 형태로 조절하기 위한 시작 지연과 입자별 간격이다. */ \
+	X(_float, fSpawnDelay, 0.f)\
+	X(_float, fSpawnInterval, 0.f)\
    COMMON_PATTERN_FIELDS(X)
 
 #define ENERGY_SPHERE_FIELDS(X) \
@@ -378,6 +384,8 @@ struct StructName \
 		StringID sGroupTag{};
 		StringID sTypeTag{};
 		uint32_t ownerId = 0;
+		_bool bInheritWorldRotation = false;
+		_float4 inheritedWorldRotation = { 0.f, 0.f, 0.f, 1.f };
 		std::variant<STANDARD_PARAMS, BEAM_PARAMS, PatternParamVariant, std::vector<PARTICLE_SPAWN_DATA>> params;
 	};
 

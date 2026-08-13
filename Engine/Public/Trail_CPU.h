@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine_Defines.h"
 #include "Particle.h"
+#include "Handle.h"
 
 NS_BEGIN(Engine)
 
@@ -90,10 +91,12 @@ public:
 	_float DistanceSq(const _float3& a, const _float3& b);
 	// 매 프레임 호출 - 무기 애니메이션 재생 중 칼날 밑동/칼끝의 현재 월드 좌표를 같이 넘긴다.
     void AddPoint(const _float3& vStart, const _float3& vEnd);
+    void AddPoint(const CHandle& hOwner, const _float3& vStart, const _float3& vEnd);
 
     void Clear();
+	void Clear(const CHandle& hOwner);
 	void SetBehaviorMode(TRAIL_BEHAVIOR_MODE eMode);
-    uint32_t Debug_GetFrameCount() const { return (uint32_t)m_dequeFrames.size(); }
+    uint32_t Debug_GetFrameCount() const;
     uint32_t Debug_GetVertexCount() const { return (uint32_t)m_vecVertices.size(); }
 	virtual void SetPosition(const _float3& pos) override;
 	virtual void SetVelocity(const _float3& vel) override;
@@ -103,27 +106,45 @@ public:
 	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
 	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
 private:
-    void BuildTrailGeometry();
+    struct TRAIL_STREAM
+    {
+        std::deque<TRAIL_FRAME> Frames;
+        _bool bHasLastPoint = false;
+        _float3 vLastStart{};
+        _float3 vLastEnd{};
+        _float fTimeSinceLastAdd = 0.f;
+        _float fIdleTime = 0.f;
+        _float fTimeSinceLastRetract = 0.f;
+        _float fTotalDistance = 0.f;
+    };
+
+    struct HANDLE_HASH
+    {
+        size_t operator()(const CHandle& hHandle) const noexcept
+        {
+            size_t iSeed = std::hash<size_t>{}(hHandle.GetIndex());
+            iSeed ^= std::hash<uint32_t>{}(hHandle.GetGeneration()) +
+                0x9e3779b9u + (iSeed << 6) + (iSeed >> 2);
+            return iSeed;
+        }
+    };
+
+    void AddPoint(TRAIL_STREAM& Stream, const _float3& vStart, const _float3& vEnd);
+    void ResetStream(TRAIL_STREAM& Stream);
+    void BuildTrailGeometry(const TRAIL_STREAM& Stream);
 
 private:
     DESC     m_Desc;
     TRAIL_TYPE m_eTrailType;
-    std::deque<TRAIL_FRAME>  m_dequeFrames; // 앞(front)이 최신, 뒤(back)가 가장 오래된 프레임
     std::vector<TRAIL_VERTEX> m_vecVertices;
-	_bool m_bHasLastPoint = false;
-	_float3 m_vLastStart{};
-	_float3 m_vLastEnd{};
+    std::unordered_map<CHandle, TRAIL_STREAM, HANDLE_HASH> m_TrailStreams;
 	_float4 m_vColor{1.f,0.f,0.f,1.f};
 	_float4 m_vEmissive{ 1.f, 0.f, 1.f, 1.f };
-	_float m_fTimeSinceLastAdd = 0.f;
 	_float   m_fSampleInterval = 1.f / 60.f;
-	_float m_fIdleTime = 0.f;          // AddPoint 호출 안 된지 얼마나 됐는지
 	_float m_fIdleThreshold = 0.1f;    // 이 시간 이상 AddPoint 없으면 "멈췄다"고 판단
 	_float m_fRetractInterval = 0.02f; // 멈춘 뒤, 이 간격마다 꼬리 1프레임씩 강제 제거
-	_float m_fTimeSinceLastRetract = 0.f;
 	_float m_ScrollOffset = 0.2f;
 	_float totalLength = 0.0f;
-	_float m_fTotalDistance = 0.f;
 	_float m_fAccumulationTime = 0;
 	uint32_t diffuseFrames = 0;
 	uint32_t currentFrame = 0;

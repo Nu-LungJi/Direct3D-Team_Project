@@ -170,6 +170,7 @@ public:
 	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
 	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
 	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end);
+	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const CHandle& hOwner, const _float3& start, const _float3& end);
 	HRESULT SetBeamPositions(const BEAM_HANDLE& handle, const _float4& start, const _float4& end);
 	HRESULT StopBeam(const BEAM_HANDLE& handle);
 	void SetBeamPositionsByOwner(uint32_t ownerId, const _float3& start, const _float3& end);
