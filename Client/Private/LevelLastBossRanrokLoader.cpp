@@ -32,6 +32,7 @@
 #include "EdgBreath.h"
 #include "EdgPulse.h"
 #include "EdgRandomBall.h"
+#include "EdgGasi.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Confringo_Bullet.h"
@@ -340,6 +341,7 @@ HRESULT CLevelLastBossRanrokLoader::MonsterLoad_InWorker()
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, CEdgBreath::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Pulse, CEdgPulse::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_RandomBall, CEdgRandomBall::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Gasi, CEdgGasi::Create()))) return E_FAIL;
 
 
 		if (auto res = CGameInstance::Get().AddResource("EDGWAYPT", "SPAWN", CResJson::Create("./Resources/json/WayPoint/SPAWN.json")))

@@ -854,7 +854,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 				{
 					auto* pCandidate = result.pGameObject;
 					if (!pCandidate || pCandidate->GetPendingDestroy() ||
-						!Cast<CMonster>(pCandidate))
+						nullptr == dynamic_cast<CSkillTarget*>(pCandidate)) // 창준변경
 						continue;
 
 					_vector vToTarget =

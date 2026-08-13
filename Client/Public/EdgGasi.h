@@ -3,15 +3,15 @@
 
 
 NS_BEGIN(Client)
-class CEdgBreath : public CDragonSkill
+class CEdgGasi : public CDragonSkill
 {
 public:
-	DECLARE_DERIVED_TYPE(CEdgBreath, CDragonSkill)
+	DECLARE_DERIVED_TYPE(CEdgGasi, CDragonSkill)
 
 protected:
-	explicit CEdgBreath();
-	explicit CEdgBreath(const CEdgBreath& rhs);
-	~CEdgBreath() override;
+	explicit CEdgGasi();
+	explicit CEdgGasi(const CEdgGasi& rhs);
+	~CEdgGasi() override;
 
 public:
 	HRESULT			InitializePrototype(void* pArg = nullptr) override;
@@ -24,16 +24,12 @@ public:
 	void			Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos = XMVectorSet(0, 0, 0, 1)) override;
 	void			Cancle() override;
 private:
-	void			SpawnGasi(_vector vPos);
-	void			MoveBreath(_float fTimeDelta);
-	_bool			MoveSweep(_vector vNextPos,_vector vCurDir);
-private:
-	_float			m_fBreathTick{}, m_fBreathDis{}, m_fMaxBreath{};
-	_bool			m_bGround{ false };
-
+	void			MoveGasi(_float fTimeDelta);
+	_bool			MoveSweep(_vector vNextPos);
 public:
-	static E::UPtr<CEdgBreath> Create();
+	static E::UPtr<CEdgGasi> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
 };
 
 NS_END
