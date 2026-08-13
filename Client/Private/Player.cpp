@@ -1084,6 +1084,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (CGameInstance::Get().KeyDown(DIK_5))
 			m_pStateMachine->RequestState(PLAYER_STATE::CONFRINGO_SKILL);
 
+		// 봄바르다 애니메이션 및 이펙트 큐 타이밍 확인용 임시 입력.
+		if (CGameInstance::Get().KeyDown(DIK_6))
+			m_pStateMachine->RequestState(PLAYER_STATE::BOMBARDA_SKILL);
+
 	}
 	
 
