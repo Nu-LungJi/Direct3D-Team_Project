@@ -16,6 +16,7 @@
 #include "PlayerThirdPersonCamera.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
+#include "Player_Bombarda_Bullet.h"
 #include "Player_Confringo_Bullet.h"
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
@@ -250,6 +251,14 @@ std::future<bool> CLevelTerrainLoader::Load()
 				CPlayer_Confringo_Bullet::Create())))
 			{
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_PlayerConfringoBullet");
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_PlayerBombardaBullet,
+				CPlayer_Bombarda_Bullet::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_PlayerBombardaBullet");
 				return false;
 			}
 			MonsterLoad_InWorker();

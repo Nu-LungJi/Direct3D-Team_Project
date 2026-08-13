@@ -88,6 +88,7 @@ namespace Client
 		Prototype_GameObject_BossStarBurst,
 		Prototype_GameObject_BossBall,
 		Prototype_GameObject_TombBossBullet,
+		Prototype_GameObject_PlayerBombardaBullet,
 	};
 
 	enum class PROTO_COMPONENT

@@ -51,6 +51,7 @@
 #include "GurdianWeapon.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
+#include "Player_Bombarda_Bullet.h"
 #include "Player_Confringo_Bullet.h"
 #include "TriggerCRW_ToBoss.h"
 #include "TriggerCRW_SpawnMonster1.h"
@@ -290,6 +291,14 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				CPlayer_Confringo_Bullet::Create())))
 			{
 				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerConfringoBullet");
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD,
+				PROTO_GAMEOBJECT::Prototype_GameObject_PlayerBombardaBullet,
+				CPlayer_Bombarda_Bullet::Create())))
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerBombardaBullet");
 				return false;
 			}
 
