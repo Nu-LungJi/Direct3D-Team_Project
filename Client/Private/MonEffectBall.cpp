@@ -149,7 +149,7 @@ void CMonEffectBall::OverlapTest()
 			CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(
 				result.hGameObject))
 		{
-			pTarget->OnQueryHit(m_iDamage);
+			pTarget->OnQueryHit(m_iDamage, vPos);
 			m_bHit = true;
 			return;
 		}

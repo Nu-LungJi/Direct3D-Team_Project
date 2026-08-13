@@ -196,6 +196,18 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State">
       <UniqueIdentifier>{7fd33e7b-d892-4472-8efd-9203f175af69}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AvadaKedavraSkill_State">
+      <UniqueIdentifier>{b04e0fc4-ab25-4bca-a345-7b2c1b41ff20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State">
+      <UniqueIdentifier>{dfc43f3f-1ab9-49d1-a6df-f7f34f58d750}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State">
+      <UniqueIdentifier>{129836af-05a5-4e96-86f5-e6664ac3d91f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_LumosSkill_State">
+      <UniqueIdentifier>{0465449e-f137-41ee-b9f5-6803212ae6a7}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State">
       <UniqueIdentifier>{01e89d2b-fc0c-4cb6-9514-7970ddfc1929}</UniqueIdentifier>
     </Filter>
@@ -330,6 +342,9 @@
     </Filter>
     <Filter Include="ShaderFiles\GameObject">
       <UniqueIdentifier>{9a45fcfc-7add-40b1-8b4a-34c6753d1cfa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State">
+      <UniqueIdentifier>{c2bc7a83-85f7-4724-8bc3-b2011caf5be4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -564,6 +579,18 @@
     <ClInclude Include="..\Public\Player_AccioSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_AvadaKedavraSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AvadaKedavraSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_BombardaSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_ConfringoSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_LumosSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_LumosSkill_State</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_DepulsoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State</Filter>
     </ClInclude>
@@ -767,6 +794,9 @@
     </ClInclude>
     <ClInclude Include="..\public\Edg_Spawn.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_ProtegoSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -999,6 +1029,18 @@
     <ClCompile Include="..\Private\Player_AccioSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_AvadaKedavraSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AvadaKedavraSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_BombardaSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_ConfringoSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_LumosSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_LumosSkill_State</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Player_DepulsoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DepulsoSkill_State</Filter>
     </ClCompile>
@@ -1153,6 +1195,9 @@
     </ClCompile>
     <ClCompile Include="..\private\EdgRandomBall.cpp">
       <Filter>GameObject\Monster\EnderDragon\Skill\RandomBall</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

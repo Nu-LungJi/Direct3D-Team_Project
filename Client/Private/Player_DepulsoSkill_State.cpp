@@ -49,7 +49,10 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 	CacheAnimationIndices(*pPlayer);
 	// Depulso 이동은 애니메이션 Root Motion이 아니라 아래의 조절 가능한
 	// 전방 이동 구간을 사용한다.
-	SetSkillControl(*pPlayer, true, true, false);
+	// The cast clips contain vertical root motion. Applying it to the CCT
+	// lifts the whole player during the spell; target approach is handled
+	// explicitly by ApplyDirectionalMovement below.
+	SetSkillControl(*pPlayer, true, false, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::DEPULSO);
 	if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
@@ -77,9 +80,9 @@ void CPlayer_DepulsoSkill_State::CacheAnimationIndices(const CPlayer& player)
 		return;
 
 	// 고쳐야 할거 
-	m_DepulsoCast_Animation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_Fwd_Lht_01_anm.bin");
-	m_DepulsoEnd_Animation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Charge_Depulso_anm.bin");
-	m_AttackFail_Animation = FindAnimationIndex(player, "AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_LF_Atk_Heavy_Fail_anm.bin");
+	m_DepulsoCast_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Fwd_Lht_01_anm.bin");
+	m_DepulsoEnd_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Charge_Depulso_anm.bin");
+	m_AttackFail_Animation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_LF_Atk_Heavy_Fail_anm.bin");
 
 	m_bAnimationIndicesCached =
 		m_DepulsoCast_Animation >= 0 &&

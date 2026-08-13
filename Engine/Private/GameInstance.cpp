@@ -1410,6 +1410,9 @@ const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() con
 HRESULT CGameInstance::Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch, int32_t _PointFaceIndex) {
 	return m_pModel_Instance_Manager->Render_ShadowInstanced(pContext.Get(), _LightHandle, _bStaticBatch, _PointFaceIndex);
 }
+HRESULT CGameInstance::Render_OutlineInstance(ID3D11DeviceContext* pContext, const RENDER_CTX& renderContext, CHandle targetHandle) {
+	return m_pModel_Instance_Manager->Render_OutlineInstance(pContext, renderContext, targetHandle);
+}
 _bool	CGameInstance::Has_ActiveDynamicShadowBatch() {
 	return m_pModel_Instance_Manager->Has_ActiveDynamicShadowBatch();
 }

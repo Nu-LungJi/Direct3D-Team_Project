@@ -82,7 +82,7 @@ std::future<bool> CLevelLastBossRanrokLoader::Load()
 
 HRESULT CLevelLastBossRanrokLoader::LoadPlayer_InWorker()
 {
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(CURR_LEVEL, "PLAYER_MODEL_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/ElegantStudent_PrettyGirl2_RigCorrectedFinal/SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin"))) {
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(CURR_LEVEL, "PLAYER_MODEL_RESROUCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
 
 		E::CResModel::DESC pDesc{};
 		pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.8f, 0.f);

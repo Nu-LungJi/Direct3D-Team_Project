@@ -98,7 +98,7 @@ HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
 		LEVEL::HOGWART_WORLD,
 		"PLAYER_MODEL_RESROUCE",
 		E::CResModel::Create(
-			"./Resources/SampleClient/Models/Skeleton/ElegantStudent_PrettyGirl2_RigCorrectedFinal/SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin")))
+			"./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin")))
 	{
 		E::CResModel::DESC desc{};
 		desc.PreTransformMatrix =

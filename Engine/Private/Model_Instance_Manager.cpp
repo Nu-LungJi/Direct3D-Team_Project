@@ -89,6 +89,7 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 		pObject->SetInstanceModelNum(iBatchInstanceIndex);
 
 	pBatch->Instances.push_back(InstanceData);
+	pBatch->InstanceObjectHandles.push_back(pBatch->ObjectHandle);
 	pBatch->CombinedBoneMatrices.push_back(pModelInstance->Get_CombinedBoneMatrices());
 
 	/*----------- 광윤 추가 -----------*/
@@ -165,6 +166,7 @@ void CModel_Instance_Manager::Add_Instance( CComModelInstance* pModelInstance, c
 		pObject->SetInstanceModelNum(iBatchInstanceIndex);
 	}
 	pBatch->Instances.push_back(InstanceData);
+	pBatch->InstanceObjectHandles.push_back(pBatch->ObjectHandle);
 	++m_iTotalInstanceCount;
 
 
@@ -214,6 +216,7 @@ void CModel_Instance_Manager::Add_Instance(CComStaticModelInstance* pModelInstan
 		pObject->SetInstanceModelNum(iBatchInstanceIndex);
 	}
 	pBatch->Instances.push_back(InstanceData);
+	pBatch->InstanceObjectHandles.push_back(pBatch->ObjectHandle);
 	++m_iTotalInstanceCount;
 
 
@@ -345,6 +348,7 @@ void CModel_Instance_Manager::Clear_Frame()
 			continue;
 
 		pBatch->Instances.clear();
+		pBatch->InstanceObjectHandles.clear();
 		pBatch->PartInstances.clear();
 		pBatch->CombinedBoneMatrices.clear();
 		/*----------- 광윤 추가 -----------*/
@@ -505,6 +509,49 @@ HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pCo
 	}
 	
 	return S_OK;
+}
+
+HRESULT CModel_Instance_Manager::Render_OutlineInstance(ID3D11DeviceContext* pContext, const RENDER_CTX& renderContext, CHandle targetHandle)
+{
+	if (!pContext || renderContext.pass != RENDERPASS::DEPTH)
+		return E_INVALIDARG;
+
+	for (MODEL_INSTANCE_BATCH* pBatch : m_ActiveBatches)
+	{
+		if (!pBatch || pBatch->bModelStatic || pBatch->bGPUSkinned || pBatch->Instances.empty())
+			continue;
+
+		const auto handleIt = std::find(
+			pBatch->InstanceObjectHandles.begin(),
+			pBatch->InstanceObjectHandles.end(),
+			targetHandle);
+		if (handleIt == pBatch->InstanceObjectHandles.end())
+			continue;
+
+		const size_t sourceIndex = static_cast<size_t>(
+			std::distance(pBatch->InstanceObjectHandles.begin(), handleIt));
+		if (sourceIndex >= pBatch->Instances.size() || sourceIndex >= pBatch->CombinedBoneMatrices.size())
+			return E_FAIL;
+
+		m_ShadowFilteredInstances.clear();
+		m_ShadowVisibleSourceIndices.clear();
+		m_ShadowFilteredInstances.push_back(pBatch->Instances[sourceIndex]);
+		m_ShadowVisibleSourceIndices.push_back(static_cast<uint32_t>(sourceIndex));
+
+		auto pDepthVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"VS_TestModelAnim_CPU_Skinning_Instanced");
+		if (!pDepthVertexShader || FAILED(pDepthVertexShader->Load()))
+			return E_FAIL;
+
+		pContext->IASetInputLayout(pDepthVertexShader->GetInputLayout().Get());
+		pContext->VSSetShader(pDepthVertexShader->GetVertexShader().Get(), nullptr, 0);
+		pContext->PSSetShader(nullptr, nullptr, 0);
+
+		return Render_ShadowBatch(pContext, *pBatch);
+	}
+
+	return S_FALSE;
 }
 HRESULT CModel_Instance_Manager::Render_ShadowBatch(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch){
 	const uint32_t iInstanceCount = static_cast<uint32_t>(m_ShadowFilteredInstances.size());

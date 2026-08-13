@@ -1582,8 +1582,6 @@ HRESULT CRenderer::Render_PostProcess_Focusing(){
 	auto OutLineObject = CGameInstance::Get().GetGameObjectByHandle(m_pOutlineTargetHandle.value());
 	if (nullptr == OutLineObject)	return S_OK;
 
-	const auto& Batches = CGameInstance::Get().Get_ActiveBatches();
-
 	{
 		ID3D11DepthStencilState* pDSS = nullptr;
 		m_pContext->OMSetDepthStencilState(pDSS, 0);
@@ -1610,14 +1608,11 @@ HRESULT CRenderer::Render_PostProcess_Focusing(){
 
 		if (FAILED(Bind_CameraAttribute(pGameCam)))						{ Unbind_Resources(); return S_OK; }
 
-		for (auto pBatch : Batches) {
-			if (nullptr == pBatch)	continue;
-
-			CGameObject* pBatchObject = CGameInstance::Get().GetGameObjectByHandle(pBatch->ObjectHandle);
-			if (pBatchObject != OutLineObject) continue;
-
-			if (FAILED(OutLineObject->Render_Instanced(m_pContext.Get(), m_pRenderContext, *pBatch))) { Unbind_Resources(); return S_OK; }
-			break;
+		if (FAILED(CGameInstance::Get().Render_OutlineInstance(
+			m_pContext.Get(), RenderContext, m_pOutlineTargetHandle.value())))
+		{
+			Unbind_Resources();
+			return S_OK;
 		}
 	}
 	{

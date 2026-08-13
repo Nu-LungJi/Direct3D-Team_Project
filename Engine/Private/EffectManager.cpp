@@ -223,7 +223,10 @@ void CEffectManager::UpdateGUI()
 	ImGui::Separator();
 
 	if (ImGui::Button("Reload Effects")) {
-
+		// EFFECT_INSTANCE stores a pointer to an entry in m_Presets.
+		// Stop every live instance before clearing the preset map so that
+		// Update() cannot dereference an invalid pPreset after a reload.
+		ClearAllRunningEffect();
 		m_Presets.clear();
 
 		auto k = Load_FilePath_ByExtension("./Resources/json/Effect", ".json");

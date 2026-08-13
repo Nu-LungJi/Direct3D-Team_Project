@@ -295,7 +295,7 @@ void CBossTMB::OverLabTest(_vector vSrcPos, _float fRadius, int32_t iDamage)
 		{
 			//m_fDamage
 			auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pxOverLapResult.hGameObject);
-			pTarget->OnQueryHit(iDamage);
+			pTarget->OnQueryHit(iDamage, GetTransform().GetPosition());
 		}
 	}
 }
