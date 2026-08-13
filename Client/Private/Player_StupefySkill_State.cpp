@@ -37,9 +37,10 @@ void CPlayer_StupefySkill_State::Update(CStateMachine* pStateMachine, _float)
 	if (!m_bProjectileReleased && m_fPreviousAnimRatio < PROJECTILE_RELEASE_RATIO && fRatio >= PROJECTILE_RELEASE_RATIO)
 	{
 		m_bProjectileReleased = true;
-		// [Stupefy Effect] 전용 시전/발사 이펙트와 투사체 생성 위치.
-		// 현재는 기존 피격 연결을 유지하기 위해 마법 탄환만 발사한다.
-		pPlayer->Attack_Magic_Bullet();
+		// [Stupefy Effect] 완드 섬광, 순백색 코어, 옅은 청백색 리본 트레일,
+		// 피격 섬광은 FireStupefyProjectile()의 데이터 이름으로 각각 연결한다.
+		if (!pPlayer->FireStupefyProjectile())
+			DEBUG_LOG("[Stupefy] Failed to spawn projectile.\n");
 	}
 	m_fPreviousAnimRatio = fRatio;
 	if (pAnimator->GetFinish()) RequestLocomotion(pStateMachine);

@@ -20,6 +20,7 @@
 #include "ComCharacterMotor.h"
 #include "PlayerRagdollController.h"
 #include "Player_ConfringoController.h"
+#include "Player_Stupefy_Bullet.h"
 #include "PlayerThirdPersonCamera.h"
 #include "DbgLineRender.h"
 #include "Player_StateMachine.h"
@@ -99,6 +100,8 @@ void CPlayer::UpdateGUI()
 
 	if (m_pConfringoController)
 		m_pConfringoController->UpdateGUI();
+
+	UpdateStupefyDebugGUI();
 
 
 	if (m_pRagdollController)
@@ -2358,6 +2361,119 @@ void CPlayer::Attack_Magic_Bullet()
 		static_cast<CTrail_CPU*>(a)->Clear();
 	}
 }
+
+_bool CPlayer::FireStupefyProjectile()
+{
+	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(
+		m_Partes[ETOUI(PARTES::WEAPON)]);
+	if (!pWeapon)
+		return false;
+
+	const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+	const _float3 vStartPosition{ spawnWorld._41, spawnWorld._42, spawnWorld._43 };
+	_float3 vEndPosition{};
+	if (auto* pTarget = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget))
+	{
+		vEndPosition = pTarget->GetHurtBoxPosition();
+	}
+	else
+	{
+		_vector vLook = XMVectorSetY(GetTransform().GetState(STATE::LOOK), 0.f);
+		if (XMVectorGetX(XMVector3LengthSq(vLook)) <= FLT_EPSILON)
+			vLook = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+		else
+			vLook = XMVector3Normalize(vLook);
+		XMStoreFloat3(&vEndPosition, XMLoadFloat3(&vStartPosition) + vLook * m_StupefyDebug.fRange);
+	}
+
+	CPlayer_Stupefy_Bullet::DESC Desc{};
+	Desc.sObjectTag = "PlayerStupefyProjectile";
+	Desc.vStartPosition = vStartPosition;
+	Desc.vEndPosition = vEndPosition;
+	Desc.hOwner = GetHandle();
+	Desc.eSkillType = PLAYER_SKILL_TYPE::ATTACK;
+	Desc.fSpeed = m_StupefyDebug.fSpeed;
+	Desc.fLifeTime = m_StupefyDebug.fLifeTime;
+	Desc.fRadius = m_StupefyDebug.fRadius;
+	Desc.fCurveAmplitude = m_StupefyDebug.fCurveAmplitude;
+	Desc.fCurveFrequency = m_StupefyDebug.fCurveFrequency;
+	Desc.iPathSampleCount = static_cast<uint32_t>(m_StupefyDebug.iPathSampleCount);
+	Desc.sProjectileEffectName = m_StupefyDebug.bCore ? "KMS_Stupefy_Core" : "";
+	Desc.sTrailParticleQueue = m_StupefyDebug.bRibbonTrail ? "KMS_Stupefy_Trail" : "";
+	Desc.sImpactEffectName = m_StupefyDebug.bImpact ? "KMS_Stupefy_Impact" : "";
+	Desc.fTrailSpacing = m_StupefyDebug.fTrailSpacing;
+	Desc.bDebugSphere = m_StupefyDebug.bDebugSphere;
+	Desc.bDebugPath = m_StupefyDebug.bDebugPath;
+	Desc.bEnableSounds = m_StupefyDebug.bSound;
+
+	const auto hProjectile = CGameInstance::Get().AddGameObjectToLayer(
+		m_LevelTag,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PlayerStupefyBullet,
+		"PlayerStupefyProjectile",
+		&Desc);
+	if (!hProjectile)
+		return false;
+	m_hLastStupefyProjectile = *hProjectile;
+
+	// [Stupefy Muzzle] 유성 핵이 응축되며 청백색과 보랏빛 별가루가 터지는 시작점.
+	if (m_StupefyDebug.bMuzzle)
+		CGameInstance::Get().Spawn("KMS_Stupefy_Muzzle_Queue.json", spawnWorld);
+	return true;
+}
+
+void CPlayer::UpdateStupefyDebugGUI()
+{
+	if (!ImGui::CollapsingHeader("Stupefy Debug"))
+		return;
+
+	const _bool bProjectileAlive =
+		CGameInstance::Get().GetGameObjectByHandle(m_hLastStupefyProjectile) != nullptr;
+	ImGui::Text("Last Projectile: %s", bProjectileAlive ? "Alive" : "None / Finished");
+	ImGui::Text("Target: %s", CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget)
+		? "Locked Target" : "Forward Test Shot");
+
+	if (ImGui::Button("Fire Stupefy Test"))
+	{
+		if (!FireStupefyProjectile())
+			DEBUG_LOG("[Stupefy Debug] Test fire failed. Check weapon and projectile prototype.\n");
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Reset Stupefy Values"))
+		m_StupefyDebug = {};
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Layers");
+	ImGui::Checkbox("Muzzle Flash", &m_StupefyDebug.bMuzzle);
+	ImGui::Checkbox("Projectile Core", &m_StupefyDebug.bCore);
+	ImGui::Checkbox("Ribbon Trail", &m_StupefyDebug.bRibbonTrail);
+	ImGui::Checkbox("Impact Flash", &m_StupefyDebug.bImpact);
+	ImGui::Checkbox("Debug Projectile Sphere", &m_StupefyDebug.bDebugSphere);
+	ImGui::Checkbox("Debug Sweep Path", &m_StupefyDebug.bDebugPath);
+	ImGui::TextDisabled("These options affect newly fired test projectiles.");
+	ImGui::Checkbox("Projectile Sound", &m_StupefyDebug.bSound);
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Flight Tuning");
+	ImGui::DragFloat("Speed", &m_StupefyDebug.fSpeed, 1.f, 1.f, 300.f, "%.1f");
+	ImGui::DragFloat("Range", &m_StupefyDebug.fRange, 0.5f, 1.f, 100.f, "%.1f");
+	ImGui::DragFloat("Life Time", &m_StupefyDebug.fLifeTime, 0.05f, 0.1f, 10.f, "%.2f");
+	ImGui::DragFloat("Sweep Radius", &m_StupefyDebug.fRadius, 0.005f, 0.01f, 2.f, "%.3f");
+	ImGui::DragFloat("Curve Amplitude", &m_StupefyDebug.fCurveAmplitude, 0.005f, 0.f, 2.f, "%.3f");
+	ImGui::DragFloat("Curve Frequency", &m_StupefyDebug.fCurveFrequency, 0.05f, 0.f, 10.f, "%.2f");
+	ImGui::DragFloat("Trail Spacing", &m_StupefyDebug.fTrailSpacing, 0.005f, 0.01f, 2.f, "%.3f");
+	ImGui::DragInt("Path Samples", &m_StupefyDebug.iPathSampleCount, 1.f, 8, 256);
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Effect Data Names");
+	ImGui::TextUnformatted("Muzzle : KMS_Stupefy_Muzzle_Queue.json");
+	ImGui::TextUnformatted("Core   : KMS_Stupefy_Core");
+	ImGui::TextUnformatted("Trail  : KMS_Stupefy_Trail (continuous mesh)");
+	ImGui::TextUnformatted("Impact : KMS_Stupefy_Impact");
+	ImGui::TextColored(ImVec4(0.52f, 0.86f, 1.f, 1.f), "Meteor Core: cyan-white");
+	ImGui::TextColored(ImVec4(0.72f, 0.42f, 1.f, 1.f), "Galaxy Dust: blue-violet");
+	ImGui::TextDisabled("Missing effect data is isolated per layer; disable that layer while testing.");
+}
+
 void CPlayer::OnWake()
 {
 }

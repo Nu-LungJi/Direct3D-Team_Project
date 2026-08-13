@@ -28,6 +28,7 @@
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Confringo_Bullet.h"
+#include "Player_Stupefy_Bullet.h"
 #include "NvClothCape.h"
 #include "ResNvClothMesh.h"
 #include "BossTMB.h"
@@ -137,6 +138,11 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 				MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerConfringoBullet");
 				return false;
 			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::BOSS_CHARLES_ROOKWOOD,
+				PROTO_GAMEOBJECT::Prototype_GameObject_PlayerStupefyBullet,
+				CPlayer_Stupefy_Bullet::Create())))
+				return false;
 
 			return  true;
 		});

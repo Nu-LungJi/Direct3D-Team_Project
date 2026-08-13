@@ -3639,6 +3639,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeCone(param);
 			else if constexpr (std::is_same_v<T, SEnergySphere>)
 				return ParticlePattern::MakeEnergySphere(param);
+			else if constexpr (std::is_same_v<T, SIrregularRingParam>)
+				return ParticlePattern::MakeIrregularRing(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
@@ -3715,6 +3717,10 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
 			else if constexpr (std::is_same_v<T, SEnergySphere>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SIrregularRingParam>)
 			{
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}

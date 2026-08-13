@@ -109,6 +109,30 @@ private:
 	void TriggerProtegoHit(const _float3& vHitPosition);
 public:
 	void Attack_Magic_Bullet();
+	_bool FireStupefyProjectile();
+private:
+	void UpdateStupefyDebugGUI();
+	struct STUPEFY_DEBUG_SETTINGS
+	{
+		_float fSpeed{ 120.f };
+		_float fLifeTime{ 2.f };
+		_float fRadius{ 0.18f };
+		_float fCurveAmplitude{ 0.08f };
+		_float fCurveFrequency{ 1.2f };
+		_float fTrailSpacing{ 0.45f };
+		_float fRange{ 30.f };
+		int32_t iPathSampleCount{ 48 };
+		_bool bMuzzle{ true };
+		_bool bCore{ true };
+		_bool bRibbonTrail{ true };
+		_bool bImpact{ true };
+		_bool bDebugSphere{ true };
+		_bool bDebugPath{};
+		_bool bSound{};
+	};
+	STUPEFY_DEBUG_SETTINGS m_StupefyDebug{};
+	CHandle m_hLastStupefyProjectile{};
+public:
 public:
 	void OnWake() override;
 	void OnSleep() override;

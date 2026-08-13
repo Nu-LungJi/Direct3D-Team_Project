@@ -52,6 +52,7 @@
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Confringo_Bullet.h"
+#include "Player_Stupefy_Bullet.h"
 #include "TriggerCRW_ToBoss.h"
 #include "TriggerCRW_SpawnMonster1.h"
 NS_USING(Client)
@@ -292,6 +293,11 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerConfringoBullet");
 				return false;
 			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD,
+				PROTO_GAMEOBJECT::Prototype_GameObject_PlayerStupefyBullet,
+				CPlayer_Stupefy_Bullet::Create())))
+				return false;
 
 
 			return true;

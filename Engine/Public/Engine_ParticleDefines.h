@@ -321,6 +321,29 @@ COMMON_PATTERN_FIELDS(X)
     X(_float4, endEmissive, _float4(0,0,0,0)) \
 	X(_float , endIntensity, 0.f) \
    COMMON_PATTERN_FIELDS(X)
+
+// Expanding ring that starts coherent, then breaks into individually drifting
+// particles. Kept separate from CircleToWave so existing effects are unchanged.
+#define IRREGULAR_RING_FIELDS(X) \
+    X(_float3, vCenter, _float3(0,0,0)) \
+    X(uint32_t, iCount, 120) \
+    X(_float, fBaseSpeed, 8.f) \
+    X(_float, fRadialJitter, 0.18f) \
+    X(_float, fTangentialJitter, 1.2f) \
+    X(_float, fCoherentWarp, 0.22f) \
+    X(_float2, vWind, _float2(0.8f,0.35f)) \
+    X(_float, fAngleJitterDegree, 1.5f) \
+    X(_float, fLifeMin, 0.55f) \
+    X(_float, fLifeMax, 1.15f) \
+    X(_float, fSpawnDelayMax, 0.035f) \
+    X(_float3, fSize, _float3(0.05f,0.05f,0.05f)) \
+    X(_float3, fEndSize, _float3(0.015f,0.015f,0.015f)) \
+    X(_float4, color, _float4(1,1,1,1)) \
+    X(_float4, emissive, _float4(1,1,1,1)) \
+    X(_float, startIntensity, 8.f) \
+    X(_float4, endEmissive, _float4(1,1,1,1)) \
+    X(_float, endIntensity, 0.f) \
+    COMMON_PATTERN_FIELDS(X)
 // ============================================================
 // struct 자동 생성 매크로
 // ============================================================
@@ -342,17 +365,18 @@ struct StructName \
 	struct SLightning { LIGHTNING_STREIGHT(DECLARE_PARAM_FIELD) };
 	struct SConeParam { CONE_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SEnergySphere { ENERGY_SPHERE_FIELDS(DECLARE_PARAM_FIELD) };
+	struct SIrregularRingParam { IRREGULAR_RING_FIELDS(DECLARE_PARAM_FIELD) };
 
 #undef DECLARE_PARAM_FIELD
 
 
 	//3. STRUCT 추가
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning, SConeParam, SEnergySphere>;
+	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning, SConeParam, SEnergySphere, SIrregularRingParam>;
 
 	// 4. 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
 	inline constexpr const char* PATTERN_KIND_NAMES[] =
 	{
-		"Stairs", "Circle",  "Spiral", "StraightGround", "CircleToWave", "SMOKE", "SLightning", "Cone", "EnergySphere"
+		"Stairs", "Circle",  "Spiral", "StraightGround", "CircleToWave", "SMOKE", "SLightning", "Cone", "EnergySphere", "IrregularRing"
 	};
 
 	//5. 여기에 CASE 추가
@@ -370,6 +394,7 @@ struct StructName \
 		case 6: return SLightning{};
 		case 7: return SConeParam{};
 		case 8: return SEnergySphere{};
+		case 9: return SIrregularRingParam{};
 			  
 		default: return SStairsParam{};
 		}

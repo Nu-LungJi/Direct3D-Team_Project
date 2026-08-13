@@ -16,6 +16,7 @@ namespace ParticlePattern
 	std::vector<PARTICLE_SPAWN_DATA> MakeLightning(const SLightning& p);
 	std::vector<PARTICLE_SPAWN_DATA> MakeCone(const SConeParam& param);
 	std::vector<PARTICLE_SPAWN_DATA> MakeEnergySphere(const SEnergySphere& param);
+	std::vector<PARTICLE_SPAWN_DATA> MakeIrregularRing(const SIrregularRingParam& param);
 
 }
 NS_END
