@@ -248,8 +248,12 @@ private:
 	_float m_fParryCounterRemainTime{};
 	static constexpr _float PARRY_COUNTER_WINDOW = 1.0f;
 	EFFECT_INSTANCE_ID m_iProtegoShieldEffectID{ INVALID_EFFECT_INSTANCE_ID };
-	EFFECT_INSTANCE_ID m_iProtegoHitEffectID{ INVALID_EFFECT_INSTANCE_ID };
-	_float4x4 m_ProtegoHitLocalMatrix{};
+	struct PROTEGO_HIT_EFFECT
+	{
+		EFFECT_INSTANCE_ID iEffectID{ INVALID_EFFECT_INSTANCE_ID };
+		_float4x4 matLocal{};
+	};
+	std::vector<PROTEGO_HIT_EFFECT> m_ProtegoHitEffects{};
 	uint32_t m_iProtegoParrySequence{};
 	_float3 m_vLastProtegoHitPosition{};
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};

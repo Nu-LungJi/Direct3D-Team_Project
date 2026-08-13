@@ -811,7 +811,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (m_pStateMachine && m_pComCharacterMotor &&
 		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
 		m_pComCharacterMotor->IsGrounded() &&
-		m_iHp > 0 && CGameInstance::Get().KeyDown(DIK_Q))
+		m_iHp > 0 && !m_bProtegoActive &&
+		CGameInstance::Get().KeyDown(DIK_Q))
 	{
 		m_pStateMachine->RequestState(PLAYER_STATE::PROTEGO_SKILL);
 	}
@@ -1731,12 +1732,12 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 void CPlayer::UpdateAttachedEffects()
 {
-	if (m_iDashBodyEffectID == INVALID_EFFECT_INSTANCE_ID)
-		return;
-
-	CGameInstance::Get().SetEffectWorldMatrix(
-		m_iDashBodyEffectID,
-		*GetTransform().GetWorldMatrix());
+	if (m_iDashBodyEffectID != INVALID_EFFECT_INSTANCE_ID)
+	{
+		CGameInstance::Get().SetEffectWorldMatrix(
+			m_iDashBodyEffectID,
+			*GetTransform().GetWorldMatrix());
+	}
 	
 
 	// 캐릭터의 이동과 회전이 모두 확정된 LateUpdate 시점에 보호막을 붙인다.
@@ -1744,21 +1745,26 @@ void CPlayer::UpdateAttachedEffects()
 	if (m_bProtegoActive &&
 		m_iProtegoShieldEffectID != INVALID_EFFECT_INSTANCE_ID)
 	{
-		_float4x4 shieldWorld = *GetTransform().GetWorldMatrix();
-		shieldWorld._42 += 1.f;
+		const _float3 vPlayerPosition = GetTransform().GetPosition();
+		_float4x4 shieldWorld{};
+		XMStoreFloat4x4(&shieldWorld, XMMatrixTranslation(
+			vPlayerPosition.x, vPlayerPosition.y + 1.f, vPlayerPosition.z));
 		CGameInstance::Get().SetEffectWorldMatrix(
 			m_iProtegoShieldEffectID, shieldWorld);
 	}
 
-	if (m_iProtegoHitEffectID != INVALID_EFFECT_INSTANCE_ID)
+	const _float3 vPlayerPosition = GetTransform().GetPosition();
+	const _matrix playerTranslation = XMMatrixTranslation(
+		vPlayerPosition.x, vPlayerPosition.y, vPlayerPosition.z);
+	for (const auto& hitEffect : m_ProtegoHitEffects)
 	{
 		_float4x4 hitWorld{};
 		XMStoreFloat4x4(
 			&hitWorld,
-			XMLoadFloat4x4(&m_ProtegoHitLocalMatrix) *
-			GetTransform().GetLoadedWorldMatrix());
+			XMLoadFloat4x4(&hitEffect.matLocal) *
+			playerTranslation);
 		CGameInstance::Get().SetEffectWorldMatrix(
-			m_iProtegoHitEffectID, hitWorld);
+			hitEffect.iEffectID, hitWorld);
 	}
 }		
 
@@ -2153,21 +2159,27 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._31), vNormal);
 	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._41), vPosition);
 
-	const _matrix playerWorld = GetTransform().GetLoadedWorldMatrix();
+	const _float3 vPlayerPosition = GetTransform().GetPosition();
+	const _matrix playerTranslation = XMMatrixTranslation(
+		vPlayerPosition.x, vPlayerPosition.y, vPlayerPosition.z);
+	_float4x4 hitLocalMatrix{};
 	XMStoreFloat4x4(
-		&m_ProtegoHitLocalMatrix,
-		XMLoadFloat4x4(&hitWorld) * XMMatrixInverse(nullptr, playerWorld));
+		&hitLocalMatrix,
+		XMLoadFloat4x4(&hitWorld) * XMMatrixInverse(nullptr, playerTranslation));
 
-	if (m_iProtegoHitEffectID != INVALID_EFFECT_INSTANCE_ID)
-		CGameInstance::Get().StopEffect(m_iProtegoHitEffectID);
-
-	m_iProtegoHitEffectID = CGameInstance::Get().PlayEffect(
+	const EFFECT_INSTANCE_ID hitEffectID = CGameInstance::Get().PlayEffect(
 		"Protego_Shield_Hit_Layered", hitWorld, XMVectorZero(),
 		[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON)
 		{
-			if (effectId == m_iProtegoHitEffectID)
-				m_iProtegoHitEffectID = INVALID_EFFECT_INSTANCE_ID;
+			std::erase_if(m_ProtegoHitEffects,
+				[effectId](const PROTEGO_HIT_EFFECT& hitEffect)
+				{
+					return hitEffect.iEffectID == effectId;
+				});
 		});
+
+	if (hitEffectID != INVALID_EFFECT_INSTANCE_ID)
+		m_ProtegoHitEffects.push_back({ hitEffectID, hitLocalMatrix });
 }
 
 _bool CPlayer::PlayUpperBodyAnimation(
@@ -2191,8 +2203,10 @@ void CPlayer::ActivateProtego(_float fDuration)
 
 	if (m_iProtegoShieldEffectID == INVALID_EFFECT_INSTANCE_ID)
 	{
-		_float4x4 shieldWorld = *GetTransform().GetWorldMatrix();
-		shieldWorld._42 += 1.f;
+		const _float3 vPlayerPosition = GetTransform().GetPosition();
+		_float4x4 shieldWorld{};
+		XMStoreFloat4x4(&shieldWorld, XMMatrixTranslation(
+			vPlayerPosition.x, vPlayerPosition.y + 1.f, vPlayerPosition.z));
 		m_iProtegoShieldEffectID = CGameInstance::Get().PlayEffect(
 			"Protego_Shield", shieldWorld, XMVectorZero());
 	}
