@@ -247,6 +247,7 @@ void CSpellMiniGame::UpdateIntro(_float fTimeDelta)
 		if (!m_bStartPadIntroRevealed)
 		{
 			m_bStartPadIntroRevealed = true;
+			PlayCreateButtonSound();
 			CreateBoostSuccessSmoke(
 				m_StartPadSuccessEffect.SmokeHandle,
 				m_hStartPad,
@@ -342,6 +343,7 @@ void CSpellMiniGame::UpdateIntroPadScales(_float elapsedTime)
 			if (elapsedTime >= revealTime && !revealed)
 			{
 				revealed = true;
+				PlayCreateButtonSound();
 				CreateBoostSuccessSmoke(
 					smokeHandle,
 					iconHandle,
@@ -384,6 +386,19 @@ void CSpellMiniGame::UpdateIntroPadScales(_float elapsedTime)
 			progress * INTRO_PATH_DURATION,
 			pad.IntroRevealed);
 	}
+}
+
+void CSpellMiniGame::PlayCreateButtonSound()
+{
+	E::CGameInstance::Get().GetSoundManager()->Play2D(
+		"./Resources/SampleClient/Sound/UI/CreateButton.wav",
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::UI,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = false
+		});
 }
 
 void CSpellMiniGame::ResetToStart()

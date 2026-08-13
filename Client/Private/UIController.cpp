@@ -231,6 +231,15 @@ _bool CUIController::StartSpellMiniGame()
 		return false;
 
 	m_hSpellMiniGame = *handle;
+	E::CGameInstance::Get().GetSoundManager()->Play2D(
+		"./Resources/SampleClient/Sound/UI/Book.wav",
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::UI,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = false
+		});
 	const std::vector<CHandle> backgroundRoots =
 		GET_SINGLE(UIManager)->LoadPrefab("BlackBG250");
 	if (!backgroundRoots.empty())

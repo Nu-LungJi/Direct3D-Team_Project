@@ -96,6 +96,7 @@ private:
 	void UpdateIntro(_float fTimeDelta);
 	void SetIntroAlpha(_float alpha);
 	void UpdateIntroPadScales(_float elapsedTime);
+	void PlayCreateButtonSound();
 	void TryActivateBoostPad(_bool aPressed, _bool xPressed);
 	void ActivateBoost();
 	void UpdateChaser(_float movementDelta, _float timerDelta);
