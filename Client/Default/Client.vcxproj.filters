@@ -40,6 +40,9 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{6bd28087-0add-401b-9153-94d4f64a07f1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\Decal">
+      <UniqueIdentifier>{c7198a28-a5af-4ed1-914d-b1609cf80b2b}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Resources">
       <UniqueIdentifier>{ea673d2d-2797-484e-8c21-2bc2a74e811d}</UniqueIdentifier>
     </Filter>
@@ -1308,6 +1311,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_EnderDragon.hlsl">
       <Filter>ShaderFiles\GameObject</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCorruption.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

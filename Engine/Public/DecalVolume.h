@@ -1,78 +1,86 @@
 #pragma once
 #include "GameObject.h"
+#include "DecalMaterial.h"
 
 NS_BEGIN(Engine)
 
 class CComConstantBuffer;
 class CResCubeColBuffer;
-class CResPixelShader;
 class CResSamplerState;
 class CResTexture2D;
 class CResVertexShader;
 
-class ENGINE_DLL CDecalVolume : public CGameObject
+class ENGINE_DLL CDecalVolume final : public CGameObject
 {
 public:
 	DECLARE_DERIVED_TYPE(CDecalVolume, CGameObject)
 	CDecalVolume& operator=(const CDecalVolume&) = delete;
+	static constexpr const char* DEFAULT_MATERIAL_PATH = "./DecalMaterials/BasicDecal.json";
 
 protected:
 	explicit CDecalVolume();
-	explicit CDecalVolume(const CDecalVolume& Prototype);
+	explicit CDecalVolume(const CDecalVolume& prototype);
 	~CDecalVolume() override;
 
 public:
-	typedef struct tagDecalVolumeDesc : public GAMEOBJECT_DESC
+	struct DECAL_VOLUME_DESC : public GAMEOBJECT_DESC
 	{
 		_float3 vPosition{};
 		_float3 vRotation{};
 		_float3 vScale{ 10.f, 2.f, 10.f };
 
-		_float4 vAlbedoColor{ 0.15f, 0.005f, 0.002f, 1.f };
-		_float3 vEmissiveColor{ 1.f, 0.01f, 0.f };
-		_float  fEmissiveIntensity{ 8.f };
-
 		_float fOpacity{ 1.f };
 		_float fNormalThreshold{ 0.4f };
 		_float fEdgeSoftness{ 0.05f };
+		_string sMaterialPath{ DEFAULT_MATERIAL_PATH };
 
+		// Legacy/default mask override. Material texture slot t2 is replaced when set.
 		StringID sTextureGroup{};
 		StringID sMaskTextureTag{};
-	} DECAL_VOLUME_DESC;
+	};
 
 private:
-	typedef struct tagDecalVolumeConstantBuffer
+	struct CB_DECAL_VOLUME
 	{
 		_float4x4 matInvWorld{};
-		_float4 vAlbedoColor{};
-		_float4 vEmissiveColorIntensity{};
-		_float4 vParams{};
-	} CB_DECAL_VOLUME;
+		_float4 vProjectionParams{}; // opacity, normal threshold, edge softness, time
+		std::array<_float4, CDecalMaterial::PARAMETER_FLOAT_COUNT / 4> vMaterialParams{};
+	};
 	static_assert(sizeof(CB_DECAL_VOLUME) % 16 == 0);
 
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
 	void LateUpdate(_float fTimeDelta) override;
-	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	HRESULT Render(ID3D11DeviceContext* context, const RENDER_CTX& ctx) override;
 	void UpdateGUI() override;
 
 public:
-	HRESULT SetMaskTexture(const StringID& textureGroup, const StringID& textureTag);
-	const StringID& GetMaskTextureGroup() const { return m_sTextureGroup; }
-	const StringID& GetMaskTextureTag() const { return m_sMaskTextureTag; }
-	const _string& GetMaskTexturePath() const;
+	HRESULT SetMaterial(const _string& materialPath);
+	const _string& GetMaterialPath() const { return m_MaterialPath; }
+	const SPtr<CDecalMaterial>& GetMaterial() const { return m_Material; }
+	const std::vector<CDecalMaterial::PARAMETER_DESC>& GetMaterialParameters() const;
+	_float* GetMaterialParameterData(const _string& name);
+	const _float* GetMaterialParameterData(const _string& name) const;
+	HRESULT SetMaterialParameter(const _string& name, const _float* values, size_t count);
 
-	const _float4& GetAlbedoColor() const { return m_vAlbedoColor; }
-	const _float3& GetEmissiveColor() const { return m_vEmissiveColor; }
-	_float GetEmissiveIntensity() const { return m_fEmissiveIntensity; }
+	HRESULT SetTextureOverride(UINT slot, const StringID& textureGroup, const StringID& textureTag);
+	void ClearTextureOverride(UINT slot);
+	const StringID& GetTextureOverrideGroup(UINT slot) const;
+	const StringID& GetTextureOverrideTag(UINT slot) const;
+	const _string& GetTextureOverridePath(UINT slot) const;
+
+	HRESULT SetMaskTexture(const StringID& textureGroup, const StringID& textureTag)
+	{
+		return SetTextureOverride(CDecalMaterial::TEXTURE_SLOT_BEGIN, textureGroup, textureTag);
+	}
+	const StringID& GetMaskTextureGroup() const { return GetTextureOverrideGroup(CDecalMaterial::TEXTURE_SLOT_BEGIN); }
+	const StringID& GetMaskTextureTag() const { return GetTextureOverrideTag(CDecalMaterial::TEXTURE_SLOT_BEGIN); }
+	const _string& GetMaskTexturePath() const { return GetTextureOverridePath(CDecalMaterial::TEXTURE_SLOT_BEGIN); }
+
 	_float GetOpacity() const { return m_fOpacity; }
 	_float GetNormalThreshold() const { return m_fNormalThreshold; }
 	_float GetEdgeSoftness() const { return m_fEdgeSoftness; }
-
-	void SetAlbedoColor(const _float4& value) { m_vAlbedoColor = value; }
-	void SetEmissiveColor(const _float3& value) { m_vEmissiveColor = value; }
-	void SetEmissiveIntensity(_float value) { m_fEmissiveIntensity = std::max(0.f, value); }
 	void SetOpacity(_float value) { m_fOpacity = std::clamp(value, 0.f, 1.f); }
 	void SetNormalThreshold(_float value) { m_fNormalThreshold = std::clamp(value, 0.f, 0.999f); }
 	void SetEdgeSoftness(_float value) { m_fEdgeSoftness = std::clamp(value, 0.001f, 0.49f); }
@@ -82,19 +90,20 @@ private:
 	CComConstantBuffer* m_pComCBufferDecal{};
 	SPtr<CResCubeColBuffer> m_pCubeBuffer{};
 	SPtr<CResVertexShader> m_pVertexShader{};
-	SPtr<CResPixelShader> m_pPixelShader{};
+	SPtr<CResSamplerState> m_pLinearWrapSampler{};
 	SPtr<CResSamplerState> m_pLinearClampSampler{};
-	SPtr<CResTexture2D> m_pMaskTexture{};
-	StringID m_sTextureGroup{};
-	StringID m_sMaskTextureTag{};
 
+	SPtr<CDecalMaterial> m_Material{};
+	_string m_MaterialPath{ DEFAULT_MATERIAL_PATH };
+	std::array<_float, CDecalMaterial::PARAMETER_FLOAT_COUNT> m_MaterialParameters{};
+	std::array<SPtr<CResTexture2D>, CDecalMaterial::TEXTURE_SLOT_END + 1> m_TextureOverrides{};
+	std::array<StringID, CDecalMaterial::TEXTURE_SLOT_END + 1> m_TextureOverrideGroups{};
+	std::array<StringID, CDecalMaterial::TEXTURE_SLOT_END + 1> m_TextureOverrideTags{};
 
-	_float4 m_vAlbedoColor{ 0.15f, 0.005f, 0.002f, 1.f };
-	_float3 m_vEmissiveColor{ 1.f, 0.01f, 0.f };
-	_float m_fEmissiveIntensity{ 8.f };
 	_float m_fOpacity{ 1.f };
 	_float m_fNormalThreshold{ 0.4f };
 	_float m_fEdgeSoftness{ 0.05f };
+	_float m_fTime{};
 
 public:
 	static UPtr<CDecalVolume> Create();
@@ -102,3 +111,4 @@ public:
 };
 
 NS_END
+

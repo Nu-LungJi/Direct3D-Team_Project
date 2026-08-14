@@ -228,10 +228,13 @@ namespace
 		const auto position = transform.GetPosition();
 		const auto rotation = transform.GetQuaternion();
 		const auto scale = transform.GetScale();
-		const auto albedo = decal->GetAlbedoColor();
-		const auto emissive = decal->GetEmissiveColor();
+		const bool hasMaskOverride = decal->GetMaskTextureGroup().hash != 0 &&
+			decal->GetMaskTextureTag().hash != 0;
+		const std::string maskGroup = hasMaskOverride ? decal->GetMaskTextureGroup().GetDbgStr() : "";
+		const std::string maskTag = hasMaskOverride ? decal->GetMaskTextureTag().GetDbgStr() : "";
 
-		return nlohmann::ordered_json
+
+		nlohmann::ordered_json result
 		{
 			{ "type", "DecalVolume" },
 			{ "objectTag", std::string(decal->GetObjectTag()) },
@@ -241,16 +244,50 @@ namespace
 			{ "position", { position.x, position.y, position.z } },
 			{ "rotation", { rotation.x, rotation.y, rotation.z, rotation.w } },
 			{ "scale", { scale.x, scale.y, scale.z } },
-			{ "albedo", { albedo.x, albedo.y, albedo.z, albedo.w } },
-			{ "emissive", { emissive.x, emissive.y, emissive.z } },
-			{ "emissiveIntensity", decal->GetEmissiveIntensity() },
+			{ "materialPath", decal->GetMaterialPath() },
 			{ "opacity", decal->GetOpacity() },
 			{ "normalThreshold", decal->GetNormalThreshold() },
 			{ "edgeSoftness", decal->GetEdgeSoftness() },
-			{ "textureGroup", std::string(decal->GetMaskTextureGroup().GetDbgStr()) },
-			{ "textureTag", std::string(decal->GetMaskTextureTag().GetDbgStr()) },
+			{ "textureGroup", maskGroup },
+			{ "textureTag", maskTag },
 			{ "texturePath", decal->GetMaskTexturePath() }
 		};
+
+		auto savedParameters = nlohmann::ordered_json::object();
+		for (const auto& parameter : decal->GetMaterialParameters())
+		{
+			const _float* value = decal->GetMaterialParameterData(parameter.name);
+			if (!value)
+				continue;
+			if (parameter.count == 1)
+				savedParameters[parameter.name] = value[0];
+			else
+			{
+				auto values = nlohmann::ordered_json::array();
+				for (uint32_t i = 0; i < parameter.count; ++i)
+					values.push_back(value[i]);
+				savedParameters[parameter.name] = std::move(values);
+			}
+		}
+		result["materialParameters"] = std::move(savedParameters);
+		auto savedTextures = nlohmann::ordered_json::array();
+		for (UINT slot = CDecalMaterial::TEXTURE_SLOT_BEGIN; slot <= CDecalMaterial::TEXTURE_SLOT_END; ++slot)
+		{
+			const auto& group = decal->GetTextureOverrideGroup(slot);
+			const auto& tag = decal->GetTextureOverrideTag(slot);
+			if (group.hash == 0 || tag.hash == 0)
+				continue;
+			savedTextures.push_back(
+			{
+				{ "slot", slot },
+				{ "group", std::string(group.GetDbgStr()) },
+				{ "tag", std::string(tag.GetDbgStr()) },
+				{ "path", decal->GetTextureOverridePath(slot) }
+			});
+		}
+		result["textureOverrides"] = std::move(savedTextures);
+
+		return result;
 	}
 
 	std::optional<CHandle> CreateDecalFromJson(const nlohmann::ordered_json& objectJson)
@@ -262,11 +299,9 @@ namespace
 			"textureGroup", std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE));
 		const std::string textureTag = objectJson.value("textureTag", std::string{});
 		const std::string texturePath = objectJson.value("texturePath", std::string{});
-		if (textureTag.empty())
-			return std::nullopt;
 
 		auto& gameInstance = CGameInstance::Get();
-		if (!gameInstance.GetResourceFirst<CResTexture2D>(textureGroup, textureTag))
+		if (!textureTag.empty() && !gameInstance.GetResourceFirst<CResTexture2D>(textureGroup, textureTag))
 		{
 			if (texturePath.empty())
 				return std::nullopt;
@@ -278,14 +313,16 @@ namespace
 
 		CDecalVolume::DECAL_VOLUME_DESC desc{};
 		desc.sObjectTag = objectJson.value("objectTag", std::string("MapDecal"));
-		desc.vAlbedoColor = ReadFloat4(objectJson, "albedo", desc.vAlbedoColor);
-		desc.vEmissiveColor = ReadFloat3(objectJson, "emissive", desc.vEmissiveColor);
-		desc.fEmissiveIntensity = objectJson.value("emissiveIntensity", desc.fEmissiveIntensity);
+		desc.sMaterialPath = objectJson.value(
+			"materialPath", std::string(CDecalVolume::DEFAULT_MATERIAL_PATH));
 		desc.fOpacity = objectJson.value("opacity", desc.fOpacity);
 		desc.fNormalThreshold = objectJson.value("normalThreshold", desc.fNormalThreshold);
 		desc.fEdgeSoftness = objectJson.value("edgeSoftness", desc.fEdgeSoftness);
-		desc.sTextureGroup = textureGroup;
-		desc.sMaskTextureTag = textureTag;
+		if (!textureTag.empty())
+		{
+			desc.sTextureGroup = textureGroup;
+			desc.sMaskTextureTag = textureTag;
+		}
 
 		auto handle = gameInstance.AddGameObjectToLayer(
 			objectJson.value("protoGroup", std::string("PERMANENT")),
@@ -307,6 +344,62 @@ namespace
 		transform.SetQuaternion(rotation);
 		transform.SetScale(scale);
 		transform.Update();
+
+		if (objectJson.contains("materialParameters") && objectJson["materialParameters"].is_object())
+		{
+			const auto& savedParameters = objectJson["materialParameters"];
+			for (const auto& parameter : decal->GetMaterialParameters())
+			{
+				const auto iter = savedParameters.find(parameter.name);
+				if (iter == savedParameters.end())
+					continue;
+
+				std::array<_float, 4> values{};
+				if (iter->is_number())
+					values[0] = iter->get<_float>();
+				else if (iter->is_array())
+					for (uint32_t i = 0; i < parameter.count && i < iter->size(); ++i)
+						if ((*iter)[i].is_number())
+							values[i] = (*iter)[i].get<_float>();
+				decal->SetMaterialParameter(parameter.name, values.data(), parameter.count);
+			}
+		}
+		else
+		{
+			const auto albedo = ReadFloat4(objectJson, "albedo", { 1.f, 1.f, 1.f, 1.f });
+			const auto emissive = ReadFloat3(objectJson, "emissive", { 1.f, 0.f, 0.f });
+			const _float intensity = objectJson.value("emissiveIntensity", 1.f);
+			decal->SetMaterialParameter("Albedo", &albedo.x, 4);
+			decal->SetMaterialParameter("Emissive Color", &emissive.x, 3);
+			decal->SetMaterialParameter("Emissive Intensity", &intensity, 1);
+		}
+
+		if (objectJson.contains("textureOverrides") && objectJson["textureOverrides"].is_array())
+		{
+			for (const auto& savedTexture : objectJson["textureOverrides"])
+			{
+				const UINT slot = savedTexture.value("slot", 0u);
+				const std::string group = savedTexture.value(
+					"group", std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE));
+				const std::string tag = savedTexture.value("tag", std::string{});
+				const std::string path = savedTexture.value("path", std::string{});
+				if (slot < CDecalMaterial::TEXTURE_SLOT_BEGIN ||
+					slot > CDecalMaterial::TEXTURE_SLOT_END ||
+					tag.empty())
+					continue;
+
+				if (!gameInstance.GetResourceFirst<CResTexture2D>(group, tag))
+				{
+					if (path.empty())
+						continue;
+					auto texture = gameInstance.AddResourceT<CResTexture2D>(
+						group, tag, CResTexture2D::Create(path));
+					if (!texture || FAILED(texture->Load()))
+						continue;
+				}
+				decal->SetTextureOverride(slot, group, tag);
+			}
+		}
 		return handle;
 	}
 

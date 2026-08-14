@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Inspector.h"
 #include "ComTransform.h"
 #include "GameInstance.h"
@@ -19,6 +19,8 @@ namespace
 
 	std::string SafeDbgStr(const E::StringID& id)
 	{
+		if (id.hash == 0)
+			return "<material default>";
 		const char* text = id.GetDbgStr();
 		return text != nullptr ? text : "<unnamed>";
 	}
@@ -180,12 +182,39 @@ namespace
 }
 	void DrawDecalVolumeInspector(E::CDecalVolume& decal)
 	{
+		const auto materialFiles = E::CDecalMaterial::FindMaterialFiles("./DecalMaterials");
+		const auto& currentMaterial = decal.GetMaterial();
+		const std::string materialPreview = currentMaterial
+			? currentMaterial->GetName()
+			: decal.GetMaterialPath();
+		if (ImGui::BeginCombo("Material", materialPreview.c_str()))
+		{
+			for (const auto& materialPath : materialFiles)
+			{
+				const bool selected = materialPath == decal.GetMaterialPath();
+				const std::string label = std::filesystem::path{ materialPath }.stem().string();
+				if (ImGui::Selectable(label.c_str(), selected))
+					decal.SetMaterial(materialPath);
+				if (selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::TextWrapped("Material Path: %s", decal.GetMaterialPath().c_str());
+
 		const std::string currentGroup = SafeDbgStr(decal.GetMaskTextureGroup());
 		const std::string currentTag = SafeDbgStr(decal.GetMaskTextureTag());
 		const std::string preview = currentGroup + " / " + currentTag;
 
 		if (ImGui::BeginCombo("Mask Texture", preview.c_str()))
 		{
+			const bool usesMaterialDefault = decal.GetMaskTextureTag().hash == 0;
+			if (ImGui::Selectable("Material Default", usesMaterialDefault))
+				decal.ClearTextureOverride(E::CDecalMaterial::TEXTURE_SLOT_BEGIN);
+			if (usesMaterialDefault)
+				ImGui::SetItemDefaultFocus();
+			ImGui::Separator();
+
 			for (const auto& [groupId, resources] : E::CGameInstance::Get().GetResources())
 			{
 				if (groupId.hash != E::StringID{ E::TAG_RES_GRP_MAP_DECAL_TEXTURE }.hash)
@@ -216,18 +245,6 @@ namespace
 		}
 		ImGui::TextWrapped("Path: %s", decal.GetMaskTexturePath().c_str());
 
-		E::_float4 albedo = decal.GetAlbedoColor();
-		if (ImGui::ColorEdit4("Albedo", reinterpret_cast<float*>(&albedo)))
-			decal.SetAlbedoColor(albedo);
-
-		E::_float3 emissive = decal.GetEmissiveColor();
-		if (ImGui::ColorEdit3("Emissive", reinterpret_cast<float*>(&emissive)))
-			decal.SetEmissiveColor(emissive);
-
-		float emissiveIntensity = decal.GetEmissiveIntensity();
-		if (ImGui::DragFloat("Emissive Intensity", &emissiveIntensity, 0.1f, 0.f, 100.f))
-			decal.SetEmissiveIntensity(emissiveIntensity);
-
 		float opacity = decal.GetOpacity();
 		if (ImGui::SliderFloat("Opacity", &opacity, 0.f, 1.f))
 			decal.SetOpacity(opacity);
@@ -239,6 +256,37 @@ namespace
 		float edgeSoftness = decal.GetEdgeSoftness();
 		if (ImGui::SliderFloat("Edge Softness", &edgeSoftness, 0.001f, 0.49f))
 			decal.SetEdgeSoftness(edgeSoftness);
+
+		ImGui::Separator();
+		ImGui::TextDisabled("Material Parameters");
+		for (const auto& parameter : decal.GetMaterialParameters())
+		{
+			float* value = decal.GetMaterialParameterData(parameter.name);
+			if (!value)
+				continue;
+
+			switch (parameter.type)
+			{
+			case E::DECAL_PARAMETER_TYPE::COLOR3:
+				ImGui::ColorEdit3(parameter.name.c_str(), value);
+				break;
+			case E::DECAL_PARAMETER_TYPE::COLOR4:
+				ImGui::ColorEdit4(parameter.name.c_str(), value);
+				break;
+			case E::DECAL_PARAMETER_TYPE::FLOAT2:
+				ImGui::DragFloat2(parameter.name.c_str(), value, parameter.speed, parameter.minValue, parameter.maxValue);
+				break;
+			case E::DECAL_PARAMETER_TYPE::FLOAT3:
+				ImGui::DragFloat3(parameter.name.c_str(), value, parameter.speed, parameter.minValue, parameter.maxValue);
+				break;
+			case E::DECAL_PARAMETER_TYPE::FLOAT4:
+				ImGui::DragFloat4(parameter.name.c_str(), value, parameter.speed, parameter.minValue, parameter.maxValue);
+				break;
+			default:
+				ImGui::DragFloat(parameter.name.c_str(), value, parameter.speed, parameter.minValue, parameter.maxValue);
+				break;
+			}
+		}
 	}
 
 
