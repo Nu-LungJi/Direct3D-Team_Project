@@ -136,7 +136,10 @@ void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 		: 0.f;
 
 	const _float fTargetOffsetY = bFlightCamera
-		? m_fFlightTargetOffsetY
+		? std::lerp(
+			m_fFlightTargetOffsetY,
+			m_fBoostTargetOffsetY,
+			m_fCurrentSpeedEffectRatio)
 		: CAMERA_TARGET_OFFSET_Y;
 	const _float3 vPlayerFocus{
 		vTargetPosition.x,
