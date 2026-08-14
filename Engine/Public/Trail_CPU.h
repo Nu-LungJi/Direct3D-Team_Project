@@ -69,6 +69,9 @@ public:
 		uint32_t TexRows = 1;
 		uint32_t TexColumns = 1;
 		_bool bShrinkWidth = true;
+		// [LSY] true이면 입력이 멈춘 트레일의 꼬리를 기존 방식대로 일정 간격마다 제거한다.
+		// false이면 강제 제거하지 않고 각 포인트가 fMaxDuration 동안 자연스럽게 페이드되도록 둔다.
+		_bool bIdleRetractEnabled = true;
 		TRAIL_BEHAVIOR_MODE eBehaviorMode = TRAIL_BEHAVIOR_MODE::STABILIZED;
 
 
