@@ -5,6 +5,7 @@
 #include "Client_Defines.h"
 #include "ClientEvents.h"
 #include "Player.h"
+#include "ComCharacterMotor.h"
 
 NS_USING(Client)
 
@@ -47,10 +48,13 @@ HRESULT CPlayerThirdPersonCamera::Initialize(void* pArg)
 		pDesc->fMinPitch,
 		pDesc->fMaxPitch);
 	m_fDistance = pDesc->fDistance;
+	m_fCurrentDistance = m_fDistance;
 	m_fMinPitch = pDesc->fMinPitch;
 	m_fMaxPitch = pDesc->fMaxPitch;
 	m_fMouseSensitivity = pDesc->fMouseSensitivity;
+	m_fBaseFovY = pDesc->fFovY;
 	m_fShoulderOffset = pDesc->fShoulderOffset;
+	m_fCurrentShoulderOffset = m_fShoulderOffset;
 	m_fHorizontalDeadZoneRadius = pDesc->fHorizontalDeadZoneRadius;
 	m_fVerticalDeadZoneHalfHeight = pDesc->fVerticalDeadZoneHalfHeight;
 	m_fVerticalFollowSpeed = pDesc->fVerticalFollowSpeed;
@@ -80,8 +84,11 @@ void CPlayerThirdPersonCamera::PriorityUpdate(_float fTimeDelta)
 		return;
 	}
 
-	m_fYaw += CGameInstance::Get().MouseMove(MOUSEMOVESTATE::X) * m_fMouseSensitivity * fTimeDelta;
-	m_fPitch += CGameInstance::Get().MouseMove(MOUSEMOVESTATE::Y) * m_fMouseSensitivity * fTimeDelta;
+	// MouseMove는 이미 프레임 동안 누적된 상대 이동량이다.
+	// 여기에 가변 DeltaTime을 다시 곱하면 프레임 드랍 때 회전 감도가 달라져 끊겨 보인다.
+	constexpr _float MOUSE_REFERENCE_FRAME = 1.f / 60.f;
+	m_fYaw += CGameInstance::Get().MouseMove(MOUSEMOVESTATE::X) * m_fMouseSensitivity * MOUSE_REFERENCE_FRAME;
+	m_fPitch += CGameInstance::Get().MouseMove(MOUSEMOVESTATE::Y) * m_fMouseSensitivity * MOUSE_REFERENCE_FRAME;
 	m_fPitch = std::clamp(m_fPitch, m_fMinPitch, m_fMaxPitch);
 }
 
@@ -95,17 +102,45 @@ void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 		return;
 
 	_float3 vTargetPosition = pTarget->GetTransform().GetPosition();
+	_bool bFlightCamera = false;
+	_float fFlightVerticalLookAhead = 0.f;
+	_float fFlightSpeed = 0.f;
 	if (auto* pPlayer = Cast<CPlayer>(pTarget))
 	{
+		bFlightCamera = pPlayer->IsFlyRequested();
+		if (bFlightCamera)
+		{
+			if (auto* pMotor = pPlayer->GetCharacterMotor())
+			{
+				const _float3 vVelocity = pMotor->GetVelocity();
+				fFlightSpeed = std::sqrt(
+					vVelocity.x * vVelocity.x +
+					vVelocity.y * vVelocity.y +
+					vVelocity.z * vVelocity.z);
+				fFlightVerticalLookAhead = std::clamp(
+					vVelocity.y * m_fFlightVerticalLookAheadTime,
+					-m_fFlightMaxVerticalLookAhead,
+					m_fFlightMaxVerticalLookAhead);
+			}
+		}
 		// [LSY] 랙돌 중에는 고정된 Player Transform 대신 물리 Hips 위치를 추적한다.
 		_float3 vRagdollFollowPosition{};
 		if (pPlayer->TryGetRagdollFollowPosition(vRagdollFollowPosition))
 			vTargetPosition = vRagdollFollowPosition;
 	}
+	const _float fTargetSpeedEffectRatio = bFlightCamera
+		? std::clamp(
+			(fFlightSpeed - m_fSpeedEffectStartSpeed) /
+			(m_fSpeedEffectFullSpeed - m_fSpeedEffectStartSpeed),
+			0.f, 1.f)
+		: 0.f;
 
+	const _float fTargetOffsetY = bFlightCamera
+		? m_fFlightTargetOffsetY
+		: CAMERA_TARGET_OFFSET_Y;
 	const _float3 vPlayerFocus{
 		vTargetPosition.x,
-		vTargetPosition.y + CAMERA_TARGET_OFFSET_Y,
+		vTargetPosition.y + fTargetOffsetY + fFlightVerticalLookAhead,
 		vTargetPosition.z};
 
 	if (!m_bFollowPivotInitialized)
@@ -114,48 +149,144 @@ void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 		m_bFollowPivotInitialized = true;
 	}
 
+	const _float fHorizontalDeadZone = bFlightCamera
+		? std::lerp(
+			m_fFlightHorizontalDeadZoneRadius,
+			m_fBoostHorizontalDeadZoneRadius,
+			m_fCurrentSpeedEffectRatio)
+		: m_fHorizontalDeadZoneRadius;
 	const _vector vHorizontalDelta = XMVectorSet(vPlayerFocus.x - m_vFollowPivot.x, 0.f, vPlayerFocus.z - m_vFollowPivot.z, 0.f);
 	_float fDeadZoneDistance{};
 	XMStoreFloat(&fDeadZoneDistance, XMVector3Length(vHorizontalDelta));
 
-	if (fDeadZoneDistance > m_fHorizontalDeadZoneRadius)
+	if (fDeadZoneDistance > fHorizontalDeadZone)
 	{
-		const _float fExcessDistance = fDeadZoneDistance - m_fHorizontalDeadZoneRadius;
+		const _float fExcessDistance = fDeadZoneDistance - fHorizontalDeadZone;
 		const _vector vPivotDisplacement = vHorizontalDelta / fDeadZoneDistance * fExcessDistance;
 
 		_float3 vPivotMove{};
 		XMStoreFloat3(&vPivotMove, vPivotDisplacement);
-		m_vFollowPivot.x += vPivotMove.x;
-		m_vFollowPivot.z += vPivotMove.z;
+		const _float fHorizontalFollowSpeed = std::lerp(
+			m_fFlightHorizontalFollowSpeed,
+			m_fBoostHorizontalFollowSpeed,
+			m_fCurrentSpeedEffectRatio);
+		const _float fHorizontalFollowRatio = bFlightCamera
+			? 1.f - std::exp(-fHorizontalFollowSpeed * std::max(fTimeDelta, 0.f))
+			: 1.f;
+		m_vFollowPivot.x += vPivotMove.x * fHorizontalFollowRatio;
+		m_vFollowPivot.z += vPivotMove.z * fHorizontalFollowRatio;
 	}
+
+	// 비행 중에는 세로 데드존을 좁히고 추종 속도를 높여 급격한 고도 변화도 따라간다.
+	const _float fVerticalDeadZone = bFlightCamera
+		? m_fFlightVerticalDeadZoneHalfHeight
+		: m_fVerticalDeadZoneHalfHeight;
+	const _float fVerticalFollowSpeed = bFlightCamera
+		? m_fFlightVerticalFollowSpeed
+		: m_fVerticalFollowSpeed;
 
 	_float fDesiredPivotY = m_vFollowPivot.y;
-	if (vPlayerFocus.y > m_vFollowPivot.y + m_fVerticalDeadZoneHalfHeight)
+	if (vPlayerFocus.y > m_vFollowPivot.y + fVerticalDeadZone)
 	{
-		fDesiredPivotY = vPlayerFocus.y - m_fVerticalDeadZoneHalfHeight;
+		fDesiredPivotY = vPlayerFocus.y - fVerticalDeadZone;
 	}
-	else if (vPlayerFocus.y < m_vFollowPivot.y - m_fVerticalDeadZoneHalfHeight)
+	else if (vPlayerFocus.y < m_vFollowPivot.y - fVerticalDeadZone)
 	{
-		fDesiredPivotY = vPlayerFocus.y + m_fVerticalDeadZoneHalfHeight;
+		fDesiredPivotY = vPlayerFocus.y + fVerticalDeadZone;
 	}
 
-	const _float fVerticalFollowRatio = 1.f - std::exp(-m_fVerticalFollowSpeed * std::max(fTimeDelta, 0.f));
+	const _float fSpeedEffectBlendRatio = 1.f - std::exp(
+		-m_fSpeedEffectResponse * std::max(fTimeDelta, 0.f));
+	m_fCurrentSpeedEffectRatio = std::lerp(
+		m_fCurrentSpeedEffectRatio,
+		fTargetSpeedEffectRatio,
+		fSpeedEffectBlendRatio);
+
+	const _float fDesiredFovY =
+		m_fBaseFovY + m_fSpeedFovExpansion * m_fCurrentSpeedEffectRatio;
+	if (std::abs(m_cameraDesc.fFovY - fDesiredFovY) > 0.01f)
+	{
+		m_cameraDesc.fFovY = fDesiredFovY;
+		UpdateProjMatrix();
+	}
+	const _float fVerticalFollowRatio = 1.f - std::exp(-fVerticalFollowSpeed * std::max(fTimeDelta, 0.f));
 	m_vFollowPivot.y = std::lerp(m_vFollowPivot.y, fDesiredPivotY, fVerticalFollowRatio);
+
+	if (bFlightCamera)
+	{
+		// 기존 hard clamp 대신 안전 구도 경계까지 부드럽게 보정한다.
+		// FixedUpdate 위치가 계단식으로 바뀌어도 카메라가 한 프레임에 순간 이동하지 않는다.
+		const _float fVerticalError = vPlayerFocus.y - m_vFollowPivot.y;
+		if (std::abs(fVerticalError) > m_fFlightMaxVerticalCompositionError)
+		{
+			const _float fSafePivotY = vPlayerFocus.y - std::copysign(
+				m_fFlightMaxVerticalCompositionError, fVerticalError);
+			const _float fCorrectionRatio = 1.f - std::exp(
+				-m_fFlightCompositionCorrectionSpeed * std::max(fTimeDelta, 0.f));
+			m_vFollowPivot.y = std::lerp(
+				m_vFollowPivot.y, fSafePivotY, fCorrectionRatio);
+		}
+	}
+
+	// 비행 중에는 캐릭터가 더 크게 보이도록 카메라를 당기고,
+	// 탑승/하차 시에는 거리 변화가 튀지 않도록 지수 보간한다.
+	const _float fTargetDistance = bFlightCamera
+		? m_fFlightDistance + m_fSpeedDistanceExtension * m_fCurrentSpeedEffectRatio
+		: m_fDistance;
+	const _float fDistanceRatio = 1.f - std::exp(
+		-m_fFlightDistanceResponse * std::max(fTimeDelta, 0.f));
+	m_fCurrentDistance = std::lerp(
+		m_fCurrentDistance, fTargetDistance, fDistanceRatio);
+	const _float fTargetShoulderOffset = bFlightCamera
+		? m_fFlightShoulderOffset
+		: m_fShoulderOffset;
+	const _float fShoulderRatio = 1.f - std::exp(
+		-m_fFlightShoulderResponse * std::max(fTimeDelta, 0.f));
+	m_fCurrentShoulderOffset = std::lerp(
+		m_fCurrentShoulderOffset, fTargetShoulderOffset, fShoulderRatio);
+	const _float fTargetCameraHeightOffset = bFlightCamera
+		? m_fFlightCameraHeightOffset
+		: 0.f;
+	m_fCurrentFlightCameraHeightOffset = std::lerp(
+		m_fCurrentFlightCameraHeightOffset,
+		fTargetCameraHeightOffset,
+		fShoulderRatio);
 
 	const _float fYawRadian = XMConvertToRadians(m_fYaw);
 	const _float fPitchRadian = XMConvertToRadians(m_fPitch);
-	const _float fHorizontalDistance = std::cos(fPitchRadian) * m_fDistance;
+	const _float fHorizontalDistance = std::cos(fPitchRadian) * m_fCurrentDistance;
 	const _float3 vForward{ std::sin(fYawRadian), 0.f, std::cos(fYawRadian) };
 	const _float3 vRight{std::cos(fYawRadian), 0.f, -std::sin(fYawRadian) };
-	const _float3 vCompositionPivot{m_vFollowPivot.x + vRight.x * m_fShoulderOffset, m_vFollowPivot.y, m_vFollowPivot.z + vRight.z * m_fShoulderOffset };
-	const _float3 vDesiredPosition{vCompositionPivot.x - vForward.x * fHorizontalDistance, vCompositionPivot.y + std::sin(fPitchRadian) * m_fDistance, vCompositionPivot.z - vForward.z * fHorizontalDistance };
+	const _float3 vCompositionPivot{m_vFollowPivot.x + vRight.x * m_fCurrentShoulderOffset, m_vFollowPivot.y, m_vFollowPivot.z + vRight.z * m_fCurrentShoulderOffset };
+	const _float3 vDesiredPosition{vCompositionPivot.x - vForward.x * fHorizontalDistance, vCompositionPivot.y + std::sin(fPitchRadian) * m_fCurrentDistance + m_fCurrentFlightCameraHeightOffset, vCompositionPivot.z - vForward.z * fHorizontalDistance };
 
 
 	_float3 finalPosition{};
-	PlayerToCameraSphereSweep(m_vFollowPivot, vDesiredPosition, CAMERA_COLLISION_RADIUS, finalPosition);
+	const _bool bCameraCollision = PlayerToCameraSphereSweep(
+		m_vFollowPivot, vDesiredPosition, CAMERA_COLLISION_RADIUS, finalPosition);
+
+	if (!m_bSmoothedCameraPositionInitialized || !bFlightCamera)
+	{
+		m_vSmoothedCameraPosition = finalPosition;
+		m_bSmoothedCameraPositionInitialized = true;
+	}
+	else if (bCameraCollision)
+	{
+		// 벽 안으로 보간되지 않도록 충돌 방향으로 당겨질 때는 즉시 반영한다.
+		m_vSmoothedCameraPosition = finalPosition;
+	}
+	else
+	{
+		// 자유 비행 및 충돌 해제 시에는 회전 위치를 부드럽게 따라가게 한다.
+		const _float fCameraPositionRatio = 1.f - std::exp(
+			-m_fFlightCameraPositionResponse * std::max(fTimeDelta, 0.f));
+		m_vSmoothedCameraPosition.x = std::lerp(m_vSmoothedCameraPosition.x, finalPosition.x, fCameraPositionRatio);
+		m_vSmoothedCameraPosition.y = std::lerp(m_vSmoothedCameraPosition.y, finalPosition.y, fCameraPositionRatio);
+		m_vSmoothedCameraPosition.z = std::lerp(m_vSmoothedCameraPosition.z, finalPosition.z, fCameraPositionRatio);
+	}
 
 	auto& CameraTransform = GetTransform();
-	CameraTransform.SetPosition(finalPosition);
+	CameraTransform.SetPosition(m_vSmoothedCameraPosition);
 	CameraTransform.LookAt(XMLoadFloat3(&vCompositionPivot));
 
 	// 셰이킹 상태 합성
@@ -170,6 +301,31 @@ void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 	_float3 vRotationShake{};
 
 	EvaluateShake(fTimeDelta, vLocalPositionShake, vRotationShake);
+
+	// 고속 비행 시 서로 다른 주기의 미세 진동을 합성해 반복 패턴을 줄인다.
+	m_fTurbulenceElapsed += std::max(fTimeDelta, 0.f);
+	const _float fTurbulenceRatio = std::clamp(
+		(m_fCurrentSpeedEffectRatio - m_fTurbulenceStartRatio) /
+		(1.f - m_fTurbulenceStartRatio),
+		0.f, 1.f);
+	if (fTurbulenceRatio > FLT_EPSILON)
+	{
+		const _float fFrequency = std::lerp(
+			m_fTurbulenceMinFrequency,
+			m_fTurbulenceMaxFrequency,
+			fTurbulenceRatio);
+		const _float fPhase = m_fTurbulenceElapsed * fFrequency;
+		const _float fAmplitude =
+			fTurbulenceRatio * fTurbulenceRatio * (3.f - 2.f * fTurbulenceRatio);
+		vLocalPositionShake.x +=
+			std::sin(fPhase * 1.13f) * m_fTurbulencePositionAmplitude * fAmplitude;
+		vLocalPositionShake.y +=
+			std::sin(fPhase * 1.71f + 1.2f) * m_fTurbulencePositionAmplitude * 0.7f * fAmplitude;
+		vRotationShake.x +=
+			std::sin(fPhase * 1.37f + 0.4f) * m_fTurbulenceRotationAmplitude * fAmplitude;
+		vRotationShake.z +=
+			std::sin(fPhase * 1.91f + 2.1f) * m_fTurbulenceRotationAmplitude * 0.6f * fAmplitude;
+	}
 
 	// 로컬 위치 흔들림을 월드 공간으로 변환
 	const _vector vWorldPositionShake = vCameraRight * vLocalPositionShake.x + vCameraUp * vLocalPositionShake.y;

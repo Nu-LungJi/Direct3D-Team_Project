@@ -693,8 +693,26 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		return;
 	}
 
+	// 비행 상태는 아래에서 일반 입력 처리를 조기 종료하므로,
+	// 탑승/하차 토글은 상태 머신 갱신보다 먼저 처리해야 한다.
+	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_O))
+	{
+		SetFlyRequested(!m_bFlyRequested);
+	}
+
 	if (m_pStateMachine)
 		m_pStateMachine->PriorityUpdate(fTimeDelta);
+
+	// 비행 중 이동 명령은 FlyState가 카메라 기준 3차원 방향으로 직접 만든다.
+	// 아래 지상 입력 코드가 Y 성분을 0으로 덮어쓰면 상승/하강이 사라지므로 여기서 분리한다.
+	if (m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::FLY)
+	{
+		m_bRawMoveInput = false;
+		m_bSprintRequested = false;
+		m_vRawMoveDirection = {};
+		return;
+	}
 
 	if (m_pModelAnimator && m_iDebugWandReadyUpperAnim >= 0)
 	{
@@ -1103,13 +1121,6 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 	}
 
-
-	if (m_pStateMachine && CGameInstance::Get().KeyPressing(DIK_TAB) && CGameInstance::Get().KeyDown(DIK_3) && !m_bFlyRequested) {
-		SetFlyRequested(true);
-	}
-	else if (m_pStateMachine && CGameInstance::Get().KeyPressing(DIK_TAB) && CGameInstance::Get().KeyDown(DIK_3) && m_bFlyRequested) {
-		SetFlyRequested(false);
-	}
 
 	if (!m_bFlyRequested) {
 		if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {

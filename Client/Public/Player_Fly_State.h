@@ -14,51 +14,7 @@ public:
 	DECLARE_DERIVED_TYPE(CPlayer_Fly_State, CState)
 
 
-	enum class MOVE_DIRECTION : uint32_t
-	{
-		FRONT,
-		RIGHT_45,
-		RIGHT_90,
-		RIGHT_135,
-		BACKWARD,
-		LEFT_135,
-		LEFT_90,
-		LEFT_45,
-		END,
-	};
-
-	enum class GAIT : uint32_t
-	{
-		WALK,
-		JOG,
-		SPRINT,
-		END,
-	};
-
-	enum class FOOT_PHASE : uint32_t
-	{
-		LEFT,
-		RIGHT,
-		END,
-	};
-
-	enum class TURN_SIDE : uint32_t
-	{
-		LEFT,
-		RIGHT,
-		END,
-	};
-
-	enum class TRANSITION : uint32_t
-	{
-		NONE,
-		START,
-		STOP,
-		GAIT_CHANGE,
-		IDLE_TURN,
-		PIVOT,
-	};
-
+	// 빗자루 탑승부터 해제까지의 비행 진행 단계.
 	enum class FLIGHT_PHASE : uint32_t
 	{
 		LIFTING,
@@ -83,10 +39,7 @@ public:
 
 private:
 	void CacheAnimationIndices(const CPlayer& player);
-	int32_t ResolveAnimation(const CPlayer& player) const;
-	_float CalculateSignedAngle(
-		const CPlayer& player,
-		const _float3& vMoveDirection) const;
+	int32_t ResolveFlightAnimation() const;
 	int32_t FindAnimationIndex(const CPlayer& player, const _string_view& sAnimationName) const;
 
 	int32_t m_iHoverAnimation{ -1 };
@@ -95,15 +48,9 @@ private:
 	int32_t m_iDismountAnimation{ -1 };
 	int32_t m_iIntoFlyAnimation{ -1 };
 	int32_t m_iIntoHoverAnimation{ -1 };
-	int32_t m_iForwardAnimation{ -1 };
-	int32_t m_iSlowUpAnimation{ -1 };
-	int32_t m_iSlowDownAnimation{ -1 };
-	int32_t m_iSlowLeftAnimation{ -1 };
-	int32_t m_iSlowRightAnimation{ -1 };
-	int32_t m_iFastUpAnimation{ -1 };
-	int32_t m_iFastDownAnimation{ -1 };
-	int32_t m_iFastLeftAnimation{ -1 };
-	int32_t m_iFastRightAnimation{ -1 };
+	int32_t m_iSlowForwardAnimation{ -1 };
+	int32_t m_iFastForwardAnimation{ -1 };
+	int32_t m_iTurboForwardAnimation{ -1 };
 	int32_t m_iActiveAnimation{ -1 };
 	_bool m_bAnimationIndicesCached{};
 	FLIGHT_PHASE m_eFlightPhase{ FLIGHT_PHASE::MOUNTING };
@@ -112,18 +59,27 @@ private:
 	_float3 m_vFlightDirection{};
 	_float3 m_vLastFlightDirection{ 0.f, 0.f, 1.f };
 	_float m_fCurrentFlightSpeed{};
+	_bool m_bBoosting{};
+	_bool m_bMountFromMovement{};
+	_float3 m_vMountGlideDirection{};
+	_float m_fMountGlideSpeed{};
 
-	_float m_fMountLiftHeight{ 1.2f };
-	_float m_fMountLiftDuration{ 0.45f };
+	// 탑승 자세의 발과 망토가 지면에 붙지 않도록 충분히 띄운 뒤 탑승한다.
+	_float m_fMountInitialHeight{ 0.75f };
+	_float m_fMountLiftHeight{ 2.7f };
+	_float m_fMountLiftDuration{ 0.55f };
+	_float m_fMountGlideMinSpeedRatio{ 0.15f };
+	_float m_fMountControlEnableRatio{ 0.6f };
+	_float m_fDismountInitialFallSpeed{ 1.5f };
 	_float m_fCruiseFlightSpeed{ 12.f };
-	_float m_fBoostFlightSpeed{ 25.f };
+	_float m_fBoostFlightSpeed{ 36.f };
 	_float m_fFlightAcceleration{ 10.f };
+	_float m_fBoostFlightAcceleration{ 26.f };
 	_float m_fFlightDeceleration{ 7.f };
+	_float m_fFlightDirectionResponse{ 3.5f };
 	_float m_fHoverSpeedThreshold{ 0.25f };
-	_float m_fFastSpeedThreshold{ 6.f };
-	_float m_fVerticalInputThreshold{ 0.35f };
-	_float m_fTurnAngleThreshold{ 55.f };
-	_float m_fFacingTurnSpeed{ 180.f };
+	_float m_fTurboAnimationSpeedThreshold{ 24.f };
+	_float m_fFacingTurnSpeed{ 150.f };
 
 };
 
