@@ -378,7 +378,7 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_EffectNames[ETOUI(DRAGON_SKILL::RANDOMBALL)] = "RandomBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::THREEBALL)]  = "FireBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::BLACKBALL)]  = "BlackBall";
-	m_EffectNames[ETOUI(DRAGON_SKILL::GASI)]		= "Gasi";
+	m_EffectNames[ETOUI(DRAGON_SKILL::GASI)]		= "BreathSpike";
 	////////////////////////////////////////////////////////////
 	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
 	int32_t iHeadBoneIndex{};

@@ -88,6 +88,8 @@ void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 	{
 		XMStoreFloat3(&m_vTargetDir, vDir);
 		XMStoreFloat3(&m_vDir, XMVector3Normalize((matBone.r[3] + vDir * fHalfDis) - matBone.r[3]));
+
+
 	}
 	else if (m_eType == DRAGON_SKILL::TURNBREATH)
 	{
@@ -113,25 +115,40 @@ void CEdgBreath::Cancle()
 	ResetValue();
 }
 
-void CEdgBreath::SpawnGasi(_vector vPos)
+void CEdgBreath::SpawnGasi(_vector vPos, _vector vDirection)
 {
 	auto pSrc = Get_Owner();
-	if (nullptr == pSrc) return;
+	if (nullptr == pSrc)
+		return;
 
 	const _string SkillName = pSrc->Get_SkillNmae(DRAGON_SKILL::GASI);
 	auto Table = pSrc->Get_SkillInfo(DRAGON_SKILL::GASI);
+
 	if (SkillName.empty())
 		return;
-	
+
+	auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(Table.handle);
+	if (nullptr == pSkill)
+		return;
+
+	vDirection = XMVectorSetY(vDirection, 0.f);
+
+	if (XMVectorGetX(XMVector3LengthSq(vDirection)) <= FLT_EPSILON)
+		vDirection = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+	else
+		vDirection = XMVector3Normalize(vDirection);
+
+	const _float fYaw = atan2f(XMVectorGetX(vDirection), XMVectorGetZ(vDirection));
+	const _vector vQuaternion = XMQuaternionRotationRollPitchYaw(0.f, fYaw, 0.f);
+
+	pSkill->GetTransform().SetQuaternion(vQuaternion);
+
 	EDG_ACSKT_DESC ACTable{};
 	ACTable.SkillName = SkillName;
 	ACTable.fLifeTime = 3.f;
 	ACTable.eType = DRAGON_SKILL::GASI;
-	auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(Table.handle);
-	if (nullptr == pSkill)
-		return;
+
 	pSkill->Active(ACTable, vPos);
-	
 }
 
 void CEdgBreath::MoveBreath(_float fTimeDelta)
@@ -248,10 +265,16 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir)
 		GroundDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC) 
 		,.bQueryStatic = true,.bQueryDynamic = false,.bIncludeTrigger = false};
 		PX_SWEEP_RESULT GroundSweep{};
+		//if (pPhysX->Sweep(GroundDesc, GroundSweep) && GroundSweep.bHit)
+		//{
+		//	SpawnGasi(vNextPos + vCurDir * m_fBreathDis);
+		//	m_bGround = true;
+		//}
+
 		if (pPhysX->Sweep(GroundDesc, GroundSweep) && GroundSweep.bHit)
 		{
-			SpawnGasi(vNextPos + vCurDir * m_fBreathDis);
 			m_bGround = true;
+			SpawnGasi(XMLoadFloat3(&GroundSweep.vHitpos), vCurDir);
 		}
 
 	}

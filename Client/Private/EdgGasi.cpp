@@ -40,7 +40,9 @@ void CEdgGasi::PriorityUpdate(E::_float fTimeDelta)
 
 	if (!m_bActive) return;
 
-	Life_Check(fTimeDelta);
+	m_fLife += fTimeDelta;
+	if (m_fLife >= m_fMaxLife || m_bHit)
+		Cancle();
 
 }
 
@@ -75,14 +77,12 @@ void CEdgGasi::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 	m_bActive = true;
 	m_bHit = false;
 	m_fLife = 0.f;
+	m_fMaxLife = SkillTable.fLifeTime;
 	Spawn_Skill_Effect(SkillTable.SkillName);
 }
 
 void CEdgGasi::Cancle()
 {
-	if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
-		CGameInstance::Get().StopEffect(m_iSkillEffID);
-
 	ResetValue();
 }
 

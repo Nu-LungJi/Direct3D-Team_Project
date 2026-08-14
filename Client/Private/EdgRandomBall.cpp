@@ -160,12 +160,7 @@ void CEdgRandomBall::Cancle()
 		m_pComSphereCollider->SetQueryEnabled(false);
 		m_pComSphereCollider->SetSimulationEnabled(false);
 	}
-	///여기에 하면됨 터지는거
-	if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
-	{
-		CGameInstance::Get().StopEffect(m_iEffectID);
-		m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
-	}	
+
 	SetPendingDestroy();
 	ResetValue();
 }
@@ -182,6 +177,26 @@ _bool CEdgRandomBall::Check_Table(PLAYER_SKILL_TYPE eType)
 	if (nullptr == pDragon) return false;
 
 	pDragon->Check_Table(PLAYER_SKILL_TYPE::DESTORY);
+
+	if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
+	{
+		CGameInstance::Get().StopEffect(m_iEffectID);
+		m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
+
+	}
+
+	switch (m_eColor) {
+	case COLOR::YELLOW:
+		m_iEffectID = CGameInstance::Get().PlayEffect("YellowRingSplash", *m_pComTransform->GetWorldMatrix());
+		break;
+	case COLOR::PURPLE:
+		m_iEffectID = CGameInstance::Get().PlayEffect("PurpleRingSplash", *m_pComTransform->GetWorldMatrix());
+		break;
+	case COLOR::RED:
+		m_iEffectID = CGameInstance::Get().PlayEffect("RedRingSplash", *m_pComTransform->GetWorldMatrix());
+		break;
+
+	}
 	return true;
 }
 

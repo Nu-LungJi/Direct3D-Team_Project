@@ -24,7 +24,7 @@ public:
 	void			Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos = XMVectorSet(0, 0, 0, 1)) override;
 	void			Cancle() override;
 private:
-	void			SpawnGasi(_vector vPos);
+	void			SpawnGasi(_vector vPos, _vector vDirection);
 	void			MoveBreath(_float fTimeDelta);
 	_bool			MoveSweep(_vector vNextPos,_vector vCurDir);
 private:
