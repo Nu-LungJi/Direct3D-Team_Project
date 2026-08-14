@@ -16,6 +16,15 @@ xcopy /E /I /Y /D .\Engine\ShaderFiles\*.* .\%TargetFolder%\Bin\ShaderFiles\
 xcopy /E /I /Y /D .\%TargetFolder%\LuaFiles\*.* .\%TargetFolder%\Bin\LuaFiles\
 xcopy /E /I /Y /D .\Engine\LuaFiles\*.* .\%TargetFolder%\Bin\LuaFiles\
 
+:: JSON Copy
+:: Engine 공용 JSON을 먼저 복사하고 대상 프로젝트 JSON으로 덮어쓴다.
+if exist ".\Engine\JsonFiles\" (
+    xcopy /E /I /Y .\Engine\JsonFiles\*.* .\%TargetFolder%\Bin\JsonFiles\
+)
+if exist ".\%TargetFolder%\JsonFiles\" (
+    xcopy /E /I /Y .\%TargetFolder%\JsonFiles\*.* .\%TargetFolder%\Bin\JsonFiles\
+)
+
 :: ThirdParty
 xcopy /E /I /Y /D .\ThirdParty\fmod_2_03_12\lib\x64\fmod.dll .\%TargetFolder%\Bin\
 xcopy /E /I /Y /D .\ThirdParty\HBAOPlus-3.1.0\lib\GFSDK_SSAO_D3D11.win64.dll .\%TargetFolder%\Bin\
