@@ -208,6 +208,8 @@ _bool CEdgFireBall::MoveSweep(_vector vNextPos)
 
 	if (pPhysX->Sweep(SweepDesc, SweepResult) && SweepResult.bHit)
 	{
+		//auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(SweepResult.hGameObject);
+		//pTarget->OnQueryHit(m_fDamage);
 		m_bHit = true;
 		//펑
 		return false;

@@ -166,8 +166,10 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), t));
 	}else if (m_eType == DRAGON_SKILL::GASIBREATH)
 	{
-		//제작중
-		vForward -= XMVectorSet(0, 0.3f, 0.f, 0.f);
+		_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
+		_matrix matOffset = XMLoadFloat4x4(&matOffB);
+		vForward = XMVector3Normalize(matOffset.r[3] - matBone.r[3]);
+		vForward = XMVector3Normalize(XMVectorSetY(vForward, -0.7f));
 	}
 	else if (m_eType == DRAGON_SKILL::TURNBREATH)
 	{ 
@@ -265,22 +267,23 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir)
 		GroundDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC) 
 		,.bQueryStatic = true,.bQueryDynamic = false,.bIncludeTrigger = false};
 		PX_SWEEP_RESULT GroundSweep{};
-		//if (pPhysX->Sweep(GroundDesc, GroundSweep) && GroundSweep.bHit)
-		//{
-		//	SpawnGasi(vNextPos + vCurDir * m_fBreathDis);
-		//	m_bGround = true;
-		//}
 
 		if (pPhysX->Sweep(GroundDesc, GroundSweep) && GroundSweep.bHit)
 		{
 			m_bGround = true;
 			SpawnGasi(XMLoadFloat3(&GroundSweep.vHitpos), vCurDir);
 		}
+	}
+	else
+	{
 
 	}
 
+
 	if (pPhysX->Sweep(SweepDesc, SweepResult) && SweepResult.bHit)
 	{
+		//auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(SweepResult.hGameObject);
+		//pTarget->OnQueryHit(m_fDamage);
 		return false;
 	}
 

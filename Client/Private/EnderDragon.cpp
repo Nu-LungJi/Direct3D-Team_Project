@@ -426,6 +426,7 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_SkillHandle[ETOUI(DRAGON_SKILL::TURNBREATH)] = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true};
 	m_SkillHandle[ETOUI(DRAGON_SKILL::BREATH)]	   = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true,};
 	m_SkillHandle[ETOUI(DRAGON_SKILL::GASIBREATH)] = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true, };
+
 	m_SkillHandle[ETOUI(DRAGON_SKILL::PULSE)]  = EDG_SKILL_INFO{.handle = PulseHandle.value() , .bPool = true,};
 	m_SkillHandle[ETOUI(DRAGON_SKILL::GASI)] = EDG_SKILL_INFO{ .handle = GasiHandle.value() , .bPool = true, };
 	return S_OK;
