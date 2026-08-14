@@ -3639,6 +3639,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeCone(param);
 			else if constexpr (std::is_same_v<T, SEnergySphere>)
 				return ParticlePattern::MakeEnergySphere(param);
+			else if constexpr (std::is_same_v<T, SSpikeParam>)
+				return ParticlePattern::MakeSpikePattern(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
@@ -3668,6 +3670,10 @@ void CParticleManager::ApplyStartEndToPattern(PatternParamVariant& pv, _fvector 
 			else if constexpr (std::is_same_v<T, SStraightGroundParam>)
 			{
 				XMStoreFloat3(&p.vStartPos, startPos);
+			}
+			else if constexpr (std::is_same_v<T, SSpikeParam>)
+			{
+				XMStoreFloat3(&p.vCenter, startPos);
 			}
 			//XMStoreFloat3(&p.vStartPos, startPos);
 			//XMStoreFloat3(&p.vEndPos, endPos);
@@ -3715,6 +3721,10 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
 			else if constexpr (std::is_same_v<T, SEnergySphere>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SSpikeParam>)
 			{
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}

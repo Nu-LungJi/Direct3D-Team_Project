@@ -321,6 +321,38 @@ COMMON_PATTERN_FIELDS(X)
     X(_float4, endEmissive, _float4(0,0,0,0)) \
 	X(_float , endIntensity, 0.f) \
    COMMON_PATTERN_FIELDS(X)
+
+#define SPIKE_FIELDS(X) \
+    X(_float3, vCenter, _float3(0,0,0)) \
+    X(_bool, bRandomPos, false) \
+    X(_float3, vMinPos, _float3(0,0,0)) \
+    X(_float3, vMaxPos, _float3(0,0,0)) \
+    X(uint32_t, iRow, 3) \
+    X(uint32_t, iCol, 3) \
+    X(_float, fOffsetX, 1.f) \
+    X(_float, fOffsetZ, 1.f) \
+    X(_bool, bRandomVel, false) \
+	X(_float3, fVelocity, _float3(0,0,0))\
+	X(_float3, fVelMin, _float3(0,0,0))\
+	X(_float3, fVelMax, _float3(0,0,0))\
+    X(_bool, bRandomSize, false) \
+    X(_float3, fSize, _float3(1.f,1.f,1.f)) \
+	X(_float3, fSizeMin, _float3(0, 0, 0))\
+	X(_float3, fSizeMax, _float3(0, 0, 0))\
+    X(_float3, fEndSize, _float3(1.f,1.f,1.f)) \
+    X(_float3, fSizeIncreasePerRow, _float3(0.f,0.f,0.f)) \
+    X(_bool, bRandomRot, false) \
+    X(_float3, vMinRot, _float3(0,0,0)) \
+    X(_float3, vMaxRot, _float3(0,0,0)) \
+    X(_float3, vRotation, _float3(0,0,0)) \
+    X(_float, fSpawnDelay, 0.1f) \
+    X(_float, fLife, 1.f) \
+    X(_float4, color, _float4(1,1,1,1)) \
+    X(_float4, emissive, _float4(0,0,0,0)) \
+    X(_float, startIntensity, 0.f) \
+    X(_float4, endEmissive, _float4(0,0,0,0)) \
+	X(_float, endIntensity, 0.f) \
+   COMMON_PATTERN_FIELDS(X)
 // ============================================================
 // struct 자동 생성 매크로
 // ============================================================
@@ -342,17 +374,18 @@ struct StructName \
 	struct SLightning { LIGHTNING_STREIGHT(DECLARE_PARAM_FIELD) };
 	struct SConeParam { CONE_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SEnergySphere { ENERGY_SPHERE_FIELDS(DECLARE_PARAM_FIELD) };
+	struct SSpikeParam { SPIKE_FIELDS(DECLARE_PARAM_FIELD) };
 
 #undef DECLARE_PARAM_FIELD
 
 
 	//3. STRUCT 추가
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning, SConeParam, SEnergySphere>;
+	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning, SConeParam, SEnergySphere, SSpikeParam>;
 
 	// 4. 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
 	inline constexpr const char* PATTERN_KIND_NAMES[] =
 	{
-		"Stairs", "Circle",  "Spiral", "StraightGround", "CircleToWave", "SMOKE", "SLightning", "Cone", "EnergySphere"
+		"Stairs", "Circle",  "Spiral", "StraightGround", "CircleToWave", "SMOKE", "SLightning", "Cone", "EnergySphere","Spike"
 	};
 
 	//5. 여기에 CASE 추가
@@ -370,6 +403,7 @@ struct StructName \
 		case 6: return SLightning{};
 		case 7: return SConeParam{};
 		case 8: return SEnergySphere{};
+		case 9: return SSpikeParam{};
 			  
 		default: return SStairsParam{};
 		}

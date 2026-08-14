@@ -155,10 +155,10 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStra
 				: param.fVelocity;
 
 			s.fSize = param.bRandomSize ?
-				_float3(Randf(param.fSizeMin.x, param.fSizeMax.x), 
-						Randf(param.fSizeMin.y, param.fSizeMax.y), 
-						Randf(param.fSizeMin.z, param.fSizeMax.z))
-						: param.fSize;
+				_float3(Randf(param.fSizeMin.x, param.fSizeMax.x),
+					Randf(param.fSizeMin.y, param.fSizeMax.y),
+					Randf(param.fSizeMin.z, param.fSizeMax.z))
+				: param.fSize;
 
 			s.life = param.fLife;
 			s.fEndSize = param.fEndSize;
@@ -182,6 +182,53 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStra
 					0.f);
 		}
 	}
+	return spawnList;
+}
+
+std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSpikePattern(const SSpikeParam& param)
+{
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(param.iRow * param.iCol);
+	const _float center = static_cast<_float>(param.iCol - 1) * 0.5f;
+
+	for (uint32_t r = 0; r < param.iRow; ++r)
+	{
+		const _float rowRatio = static_cast<_float>(r);
+		const _float3 rowSizeIncrease = _float3(param.fSizeIncreasePerRow.x * rowRatio, param.fSizeIncreasePerRow.y * rowRatio, param.fSizeIncreasePerRow.z * rowRatio);
+
+		for (uint32_t c = 0; c < param.iCol; ++c)
+		{
+			PARTICLE_SPAWN_DATA& s = spawnList[r * param.iCol + c];
+			const _float dx = static_cast<_float>(c) - center;
+
+			if (param.bRandomPos)
+			{
+				s.position = _float3(Randf(param.vMinPos.x, param.vMaxPos.x) + param.fOffsetX * dx, Randf(param.vMinPos.y, param.vMaxPos.y), Randf(param.vMinPos.z, param.vMaxPos.z) + param.fOffsetZ * rowRatio);
+			}
+			else
+			{
+				s.position = _float3(param.vCenter.x + param.fOffsetX * dx, param.vCenter.y, param.vCenter.z + param.fOffsetZ * rowRatio);
+			}
+
+			s.velocity = param.bRandomVel ? _float3(Randf(param.fVelMin.x, param.fVelMax.x), Randf(param.fVelMin.y, param.fVelMax.y), Randf(param.fVelMin.z, param.fVelMax.z)) : param.fVelocity;
+
+			const _float3 startSize = param.bRandomSize ? _float3(Randf(param.fSizeMin.x, param.fSizeMax.x), Randf(param.fSizeMin.y, param.fSizeMax.y), Randf(param.fSizeMin.z, param.fSizeMax.z)) : param.fSize;
+			const _float3 endSize = param.bRandomSize ? startSize : param.fEndSize;
+			s.fSize = _float3(startSize.x + rowSizeIncrease.x, startSize.y + rowSizeIncrease.y, startSize.z + rowSizeIncrease.z);
+			s.fEndSize = _float3(endSize.x + rowSizeIncrease.x, endSize.y + rowSizeIncrease.y, endSize.z + rowSizeIncrease.z);
+
+			s.life = param.fLife;
+			s.color = param.color;
+			s.emissive = _float4(param.emissive.x, param.emissive.y, param.emissive.z, param.startIntensity);
+			s.endEmissive = _float4(param.endEmissive.x, param.endEmissive.y, param.endEmissive.z, param.endIntensity);
+			s.spawnDelay = param.fSpawnDelay * rowRatio;
+			s.iBehaviorType = param.iBehaviorType;
+			s.originalEmissive = s.emissive;
+			s.originalPosition = s.position;
+			s.originalVelocity = s.velocity;
+			s.rotation = param.bRandomRot ? _float4(XMConvertToRadians(Randf(param.vMinRot.x, param.vMaxRot.x)), XMConvertToRadians(Randf(param.vMinRot.y, param.vMaxRot.y)), XMConvertToRadians(Randf(param.vMinRot.z, param.vMaxRot.z)), 0.f) : _float4(XMConvertToRadians(param.vRotation.x), XMConvertToRadians(param.vRotation.y), XMConvertToRadians(param.vRotation.z), 0.f);
+		}
+	}
+
 	return spawnList;
 }
 
