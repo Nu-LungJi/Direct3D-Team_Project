@@ -31,6 +31,7 @@ NS_END
 NS_BEGIN(Client)
 class CPlayer_StateMachine;
 class CPlayerRagdollController;
+class CPlayer_BombardaController;
 class CPlayer_ConfringoController;
 
 class CPlayer final : public CAnimationObject
@@ -312,6 +313,19 @@ private:
 	_bool IsRagdollTransitioning() const;
 private:
 	UPtr<CPlayerRagdollController> m_pRagdollController{};
+#pragma endregion
+
+#pragma region BOMBARDA
+	// [LSY] 봄바르다 연출과 투사체 생성 구현은 전용 컨트롤러가 담당한다.
+	friend class CPlayer_BombardaController;
+public:
+	// [LSY] 상태 클래스에서는 아래 전달 API만 사용한다.
+	void StartBombardaCastEffect();
+	void StopBombardaCastEffect();
+	_bool FireBombardaProjectile();
+private:
+	HRESULT InitializeBombarda();
+	UPtr<CPlayer_BombardaController> m_pBombardaController{};
 #pragma endregion
 
 #pragma region CONFRINGO

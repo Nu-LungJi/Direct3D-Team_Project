@@ -19,6 +19,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "PlayerRagdollController.h"
+#include "Player_BombardaController.h"
 #include "Player_ConfringoController.h"
 #include "Player_Stupefy_Bullet.h"
 #include "PlayerThirdPersonCamera.h"
@@ -524,6 +525,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	m_hAutoTarget = CHandle{};
+	if (FAILED(InitializeBombarda()))
+		return E_FAIL;
 	if (FAILED(InitializeConfringo()))
 		return E_FAIL;
 
@@ -577,6 +580,35 @@ _bool CPlayer::IsRagdollTransitioning() const
 		return false;
 
 	return m_pRagdollController->IsTransitioning();
+}
+#pragma endregion
+
+#pragma region BOMBARDA
+HRESULT CPlayer::InitializeBombarda()
+{
+	// [LSY] 플레이어별 봄바르다 런타임 상태를 Clone 초기화에서 생성한다.
+	m_pBombardaController = CPlayer_BombardaController::Create(*this);
+	return m_pBombardaController ? S_OK : E_FAIL;
+}
+
+void CPlayer::StartBombardaCastEffect()
+{
+	if (m_pBombardaController)
+		m_pBombardaController->StartCastEffect();
+}
+
+void CPlayer::StopBombardaCastEffect()
+{
+	if (m_pBombardaController)
+		m_pBombardaController->StopCastEffect();
+}
+
+_bool CPlayer::FireBombardaProjectile()
+{
+	if (!m_pBombardaController)
+		return false;
+
+	return m_pBombardaController->FireProjectile();
 }
 #pragma endregion
 
@@ -1737,6 +1769,9 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 	}
 
+	if (m_pBombardaController)
+		m_pBombardaController->Update();
+
 	if (m_pConfringoController)
 		m_pConfringoController->Update(fTimeDelta);
 	UpdateAttachedEffects();
@@ -2635,6 +2670,7 @@ E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 void CPlayer::Free()
 {
 	// [LSY] 컨트롤러가 플레이어 참조를 사용하므로 기반 오브젝트 해제 전에 정리한다.
+	m_pBombardaController.reset();
 	m_pConfringoController.reset();
 	CAnimationObject::Free();
 }
