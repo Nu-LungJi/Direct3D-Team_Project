@@ -75,7 +75,7 @@ void CEdgRandomBall::PriorityUpdate(E::_float fTimeDelta)
 		auto pSrc = Get_Owner();
 		if (nullptr == pSrc) return;
 
-		pSrc->Heal(20.f);
+		pSrc->Heal(20);
 	}
 }
 

@@ -27,6 +27,7 @@ private:
 
 	_bool		MovePhase3(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Befor_Action2(CEnderDragon* pDragon, _float fTimeDelta);
+	void		Before_Action5(CEnderDragon* pDragon, _float fTimeDelta);
 	void		After_Action2(CEnderDragon* pDragon, _float fTimeDelta);
 
 	void		Phase_Before_Action(CEnderDragon* pDragon, _float fTimeDelta);

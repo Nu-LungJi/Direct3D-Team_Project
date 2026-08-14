@@ -819,6 +819,9 @@
     <ClInclude Include="..\public\EdgGasi.h">
       <Filter>GameObject\Monster\EnderDragon\Skill\Gasi</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Edg_Dead.h">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1231,6 +1234,9 @@
     </ClCompile>
     <ClCompile Include="..\private\EdgGasi.cpp">
       <Filter>GameObject\Monster\EnderDragon\Skill\Gasi</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Edg_Dead.cpp">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

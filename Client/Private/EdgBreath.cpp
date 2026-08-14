@@ -159,7 +159,7 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 		_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
 		_matrix matOffset = XMLoadFloat4x4(&matOffB);
 		vForward = XMVector3Normalize(matOffset.r[3]  - matBone.r[3]);
-		vForward = XMVector3Normalize(XMVectorSetY(vForward, -0.158));
+		vForward = XMVector3Normalize(XMVectorSetY(vForward, -0.158f));
 	}
 	else if (m_eType == DRAGON_SKILL::LONGBREATH)
 	{

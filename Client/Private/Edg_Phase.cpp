@@ -64,6 +64,9 @@ void CEdg_Phase::Enter(CStateMachine* pStateMachine)
 		pDragon->Set_HideOnBush(true);
 		break;
 	case DRAGON_PHASE::PHASE5:
+		m_Anims[ETOUI(DRAGON_PHASE::PHASE5)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
+		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cmbt_Hover_Land_anm.bin"),.fBlend = 0.1f });
+
 		pDragon->Set_HideOnBush(true);
 		break;
 	}
@@ -96,9 +99,7 @@ void CEdg_Phase::Exit(CStateMachine* pStateMachine)
 	}
 	if (m_ePhase == DRAGON_PHASE::PHASE5)
 	{
-		auto pBT = pDragon->GetComponent<CComBeHavior>("Com_BT");
-		if (nullptr == pBT) return;
-		pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+		
 	}
 }
 
@@ -115,6 +116,7 @@ void CEdg_Phase::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	auto pDragon = pDragonFsm->GetOwner<CEnderDragon>();
 	if (nullptr == pDragon) return;
 
+	//반대로했네 귀찮아..
 	switch (m_eNum)
 	{
 	case EDG_SPAWN_NUMBER::FIRST:
@@ -248,6 +250,24 @@ void CEdg_Phase::Befor_Action2(CEnderDragon* pDragon, _float fTimeDelta)
 		Effect_Single(pDragon, "RanrokStaySmoke");
 	
 }
+void CEdg_Phase::Before_Action5(CEnderDragon* pDragon, _float fTimeDelta)
+{
+	auto pAnimator = pDragon->Get_Animator();
+	if (nullptr == pAnimator) return;
+
+	EDG_ANIM_FSM eAnim = m_Anims[ETOUI(m_ePhase)].front();
+	pAnimator->Play_Anim(eAnim.iAnimIndex, false, eAnim.fBlend);
+
+	pDragon->Set_HideOnBush(false);
+	if (pAnimator->GetFinish())
+	{
+		m_eNum = EDG_SPAWN_NUMBER::FOUR;
+		return;
+	}
+
+	if (m_iEffectID == INVALID_EFFECT_INSTANCE_ID)
+		Effect_Single(pDragon, "RanrokStaySmoke");
+}
 void CEdg_Phase::After_Action2(CEnderDragon* pDragon, _float fTimeDelta)
 {
 	auto pAnimator = pDragon->Get_Animator();
@@ -292,7 +312,7 @@ void CEdg_Phase::Phase_Before_Action(CEnderDragon* pDragon, _float fTimeDelta)
 		m_eNum = EDG_SPAWN_NUMBER::FOUR;
 		break;
 	case DRAGON_PHASE::PHASE5:
-		m_eNum = EDG_SPAWN_NUMBER::FOUR;
+		Before_Action5(pDragon, fTimeDelta);
 		break;
 	}
 }
@@ -315,6 +335,13 @@ void CEdg_Phase::Phase_Change_Action(CEnderDragon* pDragon, _float fTimeDelta)
 			m_fTick = 0.f;
 			m_eNextPhase = m_ePhase;
 			m_eNum = EDG_SPAWN_NUMBER::THIRD;
+			if (m_ePhase == DRAGON_PHASE::PHASE5)
+			{
+				pDragon->Set_HideOnBush(false);
+				auto pBT = pDragon->GetComponent<CComBeHavior>("Com_BT");
+				if (nullptr == pBT) return;
+				pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+			}
 		}
 	}
 }
@@ -332,9 +359,11 @@ void CEdg_Phase::Phase_After_Action(CEnderDragon* pDragon, _float fTimeDelta)
 		m_eNum = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	case DRAGON_PHASE::PHASE4:
+
 		m_eNum = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	case DRAGON_PHASE::PHASE5:
+
 		m_eNum = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	}
