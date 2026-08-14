@@ -444,7 +444,7 @@ void CBTAnimRoot::OnEnter()
 	if (nullptr == pAnim) return;
 
 	auto& pA = pAnim->GetCurAnimState();
-	if (m_Value.iAnimIndex == pA.iAnimIndex)
+	if (!m_bLoop && m_Value.iAnimIndex == pA.iAnimIndex)
 	{
 		pA.bFinished = false;
 		pA.bLoop = m_bLoop;

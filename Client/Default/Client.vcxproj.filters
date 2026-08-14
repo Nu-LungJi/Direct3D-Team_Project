@@ -352,6 +352,9 @@
     <Filter Include="GameObject\Player\Player_ConfringoController">
       <UniqueIdentifier>{6edd5ca2-a286-4ac1-b657-df90b1703e18}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\EnderDragon\Skill\Gasi">
+      <UniqueIdentifier>{a9ff708e-a308-4d48-99c3-2ed09296a5f9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -810,6 +813,12 @@
     <ClInclude Include="..\Public\Player_ConfringoController.h">
       <Filter>GameObject\Player\Player_ConfringoController</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\SkillTarget.h">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\EdgGasi.h">
+      <Filter>GameObject\Monster\EnderDragon\Skill\Gasi</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1216,6 +1225,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_ConfringoController.cpp">
       <Filter>GameObject\Player\Player_ConfringoController</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\SkillTarget.cpp">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EdgGasi.cpp">
+      <Filter>GameObject\Monster\EnderDragon\Skill\Gasi</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

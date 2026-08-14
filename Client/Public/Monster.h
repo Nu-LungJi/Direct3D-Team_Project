@@ -1,6 +1,7 @@
 #pragma once
 #include "AnimationObject.h"
 #include "Client_Defines.h"
+#include "SkillTarget.h"
 NS_BEGIN(Engine)
 class CComConstantBuffer;
 class CResTexture2D;
@@ -56,7 +57,7 @@ typedef struct MonsterHitInfo
 	ATTMON    eAttType{ ATTMON::END };
 	int32_t iPriority{ 0 };
 }MON_HIT_INFO;
-class CMonster : public CAnimationObject
+class CMonster : public CAnimationObject, public CSkillTarget
 {
 public:
 	DECLARE_DERIVED_TYPE(CMonster, CAnimationObject)
@@ -130,7 +131,6 @@ public:
 	_bool						Is_ActiveHit() { return m_bActiveHit; }
 	void						ReActiveTable();
 	_bool						Is_Grounded();
-	_bool						Monster_Type(MONSTER_TYPE eType) { if (m_eMonType == eType)return true;  return false; }
 	uint32_t					GetHitCnt() { return m_iHitCnt; }
 	uint32_t					GetNormalCnt() {return m_iNormalHitCnt;}
 	CGameObject*				Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
@@ -203,7 +203,6 @@ protected:
 	_bool								m_bActiveHit{ false };
 	MON_HIT_INFO						m_ActiveMonTable{};
 	
-	MONSTER_TYPE						m_eMonType{ MONSTER_TYPE::NORMAL };
 	std::vector<E::SPAWN_COMMAND>		m_Effects[ETOUI(ATTMON::END)];
 	CHandle								m_TargetHandle{};
 	std::unordered_map<_string, std::vector<_string>> m_SoundTable;

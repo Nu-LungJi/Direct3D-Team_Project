@@ -1,7 +1,10 @@
 #include "pch.h"
 #include "DragonSkill.h"
 #include "ComAnimator.h"
+#include "BTBlackBoard.h"
 #include "ComModelInstance.h"
+#include "BlackBoardKey.h"
+#include "EnderDragon_State.h"
 NS_USING(Client)
 CDragonSkill::CDragonSkill()
 {
@@ -13,6 +16,11 @@ CDragonSkill::CDragonSkill(const CDragonSkill& rhs) : CGameObject(rhs)
 
 CDragonSkill::~CDragonSkill()
 {
+}
+
+void CDragonSkill::UpdateGUI()
+{
+	ImGui::DragFloat("hmmmm", &m_fHm, 0.1f, -100.f, 100.f);
 }
 
 HRESULT CDragonSkill::InitializePrototype(void* pArg)
@@ -42,6 +50,16 @@ void CDragonSkill::PriorityUpdate(E::_float fTimeDelta)
 {
 	auto pSrc = Get_Owner();
 	if (nullptr == pSrc)
+		SetPendingDestroy();
+	auto pBB = pSrc->Get_BlackBoard();
+	if (nullptr == pBB) return;
+
+	auto pState = pBB->Get_Value<EDG_STATE>(EDG_KEY::STATE);
+	if (nullptr == pState) return;
+
+	if (*pState == EDG_STATE::PHASE_CHANGE || *pState == EDG_STATE::HIT)
+		Cancle();
+	if (*pState == EDG_STATE::DEAD)
 		SetPendingDestroy();
 }
 
@@ -81,7 +99,7 @@ _bool CDragonSkill::Life_Check(_float fTimeDelta)
 	{
 		if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
 			CGameInstance::Get().StopEffect(m_iSkillEffID);
-		ResetValue();
+		Cancle();
 		return true;
 	}
 	return false;

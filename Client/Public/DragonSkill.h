@@ -27,7 +27,9 @@ protected:
 	explicit CDragonSkill();
 	explicit CDragonSkill(const CDragonSkill& rhs);
 	~CDragonSkill() override;
+public:
 
+	void UpdateGUI() override;
 public:
 	HRESULT						InitializePrototype(void* pArg = nullptr) override;
 	HRESULT						Initialize(void* pArg) override;
@@ -52,7 +54,7 @@ protected:
 	uint32_t					m_iSkillEffID{};
 	int32_t						m_iBoneIndex{ -1 }, m_iOffsetBoneIdex{};
 
-	_float						m_fDamage{}, m_fSpeed{}, m_fRadius{}, m_fLife{}, m_fMaxLife{};
+	_float						m_fDamage{}, m_fSpeed{}, m_fRadius{}, m_fLife{}, m_fMaxLife{}, m_fHm{};
 	_float3						m_vDir{}, m_vTargetDir{};
 	_bool						m_bActive{ false }, m_bHit{ false }, m_bThrow{false};
 

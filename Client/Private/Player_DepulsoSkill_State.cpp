@@ -55,11 +55,12 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 	SetSkillControl(*pPlayer, true, false, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::DEPULSO);
-	if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
-	{
-		pMonster->Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
-	
-	}
+	TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DEPULSO); //창준 변경
+	//if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
+	//{
+	//	pMonster->Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
+	//
+	//}
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
