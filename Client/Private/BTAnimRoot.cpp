@@ -615,11 +615,11 @@ void CBTAnimRoot::SoundPopUp(MONSOUND& Sound, CMonster* Monster)
 	ImGui::EndPopup();
 }
 
-void CBTAnimRoot::DragFloat(const _char* pName, _float& fValue)
+void CBTAnimRoot::DragFloat(const _char* pName, _float& fValue,_float fSpeed , _float fMin, _float fMax)
 {
 	_string Name = "##" + _string(pName);
 	ImGui::Text(pName);
-	ImGui::DragFloat(Name.c_str(), &fValue,0.1f,0.f,1.f);
+	ImGui::DragFloat(Name.c_str(), &fValue, fSpeed, fMin, fMax);
 }
 void CBTAnimRoot::BoolButton(const _char* pName, _bool& bButton)
 {

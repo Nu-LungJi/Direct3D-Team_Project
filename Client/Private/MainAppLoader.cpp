@@ -641,6 +641,14 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "GASIBREATH", CResJson::Create("./Resources/json/BeHavior/SubTree/GASIBREATH.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED GASIBREATH JSON");
+			return E_FAIL;
+		}
+	}
 	return S_OK; 
 }
 
