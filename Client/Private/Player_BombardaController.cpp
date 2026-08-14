@@ -23,9 +23,10 @@ void CPlayer_BombardaController::EnsureCastParticleCommandsLoaded()
 {
 	if (m_CastParticleCommands.empty())
 	{
-		// [LSY] 투사체 잔상 큐를 캐스팅 중 지팡이 궤적에도 재사용한다.
+		// [LSY] 캐스팅 곡선 전용 큐를 한 번만 파싱하여 매 프레임 파일을 읽지 않게 한다.
+		// 투사체 꼬리 큐와 분리되어 두 연출의 생성 수치를 독립적으로 조정할 수 있다.
 		m_CastParticleCommands = CGameInstance::Get().Parse_Command(
-			"LSY_Bombarda_Projectile_Trail_Queue.json");
+			"LSY_Bombarda_Cast_Particle_Queue.json");
 	}
 }
 
