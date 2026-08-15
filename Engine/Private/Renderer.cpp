@@ -1616,6 +1616,9 @@ HRESULT CRenderer::Render_PostProcess_Focusing(){
 		}
 	}
 	{
+		SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
+		if (nullptr == DepthWriteState) return S_OK;
+
 		ID3D11RenderTargetView* pNullRTVs[1] = { nullptr };
 		m_pContext->OMSetRenderTargets(1, pNullRTVs, nullptr);
 		m_pContext->OMSetDepthStencilState(nullptr, 0);
@@ -2353,6 +2356,12 @@ VOID CRenderer::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, 
 	m_fExpandDuration = _Duration;
 	m_fCurrentLifeTime = 0.f;
 	m_fRingScale = _Scale;
+}
+
+VOID CRenderer::Clear_OutlineEffect() {
+	m_pOutlineTargetHandle = std::nullopt;
+
+	m_pContext->ClearDepthStencilView(m_pResDynTexTargetFocusingDepthMap->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
 }
 
 #pragma region BLOOMHELPER

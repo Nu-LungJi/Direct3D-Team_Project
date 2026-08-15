@@ -108,6 +108,7 @@ public:			// PostProcess Effect Function
 	VOID		Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale);
 	VOID		Set_ChromaticRingOpacity(_float _Opacity) { m_fChromaticRingAlpha = _Opacity; }
 	VOID		Apply_OutlineEffect(std::optional<CHandle> _OutlineTargetHandle) { m_pOutlineTargetHandle = _OutlineTargetHandle; }
+	VOID		Clear_OutlineEffect();
 	
 private:		// Unbind Shader Resource / Shader / UAV / Render Target
 	VOID		Unbind_Resources();

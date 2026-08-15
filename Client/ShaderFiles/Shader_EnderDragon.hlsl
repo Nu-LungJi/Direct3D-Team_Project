@@ -1,12 +1,24 @@
 #include "../../Engine/ShaderFiles/ShaderDefines.hlsl"
 
-Texture2D g_DiffuseTexture : register(t0);
-Texture2D g_NormalTexture : register(t1);
-Texture2D g_SMROTexture : register(t2);
-Texture2D g_EmissiveTexture : register(t3);
+Texture2D g_DiffuseTexture		: register(t0);
+Texture2D g_NormalTexture		: register(t1);
+Texture2D g_SMROTexture			: register(t2);
+Texture2D g_MaskTexture			: register(t3);
+Texture2D g_EmissiveLayer0Texture	: register(t4);
+Texture2D g_EmissiveLayer1Texture	: register(t5);
 
-Texture2D DefaultNoiseTexture : register(t13);
+Texture2D DefaultNoiseTexture	: register(t13);
 static const float DissolveEdgeWidth = 0.025f;
+
+cbuffer CB_DRAGON_MATERIAL : register(b10)
+{
+	float4 TintR;
+	float4 TintG;
+	float4 TintB;
+	
+	float4 EmissiveLayerColor;
+	float4 EmissiveLayerChannel;
+}
 
 struct PS_IN
 {
@@ -73,22 +85,49 @@ PS_OUT PSMain(PS_IN IN)
 	PS_OUT Out;
     
 	float4	Diffuse = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord) * float4(AlbedoColor, ObjectAlpha);
-	clip(Diffuse.a - 0.35f);
+	float3	MaskTex = g_MaskTexture.Sample(LinearWrap, IN.vTexcoord).rgb;
     
-	float3	Normal = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
-	float3	MRO = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);
-    
-	float	FinalMetallic = MRO.r * MetallicIntensity;
-	float	FinalRoughness = MRO.g * RoughnessIntensity;
-	float	FinalAO = MRO.b * AmbientIntensity;
+	float3 DiffuseOutput = Diffuse.rgb;
+	DiffuseOutput = lerp(DiffuseOutput, DiffuseOutput * TintB.rgb, saturate(MaskTex.b * TintB.a));
+	DiffuseOutput = lerp(DiffuseOutput, DiffuseOutput * TintG.rgb, saturate(MaskTex.g * TintG.a));
+	DiffuseOutput = lerp(DiffuseOutput, DiffuseOutput * TintR.rgb, saturate(MaskTex.r * TintR.a));
 	
-	float3	Emissive = g_EmissiveTexture.Sample(LinearWrap, IN.vTexcoord).r * EmissiveColor * EmissiveIntensity;
-	float3	FinalEmissive = Apply_DissolveEffect(DefaultNoiseTexture, Emissive, IN.vTexcoord, DissolveEdgeWidth);
+	float3	Normal	= Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
+	float3	MRO		= g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);
+    
+	float	FinalMetallic	= MRO.r * MetallicIntensity;
+	float	FinalRoughness	= MRO.g * RoughnessIntensity;
+	float	FinalAO			= MRO.b * AmbientIntensity;
+	
+	float3 EmissiveLayer0 = g_EmissiveLayer0Texture.Sample(LinearWrap, IN.vTexcoord).rgb;
+	EmissiveLayer0 *= EmissiveColor * EmissiveIntensity;
+	
+	float4	EmissiveLayer1Tex = g_EmissiveLayer1Texture.Sample(LinearWrap, IN.vTexcoord);
+	float	EmissiveLayer1Value = saturate(dot(EmissiveLayer1Tex, EmissiveLayerChannel));
 
-	Out.vDiffuse = Diffuse;
-	Out.vNormal = float4(Normal * 0.5f + 0.5f, 1.f);
-	Out.vSMRO = float4(FinalMetallic, FinalRoughness, FinalAO, 1.f);
-	Out.vEmissive = float4(Emissive, 1.f);
+	float3	EmissiveLayer1 = EmissiveLayer1Value * EmissiveLayerColor.rgb * EmissiveLayerColor.a;
+	float3 Emissive = EmissiveLayer0 + EmissiveLayer1;
+
+	float3 FinalEmissive = Apply_DissolveEffect(DefaultNoiseTexture, Emissive, IN.vTexcoord, DissolveEdgeWidth);
+	
+	Out.vDiffuse  = float4(DiffuseOutput.rgb, Diffuse.a);
+	Out.vNormal   = float4(Normal * 0.5f + 0.5f, 1.f);
+	Out.vSMRO     = float4(FinalMetallic, FinalRoughness, FinalAO, 1.f);
+	Out.vEmissive = float4(FinalEmissive, 1.f);
     
 	return Out;
+}
+
+PS_OUT PSMain_OnlyEmissive(PS_IN IN)
+{
+	PS_OUT OUT;
+	
+	float3 FinalEmissive = g_EmissiveLayer0Texture.Sample(LinearWrap, IN.vTexcoord).rgb * EmissiveColor * EmissiveIntensity;
+	
+	OUT.vDiffuse = float4(0.f, 0.f, 0.f, 0.f);
+	OUT.vNormal = float4(0.f, 0.f, 0.f, 0.f);
+	OUT.vSMRO = float4(0.f, 0.f, 0.f, 0.f);
+	OUT.vEmissive = float4(FinalEmissive, 1.f);
+	
+	return OUT;
 }
