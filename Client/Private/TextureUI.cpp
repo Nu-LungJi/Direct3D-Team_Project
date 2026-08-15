@@ -157,6 +157,12 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 	auto vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
 	auto ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
+	if (m_UIINFO.Restag == "TEX_UI_T_FG_IndexButtonRippleGlow")
+	{
+		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"PS_SpellMiniGameRippleGlow");
+	}
 
 	if (m_bPathProgressMode)
 	{

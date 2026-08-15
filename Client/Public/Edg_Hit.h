@@ -16,11 +16,16 @@ public:
 
 	void PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta) override;
 	void Update(CStateMachine* pStateMachine, _float fTimeDelta) override;
+		
+private:
 
+	HRESULT		Initialize();
+	_bool Play_Hit_Anim(CEnderDragon* pDragon);
+	_bool Is_Finished(CEnderDragon* pDragon);
 private:
-	void Play_Hit_Anim();
-private:
-	MON_HIT_INFO			m_eHitInfo{};
+	std::vector<EDG_ANIM_FSM>	m_Hits[ETOUI(PLAYER_SKILL_TYPE::END)];
+	MON_HIT_INFO				m_eHitInfo{};
+	uint32_t					m_iIndex{};
 public:
 	static SPtr<CEdg_Hit> Create();
 };

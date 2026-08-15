@@ -142,8 +142,9 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 				const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
 				CGameInstance::Get().PlayEffect("DescendoWips", spawnWorld);
 			}
-			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
-				pMonster->Check_Table(PLAYER_SKILL_TYPE::DESCENDO);
+			TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DESCENDO); //창준 변경
+			//if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
+			//	pMonster->Check_Table(PLAYER_SKILL_TYPE::DESCENDO);
 			m_ePhase = PHASE::PUSH;
 			pAnimator->Play_Anim(m_DescendoCast_Animation, false, 0.25f);
 			pAnimator->GetCurAnimState().fSpeed = 1.f;

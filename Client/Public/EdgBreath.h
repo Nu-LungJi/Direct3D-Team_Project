@@ -24,10 +24,13 @@ public:
 	void			Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos = XMVectorSet(0, 0, 0, 1)) override;
 	void			Cancle() override;
 private:
+	void			SpawnGasi(_vector vPos, _vector vDirection);
 	void			MoveBreath(_float fTimeDelta);
 	_bool			MoveSweep(_vector vNextPos,_vector vCurDir);
 private:
-	_float			m_fBreathTick{};
+	_float			m_fBreathTick{}, m_fBreathDis{}, m_fMaxBreath{};
+	_bool			m_bGround{ false };
+
 public:
 	static E::UPtr<CEdgBreath> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

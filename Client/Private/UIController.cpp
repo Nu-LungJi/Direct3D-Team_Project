@@ -78,6 +78,12 @@ void CUIController::Update(E::_float fTimeDelta)
 		m_hSpellMiniGame = std::nullopt;
 		FadeOutSpellMiniGameBackground();
 		FadeInPotionCountAfterSpellMiniGame();
+		E::CGameInstance::Get().SetMouseFix(true);
+		if (m_Cursor)
+		{
+			if (auto* cursor = SafeGetOBJ(*m_Cursor))
+				cursor->SetAlpha(0.f);
+		}
 	}
 
 	// Temporary test entry. F8 opens/closes the Incendio mini game.

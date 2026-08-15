@@ -31,13 +31,6 @@ HRESULT CEdgFireBall::Initialize(void* pArg)
 	m_fRadius = 0.5f;
 	m_fMaxLife = 3.f;
 
-
-
-
-
-
-
-
 	return S_OK;
 }
 
@@ -47,11 +40,8 @@ void CEdgFireBall::PriorityUpdate(E::_float fTimeDelta)
 
 	if (!m_bActive) return;
 
-	if (Life_Check(fTimeDelta)) {
-		SetPendingDestroy();
-		if(m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().StopEffect(m_iEffectID);
-	}
+	Life_Check(fTimeDelta);
+	
 }
 
 void CEdgFireBall::FixedUpdate(E::_float fTimeDelta)
@@ -136,6 +126,9 @@ void CEdgFireBall::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 
 void CEdgFireBall::Cancle()
 {
+	if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
+		CGameInstance::Get().StopEffect(m_iEffectID);
+	SetPendingDestroy();
 	ResetValue();
 }
 
@@ -215,6 +208,8 @@ _bool CEdgFireBall::MoveSweep(_vector vNextPos)
 
 	if (pPhysX->Sweep(SweepDesc, SweepResult) && SweepResult.bHit)
 	{
+		//auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(SweepResult.hGameObject);
+		//pTarget->OnQueryHit(m_fDamage);
 		m_bHit = true;
 		//펑
 		return false;

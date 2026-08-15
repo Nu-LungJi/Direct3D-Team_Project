@@ -49,7 +49,7 @@ private:
 	void				SoundTableValueList();
 	void				SoundPopUp(MONSOUND& Sound, CMonster* Monster);
 protected:
-	void				DragFloat(const _char* pName, _float& fValue);
+	void				DragFloat(const _char* pName, _float& fValue, _float fSpeed = 0.1f, _float fMin = 0.f, _float fMax = 1.f);
 	void				BoolButton(const _char* pName, _bool& bButton);
 	void				Rotation(CComTransform* pTransform, CComCharacterMoveIntent* pMoveIntent, CGameObject* pTarget, _float fTimeDelta, _float fRotRatio);
 

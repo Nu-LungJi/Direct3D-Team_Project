@@ -270,6 +270,28 @@ PS_OUT PSProtegoGlass(VS_OUT In)
 	rippleHighlight *= 0.62f + 0.38f * smoothstep(-0.25f, 0.75f, brokenFlow);
 	float rippleValley = 1.0f - smoothstep(0.20f, 0.46f, surfaceRipple);
 
+	// Asset-driven idle water. The turbulent water and caustic textures move in
+	// opposite directions; each flow warps the other so it does not read as one
+	// flat texture sliding over the sphere.
+	float2 waterUV1 = In.vTexcoord * float2(1.72f, 1.34f) +
+		float2(slowTime * 0.062f, -slowTime * 0.091f);
+	float causticWarpA = dot(NoiseMap.Sample(LinearWrap, waterUV1).rgb,
+		float3(0.299f, 0.587f, 0.114f));
+	float2 waterUV2 = In.vTexcoord * float2(1.29f, 1.83f) +
+		float2(-slowTime * 0.083f, slowTime * 0.054f);
+	waterUV2 += float2(causticWarpA - 0.5f, 0.5f - causticWarpA) * 0.085f;
+	float3 turbulentWater = AnyTextureMap.Sample(LinearWrap, waterUV2).rgb;
+	float waterHeight = dot(turbulentWater, float3(0.299f, 0.587f, 0.114f));
+	float2 reverseCausticUV = In.vTexcoord * 2.11f +
+		float2(slowTime * 0.074f, slowTime * 0.103f) +
+		(turbulentWater.rg - 0.5f) * 0.065f;
+	float causticWarpB = dot(NoiseMap.Sample(LinearWrap, reverseCausticUV).rgb,
+		float3(0.299f, 0.587f, 0.114f));
+	float idleCaustic = smoothstep(0.38f, 0.78f,
+		saturate(waterHeight * 0.56f + causticWarpA * 0.25f + causticWarpB * 0.29f));
+	float idleBreath = 0.78f + 0.22f * sin(
+		g_fAccumulationTime * 1.28f + broadFlow * 0.55f);
+
 	// Moving broken rim: independent frequencies keep the outline from forming
 	// one continuous, mechanically pulsing ring.
 	float rimFlowA = sin(
@@ -304,7 +326,18 @@ PS_OUT PSProtegoGlass(VS_OUT In)
 	float2 rippleDirection = normalize(N.xy + float2(0.001f, 0.001f));
 	float2 refraction = N.xy * lerp(0.0030f, 0.0048f, breath) *
 		(0.25f + fresnel * 0.75f);
-	refraction += rippleDirection * (surfaceRipple - 0.5f) * 0.0038f;
+	refraction += rippleDirection * (surfaceRipple - 0.5f) * 0.0075f;
+	// Make the asset-driven flow deform the scene behind the resting shield.
+	// This is what makes the motion read on transparent center pixels as well.
+	float2 waterDistortion = (turbulentWater.rg - 0.5f) * 0.0330f;
+	waterDistortion += float2(causticWarpA - causticWarpB,
+		causticWarpB - causticWarpA) * 0.0110f;
+	// A second, counter-flowing lobe breaks the single-direction UV slide and
+	// produces clearly visible liquid wobble without making the glass opaque.
+	float2 counterFlow = float2(causticWarpB - 0.5f,
+		causticWarpA - 0.5f) * 0.0100f;
+	waterDistortion += counterFlow * (0.55f + 0.45f * brokenFlow);
+	refraction += waterDistortion * (0.58f + fresnel * 0.42f);
 	float3 background = g_BackgroundTex.Sample(LinearClamp, screenUV + refraction).rgb;
 
 	float3 glassTint = float3(0.30f, 0.08f, 0.62f);
@@ -324,6 +357,11 @@ PS_OUT PSProtegoGlass(VS_OUT In)
 	finalColor += lerp(float3(0.30f, 0.18f, 1.0f),
 		float3(0.88f, 0.08f, 1.0f), surfaceRipple) *
 		rippleHighlight * centerGlass * 0.24f;
+	finalColor += lerp(float3(0.20f, 0.10f, 0.72f),
+		float3(0.62f, 0.20f, 1.0f), surfaceRipple) *
+		idleCaustic * idleBreath * centerGlass * 0.46f;
+	float waterShadow = 1.0f - smoothstep(0.18f, 0.48f, waterHeight);
+	finalColor *= 1.0f - waterShadow * centerGlass * 0.11f;
 	finalColor *= 1.0f - rippleValley * centerGlass * 0.055f;
 	finalColor += glassTint * fresnel * 0.12f;
 	finalColor += rimTint * softRim * (0.10f + rimVisibility * 1.38f);
@@ -337,6 +375,7 @@ PS_OUT PSProtegoGlass(VS_OUT In)
 	float fadeOut = 1.0f - smoothstep(0.82f, 1.0f, lifeRatio);
 	float alpha = saturate(0.115f + centerGlass * 0.075f +
 		rippleHighlight * centerGlass * 0.11f +
+		idleCaustic * idleBreath * centerGlass * 0.075f +
 		rippleValley * centerGlass * 0.035f +
 		fresnel * 0.24f +
 		softRim * (0.008f + rimVisibility * 0.25f) +

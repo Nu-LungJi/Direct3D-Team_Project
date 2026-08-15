@@ -40,6 +40,9 @@ private:
 	// shader분기용
 	std::string m_VSShaderTag = "VS_QuadTexFlipBook";
 	std::string m_PSShaderTag = "PS_QuadTexFlipBook";
+	_float m_fStableFlameTime = 0.f;
+	_float m_fSmoothedFlameDelta = 1.f / 60.f;
+	_bool m_bWasFlameActive = false;
 
 public:
 	static E::UPtr<CEffectUI> Create();

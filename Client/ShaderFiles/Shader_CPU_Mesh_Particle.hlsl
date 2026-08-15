@@ -531,18 +531,17 @@ PS_OUT PSOuterSphere(VS_OUT In)
 
 	float3 bodyColor = In.vColor.rgb * (0.015f + flowMask * 0.18f);
 	float3 flowColor = In.vColor.rgb * flowMask * 0.25f;
-	float3 flowEmissive = emissive.rgb * emissive.a * hotFlowMask * NdotV * 0.12f;
-	float3 rimGlowColor = In.vColor.rgb * rimGlowMask * 0.7f;
-	float3 rimLineColor = lerp(emissive.rgb, float3(1.f, 0.35f, 0.25f), 0.6f) * emissive.a * rimLineMask * 0.8f;
-	float3 whiteLineColor = float3(1.f, 0.92f, 0.86f) * emissive.a * whiteLineMask * 1.5f;
-	float3 finalColor = bodyColor + flowColor + flowEmissive + rimGlowColor + rimLineColor + whiteLineColor;
+	float maxColorChannel = max(max(In.vColor.r, In.vColor.g), In.vColor.b);
+	float3 rimTint = In.vColor.rgb / max(maxColorChannel, 0.0001f);
+	float rimCombinedMask = saturate(rimGlowMask * 0.2f + rimLineMask * 0.45f + whiteLineMask * 0.7f);
+	float3 rimBaseColor = rimTint * rimCombinedMask * 0.8f;
+	float3 rimEmissiveColor = rimTint * emissive.a * rimCombinedMask;
+	float3 finalColor = bodyColor + flowColor + rimBaseColor + rimEmissiveColor;
 
 	float bodyAlpha = In.vColor.a * (0.08f + flowMask * 0.35f);
 	float flowAlpha = hotFlowMask * 0.04f;
-	float rimGlowAlpha = rimGlowMask * 0.08f;
-	float rimLineAlpha = rimLineMask * 0.45f;
-	float whiteLineAlpha = whiteLineMask * 0.45f;
-	float finalAlpha = saturate(bodyAlpha + flowAlpha + rimGlowAlpha + rimLineAlpha + whiteLineAlpha);
+	float rimAlpha = rimCombinedMask * 0.85f;
+	float finalAlpha = saturate(bodyAlpha + flowAlpha + rimAlpha);
 
 	Out.vDiffuse = float4(finalColor, finalAlpha);
 	return Out;
@@ -594,23 +593,59 @@ PS_OUT PSRanrok_Sphere(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
 
-	float3	ViewDirection = normalize(g_vCamPos.xyz - In.vWorldPos);
-	float3	WorldNormal = normalize(In.vNormal);
-	float	Fresnel = pow(1.f - saturate(dot(WorldNormal, ViewDirection)), 3.f);
+	float3	WorldNormal		= normalize(In.vNormal);
+	float3	ViewDirection	= normalize(g_vCamPos.xyz - In.vWorldPos);
+	float	NDV = saturate(dot(WorldNormal, ViewDirection));
 	
-	float2	NoiseUV = In.vTexcoord * 1.5f + In.life * float2(0.03f, 0.01f);
-	float	Noise = NoiseMap.Sample(LinearWrap, NoiseUV).r;
+	float	LifeRatio = In.life / max(In.maxLife, 0.001f);
+	
+	float	EaseOut = 1.f - (1.f - LifeRatio) * (1.f - LifeRatio);
 
-	float	LifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
-	float4	Emissive = lerp(In.vEmissive, In.vEndEmissive, LifeRatio);
+	float CombinedNoise = NoiseMap.Sample(LinearWrap, In.vTexcoord + In.life * float2(0.4f, 0.4f)).r;
+	CombinedNoise = lerp(0.5f, CombinedNoise, 0.35f);
+	float	SignedNoise = CombinedNoise * 2.f - 1.f;
+	float	NoiseStrength = lerp(0.01f, 0.05f, 1.f - NDV)	;
 	
-	float3	InnerColor = In.vColor.rgb;
-	float3	RimColor = float3(1.f, 0.015f, 0.005f);
-	float3	SphereColor = lerp(InnerColor, RimColor, Fresnel);
-	float	EmissiveStrength = Emissive.a * lerp(0.7f, 1.5f, Fresnel) * lerp(0.65f, 1.f, Noise);
+	float DistortedNdotV = saturate(NDV + SignedNoise * 0.35f);
 	
-	float3	FinalColor = SphereColor + Emissive.rgb * EmissiveStrength;
-	float Opacity = In.vColor.a * (1.f - Noise);
+	float	CoreThreshold = lerp(0.97f, 0.60f, EaseOut);
+	float	CoreMask = smoothstep(CoreThreshold - 0.11f, CoreThreshold + 0.02f, DistortedNdotV);
+	float	CoreEnvelope = smoothstep(0.35f, 0.60f, NDV);
+	CoreMask *= CoreEnvelope;
+	
+	float GlowMask = smoothstep(CoreThreshold - 0.28f, CoreThreshold + 0.02f, DistortedNdotV);
+	GlowMask *= smoothstep(0.15f, 0.45f, NDV);
+
+	float4 Emissive = lerp(In.vEmissive, In.vEndEmissive, LifeRatio);
+	
+	float MidGradient = smoothstep(0.08f, 0.72f, DistortedNdotV);
+
+	float CenterGradient = smoothstep(0.5f, 1.f, DistortedNdotV);
+	CenterGradient = pow(CenterGradient, 5.f);
+
+	float3 OuterColor	= Emissive.rgb * 0.3f;
+	float3 MidColor		= Emissive.rgb * 0.9f;
+	float3 CenterColor = lerp(Emissive.rgb, float3(1.f, 0.90f, 0.82f), 0.65f);
+
+	float3 GradientColor = lerp(OuterColor, MidColor, MidGradient);
+	GradientColor = lerp(GradientColor, CenterColor, CenterGradient);
+
+	float EnergyMask = saturate(GlowMask * 0.75f + CoreMask * 0.25f);
+
+	float SpreadBrightness = lerp(0.35f, 0.4f, EnergyMask);
+	float CenterBrightness = lerp(1.5f, 2.5f, CenterGradient);
+
+	float NoiseBrightness  = lerp(0.97f, 1.03f, CombinedNoise);
+
+	float3 FinalColor = GradientColor * SpreadBrightness * CenterBrightness * NoiseBrightness;
+
+	float EdgeFade		= smoothstep(0.02f, 1.5f, NDV);
+	float EdgeOpacity	= lerp(0.4f, 1.f, EdgeFade);
+
+	float NoiseOpacity	= lerp(0.85f, 1.f, CombinedNoise);
+	
+	float Opacity = In.vColor.a * EdgeOpacity;
+	
 	Out.vDiffuse = float4(FinalColor, Opacity);
 	return Out;
 }

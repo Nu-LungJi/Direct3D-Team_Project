@@ -388,10 +388,12 @@ public:
 
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
+	const std::vector<SPAWN_COMMAND>* FindCachedCommandQueue(const std::string& strJsonPath) const;
 	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos = XMVectorSet(0,0,0,1));
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag);
 	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
 	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
+	HRESULT Load_ParticleQueueJsonPackage(const std::vector<std::string>& _FilePathPackage);
 	void TranslateOwner(uint32_t ownerId, const _float3& delta);
 	// [LSY] 직접 Spawn한 파티클 묶음을 반환받은 Owner ID로 명시적으로 정리한다.
 	void ClearParticleOwner(uint32_t ownerId);

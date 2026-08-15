@@ -166,6 +166,12 @@ inline void DrawImGui(SConeParam& p) {
 inline void DrawImGui(SEnergySphere& p) {
 	ENERGY_SPHERE_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
 }
+inline void DrawImGui(SSpikeParam& p) {
+	SPIKE_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+inline void DrawImGui(SIrregularRingParam& p) {
+	IRREGULAR_RING_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
+}
 #undef DRAW_PARAM_FIELD
 
 //8. save 추가
@@ -178,6 +184,8 @@ inline void SaveParam(const SMOKE& p, nlohmann::json& out) { SMOKE_FIELDS(SAVE_P
 inline void SaveParam(const SLightning& p, nlohmann::json& out) { LIGHTNING_STREIGHT(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SConeParam& p, nlohmann::json& out) { CONE_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SEnergySphere& p, nlohmann::json& out) { ENERGY_SPHERE_FIELDS(SAVE_PARAM_FIELD) }
+inline void SaveParam(const SIrregularRingParam& p, nlohmann::json& out) { IRREGULAR_RING_FIELDS(SAVE_PARAM_FIELD) }
+inline void SaveParam(const SSpikeParam& p, nlohmann::json& out) { SPIKE_FIELDS(SAVE_PARAM_FIELD) }
 
 //9. 로드 추가
 inline void LoadParam(SStairsParam& p, const nlohmann::json& in) { STAIRS_FIELDS(LOAD_PARAM_FIELD) }
@@ -189,6 +197,8 @@ inline void LoadParam(SMOKE& p, const nlohmann::json& in) { SMOKE_FIELDS(LOAD_PA
 inline void LoadParam(SLightning& p, const nlohmann::json& in) { LIGHTNING_STREIGHT(LOAD_PARAM_FIELD) }
 inline void LoadParam(SConeParam& p, const nlohmann::json& in) { CONE_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SEnergySphere& p, const nlohmann::json& in) { ENERGY_SPHERE_FIELDS(LOAD_PARAM_FIELD) }
+inline void LoadParam(SIrregularRingParam& p, const nlohmann::json& in) { IRREGULAR_RING_FIELDS(LOAD_PARAM_FIELD) }
+inline void LoadParam(SSpikeParam& p, const nlohmann::json& in) { SPIKE_FIELDS(LOAD_PARAM_FIELD) }
 
 #undef SAVE_PARAM_FIELD
 #undef LOAD_PARAM_FIELD
