@@ -157,46 +157,46 @@ HRESULT CEnderDragon::InitializePrototype(void* pArg)
 	{
 		return E_FAIL;
 	}
-	/*----------- 광윤 추가 -----------*/
-	if (m_pResDragonPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_EnderDragon", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
-		if (FAILED(m_pResDragonPixelShader->Load()))    return E_FAIL;
-	}
-	if (m_pDragonFXPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_EnderDragonFX", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
-		if (FAILED(m_pDragonFXPixelShader->Load(CResShader::DESC{ .sEntryPoint = "PSMain_DragonFX", .sTarget = "ps_5_0" })))    return E_FAIL;
-	}
-	//if (m_pResDragonCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "DRAGON_MATERIAL", E::CResCBuffer::Create())) {
-	//	if (FAILED(m_pResDragonCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(EDG_MATERIAL) })))	return E_FAIL;
+	///*----------- 광윤 추가 -----------*/
+	//if (m_pResDragonPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_EnderDragon", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
+	//	if (FAILED(m_pResDragonPixelShader->Load()))    return E_FAIL;
 	//}
-	if (m_pDragonFXModel = CGameInstance::Get().AddResourceT<E::CResModel>("DRAGON_VFX", "MODEL_CONJURED_DRAGON_FX",
-		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_DragonFX.bin"))) {
+	//if (m_pDragonFXPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_EnderDragonFX", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
+	//	if (FAILED(m_pDragonFXPixelShader->Load(CResShader::DESC{ .sEntryPoint = "PSMain_DragonFX", .sTarget = "ps_5_0" })))    return E_FAIL;
+	//}
+	////if (m_pResDragonCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "DRAGON_MATERIAL", E::CResCBuffer::Create())) {
+	////	if (FAILED(m_pResDragonCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(EDG_MATERIAL) })))	return E_FAIL;
+	////}
+	//if (m_pDragonFXModel = CGameInstance::Get().AddResourceT<E::CResModel>("DRAGON_VFX", "MODEL_CONJURED_DRAGON_FX",
+	//	CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_DragonFX.bin"))) {
 
-		E::CResModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(1.6f, 1.6f, 1.6f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+	//	E::CResModel::DESC pDesc{};
+	//	pDesc.PreTransformMatrix = XMMatrixScaling(1.6f, 1.6f, 1.6f) * XMMatrixRotationY(XMConvertToRadians(180.f));
 
-		if (FAILED(m_pDragonFXModel->Load(pDesc)))
-		{
-			MSG_BOX("LAST_BOSS_RANROK Failed MODEL_CONJURED_DRAGON_FX");
-			return E_FAIL;
-		}
-	}
+	//	if (FAILED(m_pDragonFXModel->Load(pDesc)))
+	//	{
+	//		MSG_BOX("LAST_BOSS_RANROK Failed MODEL_CONJURED_DRAGON_FX");
+	//		return E_FAIL;
+	//	}
+	//}
 
-	if (m_pDragonSpineModel = CGameInstance::Get().AddResourceT<E::CResStaticModel>("DRAGON_VFX", "MODEL_CONJURED_DRAGON_SPINE_FX",
-		CResStaticModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SM_DragonSpineFX.bin"))) {
+	//if (m_pDragonSpineModel = CGameInstance::Get().AddResourceT<E::CResStaticModel>("DRAGON_VFX", "MODEL_CONJURED_DRAGON_SPINE_FX",
+	//	CResStaticModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SM_DragonSpineFX.bin"))) {
 
-		E::CResStaticModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixIdentity();
+	//	E::CResStaticModel::DESC pDesc{};
+	//	pDesc.PreTransformMatrix = XMMatrixIdentity();
 
-		if (FAILED(m_pDragonSpineModel->Load(pDesc)))
-		{
-			MSG_BOX("LAST_BOSS_RANROK Failed MODEL_CONJURED_DRAGON_SPINE_FX");
-			return E_FAIL;
-		}
-	}
-	if (m_pResDragonFXCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CBUFFER_DRAGON_FX_MATERIAL", E::CResCBuffer::Create())) {
-		if (FAILED(m_pResDragonFXCBuffer->Load(CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(DRAGON_FX_MATERIAL) })))	return E_FAIL;
-	}
-	
-	/*---------------------------------*/
+	//	if (FAILED(m_pDragonSpineModel->Load(pDesc)))
+	//	{
+	//		MSG_BOX("LAST_BOSS_RANROK Failed MODEL_CONJURED_DRAGON_SPINE_FX");
+	//		return E_FAIL;
+	//	}
+	//}
+	//if (m_pResDragonFXCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CBUFFER_DRAGON_FX_MATERIAL", E::CResCBuffer::Create())) {
+	//	if (FAILED(m_pResDragonFXCBuffer->Load(CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(DRAGON_FX_MATERIAL) })))	return E_FAIL;
+	//}
+	//
+	///*---------------------------------*/
 	return S_OK;
 }
 
