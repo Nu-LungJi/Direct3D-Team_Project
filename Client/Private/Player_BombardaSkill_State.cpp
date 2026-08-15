@@ -5,6 +5,8 @@
 #include "ComAnimator.h"
 #include "PlayerAnimationRatioGuard.h"
 
+#include "ComSound.h"
+
 NS_USING(Client)
 
 void CPlayer_BombardaSkill_State::Enter(CStateMachine* pStateMachine)
