@@ -6,7 +6,7 @@
 #include "Player.h"
 #include "Player_Bombarda_Bullet.h"
 #include "Player_Weapon.h"
-
+#include "Particle.h"
 NS_BEGIN(Client)
 
 CPlayer_BombardaController::CPlayer_BombardaController(CPlayer& Owner)
