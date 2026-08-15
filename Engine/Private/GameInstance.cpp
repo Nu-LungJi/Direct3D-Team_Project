@@ -670,6 +670,11 @@ std::vector<SPAWN_COMMAND>  CGameInstance::Parse_Command(const std::string& strJ
 	return m_pParticleManager->Parse_Command(strJsonFile);
 }
 
+const std::vector<SPAWN_COMMAND>* CGameInstance::FindCachedCommandQueue(const std::string& strJsonPath) const
+{
+	return m_pParticleManager->FindCachedCommandQueue(strJsonPath);
+}
+
 uint32_t CGameInstance::Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos) {
 	return m_pParticleManager->Spawn(templateCommands, worldMat ,endPos);
 }
@@ -685,6 +690,11 @@ std::vector<std::string> CGameInstance::Load_FilePath_ByExtension(const std::fil
 HRESULT CGameInstance::Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage)
 {
 	return m_pParticleManager->Load_ParticleJsonPackage(_FilePathPackage);
+}
+
+HRESULT CGameInstance::Load_ParticleQueueJsonPackage(const std::vector<std::string>& _FilePathPackage)
+{
+	return m_pParticleManager->Load_ParticleQueueJsonPackage(_FilePathPackage);
 }
 
 void CGameInstance::TranslateOwner(uint32_t ownerId, const _float3& delta) {

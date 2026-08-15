@@ -600,6 +600,9 @@ void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 	case PLAYER_SKILL_TYPE::PROTEGO:
 		m_iHp -= 8.f;
 		break;
+	case PLAYER_SKILL_TYPE::DESTORY:
+		m_iHp -= 25.f;
+		break;
 	}
 }
 

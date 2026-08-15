@@ -31,6 +31,7 @@ HRESULT CEdgBreath::Initialize(void* pArg)
 	m_fDamage = 3.f;
 	m_fRadius = 1.2f;
 	m_fMaxLife = 2.f;
+	m_fMaxBreath = 60.f;
 	return S_OK;
 }
 
@@ -82,13 +83,13 @@ void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 	_vector vDir = XMVector3Normalize(vLength);
 	_float fHalfDis = XMVectorGetX(XMVector3Length(vLength)) * 0.5f;
 
-
-
-
-	if (m_eType == DRAGON_SKILL::BREATH)
+	m_fBreathDis = 0.f;
+	if (m_eType == DRAGON_SKILL::BREATH || m_eType == DRAGON_SKILL::GASIBREATH)
 	{
 		XMStoreFloat3(&m_vTargetDir, vDir);
 		XMStoreFloat3(&m_vDir, XMVector3Normalize((matBone.r[3] + vDir * fHalfDis) - matBone.r[3]));
+
+
 	}
 	else if (m_eType == DRAGON_SKILL::TURNBREATH)
 	{
@@ -98,10 +99,12 @@ void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 	{
 
 	}
-		
+	
+	GetTransform().SetPosition(matBone.r[3]);
+	GetTransform().SetQuaternion(XMQuaternionRotationMatrix(matBone));
 	
 	m_bActive = true;
-	m_bHit = false;
+	m_bGround = m_bHit = false;
 	m_fBreathTick = m_fLife = 0.f;
 	m_fMaxLife = SkillTable.fLifeTime;
 	Spawn_Skill_Effect(SkillTable.SkillName);
@@ -110,6 +113,42 @@ void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 void CEdgBreath::Cancle()
 {
 	ResetValue();
+}
+
+void CEdgBreath::SpawnGasi(_vector vPos, _vector vDirection)
+{
+	auto pSrc = Get_Owner();
+	if (nullptr == pSrc)
+		return;
+
+	const _string SkillName = pSrc->Get_SkillNmae(DRAGON_SKILL::GASI);
+	auto Table = pSrc->Get_SkillInfo(DRAGON_SKILL::GASI);
+
+	if (SkillName.empty())
+		return;
+
+	auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(Table.handle);
+	if (nullptr == pSkill)
+		return;
+
+	vDirection = XMVectorSetY(vDirection, 0.f);
+
+	if (XMVectorGetX(XMVector3LengthSq(vDirection)) <= FLT_EPSILON)
+		vDirection = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+	else
+		vDirection = XMVector3Normalize(vDirection);
+
+	const _float fYaw = atan2f(XMVectorGetX(vDirection), XMVectorGetZ(vDirection));
+	const _vector vQuaternion = XMQuaternionRotationRollPitchYaw(0.f, fYaw, 0.f);
+
+	pSkill->GetTransform().SetQuaternion(vQuaternion);
+
+	EDG_ACSKT_DESC ACTable{};
+	ACTable.SkillName = SkillName;
+	ACTable.fLifeTime = 3.f;
+	ACTable.eType = DRAGON_SKILL::GASI;
+
+	pSkill->Active(ACTable, vPos);
 }
 
 void CEdgBreath::MoveBreath(_float fTimeDelta)
@@ -121,16 +160,23 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	m_fBreathTick += fTimeDelta;
 	_vector vForward{};
 	_float t = std::min(m_fBreathTick / 3.f, 1.f);
+	_float tBreath = std::min(m_fBreathTick / 1.f, 1.f);
 	if (m_eType == DRAGON_SKILL::BREATH)
 	{
 		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), t));
+	}else if (m_eType == DRAGON_SKILL::GASIBREATH)
+	{
+		_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
+		_matrix matOffset = XMLoadFloat4x4(&matOffB);
+		vForward = XMVector3Normalize(matOffset.r[3] - matBone.r[3]);
+		vForward = XMVector3Normalize(XMVectorSetY(vForward, -0.7f));
 	}
 	else if (m_eType == DRAGON_SKILL::TURNBREATH)
 	{ 
 		_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
 		_matrix matOffset = XMLoadFloat4x4(&matOffB);
 		vForward = XMVector3Normalize(matOffset.r[3]  - matBone.r[3]);
-		vForward -= XMVectorSet(0, 0.15f, 0, 0);
+		vForward = XMVector3Normalize(XMVectorSetY(vForward, -0.158));
 	}
 	else if (m_eType == DRAGON_SKILL::LONGBREATH)
 	{
@@ -146,7 +192,7 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 		XMStoreFloat3(&m_vTargetDir, XMVector3Normalize(XMLoadFloat3(&pTarget->GetTransform().GetPosition()) - matOffset.r[3]));
 
 		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), 0.8f));
-		vForward -= XMVectorSet(0, 0.15f, 0, 0);
+		vForward -= XMVectorSet(0, 0.05f, 0, 0);
 	}
 
 	_vector vUp = XMVector3Normalize(matBone.r[1]);
@@ -168,6 +214,7 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	XMStoreFloat4x4(&breathWorldData, breathWorld);
 
 	CGameInstance::Get().PlayEffect("DragonBreath", breathWorldData);
+	m_fBreathDis = m_fMaxBreath * tBreath;
 	if (MoveSweep(matBone.r[3], vForward))
 	{
 		//if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
@@ -195,7 +242,7 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir)
 	SweepDesc.tPose.vPosition = vPos;
 	SweepDesc.vDirection = vDir;
 	SweepDesc.tFilter = m_pxQueryFilter;
-	SweepDesc.fMaxDistance = 60.f;
+	SweepDesc.fMaxDistance = m_fBreathDis;
 
 	////////////////////////////////////
 	for (uint32_t i = 0; i < iDebugCnt; ++i)
@@ -211,8 +258,54 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir)
 	auto pPhysX = CGameInstance::Get().GetPhysXManager();
 	if (nullptr == pPhysX) return false;
 
+	//가시브래스로 교체예정
+	//롱브래스나 회전 브래스는 땅에 닿으면 그 자리에 데칼 소환하게
+	if (!m_bGround &&  m_eType == DRAGON_SKILL::BREATH)
+	{
+		//이거 땅판정임
+		PX_SWEEP_DESC GroundDesc = SweepDesc;
+		GroundDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC) 
+		,.bQueryStatic = true,.bQueryDynamic = false,.bIncludeTrigger = false};
+		PX_SWEEP_RESULT GroundSweep{};
+
+		//if (pPhysX->Sweep(GroundDesc, GroundSweep) && GroundSweep.bHit)
+		//{
+		//	m_bGround = true;
+		//	SpawnGasi(XMLoadFloat3(&GroundSweep.vHitpos), vCurDir);
+		//}
+	}
+	else
+	{
+
+	}
+
+
+	if (!m_bGround && m_eType == DRAGON_SKILL::GASIBREATH)
+	{
+		//이거 땅판정임
+		PX_SWEEP_DESC GroundDesc = SweepDesc;
+		GroundDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC)
+		,.bQueryStatic = true,.bQueryDynamic = false,.bIncludeTrigger = false };
+		PX_SWEEP_RESULT GroundSweep{};
+
+		if (pPhysX->Sweep(GroundDesc, GroundSweep) && GroundSweep.bHit)
+		{
+			m_bGround = true;
+			SpawnGasi(XMLoadFloat3(&GroundSweep.vHitpos), vCurDir);
+		}
+	}
+	else
+	{
+
+	}
+
+
+
+
 	if (pPhysX->Sweep(SweepDesc, SweepResult) && SweepResult.bHit)
 	{
+		//auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(SweepResult.hGameObject);
+		//pTarget->OnQueryHit(m_fDamage);
 		return false;
 	}
 

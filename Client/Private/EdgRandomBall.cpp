@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "EdgRandomBall.h"
 #include "PhysXManager.h"
+#include "ComPxRigidBody.h"
+#include "ComPxSphereCollider.h"
 NS_USING(Client)
 CEdgRandomBall::CEdgRandomBall()
 {
@@ -30,9 +32,35 @@ HRESULT CEdgRandomBall::Initialize(void* pArg)
 	m_fDamage = 30.f;
 	m_fSpeed = 100.f;
 	m_fRadius = 0.5f;
-	m_fMaxLife = 8.f;
+	m_fMaxLife = 6.f;
 
-	
+	{
+		CComPxRigidBody::DESC Desc{};
+		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
+		Desc.vPosition = GetTransform().GetPosition();
+		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody,
+			"ComPxRigidBody", &Desc, &m_pComRigidBody)))
+			return E_FAIL;
+	}
+
+	{
+		CComPxSphereCollider::DESC Desc{};
+		Desc.pComPxRigidBody = m_pComRigidBody;
+		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = m_fRadius });
+		Desc.bIsTrigger = false;
+		Desc.tFilter = PX_FILTER_DESC{ .iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),.iSimulationMask = 0,
+		.iQueryMask = 0 };
+
+		if (!Desc.pResMaterial || !Desc.pResSphereGeo || FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
+			"ComPxSphereCollider", &Desc, &m_pComSphereCollider)))
+			return E_FAIL;
+
+		//물리 충돌 사용안함
+		m_pComSphereCollider->SetSimulationEnabled(false);
+		m_pComSphereCollider->SetQueryEnabled(false);
+	}
 	return S_OK;
 }
 
@@ -43,7 +71,12 @@ void CEdgRandomBall::PriorityUpdate(E::_float fTimeDelta)
 	if (!m_bActive) return;
 
 	if (Life_Check(fTimeDelta))
-		SetPendingDestroy();
+	{
+		auto pSrc = Get_Owner();
+		if (nullptr == pSrc) return;
+
+		pSrc->Heal(20.f);
+	}
 }
 
 void CEdgRandomBall::FixedUpdate(E::_float fTimeDelta)
@@ -70,6 +103,8 @@ void CEdgRandomBall::LateUpdate(E::_float fTimeDelta)
 
 void CEdgRandomBall::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 {
+	if (nullptr == m_pComRigidBody || nullptr == m_pComSphereCollider) return;
+
 	m_eType = SkillTable.eType;
 	auto pOwner = Get_Owner();
 	if (nullptr == pOwner) return;
@@ -81,18 +116,22 @@ void CEdgRandomBall::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 
 	_float4x4 matB = Get_BoneMatrix(m_iBoneIndex);
 	_matrix matBone = XMLoadFloat4x4(&matB);
-	_vector vQuat = XMQuaternionRotationMatrix(matBone);
 	_vector vDir = XMVector3Normalize(vTarget - matBone.r[3]);
-	
-	GetTransform().SetPosition(matBone.r[3] + vDir * SkillTable.fDist);
+	_float4 vQuat{};
+	_float3 vPos{};
+	XMStoreFloat4(&vQuat, XMQuaternionRotationMatrix(matBone));
+	XMStoreFloat3(&vPos, matBone.r[3] + vDir * SkillTable.fDist);
+	GetTransform().SetPosition(XMLoadFloat3(&vPos));
 	GetTransform().SetQuaternion(vQuat);
 	GetTransform().Update();
 
-	
+	m_pComRigidBody->SetPose(vPos, vQuat);
+	m_pComSphereCollider->SetSimulationEnabled(false);
+	m_pComSphereCollider->SetQueryEnabled(true);
+
 	m_bActive = true;
 	m_bHit = false;
 	m_fLife = 0.f;
-	m_fMaxLife = SkillTable.fLifeTime;
 
 	uint32_t randomInt = RandInt(0, 2);
 
@@ -116,7 +155,49 @@ void CEdgRandomBall::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 
 void CEdgRandomBall::Cancle()
 {
+	if (m_pComSphereCollider)
+	{
+		m_pComSphereCollider->SetQueryEnabled(false);
+		m_pComSphereCollider->SetSimulationEnabled(false);
+	}
+
+	SetPendingDestroy();
 	ResetValue();
+}
+
+_bool CEdgRandomBall::Check_Table(PLAYER_SKILL_TYPE eType)
+{
+	if (eType == PLAYER_SKILL_TYPE::DEFAULT || eType == PLAYER_SKILL_TYPE::END
+		|| eType == PLAYER_SKILL_TYPE::ATTACK)
+		return false;
+
+	m_bHit = true;
+	
+	auto pDragon = Get_Owner();
+	if (nullptr == pDragon) return false;
+
+	pDragon->Check_Table(PLAYER_SKILL_TYPE::DESTORY);
+
+	if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
+	{
+		CGameInstance::Get().StopEffect(m_iEffectID);
+		m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
+
+	}
+
+	switch (m_eColor) {
+	case COLOR::YELLOW:
+		m_iEffectID = CGameInstance::Get().PlayEffect("YellowRingSplash", *m_pComTransform->GetWorldMatrix());
+		break;
+	case COLOR::PURPLE:
+		m_iEffectID = CGameInstance::Get().PlayEffect("PurpleRingSplash", *m_pComTransform->GetWorldMatrix());
+		break;
+	case COLOR::RED:
+		m_iEffectID = CGameInstance::Get().PlayEffect("RedRingSplash", *m_pComTransform->GetWorldMatrix());
+		break;
+
+	}
+	return true;
 }
 
 void CEdgRandomBall::Ball(_float fTimeDelta)

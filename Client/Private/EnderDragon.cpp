@@ -43,7 +43,7 @@ CEnderDragon::~CEnderDragon()
 
 void CEnderDragon::UpdateGUI()
 {
-	CGameObject::UpdateGUI();
+	__super::UpdateGUI();
 	ImGui::DragInt("HP", &m_iHp, 0, 1);
 	
 	if (ImGui::Button("AddWay"))
@@ -366,6 +366,7 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
 	InitializeEffects();
+
 	return S_OK;
 }
 HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
@@ -401,15 +402,19 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_MonSkillLists[ATTMON::SLOT6] = ETOUI(DRAGON_SKILL::BLACKBALL);
 	m_MonSkillLists[ATTMON::SLOT7] = ETOUI(DRAGON_SKILL::TURNBREATH);
 	m_MonSkillLists[ATTMON::SLOT8] = ETOUI(DRAGON_SKILL::LONGBREATH);
+	m_MonSkillLists[ATTMON::SLOT9] = ETOUI(DRAGON_SKILL::GASI);
+	m_MonSkillLists[ATTMON::SLOT10] = ETOUI(DRAGON_SKILL::GASIBREATH);
 	//////////////////////파티클 넣는곳/////////////////////////
 	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)]   = "FireBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)]	   = "DragonBreath";
 	m_EffectNames[ETOUI(DRAGON_SKILL::TURNBREATH)] = "DragonBreath";
 	m_EffectNames[ETOUI(DRAGON_SKILL::LONGBREATH)] = "DragonBreath";
+	m_EffectNames[ETOUI(DRAGON_SKILL::GASIBREATH)] = "DragonBreath";
 	m_EffectNames[ETOUI(DRAGON_SKILL::PULSE)]	   = "PulseSphere";
 	m_EffectNames[ETOUI(DRAGON_SKILL::RANDOMBALL)] = "RandomBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::THREEBALL)]  = "FireBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::BLACKBALL)]  = "BlackBall";
+	m_EffectNames[ETOUI(DRAGON_SKILL::GASI)]		= "BreathSpike";
 	////////////////////////////////////////////////////////////
 	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
 	int32_t iHeadBoneIndex{};
@@ -419,7 +424,6 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	iHeadBoneIndex = SkillDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Head");
 	SkillDesc.iOffsetBoneIndex = iOffsetBoneIndex;
 	SkillDesc.hOwner = GetHandle();
-	SkillDesc.eType = DRAGON_SKILL::BREATH;
 	auto BreathHandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, "03.Breath", &SkillDesc);
 	if (!BreathHandle) return E_FAIL;
 
@@ -427,9 +431,14 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	SkillDesc.eType = DRAGON_SKILL::PULSE;
 	auto PulseHandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Pulse, "03.Pulse", &SkillDesc);
 	if (!PulseHandle) return E_FAIL;
+
+
+	SkillDesc.eType = DRAGON_SKILL::GASI;
+	auto GasiHandle = CGameInstance::Get().AddGameObjectToLayer(LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Gasi, "03.Gasi", &SkillDesc);
+	if (!GasiHandle) return E_FAIL;
+
 	///////////
 
-	
 	m_SkillHandle[ETOUI(DRAGON_SKILL::FIREBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iHeadBoneIndex,
 	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, .NameTag = "03.FireBall",.iOffsetBoneIndex = iOffsetBoneIndex,
 	.eType = DRAGON_SKILL::FIREBALL};
@@ -441,7 +450,9 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_SkillHandle[ETOUI(DRAGON_SKILL::BLACKBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iHeadBoneIndex,
 	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_FireBall, .NameTag = "03.BlackBall",.iOffsetBoneIndex = iOffsetBoneIndex,
 	.eType = DRAGON_SKILL::BLACKBALL };
+
 	
+
 	int32_t iBallBone = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_Main");
 	m_SkillHandle[ETOUI(DRAGON_SKILL::RANDOMBALL)] = EDG_SKILL_INFO{ .bPool = false, .iBoneIndex = iBallBone,
 	.LevelTag = LevelTag, .ProtoTag = PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_RandomBall, .NameTag = "03.RandomBall", };
@@ -450,7 +461,10 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_SkillHandle[ETOUI(DRAGON_SKILL::LONGBREATH)] = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true };
 	m_SkillHandle[ETOUI(DRAGON_SKILL::TURNBREATH)] = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true};
 	m_SkillHandle[ETOUI(DRAGON_SKILL::BREATH)]	   = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true,};
+	m_SkillHandle[ETOUI(DRAGON_SKILL::GASIBREATH)] = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true, };
+
 	m_SkillHandle[ETOUI(DRAGON_SKILL::PULSE)]  = EDG_SKILL_INFO{.handle = PulseHandle.value() , .bPool = true,};
+	m_SkillHandle[ETOUI(DRAGON_SKILL::GASI)] = EDG_SKILL_INFO{ .handle = GasiHandle.value() , .bPool = true, };
 	return S_OK;
 }
 void CEnderDragon::Ready_BBKeyValue()
@@ -879,6 +893,9 @@ _bool CEnderDragon::BreakSkillType(PLAYER_SKILL_TYPE eType)
 		break;
 
 	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+		break;
+	case PLAYER_SKILL_TYPE::DESTORY:
+		return true;
 		break;
 	}
 	return false;

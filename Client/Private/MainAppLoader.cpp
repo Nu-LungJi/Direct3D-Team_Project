@@ -446,6 +446,15 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 		CGameInstance::Get().Load_ParticleJsonPackage(k);
 	}
 
+	{
+		auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleQueue", ".json");
+		if (FAILED(CGameInstance::Get().Load_ParticleQueueJsonPackage(k)))
+		{
+			MSG_BOX("PARTICLE QUEUE LOAD FAILED");
+			return E_FAIL;
+		}
+	}
+
 	//클라이언트 사운드 버스 초기화
 	{
 		if (FAILED(Initialize_Sound()))
@@ -654,6 +663,14 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		if (FAILED(res->Load()))
 		{
 			MSG_BOX("LOAD FAILED BALLSECOND JSON");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "GASIBREATH", CResJson::Create("./Resources/json/BeHavior/SubTree/GASIBREATH.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED GASIBREATH JSON");
 			return E_FAIL;
 		}
 	}

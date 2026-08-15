@@ -3272,11 +3272,11 @@ HRESULT CParticleManager::LoadParticlePresets(const std::string& strJsonPath)
 uint32_t CParticleManager::Spawn(const std::string& strJsonPath,
 	const _float4x4& worldMat, _fvector endPos)
 {
-	auto found = m_ParsedCommandCache.find(strJsonPath);
-	if (found == m_ParsedCommandCache.end())
-		found = m_ParsedCommandCache.emplace(strJsonPath, Parse_Command(strJsonPath)).first;
+	const auto* pCommands = FindCachedCommandQueue(strJsonPath);
+	if (nullptr == pCommands || pCommands->empty())
+		return INVALID_PARTICLE_OWNER_ID;
 
-	return Spawn(found->second, worldMat, endPos);
+	return Spawn(*pCommands, worldMat, endPos);
 }
 
 // 1) 순수 파싱: matWorld 관여 없음, 로컬값 그대로
@@ -3442,6 +3442,17 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 	return parsed;
 }
 // 2) 진짜 스폰: 이미 파싱된 벡터만 받아서 변환+실행
+const std::vector<SPAWN_COMMAND>* CParticleManager::FindCachedCommandQueue(const std::string& strJsonPath) const
+{
+	auto iter = m_ParsedCommandCache.find(strJsonPath);
+	if (iter != m_ParsedCommandCache.end())
+		return &iter->second;
+
+	const std::string fileName = std::filesystem::path(strJsonPath).filename().string();
+	iter = m_ParsedCommandCache.find(fileName);
+	return iter != m_ParsedCommandCache.end() ? &iter->second : nullptr;
+}
+
 uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateCommands,
 	const _float4x4& worldMat, _fvector endPos)
 {
@@ -3646,6 +3657,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeCone(param);
 			else if constexpr (std::is_same_v<T, SEnergySphere>)
 				return ParticlePattern::MakeEnergySphere(param);
+			else if constexpr (std::is_same_v<T, SSpikeParam>)
+				return ParticlePattern::MakeSpikePattern(param);
 			else if constexpr (std::is_same_v<T, SIrregularRingParam>)
 				return ParticlePattern::MakeIrregularRing(param);
 			else
@@ -3677,6 +3690,10 @@ void CParticleManager::ApplyStartEndToPattern(PatternParamVariant& pv, _fvector 
 			else if constexpr (std::is_same_v<T, SStraightGroundParam>)
 			{
 				XMStoreFloat3(&p.vStartPos, startPos);
+			}
+			else if constexpr (std::is_same_v<T, SSpikeParam>)
+			{
+				XMStoreFloat3(&p.vCenter, startPos);
 			}
 			//XMStoreFloat3(&p.vStartPos, startPos);
 			//XMStoreFloat3(&p.vEndPos, endPos);
@@ -3724,6 +3741,10 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
 			else if constexpr (std::is_same_v<T, SEnergySphere>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SSpikeParam>)
 			{
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
@@ -3840,6 +3861,40 @@ HRESULT CParticleManager::Load_ParticleJsonPackage(const std::vector<std::string
 	for (const auto& FilePath : _FilePathPackage) {
 		CGameInstance::Get().LoadParticleJson(FilePath.c_str());
 	}
+	return S_OK;
+}
+
+HRESULT CParticleManager::Load_ParticleQueueJsonPackage(const std::vector<std::string>& _FilePathPackage)
+{
+	if (_FilePathPackage.empty())
+		return E_FAIL;
+
+	std::unordered_map<std::string, std::vector<SPAWN_COMMAND>> parsedCommandCache;
+	parsedCommandCache.reserve(_FilePathPackage.size());
+
+	for (const std::string& filePath : _FilePathPackage)
+	{
+		const std::string fileName = std::filesystem::path(filePath).filename().string();
+		if (fileName.empty())
+			continue;
+
+		if (parsedCommandCache.contains(fileName))
+		{
+			OutputDebugStringA(("[ParticleQueue] Duplicate file name: " + fileName + "\n").c_str());
+			return E_FAIL;
+		}
+
+		auto commands = Parse_Command(fileName);
+		if (commands.empty())
+			OutputDebugStringA(("[ParticleQueue] Empty or invalid queue: " + fileName + "\n").c_str());
+
+		parsedCommandCache.emplace(fileName, std::move(commands));
+	}
+
+	if (parsedCommandCache.empty())
+		return E_FAIL;
+
+	m_ParsedCommandCache = std::move(parsedCommandCache);
 	return S_OK;
 }
 

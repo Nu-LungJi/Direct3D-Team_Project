@@ -1,7 +1,7 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
-enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL, TURNBREATH, THREEBALL, BLACKBALL,LONGBREATH,END};
+enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL, TURNBREATH, THREEBALL, BLACKBALL,LONGBREATH,GASI,GASIBREATH,END};
 enum class DRAGON_PHASE{PHASE1, PHASE2, PHASE3, PHASE4, PHASE5, PHASE6, PHASE7, END};
 enum class EDG_SPAWN_NUMBER { FIRST, SECOND, THIRD, FOUR };
 
@@ -99,7 +99,9 @@ public:
 	void						Check_Phase();
 	void						Set_AttTable(ATTMON eType, _float2 fSkillRatio) override;
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
-	EDG_SKILL_INFO&				 Get_SkillInfo(DRAGON_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
+	EDG_SKILL_INFO&				Get_SkillInfo(DRAGON_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
+	const _string&				Get_SkillNmae(DRAGON_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
+	void						Heal(uint32_t iHp) { m_iHp += iHp; if (m_iHp >= m_iMaxHp) m_iHp = m_iMaxHp; }
 private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;

@@ -364,6 +364,9 @@
     <Filter Include="GameObject\Player\Player_BombardaController">
       <UniqueIdentifier>{a21cbdd5-7eb1-4c65-8cba-a14935998a12}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\EnderDragon\Skill\Gasi">
+      <UniqueIdentifier>{a9ff708e-a308-4d48-99c3-2ed09296a5f9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -834,6 +837,12 @@
     <ClInclude Include="..\Public\Player_BombardaController.h">
       <Filter>GameObject\Player\Player_BombardaController</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\SkillTarget.h">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\EdgGasi.h">
+      <Filter>GameObject\Monster\EnderDragon\Skill\Gasi</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1252,6 +1261,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_BombardaController.cpp">
       <Filter>GameObject\Player\Player_BombardaController</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\SkillTarget.cpp">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EdgGasi.cpp">
+      <Filter>GameObject\Monster\EnderDragon\Skill\Gasi</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

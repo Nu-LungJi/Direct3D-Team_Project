@@ -51,9 +51,9 @@ void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
 	SetSkillControl(*pPlayer, true, true, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::ACCIO);
-	if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
-		pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
-	
+	//if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
+	//	pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
+	TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO); //창준 변경
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
 	m_bPulling = true;

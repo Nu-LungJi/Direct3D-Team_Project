@@ -531,18 +531,17 @@ PS_OUT PSOuterSphere(VS_OUT In)
 
 	float3 bodyColor = In.vColor.rgb * (0.015f + flowMask * 0.18f);
 	float3 flowColor = In.vColor.rgb * flowMask * 0.25f;
-	float3 flowEmissive = emissive.rgb * emissive.a * hotFlowMask * NdotV * 0.12f;
-	float3 rimGlowColor = In.vColor.rgb * rimGlowMask * 0.7f;
-	float3 rimLineColor = lerp(emissive.rgb, float3(1.f, 0.35f, 0.25f), 0.6f) * emissive.a * rimLineMask * 0.8f;
-	float3 whiteLineColor = float3(1.f, 0.92f, 0.86f) * emissive.a * whiteLineMask * 1.5f;
-	float3 finalColor = bodyColor + flowColor + flowEmissive + rimGlowColor + rimLineColor + whiteLineColor;
+	float maxColorChannel = max(max(In.vColor.r, In.vColor.g), In.vColor.b);
+	float3 rimTint = In.vColor.rgb / max(maxColorChannel, 0.0001f);
+	float rimCombinedMask = saturate(rimGlowMask * 0.2f + rimLineMask * 0.45f + whiteLineMask * 0.7f);
+	float3 rimBaseColor = rimTint * rimCombinedMask * 0.8f;
+	float3 rimEmissiveColor = rimTint * emissive.a * rimCombinedMask;
+	float3 finalColor = bodyColor + flowColor + rimBaseColor + rimEmissiveColor;
 
 	float bodyAlpha = In.vColor.a * (0.08f + flowMask * 0.35f);
 	float flowAlpha = hotFlowMask * 0.04f;
-	float rimGlowAlpha = rimGlowMask * 0.08f;
-	float rimLineAlpha = rimLineMask * 0.45f;
-	float whiteLineAlpha = whiteLineMask * 0.45f;
-	float finalAlpha = saturate(bodyAlpha + flowAlpha + rimGlowAlpha + rimLineAlpha + whiteLineAlpha);
+	float rimAlpha = rimCombinedMask * 0.85f;
+	float finalAlpha = saturate(bodyAlpha + flowAlpha + rimAlpha);
 
 	Out.vDiffuse = float4(finalColor, finalAlpha);
 	return Out;
