@@ -216,6 +216,7 @@
     <ClInclude Include="..\public\EdgPulse.h" />
     <ClInclude Include="..\public\EdgRandomBall.h" />
     <ClInclude Include="..\public\Edg_Combat.h" />
+    <ClInclude Include="..\public\Edg_Dead.h" />
     <ClInclude Include="..\public\Edg_Hit.h" />
     <ClInclude Include="..\public\Edg_Phase.h" />
     <ClInclude Include="..\public\Edg_Spawn.h" />
@@ -368,6 +369,7 @@
     <ClCompile Include="..\private\EdgGasi.cpp" />
     <ClCompile Include="..\private\EdgPulse.cpp" />
     <ClCompile Include="..\private\EdgRandomBall.cpp" />
+    <ClCompile Include="..\private\Edg_Dead.cpp" />
     <ClCompile Include="..\private\LevelLastBossRanrok.cpp" />
     <ClCompile Include="..\private\LevelLastBossRanrokLoader.cpp" />
     <ClCompile Include="..\private\BTDecEdgPatroll.cpp" />

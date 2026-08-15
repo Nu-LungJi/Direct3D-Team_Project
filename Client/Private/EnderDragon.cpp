@@ -22,6 +22,7 @@
 #include "Edg_Combat.h"
 #include "Edg_Hit.h"
 #include "Edg_Phase.h"
+#include "Edg_Dead.h"
 //BB
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
@@ -383,6 +384,8 @@ HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
 
 	if (false == m_pFsm->Add_State(EDG_STATE::PHASE_CHANGE, CEdg_Phase::Create(LevelTag))) return E_FAIL;
 
+	if (false == m_pFsm->Add_State(EDG_STATE::DEAD, CEdg_Dead::Create())) return E_FAIL;
+
 	if (false == m_pFsm->Initialize_State(EDG_STATE::SPAWN)) return E_FAIL;
 
 
@@ -464,7 +467,7 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_SkillHandle[ETOUI(DRAGON_SKILL::GASIBREATH)] = EDG_SKILL_INFO{ .handle = BreathHandle.value(),.bPool = true, };
 
 	m_SkillHandle[ETOUI(DRAGON_SKILL::PULSE)]  = EDG_SKILL_INFO{.handle = PulseHandle.value() , .bPool = true,};
-	m_SkillHandle[ETOUI(DRAGON_SKILL::GASI)] = EDG_SKILL_INFO{ .handle = GasiHandle.value() , .bPool = true, };
+	m_SkillHandle[ETOUI(DRAGON_SKILL::GASI)]   = EDG_SKILL_INFO{ .handle = GasiHandle.value() , .bPool = true,};
 	return S_OK;
 }
 void CEnderDragon::Ready_BBKeyValue()
@@ -476,6 +479,11 @@ void CEnderDragon::Ready_BBKeyValue()
 }
 void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_bEndGame)
+	{
+		SetPendingDestroy();
+		return;
+	}
 	if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_H))
 		m_bDebug = !m_bDebug;
 	
@@ -490,6 +498,7 @@ void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 
 void CEnderDragon::Update(E::_float fTimeDelta)
 {
+	if (m_bEndGame) return;
 	if (!m_bDebug) return;
 	__super::Update(fTimeDelta);
 	
@@ -497,6 +506,7 @@ void CEnderDragon::Update(E::_float fTimeDelta)
 
 void CEnderDragon::FixedUpdate(E::_float fTimeDelta)
 {
+	if (m_bEndGame) return;
 	if (!m_bDebug) return;
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
@@ -779,6 +789,11 @@ void CEnderDragon::Check_Phase()
 	_float fDis = XMVectorGetX(XMVector3Length(XMLoadFloat3(&DestPos) - XMLoadFloat3(&SrcPos)));
 
 	auto pFinished = pBB->Get_Value<_bool>(EDG_KEY::BSTATE_FINISHED);
+	if (m_iHp <= 0.f)
+	{
+		m_pFsm->Request_State(EDG_STATE::DEAD);
+		return;
+	}
 	if (nullptr == pFinished) return;
 
 	if (false == m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE2)] && m_iHp <= m_iMaxHp - m_iMaxHp / 8.f)
