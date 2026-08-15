@@ -205,13 +205,33 @@ _bool CEdgFireBall::MoveSweep(_vector vNextPos)
 	PX_SWEEP_RESULT SweepResult{} ;
 	auto pPhysX = CGameInstance::Get().GetPhysXManager();
 	if (nullptr == pPhysX) return false;
-
 	if (pPhysX->Sweep(SweepDesc, SweepResult) && SweepResult.bHit)
 	{
-		//auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(SweepResult.hGameObject);
-		//pTarget->OnQueryHit(m_fDamage);
 		m_bHit = true;
-		//펑
+
+		_vector vImpactForward = -XMVector3Normalize(XMLoadFloat3(&vDir));
+		_vector vWorldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+
+		if (fabsf(XMVectorGetX(XMVector3Dot(vImpactForward, vWorldUp))) > 0.999f)
+			vWorldUp = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+
+		_vector vImpactRight = XMVector3Normalize(XMVector3Cross(vWorldUp, vImpactForward));
+		_vector vImpactUp = XMVector3Normalize(XMVector3Cross(vImpactForward, vImpactRight));
+
+		_matrix matImpact = XMMatrixIdentity();
+		matImpact.r[0] = XMVectorSetW(vImpactRight, 0.f);
+		matImpact.r[1] = XMVectorSetW(vImpactUp, 0.f);
+		matImpact.r[2] = XMVectorSetW(vImpactForward, 0.f);
+		matImpact.r[3] = XMVectorSetW(XMLoadFloat3(&SweepResult.vHitpos), 1.f);
+
+		_float4x4 worldMat{};
+		XMStoreFloat4x4(&worldMat, matImpact);
+
+		if (m_eType == DRAGON_SKILL::FIREBALL)
+			CGameInstance::Get().PlayEffect("FireBallHit", worldMat);
+		else if (m_eType == DRAGON_SKILL::BLACKBALL || m_eType == DRAGON_SKILL::THREEBALL)
+			CGameInstance::Get().PlayEffect("BlackBallHit", worldMat);
+
 		return false;
 	}
 	return true;

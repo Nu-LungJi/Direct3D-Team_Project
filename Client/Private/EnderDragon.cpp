@@ -501,7 +501,66 @@ void CEnderDragon::Update(E::_float fTimeDelta)
 	if (m_bEndGame) return;
 	if (!m_bDebug) return;
 	__super::Update(fTimeDelta);
-	
+	Update_EnvironmentParticles(fTimeDelta);
+}
+
+void CEnderDragon::Update_EnvironmentParticles(_float fTimeDelta)
+{
+	m_fBlobEnvSpawnAcc += fTimeDelta;
+	m_fSwirlEnvSpawnAcc += fTimeDelta;
+
+	if (m_fBlobEnvSpawnAcc >= m_fBlobEnvSpawnInterval)
+	{
+		m_fBlobEnvSpawnAcc = 0.f;
+		m_fBlobEnvSpawnInterval = 0.5f;
+		Spawn_EnvironmentParticles(0, 1);
+	}
+
+	if (m_fSwirlEnvSpawnAcc >= m_fSwirlEnvSpawnInterval)
+	{
+		m_fSwirlEnvSpawnAcc = 0.f;
+		m_fSwirlEnvSpawnInterval = 1.5f;
+		const uint32_t iSwirlIndex = 1u + static_cast<uint32_t>(Randf(0.f, 4.999f));
+		Spawn_EnvironmentParticles(iSwirlIndex, 1);
+	}
+}
+
+void CEnderDragon::Spawn_EnvironmentParticles(uint32_t iParticleIndex, uint32_t iCount)
+{
+	struct ENV_PARTICLE_RESOURCE
+	{
+		const _char* pQueueName;
+	};
+
+	static constexpr ENV_PARTICLE_RESOURCE PARTICLE_RESOURCES[] =
+	{
+		{ "BlobEnv.json" },
+		{ "SwirlEnv1.json" },
+		{ "SwirlEnv2.json" },
+		{ "SwirlEnv3.json" },
+		{ "SwirlEnv4.json" },
+		{ "SwirlEnv5.json" }
+	};
+
+	if (iParticleIndex >= std::size(PARTICLE_RESOURCES) || 0u == iCount)
+		return;
+
+	const _float3 vBossPosition = GetTransform().GetPosition();
+	const ENV_PARTICLE_RESOURCE& resource = PARTICLE_RESOURCES[iParticleIndex];
+
+	for (uint32_t i = 0; i < iCount; ++i)
+	{
+		const _float fAngle = Randf(0.f, XM_2PI);
+		const _float fRadiusRatio = Randf(0.f, 1.f);
+		const _float fMinRadius = 10.f;
+		const _float fMaxRadius = 70.f;
+		const _float fRadius = sqrtf(fMinRadius * fMinRadius + fRadiusRatio * (fMaxRadius * fMaxRadius - fMinRadius * fMinRadius));
+		const _float3 vSpawnPosition = _float3(vBossPosition.x + cosf(fAngle) * fRadius, vBossPosition.y + Randf(-20.f, 20.f), vBossPosition.z + sinf(fAngle) * fRadius);
+
+		_float4x4 spawnWorld{};
+		XMStoreFloat4x4(&spawnWorld, XMMatrixTranslation(vSpawnPosition.x, vSpawnPosition.y, vSpawnPosition.z));
+		CGameInstance::Get().Spawn(resource.pQueueName, spawnWorld);
+	}
 }
 
 void CEnderDragon::FixedUpdate(E::_float fTimeDelta)
@@ -996,22 +1055,25 @@ void CEnderDragon::InitializeEffects()
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail1", "RanrokTrail1");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 45 / 255.f, 45 / 255.f, 15.f));
+
 	}
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail2", "RanrokTrail2");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 45 / 255.f, 45 / 255.f, 15.f));
+
 	}
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail3", "RanrokTrail3");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 45 / 255.f, 45 / 255.f, 15.f));
+
 	}
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail4", "RanrokTrail4");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 45 / 255.f, 45 / 255.f, 15.f));
 	}
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail5", "RanrokTrail5");

@@ -197,23 +197,23 @@ void CEdg_Spawn::Effect(CEnderDragon* pDragon, _float fTimeDelta)
 	_float3 vstart{};
 	_float3 vend{};
 	
-	vstart = TransformTrailPoint({ 0.f, 3.5f, 0.f });
+	vstart = TransformTrailPoint({ 0.f, 4.5f, 0.f });
 	vend = TransformTrailPoint({ 0.f, 2.5f, 0.f });
 	CGameInstance::Get().AddTrailPoint("RanrokTrail1", "RanrokTrail1", pDragon->GetHandle(), vstart, vend);
 	
-	vstart = TransformTrailPoint({ 0.f, 1.5f, -3.f });
+	vstart = TransformTrailPoint({ 0.f, 2.5f, -3.f });
 	vend = TransformTrailPoint({ 0.f, 0.5f, -3.f });
 	CGameInstance::Get().AddTrailPoint("RanrokTrail2", "RanrokTrail2", pDragon->GetHandle(), vstart, vend);
 	
-	vstart = TransformTrailPoint({ 0.f, 1.5f, 3.f });
+	vstart = TransformTrailPoint({ 0.f, 2.5f, 3.f });
 	vend = TransformTrailPoint({ 0.f, 0.5f, 3.f });
 	CGameInstance::Get().AddTrailPoint("RanrokTrail3", "RanrokTrail3", pDragon->GetHandle(), vstart, vend);
 	
-	vstart = TransformTrailPoint({ 0.f, -0.5f, -2.f });
+	vstart = TransformTrailPoint({ 0.f, 0.5f, -2.f });
 	vend = TransformTrailPoint({ 0.f, -1.5f, -2.f });
 	CGameInstance::Get().AddTrailPoint("RanrokTrail4", "RanrokTrail4", pDragon->GetHandle(), vstart, vend);
 	
-	vstart = TransformTrailPoint({ 0.f, -0.5f, 2.f });
+	vstart = TransformTrailPoint({ 0.f, 0.5f, 2.f });
 	vend = TransformTrailPoint({ 0.f, -1.5f, 2.f });
 	CGameInstance::Get().AddTrailPoint("RanrokTrail5", "RanrokTrail5", pDragon->GetHandle(), vstart, vend);
 	
