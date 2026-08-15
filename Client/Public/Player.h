@@ -102,9 +102,11 @@ public:
 	_bool OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,int32_t iDamage,const _float3& vHitPosition);
 	_bool OnQueryHit(int32_t iDamage,const _float3& vHitPosition);
 	_bool OnQueryHit(int32_t iDamage);
+	_bool RequestKnockdown(const _float3& vAttackPosition);
 	int32_t GetCurrentHp() const { return m_iHp; }
 	int32_t GetMaxHp() const { return m_iMaxHp; }
 	const _float3& GetLastHitPosition() const { return m_vLastHitPosition; }
+	const _float3& GetKnockdownAttackPosition() const { return m_vKnockdownAttackPosition; }
 private:
 	void HandleDeath();
 	void TriggerProtegoHit(const _float3& vHitPosition);
@@ -157,6 +159,7 @@ public:
 	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
+	void SetRootMotionTranslationScale(_float fScale) { m_fRootMotionTranslationScale = std::max(0.f, fScale); }
 	void ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta);
 	void ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_float fTimeDelta);
 	void ApplyGroundFollow(_float fFixedTimeDelta);
@@ -251,6 +254,7 @@ private:
 	_bool m_bMovementLocked{};
 	_bool m_bRootMotionRotationActive{};
 	_bool m_bRootMotionTranslationActive{};
+	_float m_fRootMotionTranslationScale{ 1.f };
 	_bool m_bRawMoveInput{};
 	_bool m_bSprintRequested{};
 	_float3 m_vRawMoveDirection{};
@@ -259,6 +263,7 @@ private:
 	_float m_fCurrentMoveSpeed{};
 	_float m_fJogSpeed{ 7.5f };
 	_float m_fSprintSpeed{ 15.f };
+	static constexpr int32_t KNOCKDOWN_DAMAGE_THRESHOLD = 50;
 	_float m_fAcceleration{ 12.f };
 	_float m_fDeceleration{ 18.f };
 	_float m_fJogDirectionResponse{ 7.f };
@@ -268,6 +273,7 @@ private:
 
 	_bool m_bDeathEventPublished{};
 	_float3 m_vLastHitPosition{};
+	_float3 m_vKnockdownAttackPosition{};
 	_float m_fGroundFollowProbeStartHeight{ 0.1f };
 	_float m_fGroundFollowMaxStepDown{ 0.5f };
 	_float m_fGroundFollowProbeRadius{ 0.2f };

@@ -31,6 +31,7 @@
 #include "Player_Roll_State.h"
 #include "Player_Attack_State.h"
 #include "Player_Hit_State.h"
+#include "Player_Knockdown_State.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
 #include "Player_AcientAttack_State.h"
@@ -374,6 +375,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::HIT,
 			CPlayer_Hit_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::KNOCKDOWN,
+			CPlayer_Knockdown_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -1203,6 +1210,22 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		vHitPosition.z += vRandomDirection.z * 2.48f;
 		OnQueryHit(20, vHitPosition);
 	}
+
+#ifdef _DEBUG
+	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_K))
+	{
+		// Knockdown debug: treat a point in front of the player as the attacker.
+		// RequestKnockdown does not change HP, so the full sequence can be tested repeatedly.
+		_vector vAttackPosition = GetTransform().GetState(STATE::POSITION);
+		_vector vLook = XMVectorSetY(GetTransform().GetState(STATE::LOOK), 0.f);
+		if (XMVectorGetX(XMVector3LengthSq(vLook)) > FLT_EPSILON)
+			vAttackPosition += XMVector3Normalize(vLook) * 2.f;
+
+		_float3 vAttackPositionValue{};
+		XMStoreFloat3(&vAttackPositionValue, vAttackPosition);
+		RequestKnockdown(vAttackPositionValue);
+	}
+#endif
 }
 
 
@@ -1298,9 +1321,12 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 		m_pComMoveIntent->ClearMoveIntent();
 
 		_float3 vVelocity = m_pComCharacterMotor->GetVelocity();
-		vVelocity.x = 0.f;
-		vVelocity.z = 0.f;
-		m_pComCharacterMotor->SetVelocity(vVelocity);
+		if (!m_pComCharacterMotor->IsPreservingHorizontalVelocity())
+		{
+			vVelocity.x = 0.f;
+			vVelocity.z = 0.f;
+			m_pComCharacterMotor->SetVelocity(vVelocity);
+		}
 	}
 
 	ApplyGroundFollow(fTimeDelta);
@@ -1718,7 +1744,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 		// 기준으로 월드 변환해야 Turn 중 이동 방향이 회전 후 방향으로
 		// 한 프레임 먼저 꺾이지 않는다.
 		const _vector vWorldDelta = XMVector3Rotate(
-			XMLoadFloat3(&vRootMotionDelta),
+			XMLoadFloat3(&vRootMotionDelta) * m_fRootMotionTranslationScale,
 			GetTransform().GetLoadedQuaternion());
 		XMStoreFloat3(
 			&vRootMotionWorldDisplacement,
@@ -2150,7 +2176,12 @@ _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,i
 	if (m_iHp <= 0)
 		HandleDeath();
 	else if (m_pStateMachine)
-		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	{
+		if (iDamage >= KNOCKDOWN_DAMAGE_THRESHOLD)
+			RequestKnockdown(pAttacker ? pAttacker->GetTransform().GetPosition() : vHitPosition);
+		else
+			m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	}
 
 	return true;
 }
@@ -2179,7 +2210,12 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 	if (m_iHp <= 0)
 		HandleDeath();
 	else if (m_pStateMachine)
-		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	{
+		if (iDamage >= KNOCKDOWN_DAMAGE_THRESHOLD)
+			RequestKnockdown(vHitPosition);
+		else
+			m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	}
 	return true;
 }
 
@@ -2214,8 +2250,33 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 	if (m_iHp <= 0)
 		HandleDeath();
 	else if (m_pStateMachine)
-		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	{
+		if (iDamage >= KNOCKDOWN_DAMAGE_THRESHOLD)
+		{
+			_float3 vAttackPosition{};
+			if (auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget))
+				vAttackPosition = pTarget->GetTransform().GetPosition();
+			else
+			{
+				_vector vFallback = GetTransform().GetState(STATE::POSITION) +
+					XMVector3Normalize(GetTransform().GetState(STATE::LOOK)) * 2.f;
+				XMStoreFloat3(&vAttackPosition, vFallback);
+			}
+			RequestKnockdown(vAttackPosition);
+		}
+		else
+			m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	}
 	return true;
+}
+
+_bool CPlayer::RequestKnockdown(const _float3& vAttackPosition)
+{
+	if (!m_pStateMachine || m_iHp <= 0 || m_bInvincible || m_bProtegoActive)
+		return false;
+
+	m_vKnockdownAttackPosition = vAttackPosition;
+	return m_pStateMachine->RequestState(PLAYER_STATE::KNOCKDOWN);
 }
 
 void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)

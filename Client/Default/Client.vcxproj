@@ -293,6 +293,7 @@
     <ClInclude Include="..\public\NvClothCape.h" />
     <ClInclude Include="..\public\OilBarrel.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
+    <ClInclude Include="..\Public\Player_Knockdown_State.h" />
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h" />
     <ClInclude Include="..\Public\Player_ProtegoSkill_State.h" />
     <ClInclude Include="..\Public\Player_StupefySkill_State.h" />
@@ -448,6 +449,7 @@
     <ClCompile Include="..\private\NvClothCape.cpp" />
     <ClCompile Include="..\private\OilBarrel.cpp" />
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
+    <ClCompile Include="..\Private\Player_Knockdown_State.cpp" />
     <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_StupefySkill_State.cpp" />

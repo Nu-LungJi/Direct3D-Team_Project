@@ -125,6 +125,7 @@ _bool CPlayer_StateMachine::CanTransition(PLAYER_STATE eCurrent, PLAYER_STATE eN
 	{
 		return eNext == PLAYER_STATE::LOCOMOTION ||
 			eNext == PLAYER_STATE::HIT ||
+			eNext == PLAYER_STATE::KNOCKDOWN ||
 			eNext == PLAYER_STATE::DEAD;
 	}
 
@@ -136,6 +137,7 @@ uint32_t CPlayer_StateMachine::GetTransitionPriority(PLAYER_STATE eState) const
 	switch (eState)
 	{
 	case PLAYER_STATE::DEAD:   return 100;
+	case PLAYER_STATE::KNOCKDOWN: return 90;
 	case PLAYER_STATE::HIT:    return 80;
 	case PLAYER_STATE::ROLL:   return 60;
 	case PLAYER_STATE::JUMP:   return 50;
