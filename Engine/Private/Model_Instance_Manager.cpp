@@ -6,6 +6,7 @@
 #include "ComModelInstance.h"
 #include "ComStaticModelInstance.h"
 #include "ResModel.h"
+#include "ResModelAnim.h"
 
 NS_USING(Engine)
 
@@ -67,6 +68,13 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 	InstanceData.iFlags = iFlags;
 	InstanceData.fTrackPosition = AnimState.fTrackPosition;
 	InstanceData.iRootBoneIndex = pAnimator->GetRootBoneIndex();
+	if (iAnimIndex < pModel->GetAnimations().size() && pModel->GetAnimations()[iAnimIndex])
+	{
+		pModel->GetAnimations()[iAnimIndex]->SampleMorphWeights(
+			AnimState.fTrackPosition,
+			InstanceData.vMorphIndices,
+			InstanceData.vMorphWeights);
+	}
 	
 	if (pAnimator->IsBlending())
 	{
@@ -672,6 +680,8 @@ HRESULT CModel_Instance_Manager::Bind_SkinMeshConstantBuffer(ID3D11DeviceContext
 	skinningConstants.iVertexCount = mesh->GetNumVertices();
 	skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
 	skinningConstants.iBonePaletteStride = BoneStride;
+	skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
+	skinningConstants.iMorphVertexCount = mesh->GetNumVertices();
 	auto SKM_CB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 	if (!SKM_CB) return E_FAIL;
 
@@ -689,6 +699,10 @@ HRESULT CModel_Instance_Manager::Bind_SkinMeshConstantBuffer(ID3D11DeviceContext
 	if (!pSkinBonesSRV)	return E_FAIL;
 
 	pContext->VSSetShaderResources(8, 1, &pSkinBonesSRV);
+	ID3D11ShaderResourceView* pMorphSRV = nullptr;
+	if (const auto& morphBuffer = mesh->GetMorphDeltaBuffer())
+		pMorphSRV = morphBuffer->GetSRV().Get();
+	pContext->VSSetShaderResources(9, 1, &pMorphSRV);
 
 	return S_OK;
 }

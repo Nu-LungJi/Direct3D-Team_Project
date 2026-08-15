@@ -1933,6 +1933,8 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
 		skinningConstants.iVertexCount = mesh->GetNumVertices();
 		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+		skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
+		skinningConstants.iMorphVertexCount = mesh->GetNumVertices();
 
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
@@ -1941,6 +1943,10 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
 		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+		ID3D11ShaderResourceView* morphSRV = nullptr;
+		if (const auto& morphBuffer = mesh->GetMorphDeltaBuffer())
+			morphSRV = morphBuffer->GetSRV().Get();
+		pContext->VSSetShaderResources(9, 1, &morphSRV);
 		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 		const UINT stride = mesh->GetVertexStride();
 		const UINT offset = 0;
@@ -1953,8 +1959,8 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
-	ID3D11ShaderResourceView* nullVSSRVs[3]{};
-	pContext->VSSetShaderResources(6, 3, nullVSSRVs);
+	ID3D11ShaderResourceView* nullVSSRVs[4]{};
+	pContext->VSSetShaderResources(6, 4, nullVSSRVs);
 
 	return S_OK;
 }
