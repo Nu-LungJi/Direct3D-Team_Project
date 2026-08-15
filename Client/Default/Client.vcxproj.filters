@@ -1315,5 +1315,32 @@
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCorruption.hlsl">
       <Filter>ShaderFiles\Decal</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokVein.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokBlight.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCore.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCrackedRock.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokWallRift.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokSurface.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokImpactScorch.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokEnergyPool.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokOrbGround.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

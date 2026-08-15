@@ -528,6 +528,15 @@
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle_Smoke.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl" />
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCorruption.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokVein.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokBlight.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCore.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCrackedRock.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokWallRift.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokSurface.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokImpactScorch.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokEnergyPool.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokOrbGround.hlsl" />
   </ItemGroup>
   <ItemDefinitionGroup>
     <FxCompile>

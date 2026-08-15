@@ -182,7 +182,10 @@ namespace
 }
 	void DrawDecalVolumeInspector(E::CDecalVolume& decal)
 	{
-		const auto materialFiles = E::CDecalMaterial::FindMaterialFiles("./DecalMaterials");
+		auto materialFiles = E::CDecalMaterial::FindMaterialFiles("./DecalMaterials");
+		const auto clientMaterialFiles = E::CDecalMaterial::FindMaterialFiles("./Resources/json/DecalMaterials");
+		materialFiles.insert(materialFiles.end(), clientMaterialFiles.begin(), clientMaterialFiles.end());
+		std::sort(materialFiles.begin(), materialFiles.end());
 		const auto& currentMaterial = decal.GetMaterial();
 		const std::string materialPreview = currentMaterial
 			? currentMaterial->GetName()
