@@ -18,6 +18,16 @@ public:
 		COMPLETED
 	};
 
+	enum class COMPLETION_PHASE
+	{
+		NONE,
+		SUCCESS_ANIMATION,
+		CENTER_DELAY,
+		CENTER_MOVE,
+		CENTER_HOLD,
+		EXITING
+	};
+
 private:
 	struct SUCCESS_EFFECT
 	{
@@ -45,6 +55,13 @@ private:
 	};
 
 	struct TRANSIENT_EFFECT
+	{
+		CHandle Handle{};
+		_float RemainingTime{};
+		_float Duration{};
+	};
+
+	struct BOOST_TRAIL_PARTICLE
 	{
 		CHandle Handle{};
 		_float RemainingTime{};
@@ -93,6 +110,16 @@ private:
 	void UpdateArrowVisual(
 		const _float2& position,
 		const _float2& facingDirection);
+	_bool CreateBoostTrailPool(const std::string& currentLevel);
+	void UpdateBoostTrailEmitter(
+		_float fTimeDelta,
+		const _float2& position,
+		const _float2& facingDirection);
+	void UpdateBoostTrailParticles(_float fTimeDelta);
+	void EmitBoostTrailParticle(
+		const _float2& position,
+		const _float2& facingDirection);
+	void ClearBoostTrailParticles();
 	void UpdateIntro(_float fTimeDelta);
 	void SetIntroAlpha(_float alpha);
 	void UpdateIntroPadScales(_float elapsedTime);
@@ -105,6 +132,20 @@ private:
 	void ResetBoostPads();
 	void SetStartPadVisible(_bool visible);
 	void SetCursorVisible(_bool visible);
+	_bool CreateDestinationSuccessFlame(
+		const _float2& destinationPosition,
+		const std::string& currentLevel);
+	void PlayDestinationSuccessFlame();
+	void ResetDestinationSuccessFlame();
+	void PlayDestinationSuccessMeterScale();
+	void ResetDestinationSuccessMeterScale();
+	void PlayDestinationSuccessDiamondPulse();
+	void ResetDestinationSuccessDiamondPulse();
+	void UpdateCompletionSequence(_float fTimeDelta);
+	void PlayCompletionCenterTransition();
+	void FadeOutCompletionSecondaryVisuals();
+	void PlayCompletionExitTransition();
+	void FadeOutUIHierarchy(CHandle rootHandle, _float duration);
 	SUCCESS_EFFECT CreateMagicBurst(const _float2& position);
 	void PlayMagicBurst(
 		const SUCCESS_EFFECT& effect,
@@ -139,11 +180,16 @@ private:
 	_float m_fChaserPathDistance{};
 	_float m_fChaserStartDelayRemaining{};
 	_float m_fIntroElapsed{};
+	_float m_fCompletionPhaseElapsed{};
 	_float2 m_vLastFacingDirection{ 0.f, -1.f };
 	_bool m_bChaserActive{};
 	_bool m_bStartPadIntroRevealed{};
+	COMPLETION_PHASE m_eCompletionPhase{ COMPLETION_PHASE::NONE };
 	std::vector<BOOST_PAD> m_BoostPads{};
 	std::vector<TRANSIENT_EFFECT> m_TransientEffects{};
+	std::vector<BOOST_TRAIL_PARTICLE> m_BoostTrailParticles{};
+	_float m_fBoostTrailSpawnAccumulator{};
+	size_t m_iNextBoostTrailParticle{};
 
 	CHandle m_hPath{};
 	CHandle m_hIntroPathProgress{};
@@ -152,6 +198,8 @@ private:
 	CHandle m_hChaserCursor{};
 	CHandle m_hDestinationSpellMeter{};
 	CHandle m_hDestinationSpellMeterBorder{};
+	CHandle m_hDestinationSuccessDiamond{};
+	CHandle m_hDestinationSuccessFlame{};
 	CHandle m_hArrow{};
 	CHandle m_hCursor{};
 	CHandle m_hStartPadBackdrop{};
@@ -173,8 +221,35 @@ private:
 	static constexpr _float CURSOR_SIZE = 24.f;
 	static constexpr _float CURSOR_ARROW_SIZE = 72.f;
 	static constexpr _float CURSOR_ARROW_ORBIT_RADIUS = 14.f;
+	static constexpr size_t BOOST_TRAIL_POOL_SIZE = 18;
+	static constexpr _float BOOST_TRAIL_SIZE = 48.f;
+	static constexpr _float BOOST_TRAIL_END_SIZE_SCALE = 1.25f;
+	static constexpr _float BOOST_TRAIL_BACK_OFFSET = 18.f;
+	static constexpr _float BOOST_TRAIL_MAX_ALPHA = 0.46f;
+	static constexpr _float BOOST_TRAIL_SPAWN_INTERVAL = 0.055f;
+	static constexpr _float BOOST_TRAIL_PARTICLE_DURATION = 0.75f;
+	static constexpr _float BOOST_TRAIL_FLIPBOOK_DURATION = 0.75f;
 	static constexpr _float DESTINATION_SPELL_METER_SIZE = 120.f;
-	static constexpr _float DESTINATION_SPELL_METER_BORDER_SIZE = 136.f;
+	static constexpr _float DESTINATION_SPELL_METER_BORDER_SIZE = 132.f;
+	static constexpr _float DESTINATION_SUCCESS_FLAME_WIDTH = 198.f;
+	static constexpr _float DESTINATION_SUCCESS_FLAME_HEIGHT = 308.f;
+	static constexpr _float DESTINATION_SUCCESS_FLAME_OFFSET_Y = -92.f;
+	static constexpr _float DESTINATION_SUCCESS_FLAME_FADE_TIME = 0.28f;
+	static constexpr _float DESTINATION_SUCCESS_ANIMATION_DURATION = 0.4f;
+	static constexpr _float DESTINATION_SUCCESS_METER_SCALE = 1.2f;
+	static constexpr _float DESTINATION_SUCCESS_FLAME_SCALE = 1.2f;
+	static constexpr _float DESTINATION_SUCCESS_CENTER_DELAY = 0.5f;
+	static constexpr _float DESTINATION_SUCCESS_CENTER_MOVE_DURATION = 1.f;
+	static constexpr _float DESTINATION_SUCCESS_CENTER_HOLD_DURATION = 2.f;
+	static constexpr _float DESTINATION_SUCCESS_EXIT_DURATION = 0.3f;
+	// Rotating the square texture by 45 degrees makes its bounding diamond
+	// match the 120-pixel spell meter at this corrected starting size.
+	static constexpr _float DESTINATION_SUCCESS_DIAMOND_START_SIZE =
+		DESTINATION_SPELL_METER_SIZE * 0.70710678f;
+	static constexpr _float DESTINATION_SUCCESS_DIAMOND_END_SIZE =
+		DESTINATION_SUCCESS_DIAMOND_START_SIZE * 2.f;
+	static constexpr _float DESTINATION_SUCCESS_DIAMOND_DURATION =
+		DESTINATION_SUCCESS_ANIMATION_DURATION;
 	// Leave a subtle gap inside the callout ring's black center.
 	static constexpr _float BOOST_PAD_ICON_SIZE = 28.f;
 	static constexpr _float BOOST_PAD_BACKDROP_SIZE = 50.f;
@@ -185,8 +260,8 @@ private:
 	static constexpr _float MAGIC_BURST_CORE_GROW_TIME = 0.35f;
 	static constexpr _float MAGIC_BURST_CORE_RETURN_TIME = 0.65f;
 	static constexpr _float BOOST_PAD_TRIGGER_RANGE = 36.f;
-	static constexpr _float BOOST_DURATION = 0.85f;
-	static constexpr _float BOOST_MAX_MULTIPLIER = 2.5f;
+	static constexpr _float BOOST_DURATION = 1.f;
+	static constexpr _float BOOST_MAX_MULTIPLIER = 3.f;
 	static constexpr _float BOOST_SUCCESS_SMOKE_DURATION = 1.5f;
 	static constexpr _float INTRO_SMOKE_DURATION =
 		BOOST_SUCCESS_SMOKE_DURATION * (2.f / 3.f);
