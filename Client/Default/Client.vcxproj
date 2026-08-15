@@ -292,11 +292,13 @@
     <ClInclude Include="..\Public\Player_Hit_State.h" />
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h" />
     <ClInclude Include="..\Public\Player_ProtegoSkill_State.h" />
+    <ClInclude Include="..\Public\Player_StupefySkill_State.h" />
     <ClInclude Include="..\public\RagdollTest.h" />
     <ClInclude Include="..\public\TestPathPlaybackObject.h" />
     <ClInclude Include="..\public\LuaTestObject.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
+    <ClInclude Include="..\Public\Player_BombardaController.h" />
     <ClInclude Include="..\Public\Player_ConfringoController.h" />
     <ClInclude Include="..\Public\PlayerRagdollController.h" />
     <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
@@ -314,7 +316,9 @@
     <ClInclude Include="..\Public\Player_LumosSkill_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
     <ClInclude Include="..\Public\Player_Jump_State.h" />
+    <ClInclude Include="..\Public\Player_Bombarda_Bullet.h" />
     <ClInclude Include="..\Public\Player_Confringo_Bullet.h" />
+    <ClInclude Include="..\Public\Player_Stupefy_Bullet.h" />
     <ClInclude Include="..\Public\Player_Magic_Bullet.h" />
     <ClInclude Include="..\Public\Player_Roll_State.h" />
     <ClInclude Include="..\Public\Player_SkillStateBase.h" />
@@ -439,10 +443,12 @@
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
     <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_StupefySkill_State.cpp" />
     <ClCompile Include="..\private\RagdollTest.cpp" />
     <ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
     <ClCompile Include="..\private\LuaTestObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
+    <ClCompile Include="..\Private\Player_BombardaController.cpp" />
     <ClCompile Include="..\Private\Player_ConfringoController.cpp" />
     <ClCompile Include="..\Private\PlayerRagdollController.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
@@ -459,7 +465,9 @@
     <ClCompile Include="..\Private\Player_LumosSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
+    <ClCompile Include="..\Private\Player_Bombarda_Bullet.cpp" />
     <ClCompile Include="..\Private\Player_Confringo_Bullet.cpp" />
+    <ClCompile Include="..\Private\Player_Stupefy_Bullet.cpp" />
     <ClCompile Include="..\Private\Player_Magic_Bullet.cpp" />
     <ClCompile Include="..\Private\Player_Roll_State.cpp" />
     <ClCompile Include="..\Private\Player_SkillStateBase.cpp" />

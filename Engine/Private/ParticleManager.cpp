@@ -614,12 +614,14 @@ void CParticleManager::UpdateGUI()
 		ImGui::InputText("VIBuffer2  if CPUTEX", szViBuffer2, IM_ARRAYSIZE(szViBuffer2));
 	}
 	static bool bShrinkWidth = true;
+	static bool bIdleRetractEnabled = true;
 	static int iTrailBehaviorMode = 1;
 	const char* trailBehaviorModeNames[] = { "Legacy", "Stabilized" };
 
 	if (particleTypeStr == "TRAIL_CPU")
 	{
 		ImGui::Checkbox("Shrink Width", &bShrinkWidth);
+		ImGui::Checkbox("Idle Retract", &bIdleRetractEnabled);
 		ImGui::Combo("Trail Behavior", &iTrailBehaviorMode,
 			trailBehaviorModeNames, IM_ARRAYSIZE(trailBehaviorModeNames));
 
@@ -804,7 +806,8 @@ void CParticleManager::UpdateGUI()
 						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID1,
 						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID2,
 						slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
-						iSelectedBlend, bShrinkWidth, fMaxDuration, iTrailBehaviorMode);
+						iSelectedBlend, bShrinkWidth, fMaxDuration,
+						iTrailBehaviorMode, bIdleRetractEnabled);
 				}
 			}
 
@@ -1873,7 +1876,7 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	const std::string& AnyTexID2,
 	const std::string& AnyTexPath,
 	int iSelectedBlend, _bool bShrinkWidth, _float fMaxduration,
-	int iTrailBehaviorMode)
+	int iTrailBehaviorMode, _bool bIdleRetractEnabled)
 {
 	if (outpath.empty() || FullPath.empty())
 		return E_FAIL;
@@ -1963,6 +1966,8 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 			newEntry["ShrinkWidth"] = bShrinkWidth;
 			newEntry["MaxDuration"] = fMaxduration;
 			newEntry["TrailBehaviorMode"] = iTrailBehaviorMode;
+			// [LSY] 키가 없는 기존 JSON은 로드 시 true를 사용하므로 기존 동작을 유지한다.
+			newEntry["IdleRetractEnabled"] = bIdleRetractEnabled;
 		} 
 	}
 	else if (whatKind == "MESH")
@@ -2711,6 +2716,8 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.TexColumns = ColCount;
 				desc.bShrinkWidth = entry.value("ShrinkWidth", true);
 				desc.fMaxDuration = entry.value("MaxDuration", 0.f);
+				// [LSY] 기존 데이터 호환을 위해 누락 시 기존 강제 축소 동작을 사용한다.
+				desc.bIdleRetractEnabled = entry.value("IdleRetractEnabled", true);
 				const int iTrailBehaviorMode = entry.value("TrailBehaviorMode", 1);
 				desc.eBehaviorMode = iTrailBehaviorMode == 0
 					? CTrail_CPU::TRAIL_BEHAVIOR_MODE::LEGACY
@@ -3639,6 +3646,8 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeCone(param);
 			else if constexpr (std::is_same_v<T, SEnergySphere>)
 				return ParticlePattern::MakeEnergySphere(param);
+			else if constexpr (std::is_same_v<T, SIrregularRingParam>)
+				return ParticlePattern::MakeIrregularRing(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
@@ -3715,6 +3724,10 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
 			else if constexpr (std::is_same_v<T, SEnergySphere>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SIrregularRingParam>)
 			{
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}

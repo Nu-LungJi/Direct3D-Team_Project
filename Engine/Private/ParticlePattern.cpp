@@ -117,6 +117,63 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircleAndSpread(const SCir
 	return spawnList;
 }
 
+std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeIrregularRing(const SIrregularRingParam& param)
+{
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(param.iCount);
+	if (param.iCount == 0)
+		return spawnList;
+
+	const _float angleStep = XM_2PI / static_cast<_float>(param.iCount);
+	const _float angleJitter = XMConvertToRadians(param.fAngleJitterDegree);
+	const _float lifeMin = std::min(param.fLifeMin, param.fLifeMax);
+	const _float lifeMax = std::max(param.fLifeMin, param.fLifeMax);
+	const _float coherentPhase = Randf(0.f, XM_2PI);
+
+	for (uint32_t i = 0; i < param.iCount; ++i)
+	{
+		auto& spawn = spawnList[i];
+		const _float angle = angleStep * static_cast<_float>(i) +
+			Randf(-angleJitter, angleJitter);
+		// Low-frequency harmonics keep neighbouring particles moving together.
+		// The ring bends into broad lobes instead of dissolving into random noise.
+		const _float coherentRadial =
+			sinf(angle * 2.f + coherentPhase) * 0.62f +
+			sinf(angle * 3.f - coherentPhase * 0.73f) * 0.28f +
+			sinf(angle - coherentPhase * 0.31f) * 0.1f;
+		const _float radialScale = std::max(0.05f,
+			1.f + coherentRadial * param.fCoherentWarp +
+			Randf(-param.fRadialJitter, param.fRadialJitter));
+		const _float radialSpeed = param.fBaseSpeed * radialScale;
+		const _float coherentTangent =
+			sinf(angle * 2.f + coherentPhase + XM_PIDIV2) * 0.7f +
+			sinf(angle * 4.f - coherentPhase) * 0.3f;
+		const _float tangentSpeed = coherentTangent * param.fTangentialJitter +
+			Randf(-param.fTangentialJitter * 0.08f,
+				param.fTangentialJitter * 0.08f);
+		const _float cosAngle = cosf(angle);
+		const _float sinAngle = sinf(angle);
+
+		spawn.position = param.vCenter;
+		spawn.velocity = {
+			cosAngle * radialSpeed - sinAngle * tangentSpeed + param.vWind.x,
+			sinAngle * radialSpeed + cosAngle * tangentSpeed + param.vWind.y,
+			0.f
+		};
+		spawn.life = Randf(lifeMin, lifeMax);
+		spawn.spawnDelay = Randf(0.f, std::max(0.f, param.fSpawnDelayMax));
+		spawn.fSize = param.fSize;
+		spawn.fEndSize = param.fEndSize;
+		spawn.color = param.color;
+		spawn.emissive = { param.emissive.x, param.emissive.y,
+			param.emissive.z, param.startIntensity };
+		spawn.endEmissive = { param.endEmissive.x, param.endEmissive.y,
+			param.endEmissive.z, param.endIntensity };
+		spawn.iBehaviorType = param.iBehaviorType;
+		spawn.originalPosition = param.vCenter;
+	}
+	return spawnList;
+}
+
 std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSpiral(const SSpiralParam& param)
 {
 	return std::vector<PARTICLE_SPAWN_DATA>();

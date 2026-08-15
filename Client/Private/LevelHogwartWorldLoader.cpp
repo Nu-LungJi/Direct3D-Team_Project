@@ -8,7 +8,9 @@
 #include "PlayerThirdPersonCamera.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
+#include "Player_Bombarda_Bullet.h"
 #include "Player_Confringo_Bullet.h"
+#include "Player_Stupefy_Bullet.h"
 #include "NvClothCape.h"
 #include "ResNvClothMesh.h"
 
@@ -146,6 +148,14 @@ HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
 			LEVEL::HOGWART_WORLD,
 			PROTO_GAMEOBJECT::Prototype_GameObject_PlayerConfringoBullet,
 			CPlayer_Confringo_Bullet::Create())) ||
+		FAILED(gameInstance.AddPrototype(
+			LEVEL::HOGWART_WORLD,
+			PROTO_GAMEOBJECT::Prototype_GameObject_PlayerBombardaBullet,
+			CPlayer_Bombarda_Bullet::Create())) ||
+		FAILED(gameInstance.AddPrototype(
+			LEVEL::HOGWART_WORLD,
+			PROTO_GAMEOBJECT::Prototype_GameObject_PlayerStupefyBullet,
+			CPlayer_Stupefy_Bullet::Create())) ||
 		FAILED(gameInstance.AddPrototype(
 			LEVEL::HOGWART_WORLD,
 			PROTO_GAMEOBJECT::Prototype_GameObject_Player,

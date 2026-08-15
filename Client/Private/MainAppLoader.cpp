@@ -276,6 +276,22 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_KMS_STUPEFY_TRAIL", CResVertexShader::Create("./ShaderFiles/Shader_Stupefy_Trail.hlsl")))
+	{
+		if (!res)
+		{
+			MSG_BOX("Failed to load Stupefy trail vertex shader");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_KMS_STUPEFY_TRAIL", CResPixelShader::Create("./ShaderFiles/Shader_Stupefy_Trail.hlsl")))
+	{
+		if (!res)
+		{
+			MSG_BOX("Failed to load Stupefy trail pixel shader");
+			return E_FAIL;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SPLASH_TEX", CResVertexShader::Create("./ShaderFiles/Shader_GPU_Splash.hlsl")))
 	{
 		if (!res)
