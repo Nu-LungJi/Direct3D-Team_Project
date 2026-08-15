@@ -105,11 +105,11 @@ private:
 	_float m_fSpeedEffectStartSpeed{ 14.f };
 	_float m_fSpeedEffectFullSpeed{ 36.f };
 	_float m_fSpeedEffectResponse{ 3.5f };
-	// 최고 속도에서 FOV를 좁혀 캐릭터 중심의 렌즈 줌을 만든다.
-	_float m_fSpeedFovExpansion{ -8.f };
+	// 최고 속도에서 FOV를 넓혀 주변부가 빠르게 벌어지는 부스트 원근감을 만든다.
+	_float m_fSpeedFovExpansion{ 8.f };
 	// FOV 확장으로 캐릭터가 작아지는 만큼 고속에서 카메라를 가까이 당긴다.
-	// 최고 속도에서는 약 5.0까지 가까워져 원작처럼 화면을 꽉 채운다.
-	_float m_fSpeedDistanceExtension{ -0.6f };
+	// 최고 속도에서는 약 5.2까지 가까워져 캐릭터 크기를 보정한다.
+	_float m_fSpeedDistanceExtension{ -0.4f };
 	_float m_fTurbulenceElapsed{};
 	_float m_fTurbulenceMinFrequency{ 8.f };
 	_float m_fTurbulenceMaxFrequency{ 14.f };

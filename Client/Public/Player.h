@@ -180,6 +180,7 @@ public:
 	CHandle& GetWeaponHandle() { return m_Partes[ETOUI(PARTES::WEAPON)]; }
 	void SetBroomVisible(_bool bVisible);
 	void SetBroomMovementRatio(_float fRatio);
+	void SetBroomBoostEffectRatio(_float fRatio);
 	_bool IsBroomVisible() const;
 
 

@@ -2702,6 +2702,15 @@ void CPlayer::SetBroomMovementRatio(_float fRatio)
 	}
 }
 
+void CPlayer::SetBroomBoostEffectRatio(_float fRatio)
+{
+	if (auto* pBroom = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Broom>(
+		m_Partes[ETOUI(PARTES::BROOM)]))
+	{
+		pBroom->SetBoostEffectRatio(fRatio);
+	}
+}
+
 _bool CPlayer::IsBroomVisible() const
 {
 	if (auto* pBroom = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Broom>(

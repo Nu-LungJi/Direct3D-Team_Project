@@ -29,6 +29,7 @@ void CPlayer_Fly_State::Enter(CStateMachine* pStateMachine)
 	m_fAppliedLiftHeight = m_fMountInitialHeight;
 	m_fCurrentFlightSpeed = 0.f;
 	m_bBoosting = false;
+	pPlayer->SetBroomBoostEffectRatio(0.f);
 	m_vFlightDirection = {};
 	// 이동 인텐트를 지우기 전에 탑승을 요청한 순간의 이동 상태를 보존한다.
 	// 이후 리프트 단계가 끝나도 달리며 탔는지 여부가 바뀌지 않는다.
@@ -70,6 +71,7 @@ void CPlayer_Fly_State::Enter(CStateMachine* pStateMachine)
 	}
 	pPlayer->SetBroomVisible(true);
 	pPlayer->SetBroomMovementRatio(0.f);
+	pPlayer->SetBroomBoostEffectRatio(0.f);
 	const int32_t iMountAnimation =
 		m_bMountFromMovement && m_iMountJogAnimation >= 0
 		? m_iMountJogAnimation
@@ -92,6 +94,7 @@ void CPlayer_Fly_State::Exit(CStateMachine* pStateMachine)
 	pPlayer->SetMovementLocked(false);
 	pPlayer->SetBroomVisible(false);
 	pPlayer->SetBroomMovementRatio(0.f);
+	pPlayer->SetBroomBoostEffectRatio(0.f);
 	pPlayer->SetRootMotionTranslationActive(false);
 	pPlayer->SetRootMotionRotationActive(false);
 	if (auto* pMoveIntent = pPlayer->GetMoveIntent())
@@ -273,6 +276,14 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	const _float fMaximumSpeedThreshold = m_fBoostFlightSpeed - 0.01f;
 	pPlayer->SetBroomMovementRatio(
 		m_fCurrentFlightSpeed >= fMaximumSpeedThreshold ? 1.f : 0.f);
+	const _float fBoostSpeedRatio = std::clamp(
+		(m_fCurrentFlightSpeed - m_fCruiseFlightSpeed) /
+		std::max(m_fBoostFlightSpeed - m_fCruiseFlightSpeed, FLT_EPSILON),
+		0.f, 1.f);
+	pPlayer->SetBroomBoostEffectRatio(
+		m_bBoosting && bHasFlightInput
+		? std::lerp(0.3f, 1.f, fBoostSpeedRatio)
+		: 0.f);
 
 	// 시작/정지 임계값을 분리해 경계 속도에서 전환 애니메이션이 반복되는 것을 막는다.
 	const _bool bAlreadyFlying =

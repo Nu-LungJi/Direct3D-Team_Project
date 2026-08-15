@@ -10,6 +10,12 @@
 
 NS_USING(Client)
 
+CPlayer_Broom::~CPlayer_Broom()
+{
+	if (m_iSpeedLineEffectID != INVALID_EFFECT_INSTANCE_ID)
+		CGameInstance::Get().StopEffect(m_iSpeedLineEffectID);
+}
+
 HRESULT CPlayer_Broom::InitializePrototype(void* pArg)
 {
 	m_pVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(
@@ -89,6 +95,11 @@ void CPlayer_Broom::SetMovementRatio(_float fRatio)
 	m_fTargetHeightOffset = std::lerp(-1.f, -0.5f, std::clamp(fRatio, 0.f, 1.f));
 }
 
+void CPlayer_Broom::SetBoostEffectRatio(_float fRatio)
+{
+	m_fBoostEffectRatio = std::clamp(fRatio, 0.f, 1.f);
+}
+
 void CPlayer_Broom::LateUpdate(_float fTimeDelta)
 {
 	auto* pPlayer = CGameInstance::Get().GetGameObjectByHandle(m_hParent);
@@ -113,6 +124,29 @@ void CPlayer_Broom::LateUpdate(_float fTimeDelta)
 		socketMatrix * pPlayer->GetTransform().GetLoadedWorldMatrix());
 	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
 	GetTransform().Update();
+
+	const _bool bBoostEffectActive = m_bVisible && m_fBoostEffectRatio > 0.05f;
+	if (bBoostEffectActive)
+	{
+		if (m_iSpeedLineEffectID == INVALID_EFFECT_INSTANCE_ID)
+		{
+			m_iSpeedLineEffectID = CGameInstance::Get().PlayEffect(
+				"Broom_Boost_SpeedLines", *pPlayer->GetTransform().GetWorldMatrix());
+		}
+		else
+		{
+			CGameInstance::Get().SetEffectWorldMatrix(
+				m_iSpeedLineEffectID, *pPlayer->GetTransform().GetWorldMatrix());
+		}
+	}
+	else
+	{
+		if (m_iSpeedLineEffectID != INVALID_EFFECT_INSTANCE_ID)
+		{
+			CGameInstance::Get().StopEffect(m_iSpeedLineEffectID);
+			m_iSpeedLineEffectID = INVALID_EFFECT_INSTANCE_ID;
+		}
+	}
 
 	if (!m_bVisible)
 		return;

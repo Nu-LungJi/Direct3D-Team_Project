@@ -28,7 +28,7 @@ public:
 
 private:
 	CPlayer_Broom() = default;
-	~CPlayer_Broom() override = default;
+	~CPlayer_Broom() override;
 
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
@@ -43,6 +43,7 @@ public:
 	void SetVisible(_bool bVisible) { m_bVisible = bVisible; }
 	_bool IsVisible() const { return m_bVisible; }
 	void SetMovementRatio(_float fRatio);
+	void SetBoostEffectRatio(_float fRatio);
 
 	static UPtr<CPlayer_Broom> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
@@ -59,6 +60,8 @@ private:
 	_float m_fCurrentHeightOffset{ -1.f };
 	_float m_fTargetHeightOffset{ -1.f };
 	_float m_fHeightBlendResponse{ 7.f };
+	_float m_fBoostEffectRatio{};
+	EFFECT_INSTANCE_ID m_iSpeedLineEffectID{ INVALID_EFFECT_INSTANCE_ID };
 };
 
 NS_END
