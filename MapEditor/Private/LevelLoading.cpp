@@ -6,6 +6,8 @@
 #include "LevelLogo.h"
 #include "LevelMapEditor.h"
 #include "MapMeshObject.h"
+#include "FlyCamera.h"
+#include "UiCamera.h"
 
 #include <cctype>
 #include <filesystem>
@@ -31,6 +33,54 @@ HRESULT CLevelLoading::Initialize()
 	Engine::CGameInstance::Get().GameObjectAllResetExceptLayers({
 		"00_ENGINE_CINEMATIC_CAMERA"
 	});
+
+	{
+		E::CCameraObject::CAMERA_DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
+		Desc.vAt = { 0.f, 0.f, 0.f };
+		Desc.vEye = { 0.f, 0.f, -5.f };
+		Desc.fAspect = { g_iWinSizeX / (E::_float)g_iWinSizeY };
+		Desc.fFovY = 75.f;
+		Desc.fNear = 0.1f;
+		Desc.fFar = 100.f;
+		Desc.sObjectTag = "FlyCam";
+
+		if (auto flyCam = E::CGameInstance::Get().AddGameObjectToLayer(
+			"CAMERAS", "Prototype_GameObject_FlyCamera", "99_CAMERA", &Desc))
+		{
+			if (FAILED(E::CGameInstance::Get().RegistCamera("FLY", flyCam.value())))
+				return E_FAIL;
+
+			if (FAILED(E::CGameInstance::Get().SetActiveCamera("FLY")))
+				return E_FAIL;
+		}
+		else
+		{
+			return E_FAIL;
+		}
+	}
+
+	{
+		E::CCameraObject::CAMERA_DESC Desc{};
+		Desc.eProj = E::CCameraObject::PROJ::ORTHOGRAPHIC;
+		Desc.fNear = 0.f;
+		Desc.fFar = 1.f;
+		Desc.fWidth = g_iWinSizeX;
+		Desc.fHeight = g_iWinSizeY;
+		Desc.sObjectTag = "UICam";
+		Desc.vEye = { 0.f, 0.f, -0.1f };
+
+		if (auto uiCam = E::CGameInstance::Get().AddGameObjectToLayer(
+			"CAMERAS", "Prototype_GameObject_UICamera", "99_CAMERA", &Desc))
+		{
+			if (FAILED(E::CGameInstance::Get().RegistCamera("UI", uiCam.value())))
+				return E_FAIL;
+		}
+		else
+		{
+			return E_FAIL;
+		}
+	}
 
 
 	return S_OK;
@@ -132,14 +182,8 @@ void CLevelLoading::LoadingCheck()
 
 Engine::UPtr<CLevelLoading> CLevelLoading::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext, LEVEL eNextLevelIndex)
 {
-	auto	pInstance = Engine::UPtr<CLevelLoading>(new CLevelLoading(pDevice, pContext, eNextLevelIndex));
-
-	if (FAILED(pInstance->Initialize()))
-	{
-		MSG_BOX("Failed to Created : CLevelLoading");
-		return nullptr;
-	}
-
+	auto pInstance = Engine::UPtr<CLevelLoading>(new CLevelLoading(pDevice, pContext, eNextLevelIndex));
+	pInstance->SetDeferredInitialization();
 	return pInstance;
 }
 

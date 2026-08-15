@@ -21,4 +21,6 @@ namespace Engine
 	static constexpr const char* PATH_MAPEDITOR_STATIC_MODEL_DIR = R"(.\Resources\SampleClient\Models\Static)"; // 스태틱모델 바이너리화 한 폴더 // 여기서 스태틱 모델 다 긁어와서 리소스매니저에 집어넣을거임
 	static constexpr const char* MAP_SAVE_ROOT = "./Resources/json/MapSaved/"; // Map저장 json 경로
 	static constexpr const char* MAPMESHOBJECTLAYER = "98_MAPMESHOBJECT"; // MapMeshObject만의 게임오브젝트 레이어
+	static constexpr const char* MAPDECALOBJECTLAYER = "97_MAPDECALOBJECT";
+	static constexpr const char* TAG_RES_GRP_MAP_DECAL_TEXTURE = "MAP_DECAL_TEXTURE";
 }

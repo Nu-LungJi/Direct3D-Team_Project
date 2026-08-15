@@ -281,6 +281,8 @@
     <ClInclude Include="..\public\ComPxFixedJoint.h" />
     <ClInclude Include="..\public\ComPxJoint.h" />
     <ClInclude Include="..\public\ComPxRagdoll.h" />
+    <ClInclude Include="..\Public\DecalMaterial.h" />
+    <ClInclude Include="..\Public\DecalVolume.h" />
     <ClInclude Include="..\public\PathPlaybackDefines.h" />
     <ClInclude Include="..\public\PathPlaybackEditor.h" />
     <ClInclude Include="..\public\PathPlaybackEvaluator.h" />
@@ -629,6 +631,8 @@
       <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</IncludeInUnityFile>
       <IncludeInUnityFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</IncludeInUnityFile>
     </ClCompile>
+    <ClCompile Include="..\Private\DecalMaterial.cpp" />
+    <ClCompile Include="..\Private\DecalVolume.cpp" />
     <ClCompile Include="..\private\ResPathPlayback.cpp" />
     <ClCompile Include="..\private\PathPlaybackEditor.cpp" />
     <ClCompile Include="..\private\PathPlaybackEvaluator.cpp" />
@@ -928,6 +932,8 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\VideoObject.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_DecalVolume.hlsl" />
+    <None Include="..\ShaderFiles\Decal\DecalProjectionCommon.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LuaFiles\SomeFolder\Hi.lua" />

@@ -2,6 +2,9 @@
 #include "Hierarchy.h"
 #include "GameInstance.h"
 #include "MapMeshObject.h"
+#include "DecalVolume.h"
+#include "DbgLineRender.h"
+#include "Resources.h"
 #include "EditorCommandManager.h"
 #include "CreateMapMeshCommand.h"
 #include "DeleteMapMeshCommand.h"
@@ -38,6 +41,48 @@ namespace
 	constexpr const char* PAYLOAD_MODEL_RESOURCE = "MAPEDITOR_MODEL_RESOURCE";
 
 	MapMeshObjectClipboard g_MapMeshClipboard{};
+	std::optional<std::pair<E::StringID, E::StringID>> FindFirstDecalTexture()
+	{
+		const E::StringID targetGroup{ E::TAG_RES_GRP_MAP_DECAL_TEXTURE };
+		for (const auto& [groupId, resources] : E::CGameInstance::Get().GetResources())
+		{
+			if (groupId.hash != targetGroup.hash)
+				continue;
+			for (const auto& [resourceId, resourceList] : resources)
+			{
+				for (const auto& resource : resourceList)
+				{
+					if (resource && resource->IsA(E::CResTexture2D::StaticType))
+						return std::pair{ groupId, resourceId };
+				}
+			}
+		}
+		return std::nullopt;
+	}
+
+	void AddDefaultDecalVolume(E::CHandle* pSelectedObject)
+	{
+		if (!pSelectedObject)
+			return;
+		const auto textureId = FindFirstDecalTexture();
+		if (!textureId)
+			return;
+
+		static uint32_t decalIndex = 1;
+		E::CDecalVolume::DECAL_VOLUME_DESC desc{};
+		desc.sObjectTag = "MapDecal_" + std::to_string(decalIndex++);
+		desc.sTextureGroup = textureId->first;
+		desc.sMaskTextureTag = textureId->second;
+		if (auto* selected = E::CGameInstance::Get().GetGameObjectByHandle(*pSelectedObject))
+			desc.vPosition = selected->GetTransform().GetPosition();
+
+		if (auto handle = E::CGameInstance::Get().AddGameObjectToLayer(
+			"PERMANENT", "Prototype_GameObject_DecalVolume", E::MAPDECALOBJECTLAYER, &desc))
+		{
+			*pSelectedObject = *handle;
+		}
+	}
+
 
 	void AddDefaultMapMeshObject(E::CHandle* pSelectedObject,
 		CEditorCommandManager* pCommandManager, const std::string& strLayerTag)
@@ -249,7 +294,43 @@ CHierarchy::~CHierarchy()
 
 void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 {
+	if (auto* pDebugLine = E::CGameInstance::Get().GetDbgLineRender())
+	{
+		const E::_float4 previousColor = pDebugLine->GetColor();
+		const E::DBG_LINE_DEPTH_MODE previousDepthMode = pDebugLine->GetDepthMode();
+		pDebugLine->SetDepthMode(E::DBG_LINE_DEPTH_MODE::ENABLED);
+
+		const auto& layers = E::CGameInstance::Get().GetGameObjectLayers();
+		for (const auto& [layerName, handles] : layers)
+		{
+			for (const E::CHandle& handle : handles)
+			{
+				auto* pDecal = E::CGameInstance::Get().GetGameObjectByHandleT<E::CDecalVolume>(handle);
+				if (pDecal == nullptr)
+					continue;
+
+				const bool bSelected = m_pSelection != nullptr && m_pSelection->IsSelected(handle);
+				pDebugLine->SetColor(bSelected
+					? E::_float4{ 1.f, 0.85f, 0.1f, 1.f }
+					: E::_float4{ 0.1f, 0.9f, 1.f, 1.f });
+				pDebugLine->AddBox(
+					{ 0.5f, 0.5f, 0.5f },
+					pDecal->GetTransform().GetLoadedCombinedWorldMatrix());
+			}
+		}
+
+		pDebugLine->SetColor(previousColor);
+		pDebugLine->SetDepthMode(previousDepthMode);
+	}
+
 	ImGui::TextDisabled("Hierarchy");
+	ImGui::SameLine();
+	if (ImGui::SmallButton("+ Decal Volume"))
+		AddDefaultDecalVolume(GetSelectedHandle());
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::SetTooltip("Create a volume decal at the selected object's position.");
+	}
 
 	if (ImGui::IsItemHovered())
 	{
@@ -390,6 +471,7 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 					if (ImGui::BeginPopupContextItem())
 					{
 						const bool bCanCopyMapMesh = E::CGameInstance::Get().GetGameObjectByHandleT<E::CMapMeshObject>(handle) != nullptr;
+						const bool bIsDecal = E::CGameInstance::Get().GetGameObjectByHandleT<E::CDecalVolume>(handle) != nullptr;
 						if (ImGui::MenuItem("Copy Object", nullptr, false, bCanCopyMapMesh))
 						{
 							CopyMapMeshObject(handle);
@@ -403,7 +485,7 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 						{
 							OpenRenamePopup(handle, pObject->GetObjectTag());
 						}
-						if (ImGui::MenuItem("Delete Object", nullptr, false, bCanCopyMapMesh))
+						if (ImGui::MenuItem("Delete Object", nullptr, false, bCanCopyMapMesh || bIsDecal))
 						{
 							if (auto snapshot = MakeMapMeshObjectSnapshot(handle); snapshot && m_pCommandManager)
 							{
@@ -411,6 +493,13 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 									handle, std::move(*snapshot), GetSelectedHandle()));
 							}
 						}
+							else if (bIsDecal)
+							{
+								pObject->SetPendingDestroyCascade(true);
+								if (m_pSelection)
+									m_pSelection->Clear();
+								*GetSelectedHandle() = E::CHandle{};
+							}
 						ImGui::EndPopup();
 					}
 				}

@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "MapManager.h"
 #include "MapMeshObject.h"
+#include "DecalVolume.h"
+#include "ResTexture2D.h"
 #include <fstream>
 #include <filesystem>
 
@@ -202,6 +204,203 @@ namespace
 		/*---------------------------------*/
 
 		return hObject;
+	}
+
+	_float4 ReadFloat4(const nlohmann::ordered_json& objectJson, const char* key, const _float4& fallback)
+	{
+		if (!objectJson.contains(key) || !objectJson[key].is_array() || objectJson[key].size() < 4)
+			return fallback;
+		const auto& value = objectJson[key];
+		return { value[0], value[1], value[2], value[3] };
+	}
+
+	_float3 ReadFloat3(const nlohmann::ordered_json& objectJson, const char* key, const _float3& fallback)
+	{
+		if (!objectJson.contains(key) || !objectJson[key].is_array() || objectJson[key].size() < 3)
+			return fallback;
+		const auto& value = objectJson[key];
+		return { value[0], value[1], value[2] };
+	}
+
+	nlohmann::ordered_json MakeDecalJson(CDecalVolume* decal, const std::string& layerName)
+	{
+		const auto& transform = decal->GetTransform();
+		const auto position = transform.GetPosition();
+		const auto rotation = transform.GetQuaternion();
+		const auto scale = transform.GetScale();
+		const bool hasMaskOverride = decal->GetMaskTextureGroup().hash != 0 &&
+			decal->GetMaskTextureTag().hash != 0;
+		const std::string maskGroup = hasMaskOverride ? decal->GetMaskTextureGroup().GetDbgStr() : "";
+		const std::string maskTag = hasMaskOverride ? decal->GetMaskTextureTag().GetDbgStr() : "";
+
+
+		nlohmann::ordered_json result
+		{
+			{ "type", "DecalVolume" },
+			{ "objectTag", std::string(decal->GetObjectTag()) },
+			{ "protoGroup", "PERMANENT" },
+			{ "prototype", "Prototype_GameObject_DecalVolume" },
+			{ "layer", layerName },
+			{ "position", { position.x, position.y, position.z } },
+			{ "rotation", { rotation.x, rotation.y, rotation.z, rotation.w } },
+			{ "scale", { scale.x, scale.y, scale.z } },
+			{ "materialPath", decal->GetMaterialPath() },
+			{ "opacity", decal->GetOpacity() },
+			{ "normalThreshold", decal->GetNormalThreshold() },
+			{ "edgeSoftness", decal->GetEdgeSoftness() },
+			{ "textureGroup", maskGroup },
+			{ "textureTag", maskTag },
+			{ "texturePath", decal->GetMaskTexturePath() }
+		};
+
+		auto savedParameters = nlohmann::ordered_json::object();
+		for (const auto& parameter : decal->GetMaterialParameters())
+		{
+			const _float* value = decal->GetMaterialParameterData(parameter.name);
+			if (!value)
+				continue;
+			if (parameter.count == 1)
+				savedParameters[parameter.name] = value[0];
+			else
+			{
+				auto values = nlohmann::ordered_json::array();
+				for (uint32_t i = 0; i < parameter.count; ++i)
+					values.push_back(value[i]);
+				savedParameters[parameter.name] = std::move(values);
+			}
+		}
+		result["materialParameters"] = std::move(savedParameters);
+		auto savedTextures = nlohmann::ordered_json::array();
+		for (UINT slot = CDecalMaterial::TEXTURE_SLOT_BEGIN; slot <= CDecalMaterial::TEXTURE_SLOT_END; ++slot)
+		{
+			const auto& group = decal->GetTextureOverrideGroup(slot);
+			const auto& tag = decal->GetTextureOverrideTag(slot);
+			if (group.hash == 0 || tag.hash == 0)
+				continue;
+			savedTextures.push_back(
+			{
+				{ "slot", slot },
+				{ "group", std::string(group.GetDbgStr()) },
+				{ "tag", std::string(tag.GetDbgStr()) },
+				{ "path", decal->GetTextureOverridePath(slot) }
+			});
+		}
+		result["textureOverrides"] = std::move(savedTextures);
+
+		return result;
+	}
+
+	std::optional<CHandle> CreateDecalFromJson(const nlohmann::ordered_json& objectJson)
+	{
+		if (!objectJson.is_object() || objectJson.value("type", std::string{}) != "DecalVolume")
+			return std::nullopt;
+
+		const std::string textureGroup = objectJson.value(
+			"textureGroup", std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE));
+		const std::string textureTag = objectJson.value("textureTag", std::string{});
+		const std::string texturePath = objectJson.value("texturePath", std::string{});
+
+		auto& gameInstance = CGameInstance::Get();
+		if (!textureTag.empty() && !gameInstance.GetResourceFirst<CResTexture2D>(textureGroup, textureTag))
+		{
+			if (texturePath.empty())
+				return std::nullopt;
+			auto texture = gameInstance.AddResourceT<CResTexture2D>(
+				textureGroup, textureTag, CResTexture2D::Create(texturePath));
+			if (!texture || FAILED(texture->Load()))
+				return std::nullopt;
+		}
+
+		CDecalVolume::DECAL_VOLUME_DESC desc{};
+		desc.sObjectTag = objectJson.value("objectTag", std::string("MapDecal"));
+		desc.sMaterialPath = objectJson.value(
+			"materialPath", std::string(CDecalVolume::DEFAULT_MATERIAL_PATH));
+		desc.fOpacity = objectJson.value("opacity", desc.fOpacity);
+		desc.fNormalThreshold = objectJson.value("normalThreshold", desc.fNormalThreshold);
+		desc.fEdgeSoftness = objectJson.value("edgeSoftness", desc.fEdgeSoftness);
+		if (!textureTag.empty())
+		{
+			desc.sTextureGroup = textureGroup;
+			desc.sMaskTextureTag = textureTag;
+		}
+
+		auto handle = gameInstance.AddGameObjectToLayer(
+			objectJson.value("protoGroup", std::string("PERMANENT")),
+			objectJson.value("prototype", std::string("Prototype_GameObject_DecalVolume")),
+			MAPDECALOBJECTLAYER,
+			&desc);
+		if (!handle)
+			return std::nullopt;
+
+		auto* decal = gameInstance.GetGameObjectByHandleT<CDecalVolume>(*handle);
+		if (!decal)
+			return std::nullopt;
+
+		const auto position = ReadFloat3(objectJson, "position", {});
+		const auto rotation = ReadFloat4(objectJson, "rotation", { 0.f, 0.f, 0.f, 1.f });
+		const auto scale = ReadFloat3(objectJson, "scale", { 10.f, 2.f, 10.f });
+		auto& transform = decal->GetTransform();
+		transform.SetPosition(position);
+		transform.SetQuaternion(rotation);
+		transform.SetScale(scale);
+		transform.Update();
+
+		if (objectJson.contains("materialParameters") && objectJson["materialParameters"].is_object())
+		{
+			const auto& savedParameters = objectJson["materialParameters"];
+			for (const auto& parameter : decal->GetMaterialParameters())
+			{
+				const auto iter = savedParameters.find(parameter.name);
+				if (iter == savedParameters.end())
+					continue;
+
+				std::array<_float, 4> values{};
+				if (iter->is_number())
+					values[0] = iter->get<_float>();
+				else if (iter->is_array())
+					for (uint32_t i = 0; i < parameter.count && i < iter->size(); ++i)
+						if ((*iter)[i].is_number())
+							values[i] = (*iter)[i].get<_float>();
+				decal->SetMaterialParameter(parameter.name, values.data(), parameter.count);
+			}
+		}
+		else
+		{
+			const auto albedo = ReadFloat4(objectJson, "albedo", { 1.f, 1.f, 1.f, 1.f });
+			const auto emissive = ReadFloat3(objectJson, "emissive", { 1.f, 0.f, 0.f });
+			const _float intensity = objectJson.value("emissiveIntensity", 1.f);
+			decal->SetMaterialParameter("Albedo", &albedo.x, 4);
+			decal->SetMaterialParameter("Emissive Color", &emissive.x, 3);
+			decal->SetMaterialParameter("Emissive Intensity", &intensity, 1);
+		}
+
+		if (objectJson.contains("textureOverrides") && objectJson["textureOverrides"].is_array())
+		{
+			for (const auto& savedTexture : objectJson["textureOverrides"])
+			{
+				const UINT slot = savedTexture.value("slot", 0u);
+				const std::string group = savedTexture.value(
+					"group", std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE));
+				const std::string tag = savedTexture.value("tag", std::string{});
+				const std::string path = savedTexture.value("path", std::string{});
+				if (slot < CDecalMaterial::TEXTURE_SLOT_BEGIN ||
+					slot > CDecalMaterial::TEXTURE_SLOT_END ||
+					tag.empty())
+					continue;
+
+				if (!gameInstance.GetResourceFirst<CResTexture2D>(group, tag))
+				{
+					if (path.empty())
+						continue;
+					auto texture = gameInstance.AddResourceT<CResTexture2D>(
+						group, tag, CResTexture2D::Create(path));
+					if (!texture || FAILED(texture->Load()))
+						continue;
+				}
+				decal->SetTextureOverride(slot, group, tag);
+			}
+		}
+		return handle;
 	}
 
 }
@@ -723,6 +922,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 	rootJson["chunkSize"] = { m_vChunkSize.x, m_vChunkSize.y, m_vChunkSize.z };
 	rootJson["chunks"] = nlohmann::ordered_json::array();
 	rootJson["objects"] = nlohmann::ordered_json::array();
+	rootJson["decals"] = nlohmann::ordered_json::array();
 
 	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
 
@@ -768,6 +968,12 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 
 		for(const auto& objectHandle : objects)
 		{
+			if (auto* decal = CGameInstance::Get().GetGameObjectByHandleT<CDecalVolume>(objectHandle))
+			{
+				rootJson["decals"].push_back(MakeDecalJson(decal, pair.first));
+				continue;
+			}
+
 			CMapMeshObject* pMeshObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
 			
 			if (pMeshObj == nullptr)
@@ -805,6 +1011,7 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 		m_MapGeneration.fetch_add(1, std::memory_order_acq_rel);
 		CGameInstance::Get().DelGameObjectLayer(E::MAPMESHOBJECTLAYER);
 		QueueAllChunkModelReleases();
+		CGameInstance::Get().DelGameObjectLayer(E::MAPDECALOBJECTLAYER);
 		m_Chunks.clear();
 	}
 
@@ -1012,6 +1219,16 @@ HRESULT CMapManager::LoadMapData(const std::string& path)
 	m_MapGeneration.fetch_add(1, std::memory_order_acq_rel);
 	QueueAllChunkModelReleases();
 	m_Chunks.clear();
+	CGameInstance::Get().DelGameObjectLayer(E::MAPDECALOBJECTLAYER);
+	if (rootJson.contains("decals") && rootJson["decals"].is_array())
+	{
+		for (const auto& decalJson : rootJson["decals"])
+		{
+			if (!CreateDecalFromJson(decalJson))
+				return E_FAIL;
+		}
+	}
+
 
 	if (rootJson.contains("chunkSize"))
 	{

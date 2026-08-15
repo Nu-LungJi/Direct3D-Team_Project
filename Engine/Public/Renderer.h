@@ -55,6 +55,7 @@ private:		// Render Setting
 	HRESULT		Render_Shadow();
 	HRESULT		Render_DepthMap();
 	HRESULT		Render_NonAlpha();
+	HRESULT		Render_Decal();
 	HRESULT		Render_HBAO();
 	HRESULT		Render_Lighting();
 	HRESULT		Render_Alpha();
@@ -70,6 +71,7 @@ private:		// Render Object
 	HRESULT		RenderPriority();
 	HRESULT		RenderNonBlend();
 	HRESULT		RenderNonBlend_Instanced();
+	HRESULT		RenderMapMesh();
 	HRESULT		RenderBlend();
 	HRESULT		RenderLight();
 	HRESULT		RenderSkybox();
@@ -145,6 +147,7 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetSMRO{};			// SMRO
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetEmissive{};		// Emissive
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetDepth{};			// Depth
+	ComPtr<ID3D11DepthStencilView> m_pDecalReadOnlyDSV{};
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPBR{};			// PBR
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetEffect{};			// Effect

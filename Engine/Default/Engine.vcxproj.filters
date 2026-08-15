@@ -220,6 +220,9 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{49228d5e-6075-4149-aa44-94dbc979feae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\Decal">
+      <UniqueIdentifier>{a3907336-6d5b-4ed7-9d06-9caf57eb8daa}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Tracy">
       <UniqueIdentifier>{e02f4b44-ac4b-4c18-9468-0d92e7afed7a}</UniqueIdentifier>
     </Filter>
@@ -549,6 +552,9 @@
     </Filter>
     <Filter Include="Lua\Manager\Watcher">
       <UniqueIdentifier>{9d20ff6d-a821-4923-8d6b-f0880f32157f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\DecalVolume">
+      <UniqueIdentifier>{b618bd73-0c04-4ba3-8935-5cdeb2ef48cc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1261,6 +1267,12 @@
     <ClInclude Include="..\public\LuaScriptInstance.h">
       <Filter>Lua\ScriptInstance</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\DecalMaterial.h">
+      <Filter>GameObject\DecalVolume</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\DecalVolume.h">
+      <Filter>GameObject\DecalVolume</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1894,6 +1906,12 @@
     <ClCompile Include="..\private\LuaScriptInstance.cpp">
       <Filter>Lua\ScriptInstance</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\DecalMaterial.cpp">
+      <Filter>GameObject\DecalVolume</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\DecalVolume.cpp">
+      <Filter>GameObject\DecalVolume</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -2069,6 +2087,12 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced_Foliage.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_DecalVolume.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <None Include="..\ShaderFiles\Decal\DecalProjectionCommon.hlsli">
+      <Filter>ShaderFiles\Decal</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">

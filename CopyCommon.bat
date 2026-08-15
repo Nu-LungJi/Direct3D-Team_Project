@@ -12,6 +12,10 @@ xcopy /E /I /Y /D .\Engine\Bin\Engine.lib .\EngineSDK\Lib\
 xcopy /E /I /Y /D .\%TargetFolder%\ShaderFiles\*.* .\%TargetFolder%\Bin\ShaderFiles\
 xcopy /E /I /Y /D .\Engine\ShaderFiles\*.* .\%TargetFolder%\Bin\ShaderFiles\
 
+:: Decal Material Copy
+xcopy /E /I /Y /D .\Engine\DecalMaterials\*.* .\%TargetFolder%\Bin\DecalMaterials\
+if exist .\%TargetFolder%\DecalMaterials\ xcopy /E /I /Y /D .\%TargetFolder%\DecalMaterials\*.* .\%TargetFolder%\Bin\DecalMaterials\
+
 :: Lua Copy
 xcopy /E /I /Y /D .\%TargetFolder%\LuaFiles\*.* .\%TargetFolder%\Bin\LuaFiles\
 xcopy /E /I /Y /D .\Engine\LuaFiles\*.* .\%TargetFolder%\Bin\LuaFiles\
