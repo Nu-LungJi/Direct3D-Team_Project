@@ -430,6 +430,15 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 		CGameInstance::Get().Load_ParticleJsonPackage(k);
 	}
 
+	{
+		auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleQueue", ".json");
+		if (FAILED(CGameInstance::Get().Load_ParticleQueueJsonPackage(k)))
+		{
+			MSG_BOX("PARTICLE QUEUE LOAD FAILED");
+			return E_FAIL;
+		}
+	}
+
 	//클라이언트 사운드 버스 초기화
 	{
 		if (FAILED(Initialize_Sound()))

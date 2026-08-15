@@ -268,6 +268,26 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir)
 		,.bQueryStatic = true,.bQueryDynamic = false,.bIncludeTrigger = false};
 		PX_SWEEP_RESULT GroundSweep{};
 
+		//if (pPhysX->Sweep(GroundDesc, GroundSweep) && GroundSweep.bHit)
+		//{
+		//	m_bGround = true;
+		//	SpawnGasi(XMLoadFloat3(&GroundSweep.vHitpos), vCurDir);
+		//}
+	}
+	else
+	{
+
+	}
+
+
+	if (!m_bGround && m_eType == DRAGON_SKILL::GASIBREATH)
+	{
+		//이거 땅판정임
+		PX_SWEEP_DESC GroundDesc = SweepDesc;
+		GroundDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC)
+		,.bQueryStatic = true,.bQueryDynamic = false,.bIncludeTrigger = false };
+		PX_SWEEP_RESULT GroundSweep{};
+
 		if (pPhysX->Sweep(GroundDesc, GroundSweep) && GroundSweep.bHit)
 		{
 			m_bGround = true;
@@ -278,6 +298,8 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir)
 	{
 
 	}
+
+
 
 
 	if (pPhysX->Sweep(SweepDesc, SweepResult) && SweepResult.bHit)

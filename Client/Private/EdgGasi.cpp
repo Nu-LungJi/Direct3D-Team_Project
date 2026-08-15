@@ -97,8 +97,8 @@ void CEdgGasi::MoveGasi(_float fTimeDelta)
 		GetTransform().SetPosition(vNextPos);
 		GetTransform().Update();
 
-		if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
+		//f (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
+		//	CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
 	}
 
 }

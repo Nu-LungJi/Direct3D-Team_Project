@@ -88,6 +88,7 @@ public:
 
 	//실제 스폰 함수
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
+	const std::vector<SPAWN_COMMAND>* FindCachedCommandQueue(const std::string& strJsonPath) const;
 	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos);
 
 
@@ -169,6 +170,7 @@ public:
 	void SetColorByOwner(uint32_t ownerId, const _float4& color);
 	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
 	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
+	HRESULT Load_ParticleQueueJsonPackage(const std::vector<std::string>& _FilePathPackage);
 	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const _float3& start, const _float3& end);
 	HRESULT AddTrailPoint(const StringID& groupTag, const StringID& typeTag, const CHandle& hOwner, const _float3& start, const _float3& end);
 	HRESULT SetBeamPositions(const BEAM_HANDLE& handle, const _float4& start, const _float4& end);
