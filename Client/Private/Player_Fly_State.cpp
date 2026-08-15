@@ -68,6 +68,8 @@ void CPlayer_Fly_State::Enter(CStateMachine* pStateMachine)
 	{
 		return;
 	}
+	pPlayer->SetBroomVisible(true);
+	pPlayer->SetBroomMovementRatio(0.f);
 	const int32_t iMountAnimation =
 		m_bMountFromMovement && m_iMountJogAnimation >= 0
 		? m_iMountJogAnimation
@@ -88,6 +90,8 @@ void CPlayer_Fly_State::Exit(CStateMachine* pStateMachine)
 	}
 
 	pPlayer->SetMovementLocked(false);
+	pPlayer->SetBroomVisible(false);
+	pPlayer->SetBroomMovementRatio(0.f);
 	pPlayer->SetRootMotionTranslationActive(false);
 	pPlayer->SetRootMotionRotationActive(false);
 	if (auto* pMoveIntent = pPlayer->GetMoveIntent())
@@ -265,7 +269,18 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	}
 	// 호버 전환은 완전히 멈춘 뒤가 아니라 입력을 놓는 순간 시작한다.
 	// 전환 애니메이션 동안 실제 속도는 위 감속 로직으로 자연스럽게 0에 수렴한다.
-	const _bool bWantsToFly = bHasFlightInput;
+	// 빗자루 높이는 일반 비행 중에는 유지하고 실제 최고 속도에 도달했을 때만 올린다.
+	const _float fMaximumSpeedThreshold = m_fBoostFlightSpeed - 0.01f;
+	pPlayer->SetBroomMovementRatio(
+		m_fCurrentFlightSpeed >= fMaximumSpeedThreshold ? 1.f : 0.f);
+
+	// 시작/정지 임계값을 분리해 경계 속도에서 전환 애니메이션이 반복되는 것을 막는다.
+	const _bool bAlreadyFlying =
+		m_eFlightPhase == FLIGHT_PHASE::INTO_FLY ||
+		m_eFlightPhase == FLIGHT_PHASE::FLYING;
+	const _bool bWantsToFly = bAlreadyFlying
+		? m_fCurrentFlightSpeed > m_fFlyExitSpeedThreshold
+		: m_fCurrentFlightSpeed >= m_fFlyEnterSpeedThreshold;
 
 	switch (m_eFlightPhase)
 	{
@@ -320,7 +335,7 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		m_eFlightPhase = FLIGHT_PHASE::HOVER;
 		if (m_iHoverAnimation >= 0)
 		{
-			pAnimator->Play_Anim(m_iHoverAnimation, true, 0.15f);
+			pAnimator->Play_Anim(m_iHoverAnimation, true, 0.3f);
 			m_iActiveAnimation = m_iHoverAnimation;
 		}
 		return;
@@ -360,8 +375,8 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		m_eFlightPhase = FLIGHT_PHASE::HOVER;
 		if (m_iHoverAnimation >= 0)
 		{
-			pAnimator->Play_Anim(m_iHoverAnimation, true, 0.15f); 
-			m_iActiveAnimation = m_iHoverAnimation; 
+			pAnimator->Play_Anim(m_iHoverAnimation, true, 0.3f);
+			m_iActiveAnimation = m_iHoverAnimation;
 		}
 		return;
 	}
@@ -375,9 +390,9 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		m_eFlightPhase = FLIGHT_PHASE::INTO_FLY;
 		if (m_iIntoFlyAnimation >= 0)
 		{
-			pAnimator->Play_Anim(m_iIntoFlyAnimation, false, 0.12f); 
-			m_iActiveAnimation = m_iIntoFlyAnimation; 
-			return; 
+			pAnimator->Play_Anim(m_iIntoFlyAnimation, false, 0.22f);
+			m_iActiveAnimation = m_iIntoFlyAnimation;
+			return;
 		}
 		m_eFlightPhase = FLIGHT_PHASE::FLYING;
 		break;
@@ -392,17 +407,11 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		break;
 
 	case FLIGHT_PHASE::FLYING:
-		// 속도가 충분히 줄면 비행 종료 전환을 거쳐 호버 상태로 돌아간다.
+		// 정지할 때 IntoHover를 한 번 더 거치면 호버 자세가 이중으로 바뀌므로
+		// 현재 비행 자세에서 Hover_Idle로 직접 블렌딩한다.
 		if (bWantsToFly) 
 		{
 			break;
-		}
-		m_eFlightPhase = FLIGHT_PHASE::INTO_HOVER;
-		if (m_iIntoHoverAnimation >= 0)
-		{
-			pAnimator->Play_Anim(m_iIntoHoverAnimation, false, 0.12f); 
-			m_iActiveAnimation = m_iIntoHoverAnimation; 
-			return; 
 		}
 		m_eFlightPhase = FLIGHT_PHASE::HOVER;
 		break;
@@ -414,7 +423,7 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 			m_eFlightPhase = FLIGHT_PHASE::INTO_FLY;
 			if (m_iIntoFlyAnimation >= 0)
 			{
-				pAnimator->Play_Anim(m_iIntoFlyAnimation, false, 0.1f);
+				pAnimator->Play_Anim(m_iIntoFlyAnimation, false, 0.22f);
 				m_iActiveAnimation = m_iIntoFlyAnimation;
 				return;
 			}
@@ -448,12 +457,14 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	}
 
 	// Turn 전용 좌우 애니메이션 없이 속도와 수직 방향만으로 비행 자세를 고른다.
-	const int32_t iDesiredAnimation = m_eFlightPhase == FLIGHT_PHASE::HOVER ? m_iHoverAnimation : ResolveFlightAnimation();
+	const int32_t iDesiredAnimation = m_eFlightPhase == FLIGHT_PHASE::HOVER
+		? m_iHoverAnimation
+		: ResolveFlightAnimation();
 	if (iDesiredAnimation < 0 || iDesiredAnimation == m_iActiveAnimation) 
 	{
 		return;
 	}
-	pAnimator->Play_Anim(iDesiredAnimation, true, 0.24f);
+	pAnimator->Play_Anim(iDesiredAnimation, true, 0.35f);
 	m_iActiveAnimation = iDesiredAnimation;
 }
 
@@ -496,9 +507,8 @@ int32_t CPlayer_Fly_State::ResolveFlightAnimation() const
 	// 터보 중 A/D를 눌러도 Turbo_Fwd 자세를 유지하고 이동 궤적만 바뀐다.
 	if (bTurboSpeed && m_iTurboForwardAnimation >= 0)
 		return m_iTurboForwardAnimation;
-	return m_fCurrentFlightSpeed >= m_fCruiseFlightSpeed * 0.65f
-		? m_iFastForwardAnimation
-		: m_iSlowForwardAnimation;
+	// Idle_Fwd는 뒷짐 자세가 섞이므로 제외하고 일반 전진은 Hover_Fly_Fwd만 사용한다.
+	return m_iSlowForwardAnimation;
 }
 
 int32_t CPlayer_Fly_State::FindAnimationIndex(const CPlayer& player, const _string_view& sAnimationName) const

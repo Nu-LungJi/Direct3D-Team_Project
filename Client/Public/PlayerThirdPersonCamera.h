@@ -85,11 +85,13 @@ private:
 	_float m_fFlightCompositionCorrectionSpeed{ 10.f };
 	_float m_fFlightVerticalLookAheadTime{ 0.02f };
 	_float m_fFlightMaxVerticalLookAhead{ 0.35f };
-	_float m_fFlightDistance{ 6.25f };
+	// 캐릭터와 빗자루 전체는 유지하면서 화면을 크게 채우는 비행 기본 거리다.
+	_float m_fFlightDistance{ 5.6f };
 	_float m_fFlightDistanceResponse{ 5.f };
 	_float m_fFlightTargetOffsetY{ 0.85f };
 	_float m_fBoostTargetOffsetY{ 0.85f };
-	_float m_fFlightShoulderOffset{ 0.3f };
+	// 비행 중 캐릭터가 화면 정중앙보다 살짝 왼쪽에 보이도록 조준점을 오른쪽으로 이동한다.
+	_float m_fFlightShoulderOffset{ 0.55f };
 	_float m_fFlightShoulderResponse{ 5.f };
 	_float m_fFlightCameraHeightOffset{ 0.15f };
 	_float m_fCurrentFlightCameraHeightOffset{};
@@ -106,7 +108,8 @@ private:
 	// 최고 속도에서 FOV를 좁혀 캐릭터 중심의 렌즈 줌을 만든다.
 	_float m_fSpeedFovExpansion{ -8.f };
 	// FOV 확장으로 캐릭터가 작아지는 만큼 고속에서 카메라를 가까이 당긴다.
-	_float m_fSpeedDistanceExtension{ -2.25f };
+	// 최고 속도에서는 약 5.0까지 가까워져 원작처럼 화면을 꽉 채운다.
+	_float m_fSpeedDistanceExtension{ -0.6f };
 	_float m_fTurbulenceElapsed{};
 	_float m_fTurbulenceMinFrequency{ 8.f };
 	_float m_fTurbulenceMaxFrequency{ 14.f };

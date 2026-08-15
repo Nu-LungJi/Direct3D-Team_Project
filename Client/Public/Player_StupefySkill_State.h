@@ -37,11 +37,11 @@ private:
 	static constexpr _float REACTION_BLEND_DURATION = 0.08f;
 	static constexpr _float REACTION_SPEED = 1.5f;
 	static constexpr _float REACTION_EXIT_RATIO = 0.38f;
-	static constexpr _float TURN_SPEED = 1.15f;
-	static constexpr _float TURN_END_RATIO = 0.04f;
+	static constexpr _float TURN_SPEED = 0.65f;
+	static constexpr _float TURN_END_RATIO = 0.10f;
 	static constexpr _float ATTACK_SPEED = 1.9f;
 	static constexpr _float PROJECTILE_RELEASE_RATIO = 0.18f;
-	static constexpr _float RECOVERY_EXIT_RATIO = 0.52f;
+	static constexpr _float RECOVERY_EXIT_RATIO = 0.32f;
 };
 
 NS_END

@@ -51,6 +51,7 @@
 #include "Player_RevelioSkill_State.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
+#include "Player_Broom.h"
 #include "Trail_CPU.h"
 #include "UIController.h"
 #include "UIManager.h"
@@ -494,6 +495,29 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+
+	CPlayer_Broom::BROOM_DESC BroomDesc{};
+	BroomDesc.sObjectTag = "Broom";
+	BroomDesc.sLevelTag = pDesc->LevelTag.GetDbgStr();
+	BroomDesc.sResourceTag = "PLAYER_BROOM_RESOURCE";
+	BroomDesc.iSocketBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_BroomCollision");
+	BroomDesc.hParent = GetHandle();
+	// UEModel -> static FBX 변환 과정에서 센티미터 단위가 1/100로 축소되어
+	// 기존 장비 모델 스케일(4배)에 원본 단위 복원(100배)을 함께 적용한다.
+	BroomDesc.vScale = { 4.f, 4.f, 4.f };
+	BroomDesc.bVisible = false;
+
+	auto Broom = E::CGameInstance::Get().AddGameObjectToLayer(
+		pDesc->LevelTag,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PlayerBroom,
+		"Broom",
+		&BroomDesc);
+	if (!Broom.has_value())
+	{
+		MSG_BOX("Create Failed Broom");
+		return E_FAIL;
+	}
+	m_Partes[ETOUI(PARTES::BROOM)] = Broom.value();
 
 	{
 		{
@@ -2658,6 +2682,34 @@ void CPlayer::SetFlyRequested(_bool bRequested)
 	m_bFlyRequested = bRequested;
 	if (bRequested && m_pStateMachine)
 		m_pStateMachine->RequestState(PLAYER_STATE::FLY);
+}
+
+void CPlayer::SetBroomVisible(_bool bVisible)
+{
+	if (auto* pBroom = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Broom>(
+		m_Partes[ETOUI(PARTES::BROOM)]))
+	{
+		pBroom->SetVisible(bVisible);
+	}
+}
+
+void CPlayer::SetBroomMovementRatio(_float fRatio)
+{
+	if (auto* pBroom = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Broom>(
+		m_Partes[ETOUI(PARTES::BROOM)]))
+	{
+		pBroom->SetMovementRatio(fRatio);
+	}
+}
+
+_bool CPlayer::IsBroomVisible() const
+{
+	if (auto* pBroom = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Broom>(
+		m_Partes[ETOUI(PARTES::BROOM)]))
+	{
+		return pBroom->IsVisible();
+	}
+	return false;
 }
 
 E::UPtr<CPlayer> CPlayer::Create()

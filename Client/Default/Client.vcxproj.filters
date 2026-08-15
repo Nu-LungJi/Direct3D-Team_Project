@@ -370,6 +370,9 @@
     <Filter Include="GameObject\Monster\EnderDragon\Skill\Gasi">
       <UniqueIdentifier>{a9ff708e-a308-4d48-99c3-2ed09296a5f9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\Player_Broom">
+      <UniqueIdentifier>{a323905d-1c56-40ee-a831-e74e7795b881}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -849,6 +852,9 @@
     <ClInclude Include="..\public\Edg_Dead.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Broom.h">
+      <Filter>GameObject\Player\Player_Broom</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1276,6 +1282,9 @@
     </ClCompile>
     <ClCompile Include="..\private\Edg_Dead.cpp">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Broom.cpp">
+      <Filter>GameObject\Player\Player_Broom</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

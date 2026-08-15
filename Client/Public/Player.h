@@ -178,6 +178,9 @@ public:
 	void SetBodyEffectID(uint32_t effectID) { m_iDashBodyEffectID = effectID; }
 	void UpdateAttachedEffects();
 	CHandle& GetWeaponHandle() { return m_Partes[ETOUI(PARTES::WEAPON)]; }
+	void SetBroomVisible(_bool bVisible);
+	void SetBroomMovementRatio(_float fRatio);
+	_bool IsBroomVisible() const;
 
 
 	_bool GetInvincible() const { return m_bInvincible; }
