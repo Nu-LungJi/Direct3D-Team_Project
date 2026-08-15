@@ -370,6 +370,15 @@
     <Filter Include="GameObject\Monster\EnderDragon\Skill\Gasi">
       <UniqueIdentifier>{a9ff708e-a308-4d48-99c3-2ed09296a5f9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\Spider">
+      <UniqueIdentifier>{76dbc1df-7dba-4448-8373-b8f865257b80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\Spider\FSM">
+      <UniqueIdentifier>{fb0e3e13-4836-4941-aa0a-bce561af7766}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\Spider\FSM\State">
+      <UniqueIdentifier>{6802c92e-b52f-438e-ad3d-29d8e867e9ce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -849,6 +858,21 @@
     <ClInclude Include="..\public\Edg_Dead.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Spider.h">
+      <Filter>GameObject\Monster\Spider</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Spider_State.h">
+      <Filter>GameObject\Monster\Spider\FSM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Spider_Spawn.h">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Spider_Combat.h">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Spider_Hit.h">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1276,6 +1300,21 @@
     </ClCompile>
     <ClCompile Include="..\private\Edg_Dead.cpp">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Spider.cpp">
+      <Filter>GameObject\Monster\Spider</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Spider_State.cpp">
+      <Filter>GameObject\Monster\Spider\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Spider_Spawn.cpp">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Spider_Combat.cpp">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Spider_Hit.cpp">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
