@@ -85,6 +85,8 @@ void CEdg_Phase::Exit(CStateMachine* pStateMachine)
 	pDragon->Set_StateFinished(false);
 	pDragon->Set_HideOnBush(false);
 
+	pDragon->Set_Break(false);
+	pDragon->ReActiveTable();
 	if (m_ePhase != DRAGON_PHASE::PHASE2)
 	{
 		_float3 vLeftPos{}, vRightPos{};
@@ -96,10 +98,6 @@ void CEdg_Phase::Exit(CStateMachine* pStateMachine)
 
 		pBB->Set_Value<_float3>(EDG_KEY::LPATROL, vLeftPos);
 		pBB->Set_Value<_float3>(EDG_KEY::RPATROL, vRightPos);
-	}
-	if (m_ePhase == DRAGON_PHASE::PHASE5)
-	{
-		
 	}
 }
 
