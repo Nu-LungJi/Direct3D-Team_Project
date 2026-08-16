@@ -35,6 +35,7 @@ private:
 	HRESULT SpawnStaticCollision();
 	HRESULT SpawnLightPlacement();
 	HRESULT SpawnBridge();
+	void ToggleGPUShadowDebugObject();
 	HRESULT SpawnMyMagicStepController();
 
 	HRESULT SpawnSkyBox();
@@ -46,7 +47,10 @@ private:
 private:
 	SOUND_ID m_bmgID{ INVALID_SOUND_ID };
 	CHandle m_hPlayer{};
+	CHandle m_hBridgeCRW{};
 	uint64_t m_iPlayerDeathListenerID{};
+	_float3 m_vBridgeOriginalPosition{};
+	_bool m_bGPUShadowDebugObjectVisible{ false };
 
 private:
 	_bool m_bCreatePlayScreenUI{ false };
