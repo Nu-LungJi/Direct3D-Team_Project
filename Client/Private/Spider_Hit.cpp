@@ -110,6 +110,7 @@ void CSpider_Hit::Exit(CStateMachine* pStateMachine)
 	auto pSpider = pStateMachine->GetOwner<CSpider>();
 	if (nullptr == pSpider) return;
 
+	m_HitTable.eHitMotion = HIT_MOTION::END;
 	pSpider->ReActiveTable();
 	Set_Gravity(true, pSpider);
 }
@@ -140,7 +141,9 @@ void CSpider_Hit::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	if (nullptr == pMove)return;
 	if (m_bTurn)
 	{
-		pMove->SetFacingIntentImmediate(TargetDir(pSpider, false));
+		if (m_HitTable.eSkillType != PLAYER_SKILL_TYPE::ATTACK)
+			pMove->SetFacingIntentImmediate(TargetDir(pSpider, false));
+
 		m_bTurn = false;
 	}
 	
@@ -176,16 +179,18 @@ void CSpider_Hit::MoveIntent(CSpider* pSpider, _float3 vDir, _float fSpeed)
 
 HIT_TYPE CSpider_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround)
 {
-
+	 
 	switch (eType)
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
-			if (m_HitTable.eHitMotion == HIT_MOTION::LAND)
-				m_HitTable.eHitMotion = HIT_MOTION::AIR;
-			else if(m_HitTable.eHitMotion == HIT_MOTION::AIR)
-				m_HitTable.eHitMotion = HIT_MOTION::AIR;
-			else 
-				m_HitTable.eHitMotion = HIT_MOTION::NORMAL;
+		if (m_HitTable.eHitMotion == HIT_MOTION::LAND)
+			m_HitTable.eHitMotion = HIT_MOTION::LAND;
+		else if (m_HitTable.eHitMotion == HIT_MOTION::AIR || m_HitTable.eHitMotion == HIT_MOTION::REBOUND || 
+			m_HitTable.eHitMotion == HIT_MOTION::BLOWBACK || m_HitTable.eHitMotion == HIT_MOTION::GROUND_SLAM
+			|| m_HitTable.eHitMotion == HIT_MOTION::FALLING)
+			m_HitTable.eHitMotion = HIT_MOTION::AIR;
+		else
+			m_HitTable.eHitMotion = HIT_MOTION::NORMAL;
 		return HIT_TYPE::NORMAL;
 	case PLAYER_SKILL_TYPE::ACCIO:
 		m_HitTable.eHitMotion = HIT_MOTION::AIR;
@@ -218,7 +223,10 @@ void CSpider_Hit::Check_PendingHit(CSpider* pSpider)
 	MON_HIT_INFO HitInfo = pSpider->Get_PendingHitInfo();
 
 	if (!pSpider->Activate_PendingHit()) return;
-
+	_bool bBlock = HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK && (m_HitTable.eHitMotion == HIT_MOTION::LAND || m_HitTable.eHitMotion == HIT_MOTION::AIR_LAND
+		);
+	if (bBlock)
+		return;
 	_bool bRestart = HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK;
 	if (m_HitTable.eSkillType == HitInfo.eHitType && !bRestart)
 		return;
@@ -320,7 +328,6 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CMon_S
 				if(bGround)
 					ChangeMotion(HIT_MOTION::LAND);
 				Jump(pSpider, -150.f, false);
-
 				break;
 			case HIT_MOTION::AIR:
 					ChangeMotion(HIT_MOTION::FALLING);
