@@ -11,7 +11,11 @@ void CPlayer_StupefySkill_State::Enter(CStateMachine* pStateMachine)
 {
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer || !pPlayer->GetAnimator()) { RequestLocomotion(pStateMachine); return; }
-	if (!pPlayer->ConsumeParryCounter(m_vParryPosition)) { RequestLocomotion(pStateMachine); return; }
+	const _bool bHeavyReaction =
+		pPlayer->ConsumeProtegoHeavyReaction(m_vParryPosition);
+	m_bCounterQueued = pPlayer->ConsumeParryCounter(m_vParryPosition);
+	if (!bHeavyReaction && !m_bCounterQueued) { RequestLocomotion(pStateMachine); return; }
+	pPlayer->StartProtegoRecoil(m_vParryPosition);
 	CacheAnimationIndices(*pPlayer);
 	SetSkillControl(*pPlayer, true, true, true);
 	pPlayer->SetCurrentMoveSpeed(0.f);
@@ -25,6 +29,13 @@ void CPlayer_StupefySkill_State::Enter(CStateMachine* pStateMachine)
 	// 반동 애니메이션이 없는 데이터에서는 기존 반격 애니메이션으로 바로 넘어간다.
 	if (!PlayParryReaction(*pPlayer))
 	{
+		if (!m_bCounterQueued)
+			m_bCounterQueued = pPlayer->ConsumeParryCounter(m_vParryPosition);
+		if (!m_bCounterQueued)
+		{
+			RequestLocomotion(pStateMachine);
+			return;
+		}
 		m_ePhase = PHASE::COUNTER_ATTACK;
 		if (!PlayCounterAnimation(*pPlayer, m_vParryPosition))
 			RequestLocomotion(pStateMachine);
@@ -43,6 +54,13 @@ void CPlayer_StupefySkill_State::Update(CStateMachine* pStateMachine, _float)
 	{
 		if (fRatio >= REACTION_EXIT_RATIO || pAnimator->GetFinish())
 		{
+			if (!m_bCounterQueued)
+				m_bCounterQueued = pPlayer->ConsumeParryCounter(m_vParryPosition);
+			if (!m_bCounterQueued)
+			{
+				RequestLocomotion(pStateMachine);
+				return;
+			}
 			m_ePhase = PHASE::COUNTER_ATTACK;
 			m_fPreviousAnimRatio = 0.f;
 			m_bSpeedRestored = false;
@@ -76,6 +94,7 @@ void CPlayer_StupefySkill_State::Exit(CStateMachine* pStateMachine)
 	if (auto* pPlayer = GetPlayer(pStateMachine)) ResetSkillControl(*pPlayer);
 	m_bSpeedRestored = false;
 	m_bProjectileReleased = false;
+	m_bCounterQueued = false;
 	m_fPreviousAnimRatio = 0.f;
 	m_vParryPosition = {};
 	m_ePhase = PHASE::PARRY_REACTION;

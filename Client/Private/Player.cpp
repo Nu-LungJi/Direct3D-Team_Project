@@ -938,7 +938,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		CGameInstance::Get().KeyPressing(DIK_Q))
 	{
 		m_bStupefyCounterRequested = true;
-		if (!m_pStateMachine->RequestState(PLAYER_STATE::STUPEFY_SKILL))
+		if (m_pStateMachine->GetCurrentState() != PLAYER_STATE::STUPEFY_SKILL &&
+			!m_pStateMachine->RequestState(PLAYER_STATE::STUPEFY_SKILL))
 			m_bStupefyCounterRequested = false;
 	}
 
@@ -1483,6 +1484,21 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 			vVelocity.z = 0.f;
 			m_pComCharacterMotor->SetVelocity(vVelocity);
 		}
+	}
+
+	// 프로테고 반동은 상태 전환과 독립적으로 유지한다. 같은 프레임에
+	// 스투페파이 반격 상태로 넘어가도 남은 시간 동안 CCT에 계속 적용된다.
+	if (m_fProtegoRecoilRemainTime > 0.f && m_pComMoveIntent)
+	{
+		const _float fRecoilRatio = std::clamp(
+			m_fProtegoRecoilRemainTime / PROTEGO_RECOIL_DURATION, 0.f, 1.f);
+		const _float fRecoilSpeed = PROTEGO_RECOIL_SPEED * fRecoilRatio;
+		m_pComMoveIntent->AddExternalDisplacement({
+			m_vProtegoRecoilDirection.x * fRecoilSpeed * fTimeDelta,
+			0.f,
+			m_vProtegoRecoilDirection.z * fRecoilSpeed * fTimeDelta });
+		m_fProtegoRecoilRemainTime = std::max(
+			0.f, m_fProtegoRecoilRemainTime - fTimeDelta);
 	}
 
 	ApplyGroundFollow(fTimeDelta);
@@ -2306,7 +2322,7 @@ _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,i
 {
 	if (m_bProtegoActive)
 	{
-		TriggerProtegoHit(vHitPosition);
+		TriggerProtegoHit(vHitPosition, iDamage);
 		return false;
 	}
 	if (m_bInvincible)
@@ -2352,7 +2368,7 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 		return false;
 	if (m_bProtegoActive)
 	{
-		TriggerProtegoHit(vHitPosition);
+		TriggerProtegoHit(vHitPosition, iDamage);
 		return false;
 	}
 	if (m_bInvincible)
@@ -2393,7 +2409,7 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 			vHit = pTarget->GetTransform().GetState(STATE::POSITION);
 		_float3 vHitPosition{};
 		XMStoreFloat3(&vHitPosition, vHit);
-		TriggerProtegoHit(vHitPosition);
+		TriggerProtegoHit(vHitPosition, iDamage);
 		return false;
 	}
 	if (m_bInvincible)
@@ -2439,7 +2455,7 @@ _bool CPlayer::RequestKnockdown(const _float3& vAttackPosition)
 	return m_pStateMachine->RequestState(PLAYER_STATE::KNOCKDOWN);
 }
 
-void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
+void CPlayer::TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage)
 {
 	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
 		.fIntensity = 0.2f,
@@ -2457,23 +2473,7 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 
 	// 방어 성공 자체의 반동이므로 스투페파이 반격 입력 여부와 무관하게 적용한다.
 	// 접촉점 반대 방향의 수평 변위만 사용해 지면에서 뜨지 않게 한다.
-	if (m_pComMoveIntent)
-	{
-		_vector vPushDirection = XMVectorSetY(-vNormal, 0.f);
-		if (XMVectorGetX(XMVector3LengthSq(vPushDirection)) <= FLT_EPSILON)
-		{
-			vPushDirection = XMVectorSetY(
-				-XMVector3Normalize(GetTransform().GetState(STATE::LOOK)), 0.f);
-		}
-		else
-		{
-			vPushDirection = XMVector3Normalize(vPushDirection);
-		}
-
-		_float3 vProtegoRecoil{};
-		XMStoreFloat3(&vProtegoRecoil, vPushDirection * 0.42f);
-		m_pComMoveIntent->AddExternalDisplacement(vProtegoRecoil);
-	}
+	StartProtegoRecoil(vHitPosition);
 
 	// Sweep 접촉점, Overlap 투사체 중심 등 입력 의미가 달라도
 	// 최종 충돌 위치는 보호막 구 표면으로 통일한다.
@@ -2483,6 +2483,11 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 	XMStoreFloat3(&m_vLastProtegoHitPosition, vShieldSurfacePosition);
 	++m_iProtegoParrySequence;
 	m_fParryCounterRemainTime = PARRY_COUNTER_WINDOW;
+	if (iDamage >= 30 && m_pStateMachine)
+	{
+		m_bProtegoHeavyReactionRequested = true;
+		m_pStateMachine->RequestState(PLAYER_STATE::STUPEFY_SKILL);
+	}
 
 	_vector vReferenceUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
 	if (fabsf(XMVectorGetX(XMVector3Dot(vNormal, vReferenceUp))) > 0.96f)
@@ -2573,6 +2578,32 @@ _bool CPlayer::ConsumeParryCounter(_float3& outAttackPosition)
 	m_fParryCounterRemainTime = 0.f;
 	outAttackPosition = m_vLastProtegoHitPosition;
 	return true;
+}
+
+_bool CPlayer::ConsumeProtegoHeavyReaction(_float3& outAttackPosition)
+{
+	if (!m_bProtegoHeavyReactionRequested)
+		return false;
+
+	m_bProtegoHeavyReactionRequested = false;
+	outAttackPosition = m_vLastProtegoHitPosition;
+	return true;
+}
+
+void CPlayer::StartProtegoRecoil(const _float3& vHitPosition)
+{
+	_vector vPushDirection = GetTransform().GetState(STATE::POSITION) -
+		XMLoadFloat3(&vHitPosition);
+	vPushDirection = XMVectorSetY(vPushDirection, 0.f);
+	if (XMVectorGetX(XMVector3LengthSq(vPushDirection)) <= FLT_EPSILON)
+		vPushDirection = -XMVectorSetY(GetTransform().GetState(STATE::LOOK), 0.f);
+	if (XMVectorGetX(XMVector3LengthSq(vPushDirection)) <= FLT_EPSILON)
+		vPushDirection = XMVectorSet(0.f, 0.f, -1.f, 0.f);
+	else
+		vPushDirection = XMVector3Normalize(vPushDirection);
+
+	XMStoreFloat3(&m_vProtegoRecoilDirection, vPushDirection);
+	m_fProtegoRecoilRemainTime = PROTEGO_RECOIL_DURATION;
 }
 
 void CPlayer::HandleDeath()

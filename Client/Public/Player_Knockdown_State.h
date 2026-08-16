@@ -42,10 +42,13 @@ private:
 	static constexpr _float BLEND_DURATION = 0.1f;
 	static constexpr _float LANDING_BLEND_DURATION = 0.18f;
 	static constexpr _float DOWN_HOLD_DURATION = 0.75f;
-	static constexpr _float LAUNCH_VERTICAL_SPEED = 7.f;
-	static constexpr _float LAUNCH_HORIZONTAL_SPEED = 12.5f;
-	static constexpr _float KNOCKDOWN_GRAVITY = -14.f;
-	static constexpr _float LANDING_SLIDE_DURATION = 0.22f;
+	static constexpr _float AIRBORNE_ANIMATION_SPEED = 1.3f;
+	static constexpr _float LAUNCH_VERTICAL_SPEED = 6.5f;
+	static constexpr _float LAUNCH_HORIZONTAL_SPEED = 15.5f;
+	static constexpr _float KNOCKDOWN_GRAVITY = -20.f;
+	static constexpr _float LANDING_SLIDE_DURATION = 0.45f;
+	static constexpr _float LANDING_SLIDE_MIN_SPEED = 7.f;
+	static constexpr _float LANDING_SLIDE_MAX_SPEED = 10.f;
 	static constexpr _float AIRBORNE_ROOT_MOTION_SCALE = 0.f;
 
 	std::array<ANIMATION_SET, DIRECTION_COUNT> m_AnimationSets{};
@@ -54,6 +57,7 @@ private:
 	_float m_fSequenceTime{};
 	_float m_fLandingSlideTime{};
 	_float3 m_vLandingSlideVelocity{};
+	_float3 m_vLaunchSlideDirection{};
 	_float m_fPreviousGravity{ -9.81f };
 	_bool m_bWasAirborne{};
 	_bool m_bLandingSliding{};

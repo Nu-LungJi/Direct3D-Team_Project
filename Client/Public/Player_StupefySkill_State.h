@@ -30,6 +30,7 @@ private:
 	_bool m_bAnimationsCached{};
 	_bool m_bSpeedRestored{};
 	_bool m_bProjectileReleased{};
+	_bool m_bCounterQueued{};
 	_float m_fPreviousAnimRatio{};
 	_float3 m_vParryPosition{};
 	PHASE m_ePhase{ PHASE::PARRY_REACTION };
