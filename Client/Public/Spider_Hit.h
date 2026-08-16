@@ -12,7 +12,8 @@ typedef struct hitalltable
 {
 	HIT_MOTION eHitMotion{};
 	HIT_TYPE eHitType{};
-	MON_ANIM_FSM Anim{};
+	PLAYER_SKILL_TYPE eSkillType{};
+
 }NEW_HIT_TABLE;
 class CSpider_Hit : public CState
 {
@@ -31,13 +32,17 @@ public:
 	void Update(CStateMachine* pStateMachine, _float fTimeDelta) override;
 
 private:
-	HIT_TYPE				Reactive_Table(PLAYER_SKILL_TYPE eType);
+	_float3					TargetDir(CSpider* pSpider, _bool bFront);
+	void					MoveIntent(CSpider* pSpider, _float3 vDir,_float fSpeed);
+	void					Set_Gravity(_bool bGravity,CSpider* pSpider);
+	
+	HIT_TYPE				Reactive_OnlyType(PLAYER_SKILL_TYPE eType);
+	HIT_TYPE				Reactive_TableMotion(PLAYER_SKILL_TYPE eType);
 	void					Check_PendingHit(CSpider* pSpider);
-	void					Hit_Step_Start(CSpider* pSpider);
-	void					Hit_Step_Loop(CSpider* pSpider);
-	void					Hit_Step_End(CSpider* pSpider);
-
+	void					MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CSpider_State* pSpiderState);
 	_bool					PlayAnim(CComAnimator* pAnimator,_bool bLoop = false);
+	void					Finishied(CSpider_State* pSpiderState);
+	void					ChangeMotion(HIT_MOTION eMotion);
 private:
 	uint32_t						m_iAnimIndex{};
 	HIT_STEP						m_HitStep{};

@@ -217,10 +217,10 @@ HRESULT CSpider::Initialize(void* pArg)
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
-	m_eMonType = MONSTER_TYPE::BOSS;
+	m_eMonType = MONSTER_TYPE::NORMAL;
 	
 	m_pComSphereCol->SetQueryEnabled(true);
-	//m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_targetSocket");
+	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RigPelvisSocket");
 	m_pModelAnimator->Play_Anim(0, false);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	return S_OK;
@@ -293,8 +293,6 @@ void CSpider::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 
 }
-/*----------- 광윤 추가 ---------펑--*/
-// 마스크 텍스쳐 테스트 중
 
 void CSpider::Set_StateFinished(_bool bFinished)
 {
@@ -373,6 +371,13 @@ void CSpider::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 void CSpider::Flag_Check(_float fTimeDelta)
 {
 	
+}
+void CSpider::Set_Gravity(_bool bGravity)
+{
+		if (bGravity)
+			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+		else
+			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
 }
 void CSpider::Update_BBToFsm()
 {

@@ -55,10 +55,12 @@ public:
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
 	const _string&				Get_SkillNmae(SPIDER_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
 	void						Set_EndGame() { m_bEndGame = true; }
+	void						Set_Gravity(_bool bGravity);
 private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);
+
 private:
 	class CSpider_State* m_pFsm{ nullptr };
 
