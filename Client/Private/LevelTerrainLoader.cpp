@@ -62,6 +62,11 @@ std::future<bool> CLevelTerrainLoader::Load()
 			{
 				return false;
 			}
+			// [LSY] 테스트 레벨에서도 플레이어 스킬 컷씬을 사용할 수 있도록 미리 등록한다.
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AvadaKedavra")))
+			{
+				return false;
+			}
 
 			UILoad();
 			// oilbarrel

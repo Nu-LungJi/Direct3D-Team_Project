@@ -20,6 +20,14 @@ public:
 		HOLD,
 		FADE
 	};
+
+	// [LSY] JSON의 GeometryType 값과 대응하는 Beam 경로 생성 방식이다.
+	enum class BEAM_GEOMETRY_TYPE : uint32_t
+	{
+		JAGGED = 0,
+		SINE = 1,
+		ELECTRIC_BUNDLE = 2
+	};
     struct DESC
     {
         std::pair<StringID, StringID> textureID;
@@ -88,6 +96,9 @@ public:
 		_float fFadeEndTime{};
 		std::vector<_float3> vecJaggedPoints;
 		_float fbeamWidth{};
+		// [LSY] 0이면 기존 폭을 유지하고, 양수면 시작/끝 정규화 구간에서 폭과 알파를 줄인다.
+		_float fStartTaperRatio = 0.f;
+		_float fEndTaperRatio = 0.f;
 		uint32_t iGeometryType = 0;
 		_float fspawnDelay{};
 	};
