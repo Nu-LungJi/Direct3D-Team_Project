@@ -2441,6 +2441,11 @@ _bool CPlayer::RequestKnockdown(const _float3& vAttackPosition)
 
 void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 {
+	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
+		.fIntensity = 0.2f,
+		.fDuration = 0.16f,
+		.fFrequency = 24.f });
+
 	_float3 vShieldCenter = GetTransform().GetPosition();
 	vShieldCenter.y += 1.f;
 
@@ -2449,6 +2454,26 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 		vNormal = XMVectorSet(0.f, 0.f, 1.f, 0.f);
 	else
 		vNormal = XMVector3Normalize(vNormal);
+
+	// 방어 성공 자체의 반동이므로 스투페파이 반격 입력 여부와 무관하게 적용한다.
+	// 접촉점 반대 방향의 수평 변위만 사용해 지면에서 뜨지 않게 한다.
+	if (m_pComMoveIntent)
+	{
+		_vector vPushDirection = XMVectorSetY(-vNormal, 0.f);
+		if (XMVectorGetX(XMVector3LengthSq(vPushDirection)) <= FLT_EPSILON)
+		{
+			vPushDirection = XMVectorSetY(
+				-XMVector3Normalize(GetTransform().GetState(STATE::LOOK)), 0.f);
+		}
+		else
+		{
+			vPushDirection = XMVector3Normalize(vPushDirection);
+		}
+
+		_float3 vProtegoRecoil{};
+		XMStoreFloat3(&vProtegoRecoil, vPushDirection * 0.42f);
+		m_pComMoveIntent->AddExternalDisplacement(vProtegoRecoil);
+	}
 
 	// Sweep 접촉점, Overlap 투사체 중심 등 입력 의미가 달라도
 	// 최종 충돌 위치는 보호막 구 표면으로 통일한다.

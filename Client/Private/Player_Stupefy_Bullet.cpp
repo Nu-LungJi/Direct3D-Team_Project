@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Player_Stupefy_Bullet.h"
+#include "ClientEvents.h"
 #include "DbgLineRender.h"
 #include "Monster.h"
 #include "PhysXManager.h"
@@ -214,6 +215,10 @@ void CPlayer_Stupefy_Bullet::Finish(const _float3& position, const _float3& norm
 		_float4x4 world{}; XMStoreFloat4x4(&world, XMMatrixTranslation(position.x, position.y, position.z));
 		CGameInstance::Get().PlayEffect(m_sImpactEffect, world, XMLoadFloat3(&normal));
 	}
+	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
+		.fIntensity = 0.085f,
+		.fDuration = 0.1f,
+		.fFrequency = 27.f });
 	if (auto* monster = Cast<CMonster>(hitObject)) monster->Check_Table(m_eSkillType);
 	SetPendingDestroy();
 }
