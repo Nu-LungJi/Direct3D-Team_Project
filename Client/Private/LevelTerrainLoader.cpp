@@ -32,6 +32,8 @@
 #include "EdgPulse.h"
 #include "EdgRandomBall.h"
 #include "EdgGasi.h"
+#include "Spider_State.h"
+#include "Spider.h"
 // UI
 #include "UIController.h"
 #include "EffectUI.h"
@@ -453,7 +455,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, CTmbGurdian::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TMBGurdian");
-			return false;
+			return E_FAIL;
 		}
 
 	}
@@ -479,7 +481,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead, CTmbGurdianDead::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TmbGurdianDead");
-			return false;
+			return E_FAIL;
 		}
 	}
 	//TombWeapon
@@ -547,6 +549,27 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Gasi, CEdgGasi::Create()))) return E_FAIL;
 
 	}
+	//Spider
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "Model_Resource_Spider",
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Spider/SK_Spider.bin"))) {
 
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(6.f, 6.f, 6.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("TERRAIN Failed Model_Resource_Spider");
+				return E_FAIL;
+			}
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");
+			return E_FAIL;
+		}
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, "Prototype_Component_Spider_FSM", CSpider_State::Create()))) return E_FAIL;
+
+	}
 	return S_OK;
 }

@@ -192,8 +192,8 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 		XMStoreFloat3(&m_vDir, XMVector3Normalize(matOffset.r[3] - matBone.r[3]));
 		XMStoreFloat3(&m_vTargetDir, XMVector3Normalize(XMLoadFloat3(&pTarget->GetTransform().GetPosition()) - matOffset.r[3]));
 
-		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), 0.8f));
-		vForward -= XMVectorSet(0, 0.05f, 0, 0);
+		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), 0.2f));
+		vForward -= XMVectorSet(0, 0.18f, 0, 0);
 	}
 
 	_vector vUp = XMVector3Normalize(matBone.r[1]);

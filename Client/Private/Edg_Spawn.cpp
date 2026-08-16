@@ -99,13 +99,15 @@ void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		MoveSpawn(pDragon, fTimeDelta);
 		break;
 	case EDG_SPAWN_NUMBER::THIRD:
-		Play_Anim(pDragon, fTimeDelta);
+		m_fSpawnTick += fTimeDelta;
+		if(m_fSpawnTick >= 2.f)
+			Play_Anim(pDragon, fTimeDelta);
 		break;
 	case EDG_SPAWN_NUMBER::FOUR:
-		pDragonFsm->Request_State(EDG_STATE::COMBAT);
+		pDragonFsm->Request_State(MON_STATE::COMBAT);
 		break;
 	}
-	//pDragonFsm->Request_State(EDG_STATE::COMBAT);
+	//pDragonFsm->Request_State(MON_STATE::COMBAT);
 }
 
 void CEdg_Spawn::SpawnSkill(CEnderDragon* pDragon, const _string& strName)
@@ -128,7 +130,7 @@ _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
 	{
 		CGameInstance::Get().StopEffect(m_iEffectID);
 		SpawnSkill(pDragon, "RanrokStaySmoke");
-
+		m_fSpawnTick = 0.f;
 		m_eSpawn = EDG_SPAWN_NUMBER::THIRD;
 		m_bNext = false;
 		return true;

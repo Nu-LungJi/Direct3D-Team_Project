@@ -367,7 +367,8 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
 	InitializeEffects();
-
+	m_pComSphereCol->SetQueryEnabled(true);
+	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_targetSocket");
 	return S_OK;
 }
 HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
@@ -376,17 +377,17 @@ HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
 	if (FAILED(AddComponentFromProto(LevelTag, "Prototype_Component_Dragon_FSM", "EnderDragon_Fsm", &Desc, &m_pFsm))) return E_FAIL;
 
 
-	if (false == m_pFsm->Add_State(EDG_STATE::SPAWN, CEdg_Spawn::Create(LevelTag))) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::SPAWN, CEdg_Spawn::Create(LevelTag))) return E_FAIL;
 
-	if (false == m_pFsm->Add_State(EDG_STATE::COMBAT, CEdg_Combat::Create())) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CEdg_Combat::Create())) return E_FAIL;
 
-	if (false == m_pFsm->Add_State(EDG_STATE::HIT, CEdg_Hit::Create())) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::HIT, CEdg_Hit::Create())) return E_FAIL;
 
-	if (false == m_pFsm->Add_State(EDG_STATE::PHASE_CHANGE, CEdg_Phase::Create(LevelTag))) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::PHASE_CHANGE, CEdg_Phase::Create(LevelTag))) return E_FAIL;
 
-	if (false == m_pFsm->Add_State(EDG_STATE::DEAD, CEdg_Dead::Create())) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::DEAD, CEdg_Dead::Create())) return E_FAIL;
 
-	if (false == m_pFsm->Initialize_State(EDG_STATE::SPAWN)) return E_FAIL;
+	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
 
 
 	return S_OK;
@@ -576,7 +577,7 @@ void CEnderDragon::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 
 }
-/*----------- 광윤 추가 -----------*/
+/*----------- 광윤 추가 ---------펑--*/
 // 마스크 텍스쳐 테스트 중
 HRESULT	CEnderDragon::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) {
 	__super::Render_Instanced(pContext, ctx, Batch);
@@ -820,7 +821,7 @@ _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 
 	if (true == BreakSkillType(eType) && false == m_bIsBreak)
 	{
-		m_pFsm->Request_State(EDG_STATE::HIT);
+		m_pFsm->Request_State(MON_STATE::HIT);
 		m_bIsBreak = true;
 
 		m_PendingMonTable.eAttType = m_eAttType;
@@ -834,7 +835,7 @@ _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 }
 void CEnderDragon::Check_Phase()
 {
-	if (m_pFsm->GetCurState() != EDG_STATE::COMBAT)
+	if (m_pFsm->GetCurState() != MON_STATE::COMBAT)
 		return;
 	auto pBB = Get_BlackBoard();
 	if (nullptr == pBB) return;
@@ -850,7 +851,7 @@ void CEnderDragon::Check_Phase()
 	auto pFinished = pBB->Get_Value<_bool>(EDG_KEY::BSTATE_FINISHED);
 	if (m_iHp <= 0.f)
 	{
-		m_pFsm->Request_State(EDG_STATE::DEAD);
+		m_pFsm->Request_State(MON_STATE::DEAD);
 		return;
 	}
 	if (nullptr == pFinished) return;
@@ -859,7 +860,7 @@ void CEnderDragon::Check_Phase()
 	{
 		//피 조금 까이고 도망
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE2)] = true;
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE,DRAGON_PHASE::PHASE2);
 		return;
@@ -868,7 +869,7 @@ void CEnderDragon::Check_Phase()
 	{
 		//도망간 후 파이어볼 잠깐 쏘다 거리 가까워지면 다시 run
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE3)] = true;
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE3);
 		return;
@@ -877,7 +878,7 @@ void CEnderDragon::Check_Phase()
 	{
 		//대충 날다 두드려 맞고 도망
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE4)] = true;
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
 		return;
@@ -886,7 +887,7 @@ void CEnderDragon::Check_Phase()
 	{
 		//대충 땅바닥 진입전 마지막 비행
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE5)] = true;
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE5);
 		return;
@@ -994,28 +995,28 @@ void CEnderDragon::Phase_Debug()
 	if (nullptr == pBB) return;
 	//if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_Q))
 	//{
-	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE1);
 	//
 	//}
 	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_W))
 	//{
-	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE2);
 	//}
 	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_E))
 	//{
-	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE3);
 	//}
 	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_R))
 	//{
-	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
 	//}
 	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_T))
 	//{
-	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
 	//}
 }

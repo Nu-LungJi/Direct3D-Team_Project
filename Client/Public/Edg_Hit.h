@@ -23,7 +23,7 @@ private:
 	_bool Play_Hit_Anim(CEnderDragon* pDragon);
 	_bool Is_Finished(CEnderDragon* pDragon);
 private:
-	std::vector<EDG_ANIM_FSM>	m_Hits[ETOUI(PLAYER_SKILL_TYPE::END)];
+	std::vector<EDG_ANIM_FSM>	m_Hits[ETOUI(PLAYER_SKILL_TYPE::END)][ETOUI(DRAGON_PHASE::END)];
 	MON_HIT_INFO				m_eHitInfo{};
 	uint32_t					m_iIndex{};
 public:

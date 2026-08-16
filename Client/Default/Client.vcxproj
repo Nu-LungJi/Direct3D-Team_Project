@@ -297,6 +297,11 @@
     <ClInclude Include="..\Public\Player_ProtegoSkill_State.h" />
     <ClInclude Include="..\Public\Player_StupefySkill_State.h" />
     <ClInclude Include="..\public\RagdollTest.h" />
+    <ClInclude Include="..\public\Spider.h" />
+    <ClInclude Include="..\public\Spider_Combat.h" />
+    <ClInclude Include="..\public\Spider_Hit.h" />
+    <ClInclude Include="..\public\Spider_Spawn.h" />
+    <ClInclude Include="..\public\Spider_State.h" />
     <ClInclude Include="..\public\TestPathPlaybackObject.h" />
     <ClInclude Include="..\public\LuaTestObject.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
@@ -451,6 +456,11 @@
     <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_StupefySkill_State.cpp" />
     <ClCompile Include="..\private\RagdollTest.cpp" />
+    <ClCompile Include="..\private\Spider.cpp" />
+    <ClCompile Include="..\private\Spider_Combat.cpp" />
+    <ClCompile Include="..\private\Spider_Hit.cpp" />
+    <ClCompile Include="..\private\Spider_Spawn.cpp" />
+    <ClCompile Include="..\private\Spider_State.cpp" />
     <ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
     <ClCompile Include="..\private\LuaTestObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />

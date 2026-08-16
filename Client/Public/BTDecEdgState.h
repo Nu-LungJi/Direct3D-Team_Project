@@ -23,7 +23,7 @@ public:
 	virtual nlohmann::json		Save_Node()override;
 	HRESULT						Load_json(const nlohmann::json& j) override;
 private:
-	EDG_STATE					m_eState{ EDG_STATE::SPAWN };
+	MON_STATE					m_eState{ MON_STATE::SPAWN };
 public:
 	static UPtr<CBTDecEdgState> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

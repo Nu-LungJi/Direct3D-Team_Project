@@ -27,8 +27,8 @@ HRESULT CEdgGasi::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	m_fDamage = 30.f;
-	m_fSpeed = 3.f;
-	m_fRadius = 0.5f;
+	m_fSpeed = 30.f;
+	m_fRadius = 3.f;
 	m_fMaxLife = 3.f;
 
 	return S_OK;
@@ -71,6 +71,11 @@ void CEdgGasi::LateUpdate(E::_float fTimeDelta)
 void CEdgGasi::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 {
 	Set_TargetDir(vOffsetPos);
+	m_vTargetDir.y = 0.f;
+	_vector vDirection = XMLoadFloat3(&m_vTargetDir);
+
+
+	XMStoreFloat3(&m_vTargetDir,XMVector3Normalize(vDirection));
 	GetTransform().SetPosition(vOffsetPos);
 	GetTransform().Update();
 
@@ -91,7 +96,7 @@ void CEdgGasi::MoveGasi(_float fTimeDelta)
 	_vector vPos = GetTransform().GetLoadedPostion();
 	_vector vDir = XMVector3Normalize(XMLoadFloat3(&m_vTargetDir));
 	_vector vNextPos = vPos + vDir * m_fSpeed * fTimeDelta;
-
+	
 	if (MoveSweep(vNextPos))
 	{
 		GetTransform().SetPosition(vNextPos);
