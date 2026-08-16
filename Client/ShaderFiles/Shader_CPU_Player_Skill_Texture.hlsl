@@ -307,3 +307,77 @@ PS_OUT PSProtegoImpactLayered(VS_OUT In)
 	return Out;
 }
 
+PS_OUT LumosWaver(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float2 centeredUV = In.vTexcoord * 2.f - 1.f;
+	float radius = length(centeredUV);
+	float angle = atan2(centeredUV.y, centeredUV.x);
+	float time = g_fAccumulationTime;
+	float2 noiseUV = In.vTexcoord * 1.7f + float2(time * 0.071f, -time * 0.053f);
+	float2 noiseUV2 = In.vTexcoord * 3.1f + float2(-time * 0.043f, time * 0.067f);
+	float noiseA = g_NoiseTexture.Sample(LinearWrap, noiseUV).r;
+	float noiseB = g_NoiseTexture.Sample(LinearWrap, noiseUV2).g;
+	float flowingNoise = noiseA * 0.65f + noiseB * 0.35f;
+	float2 flowDirection = float2(noiseA, noiseB) * 2.f - 1.f;
+	float edgeWeight = smoothstep(0.05f, 0.72f, radius);
+	float2 distortedUV = In.vTexcoord + flowDirection * 0.018f * edgeWeight;
+	distortedUV += float2(sin(time * 1.37f + centeredUV.y * 8.f),
+		cos(time * 1.11f + centeredUV.x * 7.f)) * 0.0045f * edgeWeight;
+	// Keep the flare large, then gently rotate and shear it so the long wisp rays
+	// never look like a rigid billboard texture.
+	float flareRotation = sin(time * 0.43f) * 0.11f + sin(time * 0.19f) * 0.055f;
+	float flareCos = cos(flareRotation);
+	float flareSin = sin(flareRotation);
+	float2 flareCentered = distortedUV - 0.5f;
+	flareCentered = float2(
+		flareCentered.x * flareCos - flareCentered.y * flareSin,
+		flareCentered.x * flareSin + flareCentered.y * flareCos);
+	float wispBreath = 0.92f + sin(time * 1.31f + flowingNoise * 2.4f) * 0.035f;
+	flareCentered.x *= wispBreath;
+	flareCentered.y *= 1.84f - wispBreath;
+	flareCentered += flowDirection * 0.012f * edgeWeight;
+	float2 flareTextureUV = flareCentered * 0.96f + 0.5f;
+	float insideFlareTexture =
+		step(0.f, flareTextureUV.x) * step(flareTextureUV.x, 1.f) *
+		step(0.f, flareTextureUV.y) * step(flareTextureUV.y, 1.f);
+	float3 flareSample = g_DiffuseTexture.Sample(LinearClamp, flareTextureUV).rgb *
+		insideFlareTexture;
+	float flareLuminance = dot(flareSample, float3(0.299f, 0.587f, 0.114f));
+	float textureBloom = pow(saturate(flareLuminance), 0.72f);
+	float angleWarp = (flowingNoise - 0.5f) * 1.25f +
+		sin(time * 1.9f + radius * 9.f) * 0.12f;
+	float raysA = pow(saturate(0.5f + 0.5f *
+		sin((angle + angleWarp) * 6.f + time * 0.73f)), 14.f);
+	float raysB = pow(saturate(0.5f + 0.5f *
+		sin((angle - angleWarp * 0.7f) * 11.f - time * 0.51f)), 22.f);
+	float rayFade = pow(saturate(1.f - radius), 2.2f) *
+		smoothstep(0.92f, 0.08f, radius);
+	float rayMask = (raysA * 0.72f + raysB * 0.42f) * rayFade;
+	float core = pow(saturate(1.f - radius), 12.f);
+	float hotCore = pow(saturate(1.f - radius * 3.6f), 3.4f);
+	float flicker = 0.88f + 0.12f * sin(time * 4.7f + flowingNoise * 6.283185f);
+	float breathing = 0.91f + 0.09f * sin(time * 3.1f + flowingNoise * 4.f);
+	float animatedFlare = textureBloom * breathing * lerp(0.86f, 1.14f, flowingNoise);
+	float outerSpread = animatedFlare * lerp(0.56f, 1.f,
+		pow(saturate(1.f - radius), 2.2f));
+	float concentratedCore = pow(saturate(1.f - radius * 4.35f), 2.7f);
+	float mask = saturate(max(outerSpread,
+		concentratedCore * 1.28f + hotCore * 0.92f + core * 0.54f) +
+		rayMask * 0.43f * flicker);
+	float3 warmWhite = float3(1.f, 0.96f, 0.84f);
+	float3 whiteCore = float3(1.f, 0.995f, 0.97f);
+	float3 color = lerp(warmWhite, whiteCore, saturate(hotCore * 2.f));
+	float4 emissive = lerp(In.vEmissive, In.vEndEmissive,
+		saturate(In.life / max(In.maxLife, 0.0001f)));
+	float centerFocus = pow(saturate(1.f - radius), 7.2f);
+	float intensity = 0.94f + emissive.a * lerp(0.3f, 1.08f, centerFocus);
+	float translucentEdge = lerp(0.115f, 0.94f, centerFocus);
+	float alpha = saturate(max(concentratedCore, mask * translucentEdge) * In.vColor.a);
+
+	Out.vDiffuse = float4(color * mask * intensity, alpha);
+	clip(Out.vDiffuse.a - 0.004f);
+	return Out;
+}
+

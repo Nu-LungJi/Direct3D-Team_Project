@@ -1424,7 +1424,7 @@ void CPlayer::UpdateLumosLight()
 	if (!m_hLumosLight)
 	{
 		m_hLumosLight = CGameInstance::Get().Allocate_EffectLight(
-			XMLoadFloat3(&vPosition), 140.f, { 0.72f, 0.84f, 1.f }, 7.f, 14.f,
+			XMLoadFloat3(&vPosition), 220.f, { 1.f, 0.94f, 0.78f }, 6.f, 13.f,
 			99999.f, { 0.f, 0.f, 0.f });
 		return;
 	}
