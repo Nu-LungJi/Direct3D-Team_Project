@@ -469,7 +469,7 @@ HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pCo
 	if (nullptr == pLight) return E_FAIL;
 
 	for (MODEL_INSTANCE_BATCH* pBatch : m_ActiveBatches) {
-		if (!pBatch || pBatch->Instances.empty() || pBatch->bModelStatic != _bStaticBatch) continue;
+		if (!pBatch || pBatch->Instances.empty() || pBatch->bModelStatic != _bStaticBatch || pBatch->bGPUSkinned) continue;
 
 		m_ShadowFilteredInstances.clear();
 		m_ShadowVisibleSourceIndices.clear();
@@ -477,15 +477,7 @@ HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pCo
 		const size_t InstanceCount = pBatch->Instances.size();
 		const LIGHT_TYPE LightType = pLight->Get_LightType();
 
-
-		if (pBatch->bGPUSkinned) {
-			m_ShadowFilteredInstances = pBatch->Instances;
-			m_ShadowVisibleSourceIndices.reserve(InstanceCount);
-			for (uint32_t i = 0; i < static_cast<uint32_t>(InstanceCount); ++i)
-				m_ShadowVisibleSourceIndices.push_back(i);
-		}
-
-		for (size_t i = 0; !pBatch->bGPUSkinned && i < InstanceCount; ++i) {
+		for (size_t i = 0; i < InstanceCount; ++i) {
 			_bool bVisibleToLight = true;
 			if (LightType != LIGHT_TYPE::DIRECTIONAL && i < pBatch->ShadowBounds.size()) {
 				const auto& OptionalBounds = pBatch->ShadowBounds[i];
@@ -582,12 +574,7 @@ HRESULT CModel_Instance_Manager::Render_ShadowBatch(ID3D11DeviceContext* pContex
 
 	if (FAILED(Update_ShadowInstanceBuffer(pContext)))	return E_FAIL;
 
-	if (Batch.bGPUSkinned) {
-		if (FAILED(Dispatch_GPUAnimationForShadow(pContext, Batch, pModel))) return E_FAIL;
-	}
-	else {
-		if (FAILED(Update_BonePaletteBuffer(pContext, Batch, BoneStride))) return E_FAIL;
-	}
+	if (FAILED(Update_BonePaletteBuffer(pContext, Batch, BoneStride))) return E_FAIL;
 
 	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex) {
 		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
@@ -607,60 +594,6 @@ HRESULT CModel_Instance_Manager::Render_ShadowBatch(ID3D11DeviceContext* pContex
 
 	ID3D11ShaderResourceView* pNullSRVs[3]{ };
 	pContext->VSSetShaderResources(6, 3, pNullSRVs);
-
-	return S_OK;
-}
-
-HRESULT CModel_Instance_Manager::Dispatch_GPUAnimationForShadow(
-	ID3D11DeviceContext* pContext,
-	const MODEL_INSTANCE_BATCH& Batch,
-	const SPtr<CResModel>& Model)
-{
-	if (!pContext || !Model || Batch.Instances.empty() || Batch.Instances.size() > MAX_INSTANCE_COUNT)
-		return E_INVALIDARG;
-
-	auto pAnimationCS = CGameInstance::Get().GetResourceFirst<CResComputeShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation");
-	auto pInstanceBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(
-		TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
-	auto pFinalBoneBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(
-		TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
-
-	if (!pAnimationCS || !pAnimationCS->GetComputeShader() || !pInstanceBuffer || !pFinalBoneBuffer)
-		return E_FAIL;
-
-	ID3D11ShaderResourceView* pCSSRVs[] = {
-		Model->Get_GPUBoneSRV(),
-		Model->Get_GPUAnimationSRV(),
-		Model->Get_GPUChannelSRV(),
-		Model->Get_GPUKeyFrameSRV(),
-		Model->Get_GPUBoneChannelMapSRV(),
-		Model->Get_GPUSkinBoneSRV(),
-		pInstanceBuffer->GetSRV().Get()
-	};
-	for (ID3D11ShaderResourceView* pSRV : pCSSRVs) {
-		if (!pSRV) return E_FAIL;
-	}
-
-	ID3D11UnorderedAccessView* pFinalBoneUAV = pFinalBoneBuffer->GetUAV().Get();
-	if (!pFinalBoneUAV) return E_FAIL;
-
-	ID3D11ShaderResourceView* pNullSRV = nullptr;
-	pContext->VSSetShaderResources(7, 1, &pNullSRV);
-	pContext->CSSetShaderResources(0, static_cast<UINT>(std::size(pCSSRVs)), pCSSRVs);
-	pContext->CSSetUnorderedAccessViews(0, 1, &pFinalBoneUAV, nullptr);
-	pContext->CSSetShader(pAnimationCS->GetComputeShader().Get(), nullptr, 0);
-	pContext->Dispatch(static_cast<UINT>(Batch.Instances.size()), 1, 1);
-
-	ID3D11ShaderResourceView* pNullCSSRVs[7]{};
-	ID3D11UnorderedAccessView* pNullUAV = nullptr;
-	pContext->CSSetShaderResources(0, 7, pNullCSSRVs);
-	pContext->CSSetUnorderedAccessViews(0, 1, &pNullUAV, nullptr);
-	pContext->CSSetShader(nullptr, nullptr, 0);
-
-	ID3D11ShaderResourceView* pFinalBoneSRV = pFinalBoneBuffer->GetSRV().Get();
-	if (!pFinalBoneSRV) return E_FAIL;
-	pContext->VSSetShaderResources(7, 1, &pFinalBoneSRV);
 
 	return S_OK;
 }
@@ -776,7 +709,7 @@ HRESULT CModel_Instance_Manager::Bind_SkinMeshConstantBuffer(ID3D11DeviceContext
 _bool CModel_Instance_Manager::Has_ActiveDynamicShadowBatch() {
 	for (const MODEL_INSTANCE_BATCH* Batch : m_ActiveBatches)
 	{
-		if (nullptr == Batch || Batch->Instances.empty() || Batch->bModelStatic)
+		if (nullptr == Batch || Batch->Instances.empty() || Batch->bModelStatic || Batch->bGPUSkinned)
 			continue;
 
 		return true;

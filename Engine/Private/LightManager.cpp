@@ -1746,7 +1746,7 @@ VOID	CLightManager::Invalidate_DynamicShadowMaps(){
 
 		if (!bHasCasterNow) {
 			for (const MODEL_INSTANCE_BATCH* Batch : ActiveBatchList) {
-				if (!Batch || Batch->Instances.empty() || Batch->bModelStatic)	continue;
+				if (!Batch || Batch->Instances.empty() || Batch->bModelStatic || Batch->bGPUSkinned)	continue;
 
 				const size_t InstanceCount = Batch->Instances.size();
 
