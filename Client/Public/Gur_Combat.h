@@ -4,13 +4,13 @@
 #include "Spider.h"
 NS_BEGIN(Client)
 
-class CSpider_Spawn : public CState
+class CGur_Combat : public CState
 {
 public:
-	DECLARE_DERIVED_TYPE(CSpider_Spawn, CState)
+	DECLARE_DERIVED_TYPE(CGur_Combat, CState)
 private:
-	CSpider_Spawn();
-	~CSpider_Spawn() override;
+	CGur_Combat();
+	~CGur_Combat() override;
 private:
 	HRESULT Initialize(const _string& strLevelTag);
 public:
@@ -19,12 +19,8 @@ public:
 
 	void PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta) override;
 	void Update(CStateMachine* pStateMachine, _float fTimeDelta) override;
-private:
-	_bool		Play_Anim(CSpider* pDragon, _float fTimeDelta);
-private:
-	std::vector<MON_ANIM_FSM>			m_Anims;
 public:
-	static SPtr<CSpider_Spawn> Create(const _string& strLevelTag);
+	static SPtr<CGur_Combat> Create(const _string& strLevelTag);
 };
 
 NS_END

@@ -379,6 +379,12 @@
     <Filter Include="GameObject\Monster\Spider\FSM\State">
       <UniqueIdentifier>{6802c92e-b52f-438e-ad3d-29d8e867e9ce}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\TombGudian\FSM">
+      <UniqueIdentifier>{25cd6b4f-4756-416e-ba73-4a4ebe76a47d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\TombGudian\FSM\State">
+      <UniqueIdentifier>{27b24ae4-64c0-4eee-be9d-7a59fd9c8e1b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -861,9 +867,6 @@
     <ClInclude Include="..\public\Spider.h">
       <Filter>GameObject\Monster\Spider</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Spider_State.h">
-      <Filter>GameObject\Monster\Spider\FSM</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Spider_Spawn.h">
       <Filter>GameObject\Monster\Spider\FSM\State</Filter>
     </ClInclude>
@@ -872,6 +875,15 @@
     </ClInclude>
     <ClInclude Include="..\public\Spider_Hit.h">
       <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Mon_State.h">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Gur_Combat.h">
+      <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Gur_Hit.h">
+      <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1304,9 +1316,6 @@
     <ClCompile Include="..\private\Spider.cpp">
       <Filter>GameObject\Monster\Spider</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\Spider_State.cpp">
-      <Filter>GameObject\Monster\Spider\FSM</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\Spider_Spawn.cpp">
       <Filter>GameObject\Monster\Spider\FSM\State</Filter>
     </ClCompile>
@@ -1315,6 +1324,15 @@
     </ClCompile>
     <ClCompile Include="..\private\Spider_Hit.cpp">
       <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Mon_State.cpp">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Gur_Combat.cpp">
+      <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Gur_Hit.cpp">
+      <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

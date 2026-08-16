@@ -17,7 +17,7 @@
 #include "UIController.h"
 #include "UIManager.h"
 //FSM
-#include "Spider_State.h"
+#include "Mon_State.h"
 #include "Spider_Spawn.h"
 #include "Spider_Combat.h"
 #include "Spider_Hit.h"
@@ -227,8 +227,8 @@ HRESULT CSpider::Initialize(void* pArg)
 }
 HRESULT CSpider::Ready_Fsm(const _string& LevelTag)
 {
-	CSpider_State::DESC Desc{};
-	if (FAILED(AddComponentFromProto(LevelTag, "Prototype_Component_Spider_FSM", "Spider_Fsm", &Desc, &m_pFsm))) return E_FAIL;
+	CMon_State::DESC Desc{};
+	if (FAILED(AddComponentFromProto(LevelTag, "Prototype_Component_Mon_FSM", "Mon_Fsm", &Desc, &m_pFsm))) return E_FAIL;
 	
 	
 	if (false == m_pFsm->Add_State(MON_STATE::SPAWN, CSpider_Spawn::Create(LevelTag))) return E_FAIL;
@@ -236,11 +236,7 @@ HRESULT CSpider::Ready_Fsm(const _string& LevelTag)
 	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CSpider_Combat::Create(LevelTag))) return E_FAIL;
 	
 	if (false == m_pFsm->Add_State(MON_STATE::HIT, CSpider_Hit::Create(LevelTag,this))) return E_FAIL;
-	//
-	//if (false == m_pFsm->Add_State(MON_STATE::PHASE_CHANGE, CEdg_Phase::Create(LevelTag))) return E_FAIL;
-	//
-	//if (false == m_pFsm->Add_State(MON_STATE::DEAD, CEdg_Dead::Create())) return E_FAIL;
-	//
+
 	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
 
 

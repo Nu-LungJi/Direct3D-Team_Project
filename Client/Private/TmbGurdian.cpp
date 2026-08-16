@@ -20,6 +20,10 @@
 #include "UIController.h"
 #include "UIManager.h"
 #include "BTBlackBoard.h"
+
+#include "Mon_State.h"
+#include "Gur_Hit.h"
+#include "Gur_Combat.h"
 NS_USING(Client)
 
 namespace
@@ -794,10 +798,30 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Spine1");
 	
 	m_pModelAnimator->Play_Anim(0, false);
+	if (FAILED(Ready_Fsm(MonDesc->LevelTag)))
+		return E_FAIL;
+
 	ReadySound();
 	return S_OK;
 }
+HRESULT CTmbGurdian::Ready_Fsm(const _string& LevelTag)
+{
+	if (m_eMonType != MONSTER_TYPE::NORMAL)
+		return S_OK;
 
+	CMon_State::DESC Desc{};
+	if (FAILED(AddComponentFromProto(LevelTag, "Prototype_Component_Mon_FSM", "Mon_Fsm", &Desc, &m_pFsm))) return E_FAIL;
+
+
+	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CGur_Combat::Create(LevelTag))) return E_FAIL;
+
+	if (false == m_pFsm->Add_State(MON_STATE::HIT, CGur_Hit::Create(LevelTag, this))) return E_FAIL;
+	
+	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
+
+
+	return S_OK;
+}
 void CTmbGurdian::Damaged(PLAYER_SKILL_TYPE eType)
 {
 	__super::Damaged(eType);
@@ -876,7 +900,15 @@ void CTmbGurdian::ReadySound()
 
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (nullptr != m_pFsm)
+		m_pFsm->PriorityUpdate(fTimeDelta);
+	Update_BBToFsm();
+
 	__super::PriorityUpdate(fTimeDelta);
+	
+	if(nullptr != m_pFsm)
+		m_pFsm->Update(fTimeDelta);
+
 }
 
 void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)
@@ -884,7 +916,24 @@ void CTmbGurdian::FixedUpdate(E::_float fTimeDelta)
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 	
 }
+void CTmbGurdian::Set_Gravity(_bool bGravity)
+{
+	if (bGravity)
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+	else
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
+}
+void	CTmbGurdian::Update_BBToFsm()
+{
+	if (nullptr == m_pFsm) return;
 
+	auto pBB = Get_BlackBoard();
+
+	if (nullptr == pBB)
+		return;
+
+	pBB->Set_Value(EDG_KEY::STATE, m_pFsm->GetCurState());
+}
 void CTmbGurdian::Update(E::_float fTimeDelta)
 {
 	Active_Skill();
@@ -911,7 +960,8 @@ void CTmbGurdian::LateUpdate(E::_float fTimeDelta)
 {
 	if (m_bDeadDebrisPhysicsActivated)
 		return;
-
+	if(nullptr != m_pFsm)
+		m_pFsm->LateUpdate(fTimeDelta);
 	__super::LateUpdate(fTimeDelta);
 }
 

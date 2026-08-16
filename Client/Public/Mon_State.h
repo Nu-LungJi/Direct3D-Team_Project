@@ -5,20 +5,24 @@
 
 
 NS_BEGIN(Client)
+enum class HIT_TYPE { NORMAL, LAUNCH, KNOCKBACK, SLAM, GODAE, END };
+enum class HIT_MOTION { NORMAL, LAND, AIR, GROUND, GODAE, BLOWBACK, GROUND_SLAM, FALLING, REBOUND, END };
+
+enum class HIT_STEP { START, LOOP, END };
 typedef struct stredganimfsm
 {
 	int32_t iAnimIndex{};
 	_float	fBlend{};
 }MON_ANIM_FSM;
-class CSpider_State final : public CStateMachine
+class CMon_State final : public CStateMachine
 {
 public:
-	DECLARE_DERIVED_TYPE(CSpider_State, CStateMachine)
+	DECLARE_DERIVED_TYPE(CMon_State, CStateMachine)
 
 private:
-	CSpider_State();
-	CSpider_State(const CSpider_State& rhs);
-	~CSpider_State() override;
+	CMon_State();
+	CMon_State(const CMon_State& rhs);
+	~CMon_State() override;
 
 private:
 	HRESULT		Initialize(void* pArg) override;
@@ -39,7 +43,7 @@ private:
 	MON_STATE					m_eRequestState{ MON_STATE::NONE };
 
 public:
-	static	UPtr<CSpider_State> Create();
+	static	UPtr<CMon_State> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
 
 };
