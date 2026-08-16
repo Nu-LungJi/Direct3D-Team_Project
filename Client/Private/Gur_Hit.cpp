@@ -21,14 +21,16 @@ HRESULT CGur_Hit::Initialize(const _string& strLevelTag, CTmbGurdian* pTmb)
 	{
 		//Start
 		m_Anims[ETOUI(HIT_TYPE::NORMAL)][ETOUI(HIT_MOTION::NORMAL)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Hitch_Bwd_Add_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Hit_Bck_anm.bin"),.fBlend = 0.1f });
 		m_Anims[ETOUI(HIT_TYPE::NORMAL)][ETOUI(HIT_MOTION::AIR)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_PopUp_2Spin_Bwd_01_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Bump_Spin_Fwd_01_anm.bin"),.fBlend = 0.1f });
 		m_Anims[ETOUI(HIT_TYPE::NORMAL)][ETOUI(HIT_MOTION::FALLING)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-				pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Fall_Bwd_Pose_anm.bin"),.fBlend = 0.1f });
+				pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Bump_Spin_Fwd_01_anm.bin"),.fBlend = 0.1f });
 
 		m_Anims[ETOUI(HIT_TYPE::NORMAL)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-				pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_KnckDn_Fwd_Getup_Bck_anm.bin"),.fBlend = 0.1f });
+				pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Send_Bwd_GetUp_anm.bin"),.fBlend = 0.1f });
+		m_Anims[ETOUI(HIT_TYPE::NORMAL)][ETOUI(HIT_MOTION::AIR_LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Send_Fwd_GetUp_anm.bin"),.fBlend = 0.1f });
 
 	}
 
@@ -36,53 +38,50 @@ HRESULT CGur_Hit::Initialize(const _string& strLevelTag, CTmbGurdian* pTmb)
 	{
 		//Start
 		m_Anims[ETOUI(HIT_TYPE::LAUNCH)][ETOUI(HIT_MOTION::AIR)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-			pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Accio_Right_anm.bin"),.fBlend = 0.1f });
+			pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Accio_02_anm.bin"),.fBlend = 0.2f });
+		m_Anims[ETOUI(HIT_TYPE::LAUNCH)][ETOUI(HIT_MOTION::AIR)].push_back(MON_ANIM_FSM{ .iAnimIndex =
+			pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Accio_01_anm.bin"),.fBlend = 0.1f });
 
 		//END
 		m_Anims[ETOUI(HIT_TYPE::LAUNCH)][ETOUI(HIT_MOTION::FALLING)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-				pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Air_Loop_Fall_anm.bin"),.fBlend = 0.1f });
+				pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Levitated_Loop_01_anm.bin"),.fBlend = 0.1f });
 
 		m_Anims[ETOUI(HIT_TYPE::LAUNCH)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-				pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Land_Stagger_Land_anm.bin"),.fBlend = 0.1f });
-		m_Anims[ETOUI(HIT_TYPE::LAUNCH)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-				pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Land_Stagger_Hold_anm.bin"),.fBlend = 0.1f });
-		m_Anims[ETOUI(HIT_TYPE::LAUNCH)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-			pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Land_Stagger_GetUp_anm.bin"),.fBlend = 0.1f });
+				pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Land_Stagger_GetUp_anm.bin"),.fBlend = 0.1f });
 
 	}
 
 	{
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::GROUND_SLAM)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Slam_FD_BounceUp_Fwd_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Descendo_Grnd_anm.bin"),.fBlend = 0.1f });
+
 
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::AIR)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Air_Descendo_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Send_Fwd_Loop_anm.bin"),.fBlend = 0.1f });
 
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::FALLING)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Air_Loop_Fall_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Send_Fwd_Loop_anm.bin"),.fBlend = 0.1f });
 
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::REBOUND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Fall_Fwd_Pose_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Slam_FU_BounceUp_Fwd_anm.bin"),.fBlend = 0.1f });
 
 
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Descendo_Slam_Start_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Send_Fwd_SplatHold_anm.bin"),.fBlend = 0.1f });
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Descendo_Slam_Loop_anm.bin"),.fBlend = 0.1f });
-		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Descendo_Slam_End_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Send_Fwd_GetUp_anm.bin"),.fBlend = 0.1f });
 
 	}
 
 	{
 		m_Anims[ETOUI(HIT_TYPE::KNOCKBACK)][ETOUI(HIT_MOTION::BLOWBACK)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Bump_Spin_Bwd_01_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Send_Bwd_Loop_anm.bin"),.fBlend = 0.1f });
 
 		m_Anims[ETOUI(HIT_TYPE::KNOCKBACK)][ETOUI(HIT_MOTION::FALLING)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_PopUp_2Spin_Bwd_01_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Send_Bwd_Loop_anm.bin"),.fBlend = 0.1f });
 
 		m_Anims[ETOUI(HIT_TYPE::KNOCKBACK)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_KnckDn_Bwd_Getup_Bck_02_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Send_Bwd_GetUp_anm.bin"),.fBlend = 0.1f });
 
 
 	}
@@ -109,7 +108,7 @@ void CGur_Hit::Exit(CStateMachine* pStateMachine)
 {
 	auto pTmb = pStateMachine->GetOwner<CTmbGurdian>();
 	if (nullptr == pTmb) return;
-
+	m_HitTable.eHitMotion = HIT_MOTION::END;
 	pTmb->ReActiveTable();
 	Set_Gravity(true, pTmb);
 }
@@ -121,7 +120,8 @@ void CGur_Hit::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta)
 
 	auto pTmb = pStateMachine->GetOwner<CTmbGurdian>();
 	if (nullptr == pTmb) return;
-
+	if (pTmb->Get_CurrentHp() <= 0)
+		pTmbFsm->Request_State(MON_STATE::COMBAT);
 	Check_PendingHit(pTmb);
 }
 
@@ -140,7 +140,9 @@ void CGur_Hit::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	if (nullptr == pMove)return;
 	if (m_bTurn)
 	{
-		pMove->SetFacingIntentImmediate(TargetDir(pTmb, false));
+		if(m_HitTable.eSkillType != PLAYER_SKILL_TYPE::ATTACK)
+			pMove->SetFacingIntentImmediate(TargetDir(pTmb, false));
+
 		m_bTurn = false;
 	}
 
@@ -181,7 +183,11 @@ HIT_TYPE CGur_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
 		if (m_HitTable.eHitMotion == HIT_MOTION::LAND)
+			m_HitTable.eHitMotion = HIT_MOTION::LAND;
+		else if (m_HitTable.eHitMotion == HIT_MOTION::AIR || m_HitTable.eHitMotion == HIT_MOTION::REBOUND || m_HitTable.eHitMotion == HIT_MOTION::BLOWBACK)
 			m_HitTable.eHitMotion = HIT_MOTION::AIR;
+		else
+			m_HitTable.eHitMotion = HIT_MOTION::NORMAL;
 		return HIT_TYPE::NORMAL;
 	case PLAYER_SKILL_TYPE::ACCIO:
 		m_HitTable.eHitMotion = HIT_MOTION::AIR;
@@ -191,7 +197,7 @@ HIT_TYPE CGur_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround
 		return HIT_TYPE::KNOCKBACK;
 	case PLAYER_SKILL_TYPE::DESCENDO:
 		if (m_HitTable.eHitMotion == HIT_MOTION::AIR)
-			m_HitTable.eHitMotion = HIT_MOTION::REBOUND;
+			m_HitTable.eHitMotion = HIT_MOTION::AIR;
 		else m_HitTable.eHitMotion = HIT_MOTION::GROUND_SLAM;
 		return HIT_TYPE::SLAM;
 	case PLAYER_SKILL_TYPE::PROTEGO:
@@ -214,6 +220,10 @@ void CGur_Hit::Check_PendingHit(CTmbGurdian* pTmb)
 	MON_HIT_INFO HitInfo = pTmb->Get_PendingHitInfo();
 
 	if (!pTmb->Activate_PendingHit()) return;
+	_bool bBlock = HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK && (m_HitTable.eHitMotion == HIT_MOTION::LAND || m_HitTable.eHitMotion == HIT_MOTION::AIR_LAND
+		|| m_HitTable.eHitMotion == HIT_MOTION::GROUND_SLAM);
+	if (bBlock)
+		return;
 
 	_bool bRestart = HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK;
 	if (m_HitTable.eSkillType == HitInfo.eHitType && !bRestart)
@@ -251,23 +261,19 @@ void CGur_Hit::MotionToPlay(CTmbGurdian* pTmb, CComAnimator* pAnimator, CMon_Sta
 				Finishied(pTmbState);
 			break;
 		case HIT_MOTION::AIR:
-			if (PlayAnim(pAnimator))
-			{
-				if (!bGround)
-					ChangeMotion(HIT_MOTION::FALLING);
-				else
-					ChangeMotion(HIT_MOTION::LAND);
-			}
-
+			PlayAnim(pAnimator, true);
+			if (bGround)
+				ChangeMotion(HIT_MOTION::AIR_LAND);
+			
 			MoveIntent(pTmb, TargetDir(pTmb, true), 7.f);
 			break;
 		case HIT_MOTION::FALLING:
 			PlayAnim(pAnimator, true);
 			if (bGround)
-				ChangeMotion(HIT_MOTION::LAND);
+				ChangeMotion(HIT_MOTION::AIR_LAND);
 			break;
 		case HIT_MOTION::LAND:
-			if (PlayAnim(pAnimator))
+			if (PlayAnim(pAnimator, false))
 				Finishied(pTmbState);
 			break;
 		case HIT_MOTION::GROUND_SLAM:
@@ -275,6 +281,10 @@ void CGur_Hit::MotionToPlay(CTmbGurdian* pTmb, CComAnimator* pAnimator, CMon_Sta
 			break;
 		case HIT_MOTION::BLOWBACK:
 			ChangeMotion(HIT_MOTION::AIR);
+			break;
+		case HIT_MOTION::AIR_LAND:
+			if (PlayAnim(pAnimator, false))
+				Finishied(pTmbState);
 			break;
 		}
 		break;
@@ -307,30 +317,31 @@ void CGur_Hit::MotionToPlay(CTmbGurdian* pTmb, CComAnimator* pAnimator, CMon_Sta
 		{
 		case HIT_MOTION::GROUND_SLAM:
 			if (PlayAnim(pAnimator))
-				ChangeMotion(HIT_MOTION::FALLING);
-			Jump(pTmb, 8.f);
+				ChangeMotion(HIT_MOTION::LAND);
 			break;
 		case HIT_MOTION::FALLING:
-			//PlayAnim(pAnimator, true);
+			PlayAnim(pAnimator, true);
 			if (bGround)
 				ChangeMotion(HIT_MOTION::LAND);
 			Jump(pTmb, -150.f, false);
 
 			break;
 		case HIT_MOTION::AIR:
-			ChangeMotion(HIT_MOTION::FALLING);
+			Set_Gravity(true, pTmb);
+			PlayAnim(pAnimator, true);
+			if (bGround)
+				ChangeMotion(HIT_MOTION::REBOUND);
+			Jump(pTmb, -150.f, false);
 			break;
 		case HIT_MOTION::LAND:
 			if (PlayAnim(pAnimator))
-			{
 				Finishied(pTmbState);
-			}
+	
 			break;
 		case HIT_MOTION::REBOUND:
-			PlayAnim(pAnimator, true);
-			if (bGround)
-				ChangeMotion(HIT_MOTION::GROUND_SLAM);
-			Jump(pTmb, -150.f, false);
+			if (PlayAnim(pAnimator, false))
+				ChangeMotion(HIT_MOTION::FALLING);
+			Jump(pTmb, 6.f, false);
 			break;
 		}
 		break;
@@ -356,6 +367,8 @@ void CGur_Hit::MotionToPlay(CTmbGurdian* pTmb, CComAnimator* pAnimator, CMon_Sta
 			PlayAnim(pAnimator, true);
 			if (bGround)
 				ChangeMotion(HIT_MOTION::LAND);
+
+			MoveIntent(pTmb, TargetDir(pTmb, true), 22.f);
 			break;
 		case HIT_MOTION::LAND:
 			if (PlayAnim(pAnimator))

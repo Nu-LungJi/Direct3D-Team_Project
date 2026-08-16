@@ -368,6 +368,10 @@ const _float CTmbGurdian::Get_Damage()
 
 _bool CTmbGurdian::Check_Table(PLAYER_SKILL_TYPE eType)
 {
+	if (m_eMonType == MONSTER_TYPE::NORMAL)
+	{
+		return Check_Normal(eType);
+	}
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
 		return false;
 
@@ -817,7 +821,7 @@ HRESULT CTmbGurdian::Ready_Fsm(const _string& LevelTag)
 
 	if (false == m_pFsm->Add_State(MON_STATE::HIT, CGur_Hit::Create(LevelTag, this))) return E_FAIL;
 	
-	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
+	if (false == m_pFsm->Initialize_State(MON_STATE::COMBAT)) return E_FAIL;
 
 
 	return S_OK;
@@ -896,6 +900,35 @@ void CTmbGurdian::ReadySound()
 
 	m_SoundTable["TmbBeforeHit"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/BeforeHit.wav", };
 	m_SoundTable["TombEliteSpawn"] = { "./Resources/SampleClient/Sound/PensiveKnight/TombEliteSpawn.wav", };
+}
+
+_bool CTmbGurdian::Check_Normal(PLAYER_SKILL_TYPE eType)
+{
+	if (m_iHp <= 0)
+		return false;
+	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
+		return false;
+
+	Damaged(eType);
+	if (eType == PLAYER_SKILL_TYPE::ATTACK)
+	{
+		const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
+		if (hUIController.has_value())
+		{
+			if (auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hUIController))
+			{
+				pUIController->AddFinisher(2.f);
+			}
+		}
+	}
+
+	m_PendingMonTable.eAttType = m_eAttType;
+	m_PendingMonTable.eHitType = eType;
+
+	m_bPending = true;
+	m_pFsm->Request_State(MON_STATE::HIT);
+	CGameInstance::Get().StopEffect(m_iCurEffectID);
+	return true;
 }
 
 void CTmbGurdian::PriorityUpdate(E::_float fTimeDelta)

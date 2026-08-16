@@ -41,7 +41,7 @@ private:
 	void						Damaged(PLAYER_SKILL_TYPE eType) override;
 	void						Active_Skill();
 	void						ReadySound();
-
+	_bool						Check_Normal(PLAYER_SKILL_TYPE eType);
 	void						Update_BBToFsm();
 private:
 	std::vector<CHandle> m_vecDeadHandles{};

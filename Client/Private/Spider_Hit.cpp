@@ -182,6 +182,10 @@ HIT_TYPE CSpider_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGro
 	case PLAYER_SKILL_TYPE::ATTACK:
 			if (m_HitTable.eHitMotion == HIT_MOTION::LAND)
 				m_HitTable.eHitMotion = HIT_MOTION::AIR;
+			else if(m_HitTable.eHitMotion == HIT_MOTION::AIR)
+				m_HitTable.eHitMotion = HIT_MOTION::AIR;
+			else 
+				m_HitTable.eHitMotion = HIT_MOTION::NORMAL;
 		return HIT_TYPE::NORMAL;
 	case PLAYER_SKILL_TYPE::ACCIO:
 		m_HitTable.eHitMotion = HIT_MOTION::AIR;
@@ -233,6 +237,7 @@ void CSpider_Hit::Check_PendingHit(CSpider* pSpider)
 
 void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CMon_State* pSpiderState)
 {
+	//햇갈린다
 	_bool bGround = pSpider->Is_Grounded();
 	if(m_HitTable.eHitMotion == HIT_MOTION::AIR)
 		Set_Gravity(false, pSpider);
@@ -288,7 +293,7 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CMon_S
 					ChangeMotion(HIT_MOTION::FALLING);
 				break;
 			case HIT_MOTION::FALLING:
-				PlayAnim(pAnimator,true);
+				PlayAnim(pAnimator);
 				if (bGround)
 					ChangeMotion(HIT_MOTION::LAND);
 				break;

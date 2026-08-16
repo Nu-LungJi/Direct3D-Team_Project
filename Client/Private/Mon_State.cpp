@@ -50,6 +50,16 @@ _bool CMon_State::Request_State(MON_STATE eState)
 	if (!IsRegistered(eState) || m_eCurState == eState)
 		return false;
 
+	if (m_eCurState == eState)
+	{
+		if (m_eCurState == MON_STATE::HIT && m_eRequestState == MON_STATE::COMBAT)
+		{
+			m_eRequestState = MON_STATE::NONE;
+			return true;
+		}
+		else return false;
+	}
+
 	m_eRequestState = eState;
 
 	return true;
