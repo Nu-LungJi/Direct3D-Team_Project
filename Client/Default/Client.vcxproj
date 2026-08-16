@@ -301,6 +301,7 @@
     <ClInclude Include="..\public\LuaTestObject.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
+    <ClInclude Include="..\Public\Player_AvadaKedavraController.h" />
     <ClInclude Include="..\Public\Player_BombardaController.h" />
     <ClInclude Include="..\Public\Player_ConfringoController.h" />
     <ClInclude Include="..\Public\PlayerRagdollController.h" />
@@ -454,6 +455,7 @@
     <ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
     <ClCompile Include="..\private\LuaTestObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
+    <ClCompile Include="..\Private\Player_AvadaKedavraController.cpp" />
     <ClCompile Include="..\Private\Player_BombardaController.cpp" />
     <ClCompile Include="..\Private\Player_ConfringoController.cpp" />
     <ClCompile Include="..\Private\PlayerRagdollController.cpp" />

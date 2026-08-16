@@ -33,6 +33,7 @@ class CPlayer_StateMachine;
 class CPlayerRagdollController;
 class CPlayer_BombardaController;
 class CPlayer_ConfringoController;
+class CPlayer_AvadaKedavraController;
 
 class CPlayer final : public CAnimationObject
 {
@@ -339,6 +340,19 @@ public:
 private:
 	HRESULT InitializeConfringo();
 	UPtr<CPlayer_ConfringoController> m_pConfringoController{};
+#pragma endregion
+
+#pragma region AVADA_KEDAVRA
+	// [LSY] 아바다 케다브라의 완드 부착, 빔 및 피격 연출은 전용 컨트롤러가 담당한다.
+	friend class CPlayer_AvadaKedavraController;
+public:
+	// [LSY] 상태 클래스에서는 애니메이션 Cue에 맞춰 아래 전달 API만 호출한다.
+	void StartAvadaKedavraCastEffect();
+	void StopAvadaKedavraCastEffect();
+	_bool ReleaseAvadaKedavraSpell();
+private:
+	HRESULT InitializeAvadaKedavra();
+	UPtr<CPlayer_AvadaKedavraController> m_pAvadaKedavraController{};
 #pragma endregion
 
 private:
