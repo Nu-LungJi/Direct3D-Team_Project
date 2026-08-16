@@ -155,10 +155,6 @@ void CSpider_Hit::Hit_Step_End(CSpider* pSpider)
 {
 }
 
-void CSpider_Hit::Check_Loop(CComAnimator* pAnimator)
-{
-}
-
 _bool CSpider_Hit::PlayAnim(CComAnimator* pAnimator, _bool bLoop)
 {
 	if (nullptr == pAnimator) return true;
