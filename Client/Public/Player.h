@@ -166,6 +166,9 @@ public:
 	void PrepareLocomotionResume();
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
+	void SetLumosActive(_bool bActive);
+	void ToggleLumos() { SetLumosActive(!m_bLumosActive); }
+	_bool IsLumosActive() const { return m_bLumosActive; }
 	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
 	_bool IsSprintRequested() const { return m_bSprintRequested; }
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
@@ -308,6 +311,9 @@ private:
 private:
 	CHandle m_UIHandle;
 	_bool m_bSkillSlotUIInitialized{ false };
+	_bool m_bLumosActive{};
+	std::optional<CHandle> m_hLumosLight{};
+	void UpdateLumosLight();
 
 #pragma region RAGDOLL
 	friend class CPlayerRagdollController;
