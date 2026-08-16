@@ -21,6 +21,18 @@ NS_USING(Client)
 
 namespace
 {
+	TEXT_ALIGN LoadTextAlignmentCompatible(
+		const nlohmann::ordered_json& obj)
+	{
+		const uint32_t alignment = obj.value(
+			"TextAlignment",
+			static_cast<uint32_t>(TEXT_ALIGN::LEFT));
+		if (alignment > static_cast<uint32_t>(TEXT_ALIGN::RIGHT))
+			return TEXT_ALIGN::LEFT;
+
+		return static_cast<TEXT_ALIGN>(alignment);
+	}
+
 	void LoadFlipInfoCompatible(
 		const nlohmann::ordered_json& obj,
 		FLIP_INFO& flipInfo)
@@ -1494,7 +1506,9 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*uiHandle);
 		{
 			TEXT_INFO& textInfo = static_cast<CTextBox*>(pUI)->GetTextInfo();
-			textInfo.Text = StringToWUTF8(obj["Text"]);
+			textInfo.Text = StringToWUTF8(
+				obj.value("Text", std::string{}));
+			textInfo.Alignment = LoadTextAlignmentCompatible(obj);
 		}
 		break;
 	case ETOUI(UI_TYPE::BUTTON):

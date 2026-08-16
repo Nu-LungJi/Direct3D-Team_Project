@@ -66,6 +66,10 @@ private:
 		CHandle Handle{};
 		_float RemainingTime{};
 		_float Duration{};
+		_float2 SpawnPosition{};
+		_float2 CenterPosition{};
+		_float2 LateralDirection{};
+		_float WavePhase{};
 	};
 
 private:
@@ -126,6 +130,9 @@ private:
 	void PlayCreateButtonSound();
 	void TryActivateBoostPad(_bool aPressed, _bool xPressed);
 	void ActivateBoost();
+	void PlayBoostCursorRipple();
+	void UpdateBoostCursorRipple(_float fTimeDelta);
+	void ResetBoostCursorRipple();
 	void UpdateChaser(_float movementDelta, _float timerDelta);
 	void ResetChaser();
 	void SetChaserVisible(_bool visible);
@@ -145,6 +152,7 @@ private:
 	void PlayCompletionCenterTransition();
 	void FadeOutCompletionSecondaryVisuals();
 	void PlayCompletionExitTransition();
+	void ShowSuccessAlarm();
 	void FadeOutUIHierarchy(CHandle rootHandle, _float duration);
 	SUCCESS_EFFECT CreateMagicBurst(const _float2& position);
 	void PlayMagicBurst(
@@ -189,7 +197,11 @@ private:
 	std::vector<TRANSIENT_EFFECT> m_TransientEffects{};
 	std::vector<BOOST_TRAIL_PARTICLE> m_BoostTrailParticles{};
 	_float m_fBoostTrailSpawnAccumulator{};
+	_float m_fBoostTrailWavePhase{};
+	_float m_fBoostCursorRippleElapsed{};
 	size_t m_iNextBoostTrailParticle{};
+	_bool m_bNextBoostTrailLeft{ true };
+	_bool m_bBoostCursorRippleActive{};
 
 	CHandle m_hPath{};
 	CHandle m_hIntroPathProgress{};
@@ -202,6 +214,7 @@ private:
 	CHandle m_hDestinationSuccessFlame{};
 	CHandle m_hArrow{};
 	CHandle m_hCursor{};
+	CHandle m_hBoostCursorRipple{};
 	CHandle m_hStartPadBackdrop{};
 	CHandle m_hStartPad{};
 	SUCCESS_EFFECT m_StartPadSuccessEffect{};
@@ -221,14 +234,32 @@ private:
 	static constexpr _float CURSOR_SIZE = 24.f;
 	static constexpr _float CURSOR_ARROW_SIZE = 72.f;
 	static constexpr _float CURSOR_ARROW_ORBIT_RADIUS = 14.f;
-	static constexpr size_t BOOST_TRAIL_POOL_SIZE = 18;
-	static constexpr _float BOOST_TRAIL_SIZE = 48.f;
-	static constexpr _float BOOST_TRAIL_END_SIZE_SCALE = 1.25f;
-	static constexpr _float BOOST_TRAIL_BACK_OFFSET = 18.f;
-	static constexpr _float BOOST_TRAIL_MAX_ALPHA = 0.46f;
-	static constexpr _float BOOST_TRAIL_SPAWN_INTERVAL = 0.055f;
-	static constexpr _float BOOST_TRAIL_PARTICLE_DURATION = 0.75f;
-	static constexpr _float BOOST_TRAIL_FLIPBOOK_DURATION = 0.75f;
+	static constexpr _float BOOST_CURSOR_RIPPLE_MIN_SIZE = CURSOR_SIZE;
+	static constexpr _float BOOST_CURSOR_RIPPLE_MAX_SIZE = 60.f;
+	static constexpr _float BOOST_CURSOR_RIPPLE_HALF_DURATION = 0.14f;
+	static constexpr uint32_t BOOST_CURSOR_RIPPLE_REPEAT_COUNT = 3;
+	static constexpr _float BOOST_CURSOR_RIPPLE_TOTAL_DURATION =
+		BOOST_CURSOR_RIPPLE_HALF_DURATION * 2.f *
+		static_cast<_float>(BOOST_CURSOR_RIPPLE_REPEAT_COUNT);
+	static constexpr size_t BOOST_TRAIL_POOL_SIZE = 64;
+	static constexpr _bool BOOST_TRAIL_ENABLED = false;
+	static constexpr _float BOOST_TRAIL_WIDTH = 72.f;
+	static constexpr _float BOOST_TRAIL_HEIGHT = 48.f;
+	// SmokeWispy frame zero's visible puff is slightly below texture center.
+	// Offset the quad against that local displacement so the visible puff
+	// starts at the cursor center after the texture is rotated along the path.
+	static constexpr _float BOOST_TRAIL_SOURCE_ANCHOR_OFFSET = 1.5f;
+	static constexpr _float BOOST_TRAIL_END_SIZE_SCALE = 1.15f;
+	// Keep the boost trail centered on the path without lateral spreading.
+	static constexpr _float BOOST_TRAIL_LATERAL_OFFSET_MIN = 0.f;
+	static constexpr _float BOOST_TRAIL_LATERAL_OFFSET_MAX = 0.f;
+	static constexpr _float BOOST_TRAIL_WAVE_AMPLITUDE = 0.f;
+	static constexpr _float BOOST_TRAIL_WAVE_PHASE_STEP = 0.5f;
+	static constexpr _float BOOST_TRAIL_WAVE_TIME_SPEED = 1.2f;
+	static constexpr _float BOOST_TRAIL_MAX_ALPHA = 0.62f;
+	static constexpr _float BOOST_TRAIL_SPAWN_INTERVAL = 0.03f;
+	static constexpr _float BOOST_TRAIL_PARTICLE_DURATION = 1.5f;
+	static constexpr _float BOOST_TRAIL_FLIPBOOK_DURATION = 1.5f;
 	static constexpr _float DESTINATION_SPELL_METER_SIZE = 120.f;
 	static constexpr _float DESTINATION_SPELL_METER_BORDER_SIZE = 132.f;
 	static constexpr _float DESTINATION_SUCCESS_FLAME_WIDTH = 198.f;
@@ -242,6 +273,23 @@ private:
 	static constexpr _float DESTINATION_SUCCESS_CENTER_MOVE_DURATION = 1.f;
 	static constexpr _float DESTINATION_SUCCESS_CENTER_HOLD_DURATION = 2.f;
 	static constexpr _float DESTINATION_SUCCESS_EXIT_DURATION = 0.3f;
+	static constexpr _float SUCCESS_ALARM_FADE_IN_DURATION = 0.3f;
+	static constexpr _float SUCCESS_ALARM_DELAY = 0.f;
+	static constexpr _float SUCCESS_ALARM_HOLD_DURATION = 3.f;
+	static constexpr _float SUCCESS_ALARM_FADE_OUT_DURATION = 0.5f;
+	static constexpr _float SUCCESS_ALARM_SMOKE_ALPHA = 0.7f;
+	static constexpr _float SUCCESS_ALARM_SMOKE_DURATION = 1.5f;
+	static constexpr _float SUCCESS_ALARM_SMOKE_FADE_IN_DURATION = 0.2f;
+	static constexpr _float SUCCESS_ALARM_SMOKE_FADE_DURATION = 0.4f;
+	static constexpr int SUCCESS_ALARM_SMOKE_WEIGHT = 898;
+	static constexpr _float SUCCESS_ALARM_EFFECT_HEIGHT_SCALE = 1.35f;
+	static constexpr _float SUCCESS_ALARM_EFFECT_CENTER_OFFSET_Y = 18.f;
+	static constexpr _float SUCCESS_ALARM_SPLATTER_ALPHA = 0.72f;
+	static constexpr _float SUCCESS_ALARM_SPLATTER_DURATION = 1.f;
+	static constexpr _float SUCCESS_ALARM_SPLATTER_START_SCALE = 0.18f;
+	static constexpr _float SUCCESS_ALARM_SPLATTER_END_SCALE = 1.25f;
+	static constexpr _float SUCCESS_ALARM_SPLATTER_ROTATION = -30.f;
+	static constexpr int SUCCESS_ALARM_SPLATTER_WEIGHT = 899;
 	// Rotating the square texture by 45 degrees makes its bounding diamond
 	// match the 120-pixel spell meter at this corrected starting size.
 	static constexpr _float DESTINATION_SUCCESS_DIAMOND_START_SIZE =

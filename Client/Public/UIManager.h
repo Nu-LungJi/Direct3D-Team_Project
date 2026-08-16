@@ -69,6 +69,8 @@ public:
 	std::vector<CHandle> LoadPrefab(std::string name, std::string g_BasePath = "./Resources/SampleClient/UIData/Prefabs/");
 	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);
 	void DeleteUIRecursive(std::optional<CHandle> targetHandle);
+	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
+	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 
 private:
 	/*************페이드인아웃****************/
@@ -76,10 +78,8 @@ private:
 	{
 		return E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle);
 	}
-	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
 	void PlayScaleDown(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
 	void PlayPosUP(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
-	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 	void PlayFadeInChange(CHandle pHandle, LEVEL level, float delay = 0.f, float playtime = 3.f);
 
 private:

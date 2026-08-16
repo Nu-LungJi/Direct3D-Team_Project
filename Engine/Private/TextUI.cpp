@@ -13,6 +13,7 @@ CTextUI::~CTextUI()
 HRESULT CTextUI::Initialize(void* pArg)
 {
 	auto		pDesc = static_cast<CTextUI::TEXT_DESC*>(pArg);
+	m_textInfo.Alignment = pDesc->Alignment;
 
 	m_textInfo.Text = L"한글";
 
@@ -26,8 +27,6 @@ void CTextUI::Update(_float fTimeDelta)
 {
 	CUIObject::Update(fTimeDelta);
 
-	auto clientSize = CGameInstance::Get().GetClientScreenSize();
-
 	_float fontscale = m_UIINFO.SizeX;
 
 	if (std::nullopt != m_pParent)
@@ -39,28 +38,45 @@ void CTextUI::Update(_float fTimeDelta)
 		fontscale = m_UIINFO.SizeX * parentUI->GetScaleRatio();
 	}
 
+	const StringID fontName = m_UIINFO.Name == "64px" ?
+		"Pretendard_64px" : "Pretendard";
+	_float originX = m_UIINFO.SizeX * 0.5f;
+	if (m_textInfo.Alignment != TEXT_ALIGN::LEFT)
+	{
+		const _float2 textSize = CGameInstance::Get().FontMeasureString(
+			fontName,
+			m_textInfo.Text.c_str());
+		originX = m_textInfo.Alignment == TEXT_ALIGN::CENTER ?
+			textSize.x * 0.5f : textSize.x;
+	}
+
+	const _float2 textOrigin = {
+		originX,
+		m_UIINFO.SizeY * 0.5f
+	};
+
 	if (m_UIINFO.Name == "64px")
 	{
 		CGameInstance::Get().FontAddLateDraw(
 			RENDERGROUP::UI,
-			"Pretendard_64px",
+			fontName,
 			m_textInfo.Text.c_str(),
 			{ m_UIINFO.fX, m_UIINFO.fY },
 			fontscale,
 			XMVectorSet(m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha),
 			0.f,
-			{ m_UIINFO.SizeX * 0.5f,  m_UIINFO.SizeY * 0.5f }
+			textOrigin
 		);
 	}
 	else
 	{
-		CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, "Pretendard", m_textInfo.Text.c_str(),
+		CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, fontName, m_textInfo.Text.c_str(),
 			{ m_UIINFO.fX, m_UIINFO.fY }, fontscale, XMVectorSet(m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha),
-			0.f, { m_UIINFO.SizeX * 0.5f,  m_UIINFO.SizeY * 0.5f });
+			0.f, textOrigin);
 
-		CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, "Pretendard", m_textInfo.Text.c_str(),
+		CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, fontName, m_textInfo.Text.c_str(),
 			{ m_UIINFO.fX, m_UIINFO.fY }, fontscale, XMVectorSet(m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha),
-			0.f, { m_UIINFO.SizeX * 0.5f,  m_UIINFO.SizeY * 0.5f });
+			0.f, textOrigin);
 	}
 }
 

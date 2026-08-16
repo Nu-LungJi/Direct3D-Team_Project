@@ -1102,6 +1102,13 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_SpellAlarmFlame", "./ShaderFiles/UI/SpellAlarmFlame.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_SpellBoostCore", "./ShaderFiles/UI/SpellBoostCore.hlsl"))
 	{
 		if (FAILED(res->Load()))
