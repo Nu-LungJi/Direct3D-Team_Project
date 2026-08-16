@@ -97,6 +97,25 @@ void CPlayer::UpdateGUI()
 			m_pModelAnimator->GetUpperLayerWeight(),
 			m_pModelAnimator->GetPlay() ? "Playing" : "Paused");
 	}
+	if (ImGui::CollapsingHeader("[KMS] Lumos Attach Debug", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Text("Lumos: %s", m_bLumosActive ? "ON" : "OFF");
+		ImGui::DragFloat3(
+			"Wand Local Offset",
+			&m_vLumosLocalOffset.x,
+			0.005f,
+			-2.f,
+			2.f,
+			"%.3f");
+		ImGui::TextDisabled("X: right / Y: up / Z: wand forward");
+		ImGui::Text(
+			"World: %.3f, %.3f, %.3f",
+			m_vLumosDebugWorldPosition.x,
+			m_vLumosDebugWorldPosition.y,
+			m_vLumosDebugWorldPosition.z);
+		if (ImGui::Button("Reset Lumos Offset"))
+			m_vLumosLocalOffset = {};
+	}
 	if (ImGui::Button("Open Player in Animation Editor"))
 		CGameInstance::Get().SetAnimationEditorTarget(GetHandle());
 	ImGui::SameLine();
@@ -489,7 +508,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	CPlayer_Weapon::WEAPON_DESC WeaponDesc{};
 	WeaponDesc.sObjectTag = "Weapon";
 	WeaponDesc.LevelTag = pDesc->LevelTag.GetDbgStr();
-	WeaponDesc.WeaponName = "PLAYER_WEAPON_RESROUCE";
+	WeaponDesc.WeaponName = "PLAYER_WEAPON_SKELETON_RESOURCE";
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RightHandWandSocket");
 	WeaponDesc.iSpawnBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("WandSocketTip");
 	WeaponDesc.ParentHandle = GetHandle();
@@ -1187,6 +1206,13 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (CGameInstance::Get().KeyDown(DIK_6))
 			m_pStateMachine->RequestState(PLAYER_STATE::BOMBARDA_SKILL);
 
+#ifdef _DEBUG
+		// Lumos debug toggle. The Lumos state decides whether this request
+		// enters Start/Hold or plays Stop based on the current active flag.
+		if (CGameInstance::Get().KeyDown(DIK_L))
+			m_pStateMachine->RequestState(PLAYER_STATE::LUMOS_SKILL);
+#endif
+
 	}
 	
 
@@ -1318,8 +1344,18 @@ void CPlayer::SetLumosActive(_bool bActive)
 		return;
 
 	m_bLumosActive = bActive;
+	m_bHasPreviousLumosAttachPosition = false;
 	if (!bActive)
 	{
+		if (m_pModelAnimator && m_pModelAnimator->HasUpperAnimation())
+			m_pModelAnimator->Stop_UpperAnim(0.08f);
+
+		if (m_iLumosEffectID != INVALID_EFFECT_INSTANCE_ID)
+		{
+			CGameInstance::Get().StopEffect(m_iLumosEffectID);
+			m_iLumosEffectID = INVALID_EFFECT_INSTANCE_ID;
+		}
+
 		if (m_hLumosLight)
 		{
 			if (auto* pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(*m_hLumosLight))
@@ -1329,21 +1365,62 @@ void CPlayer::SetLumosActive(_bool bActive)
 		return;
 	}
 
-	UpdateLumosLight();
+	// The glow is created in UpdateAttachedEffects() after animation finishes,
+	// using the exact same finalized spawn matrix as player projectiles.
 }
 
 void CPlayer::UpdateLumosLight()
 {
 	if (!m_bLumosActive)
+	{
+		if (m_iLumosEffectID != INVALID_EFFECT_INSTANCE_ID)
+		{
+			CGameInstance::Get().StopEffect(m_iLumosEffectID);
+			m_iLumosEffectID = INVALID_EFFECT_INSTANCE_ID;
+		}
+		if (m_hLumosLight)
+		{
+			if (auto* pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(*m_hLumosLight))
+				pLight->Reset_Light();
+			m_hLumosLight.reset();
+		}
+		return;
+	}
+
+	_float4x4 matGlowWorld{};
+	if (!TryGetLumosGlowWorldMatrix(matGlowWorld))
 		return;
 
-	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(
-		m_Partes[ETOUI(PARTES::WEAPON)]);
-	if (!pWeapon)
-		return;
+	const _float3 vPosition{ matGlowWorld._41, matGlowWorld._42, matGlowWorld._43 };
+	m_vLumosDebugWorldPosition = vPosition;
+	_float3 vPredictedPosition = vPosition;
+	if (m_bHasPreviousLumosAttachPosition)
+	{
+		_vector vFrameDelta =
+			XMLoadFloat3(&vPosition) - XMLoadFloat3(&m_vPreviousLumosAttachPosition);
+		const _float fDeltaLength = XMVectorGetX(XMVector3Length(vFrameDelta));
+		constexpr _float MAX_PREDICTION_DISTANCE = 0.35f;
+		if (fDeltaLength > MAX_PREDICTION_DISTANCE)
+			vFrameDelta *= MAX_PREDICTION_DISTANCE / fDeltaLength;
+		XMStoreFloat3(&vPredictedPosition, XMLoadFloat3(&vPosition) + vFrameDelta);
+	}
+	m_vPreviousLumosAttachPosition = vPosition;
+	m_bHasPreviousLumosAttachPosition = true;
 
-	const _float4x4 matWandTip = pWeapon->GetSpawnWorldMatrix();
-	const _float3 vPosition{ matWandTip._41, matWandTip._42, matWandTip._43 };
+	_float4x4 matPredictedGlowWorld{};
+	XMStoreFloat4x4(&matPredictedGlowWorld, XMMatrixTranslation(
+		vPredictedPosition.x, vPredictedPosition.y, vPredictedPosition.z));
+	if (m_iLumosEffectID == INVALID_EFFECT_INSTANCE_ID)
+	{
+		m_iLumosEffectID = CGameInstance::Get().PlayEffect(
+			"KMS_Lumos_WandGlow", matPredictedGlowWorld);
+	}
+	else
+	{
+		CGameInstance::Get().SetEffectWorldMatrix(
+			m_iLumosEffectID, matPredictedGlowWorld);
+	}
+
 	if (!m_hLumosLight)
 	{
 		m_hLumosLight = CGameInstance::Get().Allocate_EffectLight(
@@ -1356,6 +1433,31 @@ void CPlayer::UpdateLumosLight()
 		pLight->Set_LightPosition(vPosition);
 	else
 		m_hLumosLight.reset();
+}
+
+_bool CPlayer::TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const
+{
+	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(
+		m_Partes[ETOUI(PARTES::WEAPON)]);
+	if (!pWeapon)
+		return false;
+
+	const _float4x4 matWandTip = pWeapon->GetSpawnWorldMatrix();
+	const _float3 vRightAxis{ matWandTip._11, matWandTip._12, matWandTip._13 };
+	const _float3 vUpAxis{ matWandTip._21, matWandTip._22, matWandTip._23 };
+	const _float3 vForwardAxis{ matWandTip._31, matWandTip._32, matWandTip._33 };
+	_vector vRight = XMVector3Normalize(XMLoadFloat3(&vRightAxis));
+	_vector vUp = XMVector3Normalize(XMLoadFloat3(&vUpAxis));
+	_vector vForward = XMVector3Normalize(XMLoadFloat3(&vForwardAxis));
+	_vector vAttachPosition = XMVectorSet(
+		matWandTip._41, matWandTip._42, matWandTip._43, 1.f);
+	vAttachPosition += vRight * m_vLumosLocalOffset.x;
+	vAttachPosition += vUp * m_vLumosLocalOffset.y;
+	vAttachPosition += vForward * m_vLumosLocalOffset.z;
+	_float3 vPosition{};
+	XMStoreFloat3(&vPosition, vAttachPosition);
+	XMStoreFloat4x4(&outWorld, XMMatrixTranslation(vPosition.x, vPosition.y, vPosition.z));
+	return true;
 }
 
 void CPlayer::FixedUpdate(_float fTimeDelta)
@@ -1698,7 +1800,6 @@ void CPlayer::PrepareLocomotionResume()
 
 void CPlayer::Update(E::_float fTimeDelta)
 {
-	UpdateLumosLight();
 	ZoneScopedN("Update TestModel");
 	{
 
@@ -1911,6 +2012,10 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 void CPlayer::UpdateAttachedEffects()
 {
+	// Bone matrices are finalized by the animator before this LateUpdate path.
+	// Updating Lumos here prevents the wand-tip glow from trailing by one frame.
+	UpdateLumosLight();
+
 	if (m_iDashBodyEffectID != INVALID_EFFECT_INSTANCE_ID)
 	{
 		CGameInstance::Get().SetEffectWorldMatrix(

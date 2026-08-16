@@ -59,7 +59,6 @@ _bool CPlayer_StateMachine::RequestState(PLAYER_STATE eState)
 			eState != PLAYER_STATE::LUMOS_SKILL;
 		const _bool bInterruptingAction = bOtherSkill ||
 			eState == PLAYER_STATE::ATTACK ||
-			eState == PLAYER_STATE::ROLL ||
 			eState == PLAYER_STATE::HIT ||
 			eState == PLAYER_STATE::KNOCKDOWN ||
 			eState == PLAYER_STATE::DEAD ||

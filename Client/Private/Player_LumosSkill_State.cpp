@@ -15,16 +15,38 @@ void CPlayer_LumosSkill_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 	CacheAnimation(*pPlayer);
-	if (m_iCastAnimation < 0)
+	m_bTurningOff = pPlayer->IsLumosActive();
+	m_bToggleApplied = false;
+
+	if (m_bTurningOff)
 	{
-		pPlayer->ToggleLumos();
+		pPlayer->SetLumosActive(false);
+		m_bToggleApplied = true;
+		if (m_iStopAnimation >= 0 && pPlayer->PlayUpperBodyAnimation(
+			m_iStopAnimation, "RightArm", 1, false, 0.1f))
+		{
+			SetSkillControl(*pPlayer, false, false, false, false);
+			return;
+		}
+
 		RequestLocomotion(pStateMachine);
 		return;
 	}
-	SetSkillControl(*pPlayer, true, false, false);
-	pPlayer->SetCurrentMoveSpeed(0.f);
-	pPlayer->GetAnimator()->Play_Anim(m_iCastAnimation, false, 0.15f);
-	m_bToggleApplied = false;
+
+	if (m_iStartAnimation < 0 || !pPlayer->PlayUpperBodyAnimation(
+		m_iStartAnimation, "RightArm", 1, false, 0.12f))
+	{
+		pPlayer->SetLumosActive(true);
+		m_bToggleApplied = true;
+		if (m_iHoldAnimation >= 0)
+			pPlayer->PlayUpperBodyAnimation(
+				m_iHoldAnimation, "RightArm", 1, true, 0.12f);
+		RequestLocomotion(pStateMachine);
+		return;
+	}
+
+
+	SetSkillControl(*pPlayer, false, false, false, false);
 }
 
 void CPlayer_LumosSkill_State::Update(CStateMachine* pStateMachine, _float)
@@ -35,15 +57,37 @@ void CPlayer_LumosSkill_State::Update(CStateMachine* pStateMachine, _float)
 		RequestLocomotion(pStateMachine);
 		return;
 	}
+	auto* pAnimator = pPlayer->GetAnimator();
 	const _float fRatio = PlayerAnimationRatioGuard::Sanitize(
-		pPlayer->GetAnimator()->GetPlayAnimRatio());
-	if (!m_bToggleApplied && fRatio >= TOGGLE_RATIO)
+		pAnimator->GetUpperAnimRatio());
+
+	if (!m_bTurningOff && !m_bToggleApplied && fRatio >= TOGGLE_RATIO)
 	{
-		pPlayer->ToggleLumos();
+		pPlayer->SetLumosActive(true);
 		m_bToggleApplied = true;
 	}
-	if (fRatio >= EXIT_RATIO || pPlayer->GetAnimator()->GetFinish())
-		RequestLocomotion(pStateMachine);
+
+	if (fRatio < EXIT_RATIO && !pAnimator->IsUpperAnimationFinished())
+		return;
+
+	if (!m_bTurningOff)
+	{
+		if (!m_bToggleApplied)
+			pPlayer->SetLumosActive(true);
+		if (m_iHoldAnimation >= 0)
+			pPlayer->PlayUpperBodyAnimation(
+				m_iHoldAnimation, "RightArm", 1, true, 0.1f);
+	}
+	else
+	{
+		pAnimator->Stop_UpperAnim(0.1f);
+	}
+
+	if (!RequestLocomotion(pStateMachine) && !m_bTurningOff)
+	{
+		pPlayer->SetLumosActive(false);
+		pAnimator->Stop_UpperAnim(0.1f);
+	}
 }
 
 void CPlayer_LumosSkill_State::Exit(CStateMachine* pStateMachine)
@@ -51,14 +95,24 @@ void CPlayer_LumosSkill_State::Exit(CStateMachine* pStateMachine)
 	if (auto* pPlayer = GetPlayer(pStateMachine))
 		ResetSkillControl(*pPlayer);
 	m_bToggleApplied = false;
+	m_bTurningOff = false;
 }
 
 void CPlayer_LumosSkill_State::CacheAnimation(const CPlayer& player)
 {
 	if (m_bAnimationCached)
 		return;
-	m_iCastAnimation = FindAnimationIndex(
-		player, "AN_ProfessorSharp_MasterRig_Hu_BM_Spell_Revelio_anm.bin");
+	m_iStartAnimation = FindAnimationIndex(
+		player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Lumos_Start_anm.bin");
+	m_iHoldAnimation = FindAnimationIndex(
+		player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Lumos_Hold_anm.bin");
+	if (m_iHoldAnimation < 0)
+	{
+		m_iHoldAnimation = FindAnimationIndex(
+			player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Lumos_Hold_01_anm.bin");
+	}
+	m_iStopAnimation = FindAnimationIndex(
+		player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Lumos_Stop_anm.bin");
 	m_bAnimationCached = true;
 }
 

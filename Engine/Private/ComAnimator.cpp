@@ -488,6 +488,29 @@ void CComAnimator::Stop_UpperAnim(_float fFadeDuration)
 	}
 }
 
+_float CComAnimator::GetUpperAnimRatio() const
+{
+	if (!m_UpperAnimState.IsValid() || m_pModelInstance == nullptr ||
+		m_pModelInstance->GetModel() == nullptr)
+	{
+		return 0.f;
+	}
+
+	const auto& animations = m_pModelInstance->GetModel()->GetAnimations();
+	if (m_UpperAnimState.iAnimIndex < 0 ||
+		m_UpperAnimState.iAnimIndex >= static_cast<int32_t>(animations.size()) ||
+		animations[m_UpperAnimState.iAnimIndex] == nullptr)
+	{
+		return 0.f;
+	}
+
+	const _float fDuration = animations[m_UpperAnimState.iAnimIndex]->GetDuration();
+	if (fDuration <= std::numeric_limits<_float>::epsilon())
+		return m_UpperAnimState.bFinished ? 1.f : 0.f;
+
+	return std::clamp(m_UpperAnimState.fTrackPosition / fDuration, 0.f, 1.f);
+}
+
 _bool CComAnimator::Set_UpperBodyRootBone(const _char* pBoneName, uint32_t iBlendDepth)
 {
 	if (m_pModelInstance == nullptr || m_pModelInstance->GetModel() == nullptr || pBoneName == nullptr)

@@ -313,7 +313,13 @@ private:
 	_bool m_bSkillSlotUIInitialized{ false };
 	_bool m_bLumosActive{};
 	std::optional<CHandle> m_hLumosLight{};
+	EFFECT_INSTANCE_ID m_iLumosEffectID{ INVALID_EFFECT_INSTANCE_ID };
+	_float3 m_vLumosLocalOffset{};
+	_float3 m_vLumosDebugWorldPosition{};
+	_float3 m_vPreviousLumosAttachPosition{};
+	_bool m_bHasPreviousLumosAttachPosition{};
 	void UpdateLumosLight();
+	_bool TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const;
 
 #pragma region RAGDOLL
 	friend class CPlayerRagdollController;
