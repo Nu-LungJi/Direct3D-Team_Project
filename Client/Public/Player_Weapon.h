@@ -10,7 +10,6 @@ class CResVertexShader;
 class CResPixelShader;
 class CResSamplerState;
 class CResModel;
-class CComStaticModelInstance;
 NS_END
 
 NS_BEGIN(Client)
@@ -22,7 +21,7 @@ public:
 public:
 	typedef struct tagWeapondesc : public CGameObject::GAMEOBJECT_DESC
 	{
-		_string	WeaponName{},LevelTag{};
+		_string	WeaponName{}, LevelTag{};
 		CHandle ParentHandle{};
 		int32_t iBoneIndex{ -1 };
 		int32_t iSpawnBoneIndex{ -1 };
@@ -50,7 +49,7 @@ public:
 private:
 	void					Weapon_Throw(_float fTimeDelta);
 private:
-	CComStaticModelInstance* m_pComModelInstance{};
+	CComModelInstance* m_pComModelInstance{};
 	// nonAnim
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
 	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};
@@ -62,6 +61,7 @@ private:
 	CHandle				m_ParentHandle{};
 	int32_t				m_iBoneSocketIndex{ -1 };
 	int32_t				m_iSpawnBoneIndex{ -1 };
+	int32_t				m_iMuzzleSocketBoneIndex{ -1 };
 	_float				m_fAngle{ 0 };
 	_bool				m_bThrow{ false };
 

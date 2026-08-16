@@ -293,6 +293,7 @@
     <ClInclude Include="..\public\NvClothCape.h" />
     <ClInclude Include="..\public\OilBarrel.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
+    <ClInclude Include="..\Public\Player_Knockdown_State.h" />
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h" />
     <ClInclude Include="..\Public\Player_ProtegoSkill_State.h" />
     <ClInclude Include="..\Public\Player_StupefySkill_State.h" />
@@ -337,7 +338,8 @@
     <ClInclude Include="..\Public\UIController.h" />
     <ClInclude Include="..\Public\UIManager.h" />
     <ClInclude Include="..\Public\UI_Enums.h" />
-    <ClInclude Include="..\Public\Player_Weapon.h" />
+	<ClInclude Include="..\Public\Player_Weapon.h" />
+	<ClInclude Include="..\Public\Player_Broom.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
     <ClInclude Include="..\public\Terrain.h" />
     <ClInclude Include="..\public\TriggerCRW_BridgeBring.h" />
@@ -448,6 +450,7 @@
     <ClCompile Include="..\private\NvClothCape.cpp" />
     <ClCompile Include="..\private\OilBarrel.cpp" />
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
+    <ClCompile Include="..\Private\Player_Knockdown_State.cpp" />
     <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_StupefySkill_State.cpp" />
@@ -489,7 +492,8 @@
     <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp" />
     <ClCompile Include="..\Private\UIController.cpp" />
     <ClCompile Include="..\Private\UIManager.cpp" />
-    <ClCompile Include="..\Private\Player_Weapon.cpp" />
+	<ClCompile Include="..\Private\Player_Weapon.cpp" />
+	<ClCompile Include="..\Private\Player_Broom.cpp" />
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
     <ClCompile Include="..\private\Terrain.cpp" />
     <ClCompile Include="..\private\TriggerCRW_BridgeBring.cpp" />

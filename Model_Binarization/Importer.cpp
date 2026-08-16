@@ -1,4 +1,4 @@
-
+﻿
 #include "Importer.h"
 #include "Bone.h"
 #include "Mesh.h"
@@ -92,9 +92,9 @@ HRESULT CImporter::ImportFBXFolder(
 {
 	std::filesystem::path sourcePath(strSourceFolder);
 
-	// 예: strSourceFolder = "../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/Skeletal"
+	// ?? strSourceFolder = "../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/Skeletal"
 	// category = "Skeletal"
-	// Static이면 category = "Static"
+	// Static?대㈃ category = "Static"
 	std::string category = sourcePath.filename().string();
 
 	if (!std::filesystem::exists(strSourceFolder))
@@ -103,7 +103,7 @@ HRESULT CImporter::ImportFBXFolder(
 	}
 
 	// ------------------------------------------------------------
-	// OriginData 앞 경로까지만 남긴다.
+	// OriginData ??寃쎈줈源뚯?留??④릿??
 	// "../../.../Models/OriginData/Skeletal"
 	// -> "../../.../Models/"
 	// ------------------------------------------------------------
@@ -117,14 +117,14 @@ HRESULT CImporter::ImportFBXFolder(
 	}
 	else
 	{
-		// OriginData가 경로에 없으면 sourcePath의 부모의 부모를 기준으로 처리
-		// 필요 없으면 이 else는 return E_FAIL 해도 됨
+		// OriginData媛 寃쎈줈???놁쑝硫?sourcePath??遺紐⑥쓽 遺紐⑤? 湲곗??쇰줈 泥섎━
+		// ?꾩슂 ?놁쑝硫???else??return E_FAIL ?대룄 ??
 		rootPath = sourcePath.parent_path().parent_path().string() + "/";
 	}
 
 	// ------------------------------------------------------------
-	// strLevelName 무시
-	// 최종 basePath:
+	// strLevelName 臾댁떆
+	// 理쒖쥌 basePath:
 	// "../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/Skeletal/"
 	// "../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/Static/"
 	// ------------------------------------------------------------
@@ -150,19 +150,19 @@ HRESULT CImporter::ImportFBXFolder(
 
 		if (_stricmp(category.c_str(), "Static") == 0)
 		{
-			// Static bin은 Models/Static 바로 아래
+			// Static bin? Models/Static 諛붾줈 ?꾨옒
 			modelDir = basePath;
 		}
 		else
 		{
-			// Skeletal은 Models/Skeletal/모델이름 아래
+			// Skeletal? Models/Skeletal/紐⑤뜽?대쫫 ?꾨옒
 			modelDir = basePath / modelName;
 		}
 
 		// ------------------------------------------------------------
-		// Texture 폴더는 bin 존재 여부와 상관없이 먼저 생성
-		// Static texture는 Textures/Static/모델이름/
-		// Skeletal texture는 Textures/Skeletal/모델이름/
+		// Texture ?대뜑??bin 議댁옱 ?щ?? ?곴??놁씠 癒쇱? ?앹꽦
+		// Static texture??Textures/Static/紐⑤뜽?대쫫/
+		// Skeletal texture??Textures/Skeletal/紐⑤뜽?대쫫/
 		// ------------------------------------------------------------
 		std::filesystem::path textureDir;
 
@@ -193,10 +193,10 @@ HRESULT CImporter::ImportFBXFolder(
 		}
 
 		// ------------------------------------------------------------
-	// Static bin 저장용 텍스처 복사
+	// Static bin ??μ슜 ?띿뒪泥?蹂듭궗
 	//
 	// Textures/OriginData/Static/*.png
-	// -> Textures/Static/모델이름/*.png
+	// -> Textures/Static/紐⑤뜽?대쫫/*.png
 	// ------------------------------------------------------------
 		if (_stricmp(category.c_str(), "Static") == 0)
 		{
@@ -777,8 +777,8 @@ HRESULT CImporter::ExportFBX(const std::string& outpath)
 	// ------------------------------------------------------------
 	// Texture output path
 	// Models -> Textures
-	// Static 모델은 Textures/Static/모델이름/ 으로 분리
-	// Skeletal은 기존처럼 Textures/Skeletal/모델이름/
+	// Static 紐⑤뜽? Textures/Static/紐⑤뜽?대쫫/ ?쇰줈 遺꾨━
+	// Skeletal? 湲곗〈泥섎읆 Textures/Skeletal/紐⑤뜽?대쫫/
 	// ------------------------------------------------------------
 	std::filesystem::path textureOutputDir =
 		MakeTextureOutputDir(modelOutputDir);
@@ -874,7 +874,7 @@ HRESULT CImporter::ExportStatic(const std::string& outpath)
 		pushMesh(&vMaterialIndex, sizeof(uint32_t));
 
 		// ------------------------------------------------------------
-		// min / max 저장
+		// min / max ???
 		// ------------------------------------------------------------
 		pushMesh(&mesh->m_min, sizeof(XMFLOAT3));
 		pushMesh(&mesh->m_max, sizeof(XMFLOAT3));
@@ -931,7 +931,7 @@ HRESULT CImporter::ExportStatic(const std::string& outpath)
             }
         }
 
-        // Material 크기 먼저 기록
+        // Material ?ш린 癒쇱? 湲곕줉
         pushMaterial(&materialSize, sizeof(uint32_t));
 
 
@@ -1047,6 +1047,13 @@ HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
         uint32_t BoneIndicesCount = (uint32_t)mesh->m_BoneIndices->size();
         uint32_t BoneMatricesCount = (uint32_t)mesh->m_BoneMatrices->size();
         uint32_t OffsetMatricesCount = (uint32_t)mesh->m_OffsetMatrices->size();
+		uint32_t morphDataSize = sizeof(uint32_t) * 2; // magic + target count
+		for (const auto& target : mesh->m_MorphTargets)
+		{
+			morphDataSize += sizeof(uint32_t) + static_cast<uint32_t>(target.Name.size());
+			morphDataSize += sizeof(uint32_t) +
+				static_cast<uint32_t>(target.Deltas.size() * sizeof(MORPHVERTEXDELTA));
+		}
 
         uint32_t meshSize =
             sizeof(uint32_t) +                                         // MaterialIndex
@@ -1060,7 +1067,8 @@ HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
             sizeof(uint32_t) +                                         // OffsetMatrices Count
             sizeof(uint32_t) * BoneIndicesCount +                      // BoneIndices Data
             sizeof(XMFLOAT4X4) * BoneMatricesCount +                   // BoneMatrices Data
-            sizeof(XMFLOAT4X4) * OffsetMatricesCount;                  // OffsetMatrices Data
+            sizeof(XMFLOAT4X4) * OffsetMatricesCount +                 // OffsetMatrices Data
+			morphDataSize;                                                  // Optional Morph extension
 
         pushMesh(&meshSize, sizeof(uint32_t));
 
@@ -1073,15 +1081,15 @@ HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
         // Index Count
         pushMesh(&iCount, sizeof(uint32_t));
 
-        // Vertex 데이터
+        // Vertex ?곗씠??
         pushMesh(mesh->m_animvertices->data(),
             sizeof(VTXANIMMESH) * vCount);
 
-        // Index 데이터
+        // Index ?곗씠??
         pushMesh(mesh->m_indices->data(),
             sizeof(uint32_t) * iCount);
 
-        // Mesh가 이용하는 뼈의 개수
+        // Mesh媛 ?댁슜?섎뒗 堉덉쓽 媛쒖닔
         pushMesh(&mesh->m_iNumBones, sizeof(uint32_t));
 
         // BoneIndices Count
@@ -1093,17 +1101,33 @@ HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
         // OffsetMatrices Count
         pushMesh(&OffsetMatricesCount, sizeof(uint32_t));
 
-        // BoneIndices 데이터
+        // BoneIndices ?곗씠??
         pushMesh(mesh->m_BoneIndices->data(),
             sizeof(uint32_t) * BoneIndicesCount);
 
-        // BoneMatrices 데이터
+        // BoneMatrices ?곗씠??
         pushMesh(mesh->m_BoneMatrices->data(),
             sizeof(XMFLOAT4X4) * BoneMatricesCount);
 
-        // OffsetMatrices 데이터
+        // OffsetMatrices ?곗씠??
         pushMesh(mesh->m_OffsetMatrices->data(),
             sizeof(XMFLOAT4X4) * OffsetMatricesCount);
+
+		pushMesh(&MORPH_BINARY_MAGIC, sizeof(uint32_t));
+		const uint32_t morphTargetCount = static_cast<uint32_t>(mesh->m_MorphTargets.size());
+		pushMesh(&morphTargetCount, sizeof(uint32_t));
+		for (const auto& target : mesh->m_MorphTargets)
+		{
+			const uint32_t nameLength = static_cast<uint32_t>(target.Name.size());
+			pushMesh(&nameLength, sizeof(uint32_t));
+			if (nameLength > 0)
+				pushMesh(target.Name.data(), nameLength);
+
+			const uint32_t deltaCount = static_cast<uint32_t>(target.Deltas.size());
+			pushMesh(&deltaCount, sizeof(uint32_t));
+			if (deltaCount > 0)
+				pushMesh(target.Deltas.data(), sizeof(MORPHVERTEXDELTA) * deltaCount);
+		}
     }
 
     ChunkHeader chMesh;
@@ -1142,7 +1166,7 @@ HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
             }
         }
 
-        // Material 크기 먼저 기록
+        // Material ?ш린 癒쇱? 湲곕줉
         pushMaterial(&materialSize, sizeof(uint32_t));
 
 
@@ -1298,6 +1322,37 @@ HRESULT CImporter::ExportAnimation(const std::string& outpath)
             }
         }
 
+		pushAnim(&MORPH_BINARY_MAGIC, sizeof(uint32_t));
+		const auto& morphChannels = Animation->m_AnimationData.MorphChannels;
+		const uint32_t morphChannelCount = morphChannels
+			? static_cast<uint32_t>(morphChannels->size()) : 0u;
+		pushAnim(&morphChannelCount, sizeof(uint32_t));
+		if (morphChannels)
+		{
+			for (const auto& channel : *morphChannels)
+			{
+				const uint32_t meshNameLength = static_cast<uint32_t>(channel.MeshName.size());
+				pushAnim(&meshNameLength, sizeof(uint32_t));
+				if (meshNameLength > 0)
+					pushAnim(channel.MeshName.data(), meshNameLength);
+
+				const uint32_t keyCount = static_cast<uint32_t>(channel.Keys.size());
+				pushAnim(&keyCount, sizeof(uint32_t));
+				for (const auto& key : channel.Keys)
+				{
+					pushAnim(&key.TrackPosition, sizeof(float));
+					const uint32_t valueCount = static_cast<uint32_t>(
+						(std::min)(key.TargetIndices.size(), key.Weights.size()));
+					pushAnim(&valueCount, sizeof(uint32_t));
+					for (uint32_t valueIndex = 0; valueIndex < valueCount; ++valueIndex)
+					{
+						pushAnim(&key.TargetIndices[valueIndex], sizeof(uint32_t));
+						pushAnim(&key.Weights[valueIndex], sizeof(float));
+					}
+				}
+			}
+		}
+
         ChunkHeader chAnim;
         chAnim.type = ChunkType::CHUNK_ANIM;
         chAnim.size = (uint32_t)animBuffer.size();
@@ -1420,6 +1475,35 @@ HRESULT CImporter::Load_Animaion(uint32_t iAnimaionCount, const aiAnimation* pAI
         Animations[iAnimaionCount]->m_AnimationData.Channels->emplace_back(ChanelData);
     }
 
+	auto& morphChannels = Animations[iAnimaionCount]->m_AnimationData.MorphChannels;
+	morphChannels = make_shared<vector<MORPHCHANNELDATA>>();
+	morphChannels->reserve(pAIAnimation->mNumMorphMeshChannels);
+	for (uint32_t channelIndex = 0; channelIndex < pAIAnimation->mNumMorphMeshChannels; ++channelIndex)
+	{
+		const aiMeshMorphAnim* sourceChannel = pAIAnimation->mMorphMeshChannels[channelIndex];
+		if (!sourceChannel)
+			continue;
+
+		MORPHCHANNELDATA channel{};
+		channel.MeshName = sourceChannel->mName.C_Str();
+		channel.Keys.reserve(sourceChannel->mNumKeys);
+		for (uint32_t keyIndex = 0; keyIndex < sourceChannel->mNumKeys; ++keyIndex)
+		{
+			const aiMeshMorphKey& sourceKey = sourceChannel->mKeys[keyIndex];
+			MORPHKEYDATA key{};
+			key.TrackPosition = static_cast<float>(sourceKey.mTime);
+			key.TargetIndices.reserve(sourceKey.mNumValuesAndWeights);
+			key.Weights.reserve(sourceKey.mNumValuesAndWeights);
+			for (uint32_t valueIndex = 0; valueIndex < sourceKey.mNumValuesAndWeights; ++valueIndex)
+			{
+				key.TargetIndices.push_back(sourceKey.mValues[valueIndex]);
+				key.Weights.push_back(static_cast<float>(sourceKey.mWeights[valueIndex]));
+			}
+			channel.Keys.push_back(std::move(key));
+		}
+		morphChannels->push_back(std::move(channel));
+	}
+
     return S_OK;
 }
 
@@ -1446,7 +1530,7 @@ HRESULT CImporter::Load_Channel(CHANNELDATA& ChannelData, const aiNodeAnim* pAIC
     {
         KEYFRAME            KeyFrame = {};
 
-        if (i < pAIChannel->mNumScalingKeys) // 만약에 더 큰 값이 들어올떄 그 전의 값으로 마지막껄 채워준다.
+        if (i < pAIChannel->mNumScalingKeys) // 留뚯빟??????媛믪씠 ?ㅼ뼱?щ뻹 洹??꾩쓽 媛믪쑝濡?留덉?留됯퍍 梨꾩썙以??
         {
             memcpy(&vScale, &pAIChannel->mScalingKeys[i].mValue, sizeof vScale);
             KeyFrame.fTrackPosition = pAIChannel->mScalingKeys[i].mTime;
@@ -1826,6 +1910,51 @@ void CImporter::ProcessAnimMesh(aiMesh* mesh, const aiScene* scene, std::string 
     fbxmesh->m_BoneMatrices = m_BoneMatrices;
     fbxmesh->m_OffsetMatrices = m_OffsetMatrices;
 
+	constexpr float MORPH_DELTA_EPSILON_SQ = 1.e-12f;
+	for (uint32_t targetIndex = 0; targetIndex < mesh->mNumAnimMeshes; ++targetIndex)
+	{
+		const aiAnimMesh* sourceTarget = mesh->mAnimMeshes[targetIndex];
+		if (!sourceTarget || sourceTarget->mNumVertices != mesh->mNumVertices)
+			continue;
+
+		MORPHTARGETDATA target{};
+		target.Name = sourceTarget->mName.length > 0
+			? sourceTarget->mName.C_Str()
+			: ("Morph_" + std::to_string(targetIndex));
+		target.Deltas.reserve(mesh->mNumVertices / 4);
+
+		for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex)
+		{
+			const aiVector3D positionDelta = sourceTarget->HasPositions()
+				? sourceTarget->mVertices[vertexIndex] - mesh->mVertices[vertexIndex]
+				: aiVector3D{};
+			const aiVector3D normalDelta = sourceTarget->HasNormals() && mesh->HasNormals()
+				? sourceTarget->mNormals[vertexIndex] - mesh->mNormals[vertexIndex]
+				: aiVector3D{};
+			const aiVector3D tangentDelta = sourceTarget->HasTangentsAndBitangents() && mesh->HasTangentsAndBitangents()
+				? sourceTarget->mTangents[vertexIndex] - mesh->mTangents[vertexIndex]
+				: aiVector3D{};
+			const aiVector3D binormalDelta = sourceTarget->HasTangentsAndBitangents() && mesh->HasTangentsAndBitangents()
+				? sourceTarget->mBitangents[vertexIndex] - mesh->mBitangents[vertexIndex]
+				: aiVector3D{};
+
+			const float magnitudeSq = positionDelta.SquareLength() + normalDelta.SquareLength() +
+				tangentDelta.SquareLength() + binormalDelta.SquareLength();
+			if (magnitudeSq <= MORPH_DELTA_EPSILON_SQ)
+				continue;
+
+			MORPHVERTEXDELTA delta{};
+			delta.VertexIndex = vertexIndex;
+			delta.PositionDelta = { positionDelta.x, positionDelta.y, positionDelta.z };
+			delta.NormalDelta = { normalDelta.x, normalDelta.y, normalDelta.z };
+			delta.TangentDelta = { tangentDelta.x, tangentDelta.y, tangentDelta.z };
+			delta.BinormalDelta = { binormalDelta.x, binormalDelta.y, binormalDelta.z };
+			target.Deltas.push_back(delta);
+		}
+
+		fbxmesh->m_MorphTargets.push_back(std::move(target));
+	}
+
 
     Meshes.emplace_back(fbxmesh);
 
@@ -1911,7 +2040,7 @@ std::unordered_set<std::string> CImporter::LoadMapFBXNamesFromJsonFolder(
 			if (!j.contains("fbx"))
 				continue;
 
-			// 문자열이든 배열이든 리스트로 통일해서 처리
+			// 臾몄옄?댁씠??諛곗뿴?대뱺 由ъ뒪?몃줈 ?듭씪?댁꽌 泥섎━
 			std::vector<std::string> fbxList;
 
 			if (j["fbx"].is_string())
@@ -1928,7 +2057,7 @@ std::unordered_set<std::string> CImporter::LoadMapFBXNamesFromJsonFolder(
 			}
 			else
 			{
-				continue; // 문자열도 배열도 아니면 스킵
+				continue; // 臾몄옄?대룄 諛곗뿴???꾨땲硫??ㅽ궢
 			}
 
 			for (auto& fbxName : fbxList)
@@ -1936,10 +2065,10 @@ std::unordered_set<std::string> CImporter::LoadMapFBXNamesFromJsonFolder(
 				if (fbxName.empty())
 					continue;
 
-				// 혹시 경로까지 들어와도 파일 이름만 비교
+				// ?뱀떆 寃쎈줈源뚯? ?ㅼ뼱????뚯씪 ?대쫫留?鍮꾧탳
 				fbxName = std::filesystem::path(fbxName).filename().string();
 
-				// 대소문자 무시 비교용
+				// ??뚮Ц??臾댁떆 鍮꾧탳??
 				fbxNames.insert(ToLowerFileName(fbxName));
 			}
 		}
@@ -1990,9 +2119,9 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		rootPath = sourcePath.parent_path().parent_path().string() + "/";
 	}
 
-	// 핵심:
-	// LevelAnimEditor 같은 중간 폴더를 넣지 않고,
-	// Models/Static 또는 Models/Skeletal 바로 밑으로 보냄
+	// ?듭떖:
+	// LevelAnimEditor 媛숈? 以묎컙 ?대뜑瑜??ｌ? ?딄퀬,
+	// Models/Static ?먮뒗 Models/Skeletal 諛붾줈 諛묒쑝濡?蹂대깂
 	std::filesystem::path basePath = std::filesystem::path(rootPath) / category;
 
 	for (const auto& entry : std::filesystem::recursive_directory_iterator(strSourceFolder))
@@ -2026,7 +2155,7 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		}
 
 		// ------------------------------------------------------------
-		// bin 추출 스킵 전에 texture 폴더 생성
+		// bin 異붿텧 ?ㅽ궢 ?꾩뿉 texture ?대뜑 ?앹꽦
 		// ------------------------------------------------------------
 		std::filesystem::path textureDir;
 		std::filesystem::path originTextureDir =
@@ -2061,10 +2190,10 @@ HRESULT CImporter::ImportFBXFolder_ForMapJson(
 		}
 		
 		// ------------------------------------------------------------
-		// Static bin 저장용 텍스처 복사
+		// Static bin ??μ슜 ?띿뒪泥?蹂듭궗
 		//
 		// Textures/OriginData/Static/*.png
-		// -> Textures/Static/모델이름/*.png
+		// -> Textures/Static/紐⑤뜽?대쫫/*.png
 		// ------------------------------------------------------------
 		std::filesystem::path outputPath;
 
@@ -2174,11 +2303,11 @@ void CImporter::CopyUsedTextureFilesToFolder(
 				if (tex.File.empty())
 					continue;
 
-				// 기본은 material에 저장된 확장자 사용
+				// 湲곕낯? material????λ맂 ?뺤옣???ъ슜
 				std::filesystem::path srcPath =
 					srcDir / (tex.File + tex.Ext);
 
-				// 근데 png만 원본 폴더에 모아뒀다면 png 우선 탐색
+				// 洹쇰뜲 png留??먮낯 ?대뜑??紐⑥븘??ㅻ㈃ png ?곗꽑 ?먯깋
 				std::filesystem::path srcPngPath =
 					srcDir / (tex.File + ".png");
 

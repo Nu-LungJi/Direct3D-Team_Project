@@ -7,6 +7,7 @@
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
 #include "Player_Weapon.h"
+#include "Player_Broom.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Bombarda_Bullet.h"
 #include "Player_Confringo_Bullet.h"
@@ -134,12 +135,30 @@ HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
 	{
 		return E_FAIL;
 	}
+	if (auto broom = E::CGameInstance::Get().AddResourceT<E::CResModel>(
+		LEVEL::HOGWART_WORLD,
+		"PLAYER_BROOM_RESOURCE",
+		E::CResModel::Create(
+			"./Resources/SampleClient/Models/Skeleton/professor/Broom/SK_FlyingClassBroom_01.bin")))
+	{
+		E::CResModel::DESC desc{};
+		if (FAILED(broom->Load(desc)))
+			return E_FAIL;
+	}
+	else
+	{
+		return E_FAIL;
+	}
 
 	auto& gameInstance = E::CGameInstance::Get();
 	if (FAILED(gameInstance.AddPrototype(
 		LEVEL::HOGWART_WORLD,
 		PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon,
 		CPlayer_Weapon::Create())) ||
+		FAILED(gameInstance.AddPrototype(
+			LEVEL::HOGWART_WORLD,
+			PROTO_GAMEOBJECT::Prototype_GameObject_PlayerBroom,
+			CPlayer_Broom::Create())) ||
 		FAILED(gameInstance.AddPrototype(
 			LEVEL::HOGWART_WORLD,
 			PROTO_GAMEOBJECT::Prototype_GameObject_PlayerMagicBullet,

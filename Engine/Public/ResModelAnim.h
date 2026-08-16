@@ -10,6 +10,17 @@ class CResModel;
 class ENGINE_DLL CResModelAnim final : public CResource
 {
 public:
+	struct MORPH_KEY
+	{
+		_float fTrackPosition{};
+		std::vector<uint32_t> TargetIndices{};
+		std::vector<_float> Weights{};
+	};
+	struct MORPH_CHANNEL
+	{
+		_string sMeshName{};
+		std::vector<MORPH_KEY> Keys{};
+	};
 	DECLARE_DERIVED_TYPE(CResModelAnim, CResource)
 public:
 	typedef struct tagDesc {
@@ -46,6 +57,9 @@ public:
 	uint32_t	GetNumChannel() { return m_iNumChannels; };
 	std::vector<SPtr<CResModelChanel>>& GetChannels() { return m_Channels; }
 	CResModelChanel* GetChannelByBoneIndex(uint32_t iBoneIndex) const;
+	_bool SampleMorphWeights(_float fTrackPosition,
+		DirectX::XMUINT4& outIndices, _float4& outWeights) const;
+	_bool HasMorphCurves() const { return !m_MorphChannels.empty(); }
 
 
 	int32_t     GetRootBoneIndex() { return m_iRootBoneIndex; }
@@ -66,6 +80,7 @@ private:
 
 	std::vector<SPtr<CResModelChanel>>	m_ChannelsByBone;
 	std::vector<uint32_t>					m_CurrentKeyFrameIndices;
+	std::vector<MORPH_CHANNEL> m_MorphChannels{};
 
 	int32_t								m_iRootBoneIndex{};
 	_float3								m_vRootDelta;

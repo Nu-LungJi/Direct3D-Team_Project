@@ -17,6 +17,7 @@ CComCharacterMotor::CComCharacterMotor(const CComCharacterMotor& rhs)
 	, m_fMinMoveDistance{ rhs.m_fMinMoveDistance }
 	, m_vControllerCenterOffset{ rhs.m_vControllerCenterOffset }
 	, m_bUseGravity{ rhs.m_bUseGravity }
+	, m_bPreserveHorizontalVelocity{ rhs.m_bPreserveHorizontalVelocity }
 	, m_bSyncTransform{ rhs.m_bSyncTransform }
 {
 }
@@ -89,9 +90,12 @@ void CComCharacterMotor::FixedUpdate(_float fFixedTimeDelta)
 	}
 	else
 	{
-		m_vVelocity.x = 0.f;
+		if (!m_bPreserveHorizontalVelocity)
+		{
+			m_vVelocity.x = 0.f;
+			m_vVelocity.z = 0.f;
+		}
 		//m_vVelocity.y = 0.f;
-		m_vVelocity.z = 0.f;
 
 		if (!m_bUseGravity)
 		{
@@ -189,6 +193,7 @@ void CComCharacterMotor::UpdateGUI()
 		reinterpret_cast<_float*>(&m_vControllerCenterOffset),
 		0.01f);
 	ImGui::Checkbox("Use Gravity", &m_bUseGravity);
+	ImGui::Checkbox("Preserve Horizontal Velocity", &m_bPreserveHorizontalVelocity);
 	ImGui::Checkbox("Sync Transform", &m_bSyncTransform);
 }
 

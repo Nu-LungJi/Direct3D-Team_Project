@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Player_Confringo_Bullet.h"
 
+#include "ClientEvents.h"
 #include "ComSound.h"
 #include "DbgLineRender.h"
 #include "Monster.h"
@@ -599,6 +600,11 @@ void CPlayer_Confringo_Bullet::PlayImpactEffect(
 	const _float3& vPosition,
 	const _float3& vNormal)
 {
+	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
+		.fIntensity = 0.13f,
+		.fDuration = 0.13f,
+		.fFrequency = 25.f });
+
 	// [LSY] 파편 오브젝트가 제거되어도 충돌음의 잔향은 끝까지 재생한다.
 	PlayImpactSounds(vPosition);
 

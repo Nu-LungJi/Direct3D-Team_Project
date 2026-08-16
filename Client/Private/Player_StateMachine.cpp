@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Player_StateMachine.h"
+#include "Player.h"
 
 NS_USING(Client)
 
@@ -52,6 +53,19 @@ _bool CPlayer_StateMachine::RequestState(PLAYER_STATE eState)
 	}
 
 	m_eRequestedState = eState;
+	if (auto* pPlayer = GetOwner<CPlayer>(); pPlayer && pPlayer->IsLumosActive())
+	{
+		const _bool bOtherSkill = IsSkillState(eState) &&
+			eState != PLAYER_STATE::LUMOS_SKILL;
+		const _bool bInterruptingAction = bOtherSkill ||
+			eState == PLAYER_STATE::ATTACK ||
+			eState == PLAYER_STATE::HIT ||
+			eState == PLAYER_STATE::KNOCKDOWN ||
+			eState == PLAYER_STATE::DEAD ||
+			eState == PLAYER_STATE::FLY;
+		if (bInterruptingAction)
+			pPlayer->SetLumosActive(false);
+	}
 	return true;
 }
 
@@ -125,6 +139,7 @@ _bool CPlayer_StateMachine::CanTransition(PLAYER_STATE eCurrent, PLAYER_STATE eN
 	{
 		return eNext == PLAYER_STATE::LOCOMOTION ||
 			eNext == PLAYER_STATE::HIT ||
+			eNext == PLAYER_STATE::KNOCKDOWN ||
 			eNext == PLAYER_STATE::DEAD;
 	}
 
@@ -136,6 +151,7 @@ uint32_t CPlayer_StateMachine::GetTransitionPriority(PLAYER_STATE eState) const
 	switch (eState)
 	{
 	case PLAYER_STATE::DEAD:   return 100;
+	case PLAYER_STATE::KNOCKDOWN: return 90;
 	case PLAYER_STATE::HIT:    return 80;
 	case PLAYER_STATE::ROLL:   return 60;
 	case PLAYER_STATE::JUMP:   return 50;

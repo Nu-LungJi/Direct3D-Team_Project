@@ -27,6 +27,7 @@ enum class PLAYER_STATE : uint32_t
 	REPAIRO_SKILL,
 	SKILL_END,
 	HIT,
+	KNOCKDOWN,
 	DEAD,
 	FLY,
 	END,

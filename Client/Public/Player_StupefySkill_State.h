@@ -17,17 +17,31 @@ public:
 	static SPtr<CPlayer_StupefySkill_State> Create();
 private:
 	void CacheAnimationIndices(const CPlayer& player);
+	_bool PlayParryReaction(CPlayer& player);
 	_bool PlayCounterAnimation(CPlayer& player, const _float3& vParryPosition);
+	enum class PHASE : uint8_t
+	{
+		PARRY_REACTION,
+		COUNTER_ATTACK,
+	};
+
 	std::array<int32_t, 5> m_Animations{};
+	int32_t m_iParryReactionAnimation{ -1 };
 	_bool m_bAnimationsCached{};
 	_bool m_bSpeedRestored{};
 	_bool m_bProjectileReleased{};
 	_float m_fPreviousAnimRatio{};
+	_float3 m_vParryPosition{};
+	PHASE m_ePhase{ PHASE::PARRY_REACTION };
 	static constexpr _float BLEND_DURATION = 0.12f;
-	static constexpr _float TURN_SPEED = 0.85f;
-	static constexpr _float TURN_END_RATIO = 0.08f;
-	static constexpr _float ATTACK_SPEED = 1.5f;
-	static constexpr _float PROJECTILE_RELEASE_RATIO = 0.25f;
+	static constexpr _float REACTION_BLEND_DURATION = 0.08f;
+	static constexpr _float REACTION_SPEED = 1.5f;
+	static constexpr _float REACTION_EXIT_RATIO = 0.38f;
+	static constexpr _float TURN_SPEED = 0.65f;
+	static constexpr _float TURN_END_RATIO = 0.10f;
+	static constexpr _float ATTACK_SPEED = 1.9f;
+	static constexpr _float PROJECTILE_RELEASE_RATIO = 0.18f;
+	static constexpr _float RECOVERY_EXIT_RATIO = 0.32f;
 };
 
 NS_END

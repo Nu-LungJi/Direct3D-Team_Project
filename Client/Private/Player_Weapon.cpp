@@ -2,10 +2,10 @@
 #include "Player_Weapon.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
-#include "ComStaticModelInstance.h"
 #include "Resources.h"
 #include "GameInstance.h"
 #include "ComModelInstance.h"
+#include "ResModelBone.h"
 #include "Trail_CPU.h"
 NS_USING(Client)
 
@@ -27,12 +27,12 @@ void CPlayer_Weapon::UpdateGUI()
 HRESULT CPlayer_Weapon::InitializePrototype(void* pArg)
 {
 
-	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
+	m_pResVertexNonAnimShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
 	if (FAILED(m_pResVertexNonAnimShader->Load()))
 	{
 		return E_FAIL;
 	}
-	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
+	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
 	if (FAILED(m_pResPixelNonAnimShader->Load()))
 	{
 		return E_FAIL;
@@ -54,6 +54,21 @@ HRESULT CPlayer_Weapon::Initialize(void* pArg)
 		return E_FAIL;
 	}
 
+	if (!CGameInstance::Get().GetResourceFirst<CResModel>(
+		pDesc->LevelTag, pDesc->WeaponName))
+	{
+		auto socketModel = CGameInstance::Get().AddResourceT<CResModel>(
+			pDesc->LevelTag,
+			pDesc->WeaponName,
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Wand/SK_Wand.bin"));
+		if (!socketModel)
+			return E_FAIL;
+		CResModel::DESC modelDesc{};
+		modelDesc.PreTransformMatrix = XMMatrixRotationX(XMConvertToRadians(-90.f));
+		if (FAILED(socketModel->Load(modelDesc)))
+			return E_FAIL;
+	}
+
 	{
 		CComConstantBuffer::DESC Desc{};
 		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
@@ -64,18 +79,33 @@ HRESULT CPlayer_Weapon::Initialize(void* pArg)
 	}
 
 	{
-		CComStaticModelInstance::DESC Desc{};
+		CComModelInstance::DESC Desc{};
 		Desc.sGroupTag = pDesc->LevelTag;
 		Desc.sResTag = pDesc->WeaponName;
 
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_StaticModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 		{
 			return E_FAIL;
 		};
 	}
 
+	{
+		const auto& bones = m_pComModelInstance->GetModel()->GetBones();
+		auto& combinedBones = m_pComModelInstance->Get_CombinedBoneMatrices();
+		combinedBones.resize(bones.size());
+		for (size_t i = 0; i < bones.size(); ++i)
+		{
+			if (!bones[i]) return E_FAIL;
+			bones[i]->Update_CombinedTransformationMatrix(bones, XMMatrixIdentity());
+			combinedBones[i] = *bones[i]->Get_CombinedTransformationMatrixPtr();
+		}
+		m_iMuzzleSocketBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("MuzzleSocket");
+		if (m_iMuzzleSocketBoneIndex < 0) return E_FAIL;
+	}
+
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
 	GetTransform().SetScale(_float3{ 4.f,4.f,4.f });
+	GetTransform().SetRotationEuler({ -90.f, 0.f, 0.f });
 
 	//test = CGameInstance::Get().Parse_Command("FireSparkQueue.json");
 
@@ -149,6 +179,8 @@ HRESULT CPlayer_Weapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CT
 	uint32_t	iNumMeshes = pModel->Get_NumMeshes();
 	for (uint32_t i = 0; i < iNumMeshes; ++i) {
 		const auto& viBuffer = pModel->GetMeshes()[i];
+		if (FAILED(m_pComModelInstance->Bind_BoneMatrices(pContext, i)))
+			return E_FAIL;
 
 
 		ID3D11Buffer* vertexBuffers[] = {
@@ -211,35 +243,45 @@ HRESULT CPlayer_Weapon::Render_Shadow(ID3D11DeviceContext* pContext, const E::RE
 	return S_OK;
 }
 bool CPlayer_Weapon::GetShadowBounds(BoundingBox& OutBounds) const {
-	if (m_pComModelInstance == nullptr)	return false;
-
-	const auto& Model = m_pComModelInstance->GetModel();
-	if (Model == nullptr || !Model->HasLocalBounds())		return false;
-
-	Model->GetLocalBounds().Transform(OutBounds, GetTransform().GetLoadedCombinedWorldMatrix());
-
-	return true;
+	return false;
 }
 /*---------------------------------*/
 
 _float4x4 CPlayer_Weapon::GetSpawnWorldMatrix() const
 {
-	if (auto pPlayer = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
+	if (m_pComModelInstance && m_iMuzzleSocketBoneIndex >= 0)
 	{
-		if (auto pModel = pPlayer->GetComponent<CComModelInstance>("ComCModelIntance"))
+		const auto& combinedBones = m_pComModelInstance->Get_CombinedBoneMatrices();
+		if (static_cast<size_t>(m_iMuzzleSocketBoneIndex) < combinedBones.size())
 		{
-			const auto& combinedBoneMatrices = pModel->Get_CombinedBoneMatrices();
-			if (m_iSpawnBoneIndex >= 0 &&
-				static_cast<size_t>(m_iSpawnBoneIndex) < combinedBoneMatrices.size())
-			{
-				_matrix spawnWorld =
-					XMLoadFloat4x4(&combinedBoneMatrices[m_iSpawnBoneIndex]) *
-					pPlayer->GetTransform().GetLoadedWorldMatrix();
+			_matrix weaponWorld = GetTransform().GetLoadedCombinedWorldMatrix();
 
-				_float4x4 result{};
-				XMStoreFloat4x4(&result, spawnWorld);
-				return result;
+			// Player and weapon LateUpdate ordering is not guaranteed. Build the
+			// attachment matrix from the player's current-frame hand bone here so
+			// wand-tip effects never consume the weapon's previous-frame transform.
+			if (auto* pPlayer = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
+			{
+				if (auto* pPlayerModel = pPlayer->GetComponent<CComModelInstance>("ComCModelIntance"))
+				{
+					const auto& playerBones = pPlayerModel->Get_CombinedBoneMatrices();
+					if (m_iBoneSocketIndex >= 0 &&
+						static_cast<size_t>(m_iBoneSocketIndex) < playerBones.size())
+					{
+						_matrix handSocket = XMLoadFloat4x4(&playerBones[m_iBoneSocketIndex]);
+						for (uint32_t i = 0; i < 3; ++i)
+							handSocket.r[i] = XMVector3Normalize(handSocket.r[i]);
+
+						weaponWorld = GetTransform().GetLoadedWorldMatrix() *
+							handSocket * pPlayer->GetTransform().GetLoadedWorldMatrix();
+					}
+				}
 			}
+
+			_float4x4 result{};
+			XMStoreFloat4x4(&result,
+				XMLoadFloat4x4(&combinedBones[m_iMuzzleSocketBoneIndex]) *
+				weaponWorld);
+			return result;
 		}
 	}
 

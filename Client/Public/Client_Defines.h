@@ -78,6 +78,7 @@ namespace Client
 		Prototype_GameObject_Mace,
 		Prototype_GameObject_PlayerThirdPersonCamera,
 		Prototype_GameObject_PlayerWeapon,
+		Prototype_GameObject_PlayerBroom,
 		Prototype_GameObject_Terrain,
 		Prototype_GameObject_OilBarrel,
 		Prototype_GameObject_RagdollTest,
@@ -104,7 +105,7 @@ namespace Client
 	enum class PLAYER_SKILL_TYPE { DEFAULT, ATTACK, ACCIO, DEPULSO , DESCENDO, ACIENT_LIGHTNING, PROTEGO,DESTORY,END};
 	enum class MONSTER_TYPE{NORMAL,ELITE, BOSS};
 
-enum class PARTES { WEAPON,EFFECT, END };
+enum class PARTES { WEAPON, BROOM, EFFECT, END };
 }
 
 template <>
