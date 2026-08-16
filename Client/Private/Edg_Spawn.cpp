@@ -92,7 +92,17 @@ void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	switch (m_eSpawn)
 	{
 	case EDG_SPAWN_NUMBER::FIRST:
-		SpawnSkill(pDragon,"RanrokMoveSmoke");
+		_float4x4 mat{};
+		XMStoreFloat4x4(&mat, pDragon->GetTransform().GetLoadedWorldMatrix());
+		CGameInstance::Get().Spawn("SpawnSmoke.json", mat);
+
+		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/LastBossRanrok/Ambient/Ranrock_Spawn.wav", SOUND_PLAY_DESC{
+		.sBusID = SOUND_BUS::SFX,
+		.fVolume = 0.7f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = false
+			});
 		m_eSpawn = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	case EDG_SPAWN_NUMBER::SECOND:
@@ -160,10 +170,17 @@ _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
 		m_fTick = 0.f;
 		if (m_PhasePos.empty())
 		{
+			pMoveIntent->ClearMoveIntent();
+
 			CGameInstance::Get().StopEffect(m_iEffectID);
-			SpawnSkill(pDragon, "RanrokStaySmoke");
-			
+			//SpawnSkill(pDragon, "RanrokStaySmoke");
+			_float4x4 mat{};
+			XMStoreFloat4x4(&mat, pDragon->GetTransform().GetLoadedWorldMatrix());
+			CGameInstance::Get().Spawn("SpawnSmoke.json", mat);
+
+			m_fSpawnTick = 0.f;
 			m_eSpawn = EDG_SPAWN_NUMBER::THIRD;
+			m_bNext = false;
 			return true;
 		}
 		vNextPos = XMLoadFloat3(&m_PhasePos.front());

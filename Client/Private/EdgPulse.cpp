@@ -31,6 +31,8 @@ HRESULT CEdgPulse::Initialize(void* pArg)
 	m_fSpeed = 20.f;
 	m_fRadius = 1.5f;
 	m_fMaxLife = 3.f;
+
+
 	return S_OK;
 }
 

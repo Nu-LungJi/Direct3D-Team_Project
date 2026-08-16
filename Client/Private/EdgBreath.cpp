@@ -107,13 +107,31 @@ void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 	m_bGround = m_bHit = false;
 	m_fBreathTick = m_fLife = 0.f;
 	m_fMaxLife = SkillTable.fLifeTime;
+	m_fBreathParticleTick = 0.f;
 	m_fGroundParticleTick = 0.f;
 	Spawn_Skill_Effect(SkillTable.SkillName);
+
+	m_iBreathSoundID  = E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/LastBossRanrok/Ambient/Breath.wav", SOUND_PLAY_DESC{
+	.sBusID = SOUND_BUS::SFX,
+	.fVolume = 0.7f,
+	.fPitch = 1.f,
+	.iPriority = 64,
+	.bLoop = false
+		});
 }
 
 void CEdgBreath::Cancle()
 {
 	ResetValue();
+
+	auto pSoundManager = E::CGameInstance::Get().GetSoundManager();
+
+	if (pSoundManager && m_iBreathSoundID != INVALID_SOUND_ID)
+	{
+		pSoundManager->Stop(m_iBreathSoundID);
+		m_iBreathSoundID = INVALID_SOUND_ID;
+	}
+
 }
 
 void CEdgBreath::SpawnGasi(_vector vPos, _vector vDirection)
@@ -214,7 +232,14 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	_float4x4 breathWorldData{};
 	XMStoreFloat4x4(&breathWorldData, breathWorld);
 
-	CGameInstance::Get().PlayEffect("DragonBreath", breathWorldData);
+	m_fBreathParticleTick += fTimeDelta;
+	constexpr _float fBreathSpawnInterval = 1.f / 60.f;
+	if (m_fBreathParticleTick >= fBreathSpawnInterval)
+	{
+		m_fBreathParticleTick -= fBreathSpawnInterval;
+		CGameInstance::Get().Spawn("DragonBreath.json", breathWorldData);
+	}
+
 	m_fBreathDis = m_fMaxBreath * tBreath;
 	if (MoveSweep(matBone.r[3], vForward, fTimeDelta))
 	{
@@ -234,8 +259,7 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir, _float fTimeDelta
 	
 	XMStoreFloat3(&vPos, vNextPos);
 	XMStoreFloat3(&vDir, vCurDir);
-
-	uint32_t iDebugCnt = 20;
+	constexpr uint32_t iDebugCnt = 20;
 
 	PX_SWEEP_DESC SweepDesc{};
 	SweepDesc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
@@ -245,15 +269,13 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir, _float fTimeDelta
 	SweepDesc.tFilter = m_pxQueryFilter;
 	SweepDesc.fMaxDistance = m_fBreathDis;
 
-	////////////////////////////////////
 	for (uint32_t i = 0; i < iDebugCnt; ++i)
 	{
-		_float t = static_cast<_float>(i) / static_cast<_float>(iDebugCnt);
+		const _float t = static_cast<_float>(i) / static_cast<_float>(iDebugCnt - 1);
 		_float3 vDebugPos{};
 		XMStoreFloat3(&vDebugPos, XMLoadFloat3(&SweepDesc.tPose.vPosition) + XMLoadFloat3(&vDir) * SweepDesc.fMaxDistance * t);
 		DebugLine(vDebugPos);
 	}
-	/////////////////////////////////////
 
 	PX_SWEEP_RESULT SweepResult{};
 	auto pPhysX = CGameInstance::Get().GetPhysXManager();
@@ -286,9 +308,9 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir, _float fTimeDelta
 		{
 			m_fGroundParticleTick += fTimeDelta;
 
-			if (m_fGroundParticleTick >= 0.05f)
+			if (m_fGroundParticleTick >= 0.1f)
 			{
-				m_fGroundParticleTick -= 0.05f;
+				m_fGroundParticleTick -= 0.1f;
 
 				_float4x4 groundWorld{};
 				XMStoreFloat4x4(&groundWorld, XMMatrixTranslation(GroundSweep.vHitpos.x, GroundSweep.vHitpos.y, GroundSweep.vHitpos.z));

@@ -172,6 +172,7 @@ _bool CEdg_Phase::MovePhase(CEnderDragon* pDragon, _float fTimeDelta)
 		m_PhasePos[ETOUI(m_ePhase)].pop_front();
 		m_bNext = false;
 		m_fTick = 0.f;
+
 	}
 
 	m_fTick += fTimeDelta;
@@ -342,34 +343,32 @@ void CEdg_Phase::Phase_Before_Action(CEnderDragon* pDragon, _float fTimeDelta)
 
 void CEdg_Phase::Phase_Change_Action(CEnderDragon* pDragon, _float fTimeDelta)
 {
+	const _bool bMoveFinished = m_ePhase == DRAGON_PHASE::PHASE3 ? MovePhase3(pDragon, fTimeDelta) : MovePhase(pDragon, fTimeDelta);
 
-	if (m_ePhase == DRAGON_PHASE::PHASE3)
+	if (!bMoveFinished)
+		return;
+
+	m_fTick = 0.f;
+	m_eNextPhase = m_ePhase;
+	m_eNum = EDG_SPAWN_NUMBER::THIRD;
+
+	auto pMoveIntent = pDragon->Get_MoveIntent();
+	if (pMoveIntent)
+		pMoveIntent->ClearMoveIntent();
+
+	_float4x4 mat{};
+	XMStoreFloat4x4(&mat, pDragon->GetTransform().GetLoadedWorldMatrix());
+	CGameInstance::Get().Spawn("SpawnSmoke.json", mat);
+
+	if (m_ePhase == DRAGON_PHASE::PHASE5)
 	{
-		
-		if (MovePhase3(pDragon, fTimeDelta))
-		{
-			m_fTick = 0.f;
-			m_eNextPhase = m_ePhase;
-			m_eNum = EDG_SPAWN_NUMBER::THIRD;
-		
-		}
-	}
-	else
-	{
-		if (MovePhase(pDragon, fTimeDelta))
-		{
-			m_fTick = 0.f;
-			m_eNextPhase = m_ePhase;
-			m_eNum = EDG_SPAWN_NUMBER::THIRD;
-			if (m_ePhase == DRAGON_PHASE::PHASE5)
-			{
-				pDragon->Set_HideOnBush(false);
-				auto pBT = pDragon->GetComponent<CComBeHavior>("Com_BT");
-				if (nullptr == pBT) return;
-				pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
-		
-			}
-		}
+		pDragon->Set_HideOnBush(false);
+
+		auto pBT = pDragon->GetComponent<CComBeHavior>("Com_BT");
+		if (nullptr == pBT)
+			return;
+
+		pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	}
 }
 void CEdg_Phase::Phase_After_Action(CEnderDragon* pDragon, _float fTimeDelta)
