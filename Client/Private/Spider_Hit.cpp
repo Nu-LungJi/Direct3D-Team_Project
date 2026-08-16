@@ -59,7 +59,6 @@ void CSpider_Hit::Enter(CStateMachine* pStateMachine)
 	if (!pSpider->Activate_PendingHit())
 		return;
 	MON_HIT_INFO Pending = pSpider->Get_ActiveHitInfo();
-	
 	Reactive_Table(Pending.eHitType);
 
 
@@ -89,10 +88,13 @@ void CSpider_Hit::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta
 	switch (m_HitStep)
 	{
 	case HIT_STEP::START:
+		Hit_Step_Start(pSpider);
 		break;
 	case HIT_STEP::LOOP:
+		Hit_Step_Loop(pSpider);
 		break;
 	case HIT_STEP::END:
+		Hit_Step_End(pSpider);
 		break;
 
 	}
@@ -141,7 +143,23 @@ void CSpider_Hit::Check_PendingHit(CSpider* pSpider)
 	
 }
 
-_bool CSpider_Hit::PlayAnim(CComAnimator* pAnimator)
+void CSpider_Hit::Hit_Step_Start(CSpider* pSpider)
+{
+}
+
+void CSpider_Hit::Hit_Step_Loop(CSpider* pSpider)
+{
+}
+
+void CSpider_Hit::Hit_Step_End(CSpider* pSpider)
+{
+}
+
+void CSpider_Hit::Check_Loop(CComAnimator* pAnimator)
+{
+}
+
+_bool CSpider_Hit::PlayAnim(CComAnimator* pAnimator, _bool bLoop)
 {
 	if (nullptr == pAnimator) return true;
 
@@ -151,7 +169,7 @@ _bool CSpider_Hit::PlayAnim(CComAnimator* pAnimator)
 	
 	pAnimator->Play_Anim(pAnim.fBlend, false, pAnim.fBlend);
 	
-	if (pAnimator->GetFinish())
+	if (!bLoop && pAnimator->GetFinish())
 		++m_iAnimIndex;
 
 }

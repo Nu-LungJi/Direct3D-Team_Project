@@ -33,7 +33,11 @@ public:
 private:
 	HIT_TYPE				Reactive_Table(PLAYER_SKILL_TYPE eType);
 	void					Check_PendingHit(CSpider* pSpider);
-	_bool					PlayAnim(CComAnimator* pAnimator);
+	void					Hit_Step_Start(CSpider* pSpider);
+	void					Hit_Step_Loop(CSpider* pSpider);
+	void					Hit_Step_End(CSpider* pSpider);
+
+	_bool					PlayAnim(CComAnimator* pAnimator,_bool bLoop = false);
 private:
 	uint32_t						m_iAnimIndex{};
 	HIT_STEP						m_HitStep{};
