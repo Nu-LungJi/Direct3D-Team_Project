@@ -26,11 +26,10 @@ public:
 private:
 	void			SpawnGasi(_vector vPos, _vector vDirection);
 	void			MoveBreath(_float fTimeDelta);
-	_bool			MoveSweep(_vector vNextPos,_vector vCurDir);
+	_bool			MoveSweep(_vector vNextPos,_vector vCurDir, _float fTimeDelta);
 private:
-	_float			m_fBreathTick{}, m_fBreathDis{}, m_fMaxBreath{};
+	_float			m_fBreathTick{}, m_fBreathDis{}, m_fMaxBreath{}, m_fGroundParticleTick{};
 	_bool			m_bGround{ false };
-
 public:
 	static E::UPtr<CEdgBreath> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
