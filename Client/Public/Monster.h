@@ -143,6 +143,9 @@ public:
 	const _float4x4*			Get_CombineBoneMatrix(int32_t iBoneIndex);
 	CComAnimator*				Get_Animator();
 	CComCharacterMoveIntent*	Get_MoveIntent();
+	void						SetRootMotionActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
+	void						SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
+	void						SetRootMotionTranslationScale(_float fScale) { m_fRootMotionTranslationScale = std::max(0.f, fScale); }
 	CBTBlackBoard*				Get_BlackBoard();
 	int32_t						Find_AnimIndex(const _string& AnimName);
 
@@ -155,6 +158,7 @@ protected:
 	virtual void				Flag_Check(_float fTimeDelta);
 private:
 	void						Cancle_Attack();
+	void						Update_Animation(_float fTimeDelta);
 	void						StartEmissive() { if (m_bWork) return;  m_bEmissive = true; }
 	void						EmissiveFadeOut(_float fTimeDelta);
 // 민수 추가 ----------------------------------------------------------
@@ -194,6 +198,8 @@ protected:
 	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{}, m_fDamage{}, m_fDissolve{};
 	int32_t								m_iHp{}, m_iMaxHp{}, m_iColliderBoneIndex{}, m_iEventBoneIndex{-1};
 	_bool								m_bEmissive{ false }, m_bWork{ false }, m_bSkillLoop{ false }, m_bSkipAtt{ false }, m_bHide{false};
+	_bool								m_bRootMotionTranslationActive{ false }, m_bRootMotionRotationActive{ false };
+	_float								m_fRootMotionTranslationScale{ 1.f };
 	_string								m_SocketName{}, m_CurEffectName{};
 	ATTMON								m_eAttType{ ATTMON::END },m_eLastSkillTable{ ATTMON::END };
 	

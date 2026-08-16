@@ -136,6 +136,12 @@ HRESULT CComAnimator::Initialize(void* pArg)
 			m_iRootBoneIndex = iIndex;
 			return S_OK;
 		}
+		iIndex = m_pModelInstance->GetModel()->Get_BoneIndex("RigRoot");
+		if (iIndex != -1)
+		{
+			m_iRootBoneIndex = iIndex;
+			return S_OK;
+		}
 	
     }
 

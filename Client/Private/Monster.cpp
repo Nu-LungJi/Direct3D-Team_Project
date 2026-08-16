@@ -163,12 +163,33 @@ void CMonster::Update(E::_float fTimeDelta)
 	__super::Update(fTimeDelta);
 	if (!m_pComSound)
 		m_pComSound->Update();
-	if (m_pComModelInstance->GetModel()->GetAnimations().size() != 0)
-		m_pModelAnimator->Update(fTimeDelta);
+	Update_Animation(fTimeDelta);
 
 	EmissiveFadeOut(fTimeDelta);
 	m_pBeHavior->AbortNode();
 	Update_HurtBox();
+}
+
+void CMonster::Update_Animation(_float fTimeDelta)
+{
+	if (m_pComModelInstance->GetModel()->GetAnimations().empty())
+		return;
+
+	m_pModelAnimator->Update(fTimeDelta);
+
+	if (m_bRootMotionTranslationActive && m_pMoveIntent)
+	{
+		const _float3 vRootMotionDelta = m_pModelAnimator->GetRootMotionDelta();
+		_float3 vWorldDisplacement{};
+		XMStoreFloat3(&vWorldDisplacement,XMVector3Rotate(XMLoadFloat3(&vRootMotionDelta) * m_fRootMotionTranslationScale,GetTransform().GetLoadedQuaternion()));
+		m_pMoveIntent->AddExternalDisplacement(vWorldDisplacement);
+	}
+
+	if (m_bRootMotionRotationActive)
+	{
+		const _float4 vRootMotionRotationDelta =m_pModelAnimator->GetRootMotionRotationDelta();
+		GetTransform().SetQuaternion(XMQuaternionNormalize(XMQuaternionMultiply(XMLoadFloat4(&vRootMotionRotationDelta),GetTransform().GetLoadedQuaternion())));
+	}
 }
 
 void CMonster::LateUpdate(E::_float fTimeDelta)
