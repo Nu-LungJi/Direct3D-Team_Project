@@ -117,7 +117,7 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
 		// ------------------------------------------- 인스턴싱 OFF --------------------------------------
-		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+		CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
 		return;
 		//------------------------------------------------------------------------------------------------
 	}

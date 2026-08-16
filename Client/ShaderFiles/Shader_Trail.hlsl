@@ -163,6 +163,28 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
 	return Out;
 
 }
+// [LSY] Bombarda 캐스팅 궤적은 단일 번개 마스크를 강하게 잘라 선명한 지그재그 실루엣을 만든다.
+PS_OUT PSBombardaEnergyTrail(VS_OUT In) : SV_TARGET
+{
+	PS_OUT Out = (PS_OUT)0;
+
+	float2 uv = In.vUV;
+	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, uv);
+	float mask = max(texColor.r, max(texColor.g, texColor.b));
+
+	clip(mask - 0.14f);
+
+	float coreMask = smoothstep(0.35f, 0.82f, mask);
+	float3 baseColor = texColor.rgb * In.vColor.rgb * 1.8f;
+	float3 emissive = In.vEmissive.rgb * In.vEmissive.a * coreMask;
+	float3 finalColor = baseColor + emissive;
+	// [LSY] PSRemoveBlack과 동일하게 텍스처 마스크와 CPU 정점 알파를 조합한다.
+	float finalAlpha = mask * texColor.a * saturate(In.vColor.a);
+
+	Out.vDiffuse = float4(finalColor, finalAlpha);
+	return Out;
+}
+
 PS_OUT PSPlayerDash(VS_OUT In) : SV_TARGET
 {
 	PS_OUT Out = (PS_OUT) 0;

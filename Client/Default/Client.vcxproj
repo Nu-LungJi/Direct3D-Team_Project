@@ -144,7 +144,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -166,7 +166,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>..\Public\;$(ProjectDir);$(SolutionDir)EngineSDK\Inc\;$(SolutionDir)ThirdParty\imgui-1.83\;$(SolutionDir)ThirdParty\ImGuizmo-1.83\;$(SolutionDir)ThirdParty\nlohmann_3.12.0\include\;$(SolutionDir)ThirdParty\imgui-node-editor-0.9.3\;$(SolutionDir)ThirdParty\tracy-0.13.1\public\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -212,9 +212,11 @@
     <ClInclude Include="..\public\DragonSkill.h" />
     <ClInclude Include="..\public\EdgBreath.h" />
     <ClInclude Include="..\public\EdgFireBall.h" />
+    <ClInclude Include="..\public\EdgGasi.h" />
     <ClInclude Include="..\public\EdgPulse.h" />
     <ClInclude Include="..\public\EdgRandomBall.h" />
     <ClInclude Include="..\public\Edg_Combat.h" />
+    <ClInclude Include="..\public\Edg_Dead.h" />
     <ClInclude Include="..\public\Edg_Hit.h" />
     <ClInclude Include="..\public\Edg_Phase.h" />
     <ClInclude Include="..\public\Edg_Spawn.h" />
@@ -223,6 +225,7 @@
     <ClInclude Include="..\public\LevelLastBossRanrok.h" />
     <ClInclude Include="..\public\LevelLastBossRanrokLoader.h" />
     <ClInclude Include="..\Public\Player_Fly_State.h" />
+    <ClInclude Include="..\public\SkillTarget.h" />
     <ClInclude Include="..\Public\SkyCloudyCube.h" />
     <ClInclude Include="..\public\BossMace.h" />
     <ClInclude Include="..\Public\BridgeCRW.h" />
@@ -292,11 +295,13 @@
     <ClInclude Include="..\Public\Player_Hit_State.h" />
     <ClInclude Include="..\Public\Player_RepairoSkill_State.h" />
     <ClInclude Include="..\Public\Player_ProtegoSkill_State.h" />
+    <ClInclude Include="..\Public\Player_StupefySkill_State.h" />
     <ClInclude Include="..\public\RagdollTest.h" />
     <ClInclude Include="..\public\TestPathPlaybackObject.h" />
     <ClInclude Include="..\public\LuaTestObject.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
+    <ClInclude Include="..\Public\Player_BombardaController.h" />
     <ClInclude Include="..\Public\Player_ConfringoController.h" />
     <ClInclude Include="..\Public\PlayerRagdollController.h" />
     <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
@@ -314,7 +319,9 @@
     <ClInclude Include="..\Public\Player_LumosSkill_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
     <ClInclude Include="..\Public\Player_Jump_State.h" />
+    <ClInclude Include="..\Public\Player_Bombarda_Bullet.h" />
     <ClInclude Include="..\Public\Player_Confringo_Bullet.h" />
+    <ClInclude Include="..\Public\Player_Stupefy_Bullet.h" />
     <ClInclude Include="..\Public\Player_Magic_Bullet.h" />
     <ClInclude Include="..\Public\Player_Roll_State.h" />
     <ClInclude Include="..\Public\Player_SkillStateBase.h" />
@@ -359,8 +366,10 @@
     <ClCompile Include="..\Private\BackGround.cpp" />
     <ClCompile Include="..\private\EdgBreath.cpp" />
     <ClCompile Include="..\private\EdgFireBall.cpp" />
+    <ClCompile Include="..\private\EdgGasi.cpp" />
     <ClCompile Include="..\private\EdgPulse.cpp" />
     <ClCompile Include="..\private\EdgRandomBall.cpp" />
+    <ClCompile Include="..\private\Edg_Dead.cpp" />
     <ClCompile Include="..\private\LevelLastBossRanrok.cpp" />
     <ClCompile Include="..\private\LevelLastBossRanrokLoader.cpp" />
     <ClCompile Include="..\private\BTDecEdgPatroll.cpp" />
@@ -375,6 +384,7 @@
     <ClCompile Include="..\private\EnderDragon.cpp" />
     <ClCompile Include="..\private\EnderDragon_State.cpp" />
     <ClCompile Include="..\Private\Player_Fly_State.cpp" />
+    <ClCompile Include="..\private\SkillTarget.cpp" />
     <ClCompile Include="..\Private\SkyCloudyCube.cpp" />
     <ClCompile Include="..\private\BossMace.cpp" />
     <ClCompile Include="..\private\BossTMB.cpp" />
@@ -439,10 +449,12 @@
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
     <ClCompile Include="..\Private\Player_RepairoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_StupefySkill_State.cpp" />
     <ClCompile Include="..\private\RagdollTest.cpp" />
     <ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
     <ClCompile Include="..\private\LuaTestObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
+    <ClCompile Include="..\Private\Player_BombardaController.cpp" />
     <ClCompile Include="..\Private\Player_ConfringoController.cpp" />
     <ClCompile Include="..\Private\PlayerRagdollController.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
@@ -459,7 +471,9 @@
     <ClCompile Include="..\Private\Player_LumosSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
+    <ClCompile Include="..\Private\Player_Bombarda_Bullet.cpp" />
     <ClCompile Include="..\Private\Player_Confringo_Bullet.cpp" />
+    <ClCompile Include="..\Private\Player_Stupefy_Bullet.cpp" />
     <ClCompile Include="..\Private\Player_Magic_Bullet.cpp" />
     <ClCompile Include="..\Private\Player_Roll_State.cpp" />
     <ClCompile Include="..\Private\Player_SkillStateBase.cpp" />
@@ -527,6 +541,16 @@
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle_Smoke.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCorruption.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokVein.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokBlight.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCore.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCrackedRock.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokWallRift.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokSurface.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokImpactScorch.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokEnergyPool.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokOrbGround.hlsl" />
   </ItemGroup>
   <ItemDefinitionGroup>
     <FxCompile>

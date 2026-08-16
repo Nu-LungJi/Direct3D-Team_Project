@@ -40,6 +40,9 @@
     <Filter Include="ShaderFiles">
       <UniqueIdentifier>{6bd28087-0add-401b-9153-94d4f64a07f1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ShaderFiles\Decal">
+      <UniqueIdentifier>{c7198a28-a5af-4ed1-914d-b1609cf80b2b}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Resources">
       <UniqueIdentifier>{ea673d2d-2797-484e-8c21-2bc2a74e811d}</UniqueIdentifier>
     </Filter>
@@ -253,6 +256,9 @@
     <Filter Include="GameObject\Player\Player_Confringo_Bullet">
       <UniqueIdentifier>{b632e874-a63c-4f32-a774-efdc9e8e3c45}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\Player_Bombarda_Bullet">
+      <UniqueIdentifier>{67c8a952-4922-44ca-98df-dbf19599c97a}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_Hit_State">
       <UniqueIdentifier>{d0adaf33-4a64-494f-9581-a01e2aa4035f}</UniqueIdentifier>
     </Filter>
@@ -349,8 +355,20 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State">
       <UniqueIdentifier>{c2bc7a83-85f7-4724-8bc3-b2011caf5be4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\Player_Stupefy_Bullet">
+      <UniqueIdentifier>{7b377b16-f214-42dc-a42f-1fed070db52b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State">
+      <UniqueIdentifier>{e8c271b5-81f6-4fe9-9552-77c3802e87d2}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\Player_ConfringoController">
       <UniqueIdentifier>{6edd5ca2-a286-4ac1-b657-df90b1703e18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\Player_BombardaController">
+      <UniqueIdentifier>{a21cbdd5-7eb1-4c65-8cba-a14935998a12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\EnderDragon\Skill\Gasi">
+      <UniqueIdentifier>{a9ff708e-a308-4d48-99c3-2ed09296a5f9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -660,6 +678,12 @@
     <ClInclude Include="..\Public\Player_Confringo_Bullet.h">
       <Filter>GameObject\Player\Player_Confringo_Bullet</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Bombarda_Bullet.h">
+      <Filter>GameObject\Player\Player_Bombarda_Bullet</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Stupefy_Bullet.h">
+      <Filter>GameObject\Player\Player_Stupefy_Bullet</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_Hit_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
     </ClInclude>
@@ -807,8 +831,23 @@
     <ClInclude Include="..\Public\Player_ProtegoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_StupefySkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_ConfringoController.h">
       <Filter>GameObject\Player\Player_ConfringoController</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_BombardaController.h">
+      <Filter>GameObject\Player\Player_BombardaController</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\SkillTarget.h">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\EdgGasi.h">
+      <Filter>GameObject\Monster\EnderDragon\Skill\Gasi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Edg_Dead.h">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1074,6 +1113,12 @@
     <ClCompile Include="..\Private\Player_Confringo_Bullet.cpp">
       <Filter>GameObject\Player\Player_Confringo_Bullet</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_Bombarda_Bullet.cpp">
+      <Filter>GameObject\Player\Player_Bombarda_Bullet</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Stupefy_Bullet.cpp">
+      <Filter>GameObject\Player\Player_Stupefy_Bullet</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Player_Hit_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
     </ClCompile>
@@ -1214,8 +1259,23 @@
     <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_StupefySkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Player_ConfringoController.cpp">
       <Filter>GameObject\Player\Player_ConfringoController</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_BombardaController.cpp">
+      <Filter>GameObject\Player\Player_BombardaController</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\SkillTarget.cpp">
+      <Filter>GameObject\Monster\00.Parents</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\EdgGasi.cpp">
+      <Filter>GameObject\Monster\EnderDragon\Skill\Gasi</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Edg_Dead.cpp">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1308,6 +1368,36 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_EnderDragon.hlsl">
       <Filter>ShaderFiles\GameObject</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCorruption.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokVein.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokBlight.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCore.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCrackedRock.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokWallRift.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokSurface.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokImpactScorch.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokEnergyPool.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokOrbGround.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

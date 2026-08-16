@@ -151,7 +151,6 @@ void CBTAttackAnimation::Update_Gui()
 	{
 		DragFloat("Move Speed", m_Value.fSpeed);
 		DragFloat("Intensive", m_fIntensive);
-		DragFloat("ShakeCamRatio", m_fCamShakeRatio);
 		ImGui::Text("OverLabRatio");
 		ImGui::DragFloat2("##OverLabRatio", reinterpret_cast<_float*>(&m_vOverlabRatio), 0.1f, 0.f, 1.f);
 		DragFloat("AttRadius", m_fAttRadius);
@@ -196,7 +195,14 @@ void CBTAttackAnimation::Update_Gui()
 		}
 		ImGui::TreePop();
 	}
-
+	if (ImGui::TreeNode("Cam"))
+	{
+		DragFloat("ShakeCamRatio", m_CamInfo.fCamStartRatio);
+		DragFloat("ShakePower", m_CamInfo.fPower,0.1f,0.f,100.f);
+		DragFloat("ShakeTime", m_CamInfo.fTime, 0.1f, 0.f, 100.f);
+		DragFloat("ShakeCnt", m_CamInfo.fCnt, 0.1f, 0.f, 100.f);
+		ImGui::TreePop();
+	}
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1,0,0,1 });
 	if (ImGui::TreeNode("New Skill Table Ver.2"))
 	{
@@ -327,16 +333,16 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 }
 void CBTAttackAnimation::ShakeCam(_float fRotRatio)
 {
-	if (m_fCamShakeRatio == 0.f)
+	if (m_CamInfo.fCamStartRatio == 0.f)
 		return;
-	if (m_bCamShake && fRotRatio > m_fCamShakeRatio)
+	if (m_bCamShake && fRotRatio > m_CamInfo.fCamStartRatio)
 	{
 		//카메라 쉐킷
 		CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
 			{
-			   1.f, // 강도 0 ~ 1
-			   1.f, // 지속시간
-			   15.f, // 초당 진동횟수
+			   m_CamInfo.fPower, // 강도 0 ~ 1
+			   m_CamInfo.fTime, // 지속시간
+			   m_CamInfo.fCnt, // 초당 진동횟수
 			});
 		m_bCamShake = false;
 	}
@@ -361,7 +367,10 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 	SaveJsonValue(j, "Intensive", m_fIntensive);
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
-	SaveJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
+	SaveJsonValue(j, "CamShakeRatio", m_CamInfo.fCamStartRatio);
+	SaveJsonValue(j, "CamShakePower", m_CamInfo.fPower);
+	SaveJsonValue(j, "CamShakeTime", m_CamInfo.fTime);
+	SaveJsonValue(j, "CamShakeCnt", m_CamInfo.fCnt);
 	SaveJsonValue(j, "AttRadius", m_fAttRadius);
 	SaveJsonValue(j, "OverlabMove", m_bOverLabMove);
 	SaveJsonValue(j, "TriggerSkill", m_bTrigger);
@@ -391,7 +400,10 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "Intensive", m_fIntensive);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
-	LoadJsonValue(j, "CamShakeRatio", m_fCamShakeRatio);
+	LoadJsonValue(j, "CamShakeRatio", m_CamInfo.fCamStartRatio);
+	LoadJsonValue(j, "CamShakePower", m_CamInfo.fPower);
+	LoadJsonValue(j, "CamShakeTime", m_CamInfo.fTime);
+	LoadJsonValue(j, "CamShakeCnt", m_CamInfo.fCnt);
 	LoadJsonValue(j, "AttRadius", m_fAttRadius);
 	LoadJsonValue(j, "OverlabMove", m_bOverLabMove);
 	LoadJsonValue(j, "TriggerSkill", m_bTrigger);

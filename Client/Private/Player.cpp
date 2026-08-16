@@ -19,7 +19,9 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "PlayerRagdollController.h"
+#include "Player_BombardaController.h"
 #include "Player_ConfringoController.h"
+#include "Player_Stupefy_Bullet.h"
 #include "PlayerThirdPersonCamera.h"
 #include "DbgLineRender.h"
 #include "Player_StateMachine.h"
@@ -39,6 +41,7 @@
 #include "Player_ConfringoSkill_State.h"
 #include "Player_AvadaKedavraSkill_State.h"
 #include "Player_ProtegoSkill_State.h"
+#include "Player_StupefySkill_State.h"
 #include "Player_LumosSkill_State.h"
 #include "Player_RepairoSkill_State.h"
 #include "Monster.h"
@@ -98,6 +101,8 @@ void CPlayer::UpdateGUI()
 
 	if (m_pConfringoController)
 		m_pConfringoController->UpdateGUI();
+
+	UpdateStupefyDebugGUI();
 
 
 	if (m_pRagdollController)
@@ -426,6 +431,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		}
 		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::STUPEFY_SKILL,
+			CPlayer_StupefySkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::LUMOS_SKILL,
 			CPlayer_LumosSkill_State::Create()))
 		{
@@ -514,6 +525,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	m_hAutoTarget = CHandle{};
+	if (FAILED(InitializeBombarda()))
+		return E_FAIL;
 	if (FAILED(InitializeConfringo()))
 		return E_FAIL;
 
@@ -570,6 +583,35 @@ _bool CPlayer::IsRagdollTransitioning() const
 }
 #pragma endregion
 
+#pragma region BOMBARDA
+HRESULT CPlayer::InitializeBombarda()
+{
+	// [LSY] 플레이어별 봄바르다 런타임 상태를 Clone 초기화에서 생성한다.
+	m_pBombardaController = CPlayer_BombardaController::Create(*this);
+	return m_pBombardaController ? S_OK : E_FAIL;
+}
+
+void CPlayer::StartBombardaCastEffect()
+{
+	if (m_pBombardaController)
+		m_pBombardaController->StartCastEffect();
+}
+
+void CPlayer::StopBombardaCastEffect()
+{
+	if (m_pBombardaController)
+		m_pBombardaController->StopCastEffect();
+}
+
+_bool CPlayer::FireBombardaProjectile()
+{
+	if (!m_pBombardaController)
+		return false;
+
+	return m_pBombardaController->FireProjectile();
+}
+#pragma endregion
+
 #pragma region CONFRINGO
 HRESULT CPlayer::InitializeConfringo()
 {
@@ -616,6 +658,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 	}
 	m_fParryCounterRemainTime = std::max(0.f, m_fParryCounterRemainTime - fTimeDelta);
+	if (m_fParryCounterRemainTime <= 0.f)
+		m_bStupefyCounterRequested = false;
 
 	// [LSY] 랙돌 전환 중에는 입력과 상태 머신이 새로운 이동 명령을 만들지 않게 한다.
 	if (m_pRagdollController)
@@ -649,8 +693,26 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		return;
 	}
 
+	// 비행 상태는 아래에서 일반 입력 처리를 조기 종료하므로,
+	// 탑승/하차 토글은 상태 머신 갱신보다 먼저 처리해야 한다.
+	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_O))
+	{
+		SetFlyRequested(!m_bFlyRequested);
+	}
+
 	if (m_pStateMachine)
 		m_pStateMachine->PriorityUpdate(fTimeDelta);
+
+	// 비행 중 이동 명령은 FlyState가 카메라 기준 3차원 방향으로 직접 만든다.
+	// 아래 지상 입력 코드가 Y 성분을 0으로 덮어쓰면 상승/하강이 사라지므로 여기서 분리한다.
+	if (m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::FLY)
+	{
+		m_bRawMoveInput = false;
+		m_bSprintRequested = false;
+		m_vRawMoveDirection = {};
+		return;
+	}
 
 	if (m_pModelAnimator && m_iDebugWandReadyUpperAnim >= 0)
 	{
@@ -811,9 +873,22 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (m_pStateMachine && m_pComCharacterMotor &&
 		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
 		m_pComCharacterMotor->IsGrounded() &&
-		m_iHp > 0 && CGameInstance::Get().KeyDown(DIK_Q))
+		m_iHp > 0 && !m_bProtegoActive &&
+		CGameInstance::Get().KeyDown(DIK_Q))
 	{
 		m_pStateMachine->RequestState(PLAYER_STATE::PROTEGO_SKILL);
+	}
+
+	// 프로테고가 실제 공격을 막은 뒤에도 Q를 유지하고 있을 때만
+	// 스투피파이 반격 애니메이션을 요청한다. 단순 방어 후 Q를 놓으면 방어만 종료된다.
+	if (m_pStateMachine &&
+		m_fParryCounterRemainTime > 0.f &&
+		!m_bStupefyCounterRequested &&
+		CGameInstance::Get().KeyPressing(DIK_Q))
+	{
+		m_bStupefyCounterRequested = true;
+		if (!m_pStateMachine->RequestState(PLAYER_STATE::STUPEFY_SKILL))
+			m_bStupefyCounterRequested = false;
 	}
 
 	if (m_pStateMachine &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
@@ -854,7 +929,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 				{
 					auto* pCandidate = result.pGameObject;
 					if (!pCandidate || pCandidate->GetPendingDestroy() ||
-						!Cast<CMonster>(pCandidate))
+						nullptr == dynamic_cast<CSkillTarget*>(pCandidate)) // 창준변경
 						continue;
 
 					_vector vToTarget =
@@ -1047,13 +1122,6 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 
-	if (m_pStateMachine && CGameInstance::Get().KeyPressing(DIK_TAB) && CGameInstance::Get().KeyDown(DIK_3) && !m_bFlyRequested) {
-		SetFlyRequested(true);
-	}
-	else if (m_pStateMachine && CGameInstance::Get().KeyPressing(DIK_TAB) && CGameInstance::Get().KeyDown(DIK_3) && m_bFlyRequested) {
-		SetFlyRequested(false);
-	}
-
 	if (!m_bFlyRequested) {
 		if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {
 			//if (TryUseSkillSlot(1))
@@ -1082,6 +1150,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		// [LSY] 스킬 슬롯에서 CONFRINGO를 연결하기 전까지 5번 키로 직접 테스트한다.
 		if (CGameInstance::Get().KeyDown(DIK_5))
 			m_pStateMachine->RequestState(PLAYER_STATE::CONFRINGO_SKILL);
+
+		// 봄바르다 애니메이션 및 이펙트 큐 타이밍 확인용 임시 입력.
+		if (CGameInstance::Get().KeyDown(DIK_6))
+			m_pStateMachine->RequestState(PLAYER_STATE::BOMBARDA_SKILL);
 
 	}
 	
@@ -1708,6 +1780,9 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 	}
 
+	if (m_pBombardaController)
+		m_pBombardaController->Update();
+
 	if (m_pConfringoController)
 		m_pConfringoController->Update(fTimeDelta);
 	UpdateAttachedEffects();
@@ -1731,12 +1806,12 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 void CPlayer::UpdateAttachedEffects()
 {
-	if (m_iDashBodyEffectID == INVALID_EFFECT_INSTANCE_ID)
-		return;
-
-	CGameInstance::Get().SetEffectWorldMatrix(
-		m_iDashBodyEffectID,
-		*GetTransform().GetWorldMatrix());
+	if (m_iDashBodyEffectID != INVALID_EFFECT_INSTANCE_ID)
+	{
+		CGameInstance::Get().SetEffectWorldMatrix(
+			m_iDashBodyEffectID,
+			*GetTransform().GetWorldMatrix());
+	}
 	
 
 	// 캐릭터의 이동과 회전이 모두 확정된 LateUpdate 시점에 보호막을 붙인다.
@@ -1744,21 +1819,26 @@ void CPlayer::UpdateAttachedEffects()
 	if (m_bProtegoActive &&
 		m_iProtegoShieldEffectID != INVALID_EFFECT_INSTANCE_ID)
 	{
-		_float4x4 shieldWorld = *GetTransform().GetWorldMatrix();
-		shieldWorld._42 += 1.f;
+		const _float3 vPlayerPosition = GetTransform().GetPosition();
+		_float4x4 shieldWorld{};
+		XMStoreFloat4x4(&shieldWorld, XMMatrixTranslation(
+			vPlayerPosition.x, vPlayerPosition.y + 1.f, vPlayerPosition.z));
 		CGameInstance::Get().SetEffectWorldMatrix(
 			m_iProtegoShieldEffectID, shieldWorld);
 	}
 
-	if (m_iProtegoHitEffectID != INVALID_EFFECT_INSTANCE_ID)
+	const _float3 vPlayerPosition = GetTransform().GetPosition();
+	const _matrix playerTranslation = XMMatrixTranslation(
+		vPlayerPosition.x, vPlayerPosition.y, vPlayerPosition.z);
+	for (const auto& hitEffect : m_ProtegoHitEffects)
 	{
 		_float4x4 hitWorld{};
 		XMStoreFloat4x4(
 			&hitWorld,
-			XMLoadFloat4x4(&m_ProtegoHitLocalMatrix) *
-			GetTransform().GetLoadedWorldMatrix());
+			XMLoadFloat4x4(&hitEffect.matLocal) *
+			playerTranslation);
 		CGameInstance::Get().SetEffectWorldMatrix(
-			m_iProtegoHitEffectID, hitWorld);
+			hitEffect.iEffectID, hitWorld);
 	}
 }		
 
@@ -2153,21 +2233,27 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._31), vNormal);
 	XMStoreFloat3(reinterpret_cast<_float3*>(&hitWorld._41), vPosition);
 
-	const _matrix playerWorld = GetTransform().GetLoadedWorldMatrix();
+	const _float3 vPlayerPosition = GetTransform().GetPosition();
+	const _matrix playerTranslation = XMMatrixTranslation(
+		vPlayerPosition.x, vPlayerPosition.y, vPlayerPosition.z);
+	_float4x4 hitLocalMatrix{};
 	XMStoreFloat4x4(
-		&m_ProtegoHitLocalMatrix,
-		XMLoadFloat4x4(&hitWorld) * XMMatrixInverse(nullptr, playerWorld));
+		&hitLocalMatrix,
+		XMLoadFloat4x4(&hitWorld) * XMMatrixInverse(nullptr, playerTranslation));
 
-	if (m_iProtegoHitEffectID != INVALID_EFFECT_INSTANCE_ID)
-		CGameInstance::Get().StopEffect(m_iProtegoHitEffectID);
-
-	m_iProtegoHitEffectID = CGameInstance::Get().PlayEffect(
+	const EFFECT_INSTANCE_ID hitEffectID = CGameInstance::Get().PlayEffect(
 		"Protego_Shield_Hit_Layered", hitWorld, XMVectorZero(),
 		[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON)
 		{
-			if (effectId == m_iProtegoHitEffectID)
-				m_iProtegoHitEffectID = INVALID_EFFECT_INSTANCE_ID;
+			std::erase_if(m_ProtegoHitEffects,
+				[effectId](const PROTEGO_HIT_EFFECT& hitEffect)
+				{
+					return hitEffect.iEffectID == effectId;
+				});
 		});
+
+	if (hitEffectID != INVALID_EFFECT_INSTANCE_ID)
+		m_ProtegoHitEffects.push_back({ hitEffectID, hitLocalMatrix });
 }
 
 _bool CPlayer::PlayUpperBodyAnimation(
@@ -2191,8 +2277,10 @@ void CPlayer::ActivateProtego(_float fDuration)
 
 	if (m_iProtegoShieldEffectID == INVALID_EFFECT_INSTANCE_ID)
 	{
-		_float4x4 shieldWorld = *GetTransform().GetWorldMatrix();
-		shieldWorld._42 += 1.f;
+		const _float3 vPlayerPosition = GetTransform().GetPosition();
+		_float4x4 shieldWorld{};
+		XMStoreFloat4x4(&shieldWorld, XMMatrixTranslation(
+			vPlayerPosition.x, vPlayerPosition.y + 1.f, vPlayerPosition.z));
 		m_iProtegoShieldEffectID = CGameInstance::Get().PlayEffect(
 			"Protego_Shield", shieldWorld, XMVectorZero());
 	}
@@ -2200,9 +2288,12 @@ void CPlayer::ActivateProtego(_float fDuration)
 
 _bool CPlayer::ConsumeParryCounter(_float3& outAttackPosition)
 {
-	if (m_fParryCounterRemainTime <= 0.f)
+	// 패링 성공만으로는 소비하지 않는다. Q 유지로 스투피파이가 명시적으로
+	// 요청된 경우에만 Attack State가 카운터 애니메이션을 가져간다.
+	if (!m_bStupefyCounterRequested || m_fParryCounterRemainTime <= 0.f)
 		return false;
 
+	m_bStupefyCounterRequested = false;
 	m_fParryCounterRemainTime = 0.f;
 	outAttackPosition = m_vLastProtegoHitPosition;
 	return true;
@@ -2316,6 +2407,119 @@ void CPlayer::Attack_Magic_Bullet()
 		static_cast<CTrail_CPU*>(a)->Clear();
 	}
 }
+
+_bool CPlayer::FireStupefyProjectile()
+{
+	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(
+		m_Partes[ETOUI(PARTES::WEAPON)]);
+	if (!pWeapon)
+		return false;
+
+	const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+	const _float3 vStartPosition{ spawnWorld._41, spawnWorld._42, spawnWorld._43 };
+	_float3 vEndPosition{};
+	if (auto* pTarget = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget))
+	{
+		vEndPosition = pTarget->GetHurtBoxPosition();
+	}
+	else
+	{
+		_vector vLook = XMVectorSetY(GetTransform().GetState(STATE::LOOK), 0.f);
+		if (XMVectorGetX(XMVector3LengthSq(vLook)) <= FLT_EPSILON)
+			vLook = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+		else
+			vLook = XMVector3Normalize(vLook);
+		XMStoreFloat3(&vEndPosition, XMLoadFloat3(&vStartPosition) + vLook * m_StupefyDebug.fRange);
+	}
+
+	CPlayer_Stupefy_Bullet::DESC Desc{};
+	Desc.sObjectTag = "PlayerStupefyProjectile";
+	Desc.vStartPosition = vStartPosition;
+	Desc.vEndPosition = vEndPosition;
+	Desc.hOwner = GetHandle();
+	Desc.eSkillType = PLAYER_SKILL_TYPE::ATTACK;
+	Desc.fSpeed = m_StupefyDebug.fSpeed;
+	Desc.fLifeTime = m_StupefyDebug.fLifeTime;
+	Desc.fRadius = m_StupefyDebug.fRadius;
+	Desc.fCurveAmplitude = m_StupefyDebug.fCurveAmplitude;
+	Desc.fCurveFrequency = m_StupefyDebug.fCurveFrequency;
+	Desc.iPathSampleCount = static_cast<uint32_t>(m_StupefyDebug.iPathSampleCount);
+	Desc.sProjectileEffectName = m_StupefyDebug.bCore ? "KMS_Stupefy_Core" : "";
+	Desc.sTrailParticleQueue = m_StupefyDebug.bRibbonTrail ? "KMS_Stupefy_Trail" : "";
+	Desc.sImpactEffectName = m_StupefyDebug.bImpact ? "KMS_Stupefy_Impact" : "";
+	Desc.fTrailSpacing = m_StupefyDebug.fTrailSpacing;
+	Desc.bDebugSphere = m_StupefyDebug.bDebugSphere;
+	Desc.bDebugPath = m_StupefyDebug.bDebugPath;
+	Desc.bEnableSounds = m_StupefyDebug.bSound;
+
+	const auto hProjectile = CGameInstance::Get().AddGameObjectToLayer(
+		m_LevelTag,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PlayerStupefyBullet,
+		"PlayerStupefyProjectile",
+		&Desc);
+	if (!hProjectile)
+		return false;
+	m_hLastStupefyProjectile = *hProjectile;
+
+	// [Stupefy Muzzle] 유성 핵이 응축되며 청백색과 보랏빛 별가루가 터지는 시작점.
+	if (m_StupefyDebug.bMuzzle)
+		CGameInstance::Get().Spawn("KMS_Stupefy_Muzzle_Queue.json", spawnWorld);
+	return true;
+}
+
+void CPlayer::UpdateStupefyDebugGUI()
+{
+	if (!ImGui::CollapsingHeader("Stupefy Debug"))
+		return;
+
+	const _bool bProjectileAlive =
+		CGameInstance::Get().GetGameObjectByHandle(m_hLastStupefyProjectile) != nullptr;
+	ImGui::Text("Last Projectile: %s", bProjectileAlive ? "Alive" : "None / Finished");
+	ImGui::Text("Target: %s", CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget)
+		? "Locked Target" : "Forward Test Shot");
+
+	if (ImGui::Button("Fire Stupefy Test"))
+	{
+		if (!FireStupefyProjectile())
+			DEBUG_LOG("[Stupefy Debug] Test fire failed. Check weapon and projectile prototype.\n");
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Reset Stupefy Values"))
+		m_StupefyDebug = {};
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Layers");
+	ImGui::Checkbox("Muzzle Flash", &m_StupefyDebug.bMuzzle);
+	ImGui::Checkbox("Projectile Core", &m_StupefyDebug.bCore);
+	ImGui::Checkbox("Ribbon Trail", &m_StupefyDebug.bRibbonTrail);
+	ImGui::Checkbox("Impact Flash", &m_StupefyDebug.bImpact);
+	ImGui::Checkbox("Debug Projectile Sphere", &m_StupefyDebug.bDebugSphere);
+	ImGui::Checkbox("Debug Sweep Path", &m_StupefyDebug.bDebugPath);
+	ImGui::TextDisabled("These options affect newly fired test projectiles.");
+	ImGui::Checkbox("Projectile Sound", &m_StupefyDebug.bSound);
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Flight Tuning");
+	ImGui::DragFloat("Speed", &m_StupefyDebug.fSpeed, 1.f, 1.f, 300.f, "%.1f");
+	ImGui::DragFloat("Range", &m_StupefyDebug.fRange, 0.5f, 1.f, 100.f, "%.1f");
+	ImGui::DragFloat("Life Time", &m_StupefyDebug.fLifeTime, 0.05f, 0.1f, 10.f, "%.2f");
+	ImGui::DragFloat("Sweep Radius", &m_StupefyDebug.fRadius, 0.005f, 0.01f, 2.f, "%.3f");
+	ImGui::DragFloat("Curve Amplitude", &m_StupefyDebug.fCurveAmplitude, 0.005f, 0.f, 2.f, "%.3f");
+	ImGui::DragFloat("Curve Frequency", &m_StupefyDebug.fCurveFrequency, 0.05f, 0.f, 10.f, "%.2f");
+	ImGui::DragFloat("Trail Spacing", &m_StupefyDebug.fTrailSpacing, 0.005f, 0.01f, 2.f, "%.3f");
+	ImGui::DragInt("Path Samples", &m_StupefyDebug.iPathSampleCount, 1.f, 8, 256);
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Effect Data Names");
+	ImGui::TextUnformatted("Muzzle : KMS_Stupefy_Muzzle_Queue.json");
+	ImGui::TextUnformatted("Core   : KMS_Stupefy_Core");
+	ImGui::TextUnformatted("Trail  : KMS_Stupefy_Trail (continuous mesh)");
+	ImGui::TextUnformatted("Impact : KMS_Stupefy_Impact");
+	ImGui::TextColored(ImVec4(0.52f, 0.86f, 1.f, 1.f), "Meteor Core: cyan-white");
+	ImGui::TextColored(ImVec4(0.72f, 0.42f, 1.f, 1.f), "Galaxy Dust: blue-violet");
+	ImGui::TextDisabled("Missing effect data is isolated per layer; disable that layer while testing.");
+}
+
 void CPlayer::OnWake()
 {
 }
@@ -2477,6 +2681,7 @@ E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 void CPlayer::Free()
 {
 	// [LSY] 컨트롤러가 플레이어 참조를 사용하므로 기반 오브젝트 해제 전에 정리한다.
+	m_pBombardaController.reset();
 	m_pConfringoController.reset();
 	CAnimationObject::Free();
 }

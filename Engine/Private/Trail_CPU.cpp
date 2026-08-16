@@ -139,7 +139,11 @@ void CTrail_CPU::Update(_float fTimeDelta)
 		Stream.fTimeSinceLastAdd += fTimeDelta;
 		Stream.fIdleTime += fTimeDelta;
 
-		if (Stream.fIdleTime >= m_fIdleThreshold && !Stream.Frames.empty())
+		// [LSY] 기존 트레일은 Idle Retract를 그대로 사용한다. 비활성화한 트레일은
+		// 포인트를 먼저 지우지 않고 fMaxDuration에 따른 알파 페이드가 끝날 때까지 유지한다.
+		if (m_Desc.bIdleRetractEnabled &&
+			Stream.fIdleTime >= m_fIdleThreshold &&
+			!Stream.Frames.empty())
 		{
 			Stream.fTimeSinceLastRetract += fTimeDelta;
 

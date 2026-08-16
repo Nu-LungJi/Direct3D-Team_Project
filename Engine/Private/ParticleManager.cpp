@@ -614,12 +614,14 @@ void CParticleManager::UpdateGUI()
 		ImGui::InputText("VIBuffer2  if CPUTEX", szViBuffer2, IM_ARRAYSIZE(szViBuffer2));
 	}
 	static bool bShrinkWidth = true;
+	static bool bIdleRetractEnabled = true;
 	static int iTrailBehaviorMode = 1;
 	const char* trailBehaviorModeNames[] = { "Legacy", "Stabilized" };
 
 	if (particleTypeStr == "TRAIL_CPU")
 	{
 		ImGui::Checkbox("Shrink Width", &bShrinkWidth);
+		ImGui::Checkbox("Idle Retract", &bIdleRetractEnabled);
 		ImGui::Combo("Trail Behavior", &iTrailBehaviorMode,
 			trailBehaviorModeNames, IM_ARRAYSIZE(trailBehaviorModeNames));
 
@@ -804,7 +806,8 @@ void CParticleManager::UpdateGUI()
 						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID1,
 						slotEmpty.selectedPath.empty() ? "" : slotEmpty.szTextureID2,
 						slotEmpty.selectedPath.empty() ? "" : slotEmpty.selectedPath,
-						iSelectedBlend, bShrinkWidth, fMaxDuration, iTrailBehaviorMode);
+						iSelectedBlend, bShrinkWidth, fMaxDuration,
+						iTrailBehaviorMode, bIdleRetractEnabled);
 				}
 			}
 
@@ -1873,7 +1876,7 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 	const std::string& AnyTexID2,
 	const std::string& AnyTexPath,
 	int iSelectedBlend, _bool bShrinkWidth, _float fMaxduration,
-	int iTrailBehaviorMode)
+	int iTrailBehaviorMode, _bool bIdleRetractEnabled)
 {
 	if (outpath.empty() || FullPath.empty())
 		return E_FAIL;
@@ -1963,6 +1966,8 @@ HRESULT CParticleManager::Save_Binary_Json(std::string outpath,
 			newEntry["ShrinkWidth"] = bShrinkWidth;
 			newEntry["MaxDuration"] = fMaxduration;
 			newEntry["TrailBehaviorMode"] = iTrailBehaviorMode;
+			// [LSY] 키가 없는 기존 JSON은 로드 시 true를 사용하므로 기존 동작을 유지한다.
+			newEntry["IdleRetractEnabled"] = bIdleRetractEnabled;
 		} 
 	}
 	else if (whatKind == "MESH")
@@ -2711,6 +2716,8 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 				desc.TexColumns = ColCount;
 				desc.bShrinkWidth = entry.value("ShrinkWidth", true);
 				desc.fMaxDuration = entry.value("MaxDuration", 0.f);
+				// [LSY] 기존 데이터 호환을 위해 누락 시 기존 강제 축소 동작을 사용한다.
+				desc.bIdleRetractEnabled = entry.value("IdleRetractEnabled", true);
 				const int iTrailBehaviorMode = entry.value("TrailBehaviorMode", 1);
 				desc.eBehaviorMode = iTrailBehaviorMode == 0
 					? CTrail_CPU::TRAIL_BEHAVIOR_MODE::LEGACY
@@ -3265,11 +3272,11 @@ HRESULT CParticleManager::LoadParticlePresets(const std::string& strJsonPath)
 uint32_t CParticleManager::Spawn(const std::string& strJsonPath,
 	const _float4x4& worldMat, _fvector endPos)
 {
-	auto found = m_ParsedCommandCache.find(strJsonPath);
-	if (found == m_ParsedCommandCache.end())
-		found = m_ParsedCommandCache.emplace(strJsonPath, Parse_Command(strJsonPath)).first;
+	const auto* pCommands = FindCachedCommandQueue(strJsonPath);
+	if (nullptr == pCommands || pCommands->empty())
+		return INVALID_PARTICLE_OWNER_ID;
 
-	return Spawn(found->second, worldMat, endPos);
+	return Spawn(*pCommands, worldMat, endPos);
 }
 
 // 1) 순수 파싱: matWorld 관여 없음, 로컬값 그대로
@@ -3435,6 +3442,17 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 	return parsed;
 }
 // 2) 진짜 스폰: 이미 파싱된 벡터만 받아서 변환+실행
+const std::vector<SPAWN_COMMAND>* CParticleManager::FindCachedCommandQueue(const std::string& strJsonPath) const
+{
+	auto iter = m_ParsedCommandCache.find(strJsonPath);
+	if (iter != m_ParsedCommandCache.end())
+		return &iter->second;
+
+	const std::string fileName = std::filesystem::path(strJsonPath).filename().string();
+	iter = m_ParsedCommandCache.find(fileName);
+	return iter != m_ParsedCommandCache.end() ? &iter->second : nullptr;
+}
+
 uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateCommands,
 	const _float4x4& worldMat, _fvector endPos)
 {
@@ -3639,6 +3657,10 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeCone(param);
 			else if constexpr (std::is_same_v<T, SEnergySphere>)
 				return ParticlePattern::MakeEnergySphere(param);
+			else if constexpr (std::is_same_v<T, SSpikeParam>)
+				return ParticlePattern::MakeSpikePattern(param);
+			else if constexpr (std::is_same_v<T, SIrregularRingParam>)
+				return ParticlePattern::MakeIrregularRing(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
@@ -3668,6 +3690,10 @@ void CParticleManager::ApplyStartEndToPattern(PatternParamVariant& pv, _fvector 
 			else if constexpr (std::is_same_v<T, SStraightGroundParam>)
 			{
 				XMStoreFloat3(&p.vStartPos, startPos);
+			}
+			else if constexpr (std::is_same_v<T, SSpikeParam>)
+			{
+				XMStoreFloat3(&p.vCenter, startPos);
 			}
 			//XMStoreFloat3(&p.vStartPos, startPos);
 			//XMStoreFloat3(&p.vEndPos, endPos);
@@ -3715,6 +3741,14 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
 			else if constexpr (std::is_same_v<T, SEnergySphere>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SSpikeParam>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SIrregularRingParam>)
 			{
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
@@ -3827,6 +3861,40 @@ HRESULT CParticleManager::Load_ParticleJsonPackage(const std::vector<std::string
 	for (const auto& FilePath : _FilePathPackage) {
 		CGameInstance::Get().LoadParticleJson(FilePath.c_str());
 	}
+	return S_OK;
+}
+
+HRESULT CParticleManager::Load_ParticleQueueJsonPackage(const std::vector<std::string>& _FilePathPackage)
+{
+	if (_FilePathPackage.empty())
+		return E_FAIL;
+
+	std::unordered_map<std::string, std::vector<SPAWN_COMMAND>> parsedCommandCache;
+	parsedCommandCache.reserve(_FilePathPackage.size());
+
+	for (const std::string& filePath : _FilePathPackage)
+	{
+		const std::string fileName = std::filesystem::path(filePath).filename().string();
+		if (fileName.empty())
+			continue;
+
+		if (parsedCommandCache.contains(fileName))
+		{
+			OutputDebugStringA(("[ParticleQueue] Duplicate file name: " + fileName + "\n").c_str());
+			return E_FAIL;
+		}
+
+		auto commands = Parse_Command(fileName);
+		if (commands.empty())
+			OutputDebugStringA(("[ParticleQueue] Empty or invalid queue: " + fileName + "\n").c_str());
+
+		parsedCommandCache.emplace(fileName, std::move(commands));
+	}
+
+	if (parsedCommandCache.empty())
+		return E_FAIL;
+
+	m_ParsedCommandCache = std::move(parsedCommandCache);
 	return S_OK;
 }
 

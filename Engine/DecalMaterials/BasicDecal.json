@@ -1,0 +1,28 @@
+{
+  "name": "Basic Decal",
+  "pixelShader": "./ShaderFiles/Decal/Shader_DecalVolume.hlsl",
+  "parameters": [
+    {
+      "name": "Albedo",
+      "type": "color4",
+      "offset": 0,
+      "default": [0.15, 0.005, 0.002, 1.0]
+    },
+    {
+      "name": "Emissive Color",
+      "type": "color3",
+      "offset": 4,
+      "default": [1.0, 0.01, 0.0]
+    },
+    {
+      "name": "Emissive Intensity",
+      "type": "float",
+      "offset": 8,
+      "default": 8.0,
+      "min": 0.0,
+      "max": 100.0,
+      "speed": 0.1
+    }
+  ],
+  "textures": []
+}

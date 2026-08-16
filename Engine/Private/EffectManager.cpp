@@ -796,10 +796,12 @@ _float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_
 	if (!m_pParticleManager || command.sParticleJson.empty())
 		return 0.f;
 
-	auto particleQueue = m_pParticleManager->Parse_Command(command.sParticleJson);
+	const auto* pParticleQueue = m_pParticleManager->FindCachedCommandQueue(command.sParticleJson);
 
-	if (particleQueue.empty())
+	if (nullptr == pParticleQueue || pParticleQueue->empty())
 		return 0.f;
+
+	const auto& particleQueue = *pParticleQueue;
 
 	_float totalLife = 0.f;
 	// [LSY] Loop 파티클을 발견해도 아래 Spawn까지 진행해야 하므로 무한 수명 여부만 기록한다.

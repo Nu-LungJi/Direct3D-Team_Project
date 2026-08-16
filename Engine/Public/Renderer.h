@@ -55,6 +55,7 @@ private:		// Render Setting
 	HRESULT		Render_Shadow();
 	HRESULT		Render_DepthMap();
 	HRESULT		Render_NonAlpha();
+	HRESULT		Render_Decal();
 	HRESULT		Render_HBAO();
 	HRESULT		Render_Lighting();
 	HRESULT		Render_Alpha();
@@ -70,6 +71,7 @@ private:		// Render Object
 	HRESULT		RenderPriority();
 	HRESULT		RenderNonBlend();
 	HRESULT		RenderNonBlend_Instanced();
+	HRESULT		RenderMapMesh();
 	HRESULT		RenderBlend();
 	HRESULT		RenderLight();
 	HRESULT		RenderSkybox();
@@ -108,6 +110,7 @@ public:			// PostProcess Effect Function
 	VOID		Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Duration, _float _Scale);
 	VOID		Set_ChromaticRingOpacity(_float _Opacity) { m_fChromaticRingAlpha = _Opacity; }
 	VOID		Apply_OutlineEffect(std::optional<CHandle> _OutlineTargetHandle) { m_pOutlineTargetHandle = _OutlineTargetHandle; }
+	VOID		Clear_OutlineEffect();
 	
 private:		// Unbind Shader Resource / Shader / UAV / Render Target
 	VOID		Unbind_Resources();
@@ -144,6 +147,7 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetSMRO{};			// SMRO
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetEmissive{};		// Emissive
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetDepth{};			// Depth
+	ComPtr<ID3D11DepthStencilView> m_pDecalReadOnlyDSV{};
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPBR{};			// PBR
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetEffect{};			// Effect

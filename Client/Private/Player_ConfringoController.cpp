@@ -24,14 +24,18 @@ _bool CPlayer_ConfringoController::EnsureParticleCommandsLoaded()
 {
 	if (m_FlameCommands.empty())
 	{
-		m_FlameCommands = CGameInstance::Get().Parse_Command(
+		const auto* pCommands = CGameInstance::Get().FindCachedCommandQueue(
 			"LSY_Confringo_CastFlame_Queue.json");
+		if (pCommands)
+			m_FlameCommands = *pCommands;
 	}
 
 	if (m_SparkCommands.empty())
 	{
-		m_SparkCommands = CGameInstance::Get().Parse_Command(
+		const auto* pCommands = CGameInstance::Get().FindCachedCommandQueue(
 			"LSY_Confringo_CastSparks_Queue.json");
+		if (pCommands)
+			m_SparkCommands = *pCommands;
 	}
 
 	return !m_FlameCommands.empty() && !m_SparkCommands.empty();

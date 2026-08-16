@@ -276,6 +276,22 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_KMS_STUPEFY_TRAIL", CResVertexShader::Create("./ShaderFiles/Shader_Stupefy_Trail.hlsl")))
+	{
+		if (!res)
+		{
+			MSG_BOX("Failed to load Stupefy trail vertex shader");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_KMS_STUPEFY_TRAIL", CResPixelShader::Create("./ShaderFiles/Shader_Stupefy_Trail.hlsl")))
+	{
+		if (!res)
+		{
+			MSG_BOX("Failed to load Stupefy trail pixel shader");
+			return E_FAIL;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_VSSHADER", "VS_VTX_GPU_SPLASH_TEX", CResVertexShader::Create("./ShaderFiles/Shader_GPU_Splash.hlsl")))
 	{
 		if (!res)
@@ -428,6 +444,15 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 	{
 		auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleData", ".json");
 		CGameInstance::Get().Load_ParticleJsonPackage(k);
+	}
+
+	{
+		auto k = CGameInstance::Get().Load_FilePath_ByExtension("./Resources/json/Particle/ParticleQueue", ".json");
+		if (FAILED(CGameInstance::Get().Load_ParticleQueueJsonPackage(k)))
+		{
+			MSG_BOX("PARTICLE QUEUE LOAD FAILED");
+			return E_FAIL;
+		}
 	}
 
 	//클라이언트 사운드 버스 초기화
@@ -638,6 +663,14 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		if (FAILED(res->Load()))
 		{
 			MSG_BOX("LOAD FAILED BALLSECOND JSON");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "GASIBREATH", CResJson::Create("./Resources/json/BeHavior/SubTree/GASIBREATH.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED GASIBREATH JSON");
 			return E_FAIL;
 		}
 	}

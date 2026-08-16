@@ -31,6 +31,7 @@ NS_END
 NS_BEGIN(Client)
 class CPlayer_StateMachine;
 class CPlayerRagdollController;
+class CPlayer_BombardaController;
 class CPlayer_ConfringoController;
 
 class CPlayer final : public CAnimationObject
@@ -109,6 +110,30 @@ private:
 	void TriggerProtegoHit(const _float3& vHitPosition);
 public:
 	void Attack_Magic_Bullet();
+	_bool FireStupefyProjectile();
+private:
+	void UpdateStupefyDebugGUI();
+	struct STUPEFY_DEBUG_SETTINGS
+	{
+		_float fSpeed{ 120.f };
+		_float fLifeTime{ 2.f };
+		_float fRadius{ 0.18f };
+		_float fCurveAmplitude{ 0.08f };
+		_float fCurveFrequency{ 1.2f };
+		_float fTrailSpacing{ 0.45f };
+		_float fRange{ 30.f };
+		int32_t iPathSampleCount{ 48 };
+		_bool bMuzzle{ true };
+		_bool bCore{ true };
+		_bool bRibbonTrail{ true };
+		_bool bImpact{ true };
+		_bool bDebugSphere{ true };
+		_bool bDebugPath{};
+		_bool bSound{};
+	};
+	STUPEFY_DEBUG_SETTINGS m_StupefyDebug{};
+	CHandle m_hLastStupefyProjectile{};
+public:
 public:
 	void OnWake() override;
 	void OnSleep() override;
@@ -246,10 +271,15 @@ private:
 	_bool  m_bProtegoActive{ false };
 	_float m_fProtegoRemainTime{};
 	_float m_fParryCounterRemainTime{};
+	_bool  m_bStupefyCounterRequested{};
 	static constexpr _float PARRY_COUNTER_WINDOW = 1.0f;
 	EFFECT_INSTANCE_ID m_iProtegoShieldEffectID{ INVALID_EFFECT_INSTANCE_ID };
-	EFFECT_INSTANCE_ID m_iProtegoHitEffectID{ INVALID_EFFECT_INSTANCE_ID };
-	_float4x4 m_ProtegoHitLocalMatrix{};
+	struct PROTEGO_HIT_EFFECT
+	{
+		EFFECT_INSTANCE_ID iEffectID{ INVALID_EFFECT_INSTANCE_ID };
+		_float4x4 matLocal{};
+	};
+	std::vector<PROTEGO_HIT_EFFECT> m_ProtegoHitEffects{};
 	uint32_t m_iProtegoParrySequence{};
 	_float3 m_vLastProtegoHitPosition{};
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
@@ -283,6 +313,19 @@ private:
 	_bool IsRagdollTransitioning() const;
 private:
 	UPtr<CPlayerRagdollController> m_pRagdollController{};
+#pragma endregion
+
+#pragma region BOMBARDA
+	// [LSY] 봄바르다 연출과 투사체 생성 구현은 전용 컨트롤러가 담당한다.
+	friend class CPlayer_BombardaController;
+public:
+	// [LSY] 상태 클래스에서는 아래 전달 API만 사용한다.
+	void StartBombardaCastEffect();
+	void StopBombardaCastEffect();
+	_bool FireBombardaProjectile();
+private:
+	HRESULT InitializeBombarda();
+	UPtr<CPlayer_BombardaController> m_pBombardaController{};
 #pragma endregion
 
 #pragma region CONFRINGO
