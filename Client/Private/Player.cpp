@@ -53,6 +53,7 @@
 #include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
 #include "Player_Broom.h"
+#include "Light.h"
 #include "Trail_CPU.h"
 #include "UIController.h"
 #include "UIManager.h"
@@ -1273,8 +1274,10 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 	if (!pUIController || !m_pStateMachine)
 		return false;
 
+	const SPELL_TYPE eSpellType = static_cast<SPELL_TYPE>(
+		pUIController->GetSpellType(iSlotNumber));
 	PLAYER_STATE eSkillState = PLAYER_STATE::NONE;
-	switch (static_cast<SPELL_TYPE>(pUIController->GetSpellType(iSlotNumber)))
+	switch (eSpellType)
 	{
 	case SPELL_TYPE::ASSIO:
 		eSkillState = PLAYER_STATE::ACCIO_SKILL;
@@ -1292,6 +1295,10 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 		eSkillState = PLAYER_STATE::REPAIRO_SKILL;
 		break;
 
+	case SPELL_TYPE::LUMOS:
+		eSkillState = PLAYER_STATE::LUMOS_SKILL;
+		break;
+
 	default:
 		// 플레이어에 구현되지 않았거나 비어 있는 스킬 슬롯이다.
 		return false;
@@ -1300,8 +1307,55 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 	if (!m_pStateMachine->RequestState(eSkillState))
 		return false;
 
-	pUIController->UseSpell(iSlotNumber);
+	if (eSpellType != SPELL_TYPE::LUMOS)
+		pUIController->UseSpell(iSlotNumber);
 	return true;
+}
+
+void CPlayer::SetLumosActive(_bool bActive)
+{
+	if (m_bLumosActive == bActive)
+		return;
+
+	m_bLumosActive = bActive;
+	if (!bActive)
+	{
+		if (m_hLumosLight)
+		{
+			if (auto* pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(*m_hLumosLight))
+				pLight->Reset_Light();
+			m_hLumosLight.reset();
+		}
+		return;
+	}
+
+	UpdateLumosLight();
+}
+
+void CPlayer::UpdateLumosLight()
+{
+	if (!m_bLumosActive)
+		return;
+
+	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(
+		m_Partes[ETOUI(PARTES::WEAPON)]);
+	if (!pWeapon)
+		return;
+
+	const _float4x4 matWandTip = pWeapon->GetSpawnWorldMatrix();
+	const _float3 vPosition{ matWandTip._41, matWandTip._42, matWandTip._43 };
+	if (!m_hLumosLight)
+	{
+		m_hLumosLight = CGameInstance::Get().Allocate_EffectLight(
+			XMLoadFloat3(&vPosition), 140.f, { 0.72f, 0.84f, 1.f }, 7.f, 14.f,
+			99999.f, { 0.f, 0.f, 0.f });
+		return;
+	}
+
+	if (auto* pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(*m_hLumosLight))
+		pLight->Set_LightPosition(vPosition);
+	else
+		m_hLumosLight.reset();
 }
 
 void CPlayer::FixedUpdate(_float fTimeDelta)
@@ -1644,6 +1698,7 @@ void CPlayer::PrepareLocomotionResume()
 
 void CPlayer::Update(E::_float fTimeDelta)
 {
+	UpdateLumosLight();
 	ZoneScopedN("Update TestModel");
 	{
 
@@ -2808,6 +2863,7 @@ E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 
 void CPlayer::Free()
 {
+	SetLumosActive(false);
 	// [LSY] 컨트롤러가 플레이어 참조를 사용하므로 기반 오브젝트 해제 전에 정리한다.
 	m_pBombardaController.reset();
 	m_pConfringoController.reset();

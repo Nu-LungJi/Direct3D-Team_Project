@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Player_StateMachine.h"
+#include "Player.h"
 
 NS_USING(Client)
 
@@ -52,6 +53,20 @@ _bool CPlayer_StateMachine::RequestState(PLAYER_STATE eState)
 	}
 
 	m_eRequestedState = eState;
+	if (auto* pPlayer = GetOwner<CPlayer>(); pPlayer && pPlayer->IsLumosActive())
+	{
+		const _bool bOtherSkill = IsSkillState(eState) &&
+			eState != PLAYER_STATE::LUMOS_SKILL;
+		const _bool bInterruptingAction = bOtherSkill ||
+			eState == PLAYER_STATE::ATTACK ||
+			eState == PLAYER_STATE::ROLL ||
+			eState == PLAYER_STATE::HIT ||
+			eState == PLAYER_STATE::KNOCKDOWN ||
+			eState == PLAYER_STATE::DEAD ||
+			eState == PLAYER_STATE::FLY;
+		if (bInterruptingAction)
+			pPlayer->SetLumosActive(false);
+	}
 	return true;
 }
 

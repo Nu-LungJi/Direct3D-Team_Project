@@ -9,6 +9,14 @@ public:
 	DECLARE_DERIVED_TYPE(CPlayer_LumosSkill_State, CPlayer_SkillStateBase)
 
 private:
+	int32_t m_iCastAnimation{ -1 };
+	_bool m_bAnimationCached{};
+	_bool m_bToggleApplied{};
+	static constexpr _float TOGGLE_RATIO = 0.2f;
+	static constexpr _float EXIT_RATIO = 0.8f;
+	void CacheAnimation(const CPlayer& player);
+
+	private:
 	CPlayer_LumosSkill_State() = default;
 	~CPlayer_LumosSkill_State() override = default;
 
