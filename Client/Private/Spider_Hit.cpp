@@ -64,6 +64,9 @@ HRESULT CSpider_Hit::Initialize(const _string& strLevelTag, CSpider* pSpider)
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::FALLING)].push_back(MON_ANIM_FSM{ .iAnimIndex =
 		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Air_Loop_Fall_anm.bin"),.fBlend = 0.1f });
 
+		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::REBOUND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
+		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Slam_FD_BounceUp_Fwd_anm.bin"),.fBlend = 0.1f });
+
 
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
 		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Descendo_Slam_Start_anm.bin"),.fBlend = 0.1f });
@@ -71,6 +74,7 @@ HRESULT CSpider_Hit::Initialize(const _string& strLevelTag, CSpider* pSpider)
 		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Descendo_Slam_Loop_anm.bin"),.fBlend = 0.1f });
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
 		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Descendo_Slam_End_anm.bin"),.fBlend = 0.1f });
+	
 	}
 	
 	{
@@ -78,7 +82,7 @@ HRESULT CSpider_Hit::Initialize(const _string& strLevelTag, CSpider* pSpider)
 		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Bump_Spin_Bwd_01_anm.bin"),.fBlend = 0.1f });
 
 		m_Anims[ETOUI(HIT_TYPE::KNOCKBACK)][ETOUI(HIT_MOTION::FALLING)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-	pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Send_Bwd_Loop_v01_Fast_anm.bin"),.fBlend = 0.1f });
+		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Send_Bwd_Loop_v01_Fast_anm.bin"),.fBlend = 0.1f });
 
 		m_Anims[ETOUI(HIT_TYPE::KNOCKBACK)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
 		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_KnckDn_Bwd_Getup_Bck_02_anm.bin"),.fBlend = 0.1f });
@@ -120,19 +124,23 @@ void CSpider_Hit::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta
 	auto pSpider = pStateMachine->GetOwner<CSpider>();
 	if (nullptr == pSpider) return;
 
-	auto pAnimator = pSpider->Get_Animator();
-	if (nullptr == pAnimator) return;
-	
-
 	Check_PendingHit(pSpider);
-	
-	MotionToPlay(pSpider,pAnimator, pSpiderFsm);
-
 }
 
 void CSpider_Hit::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 {
+	auto pSpiderFsm = Cast<CSpider_State>(pStateMachine);
+	if (nullptr == pSpiderFsm) return;
 
+	auto pSpider = pStateMachine->GetOwner<CSpider>();
+	if (nullptr == pSpider) return;
+
+	auto pAnimator = pSpider->Get_Animator();
+	if (nullptr == pAnimator) return;
+
+
+
+	MotionToPlay(pSpider, pAnimator, pSpiderFsm);
 
 
 }
@@ -163,27 +171,23 @@ void CSpider_Hit::MoveIntent(CSpider* pSpider, _float3 vDir, _float fSpeed)
 
 HIT_TYPE CSpider_Hit::Reactive_OnlyType(PLAYER_SKILL_TYPE eType)
 {
-	if (m_HitTable.eSkillType == PLAYER_SKILL_TYPE::ATTACK && eType != PLAYER_SKILL_TYPE::ATTACK)
+	
+	switch (eType)
 	{
-		Reactive_TableMotion(eType);
+	case PLAYER_SKILL_TYPE::ATTACK:
+		return  HIT_TYPE::NORMAL;
+	case PLAYER_SKILL_TYPE::ACCIO:
+		return HIT_TYPE::LAUNCH;
+	case PLAYER_SKILL_TYPE::DEPULSO:
+		return HIT_TYPE::KNOCKBACK;
+	case PLAYER_SKILL_TYPE::DESCENDO:
+		return HIT_TYPE::SLAM;
+	case PLAYER_SKILL_TYPE::PROTEGO:
+		break;
+	
+	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+		break;
 	}
-	//switch (eType)
-	//{
-	//case PLAYER_SKILL_TYPE::ATTACK:
-	//	
-	//	return m_HitTable.eHitType == HIT_TYPE::LAUNCH ? HIT_TYPE::LAUNCH : HIT_TYPE::NORMAL;
-	//case PLAYER_SKILL_TYPE::ACCIO:
-	//	return HIT_TYPE::LAUNCH;
-	//case PLAYER_SKILL_TYPE::DEPULSO:
-	//	return HIT_TYPE::KNOCKBACK;
-	//case PLAYER_SKILL_TYPE::DESCENDO:
-	//	return HIT_TYPE::SLAM;
-	//case PLAYER_SKILL_TYPE::PROTEGO:
-	//	break;
-	//
-	//case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
-	//	break;
-	//}
 
 	return HIT_TYPE::END;
 }
@@ -227,13 +231,23 @@ void CSpider_Hit::Check_PendingHit(CSpider* pSpider)
 	if (!pSpider->Activate_PendingHit()) return;
 
 	_bool bRestart = HitInfo.eHitType == PLAYER_SKILL_TYPE::ATTACK;
+
+	_bool bNormalToSkill = m_HitTable.eSkillType == PLAYER_SKILL_TYPE::ATTACK &&
+						   HitInfo.eHitType != PLAYER_SKILL_TYPE::ATTACK;
+
 	if (m_HitTable.eSkillType == HitInfo.eHitType && !bRestart)
 		return;
-	
-	m_HitTable.eHitType = Reactive_TableMotion(HitInfo.eHitType);
+	if (bNormalToSkill)
+	{
+		m_HitTable.eHitType = Reactive_TableMotion(HitInfo.eHitType);
+	}
+	else
+		m_HitTable.eHitType = Reactive_OnlyType(HitInfo.eHitType);
 	
 	m_HitTable.eSkillType = HitInfo.eHitType;
 
+	auto& State = pAnim->GetCurAnimState();
+	State.fTrackPosition = 0.f;
 	m_iAnimIndex = 0;
 
 }
@@ -255,6 +269,7 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CSpide
 			case HIT_MOTION::NORMAL:
 				if (PlayAnim(pAnimator))
 					Finishied(pSpiderState);
+				MoveIntent(pSpider, TargetDir(pSpider, true), 1.f);
 				break;
 			case HIT_MOTION::AIR:
 				if (PlayAnim(pAnimator))
@@ -264,9 +279,11 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CSpide
 					else
 						ChangeMotion(HIT_MOTION::LAND);
 				}
+
+				MoveIntent(pSpider, TargetDir(pSpider,true), 7.f);
 				break;
 			case HIT_MOTION::FALLING:
-				if (PlayAnim(pAnimator,true))
+				PlayAnim(pAnimator, true);
 					if (bGround)
 						ChangeMotion(HIT_MOTION::LAND);
 				break;
@@ -286,14 +303,16 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CSpide
 					ChangeMotion(HIT_MOTION::FALLING);
 				break;
 			case HIT_MOTION::FALLING:
-				if (PlayAnim(pAnimator))
-					if (bGround)
-						ChangeMotion(HIT_MOTION::LAND);
+				PlayAnim(pAnimator,true);
+				if (bGround)
+					ChangeMotion(HIT_MOTION::LAND);
 				break;
 			case HIT_MOTION::LAND:
 				if (PlayAnim(pAnimator))
 					Finishied(pSpiderState);
 				break;
+			case HIT_MOTION::BLOWBACK:
+				ChangeMotion(HIT_MOTION::FALLING);
 			}
 			break;
 		}
@@ -304,11 +323,15 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CSpide
 			case HIT_MOTION::GROUND_SLAM:
 				if (PlayAnim(pAnimator))
 					ChangeMotion(HIT_MOTION::LAND);
+				MoveIntent(pSpider, _float3(0.f,1.f,0.f), 5.f);
 				break;
 			case HIT_MOTION::FALLING:
-				if (PlayAnim(pAnimator, true))
-					if(bGround)
-						ChangeMotion(HIT_MOTION::LAND);
+				PlayAnim(pAnimator, true);
+				if(bGround)
+					ChangeMotion(HIT_MOTION::GROUND_SLAM);
+				break;
+			case HIT_MOTION::AIR:
+					ChangeMotion(HIT_MOTION::FALLING);
 				break;
 			case HIT_MOTION::LAND:
 				if (PlayAnim(pAnimator))
@@ -329,13 +352,15 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CSpide
 					else
 						ChangeMotion(HIT_MOTION::FALLING);
 				}
-				else
-					MoveIntent(pSpider, TargetDir(pSpider, false), 6.f);
+				MoveIntent(pSpider, TargetDir(pSpider, true), 13.f);
+				break;
+			case HIT_MOTION::AIR:
+				ChangeMotion(HIT_MOTION::BLOWBACK);
 				break;
 			case HIT_MOTION::FALLING:
-				if (PlayAnim(pAnimator, true))
-					if (bGround)
-						ChangeMotion(HIT_MOTION::LAND);
+				PlayAnim(pAnimator, true);
+				if (bGround)
+					ChangeMotion(HIT_MOTION::LAND);
 				break;
 			case HIT_MOTION::LAND:
 				if (PlayAnim(pAnimator))
