@@ -165,6 +165,7 @@ public:
 	void ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_float fTimeDelta);
 	void ApplyGroundFollow(_float fFixedTimeDelta);
 	void PrepareLocomotionResume();
+	_bool StartWiggenweldPotionUse();
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
 	void SetLumosActive(_bool bActive);
@@ -328,6 +329,10 @@ private:
 	_bool m_bHasPreviousLumosAttachPosition{};
 	void UpdateLumosLight();
 	_bool TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const;
+	void UpdateWiggenweldPotion();
+	CHandle m_hWiggenweldPotion{};
+	int32_t m_iWiggenweldPotionBoneIndex{ -1 };
+	_bool m_bWiggenweldPotionDropped{};
 
 #pragma region RAGDOLL
 	friend class CPlayerRagdollController;
