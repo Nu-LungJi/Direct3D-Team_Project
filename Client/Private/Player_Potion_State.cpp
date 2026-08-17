@@ -27,6 +27,8 @@ void CPlayer_Potion_State::Enter(CStateMachine* pStateMachine)
 	}
 
 	pPlayer->GetAnimator()->SetUpperAnimationSpeed(3.2f);
+	if (!pPlayer->StartWiggenweldPotionUse())
+		DEBUG_LOG("[PlayerPotion] Failed to create or attach the Wiggenweld potion object.\n");
 }
 
 void CPlayer_Potion_State::Update(CStateMachine* pStateMachine, _float)

@@ -5,6 +5,7 @@
 #include "Level_Defines.h"
 #include "Client_Resources.h"
 #include "Player.h"
+#include "WiggenweldPotion.h"
 #include "PlayerThirdPersonCamera.h"
 #include "Player_Weapon.h"
 #include "Player_Broom.h"
@@ -117,6 +118,18 @@ HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
 		return E_FAIL;
 	}
 
+	if (auto potion = E::CGameInstance::Get().AddResourceT<E::CResStaticModel>(
+		LEVEL::HOGWART_WORLD,
+		"Static_WiggenweldPotion_Resource",
+		E::CResStaticModel::Create(
+			"./Resources/SampleClient/Models/Static/Potion_Wiggenweld/SM_Potion_Wiggenweld.bin")))
+	{
+		E::CResStaticModel::DESC desc{};
+		desc.PreTransformMatrix =  XMMatrixScaling(2.f, 2.f, 2.f);
+		if (FAILED(potion->Load(desc))) return E_FAIL;
+	}
+	else return E_FAIL;
+
 	if (FAILED(LoadPlayerCape()))
 		return E_FAIL;
 
@@ -179,6 +192,10 @@ HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
 			LEVEL::HOGWART_WORLD,
 			PROTO_GAMEOBJECT::Prototype_GameObject_Player,
 			CPlayer::Create())) ||
+		FAILED(gameInstance.AddPrototype(
+			LEVEL::HOGWART_WORLD,
+			PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
+			CWiggenweldPotion::Create())) ||
 		FAILED(gameInstance.AddPrototype(
 			LEVEL::HOGWART_WORLD,
 			PROTO_GAMEOBJECT::Prototype_GameObject_PlayerThirdPersonCamera,

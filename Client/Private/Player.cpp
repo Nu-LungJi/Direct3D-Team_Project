@@ -55,6 +55,7 @@
 #include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
 #include "Player_Broom.h"
+#include "WiggenweldPotion.h"
 #include "Light.h"
 #include "Trail_CPU.h"
 #include "UIController.h"
@@ -591,6 +592,46 @@ HRESULT CPlayer::Initialize(void* pArg)
 		return E_FAIL;
 	if (FAILED(InitializeAvadaKedavra()))
 		return E_FAIL;
+
+#ifdef _DEBUG
+	{
+		CWiggenweldPotion::DESC debugPotionDesc{};
+		debugPotionDesc.sObjectTag = "Debug_WiggenweldPotion_Origin";
+		debugPotionDesc.sResourceGroup = m_LevelTag;
+		debugPotionDesc.vInitialPosition = { 0.f, 0.f, 0.f };
+		debugPotionDesc.vInitialScale = { 1.f, 1.f, 1.f };
+		debugPotionDesc.vConvexScale = debugPotionDesc.vInitialScale;
+
+		const auto debugPotionHandle = CGameInstance::Get().AddGameObjectToLayer(
+			m_LevelTag,
+			PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
+			"Debug_WiggenweldPotion_Origin",
+			&debugPotionDesc);
+		if (debugPotionHandle.has_value())
+			DEBUG_LOG("[PlayerPotion] Debug potion permanently spawned at (0, 0, 0).\n");
+		else
+			DEBUG_LOG("[PlayerPotion] Failed to spawn debug potion at (0, 0, 0).\n");
+
+		CWiggenweldPotion::DESC visiblePotionDesc = debugPotionDesc;
+		visiblePotionDesc.sObjectTag = "Debug_WiggenweldPotion_Visible";
+		visiblePotionDesc.vInitialPosition = {
+			pDesc->vInitialPosition.x,
+			pDesc->vInitialPosition.y + 2.f,
+			pDesc->vInitialPosition.z + 3.f };
+		visiblePotionDesc.vInitialScale = { 3.f, 3.f, 3.f };
+		visiblePotionDesc.vConvexScale = visiblePotionDesc.vInitialScale;
+
+		const auto visiblePotionHandle = CGameInstance::Get().AddGameObjectToLayer(
+			m_LevelTag,
+			PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
+			"Debug_WiggenweldPotion_Visible",
+			&visiblePotionDesc);
+		if (visiblePotionHandle.has_value())
+			DEBUG_LOG("[PlayerPotion] Large debug potion spawned near the player.\n");
+		else
+			DEBUG_LOG("[PlayerPotion] Failed to spawn the large debug potion.\n");
+	}
+#endif
 
 	return S_OK;
 }
@@ -1943,6 +1984,8 @@ void CPlayer::Update(E::_float fTimeDelta)
 		}
 	}
 
+	UpdateWiggenweldPotion();
+
 	// Animator를 먼저 진행해야 Locomotion State가 현재 프레임의
 	// 재생 비율과 종료 상태로 Turn 회전을 맞출 수 있다.
 	if (!CGameInstance::Get().IsAnimationEditorTarget(GetHandle()) &&
@@ -1967,6 +2010,93 @@ void CPlayer::Update(E::_float fTimeDelta)
 	if (m_pRagdollController)
 		m_pRagdollController->UpdatePoseBridge();
 
+}
+
+_bool CPlayer::StartWiggenweldPotionUse()
+{
+	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
+		return false;
+
+	if (auto* pPreviousPotion = CGameInstance::Get()
+		.GetGameObjectByHandleT<CWiggenweldPotion>(m_hWiggenweldPotion))
+	{
+		pPreviousPotion->Drop();
+	}
+
+	m_iWiggenweldPotionBoneIndex =
+		m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_PotionBottles");
+	if (m_iWiggenweldPotionBoneIndex < 0)
+		m_iWiggenweldPotionBoneIndex =
+			m_pComModelInstance->GetModel()->Get_BoneIndex("prop_LeftHand_potion");
+	if (m_iWiggenweldPotionBoneIndex < 0)
+		m_iWiggenweldPotionBoneIndex =
+			m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_LeftHandSocket_YUp");
+	if (m_iWiggenweldPotionBoneIndex < 0)
+		m_iWiggenweldPotionBoneIndex =
+			m_pComModelInstance->GetModel()->Get_BoneIndex("LeftHand");
+	if (m_iWiggenweldPotionBoneIndex < 0)
+		return false;
+
+	CWiggenweldPotion::DESC desc{};
+	desc.sObjectTag = "WiggenweldPotion";
+	desc.sResourceGroup = m_LevelTag;
+	desc.vInitialPosition = GetTransform().GetPosition();
+	desc.vInitialScale = { 1.f, 1.f, 1.f };
+	desc.vConvexScale = desc.vInitialScale;
+	const auto handle = CGameInstance::Get().AddGameObjectToLayer(
+		m_LevelTag,
+		PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
+		"PlayerPotion",
+		&desc);
+	if (!handle.has_value())
+		return false;
+
+	m_hWiggenweldPotion = *handle;
+	m_bWiggenweldPotionDropped = false;
+	DEBUG_LOG("[PlayerPotion] Wiggenweld potion object created.\n");
+	UpdateWiggenweldPotion();
+	return true;
+}
+
+void CPlayer::UpdateWiggenweldPotion()
+{
+	auto* pPotion = CGameInstance::Get()
+		.GetGameObjectByHandleT<CWiggenweldPotion>(m_hWiggenweldPotion);
+	if (!pPotion || m_bWiggenweldPotionDropped ||
+		!m_pComModelInstance || !m_pModelAnimator)
+		return;
+
+	const auto& boneMatrices = m_pComModelInstance->Get_CombinedBoneMatrices();
+	if (m_iWiggenweldPotionBoneIndex < 0 ||
+		static_cast<size_t>(m_iWiggenweldPotionBoneIndex) >= boneMatrices.size())
+		return;
+
+	_matrix socketMatrix = XMLoadFloat4x4(
+		&boneMatrices[static_cast<size_t>(m_iWiggenweldPotionBoneIndex)]);
+	for (uint32_t axis = 0; axis < 3; ++axis)
+		socketMatrix.r[axis] = XMVector3Normalize(socketMatrix.r[axis]);
+
+	if (!pPotion->SetHeldPose(
+		socketMatrix * GetTransform().GetLoadedWorldMatrix()))
+	{
+		DEBUG_LOG("[PlayerPotion] Failed to update the held potion pose.\n");
+		return;
+	}
+
+	if (m_pModelAnimator->HasUpperAnimation() &&
+		!m_pModelAnimator->IsUpperAnimationFinished() &&
+		m_pModelAnimator->GetUpperAnimRatio() < 0.92f)
+		return;
+
+	_float3 vLook{};
+	XMStoreFloat3(&vLook, XMVector3Normalize(GetTransform().GetState(STATE::LOOK)));
+	const _float3 vImpulse{
+		vLook.x * 0.35f,
+		0.12f,
+		vLook.z * 0.35f
+	};
+	if (pPotion->Drop(vImpulse, { 0.08f, 0.14f, -0.1f }))
+		m_bWiggenweldPotionDropped = true;
 }
 
 void CPlayer::LateUpdate(E::_float fTimeDelta)
