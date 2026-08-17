@@ -3,6 +3,7 @@
 #include "GameInstance.h"
 
 #include "Player.h"
+#include "WiggenweldPotion.h"
 #include "DebugPlayer.h"
 #include "DebugPlayerThirdPersonCamera.h"
 #include "PlayerThirdPersonCamera.h"
@@ -124,6 +125,19 @@ HRESULT CLevelLastBossRanrokLoader::LoadPlayer_InWorker()
 		MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Player");
 		return false;
 	}
+	if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+		CURR_LEVEL, "Static_WiggenweldPotion_Resource",
+		CResStaticModel::Create("./Resources/SampleClient/Models/Static/Potion_Wiggenweld/SM_Potion_Wiggenweld.bin")))
+	{
+		CResStaticModel::DESC desc{};
+		desc.PreTransformMatrix = XMMatrixScaling(2.f, 2.f, 2.f);
+		if (FAILED(resource->Load(desc))) 
+			return false;
+	}
+
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		CURR_LEVEL, PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
+		CWiggenweldPotion::Create()))) return false;
 
 	if (FAILED(E::CGameInstance::Get().AddPrototype(
 		CURR_LEVEL, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerThirdPersonCamera, CPlayerThirdPersonCamera::Create())))

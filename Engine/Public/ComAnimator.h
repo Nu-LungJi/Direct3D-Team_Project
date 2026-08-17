@@ -329,6 +329,7 @@ public:
 	_bool	IsUpperAnimationFinished() const { return m_UpperAnimState.bFinished; }
 	_float	GetUpperAnimRatio() const;
 	_float	GetUpperLayerWeight() const { return m_fUpperLayerWeight; }
+	void	SetUpperAnimationSpeed(_float fSpeed) { m_UpperAnimState.fSpeed = std::max(fSpeed, 0.f); }
 	void	Build_BoneMatrices_CPU(_float fTimeDelta);
 	_bool Sample_CombinedBoneMatrices(int32_t iAnimIndex, _float fTrackPosition, const std::vector<uint32_t>& boneChain, _float4x4& outMatrix) const;
 

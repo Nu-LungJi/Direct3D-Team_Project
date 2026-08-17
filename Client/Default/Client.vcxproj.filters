@@ -397,6 +397,9 @@
     <Filter Include="GameObject\Monster\TombGudian\FSM\State">
       <UniqueIdentifier>{27b24ae4-64c0-4eee-be9d-7a59fd9c8e1b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\Player_Potion">
+      <UniqueIdentifier>{660a0ade-739e-45b4-ae9b-38f10520e799}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -906,6 +909,10 @@
     <ClInclude Include="..\public\Gur_Hit.h">
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Potion_State.h" />
+    <ClInclude Include="..\Public\WiggenweldPotion.h">
+      <Filter>GameObject\Player\Player_Potion</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1363,6 +1370,10 @@
     </ClCompile>
     <ClCompile Include="..\private\Gur_Hit.cpp">
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Potion_State.cpp" />
+    <ClCompile Include="..\Private\WiggenweldPotion.cpp">
+      <Filter>GameObject\Player\Player_Potion</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
