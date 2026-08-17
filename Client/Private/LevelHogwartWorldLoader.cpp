@@ -108,7 +108,7 @@ HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
 		desc.PreTransformMatrix =
 			XMMatrixScaling(3.f, 3.f, 3.f) *
 			XMMatrixRotationY(XMConvertToRadians(180.f)) *
-			XMMatrixTranslation(0.f, -1.8f, 0.f);
+			XMMatrixTranslation(0.f, -1.4f, 0.f);
 		if (FAILED(model->Load(desc)))
 			return E_FAIL;
 	}

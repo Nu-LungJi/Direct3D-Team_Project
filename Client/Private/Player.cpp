@@ -46,6 +46,7 @@
 #include "Player_StupefySkill_State.h"
 #include "Player_LumosSkill_State.h"
 #include "Player_RepairoSkill_State.h"
+#include "Player_Potion_State.h"
 #include "Monster.h"
 #include "ComSound.h"
 #include "ClientEvents.h"
@@ -481,6 +482,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::REPAIRO_SKILL,
 			CPlayer_RepairoSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::POTION,
+			CPlayer_Potion_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -962,6 +969,14 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		CGameInstance::Get().KeyDown(DIK_Q))
 	{
 		m_pStateMachine->RequestState(PLAYER_STATE::PROTEGO_SKILL);
+	}
+
+	if (m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
+		m_iHp > 0 && !m_bFlyRequested &&
+		CGameInstance::Get().KeyDown(DIK_G))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::POTION);
 	}
 
 	// 프로테고가 실제 공격을 막은 뒤에도 Q를 유지하고 있을 때만
@@ -2041,8 +2056,10 @@ void CPlayer::UpdateAttachedEffects()
 	{
 		const _float3 vPlayerPosition = GetTransform().GetPosition();
 		_float4x4 shieldWorld{};
-		XMStoreFloat4x4(&shieldWorld, XMMatrixTranslation(
-			vPlayerPosition.x, vPlayerPosition.y + 1.f, vPlayerPosition.z));
+		XMStoreFloat4x4(&shieldWorld,
+			XMMatrixScaling(1.2f, 1.2f, 1.2f) *
+			XMMatrixTranslation(
+				vPlayerPosition.x, vPlayerPosition.y + 1.f, vPlayerPosition.z));
 		CGameInstance::Get().SetEffectWorldMatrix(
 			m_iProtegoShieldEffectID, shieldWorld);
 	}
@@ -2554,8 +2571,10 @@ void CPlayer::ActivateProtego(_float fDuration)
 	{
 		const _float3 vPlayerPosition = GetTransform().GetPosition();
 		_float4x4 shieldWorld{};
-		XMStoreFloat4x4(&shieldWorld, XMMatrixTranslation(
-			vPlayerPosition.x, vPlayerPosition.y + 1.f, vPlayerPosition.z));
+		XMStoreFloat4x4(&shieldWorld,
+			XMMatrixScaling(1.2f, 1.2f, 1.2f) *
+			XMMatrixTranslation(
+				vPlayerPosition.x, vPlayerPosition.y + 1.f, vPlayerPosition.z));
 		m_iProtegoShieldEffectID = CGameInstance::Get().PlayEffect(
 			"Protego_Shield", shieldWorld, XMVectorZero());
 	}
