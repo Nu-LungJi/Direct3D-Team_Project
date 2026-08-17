@@ -1,7 +1,7 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
-enum class SPIDER_SKILL { BOOM, BREATH, FIREBALL, PULSE, RANDOMBALL, TURNBREATH, THREEBALL, BLACKBALL, LONGBREATH, GASI, GASIBREATH, END };
+enum class SPIDER_SKILL { AB, END };
 
 typedef struct stractiveskilltablespider
 {
@@ -65,7 +65,7 @@ private:
 private:
 	class CMon_State* m_pFsm{ nullptr };
 
-	_string			m_EffectNames[ETOUI(SPIDER_SKILL::END)]{};
+	_string			m_EffectNames[ETOUI(SPIDER_SKILL::END)];
 		_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false }, m_bPopupL{ false }, m_bEndGame{ false };
 
 	_string						m_WayName{};

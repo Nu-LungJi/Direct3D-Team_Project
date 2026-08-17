@@ -944,7 +944,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 	}
 
-	if (CGameInstance::Get().KeyDown(DIK_R))
+	if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_R))
 	{
 		//m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
 		m_pComMoveIntent->RequestWarp(m_vInitialPosition);

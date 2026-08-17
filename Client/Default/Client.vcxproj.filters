@@ -397,6 +397,9 @@
     <Filter Include="GameObject\Monster\TombGudian\FSM\State">
       <UniqueIdentifier>{27b24ae4-64c0-4eee-be9d-7a59fd9c8e1b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\00.Parents\State">
+      <UniqueIdentifier>{f6a28477-befa-428d-b636-662eef20aab1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -906,6 +909,12 @@
     <ClInclude Include="..\public\Gur_Hit.h">
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Mon_Godae.h">
+      <Filter>GameObject\Monster\00.Parents\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Edg_Godae.h">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1363,6 +1372,12 @@
     </ClCompile>
     <ClCompile Include="..\private\Gur_Hit.cpp">
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Mon_Godae.cpp">
+      <Filter>GameObject\Monster\00.Parents\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Edg_Godae.cpp">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

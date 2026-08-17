@@ -209,6 +209,7 @@
     <ClInclude Include="..\public\BTDecEdgPhase.h" />
     <ClInclude Include="..\public\BTDecEdgState.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
+    <ClInclude Include="..\public\Edg_Godae.h" />
     <ClInclude Include="..\public\Gur_Combat.h" />
     <ClInclude Include="..\public\Gur_Hit.h" />
     <ClInclude Include="..\public\DragonSkill.h" />
@@ -226,6 +227,7 @@
     <ClInclude Include="..\public\EnderDragon_State.h" />
     <ClInclude Include="..\public\LevelLastBossRanrok.h" />
     <ClInclude Include="..\public\LevelLastBossRanrokLoader.h" />
+    <ClInclude Include="..\public\Mon_Godae.h" />
     <ClInclude Include="..\Public\Player_Fly_State.h" />
     <ClInclude Include="..\public\SkillTarget.h" />
     <ClInclude Include="..\Public\SkyCloudyCube.h" />
@@ -345,8 +347,8 @@
     <ClInclude Include="..\Public\UIController.h" />
     <ClInclude Include="..\Public\UIManager.h" />
     <ClInclude Include="..\Public\UI_Enums.h" />
-	<ClInclude Include="..\Public\Player_Weapon.h" />
-	<ClInclude Include="..\Public\Player_Broom.h" />
+    <ClInclude Include="..\Public\Player_Weapon.h" />
+    <ClInclude Include="..\Public\Player_Broom.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
     <ClInclude Include="..\public\Terrain.h" />
     <ClInclude Include="..\public\TriggerCRW_BridgeBring.h" />
@@ -374,6 +376,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\Edg_Godae.cpp" />
     <ClCompile Include="..\private\Gur_Combat.cpp" />
     <ClCompile Include="..\private\Gur_Hit.cpp" />
     <ClCompile Include="..\private\EdgBreath.cpp" />
@@ -395,6 +398,7 @@
     <ClCompile Include="..\private\Edg_Spawn.cpp" />
     <ClCompile Include="..\private\EnderDragon.cpp" />
     <ClCompile Include="..\private\EnderDragon_State.cpp" />
+    <ClCompile Include="..\private\Mon_Godae.cpp" />
     <ClCompile Include="..\Private\Player_Fly_State.cpp" />
     <ClCompile Include="..\private\SkillTarget.cpp" />
     <ClCompile Include="..\Private\SkyCloudyCube.cpp" />
@@ -506,8 +510,8 @@
     <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp" />
     <ClCompile Include="..\Private\UIController.cpp" />
     <ClCompile Include="..\Private\UIManager.cpp" />
-	<ClCompile Include="..\Private\Player_Weapon.cpp" />
-	<ClCompile Include="..\Private\Player_Broom.cpp" />
+    <ClCompile Include="..\Private\Player_Weapon.cpp" />
+    <ClCompile Include="..\Private\Player_Broom.cpp" />
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
     <ClCompile Include="..\private\Terrain.cpp" />
     <ClCompile Include="..\private\TriggerCRW_BridgeBring.cpp" />

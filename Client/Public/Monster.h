@@ -150,14 +150,16 @@ public:
 	int32_t						Find_AnimIndex(const _string& AnimName);
 
 	void						Set_HideOnBush(_bool bHide) { m_bHide = bHide; }
+
+
 protected:
 	uint32_t					Find_SkillNum(ATTMON eType);
 	 _bool						Check_Flag(uint32_t iFlag);
 	virtual	void				Damaged(PLAYER_SKILL_TYPE eType);
 	void						Update_HurtBox();
 	virtual void				Flag_Check(_float fTimeDelta);
+	virtual void				Stuck();
 private:
-	void						Cancle_Attack();
 	void						Update_Animation(_float fTimeDelta);
 	void						StartEmissive() { if (m_bWork) return;  m_bEmissive = true; }
 	void						EmissiveFadeOut(_float fTimeDelta);

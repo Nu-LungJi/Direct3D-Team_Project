@@ -25,10 +25,12 @@ public:
 private:
 	HRESULT		Initialize();
 	void		RandomBall(CEnderDragon* pDragon, _vector vPos, _float fDis);
+	void		PlaySound(CEnderDragon* pDragon);
 private:
 	std::vector<RAND_BALL_DESC>		m_RandomBalls[ETOUI(DRAGON_PHASE::END)];
 	DRAGON_PHASE					m_ePhase{};
 	_float							m_fTick{}, m_fMaxTick{};
+	SOUND_ID						m_iWingSound{};
 public:
 	static SPtr<CEdg_Combat> Create();
 };

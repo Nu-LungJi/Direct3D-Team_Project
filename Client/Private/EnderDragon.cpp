@@ -23,6 +23,7 @@
 #include "Edg_Hit.h"
 #include "Edg_Phase.h"
 #include "Edg_Dead.h"
+#include "Edg_Godae.h"
 //BB
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
@@ -391,16 +392,47 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
 	InitializeEffects();
+	ReadySound();
 	m_pComSphereCol->SetQueryEnabled(true);
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_targetSocket");
 	return S_OK;
+}
+void CEnderDragon::ReadySound()
+{
+	m_SoundTable["PulseReady"] = { "./Resources/SampleClient/Sound/LastBossRanrok/Ambient/BeforeSinra.wav", };
+
+	m_SoundTable["WingDefault"] = { "./Resources/SampleClient/Sound/LastBossRanrok/Move/enemies_dragon_conjured_akb__WIngSmall.wav",
+			"./Resources/SampleClient/Sound/LastBossRanrok/Move/enemies_dragon_conjured_akb__WIngSmall2.wav",
+	"./Resources/SampleClient/Sound/LastBossRanrok/Move/enemies_dragon_conjured_akb__WIngSmall3.wav",
+	"./Resources/SampleClient/Sound/LastBossRanrok/Move/enemies_dragon_conjured_akb__WIngSmall4.wav" };
+
+	m_SoundTable["WingMove"] = { "./Resources/SampleClient/Sound/LastBossRanrok/Move/enemies_dragon_conjured_akb__WingMove1.wav",
+	"./Resources/SampleClient/Sound/LastBossRanrok/Move/enemies_dragon_conjured_akb__WingMove2.wav",
+	"./Resources/SampleClient/Sound/LastBossRanrok/Move/enemies_dragon_conjured_akb__WingMove3.wav", 
+	"./Resources/SampleClient/Sound/LastBossRanrok/Move/enemies_dragon_conjured_akb__WingMove4.wav", };
+
+	m_SoundTable["Doljin"]={ 
+	"./Resources/SampleClient/Sound/LastBossRanrok/Move/enemies_dragon_conjured_akb__Doljin2.wav"
+
+	};
+	m_SoundTable["Phase"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragon_conjured_akb__PhaseChange.wav"
+	};
+	m_SoundTable["Hit"] = {
+		"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragon_conjured_akb__Hit.wav"
+	};
+	m_SoundTable["Houling"] = {
+		"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragon_conjured_akb__Houling.wav"
+	};
+	m_SoundTable["Ground"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragon_conjured_akb__MaybeGround.wav"
+	};
 }
 HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
 {
 	CEnderDragon_State::DESC Desc{};
 	if (FAILED(AddComponentFromProto(LevelTag, "Prototype_Component_Dragon_FSM", "EnderDragon_Fsm", &Desc, &m_pFsm))) return E_FAIL;
-
-
+	
 	if (false == m_pFsm->Add_State(MON_STATE::SPAWN, CEdg_Spawn::Create(LevelTag))) return E_FAIL;
 
 	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CEdg_Combat::Create())) return E_FAIL;
@@ -410,6 +442,8 @@ HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
 	if (false == m_pFsm->Add_State(MON_STATE::PHASE_CHANGE, CEdg_Phase::Create(LevelTag))) return E_FAIL;
 
 	if (false == m_pFsm->Add_State(MON_STATE::DEAD, CEdg_Dead::Create())) return E_FAIL;
+
+	if (false == m_pFsm->Add_State(MON_STATE::GODAE, CEdg_Godae::Create(this))) return E_FAIL;
 
 	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
 
@@ -588,6 +622,13 @@ void CEnderDragon::Spawn_EnvironmentParticles(uint32_t iParticleIndex, uint32_t 
 	}
 }
 
+void CEnderDragon::Stuck()
+{
+	if (nullptr == m_pFsm) return;
+
+	m_pFsm->Request_State(MON_STATE::GODAE);
+}
+
 void CEnderDragon::FixedUpdate(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;
@@ -693,6 +734,7 @@ HRESULT	CEnderDragon::Render_Instanced(ID3D11DeviceContext* pContext, const E::R
 	return S_OK;
 }
 HRESULT CEnderDragon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {	// Called Render_Alpha()
+	if (m_bHide) return  S_OK;
 	HRESULT Result = S_OK;
 
 	if (m_pPendingWingFXBatch) {
@@ -709,6 +751,7 @@ HRESULT CEnderDragon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 	return Result;
 }
 HRESULT CEnderDragon::Render_WingFXForward(ID3D11DeviceContext* pContext, const E::MODEL_INSTANCE_BATCH& Batch) {
+	if (m_bHide) return S_OK;
 	SPtr<CResModel> pModel{};
 	uint32_t iInstanceCount = 0;
 
@@ -898,7 +941,7 @@ _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 		m_bIsBreak = true;
 
 		m_PendingMonTable.eAttType = m_eAttType;
-		m_PendingMonTable.eHitType = eType;
+		m_PendingMonTable.eHitType = PLAYER_SKILL_TYPE::DESTORY;
 	
 		m_bPending = true;
 	}
@@ -1041,6 +1084,7 @@ _bool CEnderDragon::BreakSkillType(PLAYER_SKILL_TYPE eType)
 		break;
 
 	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+		return true;
 		break;
 	case PLAYER_SKILL_TYPE::DESTORY:
 		return true;
