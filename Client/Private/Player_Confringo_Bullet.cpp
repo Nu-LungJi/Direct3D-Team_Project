@@ -388,8 +388,13 @@ void CPlayer_Confringo_Bullet::ProcessHitGameplay(
 	// 피해, 상태 이상, 넉백, 이벤트 통지는 이 함수에서 처리한다.
 	// Hit.pGameObject는 이 함수 안에서만 사용하고, 보관이 필요하면
 	// 수명 검증이 가능한 Hit.hGameObject를 저장한다.
-	if (auto* pMonster = Cast<CMonster>(Hit.pGameObject))
-		pMonster->Check_Table(m_eSkillType);
+	//if (auto* pMonster = Cast<CMonster>(Hit.pGameObject))
+	//	pMonster->Check_Table(m_eSkillType);
+	//창준 변경
+	if (nullptr == Hit.pGameObject) return;
+	auto pSkillTarget = dynamic_cast<CSkillTarget*>(Hit.pGameObject);
+	if (nullptr == pSkillTarget) return;
+	pSkillTarget->Check_Table(m_eSkillType);
 }
 
 void CPlayer_Confringo_Bullet::FinishWithoutHit()

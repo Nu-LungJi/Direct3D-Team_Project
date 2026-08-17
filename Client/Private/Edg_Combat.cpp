@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Edg_Combat.h"
-#include "EnderDragon.h"
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
 #include "DragonSkill.h"
@@ -19,6 +18,7 @@ HRESULT		CEdg_Combat::Initialize()
 		m_RandomBalls[ETOUI(DRAGON_PHASE::PHASE1)].push_back(RAND_BALL_DESC{ .vPos = {Randf(-10.f,10.f),Randf(15.f,20.f),0} ,.fDist = Randf(10.f,20.f)});
 		m_RandomBalls[ETOUI(DRAGON_PHASE::PHASE3)].push_back(RAND_BALL_DESC{ .vPos = {Randf(-10.f,10.f),Randf(15.f,20.f),0} ,.fDist = Randf(10.f,20.f) });
 		m_RandomBalls[ETOUI(DRAGON_PHASE::PHASE4)].push_back(RAND_BALL_DESC{ .vPos = {Randf(-10.f,10.f),Randf(15.f,20.f),0} ,.fDist = Randf(10.f,20.f) });
+		m_RandomBalls[ETOUI(DRAGON_PHASE::PHASE5)].push_back(RAND_BALL_DESC{ .vPos = {Randf(-10.f,10.f),Randf(15.f,20.f),Randf(-10.f,10.f)} ,.fDist = Randf(10.f,20.f) });
 
 	}
 
@@ -42,7 +42,7 @@ void CEdg_Combat::Enter(CStateMachine* pStateMachine)
 	switch (m_ePhase)
 	{
 	case DRAGON_PHASE::PHASE1:
-		m_fMaxTick = 2.f;
+		m_fMaxTick = 8.f;
 		break;
 	case DRAGON_PHASE::PHASE3:
 		m_fMaxTick = 6.f;

@@ -72,7 +72,40 @@ void CEffectUI::Update(E::_float fTimeDelta)
 	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
 
 	if (!m_isActive)
+	{
+		if (m_UIINFO.Restag == "TEX_UI_T_PointFlame")
+			m_bWasFlameActive = false;
 		return;
+	}
+
+	if (m_UIINFO.Restag == "TEX_UI_T_PointFlame")
+	{
+		constexpr _float FLAME_DEFAULT_DELTA = 1.f / 60.f;
+		constexpr _float FLAME_MAX_DELTA = 1.f / 30.f;
+		constexpr _float FLAME_DELTA_RESPONSE = 10.f;
+
+		const _float safeDelta = std::isfinite(fTimeDelta) && fTimeDelta > 0.f ?
+			std::min(fTimeDelta, FLAME_MAX_DELTA) : 0.f;
+
+		if (!m_bWasFlameActive)
+		{
+			m_fStableFlameTime = 0.f;
+			m_fSmoothedFlameDelta = safeDelta > 0.f ? safeDelta : FLAME_DEFAULT_DELTA;
+			m_bWasFlameActive = true;
+		}
+		else
+		{
+			const _float response = 1.f - std::exp(-FLAME_DELTA_RESPONSE * safeDelta);
+			m_fSmoothedFlameDelta += (safeDelta - m_fSmoothedFlameDelta) * response;
+		}
+
+		if (safeDelta > 0.f)
+		{
+			m_fStableFlameTime = std::fmod(
+				m_fStableFlameTime + m_fSmoothedFlameDelta,
+				4096.f);
+		}
+	}
 
 	CFlipbookUI::Update(fTimeDelta);
 
@@ -101,6 +134,11 @@ void CEffectUI::LateUpdate(E::_float fTimeDelta)
 	{
 		m_VSShaderTag = "VS_TwoTone";
 		m_PSShaderTag = "PS_TwoTone";
+	}
+	else if (m_UIINFO.Restag == "TEX_UI_T_PointFlame")
+	{
+		m_VSShaderTag = "VS_SpellMiniGameFlame";
+		m_PSShaderTag = "PS_SpellMiniGameFlame";
 	}
 	else
 	{
@@ -141,6 +179,8 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 		perUI.texCoord = m_texcoord;
 		perUI.uvSize = m_uvSize;
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
+		if (m_UIINFO.Restag == "TEX_UI_T_PointFlame")
+			perUI.margins.x = m_fStableFlameTime;
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
@@ -171,15 +211,61 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 	}
 
 	{
-		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
-		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
+		if (m_UIINFO.Restag == "TEX_UI_T_PointFlame")
+		{
+			const auto& flame = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
+			const auto& mask = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_VFX_T_GradientSpline_D");
+			const auto& flow = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_T_FX_Flowmap_FM");
+			const auto& noise = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_VFX_T_DistortionNoise_N");
+			const auto& sparks = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, "TEX_UI_T_MagicSplatter");
+			ID3D11ShaderResourceView* srvs[] = {
+				flame->GetSRV().Get(),
+				mask->GetSRV().Get(),
+				flow->GetSRV().Get(),
+				noise->GetSRV().Get(),
+				flame->GetSRV().Get(),
+				sparks->GetSRV().Get()
+			};
+			pContext->PSSetShaderResources(0, static_cast<UINT>(std::size(srvs)), srvs);
+		}
+		else
+		{
+			const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
+			pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
+		}
 
 		const auto& sampler = E::CGameInstance::GetConst().GetResourceFirst<E::CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
 		pContext->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
 	}
 
+	const _bool useAdditiveBlend =
+		m_UIINFO.Restag == "TEX_UI_T_PointFlame" ||
+		m_UIINFO.Restag == "TEX_VFX_T_MuralSmoke_D";
+	if (useAdditiveBlend)
+	{
+		const auto& additive = E::CGameInstance::Get().
+			GetResourceFirst<E::CResBlendState>(
+				TAG_RES_GRP_PERMANENT_STATE,
+				"BS_ADDITIVE");
+		pContext->OMSetBlendState(
+			additive->GetBlendState().Get(),
+			nullptr,
+			0xffffffff);
+	}
+
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
+	if (useAdditiveBlend)
+	{
+		const auto& alphaBlend = E::CGameInstance::Get().
+			GetResourceFirst<E::CResBlendState>(
+				TAG_RES_GRP_PERMANENT_STATE,
+				"BS_ALPHA_BLEND");
+		pContext->OMSetBlendState(
+			alphaBlend->GetBlendState().Get(),
+			nullptr,
+			0xffffffff);
+	}
 
 
 	return S_OK;

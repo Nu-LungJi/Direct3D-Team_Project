@@ -7,6 +7,8 @@
 #include "ComModelInstance.h"
 #include "Player.h"
 #include "ComBeHavior.h"
+
+#include "ClientEvents.h" 
 NS_USING(Client)
 
 CMonEffectBall::CMonEffectBall()
@@ -93,7 +95,15 @@ void CMonEffectBall::Update(E::_float fTimeDelta)
 				effectMat,
 				_vector{});
 		}
-
+		if (m_bHit)
+		{
+			CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
+				{
+				   3, // 강도 0 ~ 1
+				   1, // 지속시간
+				   15, // 초당 진동횟수
+				});
+		}
 		SetPendingDestroy();
 		return;
 	}

@@ -7,7 +7,7 @@
 #include "ComAnimator.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComModelInstance.h"
-#include "Monster.h"
+#include "SkillTarget.h"
 #include "ResModel.h"
 #include "ResModelAnim.h"
 
@@ -109,9 +109,12 @@ _bool CPlayer_SkillStateBase::HasValidTarget(const CPlayer& player)
 }
 
 _bool CPlayer_SkillStateBase::TryApplySkillToTarget(CPlayer& player,PLAYER_SKILL_TYPE eSkillType) const
-{
-	auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(player.GetTargetHandle());
-	return pMonster && pMonster->Check_Table(eSkillType);
+{//창준 변경
+	auto pMonster = CGameInstance::Get().GetGameObjectByHandle(player.GetTargetHandle());
+	if (nullptr == pMonster) return false;
+	auto pSkillTarget = dynamic_cast<CSkillTarget*>(pMonster);
+	if (nullptr == pSkillTarget) return false;
+	return pSkillTarget->Check_Table(eSkillType);
 }
 
 void CPlayer_SkillStateBase::CacheDirectionalAttackAnimations(const CPlayer& player)

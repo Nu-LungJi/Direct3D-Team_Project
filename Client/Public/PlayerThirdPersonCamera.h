@@ -62,15 +62,57 @@ private:
 	_float m_fYaw{};
 	_float m_fPitch{ 15.f };
 	_float m_fDistance{ 7.f };
+	_float m_fCurrentDistance{ 7.f };
 	_float m_fMinPitch{ -20.f };
 	_float m_fMaxPitch{ 65.f };
 	_float m_fMouseSensitivity{ 10.f };
 	_float m_fShoulderOffset{ 2.f };
+	_float m_fCurrentShoulderOffset{ 2.f };
 	_float m_fHorizontalDeadZoneRadius{ 1.f };
 	_float m_fVerticalDeadZoneHalfHeight{ 1.f };
 	_float m_fVerticalFollowSpeed{ 8.f };
 	_float3 m_vFollowPivot{};
 	_bool m_bFollowPivotInitialized{ false };
+
+	// 고속 상승/하강 중에도 플레이어가 화면 상하 구도 밖으로 벗어나지 않게 하는 비행 전용 값.
+	_float m_fFlightHorizontalDeadZoneRadius{ 0.35f };
+	_float m_fFlightHorizontalFollowSpeed{ 7.f };
+	_float m_fBoostHorizontalDeadZoneRadius{ 0.05f };
+	_float m_fBoostHorizontalFollowSpeed{ 13.f };
+	_float m_fFlightVerticalDeadZoneHalfHeight{ 0.2f };
+	_float m_fFlightVerticalFollowSpeed{ 8.f };
+	_float m_fFlightMaxVerticalCompositionError{ 1.f };
+	_float m_fFlightCompositionCorrectionSpeed{ 10.f };
+	_float m_fFlightVerticalLookAheadTime{ 0.02f };
+	_float m_fFlightMaxVerticalLookAhead{ 0.35f };
+	_float m_fFlightDistance{ 6.25f };
+	_float m_fFlightDistanceResponse{ 5.f };
+	_float m_fFlightTargetOffsetY{ 0.85f };
+	_float m_fBoostTargetOffsetY{ 0.85f };
+	_float m_fFlightShoulderOffset{ 0.3f };
+	_float m_fFlightShoulderResponse{ 5.f };
+	_float m_fFlightCameraHeightOffset{ 0.15f };
+	_float m_fCurrentFlightCameraHeightOffset{};
+	_float m_fFlightCameraPositionResponse{ 10.f };
+	_float3 m_vSmoothedCameraPosition{};
+	_bool m_bSmoothedCameraPositionInitialized{ false };
+
+	// 실제 비행 속도에 따라 시야각, 거리, 난기류를 함께 제어한다.
+	_float m_fBaseFovY{ 75.f };
+	_float m_fCurrentSpeedEffectRatio{};
+	_float m_fSpeedEffectStartSpeed{ 14.f };
+	_float m_fSpeedEffectFullSpeed{ 36.f };
+	_float m_fSpeedEffectResponse{ 3.5f };
+	// 최고 속도에서 FOV를 좁혀 캐릭터 중심의 렌즈 줌을 만든다.
+	_float m_fSpeedFovExpansion{ -8.f };
+	// FOV 확장으로 캐릭터가 작아지는 만큼 고속에서 카메라를 가까이 당긴다.
+	_float m_fSpeedDistanceExtension{ -2.25f };
+	_float m_fTurbulenceElapsed{};
+	_float m_fTurbulenceMinFrequency{ 8.f };
+	_float m_fTurbulenceMaxFrequency{ 14.f };
+	_float m_fTurbulenceStartRatio{ 0.85f };
+	_float m_fTurbulencePositionAmplitude{ 0.025f };
+	_float m_fTurbulenceRotationAmplitude{ 0.14f };
 
 private:
 	_float CAMERA_TARGET_OFFSET_Y = 1.5f;

@@ -30,8 +30,6 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 	m_iComboCount = 1;
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
-	m_bPlayingParryCounter = false;
-	m_bParryCounterSpeedRestored = false;
 	m_bMagicBulletFired = false;
 	m_fPreviousAnimRatio = 0.f;
 
@@ -54,11 +52,7 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 		moveIntent->ClearFacingIntent();
 	}
 
-	_float3 vParryAttackPosition{};
-	const _bool bHasParryCounter = player->ConsumeParryCounter(vParryAttackPosition);
-	if (bHasParryCounter
-		? !PlayParryCounterAttack(*player, vParryAttackPosition)
-		: !PlayDirectionalAttack(*player, false))
+	if (!PlayDirectionalAttack(*player, false))
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 
 	pTarget = CGameInstance::Get().GetGameObjectByHandle(player->GetTargetHandle());
@@ -78,8 +72,6 @@ void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
 	m_iComboCount = 0;
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
-	m_bPlayingParryCounter = false;
-	m_bParryCounterSpeedRestored = false;
 	m_bMagicBulletFired = false;
 	m_fPreviousAnimRatio = 0.f;
 }
@@ -113,13 +105,6 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 		? HEAVY_MAGIC_BULLET_FIRE_RATIO
 		: LIGHT_MAGIC_BULLET_FIRE_RATIO;
 
-	if (m_bPlayingParryCounter && !m_bParryCounterSpeedRestored &&
-		fAnimRatio >= PARRY_COUNTER_TURN_END_RATIO)
-	{
-		animator->GetCurAnimState().fSpeed = PARRY_COUNTER_ATTACK_SPEED;
-		m_bParryCounterSpeedRestored = true;
-	}
-
 	if (!m_bMagicBulletFired &&
 		fPreviousAnimRatio < fMagicBulletFireRatio &&
 		fAnimRatio >= fMagicBulletFireRatio)
@@ -143,7 +128,7 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 			COMBO_INPUT_START_RATIO,
 			COMBO_INPUT_END_RATIO);
 
-	if (!m_bPlayingParryCounter && bInComboInputWindow &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	if (bInComboInputWindow && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		m_bAttackQueued = true;
 	}
@@ -410,12 +395,6 @@ void CPlayer_Attack_State::CacheAnimationIndices(const CPlayer& player)
 	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_90)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_90_Hvy_anm.bin");
 	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_135)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_135_Hvy_anm.bin");
 	m_DirectionalHeavyAnimations[static_cast<size_t>(ATTACK_DIRECTION::RHT_180)] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Rht_180_Hvy_Spin_anm.bin");
-
-	m_ParryCounterAnimations[0] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Fwd_2_Spin_Rht_anm.bin");
-	m_ParryCounterAnimations[1] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Lft_90_Spin_Lft_Slam_anm.bin");
-	m_ParryCounterAnimations[2] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Rht_90_Spin_Rht_Slam_anm.bin");
-	m_ParryCounterAnimations[3] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Lft_180_Spin_Rht_Send_anm.bin");
-	m_ParryCounterAnimations[4] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Rht_180_Spin_Rht_anm.bin");
 
 	m_bAnimationIndicesCached = true;
 }

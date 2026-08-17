@@ -1,7 +1,7 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
-enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL, TURNBREATH, THREEBALL, BLACKBALL,LONGBREATH,END};
+enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL, TURNBREATH, THREEBALL, BLACKBALL,LONGBREATH,GASI,GASIBREATH,END};
 enum class DRAGON_PHASE{PHASE1, PHASE2, PHASE3, PHASE4, PHASE5, PHASE6, PHASE7, END};
 enum class EDG_SPAWN_NUMBER { FIRST, SECOND, THIRD, FOUR };
 
@@ -18,6 +18,17 @@ typedef struct stractiveskilltable
 	int32_t		  iBoneOffset{};
 	DRAGON_SKILL eType{};
 }EDG_ACSKT_DESC;
+
+/*----------- 광윤 추가 -----------*/
+typedef struct dragonfxmaterial
+{
+	_float4		vCoreColor;
+	_float4		vEdgeColor;
+	_float4		vAnimationParams;
+	_float4		vSurfaceParams;
+
+}DRAGON_FX_MATERIAL;
+/*---------------------------------*/
 
 NS_BEGIN(Client)
 typedef struct stredgskillInfo
@@ -62,10 +73,18 @@ public:
 
 	/*----------- 광윤 추가 -----------*/ // MaskMap Test
 	HRESULT						Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch);
-
+	HRESULT						Render_DragonFX(ID3D11DeviceContext* pContext, uint32_t iInstanceCount);
+	HRESULT						Bind_DragonFXMaterial(ID3D11DeviceContext* pContext, uint32_t iMaterialIndex);
 private:
 	SPtr<CResPixelShader>	m_pResDragonPixelShader{};
 	SPtr<CResCBuffer>		m_pResDragonCBuffer{};
+	SPtr<CResCBuffer>		m_pResDragonFXCBuffer{};
+
+	SPtr<CResModel>			m_pDragonFXModel;
+	SPtr<CResStaticModel>	m_pDragonSpineModel;
+
+	SPtr<CResPixelShader>	m_pDragonFXPixelShader{};
+	SPtr<CResPixelShader>	m_pDragonSpinePixelShader{};
 	/*---------------------------------*/
 
 public:
@@ -80,7 +99,10 @@ public:
 	void						Check_Phase();
 	void						Set_AttTable(ATTMON eType, _float2 fSkillRatio) override;
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
-	EDG_SKILL_INFO&				 Get_SkillInfo(DRAGON_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
+	EDG_SKILL_INFO&				Get_SkillInfo(DRAGON_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
+	const _string&				Get_SkillNmae(DRAGON_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
+	void						Heal(uint32_t iHp) { m_iHp += iHp; if (m_iHp >= m_iMaxHp) m_iHp = m_iMaxHp; }
+	void						Set_EndGame() { m_bEndGame = true; }
 private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
@@ -98,7 +120,7 @@ private:
 	EDG_SKILL_INFO	m_SkillHandle[ETOUI(DRAGON_SKILL::END)]{};
 	DRAGON_SKILL	m_eDragonSkill{};
 	DRAGON_PHASE	m_ePhase{};
-	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false }, m_bPopupL{ false };
+	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false }, m_bPopupL{ false }, m_bEndGame{ false };
 
 	_string						m_WayName{};
 	std::list<_float3>			m_DebugPoint;

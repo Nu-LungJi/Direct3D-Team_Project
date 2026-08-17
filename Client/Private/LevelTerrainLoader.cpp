@@ -16,7 +16,9 @@
 #include "PlayerThirdPersonCamera.h"
 #include "Player_Weapon.h"
 #include "Player_Magic_Bullet.h"
+#include "Player_Bombarda_Bullet.h"
 #include "Player_Confringo_Bullet.h"
+#include "Player_Stupefy_Bullet.h"
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
 #include "GurdianWeapon.h"
@@ -29,6 +31,7 @@
 #include "EdgBreath.h"
 #include "EdgPulse.h"
 #include "EdgRandomBall.h"
+#include "EdgGasi.h"
 // UI
 #include "UIController.h"
 #include "EffectUI.h"
@@ -252,6 +255,19 @@ std::future<bool> CLevelTerrainLoader::Load()
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_PlayerConfringoBullet");
 				return false;
 			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_PlayerBombardaBullet,
+				CPlayer_Bombarda_Bullet::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_PlayerBombardaBullet");
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_PlayerStupefyBullet,
+				CPlayer_Stupefy_Bullet::Create())))
+				return false;
 			MonsterLoad_InWorker();
 			// 워커 스레드 종료
 			return  true;
@@ -528,6 +544,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Breath, CEdgBreath::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Pulse, CEdgPulse::Create()))) return E_FAIL;
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_RandomBall, CEdgRandomBall::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Gasi, CEdgGasi::Create()))) return E_FAIL;
 
 	}
 
