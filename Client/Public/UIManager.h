@@ -1,6 +1,7 @@
 #pragma once
 #include "Client_Defines.h"
 #include "UIObject.h"
+#include "UI_Structs.h"
 
 NS_BEGIN(Client)
 
@@ -46,6 +47,10 @@ public:
 	/********데미지 폰트***********/
 	void CreateDamageFont(uint32_t damage, CHandle targetMonster,_bool isCritical = false);
 
+	/********액티브 버튼***********/
+	void CreateActiveButton(CHandle handle, _ubyte KeyType);
+	void RemoveActiveButton(CHandle handle, _bool fadeOut = true);
+
 public:
 	std::optional<CHandle> RootUIPicking();
 
@@ -63,6 +68,9 @@ private:
 
 	std::vector<CHandle> m_vLoadPrefabRoot{};
 	std::optional<CHandle> m_UIController = std::nullopt;
+	std::vector<ACTIVE_BUTTON_INFO> m_ActiveButtons{};
+
+	void UpdateActiveButtons();
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
 public:

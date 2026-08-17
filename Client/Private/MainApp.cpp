@@ -101,6 +101,7 @@ HRESULT CMainApp::Initialize()
 void CMainApp::FrameStart(_float fTimeDelta)
 {
 	CBaseApp::FrameStart(fTimeDelta);
+	GET_SINGLE(UIManager)->Update();
 
 	if (m_pCinematicEditor && E::CGameInstance::Get().ImguiGetActive())
 	{
