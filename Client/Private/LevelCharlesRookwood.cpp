@@ -127,6 +127,11 @@ void CLevelCharlesRookwood::Update(E::_float fTimeDelta)
 
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 
+#ifdef _DEBUG
+	if (E::CGameInstance::Get().KeyDown(DIK_F8))
+		ToggleGPUShadowDebugObject();
+#endif
+
 	if (E::CGameInstance::Get().KeyDown(DIK_SPACE))
 	{
 		//GET_SINGLE(UIManager)->CreateFadeInSceneChange(float delay = 0.f, float playtime = 5.f, LEVEL level = LEVEL::LOGO);
@@ -561,13 +566,42 @@ HRESULT CLevelCharlesRookwood::SpawnBridge()
 
 	if (hBridgeCRW)
 	{
+		m_hBridgeCRW = *hBridgeCRW;
 		if (auto pObj = CGameInstance::Get().GetGameObjectByHandleT<CBridgeCRW>(*hBridgeCRW))
 		{
-			pObj->GetTransform().SetPosition(_float3{ -251.f, -242.f, -382.f });
+			m_vBridgeOriginalPosition = { -251.f, -242.f, -382.f };
+			pObj->GetTransform().SetPosition(m_vBridgeOriginalPosition);
 		}
 	}
 	
 	return S_OK;
+}
+
+void CLevelCharlesRookwood::ToggleGPUShadowDebugObject()
+{
+	auto* pBridge = CGameInstance::Get().GetGameObjectByHandleT<CBridgeCRW>(m_hBridgeCRW);
+	if (!pBridge)
+		return;
+
+	if (m_bGPUShadowDebugObjectVisible)
+	{
+		pBridge->GetTransform().SetPosition(m_vBridgeOriginalPosition);
+		m_bGPUShadowDebugObjectVisible = false;
+		return;
+	}
+
+	auto* pCamera = CGameInstance::Get().GetActiveCamera();
+	if (!pCamera)
+		return;
+
+	const _vector vCameraPosition = pCamera->GetTransform().GetState(STATE::POSITION);
+	const _vector vCameraLook = XMVector3Normalize(
+		pCamera->GetTransform().GetState(STATE::LOOK));
+	const _vector vDebugPosition = vCameraPosition + vCameraLook * 12.f +
+		XMVectorSet(0.f, -2.f, 0.f, 0.f);
+
+	pBridge->GetTransform().SetPosition(vDebugPosition);
+	m_bGPUShadowDebugObjectVisible = true;
 }
 
 void CLevelCharlesRookwood::Free()

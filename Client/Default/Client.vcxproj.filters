@@ -262,6 +262,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_Hit_State">
       <UniqueIdentifier>{d0adaf33-4a64-494f-9581-a01e2aa4035f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Knockdown_State">
+      <UniqueIdentifier>{e37138c7-ca88-4da8-85e8-e793c2a7196f}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Monster\Effect">
       <UniqueIdentifier>{1d4dcef1-d0db-4ee2-99d1-8e63dd2b61d9}</UniqueIdentifier>
     </Filter>
@@ -369,6 +372,12 @@
     </Filter>
     <Filter Include="GameObject\Monster\EnderDragon\Skill\Gasi">
       <UniqueIdentifier>{a9ff708e-a308-4d48-99c3-2ed09296a5f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\Player_Broom">
+      <UniqueIdentifier>{a323905d-1c56-40ee-a831-e74e7795b881}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Broom">
+      <UniqueIdentifier>{fde2875f-27ed-4c69-9d9e-eb2981fdb1e1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -687,6 +696,9 @@
     <ClInclude Include="..\Public\Player_Hit_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_Knockdown_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Knockdown_State</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\MonEffectBall.h">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClInclude>
@@ -848,6 +860,9 @@
     </ClInclude>
     <ClInclude Include="..\public\Edg_Dead.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Broom.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Broom</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1122,6 +1137,9 @@
     <ClCompile Include="..\Private\Player_Hit_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Hit_State</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_Knockdown_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Knockdown_State</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\MonEffectBall.cpp">
       <Filter>GameObject\Monster\Effect</Filter>
     </ClCompile>
@@ -1276,6 +1294,9 @@
     </ClCompile>
     <ClCompile Include="..\private\Edg_Dead.cpp">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Broom.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Broom</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

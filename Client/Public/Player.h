@@ -102,12 +102,14 @@ public:
 	_bool OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,int32_t iDamage,const _float3& vHitPosition);
 	_bool OnQueryHit(int32_t iDamage,const _float3& vHitPosition);
 	_bool OnQueryHit(int32_t iDamage);
+	_bool RequestKnockdown(const _float3& vAttackPosition);
 	int32_t GetCurrentHp() const { return m_iHp; }
 	int32_t GetMaxHp() const { return m_iMaxHp; }
 	const _float3& GetLastHitPosition() const { return m_vLastHitPosition; }
+	const _float3& GetKnockdownAttackPosition() const { return m_vKnockdownAttackPosition; }
 private:
 	void HandleDeath();
-	void TriggerProtegoHit(const _float3& vHitPosition);
+	void TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage = 0);
 public:
 	void Attack_Magic_Bullet();
 	_bool FireStupefyProjectile();
@@ -157,12 +159,16 @@ public:
 	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
+	void SetRootMotionTranslationScale(_float fScale) { m_fRootMotionTranslationScale = std::max(0.f, fScale); }
 	void ApplyAttackForwardMovement(_float fSpeed, _float fTimeDelta);
 	void ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_float fTimeDelta);
 	void ApplyGroundFollow(_float fFixedTimeDelta);
 	void PrepareLocomotionResume();
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
+	void SetLumosActive(_bool bActive);
+	void ToggleLumos() { SetLumosActive(!m_bLumosActive); }
+	_bool IsLumosActive() const { return m_bLumosActive; }
 	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
 	_bool IsSprintRequested() const { return m_bSprintRequested; }
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
@@ -178,6 +184,10 @@ public:
 	void SetBodyEffectID(uint32_t effectID) { m_iDashBodyEffectID = effectID; }
 	void UpdateAttachedEffects();
 	CHandle& GetWeaponHandle() { return m_Partes[ETOUI(PARTES::WEAPON)]; }
+	void SetBroomVisible(_bool bVisible);
+	void SetBroomMovementRatio(_float fRatio);
+	void SetBroomBoostEffectRatio(_float fRatio);
+	_bool IsBroomVisible() const;
 
 
 	_bool GetInvincible() const { return m_bInvincible; }
@@ -185,6 +195,8 @@ public:
 	_bool IsProtegoActive() const { return m_bProtegoActive; }
 	void ActivateProtego(_float fDuration);
 	_bool ConsumeParryCounter(_float3& outAttackPosition);
+	_bool ConsumeProtegoHeavyReaction(_float3& outAttackPosition);
+	void StartProtegoRecoil(const _float3& vHitPosition);
 	uint32_t GetProtegoParrySequence() const { return m_iProtegoParrySequence; }
 	const _float3& GetLastProtegoHitPosition() const { return m_vLastProtegoHitPosition; }
 private:
@@ -247,6 +259,7 @@ private:
 	_bool m_bMovementLocked{};
 	_bool m_bRootMotionRotationActive{};
 	_bool m_bRootMotionTranslationActive{};
+	_float m_fRootMotionTranslationScale{ 1.f };
 	_bool m_bRawMoveInput{};
 	_bool m_bSprintRequested{};
 	_float3 m_vRawMoveDirection{};
@@ -255,6 +268,7 @@ private:
 	_float m_fCurrentMoveSpeed{};
 	_float m_fJogSpeed{ 7.5f };
 	_float m_fSprintSpeed{ 15.f };
+	static constexpr int32_t KNOCKDOWN_DAMAGE_THRESHOLD = 30;
 	_float m_fAcceleration{ 12.f };
 	_float m_fDeceleration{ 18.f };
 	_float m_fJogDirectionResponse{ 7.f };
@@ -264,6 +278,7 @@ private:
 
 	_bool m_bDeathEventPublished{};
 	_float3 m_vLastHitPosition{};
+	_float3 m_vKnockdownAttackPosition{};
 	_float m_fGroundFollowProbeStartHeight{ 0.1f };
 	_float m_fGroundFollowMaxStepDown{ 0.5f };
 	_float m_fGroundFollowProbeRadius{ 0.2f };
@@ -271,8 +286,13 @@ private:
 	_bool  m_bProtegoActive{ false };
 	_float m_fProtegoRemainTime{};
 	_float m_fParryCounterRemainTime{};
+	_float m_fProtegoRecoilRemainTime{};
+	_float3 m_vProtegoRecoilDirection{};
 	_bool  m_bStupefyCounterRequested{};
+	_bool  m_bProtegoHeavyReactionRequested{};
 	static constexpr _float PARRY_COUNTER_WINDOW = 1.0f;
+	static constexpr _float PROTEGO_RECOIL_DURATION = 0.2f;
+	static constexpr _float PROTEGO_RECOIL_SPEED = 5.f;
 	EFFECT_INSTANCE_ID m_iProtegoShieldEffectID{ INVALID_EFFECT_INSTANCE_ID };
 	struct PROTEGO_HIT_EFFECT
 	{
@@ -298,6 +318,15 @@ private:
 private:
 	CHandle m_UIHandle;
 	_bool m_bSkillSlotUIInitialized{ false };
+	_bool m_bLumosActive{};
+	std::optional<CHandle> m_hLumosLight{};
+	EFFECT_INSTANCE_ID m_iLumosEffectID{ INVALID_EFFECT_INSTANCE_ID };
+	_float3 m_vLumosLocalOffset{};
+	_float3 m_vLumosDebugWorldPosition{};
+	_float3 m_vPreviousLumosAttachPosition{};
+	_bool m_bHasPreviousLumosAttachPosition{};
+	void UpdateLumosLight();
+	_bool TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const;
 
 #pragma region RAGDOLL
 	friend class CPlayerRagdollController;

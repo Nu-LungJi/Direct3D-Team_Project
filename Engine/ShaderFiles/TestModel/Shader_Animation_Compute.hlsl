@@ -2,7 +2,7 @@ struct GPU_BONE_DESC { float4x4 BindLocalMatrix; float3 BindScale; float4 BindRo
 struct GPU_ANIM_DESC { float4x4 PreTransformMatrix; uint iChannelOffset; uint iChannelCount; uint iBoneChannelMapOffset; uint iBoneCount; float fDuration; float3 Padding; };
 struct GPU_CHANNEL_DESC { uint iBoneIndex; uint iKeyFrameOffset; uint iKeyFrameCount; uint Padding; };
 struct GPU_KEYFRAME_DESC { float3 vScale; float fTrackPosition; float4 vRotation; float3 vTranslation; float Padding; };
-struct GPU_ANIM_INSTANCE_DATA { float4x4 WorldMatrix; uint iAnimIndex; uint iFlags; float fTrackPosition; uint RootBoneIndex; uint iPrevAnimIndex; float fPrevTrackPosition; float fBlendWeight; uint bBlending; };
+struct GPU_ANIM_INSTANCE_DATA { float4x4 WorldMatrix; uint iAnimIndex; uint iFlags; float fTrackPosition; uint RootBoneIndex; uint iPrevAnimIndex; float fPrevTrackPosition; float fBlendWeight; uint bBlending; uint4 vMorphIndices; float4 vMorphWeights; };
 
 StructuredBuffer<GPU_BONE_DESC> gBones : register(t0);
 StructuredBuffer<GPU_ANIM_DESC> gAnimations : register(t1);

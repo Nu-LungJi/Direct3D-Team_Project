@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -78,7 +78,7 @@ typedef struct tagModel
 	uint32_t AnimationCount;
 }MODEL;
 
-/* ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ¾ø´Â ¸Ş½Ã¿ë Á¤Á¡. */
+/* ì• ë‹ˆë©”ì´ì…˜ì´ ì—†ëŠ” ë©”ì‹œìš© ì •ì . */
 typedef struct tagVertexMesh
 {
 	XMFLOAT3	vPosition;
@@ -89,7 +89,7 @@ typedef struct tagVertexMesh
 
 }VTXMESH;
 
-/* ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ÀÖ´Â ¸Ş½Ã¿ë Á¤Á¡. */
+/* ì• ë‹ˆë©”ì´ì…˜ì´ ìˆëŠ” ë©”ì‹œìš© ì •ì . */
 typedef struct tagVertexAnimMesh
 {
 	XMFLOAT3	vPosition;
@@ -116,10 +116,37 @@ typedef struct tagChannel {
 	shared_ptr<vector<KEYFRAME>> KeyFrames;
 }CHANNELDATA;
 
+constexpr uint32_t MORPH_BINARY_MAGIC = 0x4850524D; // "MRPH"
+
+typedef struct tagMorphVertexDelta {
+	uint32_t VertexIndex{};
+	XMFLOAT3 PositionDelta{};
+	XMFLOAT3 NormalDelta{};
+	XMFLOAT3 TangentDelta{};
+	XMFLOAT3 BinormalDelta{};
+} MORPHVERTEXDELTA;
+
+typedef struct tagMorphTargetData {
+	string Name;
+	vector<MORPHVERTEXDELTA> Deltas;
+} MORPHTARGETDATA;
+
+typedef struct tagMorphKeyData {
+	float TrackPosition{};
+	vector<uint32_t> TargetIndices;
+	vector<float> Weights;
+} MORPHKEYDATA;
+
+typedef struct tagMorphChannelData {
+	string MeshName;
+	vector<MORPHKEYDATA> Keys;
+} MORPHCHANNELDATA;
+
 typedef struct tagAnimation {
 	string sAnimName;
 	float AnimationDuration;
 	float AnimtaionTickPerSecond;
 	uint32_t ChannelCount;
 	shared_ptr<vector<CHANNELDATA>> Channels;
+	shared_ptr<vector<MORPHCHANNELDATA>> MorphChannels;
 }ANIMATIONDATA;

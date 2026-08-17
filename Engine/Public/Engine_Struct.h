@@ -455,7 +455,31 @@ namespace Engine
 		/*----------- 광윤 추가 -----------*/
 		uint32_t iBonePaletteStride = 0;
 		/*---------------------------------*/
+		uint32_t iMorphTargetCount = 0;
+		uint32_t iMorphVertexCount = 0;
+		uint32_t iMorphPadding0 = 0;
+		uint32_t iMorphPadding1 = 0;
 	}GPU_SKIN_MESH_CONSTANTS;
+
+	constexpr uint32_t MORPH_BINARY_MAGIC = 0x4850524D; // "MRPH"
+	constexpr uint32_t MAX_ACTIVE_MORPH_TARGETS = 4;
+
+	typedef struct MORPH_VERTEX_DELTA
+	{
+		uint32_t iVertexIndex = 0;
+		_float3 vPositionDelta{};
+		_float3 vNormalDelta{};
+		_float3 vTangentDelta{};
+		_float3 vBinormalDelta{};
+	} MORPH_VERTEX_DELTA;
+
+	typedef struct GPU_MORPH_VERTEX_DELTA
+	{
+		_float4 vPositionDelta{};
+		_float4 vNormalDelta{};
+		_float4 vTangentDelta{};
+		_float4 vBinormalDelta{};
+	} GPU_MORPH_VERTEX_DELTA;
 
 
 	//struct GPU_ANIM_INSTANCE_DATA { 
@@ -484,6 +508,9 @@ namespace Engine
 		_float fPrevTrackPosition = 0.f;
 		_float fBlendWeight = 1.f;
 		uint32_t bBlending = 0;
+
+		DirectX::XMUINT4 vMorphIndices{ UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX };
+		_float4 vMorphWeights{};
 	}GPU_ANIM_INSTANCE_DATA;
 
 	constexpr uint32_t INVALID_ANIM_INDEX = UINT32_MAX;

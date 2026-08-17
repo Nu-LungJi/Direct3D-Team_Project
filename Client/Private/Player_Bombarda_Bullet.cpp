@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Player_Bombarda_Bullet.h"
 
+#include "ClientEvents.h"
 #include "ComSound.h"
 #include "DbgLineRender.h"
 #include "PhysXManager.h"
@@ -559,6 +560,11 @@ void CPlayer_Bombarda_Bullet::PlayImpactEffect(
 	const _float3& vPosition,
 	const _float3& vNormal) const
 {
+	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
+		.fIntensity = 0.18f,
+		.fDuration = 0.16f,
+		.fFrequency = 24.f });
+
 	// [LSY] 불릿 제거 이후에도 폭발 저역과 잔향이 끝까지 재생되도록 매니저에서 직접 재생한다.
 	PlayImpactSounds(vPosition);
 

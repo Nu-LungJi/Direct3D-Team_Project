@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Player_Magic_Bullet.h"
+#include "ClientEvents.h"
 #include "Client_Resources.h"
 #include "Trail_CPU.h"
 #include "PhysXManager.h"
@@ -331,6 +332,10 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 		pTmbGurdian->Check_Table(PLAYER_SKILL_TYPE::ATTACK);
 	}
 
+	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
+		.fIntensity = 0.065f,
+		.fDuration = 0.085f,
+		.fFrequency = 28.f });
 	SetPendingDestroy();
 }
 

@@ -31,6 +31,7 @@
 #include "Player_Roll_State.h"
 #include "Player_Attack_State.h"
 #include "Player_Hit_State.h"
+#include "Player_Knockdown_State.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
 #include "Player_AcientAttack_State.h"
@@ -51,6 +52,8 @@
 #include "Player_RevelioSkill_State.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Weapon.h"
+#include "Player_Broom.h"
+#include "Light.h"
 #include "Trail_CPU.h"
 #include "UIController.h"
 #include "UIManager.h"
@@ -93,6 +96,25 @@ void CPlayer::UpdateGUI()
 			m_pModelAnimator->HasUpperAnimation() ? "Loaded" : "Empty",
 			m_pModelAnimator->GetUpperLayerWeight(),
 			m_pModelAnimator->GetPlay() ? "Playing" : "Paused");
+	}
+	if (ImGui::CollapsingHeader("[KMS] Lumos Attach Debug", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Text("Lumos: %s", m_bLumosActive ? "ON" : "OFF");
+		ImGui::DragFloat3(
+			"Wand Local Offset",
+			&m_vLumosLocalOffset.x,
+			0.005f,
+			-2.f,
+			2.f,
+			"%.3f");
+		ImGui::TextDisabled("X: right / Y: up / Z: wand forward");
+		ImGui::Text(
+			"World: %.3f, %.3f, %.3f",
+			m_vLumosDebugWorldPosition.x,
+			m_vLumosDebugWorldPosition.y,
+			m_vLumosDebugWorldPosition.z);
+		if (ImGui::Button("Reset Lumos Offset"))
+			m_vLumosLocalOffset = {};
 	}
 	if (ImGui::Button("Open Player in Animation Editor"))
 		CGameInstance::Get().SetAnimationEditorTarget(GetHandle());
@@ -377,6 +399,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		}
 		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::KNOCKDOWN,
+			CPlayer_Knockdown_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::DASH_SKILL,
 			CPlayer_DashSkill_State::Create()))
 		{
@@ -480,7 +508,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	CPlayer_Weapon::WEAPON_DESC WeaponDesc{};
 	WeaponDesc.sObjectTag = "Weapon";
 	WeaponDesc.LevelTag = pDesc->LevelTag.GetDbgStr();
-	WeaponDesc.WeaponName = "PLAYER_WEAPON_RESROUCE";
+	WeaponDesc.WeaponName = "PLAYER_WEAPON_SKELETON_RESOURCE";
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RightHandWandSocket");
 	WeaponDesc.iSpawnBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("WandSocketTip");
 	WeaponDesc.ParentHandle = GetHandle();
@@ -494,6 +522,29 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+
+	CPlayer_Broom::BROOM_DESC BroomDesc{};
+	BroomDesc.sObjectTag = "Broom";
+	BroomDesc.sLevelTag = pDesc->LevelTag.GetDbgStr();
+	BroomDesc.sResourceTag = "PLAYER_BROOM_RESOURCE";
+	BroomDesc.iSocketBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_BroomCollision");
+	BroomDesc.hParent = GetHandle();
+	// UEModel -> static FBX 변환 과정에서 센티미터 단위가 1/100로 축소되어
+	// 기존 장비 모델 스케일(4배)에 원본 단위 복원(100배)을 함께 적용한다.
+	BroomDesc.vScale = { 4.f, 4.f, 4.f };
+	BroomDesc.bVisible = false;
+
+	auto Broom = E::CGameInstance::Get().AddGameObjectToLayer(
+		pDesc->LevelTag,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PlayerBroom,
+		"Broom",
+		&BroomDesc);
+	if (!Broom.has_value())
+	{
+		MSG_BOX("Create Failed Broom");
+		return E_FAIL;
+	}
+	m_Partes[ETOUI(PARTES::BROOM)] = Broom.value();
 
 	{
 		{
@@ -887,7 +938,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		CGameInstance::Get().KeyPressing(DIK_Q))
 	{
 		m_bStupefyCounterRequested = true;
-		if (!m_pStateMachine->RequestState(PLAYER_STATE::STUPEFY_SKILL))
+		if (m_pStateMachine->GetCurrentState() != PLAYER_STATE::STUPEFY_SKILL &&
+			!m_pStateMachine->RequestState(PLAYER_STATE::STUPEFY_SKILL))
 			m_bStupefyCounterRequested = false;
 	}
 
@@ -1155,6 +1207,13 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (CGameInstance::Get().KeyDown(DIK_6))
 			m_pStateMachine->RequestState(PLAYER_STATE::BOMBARDA_SKILL);
 
+#ifdef _DEBUG
+		// Lumos debug toggle. The Lumos state decides whether this request
+		// enters Start/Hold or plays Stop based on the current active flag.
+		if (CGameInstance::Get().KeyDown(DIK_L))
+			m_pStateMachine->RequestState(PLAYER_STATE::LUMOS_SKILL);
+#endif
+
 	}
 	
 
@@ -1179,6 +1238,22 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		vHitPosition.z += vRandomDirection.z * 2.48f;
 		OnQueryHit(20, vHitPosition);
 	}
+
+#ifdef _DEBUG
+	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_K))
+	{
+		// Knockdown debug: treat a point in front of the player as the attacker.
+		// RequestKnockdown does not change HP, so the full sequence can be tested repeatedly.
+		_vector vAttackPosition = GetTransform().GetState(STATE::POSITION);
+		_vector vLook = XMVectorSetY(GetTransform().GetState(STATE::LOOK), 0.f);
+		if (XMVectorGetX(XMVector3LengthSq(vLook)) > FLT_EPSILON)
+			vAttackPosition += XMVector3Normalize(vLook) * 2.f;
+
+		_float3 vAttackPositionValue{};
+		XMStoreFloat3(&vAttackPositionValue, vAttackPosition);
+		RequestKnockdown(vAttackPositionValue);
+	}
+#endif
 }
 
 
@@ -1226,8 +1301,10 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 	if (!pUIController || !m_pStateMachine)
 		return false;
 
+	const SPELL_TYPE eSpellType = static_cast<SPELL_TYPE>(
+		pUIController->GetSpellType(iSlotNumber));
 	PLAYER_STATE eSkillState = PLAYER_STATE::NONE;
-	switch (static_cast<SPELL_TYPE>(pUIController->GetSpellType(iSlotNumber)))
+	switch (eSpellType)
 	{
 	case SPELL_TYPE::ASSIO:
 		eSkillState = PLAYER_STATE::ACCIO_SKILL;
@@ -1245,6 +1322,10 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 		eSkillState = PLAYER_STATE::REPAIRO_SKILL;
 		break;
 
+	case SPELL_TYPE::LUMOS:
+		eSkillState = PLAYER_STATE::LUMOS_SKILL;
+		break;
+
 	default:
 		// 플레이어에 구현되지 않았거나 비어 있는 스킬 슬롯이다.
 		return false;
@@ -1253,7 +1334,130 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 	if (!m_pStateMachine->RequestState(eSkillState))
 		return false;
 
-	pUIController->UseSpell(iSlotNumber);
+	if (eSpellType != SPELL_TYPE::LUMOS)
+		pUIController->UseSpell(iSlotNumber);
+	return true;
+}
+
+void CPlayer::SetLumosActive(_bool bActive)
+{
+	if (m_bLumosActive == bActive)
+		return;
+
+	m_bLumosActive = bActive;
+	m_bHasPreviousLumosAttachPosition = false;
+	if (!bActive)
+	{
+		if (m_pModelAnimator && m_pModelAnimator->HasUpperAnimation())
+			m_pModelAnimator->Stop_UpperAnim(0.08f);
+
+		if (m_iLumosEffectID != INVALID_EFFECT_INSTANCE_ID)
+		{
+			CGameInstance::Get().StopEffect(m_iLumosEffectID);
+			m_iLumosEffectID = INVALID_EFFECT_INSTANCE_ID;
+		}
+
+		if (m_hLumosLight)
+		{
+			if (auto* pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(*m_hLumosLight))
+				pLight->Reset_Light();
+			m_hLumosLight.reset();
+		}
+		return;
+	}
+
+	// The glow is created in UpdateAttachedEffects() after animation finishes,
+	// using the exact same finalized spawn matrix as player projectiles.
+}
+
+void CPlayer::UpdateLumosLight()
+{
+	if (!m_bLumosActive)
+	{
+		if (m_iLumosEffectID != INVALID_EFFECT_INSTANCE_ID)
+		{
+			CGameInstance::Get().StopEffect(m_iLumosEffectID);
+			m_iLumosEffectID = INVALID_EFFECT_INSTANCE_ID;
+		}
+		if (m_hLumosLight)
+		{
+			if (auto* pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(*m_hLumosLight))
+				pLight->Reset_Light();
+			m_hLumosLight.reset();
+		}
+		return;
+	}
+
+	_float4x4 matGlowWorld{};
+	if (!TryGetLumosGlowWorldMatrix(matGlowWorld))
+		return;
+
+	const _float3 vPosition{ matGlowWorld._41, matGlowWorld._42, matGlowWorld._43 };
+	m_vLumosDebugWorldPosition = vPosition;
+	_float3 vPredictedPosition = vPosition;
+	if (m_bHasPreviousLumosAttachPosition)
+	{
+		_vector vFrameDelta =
+			XMLoadFloat3(&vPosition) - XMLoadFloat3(&m_vPreviousLumosAttachPosition);
+		const _float fDeltaLength = XMVectorGetX(XMVector3Length(vFrameDelta));
+		constexpr _float MAX_PREDICTION_DISTANCE = 0.35f;
+		if (fDeltaLength > MAX_PREDICTION_DISTANCE)
+			vFrameDelta *= MAX_PREDICTION_DISTANCE / fDeltaLength;
+		XMStoreFloat3(&vPredictedPosition, XMLoadFloat3(&vPosition) + vFrameDelta);
+	}
+	m_vPreviousLumosAttachPosition = vPosition;
+	m_bHasPreviousLumosAttachPosition = true;
+
+	_float4x4 matPredictedGlowWorld{};
+	XMStoreFloat4x4(&matPredictedGlowWorld, XMMatrixTranslation(
+		vPredictedPosition.x, vPredictedPosition.y, vPredictedPosition.z));
+	if (m_iLumosEffectID == INVALID_EFFECT_INSTANCE_ID)
+	{
+		m_iLumosEffectID = CGameInstance::Get().PlayEffect(
+			"KMS_Lumos_WandGlow", matPredictedGlowWorld);
+	}
+	else
+	{
+		CGameInstance::Get().SetEffectWorldMatrix(
+			m_iLumosEffectID, matPredictedGlowWorld);
+	}
+
+	if (!m_hLumosLight)
+	{
+		m_hLumosLight = CGameInstance::Get().Allocate_EffectLight(
+			XMLoadFloat3(&vPosition), 220.f, { 1.f, 0.94f, 0.78f }, 6.f, 13.f,
+			99999.f, { 0.f, 0.f, 0.f });
+		return;
+	}
+
+	if (auto* pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(*m_hLumosLight))
+		pLight->Set_LightPosition(vPosition);
+	else
+		m_hLumosLight.reset();
+}
+
+_bool CPlayer::TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const
+{
+	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(
+		m_Partes[ETOUI(PARTES::WEAPON)]);
+	if (!pWeapon)
+		return false;
+
+	const _float4x4 matWandTip = pWeapon->GetSpawnWorldMatrix();
+	const _float3 vRightAxis{ matWandTip._11, matWandTip._12, matWandTip._13 };
+	const _float3 vUpAxis{ matWandTip._21, matWandTip._22, matWandTip._23 };
+	const _float3 vForwardAxis{ matWandTip._31, matWandTip._32, matWandTip._33 };
+	_vector vRight = XMVector3Normalize(XMLoadFloat3(&vRightAxis));
+	_vector vUp = XMVector3Normalize(XMLoadFloat3(&vUpAxis));
+	_vector vForward = XMVector3Normalize(XMLoadFloat3(&vForwardAxis));
+	_vector vAttachPosition = XMVectorSet(
+		matWandTip._41, matWandTip._42, matWandTip._43, 1.f);
+	vAttachPosition += vRight * m_vLumosLocalOffset.x;
+	vAttachPosition += vUp * m_vLumosLocalOffset.y;
+	vAttachPosition += vForward * m_vLumosLocalOffset.z;
+	_float3 vPosition{};
+	XMStoreFloat3(&vPosition, vAttachPosition);
+	XMStoreFloat4x4(&outWorld, XMMatrixTranslation(vPosition.x, vPosition.y, vPosition.z));
 	return true;
 }
 
@@ -1274,9 +1478,27 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 		m_pComMoveIntent->ClearMoveIntent();
 
 		_float3 vVelocity = m_pComCharacterMotor->GetVelocity();
-		vVelocity.x = 0.f;
-		vVelocity.z = 0.f;
-		m_pComCharacterMotor->SetVelocity(vVelocity);
+		if (!m_pComCharacterMotor->IsPreservingHorizontalVelocity())
+		{
+			vVelocity.x = 0.f;
+			vVelocity.z = 0.f;
+			m_pComCharacterMotor->SetVelocity(vVelocity);
+		}
+	}
+
+	// 프로테고 반동은 상태 전환과 독립적으로 유지한다. 같은 프레임에
+	// 스투페파이 반격 상태로 넘어가도 남은 시간 동안 CCT에 계속 적용된다.
+	if (m_fProtegoRecoilRemainTime > 0.f && m_pComMoveIntent)
+	{
+		const _float fRecoilRatio = std::clamp(
+			m_fProtegoRecoilRemainTime / PROTEGO_RECOIL_DURATION, 0.f, 1.f);
+		const _float fRecoilSpeed = PROTEGO_RECOIL_SPEED * fRecoilRatio;
+		m_pComMoveIntent->AddExternalDisplacement({
+			m_vProtegoRecoilDirection.x * fRecoilSpeed * fTimeDelta,
+			0.f,
+			m_vProtegoRecoilDirection.z * fRecoilSpeed * fTimeDelta });
+		m_fProtegoRecoilRemainTime = std::max(
+			0.f, m_fProtegoRecoilRemainTime - fTimeDelta);
 	}
 
 	ApplyGroundFollow(fTimeDelta);
@@ -1694,7 +1916,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 		// 기준으로 월드 변환해야 Turn 중 이동 방향이 회전 후 방향으로
 		// 한 프레임 먼저 꺾이지 않는다.
 		const _vector vWorldDelta = XMVector3Rotate(
-			XMLoadFloat3(&vRootMotionDelta),
+			XMLoadFloat3(&vRootMotionDelta) * m_fRootMotionTranslationScale,
 			GetTransform().GetLoadedQuaternion());
 		XMStoreFloat3(
 			&vRootMotionWorldDisplacement,
@@ -1806,6 +2028,10 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 void CPlayer::UpdateAttachedEffects()
 {
+	// Bone matrices are finalized by the animator before this LateUpdate path.
+	// Updating Lumos here prevents the wand-tip glow from trailing by one frame.
+	UpdateLumosLight();
+
 	if (m_iDashBodyEffectID != INVALID_EFFECT_INSTANCE_ID)
 	{
 		CGameInstance::Get().SetEffectWorldMatrix(
@@ -1933,6 +2159,8 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
 		skinningConstants.iVertexCount = mesh->GetNumVertices();
 		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+		skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
+		skinningConstants.iMorphVertexCount = mesh->GetNumVertices();
 
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
@@ -1941,6 +2169,10 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
 		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+		ID3D11ShaderResourceView* morphSRV = nullptr;
+		if (const auto& morphBuffer = mesh->GetMorphDeltaBuffer())
+			morphSRV = morphBuffer->GetSRV().Get();
+		pContext->VSSetShaderResources(9, 1, &morphSRV);
 		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 		const UINT stride = mesh->GetVertexStride();
 		const UINT offset = 0;
@@ -1953,8 +2185,8 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
-	ID3D11ShaderResourceView* nullVSSRVs[3]{};
-	pContext->VSSetShaderResources(6, 3, nullVSSRVs);
+	ID3D11ShaderResourceView* nullVSSRVs[4]{};
+	pContext->VSSetShaderResources(6, 4, nullVSSRVs);
 
 	return S_OK;
 }
@@ -2090,7 +2322,7 @@ _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,i
 {
 	if (m_bProtegoActive)
 	{
-		TriggerProtegoHit(vHitPosition);
+		TriggerProtegoHit(vHitPosition, iDamage);
 		return false;
 	}
 	if (m_bInvincible)
@@ -2120,7 +2352,12 @@ _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,i
 	if (m_iHp <= 0)
 		HandleDeath();
 	else if (m_pStateMachine)
-		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	{
+		if (iDamage >= KNOCKDOWN_DAMAGE_THRESHOLD)
+			RequestKnockdown(pAttacker ? pAttacker->GetTransform().GetPosition() : vHitPosition);
+		else
+			m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	}
 
 	return true;
 }
@@ -2131,7 +2368,7 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 		return false;
 	if (m_bProtegoActive)
 	{
-		TriggerProtegoHit(vHitPosition);
+		TriggerProtegoHit(vHitPosition, iDamage);
 		return false;
 	}
 	if (m_bInvincible)
@@ -2149,7 +2386,12 @@ _bool CPlayer::OnQueryHit(int32_t iDamage, const _float3& vHitPosition)
 	if (m_iHp <= 0)
 		HandleDeath();
 	else if (m_pStateMachine)
-		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	{
+		if (iDamage >= KNOCKDOWN_DAMAGE_THRESHOLD)
+			RequestKnockdown(vHitPosition);
+		else
+			m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	}
 	return true;
 }
 
@@ -2167,7 +2409,7 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 			vHit = pTarget->GetTransform().GetState(STATE::POSITION);
 		_float3 vHitPosition{};
 		XMStoreFloat3(&vHitPosition, vHit);
-		TriggerProtegoHit(vHitPosition);
+		TriggerProtegoHit(vHitPosition, iDamage);
 		return false;
 	}
 	if (m_bInvincible)
@@ -2184,12 +2426,42 @@ _bool CPlayer::OnQueryHit(int32_t iDamage)
 	if (m_iHp <= 0)
 		HandleDeath();
 	else if (m_pStateMachine)
-		m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	{
+		if (iDamage >= KNOCKDOWN_DAMAGE_THRESHOLD)
+		{
+			_float3 vAttackPosition{};
+			if (auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget))
+				vAttackPosition = pTarget->GetTransform().GetPosition();
+			else
+			{
+				_vector vFallback = GetTransform().GetState(STATE::POSITION) +
+					XMVector3Normalize(GetTransform().GetState(STATE::LOOK)) * 2.f;
+				XMStoreFloat3(&vAttackPosition, vFallback);
+			}
+			RequestKnockdown(vAttackPosition);
+		}
+		else
+			m_pStateMachine->RequestState(PLAYER_STATE::HIT);
+	}
 	return true;
 }
 
-void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
+_bool CPlayer::RequestKnockdown(const _float3& vAttackPosition)
 {
+	if (!m_pStateMachine || m_iHp <= 0 || m_bInvincible || m_bProtegoActive)
+		return false;
+
+	m_vKnockdownAttackPosition = vAttackPosition;
+	return m_pStateMachine->RequestState(PLAYER_STATE::KNOCKDOWN);
+}
+
+void CPlayer::TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage)
+{
+	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
+		.fIntensity = 0.2f,
+		.fDuration = 0.16f,
+		.fFrequency = 24.f });
+
 	_float3 vShieldCenter = GetTransform().GetPosition();
 	vShieldCenter.y += 1.f;
 
@@ -2199,6 +2471,10 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 	else
 		vNormal = XMVector3Normalize(vNormal);
 
+	// 방어 성공 자체의 반동이므로 스투페파이 반격 입력 여부와 무관하게 적용한다.
+	// 접촉점 반대 방향의 수평 변위만 사용해 지면에서 뜨지 않게 한다.
+	StartProtegoRecoil(vHitPosition);
+
 	// Sweep 접촉점, Overlap 투사체 중심 등 입력 의미가 달라도
 	// 최종 충돌 위치는 보호막 구 표면으로 통일한다.
 	constexpr _float PROTEGO_SHIELD_RADIUS = 2.5f;
@@ -2207,6 +2483,11 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition)
 	XMStoreFloat3(&m_vLastProtegoHitPosition, vShieldSurfacePosition);
 	++m_iProtegoParrySequence;
 	m_fParryCounterRemainTime = PARRY_COUNTER_WINDOW;
+	if (iDamage >= 30 && m_pStateMachine)
+	{
+		m_bProtegoHeavyReactionRequested = true;
+		m_pStateMachine->RequestState(PLAYER_STATE::STUPEFY_SKILL);
+	}
 
 	_vector vReferenceUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
 	if (fabsf(XMVectorGetX(XMVector3Dot(vNormal, vReferenceUp))) > 0.96f)
@@ -2297,6 +2578,32 @@ _bool CPlayer::ConsumeParryCounter(_float3& outAttackPosition)
 	m_fParryCounterRemainTime = 0.f;
 	outAttackPosition = m_vLastProtegoHitPosition;
 	return true;
+}
+
+_bool CPlayer::ConsumeProtegoHeavyReaction(_float3& outAttackPosition)
+{
+	if (!m_bProtegoHeavyReactionRequested)
+		return false;
+
+	m_bProtegoHeavyReactionRequested = false;
+	outAttackPosition = m_vLastProtegoHitPosition;
+	return true;
+}
+
+void CPlayer::StartProtegoRecoil(const _float3& vHitPosition)
+{
+	_vector vPushDirection = GetTransform().GetState(STATE::POSITION) -
+		XMLoadFloat3(&vHitPosition);
+	vPushDirection = XMVectorSetY(vPushDirection, 0.f);
+	if (XMVectorGetX(XMVector3LengthSq(vPushDirection)) <= FLT_EPSILON)
+		vPushDirection = -XMVectorSetY(GetTransform().GetState(STATE::LOOK), 0.f);
+	if (XMVectorGetX(XMVector3LengthSq(vPushDirection)) <= FLT_EPSILON)
+		vPushDirection = XMVectorSet(0.f, 0.f, -1.f, 0.f);
+	else
+		vPushDirection = XMVector3Normalize(vPushDirection);
+
+	XMStoreFloat3(&m_vProtegoRecoilDirection, vPushDirection);
+	m_fProtegoRecoilRemainTime = PROTEGO_RECOIL_DURATION;
 }
 
 void CPlayer::HandleDeath()
@@ -2654,6 +2961,43 @@ void CPlayer::SetFlyRequested(_bool bRequested)
 		m_pStateMachine->RequestState(PLAYER_STATE::FLY);
 }
 
+void CPlayer::SetBroomVisible(_bool bVisible)
+{
+	if (auto* pBroom = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Broom>(
+		m_Partes[ETOUI(PARTES::BROOM)]))
+	{
+		pBroom->SetVisible(bVisible);
+	}
+}
+
+void CPlayer::SetBroomMovementRatio(_float fRatio)
+{
+	if (auto* pBroom = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Broom>(
+		m_Partes[ETOUI(PARTES::BROOM)]))
+	{
+		pBroom->SetMovementRatio(fRatio);
+	}
+}
+
+void CPlayer::SetBroomBoostEffectRatio(_float fRatio)
+{
+	if (auto* pBroom = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Broom>(
+		m_Partes[ETOUI(PARTES::BROOM)]))
+	{
+		pBroom->SetBoostEffectRatio(fRatio);
+	}
+}
+
+_bool CPlayer::IsBroomVisible() const
+{
+	if (auto* pBroom = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Broom>(
+		m_Partes[ETOUI(PARTES::BROOM)]))
+	{
+		return pBroom->IsVisible();
+	}
+	return false;
+}
+
 E::UPtr<CPlayer> CPlayer::Create()
 {
 	auto pInstance = E::ToUPtr(new CPlayer{});
@@ -2680,6 +3024,7 @@ E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 
 void CPlayer::Free()
 {
+	SetLumosActive(false);
 	// [LSY] 컨트롤러가 플레이어 참조를 사용하므로 기반 오브젝트 해제 전에 정리한다.
 	m_pBombardaController.reset();
 	m_pConfringoController.reset();

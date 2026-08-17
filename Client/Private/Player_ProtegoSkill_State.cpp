@@ -4,6 +4,7 @@
 #include "GameInstance.h"
 #include "Player.h"
 #include "ComAnimator.h"
+#include "ComSound.h"
 #include "PlayerAnimationRatioGuard.h"
 
 NS_USING(Client)
@@ -27,9 +28,22 @@ void CPlayer_ProtegoSkill_State::Enter(CStateMachine* pStateMachine)
 	// 프로테고 준비/유지 중에는 이동 입력을 허용한다.
 	SetSkillControl(*pPlayer, false, false, false, false);
 	pPlayer->ActivateProtego(PROTEGO_DURATION);
+	if (auto* pSound = pPlayer->GetSound())
+	{
+		pSound->PlaySlot2D(
+			E::StringID{ "PLAYER_VOICE_PROTEGO" },
+			"./Resources/SampleClient/Sound/Player/Spell/Protego/Protego_Man.wav",
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 2.f,
+				.fPitch = 1.f,
+				.iPriority = 80,
+				.bLoop = false
+			});
+	}
 	// 하체 locomotion은 유지하고 몸통 위쪽으로만 프로테고를 시전한다.
 	if (!pPlayer->PlayUpperBodyAnimation(
-		m_iProtegoStartAnimation, "Spine1", 2, false, 0.1f))
+		m_iProtegoStartAnimation, "RightArm", 1, false, 0.1f))
 	{
 		RequestLocomotion(pStateMachine);
 	}
@@ -60,6 +74,7 @@ void CPlayer_ProtegoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 
 	// 상체 레이어는 Animator가 끝까지 재생하고 자동 페이드한다.
 	// 상태는 즉시 locomotion으로 복귀시켜 이동 애니메이션을 계속 갱신한다.
+	pPlayer->PrepareLocomotionResume();
 	RequestLocomotion(pStateMachine);
 }
 
