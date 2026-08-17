@@ -76,6 +76,15 @@ void CTextureUI::Update(E::_float fTimeDelta)
 	if (!m_isActive)
 		return;
 
+	if (m_bSpellAlarmFlame &&
+		std::isfinite(fTimeDelta) && fTimeDelta > 0.f)
+	{
+		m_fSpellAlarmFlameTime = std::fmod(
+			m_fSpellAlarmFlameTime +
+				std::min(fTimeDelta, 0.05f) * m_fSpellAlarmFlameSpeed,
+			4096.f);
+	}
+
 	CUIObject::Update(fTimeDelta);
 
 	//m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
@@ -157,6 +166,12 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 	auto vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
 	auto ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
+	if (m_bSpellAlarmFlame)
+	{
+		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"PS_SpellAlarmFlame");
+	}
 	if (m_UIINFO.Restag == "TEX_UI_T_FG_IndexButtonRippleGlow")
 	{
 		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
@@ -198,6 +213,15 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		perUI.texCoord = { m_fAmount, 0.f };
 		perUI.uvSize = { 0.f, 0.f };
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
+		if (m_bSpellAlarmFlame)
+		{
+			perUI.margins = {
+				m_fSpellAlarmFlameTime,
+				m_fSpellAlarmFlamePhase,
+				m_fSpellAlarmFlameSwayScale,
+				0.f
+			};
+		}
 
 		if (FAILED(m_pComCBufferPerUI->MapDiscard(pContext, &perUI, sizeof(perUI))))
 		{
@@ -242,7 +266,33 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	{
 		auto& tmp = E::CGameInstance::Get();
 		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
-		pContext->PSSetShaderResources(0, 1, srv->GetSRV().GetAddressOf());
+		if (m_bSpellAlarmFlame)
+		{
+			const auto& flow = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_T_FX_Flowmap_FM");
+			const auto& noise = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_VFX_T_DistortionNoise_N");
+			ID3D11ShaderResourceView* srvs[] = {
+				srv->GetSRV().Get(),
+				flow->GetSRV().Get(),
+				noise->GetSRV().Get()
+			};
+			pContext->PSSetShaderResources(
+				0,
+				static_cast<UINT>(std::size(srvs)),
+				srvs);
+		}
+		else
+		{
+			pContext->PSSetShaderResources(
+				0,
+				1,
+				srv->GetSRV().GetAddressOf());
+		}
 	}
 
 	{
@@ -260,9 +310,83 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		}
 	}
 
+	if (m_bAdditiveBlend)
+	{
+		const auto& additive = E::CGameInstance::Get().
+			GetResourceFirst<E::CResBlendState>(
+				TAG_RES_GRP_PERMANENT_STATE,
+				"BS_ADDITIVE");
+		pContext->OMSetBlendState(
+			additive->GetBlendState().Get(),
+			nullptr,
+			0xffffffff);
+	}
+	else if (m_bSpellAlarmFlame)
+	{
+		const auto& sampler = E::CGameInstance::GetConst().
+			GetResourceFirst<E::CResSamplerState>(
+				TAG_RES_GRP_PERMANENT_STATE,
+				TAG_RES_STATE_SS_LINEAR_WRAP);
+		pContext->PSSetSamplers(
+			0,
+			1,
+			sampler->GetSamplerState().GetAddressOf());
+
+		const auto& alphaBlend = E::CGameInstance::Get().
+			GetResourceFirst<E::CResBlendState>(
+				TAG_RES_GRP_PERMANENT_STATE,
+				"BS_ALPHA_BLEND");
+		pContext->OMSetBlendState(
+			alphaBlend->GetBlendState().Get(),
+			nullptr,
+			0xffffffff);
+	}
+
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
+	if (m_bAdditiveBlend)
+	{
+		const auto& alphaBlend = E::CGameInstance::Get().
+			GetResourceFirst<E::CResBlendState>(
+				TAG_RES_GRP_PERMANENT_STATE,
+				"BS_ALPHA_BLEND");
+		pContext->OMSetBlendState(
+			alphaBlend->GetBlendState().Get(),
+			nullptr,
+			0xffffffff);
+	}
+
 	return S_OK;
+}
+
+void CTextureUI::SetSpellAlarmFlame(uint32_t flameIndex)
+{
+	static constexpr _float phases[] = {
+		0.37f,
+		2.11f,
+		4.76f,
+		5.83f
+	};
+	static constexpr _float speeds[] = {
+		0.91f,
+		1.08f,
+		0.84f,
+		1.17f
+	};
+	static constexpr _float swayScales[] = {
+		0.88f,
+		1.13f,
+		0.96f,
+		1.21f
+	};
+	const size_t index = flameIndex % std::size(phases);
+
+	m_bSpellAlarmFlame = true;
+	m_fSpellAlarmFlameTime = 0.f;
+	m_fSpellAlarmFlamePhase = phases[index];
+	m_fSpellAlarmFlameSpeed = speeds[index];
+	m_fSpellAlarmFlameSwayScale = swayScales[index];
+	SetColor({ 1.f, 1.f, 1.f });
 }
 
 void CTextureUI::PlayEffect(uint32_t uiState)

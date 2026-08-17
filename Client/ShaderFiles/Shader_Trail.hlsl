@@ -303,6 +303,7 @@ PS_OUT PSDarkWispTrail(VS_OUT In)
 
 	float2 uv = In.vUV;
 	uv.x -= g_fAccumulationTime * 0.15f;
+	float3 textureColor = g_DiffuseTexture.Sample(LinearWrap, uv).rgb;
 
 	float2 noiseUV1 = float2(uv.x * 1.5f - g_fAccumulationTime * 0.2f, uv.y * 2.f);
 	float2 noiseUV2 = float2(uv.x * 3.f + g_fAccumulationTime * 0.13f, uv.y * 4.f);
@@ -318,8 +319,6 @@ PS_OUT PSDarkWispTrail(VS_OUT In)
 	uv.y += distortion.y * 0.12f * centerMask;
 
 	
-
-	float3 textureColor = g_DiffuseTexture.Sample(LinearWrap, In.vUV).rgb;
 	float luminance = dot(textureColor, float3(0.299f, 0.587f, 0.114f));		
 
 	float bodyMask = smoothstep(0.01f, 0.2f, luminance);

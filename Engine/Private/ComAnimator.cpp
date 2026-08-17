@@ -142,7 +142,6 @@ HRESULT CComAnimator::Initialize(void* pArg)
 			m_iRootBoneIndex = iIndex;
 			return S_OK;
 		}
-	
     }
 
 

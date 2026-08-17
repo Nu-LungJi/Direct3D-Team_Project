@@ -41,7 +41,7 @@ EVALUATE CBTDecEdgState::Evaluate(_float fTimeDelta)
 	auto pBB = pBT->Get_Blackboard();
 	if(!pBB) return m_eDebug = EVALUATE::FAILED;
 
-	auto pState = pBB->Get_Value<EDG_STATE>(EDG_KEY::STATE);
+	auto pState = pBB->Get_Value<MON_STATE>(EDG_KEY::STATE);
 	if (!pState) return m_eDebug = EVALUATE::FAILED;
 	//--------------------------------------//
 
@@ -55,13 +55,13 @@ void CBTDecEdgState::Update_Gui()
 	ImGui::Text("EdgState");
 	if(ImGui::BeginCombo("##EdgState",MagicEnumToStringView(m_eState).data()))
 	{
-		for (uint32_t i = 0; i < ETOUI(EDG_STATE::END); ++i)
+		for (uint32_t i = 0; i < ETOUI(MON_STATE::END); ++i)
 		{
 			_bool bSelect = i == ETOUI(m_eState);
 
-			if (ImGui::Selectable(MagicEnumToStringView(static_cast<EDG_STATE>(i)).data(), bSelect))
+			if (ImGui::Selectable(MagicEnumToStringView(static_cast<MON_STATE>(i)).data(), bSelect))
 			{
-				m_eState = static_cast<EDG_STATE>(i);
+				m_eState = static_cast<MON_STATE>(i);
 			}
 			if(bSelect)
 				ImGui::SetItemDefaultFocus();

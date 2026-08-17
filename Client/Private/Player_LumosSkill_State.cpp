@@ -25,7 +25,7 @@ void CPlayer_LumosSkill_State::Enter(CStateMachine* pStateMachine)
 		if (m_iStopAnimation >= 0 && pPlayer->PlayUpperBodyAnimation(
 			m_iStopAnimation, "RightArm", 1, false, 0.1f))
 		{
-			SetSkillControl(*pPlayer, false, false, false, false);
+			SetSkillControl(*pPlayer, true, false, false, true);
 			return;
 		}
 
@@ -46,7 +46,7 @@ void CPlayer_LumosSkill_State::Enter(CStateMachine* pStateMachine)
 	}
 
 
-	SetSkillControl(*pPlayer, false, false, false, false);
+	SetSkillControl(*pPlayer, true, false, false, true);
 }
 
 void CPlayer_LumosSkill_State::Update(CStateMachine* pStateMachine, _float)
@@ -60,6 +60,8 @@ void CPlayer_LumosSkill_State::Update(CStateMachine* pStateMachine, _float)
 	auto* pAnimator = pPlayer->GetAnimator();
 	const _float fRatio = PlayerAnimationRatioGuard::Sanitize(
 		pAnimator->GetUpperAnimRatio());
+	if (fRatio >= MOVEMENT_RELEASE_RATIO)
+		pPlayer->SetMovementLocked(false);
 
 	if (!m_bTurningOff && !m_bToggleApplied && fRatio >= TOGGLE_RATIO)
 	{

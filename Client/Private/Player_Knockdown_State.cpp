@@ -24,6 +24,7 @@ void CPlayer_Knockdown_State::Enter(CStateMachine* pStateMachine)
 	m_fSequenceTime = 0.f;
 	m_fLandingSlideTime = 0.f;
 	m_vLandingSlideVelocity = {};
+	m_vLaunchSlideDirection = {};
 	m_bWasAirborne = false;
 	m_bLandingSliding = false;
 	player->SetCurrentMoveSpeed(0.f);
@@ -61,7 +62,9 @@ void CPlayer_Knockdown_State::Enter(CStateMachine* pStateMachine)
 	if (XMVectorGetX(XMVector3LengthSq(vLaunchDirection)) <= FLT_EPSILON)
 		vLaunchDirection = XMVectorSet(0.f, 0.f, -1.f, 0.f);
 
-	vLaunchDirection = XMVector3Normalize(vLaunchDirection) * LAUNCH_HORIZONTAL_SPEED;
+	vLaunchDirection = XMVector3Normalize(vLaunchDirection);
+	XMStoreFloat3(&m_vLaunchSlideDirection, vLaunchDirection);
+	vLaunchDirection *= LAUNCH_HORIZONTAL_SPEED;
 	_float3 vLaunchVelocity{};
 	XMStoreFloat3(&vLaunchVelocity, vLaunchDirection);
 	vLaunchVelocity.y = LAUNCH_VERTICAL_SPEED;
@@ -89,6 +92,7 @@ void CPlayer_Knockdown_State::Exit(CStateMachine* pStateMachine)
 	m_fSequenceTime = 0.f;
 	m_fLandingSlideTime = 0.f;
 	m_vLandingSlideVelocity = {};
+	m_vLaunchSlideDirection = {};
 	m_bWasAirborne = false;
 	m_bLandingSliding = false;
 	m_bMotorSettingsCaptured = false;
@@ -123,6 +127,30 @@ void CPlayer_Knockdown_State::Update(CStateMachine* pStateMachine, _float fTimeD
 			m_fLandingSlideTime = 0.f;
 			m_vLandingSlideVelocity = motor->GetVelocity();
 			m_vLandingSlideVelocity.y = 0.f;
+
+			_vector vSlideVelocity = XMLoadFloat3(&m_vLandingSlideVelocity);
+			_float fSlideSpeed = XMVectorGetX(XMVector3Length(vSlideVelocity));
+			_vector vSlideDirection{};
+			if (fSlideSpeed > FLT_EPSILON)
+				vSlideDirection = vSlideVelocity / fSlideSpeed;
+			else
+				vSlideDirection = XMLoadFloat3(&m_vLaunchSlideDirection);
+
+			if (XMVectorGetX(XMVector3LengthSq(vSlideDirection)) <= FLT_EPSILON)
+				vSlideDirection = XMVectorSet(0.f, 0.f, -1.f, 0.f);
+			else
+				vSlideDirection = XMVector3Normalize(vSlideDirection);
+
+			fSlideSpeed = std::clamp(
+				fSlideSpeed, LANDING_SLIDE_MIN_SPEED, LANDING_SLIDE_MAX_SPEED);
+			XMStoreFloat3(
+				&m_vLandingSlideVelocity, vSlideDirection * fSlideSpeed);
+			if (auto* moveIntent = player->GetMoveIntent())
+			{
+				_float3 vLandingImpulse{};
+				XMStoreFloat3(&vLandingImpulse, vSlideDirection * 0.12f);
+				moveIntent->AddExternalDisplacement(vLandingImpulse);
+			}
 			if (!PlaySequence(*player, SEQUENCE::SPLAT_HOLD))
 				playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		}
@@ -137,12 +165,22 @@ void CPlayer_Knockdown_State::Update(CStateMachine* pStateMachine, _float fTimeD
 			const _float fRatio = std::clamp(
 				m_fLandingSlideTime / LANDING_SLIDE_DURATION, 0.f, 1.f);
 			const _float fRemain = 1.f - fRatio;
-			const _float fSpeedScale = fRemain * fRemain;
+			const _float fSpeedScale = fRemain;
 
+			// Grounded 상태에서는 모터의 수평 속도가 충돌 처리 순서에 따라
+			// 상쇄될 수 있으므로, 누운 구간의 슬라이드는 CCT 외부 변위로 적용한다.
 			_float3 vVelocity = motor->GetVelocity();
-			vVelocity.x = m_vLandingSlideVelocity.x * fSpeedScale;
-			vVelocity.z = m_vLandingSlideVelocity.z * fSpeedScale;
+			vVelocity.x = 0.f;
+			vVelocity.z = 0.f;
 			motor->SetVelocity(vVelocity);
+			if (auto* moveIntent = player->GetMoveIntent())
+			{
+				const _float3 vSlideDisplacement{
+					m_vLandingSlideVelocity.x * fSpeedScale * fTimeDelta,
+					0.f,
+					m_vLandingSlideVelocity.z * fSpeedScale * fTimeDelta };
+				moveIntent->AddExternalDisplacement(vSlideDisplacement);
+			}
 
 			if (fRatio >= 1.f)
 			{
@@ -242,6 +280,8 @@ _bool CPlayer_Knockdown_State::PlaySequence(CPlayer& player, SEQUENCE eSequence)
 		iAnimation,
 		eSequence == SEQUENCE::SPLAT_HOLD,
 		fBlendDuration);
+	if (eSequence == SEQUENCE::AIRBORNE)
+		player.GetAnimator()->GetCurAnimState().fSpeed = AIRBORNE_ANIMATION_SPEED;
 	m_eSequence = eSequence;
 	m_fSequenceTime = 0.f;
 	return true;

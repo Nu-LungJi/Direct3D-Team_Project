@@ -156,6 +156,20 @@ HRESULT CCursor::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
+	// Draw the small aim reticle over CursorRings as one cursor visual.
+	{
+		const auto& aimReticle = E::CGameInstance::GetConst().
+			GetResourceFirst<E::CResTexture2D>(
+				currentLevel,
+				"TEX_UI_T_AimLockReticle_02");
+		pContext->PSSetShaderResources(
+			0,
+			1,
+			aimReticle->GetSRV().GetAddressOf());
+	}
+
+	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+
 	return S_OK;
 }
 

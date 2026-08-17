@@ -209,6 +209,8 @@
     <ClInclude Include="..\public\BTDecEdgPhase.h" />
     <ClInclude Include="..\public\BTDecEdgState.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
+    <ClInclude Include="..\public\Gur_Combat.h" />
+    <ClInclude Include="..\public\Gur_Hit.h" />
     <ClInclude Include="..\public\DragonSkill.h" />
     <ClInclude Include="..\public\EdgBreath.h" />
     <ClInclude Include="..\public\EdgFireBall.h" />
@@ -298,6 +300,11 @@
     <ClInclude Include="..\Public\Player_ProtegoSkill_State.h" />
     <ClInclude Include="..\Public\Player_StupefySkill_State.h" />
     <ClInclude Include="..\public\RagdollTest.h" />
+    <ClInclude Include="..\public\Spider.h" />
+    <ClInclude Include="..\public\Spider_Combat.h" />
+    <ClInclude Include="..\public\Spider_Hit.h" />
+    <ClInclude Include="..\public\Spider_Spawn.h" />
+    <ClInclude Include="..\public\Mon_State.h" />
     <ClInclude Include="..\public\TestPathPlaybackObject.h" />
     <ClInclude Include="..\public\LuaTestObject.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
@@ -367,6 +374,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\Gur_Combat.cpp" />
+    <ClCompile Include="..\private\Gur_Hit.cpp" />
     <ClCompile Include="..\private\EdgBreath.cpp" />
     <ClCompile Include="..\private\EdgFireBall.cpp" />
     <ClCompile Include="..\private\EdgGasi.cpp" />
@@ -455,6 +464,11 @@
     <ClCompile Include="..\Private\Player_ProtegoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_StupefySkill_State.cpp" />
     <ClCompile Include="..\private\RagdollTest.cpp" />
+    <ClCompile Include="..\private\Spider.cpp" />
+    <ClCompile Include="..\private\Spider_Combat.cpp" />
+    <ClCompile Include="..\private\Spider_Hit.cpp" />
+    <ClCompile Include="..\private\Spider_Spawn.cpp" />
+    <ClCompile Include="..\private\Mon_State.cpp" />
     <ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
     <ClCompile Include="..\private\LuaTestObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
@@ -557,6 +571,7 @@
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokImpactScorch.hlsl" />
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokEnergyPool.hlsl" />
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokOrbGround.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokBranchCrack.hlsl" />
   </ItemGroup>
   <ItemDefinitionGroup>
     <FxCompile>

@@ -593,6 +593,14 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "SPIDER", CResJson::Create("./Resources/json/BeHavior/Spider.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED SPIDER JSON");
+			return E_FAIL;
+		}
+	}
 	////서브트리
 	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "FIREBALL", CResJson::Create("./Resources/json/BeHavior/SubTree/SubTreeTest.json")))
 	{

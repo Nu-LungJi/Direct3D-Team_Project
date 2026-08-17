@@ -34,9 +34,17 @@ public:
 	void SetMouseTracking(_bool isTracking) { m_bMouseTracking = isTracking; }
 	void SetPathProgressMode(_bool enabled) { m_bPathProgressMode = enabled; }
 	void SetPathProgress(_float progress) { m_fAmount = std::clamp(progress, 0.f, 1.f); }
+	void SetSpellAlarmFlame(uint32_t flameIndex);
+	void SetAdditiveBlend(_bool enabled) { m_bAdditiveBlend = enabled; }
 private:
 	_bool m_bMouseTracking{false};
 	_bool m_bPathProgressMode{ false };
+	_bool m_bSpellAlarmFlame{};
+	_bool m_bAdditiveBlend{};
+	_float m_fSpellAlarmFlameTime{};
+	_float m_fSpellAlarmFlamePhase{};
+	_float m_fSpellAlarmFlameSwayScale{ 1.f };
+	_float m_fSpellAlarmFlameSpeed{ 1.f };
 
 private:
 	bool m_bOutline{};

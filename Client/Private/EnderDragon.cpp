@@ -157,46 +157,70 @@ HRESULT CEnderDragon::InitializePrototype(void* pArg)
 	{
 		return E_FAIL;
 	}
-	///*----------- 광윤 추가 -----------*/
-	//if (m_pResDragonPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_EnderDragon", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
-	//	if (FAILED(m_pResDragonPixelShader->Load()))    return E_FAIL;
-	//}
-	//if (m_pDragonFXPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_EnderDragonFX", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
-	//	if (FAILED(m_pDragonFXPixelShader->Load(CResShader::DESC{ .sEntryPoint = "PSMain_DragonFX", .sTarget = "ps_5_0" })))    return E_FAIL;
-	//}
-	////if (m_pResDragonCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "DRAGON_MATERIAL", E::CResCBuffer::Create())) {
-	////	if (FAILED(m_pResDragonCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(EDG_MATERIAL) })))	return E_FAIL;
-	////}
-	//if (m_pDragonFXModel = CGameInstance::Get().AddResourceT<E::CResModel>("DRAGON_VFX", "MODEL_CONJURED_DRAGON_FX",
-	//	CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_DragonFX.bin"))) {
+	/*----------- 광윤 추가 -----------*/
+	if (m_pResDragonBodyPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_DragonBody", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
+		if (FAILED(m_pResDragonBodyPixelShader->Load(CResShader::DESC{ .sEntryPoint = "PSMain_DragonBody", .sTarget = "ps_5_0" })))    return E_FAIL;
+	}
+	if (m_pResDragonWingPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_DragonWing", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
+		if (FAILED(m_pResDragonWingPixelShader->Load(CResShader::DESC{ .sEntryPoint = "PSMain_DragonWing", .sTarget = "ps_5_0" })))    return E_FAIL;
+	}
+	if (m_pResDragonWingFXPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_EtherealWing", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
+		if (FAILED(m_pResDragonWingFXPixelShader->Load(CResShader::DESC{ .sEntryPoint = "PSMain_EtherealWing", .sTarget = "ps_5_0" })))    return E_FAIL;
+	}
 
-	//	E::CResModel::DESC pDesc{};
-	//	pDesc.PreTransformMatrix = XMMatrixScaling(1.6f, 1.6f, 1.6f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+	m_pBodyMaskTexture		= CResTexture2D::Create("./Resources/SampleClient/Textures/Skeleton/Dragon/T_ConjuredDragon_Body_MSK.dds");
+	if (!m_pBodyMaskTexture || FAILED(m_pBodyMaskTexture->Load()))	return E_FAIL;
 
-	//	if (FAILED(m_pDragonFXModel->Load(pDesc)))
-	//	{
-	//		MSG_BOX("LAST_BOSS_RANROK Failed MODEL_CONJURED_DRAGON_FX");
-	//		return E_FAIL;
-	//	}
-	//}
+	m_pWingsMaskTexture		= CResTexture2D::Create("./Resources/SampleClient/Textures/Skeleton/Dragon/T_ConjuredDragon_Wings_MSK.dds");
+	if (!m_pWingsMaskTexture || FAILED(m_pWingsMaskTexture->Load()))	return E_FAIL;
 
-	//if (m_pDragonSpineModel = CGameInstance::Get().AddResourceT<E::CResStaticModel>("DRAGON_VFX", "MODEL_CONJURED_DRAGON_SPINE_FX",
-	//	CResStaticModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SM_DragonSpineFX.bin"))) {
+	m_pBodyMROTexture		= CResTexture2D::Create("./Resources/SampleClient/Textures/Skeleton/Dragon/T_ConjuredDragon_Body_MRO.dds");
+	if (!m_pBodyMROTexture || FAILED(m_pBodyMROTexture->Load()))		return E_FAIL;
 
-	//	E::CResStaticModel::DESC pDesc{};
-	//	pDesc.PreTransformMatrix = XMMatrixIdentity();
+	m_pWingsMROTexture		= CResTexture2D::Create("./Resources/SampleClient/Textures/Skeleton/Dragon/T_ConjuredDragon_Wings_MRO.dds");
+	if (!m_pWingsMROTexture || FAILED(m_pWingsMROTexture->Load()))		return E_FAIL;
 
-	//	if (FAILED(m_pDragonSpineModel->Load(pDesc)))
-	//	{
-	//		MSG_BOX("LAST_BOSS_RANROK Failed MODEL_CONJURED_DRAGON_SPINE_FX");
-	//		return E_FAIL;
-	//	}
-	//}
-	//if (m_pResDragonFXCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CBUFFER_DRAGON_FX_MATERIAL", E::CResCBuffer::Create())) {
-	//	if (FAILED(m_pResDragonFXCBuffer->Load(CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(DRAGON_FX_MATERIAL) })))	return E_FAIL;
-	//}
-	//
-	///*---------------------------------*/
+	m_pEtherealWingsTexture = CResTexture2D::Create("./Resources/SampleClient/Textures/Skeleton/Dragon/VFX_T_ConjuredDragonWing_M.dds");
+	if (!m_pEtherealWingsTexture || FAILED(m_pEtherealWingsTexture->Load()))	return E_FAIL;
+
+	m_pMarbleNoiseTexture	= CResTexture2D::Create("./Resources/SampleClient/Textures/Skeleton/Dragon/VFX_T_MarbleSkin_01_BPF_D.dds");
+	if (!m_pMarbleNoiseTexture || FAILED(m_pMarbleNoiseTexture->Load()))	return E_FAIL;
+
+	m_pRiverNoiseTexture	= CResTexture2D::Create("./Resources/SampleClient/Textures/Skeleton/Dragon/VFX_T_NoiseCaustics02_D.dds");
+	if (!m_pRiverNoiseTexture || FAILED(m_pRiverNoiseTexture->Load()))	return E_FAIL;
+
+	m_pCausticNoiseTexture	= CResTexture2D::Create("./Resources/SampleClient/Textures/Skeleton/Dragon/VFX_T_CausticNoise_C_Seamless_D.dds");
+	if (!m_pCausticNoiseTexture || FAILED(m_pCausticNoiseTexture->Load()))		return E_FAIL;
+
+	m_pDetailNoiseTexture	 = CResTexture2D::Create("./Resources/SampleClient/Textures/Skeleton/Dragon/VFX_T_Noise08_D.dds");
+	if (!m_pDetailNoiseTexture || FAILED(m_pDetailNoiseTexture->Load()))		return E_FAIL;
+
+	if (m_pResWingFXRasterizer = CGameInstance::Get().AddResourceT<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, "RS_DRAGON_WING_FX", CResRasterizerState::Create())) {
+		D3D11_RASTERIZER_DESC Desc{};
+
+		Desc.FillMode = D3D11_FILL_SOLID;
+		Desc.CullMode = D3D11_CULL_NONE;
+		Desc.DepthClipEnable = TRUE;
+
+		Desc.DepthBias = -10;
+		Desc.SlopeScaledDepthBias = -0.5f;
+		Desc.DepthBiasClamp = 0.f;
+
+		if (FAILED(m_pResWingFXRasterizer->Load(Desc)))	return E_FAIL;
+	}
+
+	if (m_pResWingFXDSS = CGameInstance::Get().AddResourceT<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DRAGON_WING_FX", CResDepthStencilState::Create())) {
+		D3D11_DEPTH_STENCIL_DESC Desc{};
+
+		Desc.DepthEnable = TRUE;
+		Desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		Desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+		Desc.StencilEnable = FALSE;
+
+		if (FAILED(m_pResWingFXDSS->Load(Desc)))	return E_FAIL;
+	}
+
+	/*---------------------------------*/
 	return S_OK;
 }
 
@@ -367,7 +391,8 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
 	InitializeEffects();
-
+	m_pComSphereCol->SetQueryEnabled(true);
+	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_targetSocket");
 	return S_OK;
 }
 HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
@@ -376,17 +401,17 @@ HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
 	if (FAILED(AddComponentFromProto(LevelTag, "Prototype_Component_Dragon_FSM", "EnderDragon_Fsm", &Desc, &m_pFsm))) return E_FAIL;
 
 
-	if (false == m_pFsm->Add_State(EDG_STATE::SPAWN, CEdg_Spawn::Create(LevelTag))) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::SPAWN, CEdg_Spawn::Create(LevelTag))) return E_FAIL;
 
-	if (false == m_pFsm->Add_State(EDG_STATE::COMBAT, CEdg_Combat::Create())) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CEdg_Combat::Create())) return E_FAIL;
 
-	if (false == m_pFsm->Add_State(EDG_STATE::HIT, CEdg_Hit::Create())) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::HIT, CEdg_Hit::Create())) return E_FAIL;
 
-	if (false == m_pFsm->Add_State(EDG_STATE::PHASE_CHANGE, CEdg_Phase::Create(LevelTag))) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::PHASE_CHANGE, CEdg_Phase::Create(LevelTag))) return E_FAIL;
 
-	if (false == m_pFsm->Add_State(EDG_STATE::DEAD, CEdg_Dead::Create())) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::DEAD, CEdg_Dead::Create())) return E_FAIL;
 
-	if (false == m_pFsm->Initialize_State(EDG_STATE::SPAWN)) return E_FAIL;
+	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
 
 
 	return S_OK;
@@ -501,7 +526,66 @@ void CEnderDragon::Update(E::_float fTimeDelta)
 	if (m_bEndGame) return;
 	if (!m_bDebug) return;
 	__super::Update(fTimeDelta);
-	
+	Update_EnvironmentParticles(fTimeDelta);
+}
+
+void CEnderDragon::Update_EnvironmentParticles(_float fTimeDelta)
+{
+	m_fBlobEnvSpawnAcc += fTimeDelta;
+	m_fSwirlEnvSpawnAcc += fTimeDelta;
+
+	if (m_fBlobEnvSpawnAcc >= m_fBlobEnvSpawnInterval)
+	{
+		m_fBlobEnvSpawnAcc = 0.f;
+		m_fBlobEnvSpawnInterval = 0.5f;
+		Spawn_EnvironmentParticles(0, 1);
+	}
+
+	if (m_fSwirlEnvSpawnAcc >= m_fSwirlEnvSpawnInterval)
+	{
+		m_fSwirlEnvSpawnAcc = 0.f;
+		m_fSwirlEnvSpawnInterval = 1.5f;
+		const uint32_t iSwirlIndex = 1u + static_cast<uint32_t>(Randf(0.f, 4.999f));
+		Spawn_EnvironmentParticles(iSwirlIndex, 1);
+	}
+}
+
+void CEnderDragon::Spawn_EnvironmentParticles(uint32_t iParticleIndex, uint32_t iCount)
+{
+	struct ENV_PARTICLE_RESOURCE
+	{
+		const _char* pQueueName;
+	};
+
+	static constexpr ENV_PARTICLE_RESOURCE PARTICLE_RESOURCES[] =
+	{
+		{ "BlobEnv.json" },
+		{ "SwirlEnv1.json" },
+		{ "SwirlEnv2.json" },
+		{ "SwirlEnv3.json" },
+		{ "SwirlEnv4.json" },
+		{ "SwirlEnv5.json" }
+	};
+
+	if (iParticleIndex >= std::size(PARTICLE_RESOURCES) || 0u == iCount)
+		return;
+
+	const _float3 vBossPosition = GetTransform().GetPosition();
+	const ENV_PARTICLE_RESOURCE& resource = PARTICLE_RESOURCES[iParticleIndex];
+
+	for (uint32_t i = 0; i < iCount; ++i)
+	{
+		const _float fAngle = Randf(0.f, XM_2PI);
+		const _float fRadiusRatio = Randf(0.f, 1.f);
+		const _float fMinRadius = 10.f;
+		const _float fMaxRadius = 70.f;
+		const _float fRadius = sqrtf(fMinRadius * fMinRadius + fRadiusRatio * (fMaxRadius * fMaxRadius - fMinRadius * fMinRadius));
+		const _float3 vSpawnPosition = _float3(vBossPosition.x + cosf(fAngle) * fRadius, vBossPosition.y + Randf(-20.f, 20.f), vBossPosition.z + sinf(fAngle) * fRadius);
+
+		_float4x4 spawnWorld{};
+		XMStoreFloat4x4(&spawnWorld, XMMatrixTranslation(vSpawnPosition.x, vSpawnPosition.y, vSpawnPosition.z));
+		CGameInstance::Get().Spawn(resource.pQueueName, spawnWorld);
+	}
 }
 
 void CEnderDragon::FixedUpdate(E::_float fTimeDelta)
@@ -517,86 +601,65 @@ void CEnderDragon::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 
 }
-/*----------- 광윤 추가 -----------*/
+/*----------- 광윤 추가 ---------펑--*/
 // 마스크 텍스쳐 테스트 중
 HRESULT	CEnderDragon::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) {
-	__super::Render_Instanced(pContext, ctx, Batch);
-	return S_OK;
-
 	{
-		if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResDragonPixelShader)	return E_FAIL;
+		if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResDragonBodyPixelShader)	return E_FAIL;
 
-		pContext->IASetInputLayout(m_pResVertexCPUSkinningInstancedShader->GetInputLayout().Get());
-		pContext->VSSetShader(m_pResVertexCPUSkinningInstancedShader->GetVertexShader().Get(), nullptr, 0);
-		pContext->PSSetShader(m_pResDragonPixelShader->GetPixelShader().Get(), nullptr, 0);
+		SPtr<CResModel> pModel{};
+		uint32_t iInstanceCount = 0;
 
-		const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
-		if (iInstanceCount == 0 || iInstanceCount > 512 || Batch.CombinedBoneMatrices.size() != iInstanceCount)	return E_FAIL;
+		HRESULT hr = Prepare_DragonInstancing(pContext, Batch, pModel, iInstanceCount);
+		if (FAILED(hr)) return hr;
+		if (S_FALSE == hr) return S_OK;
 
-		if (FAILED(Update_InstanceBuffer(pContext, Batch.Instances)))	return E_FAIL;
+		ComPtr<ID3D11RasterizerState> pPreviousRasterizer;
+		pContext->RSGetState(pPreviousRasterizer.GetAddressOf());
 
-		auto pModel = CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup, Batch.Key.modelTag);
-		auto pCPUBonePaletteBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_CPU_BONEMATRIX");
-		if (!pModel || !pCPUBonePaletteBuffer)	return E_FAIL;
+		auto NoCullRasterizer = E::CGameInstance::GetConst().GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+		auto BackCullRasterizer = E::CGameInstance::GetConst().GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
 
-		_float4x4 identity{};
-		XMStoreFloat4x4(&identity, XMMatrixIdentity());
-		std::vector<_float4x4> combinedPalette(iInstanceCount * 512, identity);
-		for (uint32_t instanceIndex = 0; instanceIndex < iInstanceCount; ++instanceIndex)
-		{
-			const auto& combinedMatrices = Batch.CombinedBoneMatrices[instanceIndex];
-			if (combinedMatrices.empty() || combinedMatrices.size() > 512)	return E_FAIL;
+		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
 
-			for (uint32_t boneIndex = 0; boneIndex < static_cast<uint32_t>(combinedMatrices.size()); ++boneIndex)
-			{
-				XMStoreFloat4x4(
-					&combinedPalette[instanceIndex * 512 + boneIndex],
-					XMMatrixTranspose(
-						XMLoadFloat4x4(&combinedMatrices[boneIndex])));
-			}
-		}
-
-		// CPU가 계산한 CombinedBone palette는 batch당 한 번만 갱신한다.
-		ID3D11ShaderResourceView* nullPaletteSRV = nullptr;
-		pContext->VSSetShaderResources(7, 1, &nullPaletteSRV);
-		if (FAILED(pCPUBonePaletteBuffer->UpdateData(combinedPalette.data(), static_cast<uint32_t>(combinedPalette.size() * sizeof(_float4x4))))) return E_FAIL;
-
-		if (FAILED(Bind_InstanceBuffer(pContext))) return E_FAIL;
-
-		ID3D11ShaderResourceView* cpuBonePaletteSRV = pCPUBonePaletteBuffer->GetSRV().Get();
-		if (!cpuBonePaletteSRV) return E_FAIL;
-
-		ID3D11ShaderResourceView* skinBonesSRV = pModel->Get_GPUSkinBoneSRV();
-		if (!skinBonesSRV) return E_FAIL;
-
-		pContext->VSSetShaderResources(7, 1, &cpuBonePaletteSRV);
-		pContext->VSSetShaderResources(8, 1, &skinBonesSRV);
-
-		for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
-		{
-			const auto& mesh = pModel->GetMeshes()[iMeshIndex];
+		for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex) {
+			auto& mesh = pModel->GetMeshes()[iMeshIndex];
 			if (!mesh) continue;
 
-			const auto& skinRange = pModel->Get_GPUMeshSkinRange(iMeshIndex);
-			if (skinRange.iSkinBoneCount == 0) return E_FAIL;
+			const uint32_t iMaterialIndex = mesh->Get_MaterialIndex();
+			if (iMaterialIndex != 3 && iMaterialIndex != 4)	continue;
 
-			{
-				E::GPU_SKIN_MESH_CONSTANTS skinningConstants{};
+			if (FAILED(Bind_SkinnedMeshConstantBuffer(pContext, pModel, mesh, iMeshIndex))) return E_FAIL;
 
-				skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
-				skinningConstants.iVertexCount = mesh->GetNumVertices();
-				skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+			ID3D11ShaderResourceView* pMaterialMaskSRV = nullptr;
 
-				D3D11_MAPPED_SUBRESOURCE mapped{};
-				if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-					return E_FAIL;
-				memcpy(mapped.pData, &skinningConstants, sizeof(skinningConstants));
-				pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
+			switch (iMaterialIndex) {
+				case 3: {
+					pContext->PSSetShader(m_pResDragonWingPixelShader->GetPixelShader().Get(), nullptr, 0);
 
-				ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
-				pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+					pContext->PSSetShaderResources(2, 1, m_pWingsMROTexture->GetSRV().GetAddressOf());
+
+					pMaterialMaskSRV = m_pWingsMaskTexture->GetSRV().Get();
+
+					pContext->RSSetState(NoCullRasterizer->GetRasterizerState().Get());
+					break;
+				}
+				case 4: {
+					pContext->PSSetShader(m_pResDragonBodyPixelShader->GetPixelShader().Get(), nullptr, 0);
+
+					pContext->PSSetShaderResources(2, 1, m_pBodyMROTexture->GetSRV().GetAddressOf());
+
+					pMaterialMaskSRV = m_pBodyMaskTexture->GetSRV().Get();
+
+					pContext->RSSetState(BackCullRasterizer->GetRasterizerState().Get());
+					break;
+				}
+				default: continue;
 			}
-			
+
+			if (!pMaterialMaskSRV)	return E_FAIL;
+			pContext->PSSetShaderResources(4, 1, &pMaterialMaskSRV);
+
 			ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 			const UINT stride = mesh->GetVertexStride();
 			const UINT offset = 0;
@@ -604,108 +667,178 @@ HRESULT	CEnderDragon::Render_Instanced(ID3D11DeviceContext* pContext, const E::R
 			pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
 			pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 			pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
-			m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
+
 			m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
+
 			pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 		}
-
-
-		if (FAILED(Render_DragonFX(pContext, iInstanceCount))) return E_FAIL;
+		pContext->RSSetState(pPreviousRasterizer.Get());
 
 		ID3D11ShaderResourceView* nullVSSRVs[3]{};
 		pContext->VSSetShaderResources(6, 3, nullVSSRVs);
+		ID3D11ShaderResourceView* pNullPSSRV[5]{};
+		pContext->PSSetShaderResources(4, 5, pNullPSSRV);
 	}
+
+	// Wing -> Render_Alpha()
+	m_pPendingWingFXBatch = &Batch;
+	if (!m_bWingFXQueued) {
+		if (FAILED(CGameInstance::Get().AddRenderObject(RENDERGROUP::BLEND, this))) {
+			m_pPendingWingFXBatch = nullptr;
+			return E_FAIL;
+		}
+		m_bWingFXQueued = true;
+	}
+
 	return S_OK;
 }
-HRESULT CEnderDragon::Render_DragonFX(ID3D11DeviceContext* pContext, uint32_t iInstanceCount) {
-	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pDragonFXPixelShader || !m_pDragonFXModel || !m_pResSkinMeshCBuffer || !m_pResDragonFXCBuffer)	return E_FAIL;
+HRESULT CEnderDragon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {	// Called Render_Alpha()
+	HRESULT Result = S_OK;
 
-	pContext->IASetInputLayout(m_pResVertexCPUSkinningInstancedShader->GetInputLayout().Get());
-	pContext->VSSetShader(m_pResVertexCPUSkinningInstancedShader->GetVertexShader().Get(), nullptr, 0);
-	pContext->PSSetShader(m_pDragonFXPixelShader->GetPixelShader().Get(), nullptr, 0);
-	ID3D11ShaderResourceView* skinSRV = m_pDragonFXModel->Get_GPUSkinBoneSRV();
-	pContext->VSSetShaderResources(8, 1, &skinSRV);
+	if (m_pPendingWingFXBatch) {
+		const E::MODEL_INSTANCE_BATCH* pBatch = m_pPendingWingFXBatch;
+		Result = Render_WingFXForward(pContext, *pBatch);
 
-	for (uint32_t i = 0; i < m_pDragonFXModel->Get_NumMeshes(); ++i) {
-		const auto& mesh  = m_pDragonFXModel->GetMeshes()[i];
-		if (!mesh) continue;
+		m_pPendingWingFXBatch = nullptr;
+
+		CGameInstance::Get().Reset_DefaultShader(RENDERGROUP::BLEND);
+	}
+
+	m_bWingFXQueued = false;
+
+	return Result;
+}
+HRESULT CEnderDragon::Render_WingFXForward(ID3D11DeviceContext* pContext, const E::MODEL_INSTANCE_BATCH& Batch) {
+	SPtr<CResModel> pModel{};
+	uint32_t iInstanceCount = 0;
+
+	HRESULT hr = Prepare_DragonInstancing(pContext, Batch, pModel, iInstanceCount);
+	if (FAILED(hr))	return hr;
+	if (S_FALSE == hr)	return S_OK;
+
+	ComPtr<ID3D11RasterizerState> pPrevRS;
+	ComPtr<ID3D11DepthStencilState> pPrevDSS;
+	UINT iPrevStencilRef = 0;
+	
+	pContext->RSGetState(pPrevRS.GetAddressOf());
+	pContext->OMGetDepthStencilState(pPrevDSS.GetAddressOf(), &iPrevStencilRef);
+
+	pContext->PSSetShader(m_pResDragonWingFXPixelShader->GetPixelShader().Get(), nullptr, 0);
+
+	pContext->RSSetState(m_pResWingFXRasterizer->GetRasterizerState().Get());
+	pContext->OMSetDepthStencilState(m_pResWingFXDSS->GetDepthStencilState().Get(), 0);
+
+	ID3D11ShaderResourceView* FXSRV[4] = {
+		m_pMarbleNoiseTexture->GetSRV().Get(),
+		m_pRiverNoiseTexture->GetSRV().Get(),
+		m_pCausticNoiseTexture->GetSRV().Get(),
+		m_pDetailNoiseTexture->GetSRV().Get()
+	};
+
+	pContext->PSSetShaderResources(5, 4, FXSRV);
+
+	pContext->PSSetShaderResources(4, 1, m_pEtherealWingsTexture->GetSRV().GetAddressOf());
+	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex) {
+		auto& mesh = pModel->GetMeshes()[iMeshIndex];
+		if (!mesh || mesh->Get_MaterialIndex() != 2)	continue;
+
+		if (FAILED(Bind_SkinnedMeshConstantBuffer(pContext, pModel, mesh, iMeshIndex))) return E_FAIL;
 		
-		const auto& range = m_pDragonFXModel->Get_GPUMeshSkinRange(i);
-
-		E::GPU_SKIN_MESH_CONSTANTS constants{};
-		constants.iSkinBoneOffset	 = range.iSkinBoneOffset;
-		constants.iVertexCount		 = mesh->GetNumVertices();
-		constants.iSkinBoneCount	 = range.iSkinBoneCount;
-		constants.iBonePaletteStride = 512;
-
-		D3D11_MAPPED_SUBRESOURCE mapped{};
-		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-			return E_FAIL;
-
-		memcpy(mapped.pData, &constants, sizeof(GPU_SKIN_MESH_CONSTANTS));
-		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
-
-		ID3D11Buffer* cb = m_pResSkinMeshCBuffer->GetCBuffer().Get();
-		pContext->VSSetConstantBuffers(5, 1, &cb);
-
-		if (FAILED(Bind_DragonFXMaterial(pContext, mesh->Get_MaterialIndex())))	return E_FAIL;
-
-
-		ID3D11Buffer* vb = mesh->GetVertexBuffer().Get();
-		const UINT stride = mesh->GetVertexStride();
-		const UINT offset = 0;
-		pContext->IASetVertexBuffers(0, 1, &vb, &stride, &offset);
+		ID3D11Buffer* pVB = mesh->GetVertexBuffer().Get();
+		const UINT iStride = mesh->GetVertexStride();
+		const UINT iOffset = 0;
+		pContext->IASetVertexBuffers(0, 1, &pVB, &iStride, &iOffset);
 		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
-	
+
+	pContext->RSSetState(pPrevRS.Get());
+
+	pContext->OMSetDepthStencilState(pPrevDSS.Get(), iPrevStencilRef);
+
+	ID3D11ShaderResourceView* pNullVSSRV[2]{};
+	pContext->VSSetShaderResources(7, 2, pNullVSSRV);
+
+	ID3D11ShaderResourceView* pNullPSSRV[5]{};
+	pContext->PSSetShaderResources(4, 5, pNullPSSRV);
+
 	return S_OK;
 }
-HRESULT CEnderDragon::Bind_DragonFXMaterial(ID3D11DeviceContext* pContext, uint32_t iMaterialIndex){
+HRESULT CEnderDragon::Prepare_DragonInstancing(ID3D11DeviceContext* pContext, const E::MODEL_INSTANCE_BATCH& Batch, SPtr<E::CResModel>& pOutModel, uint32_t& iOutInstanceCount) {
+	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResSkinMeshCBuffer)	return E_FAIL;
 
-	DRAGON_FX_MATERIAL material{};
-	switch (iMaterialIndex) {
-	case 0: 
-		material.vCoreColor			= _float4(1.f, 0.01f, 0.f, 9.f);
-		material.vEdgeColor			= _float4(0.35f, 0.f, 0.f, 0.85f);
-		material.vAnimationParams	= _float4(5.f, 0.18f, 0.10f, 1.30f); 
-		material.vSurfaceParams		= _float4(3.f, 0.35f, 0.002f, 0.f);
-		break;
+	iOutInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
+	if (0 == iOutInstanceCount)	return S_FALSE;
 
-	case 1:
-		material.vCoreColor			= _float4(1.f, 0.035f, 0.01f, 16.f);
-		material.vEdgeColor			= _float4(0.65f, 0.f, 0.015f, 0.9f);
-		material.vAnimationParams	= _float4(7.f, 0.23f, 0.15f, 1.15f);
-		material.vSurfaceParams		= _float4(2.5f, 0.5f, 0.003f, 1.f);
-		break;
+	if (iOutInstanceCount > 512 || Batch.CombinedBoneMatrices.size() != iOutInstanceCount)	return E_FAIL;
 
-	case 2:
-		material.vCoreColor			= _float4(1.f, 0.30f, 0.03f, 25.f);
-		material.vEdgeColor			= _float4(1.f, 0.015f, 0.f, 1.f);
-		material.vAnimationParams	= _float4(9.f, 0.12f, 0.08f, 0.9f);
-		material.vSurfaceParams		= _float4(2.f, 0.25f, 0.002f, 2.f);
-		break;
+	pContext->IASetInputLayout(m_pResVertexCPUSkinningInstancedShader->GetInputLayout().Get());
+	pContext->VSSetShader(m_pResVertexCPUSkinningInstancedShader->GetVertexShader().Get(), nullptr, 0);
 
-	default:
-		material.vCoreColor			= _float4(1.f, 0.f, 1.f, 10.f);
-		material.vEdgeColor			= _float4(0.3f, 0.f, 0.3f, 1.f);
-		material.vAnimationParams	= _float4(5.f, 0.2f, 0.1f, 1.f);
-		material.vSurfaceParams		= _float4(3.f, 0.5f, 0.002f, -1.f);
-		break;
+	if (FAILED(Update_InstanceBuffer(pContext, Batch.Instances)))	return E_FAIL;
+
+	pOutModel = CGameInstance::Get().GetResourceFirst<E::CResModel>(Batch.Key.modelGroup, Batch.Key.modelTag);
+	if (nullptr == pOutModel)	return E_FAIL;
+
+	auto pCPUBonePaletteBuffer = CGameInstance::Get().GetResourceFirst<E::CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_CPU_BONEMATRIX");
+	if (nullptr == pCPUBonePaletteBuffer) return E_FAIL;
+
+	constexpr uint32_t MAX_BONES_PER_INSTANCE = 512;
+
+	_float4x4 IdentityMatrix{};
+	XMStoreFloat4x4(&IdentityMatrix, XMMatrixIdentity());
+
+	std::vector<_float4x4> CombinedPalette(static_cast<size_t>(iOutInstanceCount) * MAX_BONES_PER_INSTANCE, IdentityMatrix);
+
+	for (uint32_t iInstanceIndex = 0; iInstanceIndex < iOutInstanceCount; ++iInstanceIndex) {
+		const auto& CombinedMatrices = Batch.CombinedBoneMatrices[iInstanceIndex];
+
+		if (CombinedMatrices.empty() || CombinedMatrices.size() > MAX_BONES_PER_INSTANCE)	return E_FAIL;
+
+		for (uint32_t iBoneIndex = 0; iBoneIndex < static_cast<uint32_t>(CombinedMatrices.size()); ++iBoneIndex) {
+			const size_t iDestinationIndex = static_cast<size_t>(iInstanceIndex) * MAX_BONES_PER_INSTANCE + iBoneIndex;
+			XMStoreFloat4x4(&CombinedPalette[iDestinationIndex], XMMatrixTranspose(XMLoadFloat4x4(&CombinedMatrices[iBoneIndex])));
+		}
 	}
-	D3D11_MAPPED_SUBRESOURCE mapped{};
-	ID3D11Buffer* pBuffer = m_pResDragonFXCBuffer->GetCBuffer().Get();
-	if (FAILED(pContext->Map(pBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-		return E_FAIL;
 
-	memcpy(mapped.pData, &material, sizeof(DRAGON_FX_MATERIAL));
-	pContext->Unmap(pBuffer, 0);
+	ID3D11ShaderResourceView* pNullSRV = nullptr;
+	pContext->VSSetShaderResources(7, 1, &pNullSRV);
 
-	pContext->VSSetConstantBuffers(11, 1, &pBuffer);
-	pContext->PSSetConstantBuffers(11, 1, &pBuffer);
+	if (FAILED(pCPUBonePaletteBuffer->UpdateData(CombinedPalette.data(), static_cast<uint32_t>(CombinedPalette.size() * sizeof(_float4x4)))))	return E_FAIL;
 
+	if (FAILED(Bind_InstanceBuffer(pContext))) return E_FAIL;
+
+	ID3D11ShaderResourceView* pCPUBonePaletteSRV = pCPUBonePaletteBuffer->GetSRV().Get();
+	ID3D11ShaderResourceView* pSkinBoneSRV = pOutModel->Get_GPUSkinBoneSRV();
+	if (nullptr == pCPUBonePaletteSRV || nullptr == pSkinBoneSRV)	return E_FAIL;
+
+	pContext->VSSetShaderResources(7, 1, &pCPUBonePaletteSRV);
+	pContext->VSSetShaderResources(8, 1, &pSkinBoneSRV);
+
+	return S_OK;
+}
+HRESULT CEnderDragon::Bind_SkinnedMeshConstantBuffer(ID3D11DeviceContext* pContext, SPtr<E::CResModel>& pModel, SPtr<CResModelMesh>& pMesh, uint32_t iMeshIndex) {
+	const auto& skinRange = pModel->Get_GPUMeshSkinRange(iMeshIndex);
+	if (skinRange.iSkinBoneCount == 0) return E_FAIL;
+
+	auto SkinningBuffer = m_pResSkinMeshCBuffer->GetCBuffer().Get();
+	D3D11_MAPPED_SUBRESOURCE MRES{};
+	if (FAILED(pContext->Map(SkinningBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))	return E_FAIL;
+
+	GPU_SKIN_MESH_CONSTANTS SkinningConstants{};
+
+	SkinningConstants.iSkinBoneOffset	 = skinRange.iSkinBoneOffset;
+	SkinningConstants.iVertexCount		 = pMesh->GetNumVertices();
+	SkinningConstants.iSkinBoneCount	 = skinRange.iSkinBoneCount;
+	SkinningConstants.iBonePaletteStride = 512;
+
+	memcpy(MRES.pData, &SkinningConstants, sizeof(GPU_SKIN_MESH_CONSTANTS));
+	pContext->Unmap(SkinningBuffer, 0);
+
+	pContext->VSSetConstantBuffers(5, 1, &SkinningBuffer);
+	
 	return S_OK;
 }
 /*---------------------------------*/
@@ -761,7 +894,7 @@ _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 
 	if (true == BreakSkillType(eType) && false == m_bIsBreak)
 	{
-		m_pFsm->Request_State(EDG_STATE::HIT);
+		m_pFsm->Request_State(MON_STATE::HIT);
 		m_bIsBreak = true;
 
 		m_PendingMonTable.eAttType = m_eAttType;
@@ -775,7 +908,7 @@ _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 }
 void CEnderDragon::Check_Phase()
 {
-	if (m_pFsm->GetCurState() != EDG_STATE::COMBAT)
+	if (m_pFsm->GetCurState() != MON_STATE::COMBAT)
 		return;
 	auto pBB = Get_BlackBoard();
 	if (nullptr == pBB) return;
@@ -791,7 +924,7 @@ void CEnderDragon::Check_Phase()
 	auto pFinished = pBB->Get_Value<_bool>(EDG_KEY::BSTATE_FINISHED);
 	if (m_iHp <= 0.f)
 	{
-		m_pFsm->Request_State(EDG_STATE::DEAD);
+		m_pFsm->Request_State(MON_STATE::DEAD);
 		return;
 	}
 	if (nullptr == pFinished) return;
@@ -800,7 +933,7 @@ void CEnderDragon::Check_Phase()
 	{
 		//피 조금 까이고 도망
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE2)] = true;
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE,DRAGON_PHASE::PHASE2);
 		return;
@@ -809,7 +942,7 @@ void CEnderDragon::Check_Phase()
 	{
 		//도망간 후 파이어볼 잠깐 쏘다 거리 가까워지면 다시 run
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE3)] = true;
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE3);
 		return;
@@ -818,7 +951,7 @@ void CEnderDragon::Check_Phase()
 	{
 		//대충 날다 두드려 맞고 도망
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE4)] = true;
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
 		return;
@@ -827,7 +960,7 @@ void CEnderDragon::Check_Phase()
 	{
 		//대충 땅바닥 진입전 마지막 비행
 		m_bPhaseLock[ETOUI(DRAGON_PHASE::PHASE5)] = true;
-		m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+		m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 
 		pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE5);
 		return;
@@ -935,28 +1068,28 @@ void CEnderDragon::Phase_Debug()
 	if (nullptr == pBB) return;
 	//if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_Q))
 	//{
-	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE1);
 	//
 	//}
 	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_W))
 	//{
-	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE2);
 	//}
 	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_E))
 	//{
-	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE3);
 	//}
 	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_R))
 	//{
-	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
 	//}
 	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_T))
 	//{
-	//	m_pFsm->Request_State(EDG_STATE::PHASE_CHANGE);
+	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
 	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
 	//}
 }
@@ -996,22 +1129,25 @@ void CEnderDragon::InitializeEffects()
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail1", "RanrokTrail1");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 45 / 255.f, 45 / 255.f, 15.f));
+
 	}
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail2", "RanrokTrail2");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 45 / 255.f, 45 / 255.f, 15.f));
+
 	}
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail3", "RanrokTrail3");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 45 / 255.f, 45 / 255.f, 15.f));
+
 	}
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail4", "RanrokTrail4");
 		static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 255 / 255.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 0.f, 0 / 255.f, 15.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 45 / 255.f, 45 / 255.f, 15.f));
 	}
 	{
 		auto a = CGameInstance::Get().GetParticle("RanrokTrail5", "RanrokTrail5");

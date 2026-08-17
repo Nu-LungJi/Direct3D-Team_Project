@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "EdgFireBall.h"
 #include "PhysXManager.h"
+#include "Player.h"
 NS_USING(Client)
 CEdgFireBall::CEdgFireBall()
 {
@@ -205,13 +206,33 @@ _bool CEdgFireBall::MoveSweep(_vector vNextPos)
 	PX_SWEEP_RESULT SweepResult{} ;
 	auto pPhysX = CGameInstance::Get().GetPhysXManager();
 	if (nullptr == pPhysX) return false;
-
 	if (pPhysX->Sweep(SweepDesc, SweepResult) && SweepResult.bHit)
 	{
-		//auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(SweepResult.hGameObject);
-		//pTarget->OnQueryHit(m_fDamage);
 		m_bHit = true;
-		//펑
+
+		auto pPlayer = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(SweepResult.hGameObject);
+		const _bool bHitPlayer = nullptr != pPlayer;
+
+		_matrix matImpact = XMMatrixIdentity();
+
+		if (bHitPlayer)
+		{
+			pPlayer->OnQueryHit(static_cast<int32_t>(m_fDamage), SweepResult.vHitpos);
+			matImpact = pPlayer->GetTransform().GetLoadedWorldMatrix();
+		}
+		else
+		{
+			matImpact.r[3] = XMVectorSetW(XMLoadFloat3(&SweepResult.vHitpos), 1.f);
+		}
+
+		_float4x4 worldMat{};
+		XMStoreFloat4x4(&worldMat, matImpact);
+
+		if (m_eType == DRAGON_SKILL::FIREBALL)
+			CGameInstance::Get().PlayEffect(bHitPlayer ? "FireBallHitP" : "FireBallHitG", worldMat);
+		else if (m_eType == DRAGON_SKILL::BLACKBALL || m_eType == DRAGON_SKILL::THREEBALL)
+			CGameInstance::Get().PlayEffect(bHitPlayer ? "BlackBallHitP" : "BlackBallHitG", worldMat);
+
 		return false;
 	}
 	return true;

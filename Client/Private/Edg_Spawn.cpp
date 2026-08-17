@@ -92,20 +92,32 @@ void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	switch (m_eSpawn)
 	{
 	case EDG_SPAWN_NUMBER::FIRST:
-		SpawnSkill(pDragon,"RanrokMoveSmoke");
+		_float4x4 mat{};
+		XMStoreFloat4x4(&mat, pDragon->GetTransform().GetLoadedWorldMatrix());
+		CGameInstance::Get().Spawn("SpawnSmoke.json", mat);
+
+		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/LastBossRanrok/Ambient/Ranrock_Spawn.wav", SOUND_PLAY_DESC{
+		.sBusID = SOUND_BUS::SFX,
+		.fVolume = 0.7f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = false
+			});
 		m_eSpawn = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	case EDG_SPAWN_NUMBER::SECOND:
 		MoveSpawn(pDragon, fTimeDelta);
 		break;
 	case EDG_SPAWN_NUMBER::THIRD:
-		Play_Anim(pDragon, fTimeDelta);
+		m_fSpawnTick += fTimeDelta;
+		if(m_fSpawnTick >= 2.f)
+			Play_Anim(pDragon, fTimeDelta);
 		break;
 	case EDG_SPAWN_NUMBER::FOUR:
-		pDragonFsm->Request_State(EDG_STATE::COMBAT);
+		pDragonFsm->Request_State(MON_STATE::COMBAT);
 		break;
 	}
-	//pDragonFsm->Request_State(EDG_STATE::COMBAT);
+	//pDragonFsm->Request_State(MON_STATE::COMBAT);
 }
 
 void CEdg_Spawn::SpawnSkill(CEnderDragon* pDragon, const _string& strName)
@@ -128,7 +140,7 @@ _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
 	{
 		CGameInstance::Get().StopEffect(m_iEffectID);
 		SpawnSkill(pDragon, "RanrokStaySmoke");
-
+		m_fSpawnTick = 0.f;
 		m_eSpawn = EDG_SPAWN_NUMBER::THIRD;
 		m_bNext = false;
 		return true;
@@ -158,10 +170,17 @@ _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
 		m_fTick = 0.f;
 		if (m_PhasePos.empty())
 		{
+			pMoveIntent->ClearMoveIntent();
+
 			CGameInstance::Get().StopEffect(m_iEffectID);
-			SpawnSkill(pDragon, "RanrokStaySmoke");
-			
+			//SpawnSkill(pDragon, "RanrokStaySmoke");
+			_float4x4 mat{};
+			XMStoreFloat4x4(&mat, pDragon->GetTransform().GetLoadedWorldMatrix());
+			CGameInstance::Get().Spawn("SpawnSmoke.json", mat);
+
+			m_fSpawnTick = 0.f;
 			m_eSpawn = EDG_SPAWN_NUMBER::THIRD;
+			m_bNext = false;
 			return true;
 		}
 		vNextPos = XMLoadFloat3(&m_PhasePos.front());
@@ -197,23 +216,23 @@ void CEdg_Spawn::Effect(CEnderDragon* pDragon, _float fTimeDelta)
 	_float3 vstart{};
 	_float3 vend{};
 	
-	vstart = TransformTrailPoint({ 0.f, 3.5f, 0.f });
+	vstart = TransformTrailPoint({ 0.f, 4.5f, 0.f });
 	vend = TransformTrailPoint({ 0.f, 2.5f, 0.f });
 	CGameInstance::Get().AddTrailPoint("RanrokTrail1", "RanrokTrail1", pDragon->GetHandle(), vstart, vend);
 	
-	vstart = TransformTrailPoint({ 0.f, 1.5f, -3.f });
+	vstart = TransformTrailPoint({ 0.f, 2.5f, -3.f });
 	vend = TransformTrailPoint({ 0.f, 0.5f, -3.f });
 	CGameInstance::Get().AddTrailPoint("RanrokTrail2", "RanrokTrail2", pDragon->GetHandle(), vstart, vend);
 	
-	vstart = TransformTrailPoint({ 0.f, 1.5f, 3.f });
+	vstart = TransformTrailPoint({ 0.f, 2.5f, 3.f });
 	vend = TransformTrailPoint({ 0.f, 0.5f, 3.f });
 	CGameInstance::Get().AddTrailPoint("RanrokTrail3", "RanrokTrail3", pDragon->GetHandle(), vstart, vend);
 	
-	vstart = TransformTrailPoint({ 0.f, -0.5f, -2.f });
+	vstart = TransformTrailPoint({ 0.f, 0.5f, -2.f });
 	vend = TransformTrailPoint({ 0.f, -1.5f, -2.f });
 	CGameInstance::Get().AddTrailPoint("RanrokTrail4", "RanrokTrail4", pDragon->GetHandle(), vstart, vend);
 	
-	vstart = TransformTrailPoint({ 0.f, -0.5f, 2.f });
+	vstart = TransformTrailPoint({ 0.f, 0.5f, 2.f });
 	vend = TransformTrailPoint({ 0.f, -1.5f, 2.f });
 	CGameInstance::Get().AddTrailPoint("RanrokTrail5", "RanrokTrail5", pDragon->GetHandle(), vstart, vend);
 	

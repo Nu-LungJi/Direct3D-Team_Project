@@ -107,12 +107,31 @@ void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 	m_bGround = m_bHit = false;
 	m_fBreathTick = m_fLife = 0.f;
 	m_fMaxLife = SkillTable.fLifeTime;
+	m_fBreathParticleTick = 0.f;
+	m_fGroundParticleTick = 0.f;
 	Spawn_Skill_Effect(SkillTable.SkillName);
+
+	m_iBreathSoundID  = E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/LastBossRanrok/Ambient/Breath.wav", SOUND_PLAY_DESC{
+	.sBusID = SOUND_BUS::SFX,
+	.fVolume = 0.7f,
+	.fPitch = 1.f,
+	.iPriority = 64,
+	.bLoop = false
+		});
 }
 
 void CEdgBreath::Cancle()
 {
 	ResetValue();
+
+	auto pSoundManager = E::CGameInstance::Get().GetSoundManager();
+
+	if (pSoundManager && m_iBreathSoundID != INVALID_SOUND_ID)
+	{
+		pSoundManager->Stop(m_iBreathSoundID);
+		m_iBreathSoundID = INVALID_SOUND_ID;
+	}
+
 }
 
 void CEdgBreath::SpawnGasi(_vector vPos, _vector vDirection)
@@ -191,8 +210,8 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 		XMStoreFloat3(&m_vDir, XMVector3Normalize(matOffset.r[3] - matBone.r[3]));
 		XMStoreFloat3(&m_vTargetDir, XMVector3Normalize(XMLoadFloat3(&pTarget->GetTransform().GetPosition()) - matOffset.r[3]));
 
-		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), 0.8f));
-		vForward -= XMVectorSet(0, 0.05f, 0, 0);
+		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), 0.2f));
+		vForward -= XMVectorSet(0, 0.18f, 0, 0);
 	}
 
 	_vector vUp = XMVector3Normalize(matBone.r[1]);
@@ -213,9 +232,16 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	_float4x4 breathWorldData{};
 	XMStoreFloat4x4(&breathWorldData, breathWorld);
 
-	CGameInstance::Get().PlayEffect("DragonBreath", breathWorldData);
+	m_fBreathParticleTick += fTimeDelta;
+	constexpr _float fBreathSpawnInterval = 1.f / 60.f;
+	if (m_fBreathParticleTick >= fBreathSpawnInterval)
+	{
+		m_fBreathParticleTick -= fBreathSpawnInterval;
+		CGameInstance::Get().Spawn("DragonBreath.json", breathWorldData);
+	}
+
 	m_fBreathDis = m_fMaxBreath * tBreath;
-	if (MoveSweep(matBone.r[3], vForward))
+	if (MoveSweep(matBone.r[3], vForward, fTimeDelta))
 	{
 		//if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
 		//	CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, breathWorldData);
@@ -227,14 +253,13 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	
 }
 
-_bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir)
+_bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir, _float fTimeDelta)
 {
 	_float3 vPos{}, vDir{};
 	
 	XMStoreFloat3(&vPos, vNextPos);
 	XMStoreFloat3(&vDir, vCurDir);
-
-	uint32_t iDebugCnt = 20;
+	constexpr uint32_t iDebugCnt = 20;
 
 	PX_SWEEP_DESC SweepDesc{};
 	SweepDesc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
@@ -244,15 +269,13 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir)
 	SweepDesc.tFilter = m_pxQueryFilter;
 	SweepDesc.fMaxDistance = m_fBreathDis;
 
-	////////////////////////////////////
 	for (uint32_t i = 0; i < iDebugCnt; ++i)
 	{
-		_float t = static_cast<_float>(i) / static_cast<_float>(iDebugCnt);
+		const _float t = static_cast<_float>(i) / static_cast<_float>(iDebugCnt - 1);
 		_float3 vDebugPos{};
 		XMStoreFloat3(&vDebugPos, XMLoadFloat3(&SweepDesc.tPose.vPosition) + XMLoadFloat3(&vDir) * SweepDesc.fMaxDistance * t);
 		DebugLine(vDebugPos);
 	}
-	/////////////////////////////////////
 
 	PX_SWEEP_RESULT SweepResult{};
 	auto pPhysX = CGameInstance::Get().GetPhysXManager();
@@ -260,32 +283,11 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir)
 
 	//가시브래스로 교체예정
 	//롱브래스나 회전 브래스는 땅에 닿으면 그 자리에 데칼 소환하게
-	if (!m_bGround &&  m_eType == DRAGON_SKILL::BREATH)
+	if (m_eType == DRAGON_SKILL::GASIBREATH && !m_bGround)
 	{
-		//이거 땅판정임
 		PX_SWEEP_DESC GroundDesc = SweepDesc;
-		GroundDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC) 
-		,.bQueryStatic = true,.bQueryDynamic = false,.bIncludeTrigger = false};
-		PX_SWEEP_RESULT GroundSweep{};
+		GroundDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC), .bQueryStatic = true, .bQueryDynamic = false, .bIncludeTrigger = false };
 
-		//if (pPhysX->Sweep(GroundDesc, GroundSweep) && GroundSweep.bHit)
-		//{
-		//	m_bGround = true;
-		//	SpawnGasi(XMLoadFloat3(&GroundSweep.vHitpos), vCurDir);
-		//}
-	}
-	else
-	{
-
-	}
-
-
-	if (!m_bGround && m_eType == DRAGON_SKILL::GASIBREATH)
-	{
-		//이거 땅판정임
-		PX_SWEEP_DESC GroundDesc = SweepDesc;
-		GroundDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC)
-		,.bQueryStatic = true,.bQueryDynamic = false,.bIncludeTrigger = false };
 		PX_SWEEP_RESULT GroundSweep{};
 
 		if (pPhysX->Sweep(GroundDesc, GroundSweep) && GroundSweep.bHit)
@@ -294,9 +296,31 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir)
 			SpawnGasi(XMLoadFloat3(&GroundSweep.vHitpos), vCurDir);
 		}
 	}
-	else
-	{
 
+	if (m_eType == DRAGON_SKILL::BREATH)
+	{
+		PX_SWEEP_DESC GroundDesc = SweepDesc;
+		GroundDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC), .bQueryStatic = true, .bQueryDynamic = false, .bIncludeTrigger = false };
+
+		PX_SWEEP_RESULT GroundSweep{};
+
+		if (pPhysX->Sweep(GroundDesc, GroundSweep) && GroundSweep.bHit)
+		{
+			m_fGroundParticleTick += fTimeDelta;
+
+			if (m_fGroundParticleTick >= 0.1f)
+			{
+				m_fGroundParticleTick -= 0.1f;
+
+				_float4x4 groundWorld{};
+				XMStoreFloat4x4(&groundWorld, XMMatrixTranslation(GroundSweep.vHitpos.x, GroundSweep.vHitpos.y, GroundSweep.vHitpos.z));
+				CGameInstance::Get().Spawn("BreathAfter.json", groundWorld);
+			}
+		}
+		else
+		{
+			m_fGroundParticleTick = 0.f;
+		}
 	}
 
 

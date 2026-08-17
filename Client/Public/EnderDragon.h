@@ -19,17 +19,6 @@ typedef struct stractiveskilltable
 	DRAGON_SKILL eType{};
 }EDG_ACSKT_DESC;
 
-/*----------- 광윤 추가 -----------*/
-typedef struct dragonfxmaterial
-{
-	_float4		vCoreColor;
-	_float4		vEdgeColor;
-	_float4		vAnimationParams;
-	_float4		vSurfaceParams;
-
-}DRAGON_FX_MATERIAL;
-/*---------------------------------*/
-
 NS_BEGIN(Client)
 typedef struct stredgskillInfo
 {
@@ -72,19 +61,37 @@ public:
 	void						Ready_BBKeyValue();
 
 	/*----------- 광윤 추가 -----------*/ // MaskMap Test
-	HRESULT						Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch);
-	HRESULT						Render_DragonFX(ID3D11DeviceContext* pContext, uint32_t iInstanceCount);
-	HRESULT						Bind_DragonFXMaterial(ID3D11DeviceContext* pContext, uint32_t iMaterialIndex);
+	HRESULT						Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+	HRESULT						Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) override;
+
 private:
-	SPtr<CResPixelShader>	m_pResDragonPixelShader{};
-	SPtr<CResCBuffer>		m_pResDragonCBuffer{};
-	SPtr<CResCBuffer>		m_pResDragonFXCBuffer{};
+	HRESULT						Render_WingFXForward(ID3D11DeviceContext* pContext, const E::MODEL_INSTANCE_BATCH& Batch);
+	HRESULT						Prepare_DragonInstancing(ID3D11DeviceContext* pContext, const E::MODEL_INSTANCE_BATCH& Batch, SPtr<E::CResModel>& pOutModel, uint32_t& iOutInstanceCount);
+	HRESULT						Bind_SkinnedMeshConstantBuffer(ID3D11DeviceContext* pContext, SPtr<E::CResModel>& pModel, SPtr<CResModelMesh>& pMesh, uint32_t iMeshIndex);
+private:
+	const E::MODEL_INSTANCE_BATCH* m_pPendingWingFXBatch = nullptr;
+	_bool m_bWingFXQueued = false;
 
-	SPtr<CResModel>			m_pDragonFXModel;
-	SPtr<CResStaticModel>	m_pDragonSpineModel;
+private:
+	SPtr<CResTexture2D>		m_pBodyMaskTexture{};
+	SPtr<CResTexture2D>		m_pWingsMaskTexture{};
 
-	SPtr<CResPixelShader>	m_pDragonFXPixelShader{};
-	SPtr<CResPixelShader>	m_pDragonSpinePixelShader{};
+	SPtr<CResTexture2D>		m_pBodyMROTexture{};
+	SPtr<CResTexture2D>		m_pWingsMROTexture{};
+
+	SPtr<CResTexture2D>		m_pEtherealWingsTexture{};
+
+	SPtr<CResTexture2D>		m_pMarbleNoiseTexture{};
+	SPtr<CResTexture2D> 	m_pRiverNoiseTexture{};
+	SPtr<CResTexture2D> 	m_pCausticNoiseTexture{};
+	SPtr<CResTexture2D> 	m_pDetailNoiseTexture{};
+
+	SPtr<CResPixelShader>	m_pResDragonBodyPixelShader{};
+	SPtr<CResPixelShader>	m_pResDragonWingPixelShader{};
+	SPtr<CResPixelShader>	m_pResDragonWingFXPixelShader{};
+
+	SPtr<CResDepthStencilState>	m_pResWingFXDSS{};
+	SPtr<CResRasterizerState>	m_pResWingFXRasterizer{};
 	/*---------------------------------*/
 
 public:
@@ -112,6 +119,8 @@ private:
 	void						Picking(_float3& vPos,uint32_t iID);
 
 	void						InitializeEffects();
+	void						Update_EnvironmentParticles(_float fTimeDelta);
+	void						Spawn_EnvironmentParticles(uint32_t iParticleIndex, uint32_t iCount);
 
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
@@ -125,6 +134,10 @@ private:
 	_string						m_WayName{};
 	std::list<_float3>			m_DebugPoint;
 	std::array<_bool, ETOUI(DRAGON_PHASE::END)>	m_bPhaseLock{ false };
+	_float						m_fBlobEnvSpawnAcc{};
+	_float						m_fSwirlEnvSpawnAcc{};
+	_float						m_fBlobEnvSpawnInterval{ 0.35f };
+	_float						m_fSwirlEnvSpawnInterval{ 1.f };
 public:
 	static E::UPtr<CEnderDragon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
