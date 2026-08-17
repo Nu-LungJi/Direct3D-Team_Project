@@ -48,6 +48,7 @@ public:
 	void						Set_Break(_bool bHit) { m_bIsBreak = bHit; }
 
 	_bool						Is_StateFinished();
+	void						Set_Gravity(_bool bGravity);
 
 	_bool						Check_Table(PLAYER_SKILL_TYPE eType) override;
 
@@ -55,12 +56,14 @@ public:
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
 	const _string&				Get_SkillNmae(SPIDER_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
 	void						Set_EndGame() { m_bEndGame = true; }
+	
 private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);
+
 private:
-	class CSpider_State* m_pFsm{ nullptr };
+	class CMon_State* m_pFsm{ nullptr };
 
 	_string			m_EffectNames[ETOUI(SPIDER_SKILL::END)]{};
 		_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false }, m_bPopupL{ false }, m_bEndGame{ false };

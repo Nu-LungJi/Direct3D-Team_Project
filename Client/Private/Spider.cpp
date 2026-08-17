@@ -17,7 +17,7 @@
 #include "UIController.h"
 #include "UIManager.h"
 //FSM
-#include "Spider_State.h"
+#include "Mon_State.h"
 #include "Spider_Spawn.h"
 #include "Spider_Combat.h"
 #include "Spider_Hit.h"
@@ -217,18 +217,18 @@ HRESULT CSpider::Initialize(void* pArg)
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
-	m_eMonType = MONSTER_TYPE::BOSS;
+	m_eMonType = MONSTER_TYPE::NORMAL;
 	
 	m_pComSphereCol->SetQueryEnabled(true);
-	//m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_targetSocket");
+	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RigPelvisSocket");
 	m_pModelAnimator->Play_Anim(0, false);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	return S_OK;
 }
 HRESULT CSpider::Ready_Fsm(const _string& LevelTag)
 {
-	CSpider_State::DESC Desc{};
-	if (FAILED(AddComponentFromProto(LevelTag, "Prototype_Component_Spider_FSM", "Spider_Fsm", &Desc, &m_pFsm))) return E_FAIL;
+	CMon_State::DESC Desc{};
+	if (FAILED(AddComponentFromProto(LevelTag, "Prototype_Component_Mon_FSM", "Mon_Fsm", &Desc, &m_pFsm))) return E_FAIL;
 	
 	
 	if (false == m_pFsm->Add_State(MON_STATE::SPAWN, CSpider_Spawn::Create(LevelTag))) return E_FAIL;
@@ -236,11 +236,7 @@ HRESULT CSpider::Ready_Fsm(const _string& LevelTag)
 	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CSpider_Combat::Create(LevelTag))) return E_FAIL;
 	
 	if (false == m_pFsm->Add_State(MON_STATE::HIT, CSpider_Hit::Create(LevelTag,this))) return E_FAIL;
-	//
-	//if (false == m_pFsm->Add_State(MON_STATE::PHASE_CHANGE, CEdg_Phase::Create(LevelTag))) return E_FAIL;
-	//
-	//if (false == m_pFsm->Add_State(MON_STATE::DEAD, CEdg_Dead::Create())) return E_FAIL;
-	//
+
 	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
 
 
@@ -293,8 +289,6 @@ void CSpider::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 
 }
-/*----------- 광윤 추가 ---------펑--*/
-// 마스크 텍스쳐 테스트 중
 
 void CSpider::Set_StateFinished(_bool bFinished)
 {
@@ -373,6 +367,13 @@ void CSpider::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 void CSpider::Flag_Check(_float fTimeDelta)
 {
 	
+}
+void CSpider::Set_Gravity(_bool bGravity)
+{
+		if (bGravity)
+			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+		else
+			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
 }
 void CSpider::Update_BBToFsm()
 {

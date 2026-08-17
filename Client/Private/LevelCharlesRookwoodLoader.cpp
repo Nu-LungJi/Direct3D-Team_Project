@@ -45,7 +45,7 @@
 
 #include "TriggerCRW_BridgeBring.h"
 #include "TriggerCRW_BridgeFix.h"
-
+#include "Mon_State.h"
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
 #include "GurdianWeapon.h"
@@ -609,6 +609,8 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Mace");
 			return E_FAIL;
 		}
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
+
 	}
 
 	return S_OK;

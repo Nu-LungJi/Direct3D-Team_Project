@@ -33,7 +33,7 @@
 #include "EdgPulse.h"
 #include "EdgRandomBall.h"
 #include "EdgGasi.h"
-#include "Spider_State.h"
+#include "Mon_State.h"
 #include "Spider.h"
 // UI
 #include "UIController.h"
@@ -586,7 +586,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");
 			return E_FAIL;
 		}
-		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, "Prototype_Component_Spider_FSM", CSpider_State::Create()))) return E_FAIL;
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
 
 	}
 	return S_OK;

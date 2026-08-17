@@ -63,7 +63,7 @@ void CSpider_Spawn::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDel
 
 void CSpider_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 {
-	auto pSpiderFsm = Cast<CSpider_State>(pStateMachine);
+	auto pSpiderFsm = Cast<CMon_State>(pStateMachine);
 	if (nullptr == pSpiderFsm) return;
 
 	auto pSpider = pStateMachine->GetOwner<CSpider>();
