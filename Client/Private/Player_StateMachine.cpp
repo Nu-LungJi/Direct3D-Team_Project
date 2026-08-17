@@ -169,6 +169,7 @@ uint32_t CPlayer_StateMachine::GetTransitionPriority(PLAYER_STATE eState) const
 	case PLAYER_STATE::REVELIO_SKILL: return 45;
 	case PLAYER_STATE::REPAIRO_SKILL: return 45;
 	case PLAYER_STATE::ATTACK: return 40;
+	case PLAYER_STATE::POTION: return 40;
 	default:                   return 0;
 	}
 }

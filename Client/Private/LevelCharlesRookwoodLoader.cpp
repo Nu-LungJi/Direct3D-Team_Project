@@ -4,6 +4,7 @@
 #include "GameInstance.h"
 
 #include "Player.h"
+#include "WiggenweldPotion.h"
 #include "DebugPlayer.h"
 #include "DebugPlayerThirdPersonCamera.h"
 #include "PlayerThirdPersonCamera.h"
@@ -98,7 +99,7 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_MODEL_RESROUCE",CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/SK_professor.bin"))) {
 
 				E::CResModel::DESC pDesc{};
-				pDesc.PreTransformMatrix = XMMatrixScaling(3.f , 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.8f, 0.f);
+				pDesc.PreTransformMatrix = XMMatrixScaling(3.f , 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.4f, 0.f);
 				if (FAILED(res->Load(pDesc))) {
 					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_MODEL_RESROUCE");
 					return false;
@@ -137,6 +138,25 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Player, CPlayer::Create())))
 			{
 				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Player");
+				return false;
+			}
+			if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(LEVEL::CHARLES_ROOKWOOD, "Static_WiggenweldPotion_Resource",
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/Potion_Wiggenweld/SM_Potion_Wiggenweld.bin")))
+			{
+				CResStaticModel::DESC desc{};				
+				desc.PreTransformMatrix =  XMMatrixScaling(2.f, 2.f, 2.f);
+
+				if (FAILED(resource->Load(desc)))
+				{
+					MSG_BOX("CHARLES_ROOKWOOD Failed Potion.bin");
+					return false;
+				}
+			}
+	
+			if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
+				CWiggenweldPotion::Create()))) 
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_WiggenweldPotion");
 				return false;
 			}
 

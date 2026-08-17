@@ -5,6 +5,7 @@
 #include "Terrain.h"
 #include "Client_Resources.h"
 #include "OilBarrel.h"
+#include "WiggenweldPotion.h"
 #include "TestPathPlaybackObject.h"
 #include "LuaTestObject.h"
 #include "RagdollTest.h"
@@ -91,6 +92,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 					return false;
 				}
 			}
+
 
 			if (FAILED(E::CGameInstance::Get().AddPrototype(
 				LEVEL::TERRAIN,
@@ -245,6 +247,19 @@ std::future<bool> CLevelTerrainLoader::Load()
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_Player");
 				return false;
 			}
+
+			if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+				LEVEL::TERRAIN, "Static_WiggenweldPotion_Resource",
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/Potion_Wiggenweld/SM_Potion_Wiggenweld.bin")))
+			{
+				CResStaticModel::DESC desc{};
+				desc.PreTransformMatrix = XMMatrixScaling(2.f, 2.f, 2.f);
+				if (FAILED(resource->Load(desc))) return false;
+			}
+			else return false;
+			if (FAILED(CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
+				CWiggenweldPotion::Create()))) return false;
 
 			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerThirdPersonCamera, CPlayerThirdPersonCamera::Create())))
 			{
