@@ -77,10 +77,10 @@ HRESULT CLevelLastBossRanrok::Initialize()
 	//if (FAILED(SpawnSkyBox()))
 	//	return E_FAIL;
 
-	//if (FAILED(PlayBGM()))
-	//	return E_FAIL;
+	if (FAILED(PlayBGM()))
+		return E_FAIL;
 
-	//SubscribePlayerDeath(*hPlayer);
+	SubscribePlayerDeath(*hPlayer);
 
 
 	return S_OK;
@@ -359,7 +359,7 @@ HRESULT CLevelLastBossRanrok::SpawnSkyBox()
 
 HRESULT CLevelLastBossRanrok::PlayBGM()
 {
-	const _string sSoundPath = "./Resources/SampleClient/Sound/CharlesRookwood/CharlesRookwoodBgm.wav";
+	const _string sSoundPath = "./Resources/SampleClient/Sound/LastBossRanrok/Ambient/Ranroks_Rage.mp3";
 	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
 	if (pSoundManager == nullptr || !pSoundManager->Preload(sSoundPath))
 		return E_FAIL;
@@ -367,7 +367,7 @@ HRESULT CLevelLastBossRanrok::PlayBGM()
 	m_bmgID = pSoundManager->Play2D(sSoundPath,
 		E::SOUND_PLAY_DESC{
 			.sBusID = SOUND_BUS::BGM,
-			.fVolume = 1.f,
+			.fVolume = 0.2f,
 			.fPitch = 1.f,
 			.fFadeInDuration = 1.f,
 			.iPriority = 64,
@@ -385,8 +385,10 @@ HRESULT CLevelLastBossRanrok::StopBGM(_float fDuration)
 		return S_OK;
 
 	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
-	if (pSoundManager == nullptr ||
-		!pSoundManager->FadeOutAndStop(m_bmgID, fDuration))
+	if (pSoundManager == nullptr)
+		return E_FAIL;
+
+	if (!pSoundManager->FadeOutAndStop(m_bmgID, fDuration))
 		return E_FAIL;
 
 	m_bmgID = INVALID_SOUND_ID;
@@ -397,12 +399,20 @@ HRESULT CLevelLastBossRanrok::StopBGM(_float fDuration)
 void CLevelLastBossRanrok::SubscribePlayerDeath(const CHandle& hPlayer)
 {
 	m_hPlayer = hPlayer;
+	if (m_iPlayerDeathListenerID != 0)
+	{
+		CGameInstance::Get().EventUnsubscribe<FPlayerDied>(m_iPlayerDeathListenerID);
+		m_iPlayerDeathListenerID = 0;
+	}
+
 	m_iPlayerDeathListenerID = CGameInstance::Get().EventSubscribe<FPlayerDied>(
 		m_hPlayer,
 		[this](const FPlayerDied& Event)
 		{
 			if (Event.hPlayer != m_hPlayer)
 				return;
+
+			DEBUG_LOG("CLevelLastBossRanrok::SubscribePlayerDeath\n");
 
 			StopBGM(Event.fLevelBgmFadeDuration);
 		});
