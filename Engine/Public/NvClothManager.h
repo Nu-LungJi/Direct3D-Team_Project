@@ -48,6 +48,13 @@ public:
 		const _float3& vTranslation,
 		const _float4& vRotation,
 		_bool bTeleport);
+	_bool SetClothWind(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		const NVCLOTH_WIND_DESC& Desc);
+	_bool SetClothSelfCollision(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		_float fDistance,
+		_float fStiffness);
 	_bool SetClothCollisions(
 		NVCLOTH_CLOTH_HANDLE Handle,
 		const NVCLOTH_COLLISION_DESC& Desc);

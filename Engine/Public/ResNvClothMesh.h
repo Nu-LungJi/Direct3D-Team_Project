@@ -2,6 +2,7 @@
 
 #include "Engine_NvClothDefines.h"
 #include "Engine_Struct_Vertex.h"
+#include "NvClothParticleConstraintData.h"
 #include "ResDynamicVIBuffer.h"
 #include "Resource.h"
 
@@ -14,6 +15,15 @@ class ENGINE_DLL CResNvClothMesh final : public CResource
 {
 public:
 	DECLARE_DERIVED_TYPE(CResNvClothMesh, CResource)
+
+	enum class PARTICLE_CONSTRAINT_MODE : uint8_t
+	{
+		// 기존 망토 호환 방식: 메시 높이로 고정 영역과 자유도를 계산한다.
+		HEIGHT_RATIO,
+
+		// 머리카락처럼 고정 경계가 곡면인 경우 사용하는 정점별 저작 방식이다.
+		AUTHORED_WEIGHTS
+	};
 
 	struct DESC
 	{
@@ -36,7 +46,18 @@ public:
 		_float fWeldTolerance{ 1.e-5f };
 
 		// 시뮬레이션 메시 상단에서 고정할 높이 비율이다.
-		_float fFixedTopRatio{ 0.08f };
+		_float fFixedTopRatio{ 0.2f };
+
+		// [LSY] 기본값은 기존 망토 동작을 유지한다.
+		PARTICLE_CONSTRAINT_MODE eParticleConstraintMode{
+			PARTICLE_CONSTRAINT_MODE::HEIGHT_RATIO };
+
+		// [LSY] AUTHORED_WEIGHTS 전용이다. Simulation Source 정점과 개수 및 순서가 같아야 한다.
+		// 0은 완전 고정, 1은 fMaxDistanceScale이 허용하는 최대 이동 범위를 의미한다.
+		std::vector<_float> vecParticleConstraintWeights{};
+
+		// [LSY] AUTHORED_WEIGHTS에서 직접 배열을 주지 않았을 때 자동으로 읽을 JSON이다.
+		_string sParticleConstraintPath{};
 
 		// 상단에서 하단으로 증가하는 Motion Constraint의 최대 반경 배율이다.
 		// 1이면 Rest Pose 망토 높이까지 움직일 수 있다.
@@ -108,6 +129,12 @@ public:
 		return m_ParticleSkinBindings;
 	}
 
+	// [LSY] 현재 로드 결과를 정점별 가중치 파일로 내보낼 수 있게 원본 순서 데이터를 만든다.
+	_bool BuildParticleConstraintData(
+		NVCLOTH_PARTICLE_CONSTRAINT_DATA& OutData) const;
+	HRESULT SaveParticleConstraintData(
+		const _string& sPath) const;
+
 	static SPtr<CResNvClothMesh> Create(const _string& sPath);
 
 private:
@@ -122,6 +149,12 @@ private:
 	std::vector<_string> m_SkinBoneNames{};
 	std::vector<PARTICLE_SKIN_BINDING>
 		m_ParticleSkinBindings{};
+
+	// [LSY] Height Ratio 결과도 파일로 저장해 Authored 방식과 동일 조건으로 비교할 수 있다.
+	uint32_t m_iSimulationMeshIndex{
+		std::numeric_limits<uint32_t>::max() };
+	uint64_t m_iSimulationMeshSignature{};
+	std::vector<_float> m_SourceParticleConstraintWeights{};
 };
 
 NS_END

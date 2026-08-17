@@ -134,6 +134,7 @@ namespace
 		}
 
 		if (!IsFinite(Desc.vGravity) ||
+			!IsFinite(Desc.tWind.vVelocity) ||
 			!IsFinite(Desc.vDamping) ||
 			!IsUnitInterval(Desc.vLinearInertia) ||
 			!IsUnitInterval(Desc.vAngularInertia) ||
@@ -144,13 +145,25 @@ namespace
 			!std::isfinite(Desc.fPhaseStiffnessMultiplier) ||
 			!std::isfinite(Desc.fCompressionLimit) ||
 			!std::isfinite(Desc.fStretchLimit) ||
+			!std::isfinite(Desc.tWind.fDragCoefficient) ||
+			!std::isfinite(Desc.tWind.fLiftCoefficient) ||
+			!std::isfinite(Desc.tWind.fFluidDensity) ||
 			!std::isfinite(
-				Desc.fMotionConstraintStiffness))
+				Desc.fMotionConstraintStiffness) ||
+			!std::isfinite(
+				Desc.fSelfCollisionDistance) ||
+			!std::isfinite(
+				Desc.fSelfCollisionStiffness))
 		{
 			return false;
 		}
 
-		return Desc.fSolverFrequency > 0.f &&
+		return Desc.tWind.fDragCoefficient >= 0.f &&
+			Desc.tWind.fDragCoefficient <= 1.f &&
+			Desc.tWind.fLiftCoefficient >= 0.f &&
+			Desc.tWind.fLiftCoefficient <= 1.f &&
+			Desc.tWind.fFluidDensity >= 0.f &&
+			Desc.fSolverFrequency > 0.f &&
 			Desc.fStiffnessFrequency > 0.f &&
 			Desc.fPhaseStiffness >= 0.f &&
 			Desc.fPhaseStiffness <= 1.f &&
@@ -160,6 +173,9 @@ namespace
 			Desc.fStretchLimit > 0.f &&
 			Desc.fMotionConstraintStiffness >= 0.f &&
 			Desc.fMotionConstraintStiffness <= 1.f &&
+			Desc.fSelfCollisionDistance >= 0.f &&
+			Desc.fSelfCollisionStiffness >= 0.f &&
+			Desc.fSelfCollisionStiffness <= 1.f &&
 			Desc.vDamping.x >= 0.f && Desc.vDamping.x <= 1.f &&
 			Desc.vDamping.y >= 0.f && Desc.vDamping.y <= 1.f &&
 			Desc.vDamping.z >= 0.f && Desc.vDamping.z <= 1.f;
@@ -538,6 +554,7 @@ struct CNvClothManager::IMPLEMENTATION
 		_bool bCpuParticleBufferDirty{ true };
 		std::vector<_float3> vecDebugPositions{};
 		std::vector<float> vecInverseMasses{};
+		std::vector<float> vecMotionConstraintRadii{};
 		std::vector<uint32_t> vecIndices{};
 		std::vector<physx::PxVec4> vecCollisionSpheres{};
 		std::vector<uint32_t> vecCollisionCapsules{};
@@ -572,6 +589,7 @@ struct CNvClothManager::IMPLEMENTATION
 	uint64_t iNextFabricHandle{ 1 };
 	uint64_t iNextClothHandle{ 1 };
 	_bool bDebugDraw{};
+	_bool bDebugConstraintWeights{};
 	_bool bSolverErrorLogged{};
 #ifdef _DEBUG
 	NVCLOTH_FABRIC_HANDLE hTestFabric{};
@@ -947,6 +965,16 @@ HRESULT CNvClothManager::CreateCloth(
 		Desc.vGravity.x,
 		Desc.vGravity.y,
 		Desc.vGravity.z });
+	pCloth->setWindVelocity({
+		Desc.tWind.vVelocity.x,
+		Desc.tWind.vVelocity.y,
+		Desc.tWind.vVelocity.z });
+	pCloth->setDragCoefficient(
+		Desc.tWind.fDragCoefficient);
+	pCloth->setLiftCoefficient(
+		Desc.tWind.fLiftCoefficient);
+	pCloth->setFluidDensity(
+		Desc.tWind.fFluidDensity);
 	pCloth->setDamping({
 		Desc.vDamping.x,
 		Desc.vDamping.y,
@@ -967,6 +995,21 @@ HRESULT CNvClothManager::CreateCloth(
 	pCloth->setStiffnessFrequency(Desc.fStiffnessFrequency);
 	pCloth->setMotionConstraintStiffness(
 		Desc.fMotionConstraintStiffness);
+	pCloth->setSelfCollisionDistance(
+		Desc.fSelfCollisionDistance);
+	pCloth->setSelfCollisionStiffness(
+		Desc.fSelfCollisionStiffness);
+	if (Desc.fSelfCollisionDistance > 0.f &&
+		Desc.fSelfCollisionStiffness > 0.f)
+	{
+		// [LSY] 초기 형상에서 이미 가까운 이웃 정점은 Self Collision
+		// 대상으로 보지 않게 해 메시 자체가 부풀거나 떨리는 현상을 막는다.
+		pCloth->setRestPositions(
+			nv::cloth::Range<const physx::PxVec4>{
+				vecParticles.data(),
+				vecParticles.data() +
+					vecParticles.size() });
+	}
 
 	std::vector<nv::cloth::PhaseConfig> vecPhases(
 		static_cast<size_t>(
@@ -1395,6 +1438,115 @@ _bool CNvClothManager::SetClothTransform(
 	return true;
 }
 
+_bool CNvClothManager::SetClothWind(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	const NVCLOTH_WIND_DESC& Desc)
+{
+	ZoneScopedN("NvCloth_SetClothWind");
+
+	if (!m_pImpl ||
+		!Handle ||
+		!IsFinite(Desc.vVelocity) ||
+		!std::isfinite(Desc.fDragCoefficient) ||
+		!std::isfinite(Desc.fLiftCoefficient) ||
+		!std::isfinite(Desc.fFluidDensity) ||
+		Desc.fDragCoefficient < 0.f ||
+		Desc.fDragCoefficient > 1.f ||
+		Desc.fLiftCoefficient < 0.f ||
+		Desc.fLiftCoefficient > 1.f ||
+		Desc.fFluidDensity < 0.f)
+	{
+		return false;
+	}
+
+	std::scoped_lock Lock{ m_pImpl->StateMutex };
+	const auto Iter = m_pImpl->Cloths.find(Handle.iValue);
+	if (Iter == m_pImpl->Cloths.end() ||
+		!Iter->second ||
+		!Iter->second->pCloth)
+	{
+		return false;
+	}
+
+	auto* pCloth = Iter->second->pCloth;
+	pCloth->setWindVelocity({
+		Desc.vVelocity.x,
+		Desc.vVelocity.y,
+		Desc.vVelocity.z });
+	pCloth->setDragCoefficient(
+		Desc.fDragCoefficient);
+	pCloth->setLiftCoefficient(
+		Desc.fLiftCoefficient);
+	pCloth->setFluidDensity(
+		Desc.fFluidDensity);
+	return true;
+}
+
+_bool CNvClothManager::SetClothSelfCollision(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	_float fDistance,
+	_float fStiffness)
+{
+	ZoneScopedN("NvCloth_SetSelfCollision");
+
+	if (!m_pImpl ||
+		!Handle ||
+		!std::isfinite(fDistance) ||
+		!std::isfinite(fStiffness) ||
+		fDistance < 0.f ||
+		fStiffness < 0.f ||
+		fStiffness > 1.f)
+	{
+		return false;
+	}
+
+	std::scoped_lock Lock{ m_pImpl->StateMutex };
+	const auto Iter = m_pImpl->Cloths.find(Handle.iValue);
+	if (Iter == m_pImpl->Cloths.end() ||
+		!Iter->second ||
+		!Iter->second->pCloth)
+	{
+		return false;
+	}
+
+	auto* pCloth = Iter->second->pCloth;
+	if (fDistance > 0.f &&
+		fStiffness > 0.f &&
+		pCloth->getNumRestPositions() == 0)
+	{
+		const auto& Record = *Iter->second;
+		if (Record.vecDebugPositions.size() !=
+			Record.vecInverseMasses.size())
+		{
+			return false;
+		}
+
+		std::vector<physx::PxVec4> vecRestPositions{};
+		vecRestPositions.reserve(
+			Record.vecDebugPositions.size());
+		for (size_t i = 0;
+			i < Record.vecDebugPositions.size();
+			++i)
+		{
+			const auto& vPosition =
+				Record.vecDebugPositions[i];
+			vecRestPositions.emplace_back(
+				vPosition.x,
+				vPosition.y,
+				vPosition.z,
+				Record.vecInverseMasses[i]);
+		}
+		pCloth->setRestPositions(
+			nv::cloth::Range<const physx::PxVec4>{
+				vecRestPositions.data(),
+				vecRestPositions.data() +
+					vecRestPositions.size() });
+	}
+	pCloth->setSelfCollisionDistance(fDistance);
+	pCloth->setSelfCollisionStiffness(fStiffness);
+	return true;
+}
+
 _bool CNvClothManager::SetClothCollisions(
 	NVCLOTH_CLOTH_HANDLE Handle,
 	const NVCLOTH_COLLISION_DESC& Desc)
@@ -1579,6 +1731,16 @@ _bool CNvClothManager::SetClothAnimationConstraints(
 			vTarget.y,
 			vTarget.z,
 			Desc.vecMaxDistances[i] };
+	}
+
+	if (m_pImpl->bDebugConstraintWeights)
+	{
+		Record.vecMotionConstraintRadii =
+			Desc.vecMaxDistances;
+	}
+	else if (!Record.vecMotionConstraintRadii.empty())
+	{
+		Record.vecMotionConstraintRadii.clear();
 	}
 
 	if (Desc.vecSeparationCenters.empty())
@@ -1953,14 +2115,76 @@ void CNvClothManager::RenderDebug(
 			continue;
 		}
 
-		DbgLineRender.SetColor({ 0.f, 0.8f, 1.f, 1.f });
-		DbgLineRender.AddTriangleMesh(
-			pRecord->vecDebugPositions.data(),
-			static_cast<uint32_t>(
-				pRecord->vecDebugPositions.size()),
-			pRecord->vecIndices.data(),
-			static_cast<uint32_t>(
-				pRecord->vecIndices.size() / 3));
+		const _bool bDrawConstraintWeights =
+			m_pImpl->bDebugConstraintWeights &&
+			pRecord->vecMotionConstraintRadii.size() ==
+				pRecord->vecDebugPositions.size();
+		if (bDrawConstraintWeights)
+		{
+			const float fMaxRadius =
+				*std::max_element(
+					pRecord->vecMotionConstraintRadii.begin(),
+					pRecord->vecMotionConstraintRadii.end());
+			const float fSafeMaxRadius =
+				std::max(fMaxRadius, FLT_EPSILON);
+
+			const auto DrawWeightedEdge =
+				[&DbgLineRender,
+					pRecord = pRecord.get(),
+					fSafeMaxRadius](
+						uint32_t i0,
+						uint32_t i1)
+			{
+				if (i0 >= pRecord->vecDebugPositions.size() ||
+					i1 >= pRecord->vecDebugPositions.size())
+				{
+					return;
+				}
+
+				const float fWeight =
+					std::clamp(
+						(pRecord->vecMotionConstraintRadii[i0] +
+							pRecord->vecMotionConstraintRadii[i1]) *
+							0.5f / fSafeMaxRadius,
+						0.f,
+						1.f);
+				const _float4 vColor{
+					1.f - fWeight,
+					std::min(1.f, fWeight * 2.f),
+					fWeight,
+					1.f };
+				DbgLineRender.AddLine(
+					pRecord->vecDebugPositions[i0],
+					pRecord->vecDebugPositions[i1],
+					vColor);
+			};
+
+			for (size_t i = 0;
+				i + 2 < pRecord->vecIndices.size();
+				i += 3)
+			{
+				const uint32_t i0 =
+					pRecord->vecIndices[i];
+				const uint32_t i1 =
+					pRecord->vecIndices[i + 1];
+				const uint32_t i2 =
+					pRecord->vecIndices[i + 2];
+				DrawWeightedEdge(i0, i1);
+				DrawWeightedEdge(i1, i2);
+				DrawWeightedEdge(i2, i0);
+			}
+		}
+		else
+		{
+			DbgLineRender.SetColor({ 0.f, 0.8f, 1.f, 1.f });
+			DbgLineRender.AddTriangleMesh(
+				pRecord->vecDebugPositions.data(),
+				static_cast<uint32_t>(
+					pRecord->vecDebugPositions.size()),
+				pRecord->vecIndices.data(),
+				static_cast<uint32_t>(
+					pRecord->vecIndices.size() / 3));
+		}
 
 		DbgLineRender.SetColor({ 1.f, 0.2f, 0.1f, 1.f });
 		const auto iParticleCount = std::min(
@@ -2095,6 +2319,17 @@ void CNvClothManager::UpdateGUI()
 			"| CPU Backend");
 	ImGui::SameLine();
 	ImGui::Checkbox("Debug Draw Cloth", &m_pImpl->bDebugDraw);
+	if (m_pImpl->bDebugDraw)
+	{
+		ImGui::SameLine();
+		ImGui::Checkbox(
+			"Constraint Weights",
+			&m_pImpl->bDebugConstraintWeights);
+	}
+	else
+	{
+		m_pImpl->bDebugConstraintWeights = false;
+	}
 
 	ImGui::Separator();
 	ImGui::TextUnformatted("Summary");

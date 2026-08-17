@@ -178,7 +178,7 @@ public:
 	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
 	void SetFlyRequested(_bool bRequested);
 	_bool IsFlyRequested() const { return m_bFlyRequested; }
-	
+
 	_bool GetRenderInfluence() { return m_bRenderInfluence; }
 	void SetRenderInfluence(_bool _RenderInfluence) { m_bRenderInfluence = _RenderInfluence; }
 
@@ -190,6 +190,10 @@ public:
 	void SetBroomMovementRatio(_float fRatio);
 	void SetBroomBoostEffectRatio(_float fRatio);
 	_bool IsBroomVisible() const;
+	CHandle GetBroomHandle() const
+	{
+		return m_Partes[ETOUI(PARTES::BROOM)];
+	}
 
 
 	_bool GetInvincible() const { return m_bInvincible; }
@@ -387,6 +391,14 @@ public:
 private:
 	HRESULT InitializeAvadaKedavra();
 	UPtr<CPlayer_AvadaKedavraController> m_pAvadaKedavraController{};
+#pragma endregion
+
+#pragma region CAPE
+public:
+	CHandle GetCapeHandle() const { return m_hCape; }
+	void SetCapeHandle(CHandle h) { m_hCape = h; }
+private:
+	CHandle m_hCape{};
 #pragma endregion
 
 private:

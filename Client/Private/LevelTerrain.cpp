@@ -158,7 +158,19 @@ HRESULT CLevelTerrain::Initialize()
 			Desc.tBodyCollisionRig,
 			E::NVCLOTH_COLLISION_RIG_ROOT,
 			false);
-		if (!E::CGameInstance::Get().
+		E::CGameInstance::Get().JsonDeSerialize(
+			"./Resources/NvCloth/CollisionRigs/"
+			"ProfessorCape_Broom.nvclothcollision.json",
+			Desc.tBroomBodyCollisionRig,
+			E::NVCLOTH_COLLISION_RIG_ROOT,
+			false);
+		E::CGameInstance::Get().JsonDeSerialize(
+			"./Resources/NvCloth/CollisionRigs/"
+			"ProfessorCape_BroomObject.nvclothcollision.json",
+			Desc.tBroomObjectCollisionRig,
+			E::NVCLOTH_COLLISION_RIG_ROOT,
+			false);
+		if (auto hCape = E::CGameInstance::Get().
 			AddGameObjectToLayer(
 				LEVEL::TERRAIN,
 				PROTO_GAMEOBJECT::
@@ -166,8 +178,15 @@ HRESULT CLevelTerrain::Initialize()
 				"03_Player",
 				&Desc))
 		{
-			return E_FAIL;
+			if(!hCape)
+				return E_FAIL;
+
+			if (auto pPlayer = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(hPlayer.value()))
+			{
+				pPlayer->SetCapeHandle(hCape.value());
+			}
 		}
+
 	}
 
 	//if (FAILED(InitializeJointTests(*hPlayer, hOilBarrels)))

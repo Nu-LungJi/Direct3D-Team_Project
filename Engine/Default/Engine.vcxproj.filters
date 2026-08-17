@@ -924,6 +924,9 @@
     <ClInclude Include="..\public\NvClothCollisionRigData.h">
       <Filter>NvCloth</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\NvClothParticleConstraintData.h">
+      <Filter>NvCloth</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\NvClothCollisionEditorGUI.h">
       <Filter>NvCloth</Filter>
     </ClInclude>
