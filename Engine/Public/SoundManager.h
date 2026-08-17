@@ -78,6 +78,11 @@ private:
 		SOUND_BUS_ID sBusID{ SOUND_MASTER_BUS_ID };
 		_bool b3D{};
 		SOUND_3D_DESC t3DDesc{};
+
+		// FMOD FadePoint가 완료된 뒤 사라져도
+		// 마지막으로 페이드된 실제 채널 볼륨을 유지하기 위한 값.
+		_bool bHasLastFadeTarget{};
+		_float fLastFadeTargetVolume{};
 	};
 
 private:
@@ -138,7 +143,7 @@ private:
 	void EnqueueCompletedSound(SOUND_ID iSoundID);
 	void FlushCompletedSounds();
 	void Draw3DSoundDebug();
-	_bool ScheduleChannelFade(FMOD_CHANNEL* pChannel, _float fTargetVolume,
+	_bool ScheduleChannelFade(SPlayingSound& tPlayingSound, _float fTargetVolume,
 		_float fDuration, _bool bStopAtEnd);
 	_bool ScheduleBusFade(FMOD_CHANNELGROUP* pBus, _float fTargetVolume,
 		_float fDuration);

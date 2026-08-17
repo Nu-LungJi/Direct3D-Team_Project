@@ -522,29 +522,63 @@ _bool CSoundManager::SetVolume(SOUND_ID iSoundID, _float fVolume)
 	if (iter == m_mapPlayingSounds.end() || !std::isfinite(fVolume))
 		return false;
 
-	FMOD_CHANNEL* pChannel = iter->second.pChannel;
-	FMOD_Channel_RemoveFadePoints(
-		pChannel, 0, std::numeric_limits<unsigned long long>::max());
-	FMOD_Channel_SetDelay(pChannel, 0, 0, false);
-	return FMOD_Channel_SetVolume(pChannel, std::max(0.f, fVolume)) == FMOD_OK;
-}
+	const _float fClampedVolume = std::max(0.f, fVolume);
 
-_bool CSoundManager::FadeTo(
-	SOUND_ID iSoundID, _float fTargetVolume, _float fDuration)
-{
-	if (!std::isfinite(fTargetVolume) || !std::isfinite(fDuration))
+	FMOD_CHANNEL* pChannel = iter->second.pChannel;
+
+	FMOD_Channel_RemoveFadePoints(
+		pChannel,
+		0,
+		std::numeric_limits<unsigned long long>::max());
+
+	FMOD_Channel_SetDelay(
+		pChannel,
+		0,
+		0,
+		false);
+
+	if (FMOD_Channel_SetVolume(
+		pChannel,
+		fClampedVolume) != FMOD_OK)
+	{
 		return false;
+	}
+
+	// 일반 SetVolume을 호출했으므로
+	// 이전 Fade target 캐시는 더 이상 유효하지 않다.
+	iter->second.bHasLastFadeTarget = false;
+	iter->second.fLastFadeTargetVolume = fClampedVolume;
+
+	return true;
+}
+_bool CSoundManager::FadeTo(
+	SOUND_ID iSoundID,
+	_float fTargetVolume,
+	_float fDuration)
+{
+	if (!std::isfinite(fTargetVolume) ||
+		!std::isfinite(fDuration))
+	{
+		return false;
+	}
 
 	if (fDuration <= 0.f)
 		return SetVolume(iSoundID, fTargetVolume);
 
 	const auto iter = m_mapPlayingSounds.find(iSoundID);
-	return iter != m_mapPlayingSounds.end() &&
-		ScheduleChannelFade(
-			iter->second.pChannel, fTargetVolume, fDuration, false);
+	if (iter == m_mapPlayingSounds.end())
+		return false;
+
+	return ScheduleChannelFade(
+		iter->second,
+		fTargetVolume,
+		fDuration,
+		false);
 }
 
-_bool CSoundManager::FadeOutAndStop(SOUND_ID iSoundID, _float fDuration)
+_bool CSoundManager::FadeOutAndStop(
+	SOUND_ID iSoundID,
+	_float fDuration)
 {
 	if (!std::isfinite(fDuration))
 		return false;
@@ -553,8 +587,14 @@ _bool CSoundManager::FadeOutAndStop(SOUND_ID iSoundID, _float fDuration)
 		return Stop(iSoundID);
 
 	const auto iter = m_mapPlayingSounds.find(iSoundID);
-	return iter != m_mapPlayingSounds.end() &&
-		ScheduleChannelFade(iter->second.pChannel, 0.f, fDuration, true);
+	if (iter == m_mapPlayingSounds.end())
+		return false;
+
+	return ScheduleChannelFade(
+		iter->second,
+		0.f,
+		fDuration,
+		true);
 }
 
 _bool CSoundManager::SetPitch(SOUND_ID iSoundID, _float fPitch)
@@ -875,13 +915,18 @@ void CSoundManager::Draw3DSoundDebug()
 	pDbgLineRender->SetColor(vPreviousColor);
 	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 }
-
 _bool CSoundManager::ScheduleChannelFade(
-	FMOD_CHANNEL* pChannel, _float fTargetVolume,
-	_float fDuration, _bool bStopAtEnd)
+	SPlayingSound& tPlayingSound,
+	_float fTargetVolume,
+	_float fDuration,
+	_bool bStopAtEnd)
 {
-	if (pChannel == nullptr || m_iSoftwareSampleRate <= 0 ||
-		!std::isfinite(fTargetVolume) || !std::isfinite(fDuration) ||
+	FMOD_CHANNEL* pChannel = tPlayingSound.pChannel;
+
+	if (pChannel == nullptr ||
+		m_iSoftwareSampleRate <= 0 ||
+		!std::isfinite(fTargetVolume) ||
+		!std::isfinite(fDuration) ||
 		fDuration <= 0.f)
 	{
 		return false;
@@ -889,99 +934,324 @@ _bool CSoundManager::ScheduleChannelFade(
 
 	unsigned long long iDSPClock{};
 	unsigned long long iParentClock{};
+
 	if (FMOD_Channel_GetDSPClock(
-		pChannel, &iDSPClock, &iParentClock) != FMOD_OK)
+		pChannel,
+		&iDSPClock,
+		&iParentClock) != FMOD_OK)
 	{
 		return false;
 	}
 
 	UNREFERENCED_PARAMETER(iDSPClock);
-	const auto iDurationTicks = static_cast<unsigned long long>(
-		std::max(1.0,
-			std::ceil(static_cast<double>(fDuration) *
-				static_cast<double>(m_iSoftwareSampleRate))));
-	const auto iMaxClock = std::numeric_limits<unsigned long long>::max();
-	const auto iEndClock = iDurationTicks > iMaxClock - iParentClock
+
+	const auto iDurationTicks =
+		static_cast<unsigned long long>(
+			std::max(
+				1.0,
+				std::ceil(
+					static_cast<double>(fDuration) *
+					static_cast<double>(m_iSoftwareSampleRate))));
+
+	const auto iMaxClock =
+		std::numeric_limits<unsigned long long>::max();
+
+	const auto iEndClock =
+		iDurationTicks > iMaxClock - iParentClock
 		? iMaxClock
 		: iParentClock + iDurationTicks;
 
-	_float fBaseVolume{ 1.f };
-	if (FMOD_Channel_GetVolume(pChannel, &fBaseVolume) != FMOD_OK)
-		return false;
 
-	_float fFadeVolume{ 1.f };
-	unsigned int iFadePointCount{};
-	if (FMOD_Channel_GetFadePoints(
-		pChannel, &iFadePointCount, nullptr, nullptr) != FMOD_OK)
+	// ---------------------------------------------------------
+	// 현재 Channel 기본 Volume
+	// ---------------------------------------------------------
+
+	_float fBaseVolume{ 1.f };
+
+	if (FMOD_Channel_GetVolume(
+		pChannel,
+		&fBaseVolume) != FMOD_OK)
 	{
 		return false;
 	}
 
+
+	// ---------------------------------------------------------
+	// 현재 활성화되어 있는 Fade Point 조사
+	// ---------------------------------------------------------
+
+	_float fFadeVolume{ 1.f };
+	unsigned int iFadePointCount{};
+
+	if (FMOD_Channel_GetFadePoints(
+		pChannel,
+		&iFadePointCount,
+		nullptr,
+		nullptr) != FMOD_OK)
+	{
+		return false;
+	}
+
+
 	if (iFadePointCount > 0)
 	{
-		std::vector<unsigned long long> fadeClocks(iFadePointCount);
-		std::vector<_float> fadeVolumes(iFadePointCount);
+		std::vector<unsigned long long> fadeClocks(
+			iFadePointCount);
+
+		std::vector<_float> fadeVolumes(
+			iFadePointCount);
+
 		if (FMOD_Channel_GetFadePoints(
-			pChannel, &iFadePointCount,
-			fadeClocks.data(), fadeVolumes.data()) != FMOD_OK)
+			pChannel,
+			&iFadePointCount,
+			fadeClocks.data(),
+			fadeVolumes.data()) != FMOD_OK)
 		{
 			return false;
 		}
 
+
+		// 현재 DSP clock이 첫 FadePoint 이전
 		if (iParentClock <= fadeClocks.front())
 		{
 			fFadeVolume = fadeVolumes.front();
 		}
-		else if (iParentClock >= fadeClocks[iFadePointCount - 1])
+
+		// 마지막 FadePoint 이후
+		else if (
+			iParentClock >=
+			fadeClocks[iFadePointCount - 1])
 		{
-			fFadeVolume = fadeVolumes[iFadePointCount - 1];
+			fFadeVolume =
+				fadeVolumes[iFadePointCount - 1];
 		}
+
+		// Fade 중간
 		else
 		{
-			for (unsigned int i = 1; i < iFadePointCount; ++i)
+			for (unsigned int i = 1;
+				i < iFadePointCount;
+				++i)
 			{
 				if (iParentClock > fadeClocks[i])
 					continue;
 
-				const auto iStartClock = fadeClocks[i - 1];
-				const auto iClockRange = fadeClocks[i] - iStartClock;
-				const _float fRatio = iClockRange == 0
+				const auto iStartClock =
+					fadeClocks[i - 1];
+
+				const auto iClockRange =
+					fadeClocks[i] - iStartClock;
+
+				const _float fRatio =
+					iClockRange == 0
 					? 1.f
-					: static_cast<_float>(iParentClock - iStartClock) /
-						static_cast<_float>(iClockRange);
-				fFadeVolume = std::lerp(
-					fadeVolumes[i - 1], fadeVolumes[i], fRatio);
+					: static_cast<_float>(
+						iParentClock - iStartClock) /
+					static_cast<_float>(
+						iClockRange);
+
+				fFadeVolume =
+					std::lerp(
+						fadeVolumes[i - 1],
+						fadeVolumes[i],
+						fRatio);
+
 				break;
 			}
 		}
 	}
 
-	const _float fCurrentOutputVolume =
-		std::max(0.f, fBaseVolume * fFadeVolume);
-	auto RestoreCurrentVolume = [pChannel, iMaxClock, fCurrentOutputVolume]()
-	{
-		FMOD_Channel_RemoveFadePoints(pChannel, 0, iMaxClock);
-		FMOD_Channel_SetDelay(pChannel, 0, 0, false);
-		FMOD_Channel_SetVolume(pChannel, fCurrentOutputVolume);
-		return false;
-	};
 
-	if (FMOD_Channel_RemoveFadePoints(pChannel, 0, iMaxClock) != FMOD_OK ||
-		FMOD_Channel_SetDelay(pChannel, 0, 0, false) != FMOD_OK ||
-		FMOD_Channel_SetVolume(pChannel, 1.f) != FMOD_OK ||
-		FMOD_Channel_AddFadePoint(
-			pChannel, iParentClock, fCurrentOutputVolume) != FMOD_OK ||
-		FMOD_Channel_AddFadePoint(
-			pChannel, iEndClock, std::max(0.f, fTargetVolume)) != FMOD_OK)
+	// ---------------------------------------------------------
+	// 실제 현재 출력 볼륨 계산
+	//
+	// 중요한 부분:
+	//
+	// FMOD FadePoint는 Fade가 완료되면 없어질 수 있다.
+	//
+	// 예:
+	//
+	// 최초:
+	// SetVolume(0)
+	// Fade 0 -> 0.2
+	//
+	// ScheduleChannelFade는 내부적으로
+	// SetVolume(1)
+	// FadePoint 0 -> 0.2
+	//
+	// Fade 완료 후:
+	//
+	// GetVolume()      = 1.0
+	// GetFadePoints()  = 0개
+	//
+	// 하지만 실제 우리가 원하는 logical volume은 0.2.
+	//
+	// 따라서 FadePoint가 없고 이전 Fade가 있었다면
+	// 마지막 Fade target을 사용한다.
+	// ---------------------------------------------------------
+
+	_float fCurrentOutputVolume{};
+
+	if (iFadePointCount > 0)
+	{
+		fCurrentOutputVolume =
+			std::max(
+				0.f,
+				fBaseVolume * fFadeVolume);
+	}
+	else if (tPlayingSound.bHasLastFadeTarget)
+	{
+		fCurrentOutputVolume =
+			std::max(
+				0.f,
+				tPlayingSound.fLastFadeTargetVolume);
+	}
+	else
+	{
+		fCurrentOutputVolume =
+			std::max(
+				0.f,
+				fBaseVolume);
+	}
+
+
+	// ---------------------------------------------------------
+	// Fade 예약 실패 시 복구
+	// ---------------------------------------------------------
+
+	auto RestoreCurrentVolume =
+		[
+			&tPlayingSound,
+			pChannel,
+			iMaxClock,
+			fCurrentOutputVolume
+		]()
+		{
+			FMOD_Channel_RemoveFadePoints(
+				pChannel,
+				0,
+				iMaxClock);
+
+			FMOD_Channel_SetDelay(
+				pChannel,
+				0,
+				0,
+				false);
+
+			FMOD_Channel_SetVolume(
+				pChannel,
+				fCurrentOutputVolume);
+
+			// 이제 다시 일반 Volume 상태로 돌아간다.
+			tPlayingSound.bHasLastFadeTarget = false;
+
+			tPlayingSound.fLastFadeTargetVolume =
+				fCurrentOutputVolume;
+
+			return false;
+		};
+
+
+	// ---------------------------------------------------------
+	// 기존 Fade 제거 후 새 Fade 구성
+	// ---------------------------------------------------------
+
+	if (FMOD_Channel_RemoveFadePoints(
+		pChannel,
+		0,
+		iMaxClock) != FMOD_OK)
 	{
 		return RestoreCurrentVolume();
 	}
 
-	if (bStopAtEnd &&
-		FMOD_Channel_SetDelay(pChannel, 0, iEndClock, true) != FMOD_OK)
+
+	if (FMOD_Channel_SetDelay(
+		pChannel,
+		0,
+		0,
+		false) != FMOD_OK)
 	{
 		return RestoreCurrentVolume();
 	}
+
+
+	/*
+	 * FadePoint volume을 실제 볼륨값으로 사용하기 위해
+	 * Channel 기본 volume은 1로 정규화한다.
+	 */
+	if (FMOD_Channel_SetVolume(
+		pChannel,
+		1.f) != FMOD_OK)
+	{
+		return RestoreCurrentVolume();
+	}
+
+
+	/*
+	 * 지금 들리고 있는 볼륨에서 시작.
+	 *
+	 * BGM의 경우 정상적으로:
+	 *
+	 * 사망 직전 = 0.2
+	 * 따라서
+	 * AddFadePoint(now, 0.2)
+	 */
+	if (FMOD_Channel_AddFadePoint(
+		pChannel,
+		iParentClock,
+		fCurrentOutputVolume) != FMOD_OK)
+	{
+		return RestoreCurrentVolume();
+	}
+
+
+	/*
+	 * 목표 볼륨까지 Fade.
+	 *
+	 * FadeOutAndStop이면:
+	 *
+	 * 0.2 -> 0.0
+	 */
+	const _float fClampedTargetVolume =
+		std::max(0.f, fTargetVolume);
+
+	if (FMOD_Channel_AddFadePoint(
+		pChannel,
+		iEndClock,
+		fClampedTargetVolume) != FMOD_OK)
+	{
+		return RestoreCurrentVolume();
+	}
+
+
+	// ---------------------------------------------------------
+	// Fade Out 완료 시 Channel 정지
+	// ---------------------------------------------------------
+
+	if (bStopAtEnd)
+	{
+		if (FMOD_Channel_SetDelay(
+			pChannel,
+			0,
+			iEndClock,
+			true) != FMOD_OK)
+		{
+			return RestoreCurrentVolume();
+		}
+	}
+
+
+	// ---------------------------------------------------------
+	// 마지막 Target 저장
+	//
+	// FMOD FadePoint가 완료 후 삭제되더라도
+	// 다음 Fade의 시작 볼륨을 알 수 있게 한다.
+	// ---------------------------------------------------------
+
+	tPlayingSound.bHasLastFadeTarget = true;
+	tPlayingSound.fLastFadeTargetVolume =
+		fClampedTargetVolume;
+
 
 	return true;
 }
