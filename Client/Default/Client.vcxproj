@@ -537,6 +537,7 @@
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokImpactScorch.hlsl" />
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokEnergyPool.hlsl" />
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokOrbGround.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokBranchCrack.hlsl" />
   </ItemGroup>
   <ItemDefinitionGroup>
     <FxCompile>

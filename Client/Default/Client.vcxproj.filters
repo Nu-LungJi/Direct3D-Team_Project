@@ -1342,5 +1342,8 @@
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokOrbGround.hlsl">
       <Filter>ShaderFiles\Decal</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokBranchCrack.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
