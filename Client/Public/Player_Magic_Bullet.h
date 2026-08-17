@@ -27,7 +27,8 @@ public:
 			.iQueryMask =
 				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
 				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
-				ETOUI(COLLISION_LAYER::ENEMY_BODY),
+				ETOUI(COLLISION_LAYER::ENEMY_BODY) |
+				ETOUI(COLLISION_LAYER::ENEMY_HURTBOX),
 			.bQueryStatic = true,
 			.bQueryDynamic = true,
 			.bIncludeTrigger = false

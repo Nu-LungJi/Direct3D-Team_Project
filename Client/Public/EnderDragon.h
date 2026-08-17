@@ -112,6 +112,8 @@ private:
 	void						Picking(_float3& vPos,uint32_t iID);
 
 	void						InitializeEffects();
+	void						Update_EnvironmentParticles(_float fTimeDelta);
+	void						Spawn_EnvironmentParticles(uint32_t iParticleIndex, uint32_t iCount);
 
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
@@ -125,6 +127,10 @@ private:
 	_string						m_WayName{};
 	std::list<_float3>			m_DebugPoint;
 	std::array<_bool, ETOUI(DRAGON_PHASE::END)>	m_bPhaseLock{ false };
+	_float						m_fBlobEnvSpawnAcc{};
+	_float						m_fSwirlEnvSpawnAcc{};
+	_float						m_fBlobEnvSpawnInterval{ 0.35f };
+	_float						m_fSwirlEnvSpawnInterval{ 1.f };
 public:
 	static E::UPtr<CEnderDragon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -78,6 +78,11 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 			{
 				return false;
 			}
+			// [LSY] 이 레벨에서도 플레이어 스킬 컷씬을 사용할 수 있도록 미리 등록한다.
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AvadaKedavra")))
+			{
+				return false;
+			}
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>("TEST", "Model_Resource",
 				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Bridge/SK_Bridge.bin"))) {
 

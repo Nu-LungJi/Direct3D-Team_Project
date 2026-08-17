@@ -40,10 +40,6 @@ HRESULT CParticle::LoadParticleTexture(std::pair<StringID, StringID> textureId)
 }
 void CParticle::RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList)
 {
-	char buf[64];
-	sprintf_s(buf, "RequestSpawn: %zu items queued\n", spawnList.size());
-	OutputDebugStringA(buf);
-
 	m_PendingSpawns.reserve(m_PendingSpawns.size() + spawnList.size());
 	for (const auto& s : spawnList)
 	{
@@ -92,12 +88,6 @@ void CParticle::ProcessPendingSpawns(E::_float fTimeDelta)
 	if (m_PendingSpawns.empty())
 		return;
 
-	char buf[64];
-	sprintf_s(buf, "ProcessPendingSpawns: pending=%zu\n", m_PendingSpawns.size());
-	OutputDebugStringA(buf);
-
-
-
 	std::vector<PARTICLE_SPAWN_DATA> readyList;
 	auto it = std::remove_if(m_PendingSpawns.begin(), m_PendingSpawns.end(),
 		[&](PENDING_SPAWN& p)
@@ -113,13 +103,7 @@ void CParticle::ProcessPendingSpawns(E::_float fTimeDelta)
 	m_PendingSpawns.erase(it, m_PendingSpawns.end());
 
 	if (!readyList.empty())
-	{
-		HRESULT hr = Spawn((uint32_t)readyList.size(), readyList.data());
-		if (FAILED(hr))
-			OutputDebugStringA("Spawn FAILED!\n");
-		else
-			OutputDebugStringA("Spawn SUCCESS!\n");
-	}
+		Spawn((uint32_t)readyList.size(), readyList.data());
 }
 void CParticle::TranslateOwner(uint32_t ownerId, const _float3& delta) {
 

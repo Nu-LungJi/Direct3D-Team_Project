@@ -21,6 +21,7 @@
 #include "PlayerRagdollController.h"
 #include "Player_BombardaController.h"
 #include "Player_ConfringoController.h"
+#include "Player_AvadaKedavraController.h"
 #include "Player_Stupefy_Bullet.h"
 #include "PlayerThirdPersonCamera.h"
 #include "DbgLineRender.h"
@@ -129,6 +130,7 @@ void CPlayer::UpdateGUI()
 
 	if (m_pRagdollController)
 		m_pRagdollController->UpdateGUI();
+
 
 
 
@@ -580,6 +582,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 		return E_FAIL;
 	if (FAILED(InitializeConfringo()))
 		return E_FAIL;
+	if (FAILED(InitializeAvadaKedavra()))
+		return E_FAIL;
 
 	return S_OK;
 }
@@ -631,6 +635,36 @@ _bool CPlayer::IsRagdollTransitioning() const
 		return false;
 
 	return m_pRagdollController->IsTransitioning();
+}
+#pragma endregion
+
+#pragma region AVADA_KEDAVRA
+HRESULT CPlayer::InitializeAvadaKedavra()
+{
+	// [LSY] 플레이어별 아바다 케다브라 런타임 연출 상태를 Clone 초기화에서 생성한다.
+	m_pAvadaKedavraController =
+		CPlayer_AvadaKedavraController::Create(*this);
+	return m_pAvadaKedavraController ? S_OK : E_FAIL;
+}
+
+void CPlayer::StartAvadaKedavraCastEffect()
+{
+	if (m_pAvadaKedavraController)
+		m_pAvadaKedavraController->StartCastEffect();
+}
+
+void CPlayer::StopAvadaKedavraCastEffect()
+{
+	if (m_pAvadaKedavraController)
+		m_pAvadaKedavraController->StopCastEffect();
+}
+
+_bool CPlayer::ReleaseAvadaKedavraSpell()
+{
+	if (!m_pAvadaKedavraController)
+		return false;
+
+	return m_pAvadaKedavraController->ReleaseSpell();
 }
 #pragma endregion
 
@@ -1213,6 +1247,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (CGameInstance::Get().KeyDown(DIK_L))
 			m_pStateMachine->RequestState(PLAYER_STATE::LUMOS_SKILL);
 #endif
+
+		// [LSY] 아바다 케다브라 애니메이션과 이펙트 연결 확인용 임시 입력.
+		if (CGameInstance::Get().KeyDown(DIK_U))
+			m_pStateMachine->RequestState(PLAYER_STATE::AVADA_KEDAVRA_SKILL);
 
 	}
 	
@@ -1820,53 +1858,6 @@ void CPlayer::Update(E::_float fTimeDelta)
 	{
 
 
-		//_float4 fpos = _float4(GetTransform().GetPosition().x, GetTransform().GetPosition().y, GetTransform().GetPosition().z, 1);
-		//_vector pos = XMVectorSet(fpos.x, fpos.y, fpos.z, fpos.w);
-		//_vector lastSpawnPos = XMVectorSet(m_vSpwanPos.x, m_vSpwanPos.y, m_vSpwanPos.z, 1.f);
-		//_float distance = XMVectorGetX(
-		//	XMVector3Length(pos - lastSpawnPos));
-		//_float3 deltaPos;
-		//XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
-		//if (distance > m_fDistanceOffeset) {
-		//
-		//	CGameInstance::Get().PlayEffect(
-		//		"RanrokMoveSmoke", *GetTransform().GetWorldMatrix(), pos);
-		//	m_vSpwanPos = GetTransform().GetPosition();
-		//
-		//}
-		//
-		//const _matrix playerWorld = GetTransform().GetLoadedWorldMatrix();
-		//
-		//auto TransformTrailPoint = [&playerWorld](const _float3& localPoint)
-		//	{
-		//		_float3 worldPoint{};
-		//		XMStoreFloat3(&worldPoint, XMVector3TransformCoord(XMLoadFloat3(&localPoint), playerWorld));
-		//		return worldPoint;
-		//	};
-		//
-		//_float3 vstart{};
-		//_float3 vend{};
-		//
-		//vstart = TransformTrailPoint({ 0.f, 3.5f, 0.f });
-		//vend = TransformTrailPoint({ 0.f, 2.5f, 0.f });
-		//CGameInstance::Get().AddTrailPoint("RanrokTrail1", "RanrokTrail1", vstart, vend);
-		//
-		//vstart = TransformTrailPoint({ 0.f, 1.5f, -3.f });
-		//vend = TransformTrailPoint({ 0.f, 0.5f, -3.f });
-		//CGameInstance::Get().AddTrailPoint("RanrokTrail2", "RanrokTrail2", vstart, vend);
-		//
-		//vstart = TransformTrailPoint({ 0.f, 1.5f, 3.f });
-		//vend = TransformTrailPoint({ 0.f, 0.5f, 3.f });
-		//CGameInstance::Get().AddTrailPoint("RanrokTrail3", "RanrokTrail3", vstart, vend);
-		//
-		//vstart = TransformTrailPoint({ 0.f, -0.5f, -2.f });
-		//vend = TransformTrailPoint({ 0.f, -1.5f, -2.f });
-		//CGameInstance::Get().AddTrailPoint("RanrokTrail4", "RanrokTrail4", vstart, vend);
-		//
-		//vstart = TransformTrailPoint({ 0.f, -0.5f, 2.f });
-		//vend = TransformTrailPoint({ 0.f, -1.5f, 2.f });
-		//CGameInstance::Get().AddTrailPoint("RanrokTrail5", "RanrokTrail5", vstart, vend);
-		//
 	}
 
 
@@ -2007,6 +1998,9 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 	if (m_pConfringoController)
 		m_pConfringoController->Update(fTimeDelta);
+
+	if (m_pAvadaKedavraController)
+		m_pAvadaKedavraController->Update(fTimeDelta);
 	UpdateAttachedEffects();
 
 	const auto& pModel = m_pComModelInstance->GetModel();
@@ -3028,5 +3022,6 @@ void CPlayer::Free()
 	// [LSY] 컨트롤러가 플레이어 참조를 사용하므로 기반 오브젝트 해제 전에 정리한다.
 	m_pBombardaController.reset();
 	m_pConfringoController.reset();
+	m_pAvadaKedavraController.reset();
 	CAnimationObject::Free();
 }

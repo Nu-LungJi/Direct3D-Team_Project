@@ -73,6 +73,7 @@ namespace Client
 		Prototype_GameObject_Dragon_Breath,
 		Prototype_GameObject_Dragon_Pulse,
 		Prototype_GameObject_Dragon_Gasi,
+		Prototype_GameObject_Spider,
 		Prototype_GameObject_Axe,
 		Prototype_GameObject_Sword,
 		Prototype_GameObject_Mace,

@@ -370,6 +370,9 @@
     <Filter Include="GameObject\Player\Player_BombardaController">
       <UniqueIdentifier>{a21cbdd5-7eb1-4c65-8cba-a14935998a12}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\Player_AvadaKedavraController">
+      <UniqueIdentifier>{cf6d4ace-6a71-49ce-b7a3-0aa8e78a1cee}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Monster\EnderDragon\Skill\Gasi">
       <UniqueIdentifier>{a9ff708e-a308-4d48-99c3-2ed09296a5f9}</UniqueIdentifier>
     </Filter>
@@ -378,6 +381,15 @@
     </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_Broom">
       <UniqueIdentifier>{fde2875f-27ed-4c69-9d9e-eb2981fdb1e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\Spider">
+      <UniqueIdentifier>{76dbc1df-7dba-4448-8373-b8f865257b80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\Spider\FSM">
+      <UniqueIdentifier>{fb0e3e13-4836-4941-aa0a-bce561af7766}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\Spider\FSM\State">
+      <UniqueIdentifier>{6802c92e-b52f-438e-ad3d-29d8e867e9ce}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -852,6 +864,9 @@
     <ClInclude Include="..\Public\Player_BombardaController.h">
       <Filter>GameObject\Player\Player_BombardaController</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_AvadaKedavraController.h">
+      <Filter>GameObject\Player\Player_AvadaKedavraController</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\SkillTarget.h">
       <Filter>GameObject\Monster\00.Parents</Filter>
     </ClInclude>
@@ -863,6 +878,21 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_Broom.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Broom</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Spider.h">
+      <Filter>GameObject\Monster\Spider</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Spider_State.h">
+      <Filter>GameObject\Monster\Spider\FSM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Spider_Spawn.h">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Spider_Combat.h">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Spider_Hit.h">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1286,6 +1316,9 @@
     <ClCompile Include="..\Private\Player_BombardaController.cpp">
       <Filter>GameObject\Player\Player_BombardaController</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_AvadaKedavraController.cpp">
+      <Filter>GameObject\Player\Player_AvadaKedavraController</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\SkillTarget.cpp">
       <Filter>GameObject\Monster\00.Parents</Filter>
     </ClCompile>
@@ -1297,6 +1330,21 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Broom.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Broom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Spider.cpp">
+      <Filter>GameObject\Monster\Spider</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Spider_State.cpp">
+      <Filter>GameObject\Monster\Spider\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Spider_Spawn.cpp">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Spider_Combat.cpp">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Spider_Hit.cpp">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

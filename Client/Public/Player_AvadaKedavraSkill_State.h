@@ -33,9 +33,11 @@ private:
 	_bool m_bAnimationsCached{};
 	PHASE m_ePhase{ PHASE::CAST_BEGIN };
 	_float m_fAnimRatio{};
+	_bool m_bCinematicStarted{};
 
+	// [LSY] 담당 애니메이션의 정규화 재생 구간에 맞춘 Cue 및 상태 복구 시점이다.
 	static constexpr _float CAST_BLEND_DURATION = 0.16f;
-	static constexpr _float RELEASE_RATIO = 0.52f;
+	static constexpr _float RELEASE_RATIO = 0.18f;
 	static constexpr _float RECOVERY_RATIO = 0.76f;
 	static constexpr _float RECOVERY_EXIT_RATIO = 0.95f;
 };

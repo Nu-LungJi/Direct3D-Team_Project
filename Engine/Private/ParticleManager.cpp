@@ -1586,6 +1586,8 @@ void CParticleManager::UpdateGUI()
 		ImGui::DragFloat("End Emissive Intensity", &pendingBeam.endEmissive.w, 0.01f);
 		ImGui::InputInt("GeometryType", &pendingBeam.geometryType);
 		ImGui::DragFloat("BeamWidth", &pendingBeam.fBeamWidth, 0.01f, 0.001f, 10.f);
+		ImGui::DragFloat("StartTaperRatio", &pendingBeam.fStartTaperRatio, 0.01f, 0.f, 1.f);
+		ImGui::DragFloat("EndTaperRatio", &pendingBeam.fEndTaperRatio, 0.01f, 0.f, 1.f);
 		ImGui::DragFloat("ScrollSpeed", &fBeamScrollSpeed, 0.01f);
 
 
@@ -2914,6 +2916,8 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["HoldEndTime"] = p.fHoldEndTime;
 				entry["FadeEndTime"] = p.fFadeEndTime;
 				entry["BeamWidth"] = p.fBeamWidth;
+				entry["StartTaperRatio"] = p.fStartTaperRatio;
+				entry["EndTaperRatio"] = p.fEndTaperRatio;
 				entry["GeometryType"] = p.geometryType;
 
 
@@ -3104,6 +3108,8 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			p.fHoldEndTime = entry.value("HoldEndTime", 0.7f);
 			p.fFadeEndTime = entry.value("FadeEndTime", 1.f);
 			p.fBeamWidth = entry.value("BeamWidth", 1.f);
+			p.fStartTaperRatio = entry.value("StartTaperRatio", 0.f);
+			p.fEndTaperRatio = entry.value("EndTaperRatio", 0.f);
 			p.geometryType = entry.value("GeometryType", 0);
 	
 
@@ -3411,6 +3417,8 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 			p.fHoldEndTime = entry.value("HoldEndTime", 0.7f);
 			p.fFadeEndTime = entry.value("FadeEndTime", 1.f);
 			p.fBeamWidth = entry.value("BeamWidth", 0.3f);
+			p.fStartTaperRatio = entry.value("StartTaperRatio", 0.f);
+			p.fEndTaperRatio = entry.value("EndTaperRatio", 0.f);
 			p.geometryType = entry.value("GeometryType", 0);
 
 			p.iDisplacementIterations = std::clamp(p.iDisplacementIterations, 1, 10);
@@ -3419,6 +3427,8 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 			p.flickerTimeInverval = std::max(p.flickerTimeInverval, 0.001f);
 			p.beamDuration = std::max(p.beamDuration, 0.001f);
 			p.fBeamWidth = std::max(p.fBeamWidth, 0.001f);
+			p.fStartTaperRatio = std::clamp(p.fStartTaperRatio, 0.f, 1.f);
+			p.fEndTaperRatio = std::clamp(p.fEndTaperRatio, 0.f, 1.f);
 
 			cmd.params = p;
 			break;

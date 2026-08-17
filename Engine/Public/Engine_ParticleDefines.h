@@ -68,6 +68,10 @@ namespace Engine
 		_float fHoldEndTime{};
 		_float fFadeEndTime{};
 		_float fBeamWidth{};
+		// [LSY] 빔 시작점의 평평한 단면을 줄일 정규화 구간이다. 0이면 기존 형상을 그대로 사용한다.
+		_float fStartTaperRatio = 0.f;
+		// [LSY] 현재 빔 선두에서 뒤쪽으로 폭과 알파를 복원할 정규화 구간이다. 0이면 기존 형상을 유지한다.
+		_float fEndTaperRatio = 0.f;
 	
 
 	}BEAM_PARAMS;
