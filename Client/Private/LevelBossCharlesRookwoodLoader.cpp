@@ -26,6 +26,7 @@
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
 #include "Player_Weapon.h"
+#include "Player_Broom.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Bombarda_Bullet.h"
 #include "Player_Confringo_Bullet.h"
@@ -54,6 +55,11 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 				return false;
 			}
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("Lightning")))
+			{
+				return false;
+			}
+			// [LSY] 이 레벨에서도 플레이어 스킬 컷씬을 사용할 수 있도록 미리 등록한다.
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AvadaKedavra")))
 			{
 				return false;
 			}
@@ -100,6 +106,13 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 				}
 
 			}
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::BOSS_CHARLES_ROOKWOOD, "PLAYER_BROOM_RESOURCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/Broom/SK_FlyingClassBroom_01.bin"))) {
+				E::CResModel::DESC pDesc{};
+				if (FAILED(res->Load(pDesc))) {
+					MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed PLAYER_BROOM_RESOURCE");
+					return false;
+				}
+			}
 			if (FAILED(E::CGameInstance::Get().AddPrototype(
 				LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_Player, CPlayer::Create())))
 			{
@@ -122,6 +135,12 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 				LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, CPlayer_Weapon::Create())))
 			{
 				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerWeapon");
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerBroom, CPlayer_Broom::Create())))
+			{
+				MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerBroom");
 				return false;
 			}
 

@@ -34,18 +34,23 @@ public:
 	_string						Get_SkillName(ATTMON SkillNode)override;
 	const _float				Get_Damage() override;
 	_bool						Check_Table(PLAYER_SKILL_TYPE eType) override;
-	
+
+	void						Set_Gravity(_bool bGravity);
 private:
+	HRESULT						Ready_Fsm(const _string& LevelTag);
 	void						Damaged(PLAYER_SKILL_TYPE eType) override;
 	void						Active_Skill();
 	void						ReadySound();
+	_bool						Check_Normal(PLAYER_SKILL_TYPE eType);
+	void						Update_BBToFsm();
 private:
 	std::vector<CHandle> m_vecDeadHandles{};
 	std::vector<int32_t> m_vecDeadBoneIndices{};
 	std::vector<_float4x4> m_vecDeadInverseBindMatrices{};
 	_bool m_bRenderDeadDebris{};
 	_bool m_bDeadDebrisPhysicsActivated{};
-	
+	class CMon_State* m_pFsm{ nullptr };
+
 	_string			m_EffectNames[ETOUI(TOMB_SKILL::END)];
 	TOMB_SKILL					m_eTombSkill{};
 public:

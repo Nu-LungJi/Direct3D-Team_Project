@@ -6,6 +6,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComAnimator.h"
 #include "ComBeHavior.h"
+#include "ClientEvents.h"
 NS_USING(Client)
 CEdg_Phase::CEdg_Phase()
 {
@@ -171,6 +172,7 @@ _bool CEdg_Phase::MovePhase(CEnderDragon* pDragon, _float fTimeDelta)
 		m_PhasePos[ETOUI(m_ePhase)].pop_front();
 		m_bNext = false;
 		m_fTick = 0.f;
+
 	}
 
 	m_fTick += fTimeDelta;
@@ -250,13 +252,37 @@ void CEdg_Phase::Befor_Action2(CEnderDragon* pDragon, _float fTimeDelta)
 }
 void CEdg_Phase::Before_Action5(CEnderDragon* pDragon, _float fTimeDelta)
 {
+	auto pMove = pDragon->Get_MoveIntent();
+	if (nullptr == pMove)return;
+	auto pTarget = pDragon->Get_Target();
+	if (nullptr == pTarget) return;
+
+	_float3 vSrcPos = pDragon->GetTransform().GetPosition();
+	_float3 vTarget = pTarget->GetTransform().GetPosition();
+	_float3 vDir{};
+
+	XMStoreFloat3(&vDir, XMVector3Normalize(
+		XMLoadFloat3(&vTarget) - XMLoadFloat3(&vSrcPos)));
+
+	pMove->SetFacingIntent(vDir, 180.f);
 	auto pAnimator = pDragon->Get_Animator();
 	if (nullptr == pAnimator) return;
 
 	EDG_ANIM_FSM eAnim = m_Anims[ETOUI(m_ePhase)].front();
 	pAnimator->Play_Anim(eAnim.iAnimIndex, false, eAnim.fBlend);
-
+	_float fRatio = pAnimator->GetPlayAnimRatio();
 	pDragon->Set_HideOnBush(false);
+	
+	if (!m_bShake && fRatio >= 0.5f)
+	{
+		CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
+			{
+			   3, // 강도 0 ~ 1
+			   1, // 지속시간
+			   15, // 초당 진동횟수
+			});
+		m_bShake = true;
+	}
 	if (pAnimator->GetFinish())
 	{
 		m_eNum = EDG_SPAWN_NUMBER::FOUR;
@@ -317,30 +343,32 @@ void CEdg_Phase::Phase_Before_Action(CEnderDragon* pDragon, _float fTimeDelta)
 
 void CEdg_Phase::Phase_Change_Action(CEnderDragon* pDragon, _float fTimeDelta)
 {
-	if (m_ePhase == DRAGON_PHASE::PHASE3)
+	const _bool bMoveFinished = m_ePhase == DRAGON_PHASE::PHASE3 ? MovePhase3(pDragon, fTimeDelta) : MovePhase(pDragon, fTimeDelta);
+
+	if (!bMoveFinished)
+		return;
+
+	m_fTick = 0.f;
+	m_eNextPhase = m_ePhase;
+	m_eNum = EDG_SPAWN_NUMBER::THIRD;
+
+	auto pMoveIntent = pDragon->Get_MoveIntent();
+	if (pMoveIntent)
+		pMoveIntent->ClearMoveIntent();
+
+	_float4x4 mat{};
+	XMStoreFloat4x4(&mat, pDragon->GetTransform().GetLoadedWorldMatrix());
+	CGameInstance::Get().Spawn("SpawnSmoke.json", mat);
+
+	if (m_ePhase == DRAGON_PHASE::PHASE5)
 	{
-		if (MovePhase3(pDragon, fTimeDelta))
-		{
-			m_fTick = 0.f;
-			m_eNextPhase = m_ePhase;
-			m_eNum = EDG_SPAWN_NUMBER::THIRD;
-		}
-	}
-	else
-	{
-		if (MovePhase(pDragon, fTimeDelta))
-		{
-			m_fTick = 0.f;
-			m_eNextPhase = m_ePhase;
-			m_eNum = EDG_SPAWN_NUMBER::THIRD;
-			if (m_ePhase == DRAGON_PHASE::PHASE5)
-			{
-				pDragon->Set_HideOnBush(false);
-				auto pBT = pDragon->GetComponent<CComBeHavior>("Com_BT");
-				if (nullptr == pBT) return;
-				pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
-			}
-		}
+		pDragon->Set_HideOnBush(false);
+
+		auto pBT = pDragon->GetComponent<CComBeHavior>("Com_BT");
+		if (nullptr == pBT)
+			return;
+
+		pBT->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	}
 }
 void CEdg_Phase::Phase_After_Action(CEnderDragon* pDragon, _float fTimeDelta)
@@ -434,7 +462,7 @@ void CEdg_Phase::End(CEnderDragon_State* pStateMachine, CBTBlackBoard* pBlackBoa
 	if (m_eNextPhase != DRAGON_PHASE::END)
 	{
 		pBlackBoard->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, m_eNextPhase);
-		pStateMachine->Request_State(EDG_STATE::COMBAT);
+		pStateMachine->Request_State(MON_STATE::COMBAT);
 	}
 }
 SPtr<CEdg_Phase> CEdg_Phase::Create(const _string& strLevelTag)

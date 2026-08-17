@@ -34,7 +34,7 @@ HRESULT CResModelMesh::Load(const std::any& arg)
     auto& PreTransformMatrix = descArg->PreTransformMatrix;
 
     {
-        if (FAILED(Ready_AnimMesh(pModel, ptr)))
+        if (FAILED(Ready_AnimMesh(pModel, ptr, descArg->iRecordSize)))
             return E_FAIL;
     }
    
@@ -50,8 +50,10 @@ HRESULT CResModelMesh::Unload(const std::any& arg)
     return S_OK;
 }
 
-HRESULT CResModelMesh::Ready_AnimMesh(CResModel* pModel, _char* pPoint)
+HRESULT CResModelMesh::Ready_AnimMesh(CResModel* pModel, _char* pPoint, uint32_t iRecordSize)
 {
+	_char* const pRecordBegin = pPoint;
+	_char* const pRecordEnd = pRecordBegin + iRecordSize;
     uint32_t materialIndex = 0;
     memcpy(&materialIndex, pPoint, sizeof(uint32_t));
     pPoint += sizeof(uint32_t);
@@ -98,6 +100,71 @@ HRESULT CResModelMesh::Ready_AnimMesh(CResModel* pModel, _char* pPoint)
     m_OffsetMatrices.resize(OffsetMatricesCount);
     memcpy(m_OffsetMatrices.data(), pPoint, sizeof(_float4x4) * OffsetMatricesCount);
     pPoint += sizeof(_float4x4) * OffsetMatricesCount;
+
+	// Older model binaries end immediately after the skin matrices. New files
+	// append a tagged Morph block, so existing resources remain readable.
+	if (pPoint + sizeof(uint32_t) * 2 <= pRecordEnd)
+	{
+		uint32_t magic = 0;
+		memcpy(&magic, pPoint, sizeof(uint32_t));
+		if (magic == MORPH_BINARY_MAGIC)
+		{
+			pPoint += sizeof(uint32_t);
+			uint32_t targetCount = 0;
+			memcpy(&targetCount, pPoint, sizeof(uint32_t));
+			pPoint += sizeof(uint32_t);
+
+			std::vector<GPU_MORPH_VERTEX_DELTA> denseDeltas(
+				static_cast<size_t>(targetCount) * vCount);
+			m_MorphTargetNames.reserve(targetCount);
+			for (uint32_t targetIndex = 0; targetIndex < targetCount; ++targetIndex)
+			{
+				if (pPoint + sizeof(uint32_t) > pRecordEnd)
+					return E_FAIL;
+				uint32_t nameLength = 0;
+				memcpy(&nameLength, pPoint, sizeof(uint32_t));
+				pPoint += sizeof(uint32_t);
+				if (pPoint + nameLength + sizeof(uint32_t) > pRecordEnd)
+					return E_FAIL;
+				m_MorphTargetNames.emplace_back(pPoint, nameLength);
+				pPoint += nameLength;
+
+				uint32_t deltaCount = 0;
+				memcpy(&deltaCount, pPoint, sizeof(uint32_t));
+				pPoint += sizeof(uint32_t);
+				if (pPoint + sizeof(MORPH_VERTEX_DELTA) * deltaCount > pRecordEnd)
+					return E_FAIL;
+
+				for (uint32_t deltaIndex = 0; deltaIndex < deltaCount; ++deltaIndex)
+				{
+					MORPH_VERTEX_DELTA delta{};
+					memcpy(&delta, pPoint, sizeof(delta));
+					pPoint += sizeof(delta);
+					if (delta.iVertexIndex >= vCount)
+						return E_FAIL;
+
+					auto& gpuDelta = denseDeltas[
+						static_cast<size_t>(targetIndex) * vCount + delta.iVertexIndex];
+					gpuDelta.vPositionDelta = { delta.vPositionDelta.x, delta.vPositionDelta.y, delta.vPositionDelta.z, 0.f };
+					gpuDelta.vNormalDelta = { delta.vNormalDelta.x, delta.vNormalDelta.y, delta.vNormalDelta.z, 0.f };
+					gpuDelta.vTangentDelta = { delta.vTangentDelta.x, delta.vTangentDelta.y, delta.vTangentDelta.z, 0.f };
+					gpuDelta.vBinormalDelta = { delta.vBinormalDelta.x, delta.vBinormalDelta.y, delta.vBinormalDelta.z, 0.f };
+				}
+			}
+
+			if (!denseDeltas.empty())
+			{
+				CResStructuredBuffer::DESC morphDesc{};
+				morphDesc.iNumElements = static_cast<uint32_t>(denseDeltas.size());
+				morphDesc.iStructureByteStride = sizeof(GPU_MORPH_VERTEX_DELTA);
+				morphDesc.iBindFlags = D3D11_BIND_SHADER_RESOURCE;
+				morphDesc.pInitialData = denseDeltas.data();
+				m_pMorphDeltaBuffer = CResStructuredBuffer::Create();
+				if (!m_pMorphDeltaBuffer || FAILED(m_pMorphDeltaBuffer->Load(morphDesc)))
+					return E_FAIL;
+			}
+		}
+	}
 
     m_iMaterialIndex = materialIndex;
     m_iNumVertices = vCount;

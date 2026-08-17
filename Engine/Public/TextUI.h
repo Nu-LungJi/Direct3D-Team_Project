@@ -5,9 +5,17 @@
 
 NS_BEGIN(Engine)
 
+enum class TEXT_ALIGN : uint32_t
+{
+	LEFT = 0,
+	CENTER,
+	RIGHT
+};
+
 typedef struct tagTextInfo
 {
 	std::wstring Text{ L"" };
+	TEXT_ALIGN Alignment{ TEXT_ALIGN::LEFT };
 }TEXT_INFO;
 
 class ENGINE_DLL CTextUI : public CUIObject
@@ -19,6 +27,7 @@ public:
 	typedef struct tagTextDesc : public E::CUIObject::UIOBJECT_DESC
 	{
 		std::wstring Text{ L"" };
+		TEXT_ALIGN Alignment{ TEXT_ALIGN::LEFT };
 	}TEXT_DESC;
 
 protected:
@@ -34,6 +43,8 @@ protected:
 public:
 	void SetwText(std::wstring text) { m_textInfo.Text = text; }
 	std::wstring GetwText() { return m_textInfo.Text; }
+	void SetTextAlignment(TEXT_ALIGN alignment) { m_textInfo.Alignment = alignment; }
+	TEXT_ALIGN GetTextAlignment() const { return m_textInfo.Alignment; }
 public:
 	TEXT_INFO& GetTextInfo() { return m_textInfo; }
 	const TEXT_INFO& GetTextInfo() const { return m_textInfo; }

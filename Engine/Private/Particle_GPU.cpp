@@ -686,14 +686,18 @@ HRESULT CParticle_GPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 
 	auto context = CGameInstance::Get().GetGraphicDeviceContext();
 
-	std::vector<PARTICLE_SPAWN_DATA> fullData(m_iNumElements);
-	memcpy(fullData.data(), pSpawnData, sizeof(PARTICLE_SPAWN_DATA) * count);
-
+	D3D11_BOX uploadRange{};
+	uploadRange.left = 0;
+	uploadRange.right = static_cast<UINT>(sizeof(PARTICLE_SPAWN_DATA) * count);
+	uploadRange.top = 0;
+	uploadRange.bottom = 1;
+	uploadRange.front = 0;
+	uploadRange.back = 1;
 	context->UpdateSubresource(
 		m_pSpawnListBuffer->GetBuffer().Get(),
 		0,
-		nullptr,
-		fullData.data(),
+		&uploadRange,
+		pSpawnData,
 		0,
 		0);
 

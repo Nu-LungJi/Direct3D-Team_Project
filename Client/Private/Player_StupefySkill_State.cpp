@@ -2,6 +2,7 @@
 #include "Player_StupefySkill_State.h"
 #include "Player.h"
 #include "ComAnimator.h"
+#include "ComSound.h"
 #include "PlayerAnimationRatioGuard.h"
 
 NS_USING(Client)
@@ -10,8 +11,11 @@ void CPlayer_StupefySkill_State::Enter(CStateMachine* pStateMachine)
 {
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer || !pPlayer->GetAnimator()) { RequestLocomotion(pStateMachine); return; }
-	_float3 vParryPosition{};
-	if (!pPlayer->ConsumeParryCounter(vParryPosition)) { RequestLocomotion(pStateMachine); return; }
+	const _bool bHeavyReaction =
+		pPlayer->ConsumeProtegoHeavyReaction(m_vParryPosition);
+	m_bCounterQueued = pPlayer->ConsumeParryCounter(m_vParryPosition);
+	if (!bHeavyReaction && !m_bCounterQueued) { RequestLocomotion(pStateMachine); return; }
+	pPlayer->StartProtegoRecoil(m_vParryPosition);
 	CacheAnimationIndices(*pPlayer);
 	SetSkillControl(*pPlayer, true, true, true);
 	pPlayer->SetCurrentMoveSpeed(0.f);
@@ -19,7 +23,23 @@ void CPlayer_StupefySkill_State::Enter(CStateMachine* pStateMachine)
 	m_bSpeedRestored = false;
 	m_bProjectileReleased = false;
 	m_fPreviousAnimRatio = 0.f;
-	if (!PlayCounterAnimation(*pPlayer, vParryPosition)) RequestLocomotion(pStateMachine);
+	m_ePhase = PHASE::PARRY_REACTION;
+
+	// 패링 충격을 받은 직후 뒤로 짧게 밀려난 다음 반격한다.
+	// 반동 애니메이션이 없는 데이터에서는 기존 반격 애니메이션으로 바로 넘어간다.
+	if (!PlayParryReaction(*pPlayer))
+	{
+		if (!m_bCounterQueued)
+			m_bCounterQueued = pPlayer->ConsumeParryCounter(m_vParryPosition);
+		if (!m_bCounterQueued)
+		{
+			RequestLocomotion(pStateMachine);
+			return;
+		}
+		m_ePhase = PHASE::COUNTER_ATTACK;
+		if (!PlayCounterAnimation(*pPlayer, m_vParryPosition))
+			RequestLocomotion(pStateMachine);
+	}
 }
 
 void CPlayer_StupefySkill_State::Update(CStateMachine* pStateMachine, _float)
@@ -29,6 +49,27 @@ void CPlayer_StupefySkill_State::Update(CStateMachine* pStateMachine, _float)
 	if (!pPlayer || !pAnimator) { RequestLocomotion(pStateMachine); return; }
 	const _float fRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
 	pPlayer->SetCurrentMoveSpeed(0.f);
+
+	if (m_ePhase == PHASE::PARRY_REACTION)
+	{
+		if (fRatio >= REACTION_EXIT_RATIO || pAnimator->GetFinish())
+		{
+			if (!m_bCounterQueued)
+				m_bCounterQueued = pPlayer->ConsumeParryCounter(m_vParryPosition);
+			if (!m_bCounterQueued)
+			{
+				RequestLocomotion(pStateMachine);
+				return;
+			}
+			m_ePhase = PHASE::COUNTER_ATTACK;
+			m_fPreviousAnimRatio = 0.f;
+			m_bSpeedRestored = false;
+			if (!PlayCounterAnimation(*pPlayer, m_vParryPosition))
+				RequestLocomotion(pStateMachine);
+		}
+		return;
+	}
+
 	if (!m_bSpeedRestored && fRatio >= TURN_END_RATIO)
 	{
 		pAnimator->GetCurAnimState().fSpeed = ATTACK_SPEED;
@@ -43,7 +84,9 @@ void CPlayer_StupefySkill_State::Update(CStateMachine* pStateMachine, _float)
 			DEBUG_LOG("[Stupefy] Failed to spawn projectile.\n");
 	}
 	m_fPreviousAnimRatio = fRatio;
-	if (pAnimator->GetFinish()) RequestLocomotion(pStateMachine);
+	// 발사가 끝난 뒤 애니메이션 후반부를 기다리지 않고 다음 조작을 받는다.
+	if ((m_bProjectileReleased && fRatio >= RECOVERY_EXIT_RATIO) || pAnimator->GetFinish())
+		RequestLocomotion(pStateMachine);
 }
 
 void CPlayer_StupefySkill_State::Exit(CStateMachine* pStateMachine)
@@ -51,7 +94,10 @@ void CPlayer_StupefySkill_State::Exit(CStateMachine* pStateMachine)
 	if (auto* pPlayer = GetPlayer(pStateMachine)) ResetSkillControl(*pPlayer);
 	m_bSpeedRestored = false;
 	m_bProjectileReleased = false;
+	m_bCounterQueued = false;
 	m_fPreviousAnimRatio = 0.f;
+	m_vParryPosition = {};
+	m_ePhase = PHASE::PARRY_REACTION;
 }
 
 void CPlayer_StupefySkill_State::CacheAnimationIndices(const CPlayer& player)
@@ -62,7 +108,20 @@ void CPlayer_StupefySkill_State::CacheAnimationIndices(const CPlayer& player)
 	m_Animations[2] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Rht_90_Spin_Rht_Slam_anm.bin");
 	m_Animations[3] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Lft_180_Spin_Rht_Send_anm.bin");
 	m_Animations[4] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Rht_180_Spin_Rht_anm.bin");
+	m_iParryReactionAnimation = FindAnimationIndex(player,
+		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Protego_Parry_Fwd_Heavy_Slide_anm.bin");
 	m_bAnimationsCached = true;
+}
+
+_bool CPlayer_StupefySkill_State::PlayParryReaction(CPlayer& player)
+{
+	auto* pAnimator = player.GetAnimator();
+	if (!pAnimator || m_iParryReactionAnimation < 0)
+		return false;
+
+	pAnimator->Play_Anim(m_iParryReactionAnimation, false, REACTION_BLEND_DURATION);
+	pAnimator->GetCurAnimState().fSpeed = REACTION_SPEED;
+	return true;
 }
 
 _bool CPlayer_StupefySkill_State::PlayCounterAnimation(CPlayer& player, const _float3& vParryPosition)
@@ -90,6 +149,19 @@ _bool CPlayer_StupefySkill_State::PlayCounterAnimation(CPlayer& player, const _f
 	if (iAnimation < 0) return false;
 	pAnimator->Play_Anim(iAnimation, false, BLEND_DURATION);
 	pAnimator->GetCurAnimState().fSpeed = TURN_SPEED;
+	if (auto* pSound = player.GetSound())
+	{
+		pSound->PlaySlot2D(
+			E::StringID{ "PLAYER_VOICE_STUPEFY" },
+			"./Resources/SampleClient/Sound/Player/Spell/Stupefy/Stupefy_Man.wav",
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 2.f,
+				.fPitch = 1.f,
+				.iPriority = 80,
+				.bLoop = false
+			});
+	}
 	return true;
 }
 

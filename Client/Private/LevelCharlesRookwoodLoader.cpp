@@ -45,11 +45,12 @@
 
 #include "TriggerCRW_BridgeBring.h"
 #include "TriggerCRW_BridgeFix.h"
-
+#include "Mon_State.h"
 #include "TmbGurdian.h"
 #include "TmbGurdianDead.h"
 #include "GurdianWeapon.h"
 #include "Player_Weapon.h"
+#include "Player_Broom.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Bombarda_Bullet.h"
 #include "Player_Confringo_Bullet.h"
@@ -74,6 +75,11 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				return false;
 			}
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("Lightning")))
+			{
+				return false;
+			}
+			// [LSY] 이 레벨에서도 플레이어 스킬 컷씬을 사용할 수 있도록 미리 등록한다.
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AvadaKedavra")))
 			{
 				return false;
 			}
@@ -116,6 +122,13 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				pDesc.PreTransformMatrix = XMMatrixRotationX(XMConvertToRadians(-90.f)) * XMMatrixScaling(1.f, 1.f, 1.f);
 				if (FAILED(res->Load(pDesc))) {
 					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_WEAPON_RESROUCE");
+					return false;
+				}
+			}
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_BROOM_RESOURCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/Broom/SK_FlyingClassBroom_01.bin"))) {
+				E::CResModel::DESC pDesc{};
+				if (FAILED(res->Load(pDesc))) {
+					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_BROOM_RESOURCE");
 					return false;
 				}
 			}
@@ -277,6 +290,12 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, CPlayer_Weapon::Create())))
 			{
 				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerWeapon");
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerBroom, CPlayer_Broom::Create())))
+			{
+				MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerBroom");
 				return false;
 			}
 
@@ -590,6 +609,8 @@ HRESULT CLevelCharlesRookwoodLoader::MonsterLoad_InWorker()
 			MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_Mace");
 			return E_FAIL;
 		}
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::CHARLES_ROOKWOOD, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
+
 	}
 
 	return S_OK;

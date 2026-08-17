@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "pch.h"
 
 class CMesh
@@ -23,10 +23,11 @@ public:
 	std::shared_ptr<std::vector<VTXMESH>> m_vertices;
 	std::shared_ptr<std::vector<VTXANIMMESH>> m_animvertices;
 	std::shared_ptr<std::vector<uint32_t>> m_indices;
+	std::vector<MORPHTARGETDATA> m_MorphTargets;
 
-	uint32_t		m_iNumBones = {}; /* ÀÌ ¸Ş½Ã°¡ ÀÌ¿ëÇÏ´Â »ÀÀÇ °¹¼ö. */
+	uint32_t		m_iNumBones = {}; /* ì´ ë©”ì‹œê°€ ì´ìš©í•˜ëŠ” ë¼ˆì˜ ê°¯ìˆ˜. */
 
-	/*  ÀÌ ¸Ş½Ã¿¡ ¿µÇâÀ» ÁÖ´Â »ÀµéÀÇ ÀüÃ¼»À±âÁØÀÇ ÀÎµ¦½º */
+	/*  ì´ ë©”ì‹œì— ì˜í–¥ì„ ì£¼ëŠ” ë¼ˆë“¤ì˜ ì „ì²´ë¼ˆê¸°ì¤€ì˜ ì¸ë±ìŠ¤ */
 	std::shared_ptr<std::vector<uint32_t>>	m_BoneIndices;
 	std::shared_ptr<std::vector<XMFLOAT4X4>>	m_BoneMatrices;
 	std::shared_ptr<std::vector<XMFLOAT4X4>>	m_OffsetMatrices;

@@ -3,22 +3,17 @@
 Texture2D g_DiffuseTexture		: register(t0);
 Texture2D g_NormalTexture		: register(t1);
 Texture2D g_SMROTexture			: register(t2);
-Texture2D g_MaskTexture			: register(t3);
-Texture2D g_EmissiveLayer0Texture	: register(t4);
-Texture2D g_EmissiveLayer1Texture	: register(t5);
+Texture2D g_EmissiveTexture		: register(t3);
+Texture2D g_MaterialMaskTexture : register(t4);
+
+Texture2D g_MarbleNoiseTexture	: register(t5);
+Texture2D g_RiverNoiseTexture	: register(t6);
+Texture2D g_CausticNoiseTexture : register(t7);
+Texture2D g_DetailNoiseTexture	: register(t8);
 
 Texture2D DefaultNoiseTexture	: register(t13);
 static const float DissolveEdgeWidth = 0.025f;
-
-cbuffer CB_DRAGON_MATERIAL : register(b10)
-{
-	float4 TintR;
-	float4 TintG;
-	float4 TintB;
-	
-	float4 EmissiveLayerColor;
-	float4 EmissiveLayerChannel;
-}
+static const float DRAGON_ALPHA_CLIP = 0.3333f;
 
 struct PS_IN
 {
@@ -33,101 +28,202 @@ struct PS_IN
 
 struct PS_OUT
 {
-	vector vDiffuse : SV_TARGET0;
-	vector vNormal : SV_TARGET1;
-	vector vSMRO : SV_TARGET2;
+	vector vDiffuse  : SV_TARGET0;
+	vector vNormal	 : SV_TARGET1;
+	vector vSMRO	 : SV_TARGET2;
 	vector vEmissive : SV_TARGET3;
 };
 
-float3x3 Make_TBNMatrix(float3 _Normal, float3 _Tangent)
+struct PS_FX_OUT
 {
-	float3 Normal = normalize(_Normal);
-	float3 Tangent = normalize(_Tangent);
+	float4 vColor : SV_Target0;
+};
 
-	Tangent = normalize(Tangent - dot(Tangent, Normal) * Normal);
+float3 Compute_WorldNormal(PS_IN IN)
+{
+	float3 LocalNormal = g_NormalTexture.Sample(LinearWrap, IN.vTexcoord).xyz * 2.f - 1.f;
+
+	float3 N = normalize(IN.vNormal.xyz);
+	float3 T = normalize(IN.vTangent.xyz - N * dot(IN.vTangent.xyz, N));
+	float3 B = normalize(IN.vBinormal.xyz);
     
-	float3 BiNormal = normalize(cross(Normal, Tangent));
-    
-	return float3x3(Tangent, BiNormal, Normal);
+	return normalize(LocalNormal.x * T + LocalNormal.y * B + LocalNormal.z * N);
 }
 
-float3 Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float4 _InNormal, float4 _InTangent)
+float3 Apply_DissolveEffect(float3 _BaseEmissive, float2 _TexCoord)
 {
-	float3 LocalNormal = _NormalTex.Sample(LinearWrap, _TexCoord).rgb;
-	LocalNormal = normalize(LocalNormal * 2.f - 1.f);
-	float3x3 TBN = Make_TBNMatrix(_InNormal.xyz, _InTangent.xyz);
-
-	float3 N = normalize(_InNormal.xyz);
-	float3 T = normalize(_InTangent.xyz);
-    
-	T = normalize(T - dot(T, N) * N);
-	float3 B = normalize(cross(N, T));
-    
-	float3 worldNormal = LocalNormal.x * T + LocalNormal.y * B + LocalNormal.z * N;
-
-	return normalize(worldNormal);
-}
-
-float3 Apply_DissolveEffect(Texture2D _NoiseTex, float3 _BaseEmissive, float2 _TexCoord, float _EdgeWidth)
-{
-	float DissolveFactor = _NoiseTex.Sample(LinearWrap, _TexCoord).r - DissolveIntensity;
+	if (DissolveIntensity <= 0.0001f) return _BaseEmissive;
+	
+	float DissolveFactor = DefaultNoiseTexture.Sample(LinearWrap, _TexCoord).r - DissolveIntensity;
 	clip(DissolveFactor);
 	
-	float DissolveEdge = 1.f - smoothstep(0.f, _EdgeWidth, DissolveFactor);
-    
-	float3 DissolveEmissive = DissolveColor * DissolveEdge;
-    
-	return _BaseEmissive + DissolveEmissive;
+	float	DissolveEdge = 1.f - smoothstep(0.f, DissolveEdgeWidth, DissolveFactor);
+
+	return _BaseEmissive + DissolveColor * DissolveEdge;
 }
 
-PS_OUT PSMain(PS_IN IN)
+float3 Dragon_SRGBToLinear(float3 Color)
 {
-	PS_OUT Out;
-    
-	float4	Diffuse = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord) * float4(AlbedoColor, ObjectAlpha);
-	float3	MaskTex = g_MaskTexture.Sample(LinearWrap, IN.vTexcoord).rgb;
-    
-	float3 DiffuseOutput = Diffuse.rgb;
-	DiffuseOutput = lerp(DiffuseOutput, DiffuseOutput * TintB.rgb, saturate(MaskTex.b * TintB.a));
-	DiffuseOutput = lerp(DiffuseOutput, DiffuseOutput * TintG.rgb, saturate(MaskTex.g * TintG.a));
-	DiffuseOutput = lerp(DiffuseOutput, DiffuseOutput * TintR.rgb, saturate(MaskTex.r * TintR.a));
-	
-	float3	Normal	= Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
-	float3	MRO		= g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);
-    
-	float	FinalMetallic	= MRO.r * MetallicIntensity;
-	float	FinalRoughness	= MRO.g * RoughnessIntensity;
-	float	FinalAO			= MRO.b * AmbientIntensity;
-	
-	float3 EmissiveLayer0 = g_EmissiveLayer0Texture.Sample(LinearWrap, IN.vTexcoord).rgb;
-	EmissiveLayer0 *= EmissiveColor * EmissiveIntensity;
-	
-	float4	EmissiveLayer1Tex = g_EmissiveLayer1Texture.Sample(LinearWrap, IN.vTexcoord);
-	float	EmissiveLayer1Value = saturate(dot(EmissiveLayer1Tex, EmissiveLayerChannel));
+	Color = saturate(Color);
 
-	float3	EmissiveLayer1 = EmissiveLayer1Value * EmissiveLayerColor.rgb * EmissiveLayerColor.a;
-	float3 Emissive = EmissiveLayer0 + EmissiveLayer1;
+	float3 Low = Color / 12.92f;
+	float3 High = pow((Color + 0.055f) / 1.055f, 2.4f);
 
-	float3 FinalEmissive = Apply_DissolveEffect(DefaultNoiseTexture, Emissive, IN.vTexcoord, DissolveEdgeWidth);
-	
-	Out.vDiffuse  = float4(DiffuseOutput.rgb, Diffuse.a);
-	Out.vNormal   = float4(Normal * 0.5f + 0.5f, 1.f);
-	Out.vSMRO     = float4(FinalMetallic, FinalRoughness, FinalAO, 1.f);
-	Out.vEmissive = float4(FinalEmissive, 1.f);
-    
-	return Out;
+	return lerp(Low, High, step(0.04045f, Color));
 }
 
-PS_OUT PSMain_OnlyEmissive(PS_IN IN)
+PS_OUT PSMain_DragonWing(PS_IN IN)
 {
 	PS_OUT OUT;
 	
-	float3 FinalEmissive = g_EmissiveLayer0Texture.Sample(LinearWrap, IN.vTexcoord).rgb * EmissiveColor * EmissiveIntensity;
+	float2 UV = IN.vTexcoord;
 	
-	OUT.vDiffuse = float4(0.f, 0.f, 0.f, 0.f);
-	OUT.vNormal = float4(0.f, 0.f, 0.f, 0.f);
-	OUT.vSMRO = float4(0.f, 0.f, 0.f, 0.f);
-	OUT.vEmissive = float4(FinalEmissive, 1.f);
+	float4	Diffuse = g_DiffuseTexture.Sample(LinearWrap, UV);
+	float	FinalAlpha = Diffuse.a * saturate(ObjectAlpha);
+	clip(FinalAlpha - DRAGON_ALPHA_CLIP);
+	
+	float3	WorldNormal = Compute_WorldNormal(IN);
+	float3	SMRO = g_SMROTexture.Sample(LinearWrap, UV).rgb;
+	float4	MaterialMask = g_MaterialMaskTexture.Sample(LinearWrap, UV);
+	
+	float	DiffuseLuma = dot(Diffuse.rgb, float3(0.2126f, 0.7152f, 0.0722f));
+	float	PhysicalBoneMask = smoothstep(0.45f, 0.90f, MaterialMask.b);
+	float	BrightBoneMask = smoothstep(0.38f, 0.72f, DiffuseLuma);
+	BrightBoneMask *= PhysicalBoneMask;
+	
+	float	MetallicBoneMask = smoothstep(0.55f, 0.90f, SMRO.r);
+
+	float	BoneCorrectionMask = BrightBoneMask * lerp(0.55f, 1.0f, MetallicBoneMask);
+	
+	float3	CorrectedBoneColor = Diffuse.rgb * float3(0.82f, 0.86f, 0.88f);
+	
+	float3	FinalDiffuse = lerp(Diffuse.rgb, CorrectedBoneColor, BoneCorrectionMask);
+
+	float	RedThreadMask = saturate(MaterialMask.r);
+
+	float	ThreadLuma = dot(FinalDiffuse, float3(0.2126f, 0.7152f, 0.0722f));
+
+	float3	NeutralThreadColor = ThreadLuma * float3(0.95f, 0.99f, 1.00f);
+
+	FinalDiffuse = lerp(FinalDiffuse, NeutralThreadColor, RedThreadMask * 0.9f);
+	FinalDiffuse *= AlbedoColor;
+	float3 FinalEmissive = Apply_DissolveEffect(float3(0.0f, 0.0f, 0.0f), UV);
+	
+	OUT.vDiffuse	= float4(FinalDiffuse, FinalAlpha);
+	OUT.vNormal		= float4(WorldNormal * 0.5f + 0.5f, 1.f);
+	OUT.vSMRO		= float4(SMRO.r * 0.2f, SMRO.g, SMRO.b, 1.f);
+	OUT.vEmissive	= float4(FinalEmissive, 1.f);
+	
+	return OUT;
+}
+
+PS_OUT PSMain_DragonBody(PS_IN IN)
+{
+	PS_OUT OUT;
+	
+	float4	Diffuse = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord);
+	float	FinalAlpha = Diffuse.a * saturate(ObjectAlpha);
+	clip(FinalAlpha - DRAGON_ALPHA_CLIP);
+	
+	float3	WorldNormal = Compute_WorldNormal(IN);
+	float3	SMRO = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord).rgb;
+	float4	MaterialMask = g_MaterialMaskTexture.Sample(LinearWrap, IN.vTexcoord);
+	
+	float	OuterNonBone = smoothstep(0.12f, 0.82f, 1.f - MaterialMask.b);
+	float	OuterCavity = smoothstep(0.06f, 0.46f, MaterialMask.g);
+	OuterCavity *= OuterNonBone;
+	
+	float InnerNonBone = smoothstep(0.25f, 0.90f, 1.f - MaterialMask.b);
+	float InnerCavity = smoothstep(0.22f, 0.68f, MaterialMask.g);
+	InnerCavity *= InnerNonBone;
+	InnerCavity = pow(saturate(InnerCavity), 1.90f);
+	
+	float ThinCrackMask = smoothstep(0.16f, 0.64f, MaterialMask.r);
+	ThinCrackMask *= InnerNonBone;
+	
+	float RedExcess = Diffuse.r - max(Diffuse.g, Diffuse.b);
+
+	float RedSeed = smoothstep(0.025f, 0.20f, saturate(RedExcess));
+	float BaseEnergyMask = saturate(InnerCavity + ThinCrackMask * 0.18f);
+	float HotCoreMask = InnerCavity * lerp(0.15f, 1.f, RedSeed);
+	HotCoreMask = pow(saturate(HotCoreMask), 1.75f);
+	
+	float3 DarkCrimson = float3(0.16f, 0.f, 0.004f);
+	float3 DeepRed = float3(0.82f, 0.204f, 0.218f);
+	float3 HotPink = float3(1.f, 0.075f, 0.01f);		
+	
+	float3 FinalEmissive = DarkCrimson * BaseEnergyMask;
+	FinalEmissive += DeepRed * InnerCavity * 1.25f;
+	FinalEmissive += HotPink * HotCoreMask * 2.25f;
+	FinalEmissive += BaseEnergyMask * EmissiveColor * EmissiveIntensity;
+	FinalEmissive = Apply_DissolveEffect(FinalEmissive, IN.vTexcoord);
+	
+	float	DiffuseLuma = dot(Diffuse.rgb, float3(0.2126f, 0.7152f, 0.0722f));
+	float	PhysicalBoneMask = smoothstep(0.45f, 0.90f, MaterialMask.b);
+	float	BrightBoneMask = smoothstep(0.36f, 0.72f, DiffuseLuma);
+	BrightBoneMask *= PhysicalBoneMask;
+	
+	float	MetallicBoneMask = smoothstep(0.55f, 0.90f, SMRO.r);
+	float	BoneCorrectionMask = BrightBoneMask * lerp(0.55f, 1.0f, MetallicBoneMask);
+	float3	CorrectedBoneColor = Diffuse.rgb * float3(0.82f, 0.86f, 0.88f);
+	
+	float3 BodyBaseColor = lerp(Diffuse.rgb, CorrectedBoneColor, BoneCorrectionMask);
+	
+	float3 FinalDiffuse = BodyBaseColor * AlbedoColor;
+	FinalDiffuse *= lerp(1.f, 0.f, OuterCavity);
+	
+	OUT.vDiffuse	= float4(FinalDiffuse, FinalAlpha);
+	OUT.vNormal		= float4(WorldNormal * 0.5f + 0.5f, 1.f);
+	OUT.vSMRO		= float4(SMRO.r * 0.2f, SMRO.g * RoughnessIntensity, SMRO.b * AmbientIntensity, 1.f);
+	OUT.vEmissive	= float4(FinalEmissive, 1.f);
+	
+	return OUT;
+}
+
+
+PS_FX_OUT PSMain_EtherealWing(PS_IN IN)
+{
+	PS_FX_OUT OUT;
+	
+	float2 UV = IN.vTexcoord;
+	
+	float MainNoise = g_RiverNoiseTexture.Sample(LinearWrap, UV * float2(2.0f, 0.85f) + g_fTimeAccumulation * float2(0.045f, -0.20f)).r;
+	float DetailNoise = g_DetailNoiseTexture.Sample(LinearWrap, UV * 4.8f + g_fTimeAccumulation * float2(0.08f, -0.48f)).r;
+	
+	float2 Distortion = float2(MainNoise, DetailNoise) - 0.5f;
+	float2 WarpedUV = UV + Distortion * 0.018f;
+	
+	float AuthoredMask = saturate(g_MaterialMaskTexture.Sample(LinearWrap, UV).r);
+
+	float marble = g_MarbleNoiseTexture.Sample(LinearWrap, WarpedUV * float2(1.0f, 2.0f) + g_fTimeAccumulation * float2(-0.057143f, -0.87619f)).r;
+	float caustic = g_CausticNoiseTexture.Sample(LinearWrap, WarpedUV * float2(3.105596f, 0.814346f) + g_fTimeAccumulation * float2(0.f, -1.090998f)).r;
+
+	float broadFlow = saturate(marble * 0.58f + MainNoise * 0.42f);
+	float flameRidges = smoothstep(0.34f, 0.78f, caustic * 0.70f + DetailNoise * 0.30f);
+	float flicker = lerp(0.72f, 1.20f, saturate(broadFlow * 0.65f + flameRidges * 0.35f));
+	
+	float ShapedMask = pow(AuthoredMask, 4.f);
+	float Opacity = smoothstep(0.12f, 0.65f, ShapedMask);
+	Opacity *= lerp(0.82f, 1.0f, broadFlow * 0.6f + flameRidges * 0.4f);
+
+	float rootHeat = smoothstep(0.38f, 0.92f, AuthoredMask);
+	float middleHeat = smoothstep(0.10f, 0.58f, AuthoredMask);
+	float core = pow(saturate(AuthoredMask), 1.35f);
+
+	float3 darkRed = float3(0.16f, 0.000f, 0.004f);
+	float3 deepRed = float3(0.82f, 0.004f, 0.018f);
+	float3 hotPink = float3(1.00f, 0.075f, 0.110f);
+
+	float3 flameColor = lerp(darkRed, deepRed, middleHeat);
+	flameColor = lerp(flameColor, hotPink, rootHeat);
+
+	float emissiveStrength = 1.15f;
+	emissiveStrength += core * 2.35f;
+	emissiveStrength += flameRidges * 1.15f;
+	emissiveStrength *= flicker;
+	emissiveStrength += 0.08f;
+
+	OUT.vColor = float4(flameColor * emissiveStrength, Opacity);
 	
 	return OUT;
 }

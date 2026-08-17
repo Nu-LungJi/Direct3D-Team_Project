@@ -25,6 +25,12 @@ enum class QUEST_UI_GROUP : uint32_t
 	END
 };
 
+enum class ACTIVE_BUTTON_KEY : uint8_t
+{
+	E,
+	F
+};
+
 enum class BUTTON_EVENT
 {
 	NONE,

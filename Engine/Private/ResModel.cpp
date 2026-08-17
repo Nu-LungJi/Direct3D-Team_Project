@@ -175,6 +175,7 @@ HRESULT CResModel::Ready_Meshes(_char* ptr)
 		E::CResModelMesh::DESC pDesc{};
 		pDesc.eType = m_eModelType;
 		pDesc.ptr = ptr;
+		pDesc.iRecordSize = consumed;
 		pDesc.pModel = this;
 		pDesc.PreTransformMatrix = XMLoadFloat4x4(&m_PreTransformMatrix);
 	

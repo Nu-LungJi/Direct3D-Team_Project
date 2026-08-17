@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Player_Stupefy_Bullet.h"
+#include "ClientEvents.h"
 #include "DbgLineRender.h"
 #include "Monster.h"
 #include "PhysXManager.h"
@@ -211,9 +212,36 @@ void CPlayer_Stupefy_Bullet::Finish(const _float3& position, const _float3& norm
 	StopCoreEffect();
 	if (!m_sImpactEffect.empty())
 	{
-		_float4x4 world{}; XMStoreFloat4x4(&world, XMMatrixTranslation(position.x, position.y, position.z));
-		CGameInstance::Get().PlayEffect(m_sImpactEffect, world, XMLoadFloat3(&normal));
+		_vector vLook = XMLoadFloat3(&normal);
+		if (XMVectorGetX(XMVector3LengthSq(vLook)) <= FLT_EPSILON)
+			vLook = -XMVector3Normalize(XMLoadFloat3(&m_vDirection));
+		else
+			vLook = XMVector3Normalize(vLook);
+
+		_vector vUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+		_vector vRight = XMVector3Cross(vUp, vLook);
+		if (XMVectorGetX(XMVector3LengthSq(vRight)) <= FLT_EPSILON)
+		{
+			vUp = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+			vRight = XMVector3Cross(vUp, vLook);
+		}
+		vRight = XMVector3Normalize(vRight);
+		vUp = XMVector3Normalize(XMVector3Cross(vLook, vRight));
+
+		_matrix impactWorld = XMMatrixIdentity();
+		impactWorld.r[0] = XMVectorSetW(vRight, 0.f);
+		impactWorld.r[1] = XMVectorSetW(vUp, 0.f);
+		impactWorld.r[2] = XMVectorSetW(vLook, 0.f);
+		impactWorld.r[3] = XMVectorSetW(XMLoadFloat3(&position) + vLook * 0.025f, 1.f);
+
+		_float4x4 world{};
+		XMStoreFloat4x4(&world, impactWorld);
+		CGameInstance::Get().PlayEffect(m_sImpactEffect, world, vLook);
 	}
+	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
+		.fIntensity = 0.085f,
+		.fDuration = 0.1f,
+		.fFrequency = 27.f });
 	if (auto* monster = Cast<CMonster>(hitObject)) monster->Check_Table(m_eSkillType);
 	SetPendingDestroy();
 }

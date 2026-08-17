@@ -75,5 +75,15 @@ struct MINIMAP_OBJECTIVE_INFO
 	std::vector<OBJECTIVE_VISUAL_PHASE> VisualPhases;
 };
 
+struct ACTIVE_BUTTON_INFO
+{
+	CHandle TargetHandle{};
+	CHandle UIHandle{};
+	_ubyte KeyType{};
+	_float3 WorldOffset{ 0.f, 1.5f, 0.f };
+	_bool Visible{};
+	_bool Removing{};
+};
+
 NS_END
 

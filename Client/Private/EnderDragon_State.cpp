@@ -22,9 +22,9 @@ HRESULT CEnderDragon_State::Initialize(void* pArg)
 	return S_OK;
 }
 
-_bool CEnderDragon_State::Add_State(EDG_STATE eState, SPtr<CState> pState)
+_bool CEnderDragon_State::Add_State(MON_STATE eState, SPtr<CState> pState)
 {
-	if (eState == EDG_STATE::NONE || eState == EDG_STATE::END || nullptr == pState || IsRegistered(eState))
+	if (eState == MON_STATE::NONE || eState == MON_STATE::END || nullptr == pState || IsRegistered(eState))
 		return false;
 
 	__super::AddState(ETOUI(eState), std::move(pState));
@@ -33,10 +33,10 @@ _bool CEnderDragon_State::Add_State(EDG_STATE eState, SPtr<CState> pState)
 	return true;
 }
 
-_bool CEnderDragon_State::Initialize_State(EDG_STATE eState)
+_bool CEnderDragon_State::Initialize_State(MON_STATE eState)
 {
 	//초기상태 지정
-	if (m_eCurState != EDG_STATE::NONE || !IsRegistered(eState))
+	if (m_eCurState != MON_STATE::NONE || !IsRegistered(eState))
 		return false;
 
 	__super::ChangeState(ETOUI(eState));
@@ -45,7 +45,7 @@ _bool CEnderDragon_State::Initialize_State(EDG_STATE eState)
 	return true;
 }
 
-_bool CEnderDragon_State::Request_State(EDG_STATE eState)
+_bool CEnderDragon_State::Request_State(MON_STATE eState)
 {
 	if (!IsRegistered(eState) || m_eCurState == eState)
 		return false;
@@ -57,12 +57,12 @@ _bool CEnderDragon_State::Request_State(EDG_STATE eState)
 void CEnderDragon_State::ApplyStateRequest()
 {
 	//상태가 없으면 아무것도 하지 않음
-	if (m_eRequestState == EDG_STATE::NONE)
+	if (m_eRequestState == MON_STATE::NONE)
 		return;
 
 	//예약된 상태를 이동하고 기존 예약 칸을 비움
-	EDG_STATE eNextState = m_eRequestState;
-	m_eRequestState = EDG_STATE::NONE;
+	MON_STATE eNextState = m_eRequestState;
+	m_eRequestState = MON_STATE::NONE;
 
 	if (!IsRegistered(eNextState) || m_eCurState == eNextState)
 		return;
@@ -75,9 +75,9 @@ void CEnderDragon_State::PriorityUpdate(_float fTimeDelta)
 	ApplyStateRequest();
 	__super::PriorityUpdate(fTimeDelta);
 }
-_bool CEnderDragon_State::IsRegistered(EDG_STATE eState)
+_bool CEnderDragon_State::IsRegistered(MON_STATE eState)
 {
-	if (eState == EDG_STATE::NONE || eState == EDG_STATE::END)
+	if (eState == MON_STATE::NONE || eState == MON_STATE::END)
 		return false;
 
 	return m_RegisteredState.contains(ETOUI(eState));

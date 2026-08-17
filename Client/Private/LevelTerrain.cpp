@@ -27,6 +27,7 @@
 
 #include "EnderDragon.h"
 #include "BossTMB.h"
+#include "Spider.h"
 #include "TmbGurdian.h"
 #include "LightPlacementObject.h"
 #include "StarBurst.h"
@@ -835,7 +836,26 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 		}
 	
 	}
-	
+	{
+		CSpider::SPIDER_DESC Spider{};
+		Spider.sObjectTag = "Spider";
+		Spider.TargetHandle = hPlayer.value();
+		Spider.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
+		XMStoreFloat3(&Spider.vPos, XMVectorSet(20.f, 15.f, 20.f, 1.f));
+		Spider.ReSourceTag = "Model_Resource_Spider";
+		Spider.resBeHaviorMajor = "BTJSON";
+		Spider.resBeHaviorMinor = "SPIDER";
+		Spider.MonType = MONSTER_TYPE::NORMAL;
+
+		auto pDragon = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider);
+
+		if (!pDragon)
+		{
+			MSG_BOX("Create Spider Failed in Terrain");
+			return E_FAIL;
+		}
+
+	}
 	
 	{
 		CLightPlacementObject::DESC desc{};

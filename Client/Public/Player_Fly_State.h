@@ -78,6 +78,9 @@ private:
 	_float m_fFlightDeceleration{ 7.f };
 	_float m_fFlightDirectionResponse{ 3.5f };
 	_float m_fHoverSpeedThreshold{ 0.25f };
+	_float m_fFlyEnterSpeedThreshold{ 0.8f };
+	_float m_fFlyExitSpeedThreshold{ 0.15f };
+	_float m_fBroomRaisedSpeed{ 2.f };
 	_float m_fTurboAnimationSpeedThreshold{ 24.f };
 	_float m_fFacingTurnSpeed{ 150.f };
 

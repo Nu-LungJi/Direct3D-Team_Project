@@ -26,6 +26,18 @@ static int selectedParent = -1;
 
 namespace
 {
+	TEXT_ALIGN LoadTextAlignmentCompatible(
+		const nlohmann::ordered_json& obj)
+	{
+		const uint32_t alignment = obj.value(
+			"TextAlignment",
+			static_cast<uint32_t>(TEXT_ALIGN::LEFT));
+		if (alignment > static_cast<uint32_t>(TEXT_ALIGN::RIGHT))
+			return TEXT_ALIGN::LEFT;
+
+		return static_cast<TEXT_ALIGN>(alignment);
+	}
+
 	void LoadFlipInfoCompatible(
 		const nlohmann::ordered_json& obj,
 		FLIP_INFO& flipInfo)
@@ -76,17 +88,7 @@ HRESULT CLevelUIEditor::Initialize()
 
 	CGameInstance::Get().GetGameObjectLayer("Layer_UI");
 
-	m_vResTag.push_back("TEX_SHM");
-	m_vResTag.push_back("TEX_MAP");
-
-	// SY가 수정함
-	const auto pResourceMap = E::CGameInstance::Get().GetResource("LEVEL_UIEDITOR");
-	m_vResTag.clear();
-	for (const auto& pair : pResourceMap)
-	{
-		m_vResTag.push_back(pair.first.GetDbgStr());
-	}
-
+	RefreshTextureResources();
 	RefreshFlipbookResources();
 
 	if (std::nullopt == Target_UI)
@@ -871,15 +873,38 @@ void CLevelUIEditor::PrefabMode()
 	// ---------------------------------------------------------
 	if (ImGui::CollapsingHeader("Texture Resources"))
 	{
+		constexpr float textureCellWidth = 76.f;
+		constexpr int textureColumnCount = 4;
+		constexpr float textureGridWidth =
+			textureCellWidth * textureColumnCount;
+
+		if (ImGui::Button("Refresh Images"))
+			RefreshTextureResources();
+
+		static ImGuiTextFilter textureResTagFilter;
+		textureResTagFilter.Draw(
+			"Search ResTag##PrefabTextureSearch",
+			textureGridWidth);
+
 		// 가로 패딩을 15로 증가 (기존은 기본값 8)
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(15, 10));
 
 		// 스크롤 가능한 차일드 영역 부여
-		ImGui::BeginChild("TextureView", ImVec2(0, 300), true);
-		if (ImGui::BeginTable("TextureTable", 4)) // 컬럼 수를 늘려서 한 줄에 여러 이미지 배치
+		ImGui::BeginChild(
+			"TextureView",
+			ImVec2(textureGridWidth + 30.f, 300.f),
+			true);
+		if (ImGui::BeginTable(
+			"TextureTable",
+			textureColumnCount,
+			ImGuiTableFlags_SizingFixedFit |
+			ImGuiTableFlags_NoSavedSettings))
 		{
 			for (size_t i = 0; i < m_vResTag.size(); ++i)
 			{
+				if (!textureResTagFilter.PassFilter(m_vResTag[i].c_str()))
+					continue;
+
 				ImGui::TableNextColumn();
 				ImGui::PushID((int)i);
 	
@@ -1466,6 +1491,81 @@ void CLevelUIEditor::PrefabLoad()
 	}
 }
 
+void CLevelUIEditor::RefreshTextureResources()
+{
+	const fs::path textureDirectory =
+		"./Resources/SampleClient/Textures/UI/TexUI";
+	std::error_code error{};
+	if (fs::exists(textureDirectory, error) &&
+		fs::is_directory(textureDirectory, error))
+	{
+		for (fs::directory_iterator iterator{
+				textureDirectory,
+				fs::directory_options::skip_permission_denied,
+				error }, end;
+			iterator != end;
+			iterator.increment(error))
+		{
+			if (error)
+			{
+				error.clear();
+				continue;
+			}
+			if (!iterator->is_regular_file(error))
+				continue;
+
+			std::string extension = iterator->path().extension().string();
+			std::ranges::transform(
+				extension,
+				extension.begin(),
+				[](unsigned char character)
+				{
+					return static_cast<char>(std::tolower(character));
+				});
+			if (extension != ".png")
+				continue;
+
+			const std::string resourceTag =
+				"TEX_" + iterator->path().stem().string();
+			auto resource = E::CGameInstance::Get().
+				GetResourceFirst<E::CResTexture2D>(
+					"LEVEL_UIEDITOR",
+					resourceTag);
+			if (!resource)
+			{
+				resource = std::dynamic_pointer_cast<E::CResTexture2D>(
+					E::CGameInstance::Get().AddResource(
+						"LEVEL_UIEDITOR",
+						resourceTag,
+						E::CResTexture2D::Create(
+							iterator->path().generic_string())));
+			}
+			if (resource && !resource->GetSRV())
+				resource->Load();
+		}
+	}
+
+	m_vResTag.clear();
+	const auto resourceMap = E::CGameInstance::Get().
+		GetResource("LEVEL_UIEDITOR");
+	for (const auto& pair : resourceMap)
+	{
+		const auto texture = E::CGameInstance::Get().
+			GetResourceFirst<E::CResTexture2D>(
+				"LEVEL_UIEDITOR",
+				pair.first);
+		if (texture && texture->GetSRV())
+		{
+			m_vResTag.emplace_back(pair.first.GetDbgStr());
+		}
+	}
+
+	std::ranges::sort(m_vResTag);
+	m_vResTag.erase(
+		std::unique(m_vResTag.begin(), m_vResTag.end()),
+		m_vResTag.end());
+}
+
 void CLevelUIEditor::RefreshFlipbookResources()
 {
 	m_vFlipBookResTag.clear();
@@ -1638,6 +1738,8 @@ void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& 
 	{
 		const TEXT_INFO& textInfo = static_cast<CTextUI*>(pUI)->GetTextInfo();
 		obj["Text"] = WStringToUTF8(textInfo.Text);
+		obj["TextAlignment"] = static_cast<uint32_t>(textInfo.Alignment);
+		break;
 	}
 	default:
 		break;
@@ -1708,9 +1810,11 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*uiHandle);
 		{
 			TEXT_INFO& textInfo = static_cast<CTextBox*>(pUI)->GetTextInfo();
-			//textInfo.Text = obj["Text"];
+			textInfo.Text = StringToWUTF8(
+				obj.value("Text", std::string{}));
+			textInfo.Alignment = LoadTextAlignmentCompatible(obj);
 		}
-		
+		break;
 	default:
 		break;
 	}
@@ -1931,6 +2035,27 @@ void CLevelUIEditor::StateView()
 			{
 				CTextBox* pTextBox = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*Target_UI);
 				pTextBox->SetwText(StringToWUTF8(m_sText));
+
+				static const char* TextAlignmentNames[] = {
+					"Left", "Center", "Right"
+				};
+				int textAlignment = static_cast<int>(
+					pTextBox->GetTextAlignment());
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Text Alignment");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(150.f);
+				if (ImGui::Combo(
+					"##TextAlignment",
+					&textAlignment,
+					TextAlignmentNames,
+					IM_ARRAYSIZE(TextAlignmentNames)))
+				{
+					pTextBox->SetTextAlignment(
+						static_cast<TEXT_ALIGN>(textAlignment));
+				}
 			}
 		}
 	
@@ -2075,6 +2200,27 @@ void CLevelUIEditor::LocalStateView()
 			{
 				CTextBox* pTextBox = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*Target_UI);
 				pTextBox->SetwText(StringToWUTF8(m_sText));
+
+				static const char* TextAlignmentNames[] = {
+					"Left", "Center", "Right"
+				};
+				int textAlignment = static_cast<int>(
+					pTextBox->GetTextAlignment());
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Text Alignment");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(150.f);
+				if (ImGui::Combo(
+					"##LocalTextAlignment",
+					&textAlignment,
+					TextAlignmentNames,
+					IM_ARRAYSIZE(TextAlignmentNames)))
+				{
+					pTextBox->SetTextAlignment(
+						static_cast<TEXT_ALIGN>(textAlignment));
+				}
 			}
 		}
 

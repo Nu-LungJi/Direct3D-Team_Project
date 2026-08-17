@@ -15,6 +15,7 @@
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
 #include "Player_Weapon.h"
+#include "Player_Broom.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Bombarda_Bullet.h"
 #include "Player_Confringo_Bullet.h"
@@ -32,6 +33,8 @@
 #include "EdgPulse.h"
 #include "EdgRandomBall.h"
 #include "EdgGasi.h"
+#include "Mon_State.h"
+#include "Spider.h"
 // UI
 #include "UIController.h"
 #include "EffectUI.h"
@@ -57,6 +60,11 @@ std::future<bool> CLevelTerrainLoader::Load()
 				return false;
 			}
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("Lightning")))
+			{
+				return false;
+			}
+			// [LSY] 테스트 레벨에서도 플레이어 스킬 컷씬을 사용할 수 있도록 미리 등록한다.
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AvadaKedavra")))
 			{
 				return false;
 			}
@@ -224,6 +232,13 @@ std::future<bool> CLevelTerrainLoader::Load()
 					return false;
 				}
 			}
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "PLAYER_BROOM_RESOURCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/Broom/SK_FlyingClassBroom_01.bin"))) {
+				E::CResModel::DESC pDesc{};
+				if (FAILED(res->Load(pDesc))) {
+					MSG_BOX("TERRAIN Failed PLAYER_BROOM_RESOURCE");
+					return false;
+				}
+			}
 
 			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Player, CPlayer::Create())))
 			{
@@ -239,6 +254,11 @@ std::future<bool> CLevelTerrainLoader::Load()
 			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, CPlayer_Weapon::Create())))
 			{
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_PlayerWeapon");
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerBroom, CPlayer_Broom::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_PlayerBroom");
 				return false;
 			}
 			if (FAILED(E::CGameInstance::Get().AddPrototype(
@@ -453,7 +473,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_TMBGurdian, CTmbGurdian::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TMBGurdian");
-			return false;
+			return E_FAIL;
 		}
 
 	}
@@ -479,7 +499,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_TmbGurdianDead, CTmbGurdianDead::Create())))
 		{
 			MSG_BOX("LEVEL_CREATURE Failed Prototype_GameObject_TmbGurdianDead");
-			return false;
+			return E_FAIL;
 		}
 	}
 	//TombWeapon
@@ -547,6 +567,27 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon_Gasi, CEdgGasi::Create()))) return E_FAIL;
 
 	}
+	//Spider
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "Model_Resource_Spider",
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Spider/SK_Spider.bin"))) {
 
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(6.f, 6.f, 6.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("TERRAIN Failed Model_Resource_Spider");
+				return E_FAIL;
+			}
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");
+			return E_FAIL;
+		}
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
+
+	}
 	return S_OK;
 }

@@ -21,6 +21,18 @@ NS_USING(Client)
 
 namespace
 {
+	TEXT_ALIGN LoadTextAlignmentCompatible(
+		const nlohmann::ordered_json& obj)
+	{
+		const uint32_t alignment = obj.value(
+			"TextAlignment",
+			static_cast<uint32_t>(TEXT_ALIGN::LEFT));
+		if (alignment > static_cast<uint32_t>(TEXT_ALIGN::RIGHT))
+			return TEXT_ALIGN::LEFT;
+
+		return static_cast<TEXT_ALIGN>(alignment);
+	}
+
 	void LoadFlipInfoCompatible(
 		const nlohmann::ordered_json& obj,
 		FLIP_INFO& flipInfo)
@@ -53,6 +65,7 @@ UIManager::~UIManager()
 
 void UIManager::Update()
 {
+	UpdateActiveButtons();
 }
 
 void UIManager::Initialize(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
@@ -1292,6 +1305,204 @@ void UIManager::CreateDamageFont(uint32_t damage, CHandle targetMonster, _bool i
 	PlayFadeOutDelete(*hDamageFont, 0.3f, 0.65f);
 }
 
+void UIManager::CreateActiveButton(CHandle handle, _ubyte KeyType)
+{
+	auto* pTarget = E::CGameInstance::Get().GetGameObjectByHandle(handle);
+	if (!pTarget || pTarget->GetPendingDestroy())
+		return;
+
+	const auto duplicate = std::find_if(
+		m_ActiveButtons.begin(),
+		m_ActiveButtons.end(),
+		[handle](const ACTIVE_BUTTON_INFO& info)
+		{
+			return info.TargetHandle == handle && !info.Removing;
+		});
+
+	if (duplicate != m_ActiveButtons.end())
+		return;
+
+	std::string resourceTag;
+	_ubyte inputKey{};
+
+	if (KeyType == static_cast<_ubyte>(ACTIVE_BUTTON_KEY::E) || KeyType == DIK_E)
+	{
+		resourceTag = "TEX_UI_T_cbi_Keyboard_E";
+		inputKey = DIK_E;
+	}
+	else if (KeyType == static_cast<_ubyte>(ACTIVE_BUTTON_KEY::F) || KeyType == DIK_F)
+	{
+		resourceTag = "TEX_UI_T_cbi_Keyboard_F";
+		inputKey = DIK_F;
+	}
+	else
+	{
+		return;
+	}
+
+	const std::string currentLevel =
+		_string("LEVEL_") +
+		MagicEnumToStringView(
+			static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+
+	CTextureUI::UIOBJECT_DESC desc{};
+	desc.sObjectTag = "ActiveButton";
+	desc.Name = "ActiveButton";
+	desc.fSizeX = 48.f;
+	desc.fSizeY = 48.f;
+	desc.fAlpha = 0.f;
+	desc.ResWeight = 950;
+	desc.ResTag = resourceTag;
+	desc.UIType = ETOUI(UI_TYPE::TEXUI);
+
+	const auto uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+		currentLevel,
+		"Prototype_GameObject_TextureUI",
+		"Layer_UI",
+		&desc);
+
+	if (!uiHandle)
+		return;
+
+	auto* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
+	if (!pUI)
+		return;
+
+	pUI->SetAlpha(0.f);
+	pUI->SetInputLcok(true);
+	pUI->CalcUICoord();
+
+	ACTIVE_BUTTON_INFO info{};
+	info.TargetHandle = handle;
+	info.UIHandle = *uiHandle;
+	info.KeyType = inputKey;
+	m_ActiveButtons.push_back(info);
+
+	PlayFadeIn(*uiHandle, 0.f, 0.15f);
+}
+
+void UIManager::RemoveActiveButton(CHandle handle, _bool fadeOut)
+{
+	const auto iter = std::find_if(
+		m_ActiveButtons.begin(),
+		m_ActiveButtons.end(),
+		[handle](const ACTIVE_BUTTON_INFO& info)
+		{
+			return info.TargetHandle == handle;
+		});
+
+	if (iter == m_ActiveButtons.end())
+		return;
+
+	const CHandle uiHandle = iter->UIHandle;
+	if (auto* pUI = SafeGetOBJ(uiHandle))
+	{
+		pUI->SetActive(true);
+		if (fadeOut)
+			PlayFadeOutDelete(uiHandle, 0.f, 0.15f);
+		else
+			DeleteUIRecursive(uiHandle);
+	}
+
+	m_ActiveButtons.erase(iter);
+}
+
+void UIManager::UpdateActiveButtons()
+{
+	auto* pCamera = E::CGameInstance::Get().GetActiveCamera();
+	if (!pCamera)
+		return;
+
+	const _float2 screenSize = E::CGameInstance::Get().GetClientScreenSize();
+	const _matrix view = pCamera->GetView();
+	const _matrix proj = pCamera->GetProj();
+	const _float2 screenCenter{ screenSize.x * 0.5f, screenSize.y * 0.5f };
+
+	CHandle nearestE{};
+	CHandle nearestF{};
+	_bool foundNearestE{};
+	_bool foundNearestF{};
+	_float nearestEDistanceSq = FLT_MAX;
+	_float nearestFDistanceSq = FLT_MAX;
+
+	for (auto iter = m_ActiveButtons.begin(); iter != m_ActiveButtons.end();)
+	{
+		auto* pTarget = E::CGameInstance::Get().GetGameObjectByHandle(iter->TargetHandle);
+		auto* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(iter->UIHandle);
+
+		if (!pTarget || pTarget->GetPendingDestroy() || !pUI || pUI->GetPendingDestroy())
+		{
+			if (pUI && !pUI->GetPendingDestroy())
+				DeleteUIRecursive(iter->UIHandle);
+
+			iter = m_ActiveButtons.erase(iter);
+			continue;
+		}
+
+		_float3 worldPosition = pTarget->GetTransform().GetPosition();
+		worldPosition.x += iter->WorldOffset.x;
+		worldPosition.y += iter->WorldOffset.y;
+		worldPosition.z += iter->WorldOffset.z;
+
+		const _vector clipPosition = XMVector4Transform(
+			XMVectorSet(worldPosition.x, worldPosition.y, worldPosition.z, 1.f),
+			view * proj);
+
+		_bool visible = XMVectorGetW(clipPosition) > 0.f;
+		_float3 screenPosition{};
+
+		if (visible)
+		{
+			const _vector projected = XMVector3Project(
+				XMLoadFloat3(&worldPosition),
+				0.f, 0.f,
+				screenSize.x, screenSize.y,
+				0.f, 1.f,
+				proj, view, XMMatrixIdentity());
+
+			XMStoreFloat3(&screenPosition, projected);
+			visible = screenPosition.z >= 0.f && screenPosition.z <= 1.f &&
+				screenPosition.x >= 0.f && screenPosition.x <= screenSize.x &&
+				screenPosition.y >= 0.f && screenPosition.y <= screenSize.y;
+		}
+
+		iter->Visible = visible;
+		pUI->SetActive(visible);
+
+		if (visible)
+		{
+			pUI->SetPos({ screenPosition.x, screenPosition.y });
+			pUI->CalcUICoord();
+
+			const _float dx = screenPosition.x - screenCenter.x;
+			const _float dy = screenPosition.y - screenCenter.y;
+			const _float distanceSq = dx * dx + dy * dy;
+
+			if (iter->KeyType == DIK_E && distanceSq < nearestEDistanceSq)
+			{
+				nearestEDistanceSq = distanceSq;
+				nearestE = iter->TargetHandle;
+				foundNearestE = true;
+			}
+			else if (iter->KeyType == DIK_F && distanceSq < nearestFDistanceSq)
+			{
+				nearestFDistanceSq = distanceSq;
+				nearestF = iter->TargetHandle;
+				foundNearestF = true;
+			}
+		}
+
+		++iter;
+	}
+
+	// The gameplay input is not consumed here. The interaction object can still
+	// process the same KeyDown this frame; only the closest visible prompt is removed.
+	if (foundNearestE && E::CGameInstance::Get().KeyDown(DIK_E))
+		RemoveActiveButton(nearestE);
+	if (foundNearestF && E::CGameInstance::Get().KeyDown(DIK_F))
+		RemoveActiveButton(nearestF);
+}
+
 std::optional<CHandle> UIManager::RootUIPicking()
 {
 	std::optional<CHandle> targetHandle = std::nullopt;
@@ -1494,7 +1705,9 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*uiHandle);
 		{
 			TEXT_INFO& textInfo = static_cast<CTextBox*>(pUI)->GetTextInfo();
-			textInfo.Text = StringToWUTF8(obj["Text"]);
+			textInfo.Text = StringToWUTF8(
+				obj.value("Text", std::string{}));
+			textInfo.Alignment = LoadTextAlignmentCompatible(obj);
 		}
 		break;
 	case ETOUI(UI_TYPE::BUTTON):

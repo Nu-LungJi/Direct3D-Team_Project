@@ -11,6 +11,8 @@ struct GPU_ANIM_INSTANCE_DATA
     float fPrevTrackPosition;
     float fBlendWeight;
     uint bBlending;
+    uint4 vMorphIndices;
+    float4 vMorphWeights;
 };
 
 
@@ -28,10 +30,24 @@ struct GPU_SKIN_BONE_DESC
 
 StructuredBuffer<GPU_SKIN_BONE_DESC> gSkinBones : register(t8);
 
+struct GPU_MORPH_VERTEX_DELTA
+{
+    float4 vPositionDelta;
+    float4 vNormalDelta;
+    float4 vTangentDelta;
+    float4 vBinormalDelta;
+};
+StructuredBuffer<GPU_MORPH_VERTEX_DELTA> gMorphDeltas : register(t9);
+
 cbuffer CB_GPU_SKIN_MESH : register(b5)
 {
     uint gSkinBoneOffset;
-    uint3 gSkinMeshPadding;
+    uint gVertexCount;
+    uint gSkinBoneCount;
+    uint gBonePaletteStride;
+    uint gMorphTargetCount;
+    uint gMorphVertexCount;
+    uint2 gMorphPadding;
 };
 
 struct VS_IN
@@ -56,9 +72,26 @@ struct VS_OUT
     float4 vProjPos : TEXCOORD2;
 };
 
-VS_OUT VSMain(VS_IN In, uint instanceId : SV_InstanceID)
+VS_OUT VSMain(VS_IN In, uint instanceId : SV_InstanceID, uint vertexId : SV_VertexID)
 {
     VS_OUT Out;
+    if (gMorphTargetCount > 0 && vertexId < gMorphVertexCount)
+    {
+        [unroll]
+        for (uint slot = 0; slot < 4; ++slot)
+        {
+            const float weight = g_AnimationInstances[instanceId].vMorphWeights[slot];
+            const uint targetIndex = g_AnimationInstances[instanceId].vMorphIndices[slot];
+            if (abs(weight) <= 1.e-4f || targetIndex >= gMorphTargetCount)
+                continue;
+            const GPU_MORPH_VERTEX_DELTA delta =
+                gMorphDeltas[targetIndex * gMorphVertexCount + vertexId];
+            In.vPosition += delta.vPositionDelta.xyz * weight;
+            In.vNormal += delta.vNormalDelta.xyz * weight;
+            In.vTangent += delta.vTangentDelta.xyz * weight;
+            In.vBinormal += delta.vBinormalDelta.xyz * weight;
+        }
+    }
     float fWeightW = 1.f - (In.vBlendWeights.x + In.vBlendWeights.y + In.vBlendWeights.z);
     uint boneOffset = instanceId * 512;
     GPU_SKIN_BONE_DESC skinBoneX = gSkinBones[gSkinBoneOffset + In.vBlendIndices.x];

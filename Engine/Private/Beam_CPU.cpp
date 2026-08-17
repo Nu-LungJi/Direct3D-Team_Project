@@ -115,15 +115,39 @@ void CBeam_CPU::Update(_float fTimeDelta)
 	m_fAccumulationTime += fTimeDelta;
 	_bool bNeedRebuild = false;
 
-
 	for (auto& beam : m_vecBeams)
 	{
 		if (!beam.bActive)
 			continue;
-		 
-		beam.fElapsedTime += fTimeDelta;
-		float lifeRatio = std::clamp(beam.fElapsedTime / std::max(beam.fDuration, 0.001f), 0.f, 1.f);
 
+		beam.fElapsedTime += fTimeDelta;
+		const _bool bElectricBundle =
+			beam.iGeometryType == static_cast<uint32_t>(
+				BEAM_GEOMETRY_TYPE::ELECTRIC_BUNDLE);
+
+		// [LSY] 전기다발은 AddBeam에서 경과 시간을 음수로 시작해 기존 수명 계산으로 지연시킨다.
+		if (beam.fElapsedTime < 0.f)
+			continue;
+
+		const _float fLifeRatio = std::clamp(
+			beam.fElapsedTime / std::max(beam.fDuration, 0.001f),
+			0.f,
+			1.f);
+
+		if (bElectricBundle)
+		{
+			// [LSY] 전기다발만 Flicker 주기마다 굴곡을 갱신한다.
+			beam.fFlickerTimer -= fTimeDelta;
+			if (beam.fFlickerTimer <= 0.f)
+			{
+				RegenerateJaggedPath(beam);
+				beam.fFlickerTimer += std::max(
+					beam.fFlickerInterval,
+					0.001f);
+			}
+		}
+
+		// [LSY] 전기다발도 기존 수명 상태를 공유하되 STRAIGHTEN 단계만 건너뛴다.
 		if (beam.fElapsedTime < beam.fGrowEndTime)
 		{
 			beam.ePhase = BEAM_PHASE::GROW;
@@ -137,7 +161,8 @@ void CBeam_CPU::Update(_float fTimeDelta)
 			beam.fStraightRatio = 0.f;
 			beam.fFadeRatio = 0.f;
 		}
-		else if (beam.fElapsedTime < beam.fStraightEndTime)
+		else if (!bElectricBundle &&
+			beam.fElapsedTime < beam.fStraightEndTime)
 		{
 			beam.ePhase = BEAM_PHASE::STRAIGHTEN;
 			beam.fGrowRatio = 1.f;
@@ -156,6 +181,8 @@ void CBeam_CPU::Update(_float fTimeDelta)
 			beam.ePhase = BEAM_PHASE::HOLD;
 			beam.fGrowRatio = 1.f;
 			beam.fStraightRatio = 1.f;
+			if (bElectricBundle)
+				beam.fStraightRatio = 0.f;
 			beam.fFadeRatio = 0.f;
 		}
 		else
@@ -163,6 +190,8 @@ void CBeam_CPU::Update(_float fTimeDelta)
 			beam.ePhase = BEAM_PHASE::FADE;
 			beam.fGrowRatio = 1.f;
 			beam.fStraightRatio = 1.f;
+			if (bElectricBundle)
+				beam.fStraightRatio = 0.f;
 
 			float ratio = std::clamp(
 				(beam.fElapsedTime - beam.fHoldEndTime) /
@@ -172,7 +201,7 @@ void CBeam_CPU::Update(_float fTimeDelta)
 
 			beam.fFadeRatio = ratio;
 		}
-		if (lifeRatio >= 1.f)
+		if (fLifeRatio >= 1.f)
 			beam.bActive = false;
 
 		bNeedRebuild = true;
@@ -307,9 +336,18 @@ int32_t CBeam_CPU::AddBeam(const BEAM_PARAMS& p)
 		beam.ownerId = p.ownerId;
 
 
-		beam.fDisplacementAmplitude =
-			distance * 0.08f;
-		//beam.fDisplacementAmplitude = std::max(p.fDisplacementAmplitude, 0.f);
+		// [LSY] 기존 Beam의 거리 비례 진폭은 유지하고 전기다발 모드만 JSON 진폭을 그대로 사용한다.
+		if (p.geometryType == static_cast<int>(
+			BEAM_GEOMETRY_TYPE::ELECTRIC_BUNDLE))
+		{
+			beam.fElapsedTime = -std::max(p.fSpawnDelay, 0.f);
+			beam.fDisplacementAmplitude =
+				std::max(p.fDisplacementAmplitude, 0.f);
+		}
+		else
+		{
+			beam.fDisplacementAmplitude = distance * 0.08f;
+		}
 		beam.iDisplacementIterations = iterations;
 		beam.fDisplacementDamping = std::clamp(p.fDisplacementDamping, 0.f, 1.f);
 		beam.fFlickerInterval = std::max(p.flickerTimeInverval, 0.001f);
@@ -322,6 +360,8 @@ int32_t CBeam_CPU::AddBeam(const BEAM_PARAMS& p)
 		beam.fStraightRatio = 0.f;
 		beam.fFadeRatio = 0.f;
 		beam.fbeamWidth = p.fBeamWidth;
+		beam.fStartTaperRatio = std::clamp(p.fStartTaperRatio, 0.f, 1.f);
+		beam.fEndTaperRatio = std::clamp(p.fEndTaperRatio, 0.f, 1.f);
 		const float straightDuration = std::max(p.fStraightEndTime - p.fGrowEndTime,0.f);
 
 		const float holdDuration = std::max(p.fHoldEndTime - p.fStraightEndTime,0.f);
@@ -337,7 +377,8 @@ int32_t CBeam_CPU::AddBeam(const BEAM_PARAMS& p)
 		beam.fspawnDelay = p.fSpawnDelay;
 		
 
-		if (beam.iGeometryType == 1)
+		if (beam.iGeometryType == static_cast<uint32_t>(
+			BEAM_GEOMETRY_TYPE::SINE))
 			RegenerateSinPath(beam);
 		else
 			RegenerateJaggedPath(beam);
@@ -358,6 +399,11 @@ void CBeam_CPU::SetBeamActive(uint32_t beamIndex, _bool bActive, _float fDuratio
 	if (bActive)
 	{
 		beam.fElapsedTime = 0.f;
+		if (beam.iGeometryType == static_cast<uint32_t>(
+			BEAM_GEOMETRY_TYPE::ELECTRIC_BUNDLE))
+		{
+			beam.fElapsedTime = -std::max(beam.fspawnDelay, 0.f);
+		}
 		beam.fDuration = fDuration;
 		beam.fFlickerTimer = 0.f;
 
@@ -367,7 +413,8 @@ void CBeam_CPU::SetBeamActive(uint32_t beamIndex, _bool bActive, _float fDuratio
 		beam.fStraightRatio = 0.f;
 		beam.fFadeRatio = 0.f;
 
-		if (beam.iGeometryType == 1)
+		if (beam.iGeometryType == static_cast<uint32_t>(
+			BEAM_GEOMETRY_TYPE::SINE))
 			RegenerateSinPath(beam);
 		else
 			RegenerateJaggedPath(beam);
@@ -412,7 +459,8 @@ void CBeam_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixDat
 				XMLoadFloat4(&beam.vEndPos),
 				deltaMatrix));
 
-		if (beam.iGeometryType == 1)
+		if (beam.iGeometryType == static_cast<uint32_t>(
+			BEAM_GEOMETRY_TYPE::SINE))
 			RegenerateSinPath(beam);
 		else
 			RegenerateJaggedPath(beam);
@@ -615,10 +663,35 @@ void CBeam_CPU::BuildBeamGeometry()
 
 					const float tailFade = std::pow(1.f - localTailRatio, 0.25f);
 					const float tailAlpha = std::lerp(minimumTailAlpha, 1.f, tailFade);
-					const float finalAlpha = fadeAlpha * tailAlpha;
+
+					// [LSY] Ratio가 명시된 Beam만 양 끝의 폭과 알파를 줄여 평평한 절단면을 없앤다.
+					float endTaperScale = 1.f;
+					if (beam.fEndTaperRatio > 0.f)
+					{
+						endTaperScale = SmoothStep(
+							0.f,
+							beam.fEndTaperRatio,
+							distanceBehindHead);
+					}
+
+					float startTaperScale = 1.f;
+					if (beam.fStartTaperRatio > 0.f)
+					{
+						startTaperScale = SmoothStep(
+							0.f,
+							beam.fStartTaperRatio,
+							point.t);
+					}
+
+					const float endpointTaperScale =
+						endTaperScale * startTaperScale;
+					const XMVECTOR taperedHalfWidth =
+						halfWidth * endpointTaperScale;
+					const float finalAlpha =
+						fadeAlpha * tailAlpha * endpointTaperScale;
 
 					BEAM_VERTEX top{};
-					XMStoreFloat3(&top.vPosition, point.position + halfWidth);
+					XMStoreFloat3(&top.vPosition, point.position + taperedHalfWidth);
 					top.vUV = { 0.f,localTailRatio };
 					top.vColor = beam.vColor;
 					top.vColor.w *= finalAlpha;
@@ -626,7 +699,7 @@ void CBeam_CPU::BuildBeamGeometry()
 					top.vEndEmissive = beam.vEndEmissive;
 
 					BEAM_VERTEX bottom{};
-					XMStoreFloat3(&bottom.vPosition, point.position - halfWidth);
+					XMStoreFloat3(&bottom.vPosition, point.position - taperedHalfWidth);
 					bottom.vUV = { 1.f,localTailRatio };
 					bottom.vColor = beam.vColor;
 					bottom.vColor.w *= finalAlpha;
@@ -768,7 +841,8 @@ void CBeam_CPU::SetBeamPositions(
 	// 아직 곡선이 남아 있을 때만 경로 재계산
 	if (beam.fStraightRatio < 1.f)
 	{
-		if (beam.iGeometryType == 1)
+		if (beam.iGeometryType == static_cast<uint32_t>(
+			BEAM_GEOMETRY_TYPE::SINE))
 			RegenerateSinPath(beam);
 		else
 			RegenerateJaggedPath(beam);
@@ -800,7 +874,8 @@ void CBeam_CPU::SetBeamPositionsByOwner(uint32_t ownerId,const _float3& start,co
 
 		if (beam.fStraightRatio < 1.f)
 		{
-			if (beam.iGeometryType == 1)
+			if (beam.iGeometryType == static_cast<uint32_t>(
+				BEAM_GEOMETRY_TYPE::SINE))
 				RegenerateSinPath(beam);
 			else
 				RegenerateJaggedPath(beam);

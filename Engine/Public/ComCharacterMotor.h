@@ -44,6 +44,8 @@ public:
 	_float GetGravity() const { return m_fGravity; }
 	void SetUseGravity(_bool bUseGravity) { m_bUseGravity = bUseGravity; }
 	_bool IsUsingGravity() const { return m_bUseGravity; }
+	void SetPreserveHorizontalVelocity(_bool bPreserve) { m_bPreserveHorizontalVelocity = bPreserve; }
+	_bool IsPreservingHorizontalVelocity() const { return m_bPreserveHorizontalVelocity; }
 	_bool IsGrounded() const { return m_bGrounded; }
 	PX_CCT_COLLISION_FLAG GetLastCollisionFlag() const { return m_eLastCollisionFlag; }
 
@@ -56,6 +58,7 @@ private:
 	_float m_fMinMoveDistance{};
 	_float3 m_vControllerCenterOffset{};
 	_bool m_bUseGravity{ true };
+	_bool m_bPreserveHorizontalVelocity{};
 	_bool m_bSyncTransform{ true };
 	_bool m_bGrounded{};
 	PX_CCT_COLLISION_FLAG m_eLastCollisionFlag{ PX_CCT_COLLISION_FLAG::NONE };

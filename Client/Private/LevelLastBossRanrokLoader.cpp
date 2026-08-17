@@ -34,6 +34,7 @@
 #include "EdgRandomBall.h"
 #include "EdgGasi.h"
 #include "Player_Weapon.h"
+#include "Player_Broom.h"
 #include "Player_Bombarda_Bullet.h"
 #include "Player_Magic_Bullet.h"
 #include "Player_Confringo_Bullet.h"
@@ -60,6 +61,11 @@ std::future<bool> CLevelLastBossRanrokLoader::Load()
 			}
 
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("Lightning")))
+			{
+				return false;
+			}
+			// [LSY] 이 레벨에서도 플레이어 스킬 컷씬을 사용할 수 있도록 미리 등록한다.
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AvadaKedavra")))
 			{
 				return false;
 			}
@@ -104,6 +110,13 @@ HRESULT CLevelLastBossRanrokLoader::LoadPlayer_InWorker()
 			return false;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(CURR_LEVEL, "PLAYER_BROOM_RESOURCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/Broom/SK_FlyingClassBroom_01.bin"))) {
+		E::CResModel::DESC pDesc{};
+		if (FAILED(res->Load(pDesc))) {
+			MSG_BOX("LAST_BOSS_RANROK Failed PLAYER_BROOM_RESOURCE");
+			return false;
+		}
+	}
 
 	if (FAILED(E::CGameInstance::Get().AddPrototype(
 		CURR_LEVEL, PROTO_GAMEOBJECT::Prototype_GameObject_Player, CPlayer::Create())))
@@ -123,6 +136,12 @@ HRESULT CLevelLastBossRanrokLoader::LoadPlayer_InWorker()
 		CURR_LEVEL, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, CPlayer_Weapon::Create())))
 	{
 		MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_PlayerWeapon");
+		return false;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(
+		CURR_LEVEL, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerBroom, CPlayer_Broom::Create())))
+	{
+		MSG_BOX("LAST_BOSS_RANROK Failed Prototype_GameObject_PlayerBroom");
 		return false;
 	}
 

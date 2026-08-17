@@ -1,6 +1,7 @@
 #pragma once
 #include "Client_Defines.h"
 #include "UIObject.h"
+#include "UI_Structs.h"
 
 NS_BEGIN(Client)
 
@@ -46,6 +47,10 @@ public:
 	/********데미지 폰트***********/
 	void CreateDamageFont(uint32_t damage, CHandle targetMonster,_bool isCritical = false);
 
+	/********액티브 버튼***********/
+	void CreateActiveButton(CHandle handle, _ubyte KeyType);
+	void RemoveActiveButton(CHandle handle, _bool fadeOut = true);
+
 public:
 	std::optional<CHandle> RootUIPicking();
 
@@ -63,12 +68,17 @@ private:
 
 	std::vector<CHandle> m_vLoadPrefabRoot{};
 	std::optional<CHandle> m_UIController = std::nullopt;
+	std::vector<ACTIVE_BUTTON_INFO> m_ActiveButtons{};
+
+	void UpdateActiveButtons();
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
 public:
 	std::vector<CHandle> LoadPrefab(std::string name, std::string g_BasePath = "./Resources/SampleClient/UIData/Prefabs/");
 	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);
 	void DeleteUIRecursive(std::optional<CHandle> targetHandle);
+	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
+	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 
 private:
 	/*************페이드인아웃****************/
@@ -76,10 +86,8 @@ private:
 	{
 		return E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(pHandle);
 	}
-	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
 	void PlayScaleDown(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
 	void PlayPosUP(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
-	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 	void PlayFadeInChange(CHandle pHandle, LEVEL level, float delay = 0.f, float playtime = 3.f);
 
 private:

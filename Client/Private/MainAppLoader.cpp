@@ -227,6 +227,14 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_KMS_LUMOS_WAVER", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Player_Skill_Texture.hlsl")))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "LumosWaver", .sTarget = "ps_5_0" })))
+		{
+			MSG_BOX("Failed to load LumosWaver particle shader.");
+			return E_FAIL;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_PARTICLE_TEX_SMOKE", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl")))
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "SMOKE", .sTarget = "ps_5_0" })))
@@ -582,6 +590,14 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		if (FAILED(res->Load()))
 		{
 			MSG_BOX("LOAD FAILED ENDERDRAGON JSON");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "SPIDER", CResJson::Create("./Resources/json/BeHavior/Spider.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED SPIDER JSON");
 			return E_FAIL;
 		}
 	}
