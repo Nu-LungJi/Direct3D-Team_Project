@@ -37,6 +37,10 @@ public:
 		const _float3& vTranslation,
 		const _float4& vRotation,
 		_bool bTeleport = false);
+	_bool SetWind(const NVCLOTH_WIND_DESC& Desc);
+	_bool SetSelfCollision(
+		_float fDistance,
+		_float fStiffness);
 	_bool SetCollisions(
 		const NVCLOTH_COLLISION_DESC& Desc);
 	_bool SetAnimationConstraints(

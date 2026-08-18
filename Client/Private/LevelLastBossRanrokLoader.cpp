@@ -113,6 +113,7 @@ HRESULT CLevelLastBossRanrokLoader::LoadPlayer_InWorker()
 	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(CURR_LEVEL, "PLAYER_BROOM_RESOURCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/Broom/SK_FlyingClassBroom_01.bin"))) {
 		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixIdentity();
 		if (FAILED(res->Load(pDesc))) {
 			MSG_BOX("LAST_BOSS_RANROK Failed PLAYER_BROOM_RESOURCE");
 			return false;
@@ -379,6 +380,20 @@ HRESULT CLevelLastBossRanrokLoader::MonsterLoad_InWorker()
 				return E_FAIL;
 			}
 		}
+		/*----------- 광윤 추가 -----------*/
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::LAST_BOSS_RANROK, "Model_Resource_Dragon_BoneModel",
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_Dragon_BoneMesh.bin"))) {
+
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.6f, 1.6f, 1.6f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("LAST_BOSS_RANROK Failed Model_Resource_Dragon_BoneModel");
+				return E_FAIL;
+			}
+		}
+		/*---------------------------------*/
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon, CEnderDragon::Create())))
 		{
 			MSG_BOX("LAST_BOSS_RANROK Failed Prototype_GameObject_Dragon");

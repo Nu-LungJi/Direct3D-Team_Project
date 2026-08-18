@@ -1,6 +1,8 @@
 #include "pch.h"
+#include "GameInstance.h"
 #include "ResNvClothMesh.h"
 
+#include <bit>
 #include <cmath>
 #include <fstream>
 #include <unordered_map>
@@ -24,6 +26,65 @@ namespace Engine::ResNvClothMeshDetail
 		std::vector<uint32_t> BoneIndices{};
 		std::vector<_float4x4> OffsetMatrices{};
 	};
+
+	void HashByte(uint64_t& iHash, uint8_t iValue)
+	{
+		constexpr uint64_t FNV_PRIME = 1099511628211ull;
+		iHash ^= iValue;
+		iHash *= FNV_PRIME;
+	}
+
+	void HashUInt32(uint64_t& iHash, uint32_t iValue)
+	{
+		for (uint32_t i = 0; i < sizeof(iValue); ++i)
+		{
+			HashByte(
+				iHash,
+				static_cast<uint8_t>(
+					(iValue >> (i * 8u)) & 0xffu));
+		}
+	}
+
+	void HashUInt64(uint64_t& iHash, uint64_t iValue)
+	{
+		for (uint32_t i = 0; i < sizeof(iValue); ++i)
+		{
+			HashByte(
+				iHash,
+				static_cast<uint8_t>(
+					(iValue >> (i * 8u)) & 0xffu));
+		}
+	}
+
+	uint64_t MakeSimulationMeshSignature(
+		const SOURCE_MESH& Mesh)
+	{
+		constexpr uint64_t FNV_OFFSET_BASIS =
+			14695981039346656037ull;
+		uint64_t iHash = FNV_OFFSET_BASIS;
+
+		HashUInt64(iHash, Mesh.Vertices.size());
+		HashUInt64(iHash, Mesh.Indices.size());
+		for (const auto& Vertex : Mesh.Vertices)
+		{
+			HashUInt32(
+				iHash,
+				std::bit_cast<uint32_t>(
+					Vertex.vPosition.x));
+			HashUInt32(
+				iHash,
+				std::bit_cast<uint32_t>(
+					Vertex.vPosition.y));
+			HashUInt32(
+				iHash,
+				std::bit_cast<uint32_t>(
+					Vertex.vPosition.z));
+		}
+		for (const uint32_t iIndex : Mesh.Indices)
+			HashUInt32(iHash, iIndex);
+
+		return iHash;
+	}
 
 	struct NVCLOTH_RENDER_VERTEX
 	{
@@ -995,9 +1056,15 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 	if (!pDesc ||
 		!std::isfinite(pDesc->fWeldTolerance) ||
 		pDesc->fWeldTolerance <= 0.f ||
-		!std::isfinite(pDesc->fFixedTopRatio) ||
-		pDesc->fFixedTopRatio < 0.f ||
-		pDesc->fFixedTopRatio > 1.f ||
+		(pDesc->eParticleConstraintMode ==
+			PARTICLE_CONSTRAINT_MODE::HEIGHT_RATIO &&
+			(!std::isfinite(pDesc->fFixedTopRatio) ||
+				pDesc->fFixedTopRatio < 0.f ||
+				pDesc->fFixedTopRatio > 1.f)) ||
+		(pDesc->eParticleConstraintMode !=
+			PARTICLE_CONSTRAINT_MODE::HEIGHT_RATIO &&
+			pDesc->eParticleConstraintMode !=
+				PARTICLE_CONSTRAINT_MODE::AUTHORED_WEIGHTS) ||
 		!std::isfinite(pDesc->fMaxDistanceScale) ||
 		pDesc->fMaxDistanceScale < 0.f)
 	{
@@ -1176,6 +1243,68 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		Meshes[iSimulationMeshIndex];
 	const auto& RenderSource =
 		Meshes[iRenderMeshIndex];
+	const uint64_t iSimulationMeshSignature =
+		ResNvClothMeshDetail::
+			MakeSimulationMeshSignature(
+				SimulationSource);
+	const _bool bUseAuthoredWeights =
+		pDesc->eParticleConstraintMode ==
+			PARTICLE_CONSTRAINT_MODE::AUTHORED_WEIGHTS;
+	std::vector<_float> SourceConstraintWeights =
+		pDesc->vecParticleConstraintWeights;
+	if (bUseAuthoredWeights)
+	{
+		if (SourceConstraintWeights.empty())
+		{
+			if (pDesc->sParticleConstraintPath.empty())
+			{
+				m_eState = STATE::LOADFAIL;
+				return E_INVALIDARG;
+			}
+
+			NVCLOTH_PARTICLE_CONSTRAINT_DATA Data{};
+			if (FAILED(
+				CGameInstance::Get().JsonDeSerialize(
+					pDesc->sParticleConstraintPath,
+					Data,
+					NVCLOTH_PARTICLE_CONSTRAINT_ROOT,
+					false)) ||
+				Data.iVersion !=
+					NVCLOTH_PARTICLE_CONSTRAINT_VERSION ||
+				Data.iSimulationMeshIndex !=
+					iSimulationMeshIndex ||
+				Data.iSourceVertexCount !=
+					SimulationSource.Vertices.size() ||
+				Data.iMeshSignature !=
+					iSimulationMeshSignature)
+			{
+				m_eState = STATE::LOADFAIL;
+				return E_FAIL;
+			}
+
+			SourceConstraintWeights =
+				std::move(Data.Weights);
+		}
+
+		if (SourceConstraintWeights.size() !=
+			SimulationSource.Vertices.size())
+		{
+			m_eState = STATE::LOADFAIL;
+			return E_INVALIDARG;
+		}
+
+		for (const _float fWeight :
+			SourceConstraintWeights)
+		{
+			if (!std::isfinite(fWeight) ||
+				fWeight < 0.f ||
+				fWeight > 1.f)
+			{
+				m_eState = STATE::LOADFAIL;
+				return E_INVALIDARG;
+			}
+		}
+	}
 	std::vector<VTXMESH> SimulationVertices(
 		SimulationSource.Vertices.size());
 	std::vector<VTXMESH> RenderVertices(
@@ -1236,6 +1365,11 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		fOriginalMaxY -
 		fOriginalHeight *
 			pDesc->fFixedTopRatio;
+	if (!bUseAuthoredWeights)
+	{
+		SourceConstraintWeights.resize(
+			SimulationVertices.size());
+	}
 
 	// 동일 위치의 저폴리 정점을 하나의 파티클로 Weld하고 고정 질량을 적용한다.
 	std::unordered_map<
@@ -1249,16 +1383,44 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		i < SimulationVertices.size();
 		++i)
 	{
-		const float fDepthRatio =
-			std::clamp(
-				(fOriginalMaxY -
-					SimulationVertices[i].vPosition.y) /
-					fOriginalHeight,
-				0.f,
-				1.f);
-		const _bool bFixed =
-			SimulationVertices[i].vPosition.y >=
-				fFixedCutoff;
+		float fConstraintWeight{};
+		_bool bFixed{};
+		if (bUseAuthoredWeights)
+		{
+			fConstraintWeight =
+				SourceConstraintWeights[i];
+			bFixed =
+				fConstraintWeight <= FLT_EPSILON;
+		}
+		else
+		{
+			const float fDepthRatio =
+				std::clamp(
+					(fOriginalMaxY -
+						SimulationVertices[i].vPosition.y) /
+						fOriginalHeight,
+					0.f,
+					1.f);
+			bFixed =
+				SimulationVertices[i].vPosition.y >=
+					fFixedCutoff;
+			const float fDynamicRange =
+				std::max(
+					1.f - pDesc->fFixedTopRatio,
+					FLT_EPSILON);
+			fConstraintWeight =
+				bFixed ?
+					0.f :
+					std::clamp(
+						(fDepthRatio -
+							pDesc->fFixedTopRatio) /
+							fDynamicRange,
+						0.f,
+						1.f);
+			SourceConstraintWeights[i] =
+				fConstraintWeight;
+		}
+
 		ResNvClothMeshDetail::TransformVertex(
 			SimulationVertices[i],
 			SimulationAnchorInverse);
@@ -1277,23 +1439,10 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 			return E_FAIL;
 		}
 
-		const float fDynamicRange =
-			std::max(
-				1.f - pDesc->fFixedTopRatio,
-				FLT_EPSILON);
-		const float fFreeRatio =
-			bFixed ?
-				0.f :
-				std::clamp(
-					(fDepthRatio -
-						pDesc->fFixedTopRatio) /
-						fDynamicRange,
-					0.f,
-					1.f);
 		SkinBinding.fMaxDistance =
 			fOriginalHeight *
 			pDesc->fMaxDistanceScale *
-			fFreeRatio;
+			fConstraintWeight;
 
 		const auto Key =
 			ResNvClothMeshDetail::MakeWeldKey(
@@ -1312,6 +1461,22 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 				bFixed ? 0.f : 1.f);
 			m_ParticleSkinBindings.push_back(
 				SkinBinding);
+		}
+		else if (bUseAuthoredWeights)
+		{
+			// [LSY] UV Seam 등으로 같은 위치의 정점이 Weld되면 더 제한적인 값을 채택한다.
+			auto& fWeldedMaxDistance =
+				m_ParticleSkinBindings[
+					Iter->second].fMaxDistance;
+			fWeldedMaxDistance =
+				std::min(
+					fWeldedMaxDistance,
+					SkinBinding.fMaxDistance);
+			if (bFixed)
+			{
+				m_tFabricDesc.vecInverseMasses[
+					Iter->second] = 0.f;
+			}
 		}
 		else if (bFixed)
 		{
@@ -1476,6 +1641,12 @@ HRESULT CResNvClothMesh::Load(const std::any& arg)
 		fMaxMappingDistance);
 	DEBUG_LOG(szLog);
 
+	m_iSimulationMeshIndex =
+		iSimulationMeshIndex;
+	m_iSimulationMeshSignature =
+		iSimulationMeshSignature;
+	m_SourceParticleConstraintWeights =
+		std::move(SourceConstraintWeights);
 	m_eState = STATE::LOADED;
 	return S_OK;
 }
@@ -1486,8 +1657,56 @@ HRESULT CResNvClothMesh::Unload(const std::any&)
 	m_tFabricDesc = {};
 	m_SkinBoneNames.clear();
 	m_ParticleSkinBindings.clear();
+	m_iSimulationMeshIndex =
+		std::numeric_limits<uint32_t>::max();
+	m_iSimulationMeshSignature = 0;
+	m_SourceParticleConstraintWeights.clear();
 	m_eState = STATE::UNLOAD;
 	return S_OK;
+}
+
+_bool CResNvClothMesh::BuildParticleConstraintData(
+	NVCLOTH_PARTICLE_CONSTRAINT_DATA& OutData) const
+{
+	if (m_eState != STATE::LOADED ||
+		m_iSimulationMeshIndex ==
+			std::numeric_limits<uint32_t>::max() ||
+		m_iSimulationMeshSignature == 0 ||
+		m_SourceParticleConstraintWeights.empty())
+	{
+		return false;
+	}
+
+	OutData = {};
+	OutData.iVersion =
+		NVCLOTH_PARTICLE_CONSTRAINT_VERSION;
+	OutData.iSimulationMeshIndex =
+		m_iSimulationMeshIndex;
+	OutData.iSourceVertexCount =
+		static_cast<uint32_t>(
+			m_SourceParticleConstraintWeights.size());
+	OutData.iMeshSignature =
+		m_iSimulationMeshSignature;
+	OutData.Weights =
+		m_SourceParticleConstraintWeights;
+	return true;
+}
+
+HRESULT CResNvClothMesh::SaveParticleConstraintData(
+	const _string& sPath) const
+{
+	if (sPath.empty())
+		return E_INVALIDARG;
+
+	NVCLOTH_PARTICLE_CONSTRAINT_DATA Data{};
+	if (!BuildParticleConstraintData(Data))
+		return E_FAIL;
+
+	return CGameInstance::Get().JsonSerialize(
+		sPath,
+		Data,
+		NVCLOTH_PARTICLE_CONSTRAINT_ROOT,
+		false);
 }
 
 SPtr<CResNvClothMesh> CResNvClothMesh::Create(

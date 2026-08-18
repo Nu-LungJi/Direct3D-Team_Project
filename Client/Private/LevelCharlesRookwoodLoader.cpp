@@ -128,6 +128,7 @@ std::future<bool> CLevelCharlesRookwoodLoader::Load()
 			}
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::CHARLES_ROOKWOOD, "PLAYER_BROOM_RESOURCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/Broom/SK_FlyingClassBroom_01.bin"))) {
 				E::CResModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixIdentity();
 				if (FAILED(res->Load(pDesc))) {
 					MSG_BOX("CHARLES_ROOKWOOD Failed PLAYER_BROOM_RESOURCE");
 					return false;

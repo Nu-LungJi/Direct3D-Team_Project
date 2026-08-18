@@ -57,7 +57,7 @@ void CDragonSkill::PriorityUpdate(E::_float fTimeDelta)
 	auto pState = pBB->Get_Value<MON_STATE>(EDG_KEY::STATE);
 	if (nullptr == pState) return;
 
-	if (*pState == MON_STATE::PHASE_CHANGE || *pState == MON_STATE::HIT)
+	if (*pState == MON_STATE::PHASE_CHANGE || *pState == MON_STATE::HIT || *pState == MON_STATE::GODAE)
 		Cancle();
 	if (*pState == MON_STATE::DEAD)
 		SetPendingDestroy();

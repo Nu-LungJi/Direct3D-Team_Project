@@ -91,6 +91,12 @@ void CEdgGasi::Cancle()
 	ResetValue();
 }
 
+void CEdgGasi::ResetValue()
+{
+	__super::ResetValue();
+	CGameInstance::Get().StopEffect(m_iSkillEffID);
+}
+
 void CEdgGasi::MoveGasi(_float fTimeDelta)
 {
 	_vector vPos = GetTransform().GetLoadedPostion();

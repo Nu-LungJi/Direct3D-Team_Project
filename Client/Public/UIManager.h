@@ -16,7 +16,7 @@ class UIManager
 
 	~UIManager();
 
-	void	Update();
+	void	Update(_float fTimeDelta);
 
 private:
 	ComPtr<ID3D11Device> m_pDevice{};
@@ -51,6 +51,10 @@ public:
 	void CreateActiveButton(CHandle handle, _ubyte KeyType);
 	void RemoveActiveButton(CHandle handle, _bool fadeOut = true);
 
+	/********대화 팝업***********/
+	void AddDialoguePopup(const std::string& speaker, const std::string& message);
+	void ClearDialoguePopups(_bool immediate = false);
+
 public:
 	std::optional<CHandle> RootUIPicking();
 
@@ -69,8 +73,12 @@ private:
 	std::vector<CHandle> m_vLoadPrefabRoot{};
 	std::optional<CHandle> m_UIController = std::nullopt;
 	std::vector<ACTIVE_BUTTON_INFO> m_ActiveButtons{};
+	std::vector<DIALOGUE_POPUP_INFO> m_DialoguePopups{};
+	_float m_fDialogueTargetWidth{};
 
 	void UpdateActiveButtons();
+	void UpdateDialoguePopups(_float fTimeDelta);
+	void RefreshDialoguePopupLayout();
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
 public:

@@ -25,7 +25,7 @@ private:
 private:
 	std::vector<EDG_ANIM_FSM>	m_Hits[ETOUI(PLAYER_SKILL_TYPE::END)][ETOUI(DRAGON_PHASE::END)];
 	MON_HIT_INFO				m_eHitInfo{};
-	uint32_t					m_iIndex{};
+	uint32_t					m_iIndex{}, m_iSound{};
 public:
 	static SPtr<CEdg_Hit> Create();
 };

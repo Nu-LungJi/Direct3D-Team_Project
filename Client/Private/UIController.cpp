@@ -787,23 +787,58 @@ uint32_t CUIController::GetSpellType(uint32_t SlotNumber)
 
 void CUIController::UseSpell(uint32_t SlotNumber)
 {
-	switch (SlotNumber)
+	if (SlotNumber < 1u || SlotNumber > 4u)
+		return;
+
+	auto* pSpellSlot = static_cast<CSpellMeter*>(
+		SafeGetOBJ(m_SpellSlot[SlotNumber - 1u]));
+	if (!pSpellSlot || pSpellSlot->GetSpellType() == ETOUI(SPELL_TYPE::NONE) ||
+		pSpellSlot->GetFillAmount() < 0.999f)
+		return;
+
+	const SPELL_TYPE spellType =
+		static_cast<SPELL_TYPE>(pSpellSlot->GetSpellType());
+	const char* dialogue = nullptr;
+
+	switch (spellType)
 	{
-	case 1:
-		static_cast<CSpellMeter*>(SafeGetOBJ(m_SpellSlot[0]))->StartCooldown();
+	case SPELL_TYPE::ASSIO:
+		dialogue = "아씨오!";
 		break;
-	case 2:
-		static_cast<CSpellMeter*>(SafeGetOBJ(m_SpellSlot[1]))->StartCooldown();
+	case SPELL_TYPE::DEPULSO:
+		dialogue = "디펄쏘!";
 		break;
-	case 3:
-		static_cast<CSpellMeter*>(SafeGetOBJ(m_SpellSlot[2]))->StartCooldown();
+	case SPELL_TYPE::DESENDO:
+		dialogue = "디센도!";
 		break;
-	case 4:
-		static_cast<CSpellMeter*>(SafeGetOBJ(m_SpellSlot[3]))->StartCooldown();
+	case SPELL_TYPE::BOMBARDA:
+		dialogue = "봄바르다!";
 		break;
-	defualt:
+	case SPELL_TYPE::LUMOS:
+		dialogue = "루모스!";
+		break;
+	case SPELL_TYPE::REPARO:
+		dialogue = "레파로!";
+		break;
+	case SPELL_TYPE::AVADAKEDAVRA:
+		dialogue = "아바다 케다브라!";
+		break;
+	case SPELL_TYPE::CONFRINGO:
+		dialogue = "콘프링고!";
+		break;
+	case SPELL_TYPE::DIFFINDO:
+		dialogue = "디핀도!";
+		break;
+	case SPELL_TYPE::TRANSFORMATION:
+		dialogue = "변환!";
+		break;
+	default:
 		break;
 	}
+
+	pSpellSlot->StartCooldown();
+	if (dialogue)
+		GET_SINGLE(UIManager)->AddDialoguePopup("스네이프", dialogue);
 }
 
 void CUIController::SetPotionCount(_float cnt)

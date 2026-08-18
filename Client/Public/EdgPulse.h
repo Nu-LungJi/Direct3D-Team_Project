@@ -23,7 +23,9 @@ public:
 public:
 	void			Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos = XMVectorSet(0, 0, 0, 1)) override;
 	void			Cancle() override;
+
 private:
+	void			ResetValue()override;
 	void			Pulse(_float fTimeDelta);
 	_bool			PulseSweep(_vector vNextPos);
 public:

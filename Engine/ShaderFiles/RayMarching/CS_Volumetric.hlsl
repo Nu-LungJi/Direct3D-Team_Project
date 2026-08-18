@@ -144,7 +144,7 @@ float GetVolumeFogDensity(float3 _WorldPos)
 	
 	float	FinalFlowNoise = Compute_FogFlow(_WorldPos);
 
-	return	HeightFactor * FogDensity * HeightLimit * FinalFlowNoise;
+	return HeightFactor * FogDensity * HeightLimit;// * FinalFlowNoise;
 }
 
 float Sample_CascadeShadow(float3 _WorldPos, uint _CascadeIndex)

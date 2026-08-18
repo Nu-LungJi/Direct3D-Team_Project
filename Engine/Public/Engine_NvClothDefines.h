@@ -61,6 +61,19 @@ namespace Engine
 		uint32_t iTriangleCount{};
 	};
 
+	struct NVCLOTH_WIND_DESC
+	{
+		// [LSY] 월드 공간의 공기 이동 속도다. Cloth가 이동하는 방향의 반대로 주면 상대풍이 된다.
+		DirectX::XMFLOAT3 vVelocity{};
+
+		// [LSY] 삼각형 면에 작용하는 항력과 양력 계수다. 0이면 해당 공기력은 적용되지 않는다.
+		float fDragCoefficient{};
+		float fLiftCoefficient{};
+
+		// [LSY] 항력과 양력 계산에 사용하는 유체 밀도다.
+		float fFluidDensity{ 1.f };
+	};
+
 	struct NVCLOTH_CLOTH_DESC
 	{
 		// [LSY] 이 Cloth 인스턴스가 공유할 쿠킹 결과다.
@@ -75,6 +88,9 @@ namespace Engine
 
 		// [LSY] 시뮬레이션 중력 가속도다.
 		DirectX::XMFLOAT3 vGravity{ 0.f, -9.81f, 0.f };
+
+		// [LSY] 생성 시 적용할 월드 공간 바람 설정이다. 기본 계수 0은 기존 Cloth 동작을 보존한다.
+		NVCLOTH_WIND_DESC tWind{};
 
 		// [LSY] 축별 속도 감쇠율이다. 높을수록 움직임이 빨리 잦아들지만 펄럭임도 줄어든다.
 		DirectX::XMFLOAT3 vDamping{ 0.05f, 0.05f, 0.05f };
@@ -109,6 +125,14 @@ namespace Engine
 
 		// [LSY] 애니메이션 Motion Constraint 구체가 파티클을 제한하는 강도다.
 		float fMotionConstraintStiffness{ 1.f };
+
+		// [LSY] 같은 Cloth 안의 파티클이 서로 유지할 최소 거리다.
+		// 0이면 Self Collision을 사용하지 않아 기존 Cloth 동작을 유지한다.
+		float fSelfCollisionDistance{};
+
+		// [LSY] Self Collision으로 겹침을 밀어내는 강도다.
+		// 0이면 비활성, 1에 가까울수록 강하게 분리한다.
+		float fSelfCollisionStiffness{};
 
 		// [LSY] 동적 삼각형 중심에 충돌 계산 전용 가상 파티클을 추가한다.
 		// 실제 시뮬레이션·렌더 파티클 수를 늘리지 않고 충돌 누락을 줄이지만
