@@ -556,6 +556,20 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		}
 
 	}
+	/*----------- 광윤 추가 -----------*/
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "Model_Resource_Dragon_BoneModel",
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_Dragon_BoneMesh.bin"))) {
+
+		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.6f, 1.6f, 1.6f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			MSG_BOX("LAST_BOSS_RANROK Failed Model_Resource_Dragon_BoneModel");
+			return E_FAIL;
+		}
+	}
+	/*---------------------------------*/
 	//Dragon	
 	{ 
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "Model_Resource_Dragon",
