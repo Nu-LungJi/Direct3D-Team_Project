@@ -121,6 +121,8 @@ private:
 	void						InitializeEffects();
 	void						Update_EnvironmentParticles(_float fTimeDelta);
 	void						Spawn_EnvironmentParticles(uint32_t iParticleIndex, uint32_t iCount);
+	void						Update_WingParticles(_float fTimeDelta);
+	void						Spawn_WingParticle(int32_t iBoneIndex);
 
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
@@ -136,8 +138,14 @@ private:
 	std::array<_bool, ETOUI(DRAGON_PHASE::END)>	m_bPhaseLock{ false };
 	_float						m_fBlobEnvSpawnAcc{};
 	_float						m_fSwirlEnvSpawnAcc{};
-	_float						m_fBlobEnvSpawnInterval{ 0.35f };
-	_float						m_fSwirlEnvSpawnInterval{ 1.f };
+	_float						m_fBlobEnvSpawnInterval{ 0.25f };
+	_float						m_fSwirlEnvSpawnInterval{ 0.6f };
+	int32_t						m_iLeft1WingParticleBoneIndex{ -1 };
+	int32_t						m_iRight1WingParticleBoneIndex{ -1 };
+	int32_t						m_iLeft2WingParticleBoneIndex{ -1 };
+	int32_t						m_iRight2WingParticleBoneIndex{ -1 };
+	_float						m_fWingParticleSpawnAcc{};
+	_float						m_fWingParticleSpawnInterval{ 0.1f };
 public:
 	static E::UPtr<CEnderDragon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
