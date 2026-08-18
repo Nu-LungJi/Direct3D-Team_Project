@@ -155,6 +155,7 @@ HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
 			"./Resources/SampleClient/Models/Skeleton/professor/Broom/SK_FlyingClassBroom_01.bin")))
 	{
 		E::CResModel::DESC desc{};
+		desc.PreTransformMatrix = XMMatrixIdentity();
 		if (FAILED(broom->Load(desc)))
 			return E_FAIL;
 	}

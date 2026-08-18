@@ -6,6 +6,7 @@
 #include "Player.h"
 #include "Player_Weapon.h"
 #include "Particle.h"
+#include "NvClothCape.h"
 
 NS_BEGIN(Client)
 
@@ -21,6 +22,8 @@ HRESULT CPlayer_AvadaKedavraController::Initialize()
 
 void CPlayer_AvadaKedavraController::Update(_float fTimeDelta)
 {
+	UpdateBeamClothWind();
+
 	if (m_bCastActive)
 	{
 		_float4x4 wandWorld{};
@@ -162,6 +165,32 @@ _bool CPlayer_AvadaKedavraController::ReleaseSpell()
 	const _float3 effectTargetPosition = CalculateVisualTargetPosition(
 		startPosition,
 		targetPosition);
+	const _vector vCastDirection =
+		XMLoadFloat3(&effectTargetPosition) -
+		XMLoadFloat3(&startPosition);
+	const _float fCastDistance = XMVectorGetX(
+		XMVector3Length(vCastDirection));
+	_float3 vClothWind{};
+	if (fCastDistance > FLT_EPSILON)
+	{
+		// [LSY] 완드와 피격점의 높이 차이를 사용하면 바람이 사선으로 들어간다.
+		// 플레이어가 바라보는 수평축의 뒤쪽으로 고정해 망토가 등 뒤로 펼쳐지게 한다.
+		_vector vCapeWindDirection = XMVectorSetY(
+			m_Owner.GetTransform().GetState(STATE::LOOK),
+			0.f);
+		if (XMVectorGetX(XMVector3LengthSq(vCapeWindDirection)) <= FLT_EPSILON)
+		{
+			vCapeWindDirection = XMVectorSetY(vCastDirection, 0.f);
+		}
+
+		if (XMVectorGetX(XMVector3LengthSq(vCapeWindDirection)) > FLT_EPSILON)
+		{
+			XMStoreFloat3(
+				&vClothWind,
+				-XMVector3Normalize(vCapeWindDirection) *
+					CLOTH_WIND_SPEED);
+		}
+	}
 
 	CGameInstance::Get().PlayEffect(
 		"AvadaKedavra_Release",
@@ -184,14 +213,45 @@ _bool CPlayer_AvadaKedavraController::ReleaseSpell()
 				.bLoop = false
 			});
 	}
-	CGameInstance::Get().PlayEffect(
+	m_iBeamEffectID = CGameInstance::Get().PlayEffect(
 		"AvadaKedavra_Beam",
 		wandWorld,
 		XMVectorSet(
 			effectTargetPosition.x,
 			effectTargetPosition.y,
 			effectTargetPosition.z,
-			1.f));
+			1.f),
+		[hOwner = m_Owner.GetHandle()](
+			EFFECT_INSTANCE_ID iEffectID,
+			EFFECT_FINISH_REASON)
+		{
+			auto* pPlayer = CGameInstance::Get().
+				GetGameObjectByHandleT<CPlayer>(hOwner);
+			if (!pPlayer || !pPlayer->m_pAvadaKedavraController)
+				return;
+
+			auto& controller = *pPlayer->m_pAvadaKedavraController;
+			if (controller.m_iBeamEffectID != iEffectID)
+				return;
+
+			// [LSY] 빔 종료 콜백과 바람 종료를 묶어 이펙트 길이 변경에도 동기화한다.
+			controller.m_iBeamEffectID = INVALID_EFFECT_INSTANCE_ID;
+			controller.m_vBeamClothWindVelocity = {};
+
+
+			if (auto pCape = CGameInstance::Get().GetGameObjectByHandleT<CNvClothCape>(pPlayer->GetCapeHandle()))
+			{
+				pCape->RequestClothWindImpulse({}, 0.001f);
+			}
+
+			//pPlayer->RequestClothWindImpulse({}, 0.001f);
+		});
+
+	if (m_iBeamEffectID != INVALID_EFFECT_INSTANCE_ID)
+	{
+		m_vBeamClothWindVelocity = vClothWind;
+		UpdateBeamClothWind();
+	}
 
 	// [LSY] 현재는 연출만 연결되어 있다. 실제 즉사/피해 처리는
 	// m_Owner.GetTargetHandle()을 대상으로 이 지점에 연결한다.
@@ -291,6 +351,21 @@ void CPlayer_AvadaKedavraController::EmitCastTrail(
 	}
 }
 
+void CPlayer_AvadaKedavraController::UpdateBeamClothWind()
+{
+	if (m_iBeamEffectID == INVALID_EFFECT_INSTANCE_ID)
+		return;
+
+	// [LSY] 단발 Impulse가 아니라 빔 수명 동안 요청을 갱신해 Flutter/Gust가 계속 계산되게 한다.
+	if (auto pCape = CGameInstance::Get().GetGameObjectByHandleT<CNvClothCape>(m_Owner.GetCapeHandle()))
+	{
+		pCape->RequestClothWindImpulse(m_vBeamClothWindVelocity, CLOTH_WIND_REFRESH_DURATION);
+	}
+	//m_Owner.RequestClothWindImpulse(
+	//	m_vBeamClothWindVelocity,
+	//	CLOTH_WIND_REFRESH_DURATION);
+}
+
 void CPlayer_AvadaKedavraController::PlayImpactEffects(
 	const _float3& vImpactPosition) const
 {
@@ -388,6 +463,8 @@ void CPlayer_AvadaKedavraController::Free()
 {
 	StopCastEffect();
 	m_bImpactPending = false;
+	m_iBeamEffectID = INVALID_EFFECT_INSTANCE_ID;
+	m_vBeamClothWindVelocity = {};
 	CEngineBase::Free();
 }
 

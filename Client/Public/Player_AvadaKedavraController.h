@@ -45,6 +45,7 @@ private:
 		const _float3& vStartPosition,
 		const _float3& vTargetPosition) const;
 	void EmitCastTrail(const _float3& vWandPosition);
+	void UpdateBeamClothWind();
 	void PlayImpactEffects(const _float3& vImpactPosition) const;
 	void PlayImpactArcs(
 		const _float4x4& impactWorld,
@@ -61,10 +62,16 @@ private:
 	_bool m_bTrailRegistrationFailureLogged{};
 	_float m_fImpactDelayRemaining{};
 	_float3 m_vPendingImpactPosition{};
+	_float3 m_vBeamClothWindVelocity{};
 	EFFECT_INSTANCE_ID m_iCastEffectID{ INVALID_EFFECT_INSTANCE_ID };
+	EFFECT_INSTANCE_ID m_iBeamEffectID{ INVALID_EFFECT_INSTANCE_ID };
 
 	// [LSY] 빔 방출 직후보다 약간 늦게 피격 연출을 시작해 타격의 선후 관계를 보이게 한다.
 	static constexpr _float IMPACT_DELAY = 0.05f;
+	// [LSY] 주문 방출 중 망토와 향후 헤어에 전달할 바람의 세기다.
+	static constexpr _float CLOTH_WIND_SPEED = 24.f;
+	// [LSY] 매 프레임 갱신하되 프레임 순서 차이에도 끊기지 않을 만큼만 짧게 유지한다.
+	static constexpr _float CLOTH_WIND_REFRESH_DURATION = 0.12f;
 };
 
 NS_END

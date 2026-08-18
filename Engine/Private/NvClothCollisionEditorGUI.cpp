@@ -697,6 +697,17 @@ DrawPreviewControls()
 		"Preview Position",
 		&m_vPreviewPosition.x,
 		0.05f);
+	if (ImGui::DragFloat(
+		"Preview Scale",
+		&m_fPreviewScale,
+		0.05f,
+		MIN_SHAPE_SIZE,
+		100.f))
+	{
+		m_fPreviewScale = std::max(
+			m_fPreviewScale,
+			MIN_SHAPE_SIZE);
+	}
 
 	ImGui::TextUnformatted("Gizmo");
 	ImGui::SameLine();
@@ -1052,11 +1063,7 @@ void CNvClothCollisionEditorGUI::DrawPreview()
 	const auto PreviousDepth = pDebug->GetDepthMode();
 	pDebug->SetDepthTest(m_bPreviewDepthTest);
 
-	const _matrix PreviewWorld =
-		XMMatrixTranslation(
-			m_vPreviewPosition.x,
-			m_vPreviewPosition.y,
-			m_vPreviewPosition.z);
+	const _matrix PreviewWorld = MakePreviewWorld();
 	if (m_pPreviewRenderer)
 		m_pPreviewRenderer->SetWorldMatrix(PreviewWorld);
 
@@ -1487,6 +1494,19 @@ void CNvClothCollisionEditorGUI::SelectModel(
 	PlacePreviewAtCamera();
 }
 
+_matrix CNvClothCollisionEditorGUI::
+MakePreviewWorld() const
+{
+	return XMMatrixScaling(
+		m_fPreviewScale,
+		m_fPreviewScale,
+		m_fPreviewScale) *
+		XMMatrixTranslation(
+			m_vPreviewPosition.x,
+			m_vPreviewPosition.y,
+			m_vPreviewPosition.z);
+}
+
 void CNvClothCollisionEditorGUI::
 PlacePreviewAtCamera()
 {
@@ -1839,10 +1859,7 @@ GetBoneRigidWorld(
 		XMLoadFloat4x4(
 			&m_BindPoses[
 				static_cast<size_t>(iBone)]) *
-		XMMatrixTranslation(
-			m_vPreviewPosition.x,
-			m_vPreviewPosition.y,
-			m_vPreviewPosition.z),
+		MakePreviewWorld(),
 		RigidWorld))
 	{
 		return false;

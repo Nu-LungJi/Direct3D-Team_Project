@@ -282,14 +282,30 @@ HRESULT CLevelCharlesRookwood::SpawnPlayerCape(CHandle hPlayer)
 		Desc.tBodyCollisionRig,
 		E::NVCLOTH_COLLISION_RIG_ROOT,
 		false);
+	E::CGameInstance::Get().JsonDeSerialize(
+		"./Resources/NvCloth/CollisionRigs/ProfessorCape_Broom.nvclothcollision.json",
+		Desc.tBroomBodyCollisionRig,
+		E::NVCLOTH_COLLISION_RIG_ROOT,
+		false);
+	E::CGameInstance::Get().JsonDeSerialize(
+		"./Resources/NvCloth/CollisionRigs/ProfessorCape_BroomObject.nvclothcollision.json",
+		Desc.tBroomObjectCollisionRig,
+		E::NVCLOTH_COLLISION_RIG_ROOT,
+		false);
 
-	if (!E::CGameInstance::Get().AddGameObjectToLayer(
+	if (auto hCape = E::CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::CHARLES_ROOKWOOD,
 		PROTO_GAMEOBJECT::Prototype_GameObject_NvClothCape,
 		"03_Player",
 		&Desc))
 	{
-		return E_FAIL;
+		if(!hCape)
+			return E_FAIL;
+
+		if (auto pPlayer = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(hPlayer))
+		{
+			pPlayer->SetCapeHandle(hCape.value());
+		}
 	}
 
 	return S_OK;

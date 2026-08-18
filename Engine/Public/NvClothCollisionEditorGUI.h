@@ -55,6 +55,7 @@ private:
 		const StringID& sGroupTag,
 		const StringID& sResourceTag,
 		std::string sLabel);
+	_matrix MakePreviewWorld() const;
 	void PlacePreviewAtCamera();
 	void AddShape(NVCLOTH_COLLISION_SHAPE_TYPE eType);
 	void RemoveSelectedShape();
@@ -105,6 +106,7 @@ private:
 	std::string m_sResultPopupMessage{};
 	std::vector<std::string> m_ValidationErrors{};
 	_float3 m_vPreviewPosition{};
+	_float m_fPreviewScale{ 1.f };
 	ImGuizmo::OPERATION m_eGizmoOperation{
 		ImGuizmo::TRANSLATE
 	};

@@ -388,6 +388,7 @@
     <ClInclude Include="..\public\PhysXManager.h" />
     <ClInclude Include="..\public\Engine_NvClothDefines.h" />
     <ClInclude Include="..\public\NvClothCollisionRigData.h" />
+    <ClInclude Include="..\public\NvClothParticleConstraintData.h" />
     <ClInclude Include="..\public\NvClothCollisionEditorGUI.h" />
     <ClInclude Include="..\public\NvClothManager.h" />
     <ClInclude Include="..\public\PhysXRagdollData.h" />
