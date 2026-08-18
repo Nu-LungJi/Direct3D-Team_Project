@@ -86,12 +86,15 @@ private:
 	SPtr<CResTexture2D> 	m_pCausticNoiseTexture{};
 	SPtr<CResTexture2D> 	m_pDetailNoiseTexture{};
 
+	SPtr<CResPixelShader>	m_pResDragonEyePixelShader{};
 	SPtr<CResPixelShader>	m_pResDragonBodyPixelShader{};
 	SPtr<CResPixelShader>	m_pResDragonWingPixelShader{};
 	SPtr<CResPixelShader>	m_pResDragonWingFXPixelShader{};
 
 	SPtr<CResDepthStencilState>	m_pResWingFXDSS{};
 	SPtr<CResRasterizerState>	m_pResWingFXRasterizer{};
+
+	CComModelInstance*		m_pComOutlineModelInstance{};
 	/*---------------------------------*/
 
 public:

@@ -1417,6 +1417,9 @@ void CGameInstance::Add_Part_Instance(CComStaticModelInstance* pModelInstance, c
 const std::vector<MODEL_INSTANCE_BATCH*>& CGameInstance::Get_ActiveBatches() const {
 	return m_pModel_Instance_Manager->Get_ActiveBatches();
 };
+HRESULT CGameInstance::Remove_Instance(CHandle _Handle) {
+	return m_pModel_Instance_Manager->Remove_Instance(_Handle);
+}
 HRESULT CGameInstance::Render_ShadowInstanced(const ComPtr<ID3D11DeviceContext>& pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch, int32_t _PointFaceIndex) {
 	return m_pModel_Instance_Manager->Render_ShadowInstanced(pContext.Get(), _LightHandle, _bStaticBatch, _PointFaceIndex);
 }

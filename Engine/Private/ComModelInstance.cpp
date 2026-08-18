@@ -478,5 +478,3 @@ void CComModelInstance::ApplyDebugBoneLocalOffsets()
 		Bones[i]->Set_TransformationMatrix(matLocal);
 	}
 }
-
-

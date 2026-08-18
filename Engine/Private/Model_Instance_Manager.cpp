@@ -50,7 +50,7 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 	if (!pModel)
 		return;
 
-	const auto& AnimState =pAnimator->GetCurAnimState();
+	const auto& AnimState = pAnimator->GetCurAnimState();
 
 	if (AnimState.iAnimIndex < 0)
 		return;
@@ -457,8 +457,28 @@ HRESULT CModel_Instance_Manager::Render(ID3D11DeviceContext* pContext, const REN
 
 	return S_OK;
 }
-
 /*----------- 광윤 추가 -----------*/
+HRESULT CModel_Instance_Manager::Remove_Instance(CHandle _Handle) {
+	auto iter = std::find_if(m_ActiveBatches.begin(), m_ActiveBatches.end(), [_Handle](const MODEL_INSTANCE_BATCH* pBatch) { 
+			return pBatch != nullptr && pBatch->ObjectHandle == _Handle;
+		});
+
+	if (iter == m_ActiveBatches.end())	return E_FAIL;
+
+	auto pBatch = (*iter);
+	pBatch->Instances.clear();
+	pBatch->InstanceObjectHandles.clear();
+	pBatch->PartInstances.clear();
+	pBatch->CombinedBoneMatrices.clear();
+	pBatch->ShadowBounds.clear();
+	pBatch->bActiveThisFrame = false;
+
+	m_ActiveBatches.erase(iter);
+
+	return S_OK;
+}
+
+
 HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch, int32_t _PointFaceIndex){
 	
 	if (!_LightHandle)	return E_FAIL;
