@@ -656,7 +656,7 @@ HRESULT CParticle_GPU::Render_Texture(ID3D11DeviceContext* pContext, const E::RE
     ID3D11ShaderResourceView* nullSRV2[] = { nullptr,nullptr ,nullptr,nullptr,nullptr,nullptr};
     pContext->VSSetShaderResources(0, 2, nullSRV1);
     pContext->PSSetShaderResources(0, 6, nullSRV2);
-    pContext->PSSetShaderResources(8, 1, nullSRV);
+	pContext->PSSetShaderResources(8, 1, nullSRV);
 
 	ID3D11Buffer* nullCB[] = { nullptr };
 	pContext->VSSetConstantBuffers(11, 1, nullCB);

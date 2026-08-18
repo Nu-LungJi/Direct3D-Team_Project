@@ -407,6 +407,10 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	InitializeEffects();
 	m_pComSphereCol->SetQueryEnabled(true);
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_targetSocket");
+	m_iLeft1WingParticleBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("indexmiddlewing_03_left");
+	m_iRight1WingParticleBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("indexmiddlewing_03_right");
+	m_iLeft2WingParticleBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("indexmiddlewing_04_left");
+	m_iRight2WingParticleBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("indexmiddlewing_04_right");
 	return S_OK;
 }
 HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
@@ -541,6 +545,7 @@ void CEnderDragon::Update(E::_float fTimeDelta)
 	if (!m_bDebug) return;
 	__super::Update(fTimeDelta);
 	Update_EnvironmentParticles(fTimeDelta);
+	Update_WingParticles(fTimeDelta);
 }
 
 void CEnderDragon::Update_EnvironmentParticles(_float fTimeDelta)
@@ -600,6 +605,35 @@ void CEnderDragon::Spawn_EnvironmentParticles(uint32_t iParticleIndex, uint32_t 
 		XMStoreFloat4x4(&spawnWorld, XMMatrixTranslation(vSpawnPosition.x, vSpawnPosition.y, vSpawnPosition.z));
 		CGameInstance::Get().Spawn(resource.pQueueName, spawnWorld);
 	}
+}
+
+void CEnderDragon::Update_WingParticles(_float fTimeDelta)
+{
+	m_fWingParticleSpawnAcc += fTimeDelta;
+	if (m_fWingParticleSpawnAcc < m_fWingParticleSpawnInterval)
+		return;
+
+	m_fWingParticleSpawnAcc = std::fmod(m_fWingParticleSpawnAcc, m_fWingParticleSpawnInterval);
+	Spawn_WingParticle(m_iLeft1WingParticleBoneIndex);
+	Spawn_WingParticle(m_iRight1WingParticleBoneIndex);
+	Spawn_WingParticle(m_iLeft2WingParticleBoneIndex);
+	Spawn_WingParticle(m_iRight2WingParticleBoneIndex);
+}
+
+void CEnderDragon::Spawn_WingParticle(int32_t iBoneIndex)
+{
+	if (nullptr == m_pComModelInstance || iBoneIndex < 0)
+		return;
+
+	const auto& combinedBoneMatrices = m_pComModelInstance->Get_CombinedBoneMatrices();
+	if (static_cast<size_t>(iBoneIndex) >= combinedBoneMatrices.size())
+		return;
+
+	const _matrix matBoneWorld = XMLoadFloat4x4(&combinedBoneMatrices[static_cast<size_t>(iBoneIndex)]) * GetTransform().GetLoadedWorldMatrix();
+	const _vector vSpawnPosition = matBoneWorld.r[3];
+	_float4x4 spawnWorld{};
+	XMStoreFloat4x4(&spawnWorld, XMMatrixTranslationFromVector(vSpawnPosition));
+	CGameInstance::Get().Spawn("RanrokBodySmoke.json", spawnWorld);
 }
 
 void CEnderDragon::FixedUpdate(E::_float fTimeDelta)
