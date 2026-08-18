@@ -308,6 +308,10 @@ public:
 	VOID	Set_ChromaticRingOpacity(_float _Opacity);
 
 	VOID	Apply_OutlineEffect(std::optional<CHandle> targetHandle);
+
+	VOID	Initialize_VolumetricFogOption(XMFLOAT3 _CenterPos, XMFLOAT3 _FogColor, XMFLOAT3 _LightColor, _float _Intensity, _float _Density, _float _MaxHeight,
+		_float _BaseHeight, _float _HeightFallOff, _float _StartDistance, _float _EndDistance, _float _NoiseScale = 0.05f, _float _ScatteringWeight = 0.5f, _float _GA = 0.7f, _float _GB = -0.3f);
+
 #pragma endregion
 
 

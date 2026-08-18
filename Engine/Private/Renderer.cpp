@@ -61,9 +61,9 @@ HRESULT CRenderer::Initialize()
 
 	if (FAILED(InitializeHizBuffer()))			return E_FAIL;
 
-#ifdef _DEBUG
-	if (FAILED(Initialize_Debugging()))         return E_FAIL;
-#endif
+//#ifdef _DEBUG
+//	if (FAILED(Initialize_Debugging()))         return E_FAIL;
+//#endif
 
 	return S_OK;
 }
@@ -975,10 +975,10 @@ HRESULT CRenderer::Draw() {
 	// FullScreen : Final
 	if (FAILED(Render_FullScreen()))     return E_FAIL;
 
-#ifdef _DEBUG
-	// Debugging
-	if (FAILED(Render_Debugging()))      return E_FAIL;
-#endif
+//#ifdef _DEBUG
+//	// Debugging
+//	if (FAILED(Render_Debugging()))      return E_FAIL;
+//#endif
 
 	return S_OK;
 }
@@ -1369,15 +1369,7 @@ HRESULT CRenderer::Render_Effect()
 }
 
 HRESULT CRenderer::Render_VolumetricEffect() {
-	if (m_bApplyVolumetric == false) {
-		return S_OK;
-	}
-	else {
-		if (false == m_bBeingInitialized) {
-			if (FAILED(InitializeVolumetricEffect())) return E_FAIL;
-			m_bBeingInitialized = true;
-		}
-	}
+	if (m_bApplyVolumetric == false) return S_OK;
 
 	ZoneScopedN("Render_VolumetricEffect");
 
@@ -1596,6 +1588,24 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 	return S_OK;
 }
 
+VOID CRenderer::Initialize_VolumetricFogOption(XMFLOAT3 _CenterPos, XMFLOAT3 _FogColor, XMFLOAT3 _LightColor, _float _Intensity, _float _Density, _float _MaxHeight, _float _BaseHeight, _float _HeightFallOff,
+	_float _StartDistance, _float _EndDistance, _float _NoiseScale, _float _ScatteringWeight, _float _GA, _float _GB) {
+	m_pFogInfo.g_fFogCenterPos = _CenterPos,
+	m_pFogInfo.g_fFogColor = _FogColor;
+	m_pFogInfo.g_fFogLightColor = _LightColor;
+	m_pFogInfo.g_fFogIntensity = _Intensity;
+	m_pFogInfo.g_fFogDensity = _Density;
+	m_pFogInfo.g_fFogHeight = _MaxHeight;
+	m_pFogInfo.g_fFogBaseHeight = _BaseHeight;
+	m_pFogInfo.g_fFogHeightFallOff = _HeightFallOff;
+	m_pFogInfo.g_fFogStartPos = _StartDistance;
+	m_pFogInfo.g_fFogEndPos = _EndDistance;
+	m_pFogInfo.g_fFogNoiseScale = _NoiseScale;
+	m_pFogInfo.g_fFogScatteringWeight = _ScatteringWeight;
+	m_pFogInfo.g_fFogAnisotropyGA = _GA;
+	m_pFogInfo.g_fFogAnisotropyGB = _GB;
+}
+
 HRESULT CRenderer::Render_OffScreen() {
 	ZoneScopedN("Render_OffScreen");
 	{
@@ -1646,7 +1656,7 @@ HRESULT CRenderer::Render_OffScreen() {
 HRESULT CRenderer::Render_PostProcess() {
 	if (m_bApplyFilter == false) return S_OK;
 
-	if (FAILED(Render_PostProcess_Focusing())) { Unbind_Resources(); return S_OK; }
+	if (FAILED(Render_PostProcess_Focusing()))  { Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_PostProcess_LensFlare())) { Unbind_Resources(); return S_OK; }
 
@@ -1818,14 +1828,15 @@ HRESULT CRenderer::Render_PostProcess_Filter() {
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexTargetPostProcess->GetUAV().Get() };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
 
-		ID3D11ShaderResourceView* pPostProcessSRVList[4] = { 
+		ID3D11ShaderResourceView* pPostProcessSRVList[5] = { 
 			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
 			nullptr,
 			m_pLookUpTableTexture.Get(),
-			m_pResDynTexTargetFocusingDepthMap->GetSRV().Get()
+			m_pResDynTexTargetFocusingDepthMap->GetSRV().Get(),
+			m_pResDynTexTargetDepth->GetSRV().Get()
 		};
 
-		m_pContext->CSSetShaderResources(0, 4, pPostProcessSRVList);
+		m_pContext->CSSetShaderResources(0, 5, pPostProcessSRVList);
 	}
 	{
 		_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();

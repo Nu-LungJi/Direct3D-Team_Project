@@ -130,8 +130,11 @@ public:			// Shader Resource Generator
 public:			// Append Render Queue
 	HRESULT		AddRenderObject(RENDERGROUP eRenderGroup, IRenderable* pRenderObject);
 
-public:			
+public:			// Extra Function
 	HRESULT		Reset_DefaultShader(RENDERGROUP _Group);
+
+	VOID		Initialize_VolumetricFogOption(XMFLOAT3 _CenterPos, XMFLOAT3 _FogColor, XMFLOAT3 _LightColor, _float _Intensity, _float _Density, _float _MaxHeight,
+		_float _BaseHeight, _float _HeightFallOff, _float _StartDistance, _float _EndDistance, _float _NoiseScale = 0.05f, _float _ScatteringWeight = 0.5f, _float _GA = 0.7f, _float _GB = -0.3f);
 
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
@@ -228,8 +231,6 @@ private:
 	_bool			m_bApplyFilter		= { true };		// 필터 적용 ON-OFF
 	_bool			m_bApplyVolumetric	= { false };	// 볼류메트릭 효과 ON-OFF
 	_bool			m_bApplyShadow		= { false };	// 그림자 ON-OFF
-
-	_bool			m_bBeingInitialized = { false };	// 볼류메트릭 효과 ON 경우
 
 private:		// ChromaticRing
 	_float2			m_fScreenPosition{};
