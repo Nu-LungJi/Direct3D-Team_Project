@@ -59,7 +59,7 @@ public:
 	HRESULT						Ready_Fsm(const _string& LevelTag);
 	HRESULT						Ready_Skill(const _string& LevelTag);
 	void						Ready_BBKeyValue();
-
+	void						ReadySound();
 	/*----------- 광윤 추가 -----------*/ // MaskMap Test
 	HRESULT						Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	HRESULT						Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) override;
@@ -99,7 +99,7 @@ private:
 
 public:
 	_string						Get_SkillName(ATTMON SkillNode)override;
-
+	
 	void						Set_StateFinished(_bool bFinished);
 	void						Set_Break(_bool bHit) { m_bIsBreak = bHit; }
 
@@ -127,6 +127,7 @@ private:
 	void						Update_WingParticles(_float fTimeDelta);
 	void						Spawn_WingParticle(int32_t iBoneIndex);
 
+	void						Stuck() override;
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
 	

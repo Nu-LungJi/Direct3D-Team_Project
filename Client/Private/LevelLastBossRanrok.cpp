@@ -277,7 +277,7 @@ HRESULT CLevelLastBossRanrok::SpawnMonster(std::optional<CHandle> hPlayer)
 		Dragon.sObjectTag = "Dragon";
 		Dragon.TargetHandle = hPlayer.value();
 		Dragon.LevelTag = MagicEnumToStringView(LEVEL::LAST_BOSS_RANROK);
-		XMStoreFloat3(&Dragon.vPos, XMVectorSet(25.1625f, 340.656f, -137.601f, 1.f));
+		XMStoreFloat3(&Dragon.vPos, XMVectorSet(-44.208, 348.931f, -241.102f, 1.f));
 		Dragon.ReSourceTag = "Model_Resource_Dragon";
 		Dragon.resBeHaviorMajor = "BTJSON";
 		Dragon.resBeHaviorMinor = "ENDERDRAGON";

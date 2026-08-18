@@ -6,7 +6,7 @@ CEnderDragon_State::CEnderDragon_State()
 {
 }
 
-CEnderDragon_State::CEnderDragon_State(const CEnderDragon_State& rhs) : CStateMachine{ rhs }
+CEnderDragon_State::CEnderDragon_State(const CEnderDragon_State& rhs) : CMon_State{ rhs }
 {
 }
 
@@ -16,7 +16,7 @@ CEnderDragon_State::~CEnderDragon_State()
 
 HRESULT CEnderDragon_State::Initialize(void* pArg)
 {
-	if (FAILED(__super::Initialize(pArg)))
+	if (FAILED(CStateMachine::Initialize(pArg)))
 		return E_FAIL;
 
 	return S_OK;
@@ -27,7 +27,7 @@ _bool CEnderDragon_State::Add_State(MON_STATE eState, SPtr<CState> pState)
 	if (eState == MON_STATE::NONE || eState == MON_STATE::END || nullptr == pState || IsRegistered(eState))
 		return false;
 
-	__super::AddState(ETOUI(eState), std::move(pState));
+	CStateMachine::AddState(ETOUI(eState), std::move(pState));
 	m_RegisteredState.insert(ETOUI(eState));
 
 	return true;
@@ -39,7 +39,7 @@ _bool CEnderDragon_State::Initialize_State(MON_STATE eState)
 	if (m_eCurState != MON_STATE::NONE || !IsRegistered(eState))
 		return false;
 
-	__super::ChangeState(ETOUI(eState));
+	CStateMachine::ChangeState(ETOUI(eState));
 	m_eCurState = eState;
 
 	return true;
@@ -67,13 +67,13 @@ void CEnderDragon_State::ApplyStateRequest()
 	if (!IsRegistered(eNextState) || m_eCurState == eNextState)
 		return;
 
-	__super::ChangeState(ETOUI(eNextState));
+	CStateMachine::ChangeState(ETOUI(eNextState));
 	m_eCurState = eNextState;
 }
 void CEnderDragon_State::PriorityUpdate(_float fTimeDelta)
 {
 	ApplyStateRequest();
-	__super::PriorityUpdate(fTimeDelta);
+	CStateMachine::PriorityUpdate(fTimeDelta);
 }
 _bool CEnderDragon_State::IsRegistered(MON_STATE eState)
 {

@@ -132,12 +132,16 @@ HRESULT CMonster::Initialize(void* pArg)
 			return E_FAIL;
 		}
 
-		CGameInstance::Get().EventSubscribe<FAcientMagicStart>(GetHandle(), [=]() { Cancle_Attack(); });
+
+		CGameInstance::Get().EventSubscribe<FAcientMagicStart>(GetHandle(), [=]() { Stuck(); });
 	}
 	return S_OK;
 }
 
+void CMonster::Stuck()
+{
 
+}
 void CMonster::PriorityUpdate(E::_float fTimeDelta)
 {
 	Activate_PendingHit();
@@ -161,7 +165,7 @@ void CMonster::PriorityUpdate(E::_float fTimeDelta)
 void CMonster::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
-	if (!m_pComSound)
+	if (m_pComSound)
 		m_pComSound->Update();
 	Update_Animation(fTimeDelta);
 
@@ -681,20 +685,6 @@ void CMonster::Update_HurtBox()
 	}
 }
 
-void CMonster::Cancle_Attack()
-{
-	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::GROGY)) && !Check_Flag(ETOUI(CBTRoot::BTFLAG::NOCKDOWN)) && Is_Grounded())
-	{
-		if (m_iEventBoneIndex == -1)
-			return;
-		ReActiveTable();
-		m_pModelAnimator->Play_Anim(m_iEventBoneIndex, false, 0.1f);
-		//여기에 블랙보드로 잠금 하기
-		// 
-		//m_pComModelInstance->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
-
-	}
-}
 
 void CMonster::Flag_Check(_float fTimeDelta)
 {

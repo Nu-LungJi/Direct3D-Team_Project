@@ -400,6 +400,9 @@
     <Filter Include="GameObject\Player\Player_Potion">
       <UniqueIdentifier>{660a0ade-739e-45b4-ae9b-38f10520e799}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\00.Parents\State">
+      <UniqueIdentifier>{f6a28477-befa-428d-b636-662eef20aab1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -913,6 +916,12 @@
     <ClInclude Include="..\Public\WiggenweldPotion.h">
       <Filter>GameObject\Player\Player_Potion</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Mon_Godae.h">
+      <Filter>GameObject\Monster\00.Parents\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Edg_Godae.h">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1370,6 +1379,12 @@
     </ClCompile>
     <ClCompile Include="..\private\Gur_Hit.cpp">
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Mon_Godae.cpp">
+      <Filter>GameObject\Monster\00.Parents\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Edg_Godae.cpp">
+      <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_Potion_State.cpp" />
     <ClCompile Include="..\Private\WiggenweldPotion.cpp">

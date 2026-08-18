@@ -44,7 +44,7 @@ private:
 	DRAGON_PHASE			m_eNextPhase{};
 	uint32_t				m_iEffectID{};
 	
-	_bool					m_bNext{}, m_bShake{ false };
+	_bool					m_bNext{}, m_bShake{ false }, m_bSound{ false };
 	_float					m_fTick{}, m_fSpawnTick{}, m_fAngle{};
 	_float3					m_vNextDir{}, m_vLastDir{};
 	EDG_SPAWN_NUMBER		m_eNum{EDG_SPAWN_NUMBER::FIRST};

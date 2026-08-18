@@ -54,10 +54,27 @@ void CEdg_Combat::Enter(CStateMachine* pStateMachine)
 		break;
 	}
 
+	if (m_ePhase != DRAGON_PHASE::PHASE5)
+	{
+		MONSOUND Sound_Desc{};
+		_float3 vPos = pDragon->GetTransform().GetPosition();
+		Sound_Desc.SoundKey = "WingDefault";
+		Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = true, };
+		Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+		m_iWingSound = pDragon->Play_Sound(Sound_Desc);
+
+	}
 }
 
 void CEdg_Combat::Exit(CStateMachine* pStateMachine)
 {
+	auto pSoundManager = CGameInstance::Get().GetSoundManager();
+
+	if (m_iWingSound != INVALID_SOUND_ID)
+	{
+		pSoundManager->Stop(m_iWingSound);
+		m_iWingSound = INVALID_SOUND_ID;
+	}
 }
 
 void CEdg_Combat::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -74,7 +91,7 @@ void CEdg_Combat::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 
 
 	m_fTick += fTimeDelta;
-
+	PlaySound(pDragon);
 	if (m_fTick > m_fMaxTick)
 	{
 		auto& Ball = m_RandomBalls[ETOUI(m_ePhase)];
@@ -110,6 +127,17 @@ void CEdg_Combat::RandomBall(CEnderDragon* pDragon, _vector vPos, _float fDis)
 	ACTable.fLifeTime = m_fMaxTick;
 	ACTable.SkillName = pDragon->Get_SkillName(static_cast<ATTMON>(ACTable.eType));
 	pSkill->Active(ACTable, vPos);
+}
+void CEdg_Combat::PlaySound(CEnderDragon* pDragon)
+{
+	if (m_iWingSound != INVALID_SOUND_ID)
+	{
+		CGameInstance::Get().GetSoundManager()->Set3DAttributes(
+			m_iWingSound,
+			pDragon->GetTransform().GetPosition()
+		);
+	}
+
 }
 SPtr<CEdg_Combat> CEdg_Combat::Create()
 {

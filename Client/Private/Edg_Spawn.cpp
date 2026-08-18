@@ -7,6 +7,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComAnimator.h"
 #include "ComModelInstance.h"
+#include "ClientEvents.h"
 NS_USING(Client)
 CEdg_Spawn::CEdg_Spawn()
 {
@@ -39,13 +40,16 @@ void CEdg_Spawn::Enter(CStateMachine* pStateMachine)
 
 	pDragon->Set_StateFinished(false);
 	
-	//m_Anims.push_back(EDG_ANIM_FSM{ .iAnimIndex = 
-	//	pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Fly_Tucked_Loop_anm.bin"),.fBlend = 0.1f});
-	//m_Anims.push_back(EDG_ANIM_FSM{ .iAnimIndex = 
+	m_Anims[ETOUI(EDG_SPAWN_NUMBER::SECOND)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
+		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Fly_Tucked_Loop_anm.bin"),.fBlend = 0.1f});
+	//m_Anims[ETOUI(EDG_SPAWN_NUMBER::SECOND)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
 	//	pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Flap_anm.bin"),.fBlend = 0.5f});
-	m_Anims.push_back(EDG_ANIM_FSM{ .iAnimIndex =
-		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Fly_To_Hover_anm.bin"),.fBlend = 0.1f});
+	m_Anims[ETOUI(EDG_SPAWN_NUMBER::THIRD)].push_back(EDG_ANIM_FSM{.iAnimIndex =
+		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Fly_To_Hover_anm.bin"),.fBlend = 0.6f});
+	m_Anims[ETOUI(EDG_SPAWN_NUMBER::THIRD)].push_back(EDG_ANIM_FSM{.iAnimIndex =
+		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Taunt_Loop_anm.bin"),.fBlend = 0.6f });
 
+	
 	pDragon->Get_Animator()->Play_Anim(0);
 	pDragon->Set_HideOnBush(true);
 }
@@ -67,7 +71,15 @@ void CEdg_Spawn::Exit(CStateMachine* pStateMachine)
 
 	pBB->Set_Value<_float3>(EDG_KEY::LPATROL, vLeftPos);
 	pBB->Set_Value<_float3>(EDG_KEY::RPATROL, vRightPos);
+	pDragon->Set_HideOnBush(false);
 
+	auto pSoundManager = CGameInstance::Get().GetSoundManager();
+
+	if (m_iSound != INVALID_SOUND_ID)
+	{
+		pSoundManager->Stop(m_iSound);
+		m_iSound = INVALID_SOUND_ID;
+	}
 }
 
 void CEdg_Spawn::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -109,9 +121,9 @@ void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		MoveSpawn(pDragon, fTimeDelta);
 		break;
 	case EDG_SPAWN_NUMBER::THIRD:
-		m_fSpawnTick += fTimeDelta;
-		if(m_fSpawnTick >= 2.f)
-			Play_Anim(pDragon, fTimeDelta);
+		//m_fSpawnTick += fTimeDelta;
+		//if(m_fSpawnTick >= 2.f)
+		Play_Anim(pDragon, fTimeDelta);
 		break;
 	case EDG_SPAWN_NUMBER::FOUR:
 		pDragonFsm->Request_State(MON_STATE::COMBAT);
@@ -136,6 +148,11 @@ _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
 	auto pMoveIntent = pDragon->Get_MoveIntent();
 	if (nullptr == pMoveIntent)return false;
 	
+	if (m_PhasePos.size() == 1)
+	{
+		Play_AnimMoveSpawn(pDragon, fTimeDelta);
+	}
+
 	if (m_PhasePos.empty())
 	{
 		CGameInstance::Get().StopEffect(m_iEffectID);
@@ -174,9 +191,7 @@ _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
 
 			CGameInstance::Get().StopEffect(m_iEffectID);
 			//SpawnSkill(pDragon, "RanrokStaySmoke");
-			_float4x4 mat{};
-			XMStoreFloat4x4(&mat, pDragon->GetTransform().GetLoadedWorldMatrix());
-			CGameInstance::Get().Spawn("SpawnSmoke.json", mat);
+		
 
 			m_fSpawnTick = 0.f;
 			m_eSpawn = EDG_SPAWN_NUMBER::THIRD;
@@ -195,7 +210,24 @@ _bool CEdg_Spawn::MoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
 		XMStoreFloat3(&vLerpDir, XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vLastDir), XMLoadFloat3(&m_vNextDir), t)));
 		
 		pMoveIntent->SetMoveIntent(vLerpDir, 25.f);
-		pMoveIntent->SetFacingIntent(vLerpDir, 30.f);
+		if (m_PhasePos.size() <= 1)
+		{
+			if (!m_bEffectStop)
+			{
+				_matrix mat{};
+				_float4x4 LastMat{};
+				mat = pDragon->GetTransform().GetLoadedWorldMatrix();
+				
+				mat.r[3] += XMLoadFloat3(&m_vNextDir) * 35.f;
+				XMStoreFloat4x4(&LastMat, mat);
+				CGameInstance::Get().Spawn("SpawnSmoke.json", LastMat);
+				m_bEffectStop = true;
+			}
+			
+			pMoveIntent->SetFacingIntentImmediate(m_vNextDir);
+		}
+		else
+			pMoveIntent->SetFacingIntent(vLerpDir, 30.f);
 	
 	return false;
 }
@@ -258,42 +290,112 @@ void CEdg_Spawn::Play_Anim(CEnderDragon* pDragon, _float fTimeDelta)
 {
 	auto pAnimator = pDragon->Get_Animator();
 	if (nullptr == pAnimator) return;
-	pDragon->Set_HideOnBush(false);
 
-	if (!m_Anims.empty())
+	auto pMove = pDragon->Get_MoveIntent();
+	if (nullptr == pMove) return;
+
+	auto pTarget = pDragon->Get_Target();
+	if (nullptr == pTarget) return;
+	//////////사 운 드
+	if (!m_bSound)
 	{
+		MONSOUND Sound_Desc{};
+		_float3 vPos = pDragon->GetTransform().GetPosition();
+		Sound_Desc.SoundKey = "WingDefault";
+		Sound_Desc.bOnlyOne = false;
+		Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = true, };
+		Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f,.eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+		m_iSound = pDragon->Play_Sound(Sound_Desc);
+		m_bSound = true;
+	}
+	if (m_iSound != INVALID_SOUND_ID)
+	{
+		CGameInstance::Get().GetSoundManager()->Set3DAttributes(
+			m_iSound,
+			pDragon->GetTransform().GetPosition()
+		);
+	}
+	///////////////////////////////////////////////
+	_float3 vTargetPos = pTarget->GetTransform().GetPosition();
+	_float3 vSrcPos = pDragon->GetTransform().GetPosition();
+	_float3 vDis{};
+	XMStoreFloat3(&vDis, XMVector3Normalize(XMLoadFloat3(&vTargetPos) - XMLoadFloat3(&vSrcPos)));
+	pMove->SetFacingIntentImmediate(vDis);
+	pDragon->Set_HideOnBush(false);
+	if (!m_Anims[ETOUI(m_eSpawn)].empty())
+	{
+		if (m_Anims[ETOUI(m_eSpawn)].size() == 1)
+		{
+			if (!m_bSoundH && pAnimator->GetPlayAnimRatio() >= 0.4f)
+			{
+				if (!m_bSoundH)
+				{
+					MONSOUND Sound_Desc{};
+					_float3 vPos = pDragon->GetTransform().GetPosition();
+					Sound_Desc.SoundKey = "Houling";
+					Sound_Desc.bOnlyOne = false;
+					Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
+					Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f,.eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+					m_bSoundH = true;
+					pDragon->Play_Sound(Sound_Desc);
+					CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
+						{
+						   3, // 강도 0 ~ 1
+						   1, // 지속시간
+						   15, // 초당 진동횟수
+						});
+				}
+			}
+		}
 		if (pAnimator->GetFinish())
 		{
-			m_Anims.pop_front();
+			m_Anims[ETOUI(m_eSpawn)].pop_front();
+
 		}
 			
 	}
 	
 
-	if(m_Anims.empty())
+	if(m_Anims[ETOUI(m_eSpawn)].empty())
 	{
 		m_eSpawn = EDG_SPAWN_NUMBER::FOUR;
 		return;
 	}
 	
-	EDG_ANIM_FSM EdgAnim = m_Anims.front();
+	EDG_ANIM_FSM EdgAnim = m_Anims[ETOUI(m_eSpawn)].front();
 
 	pAnimator->Play_Anim(EdgAnim.iAnimIndex, false, EdgAnim.fBlend);
 
-	//if (!m_bNext)
-	//{
-	//	auto pMove = pDragon->Get_MoveIntent();
-	//	if (nullptr == pMove) return;
-	//
-	//	pMove->SetMoveIntent(m_vLastDir, 15.f);
-	//	pMove->SetFacingIntent(m_vLastDir, 60.f);
-	//	if (pAnimator->GetPlayAnimRatio() >= 0.1f)
-	//	{
-	//		m_Anims.pop_front();
-	//		m_bNext = true;
-	//	}
-	//}
+}
+void CEdg_Spawn::Play_AnimMoveSpawn(CEnderDragon* pDragon, _float fTimeDelta)
+{
+	auto pAnimator = pDragon->Get_Animator();
+	if (nullptr == pAnimator) return;
 
+	auto pMove = pDragon->Get_MoveIntent();
+	if (nullptr == pMove) return;
+
+	auto pTarget = pDragon->Get_Target();
+	if (nullptr == pTarget) return;
+
+	pDragon->Set_HideOnBush(false);
+	if (!m_Anims[ETOUI(m_eSpawn)].empty())
+	{
+		if (pAnimator->GetFinish())
+		{
+			m_Anims[ETOUI(m_eSpawn)].pop_front();
+
+		}
+
+	}
+	if (m_Anims[ETOUI(m_eSpawn)].empty())
+	{
+		return;
+	}
+
+	EDG_ANIM_FSM EdgAnim = m_Anims[ETOUI(m_eSpawn)].front();
+
+	pAnimator->Play_Anim(EdgAnim.iAnimIndex, true, EdgAnim.fBlend);
 }
 SPtr<CEdg_Spawn> CEdg_Spawn::Create(const _string& strLevelTag)
 {

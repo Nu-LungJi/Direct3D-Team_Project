@@ -87,6 +87,13 @@ void CEdgPulse::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 void CEdgPulse::Cancle()
 {
 	ResetValue();
+
+	CGameInstance::Get().StopEffect(m_iSkillEffID);
+}
+
+void CEdgPulse::ResetValue()
+{
+	__super::ResetValue();
 }
 
 void CEdgPulse::Pulse(_float fTimeDelta)

@@ -65,13 +65,26 @@ void CEdg_Phase::Enter(CStateMachine* pStateMachine)
 		pDragon->Set_HideOnBush(true);
 		break;
 	case DRAGON_PHASE::PHASE5:
+
 		m_Anims[ETOUI(DRAGON_PHASE::PHASE5)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
 		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cmbt_Hover_Land_anm.bin"),.fBlend = 0.1f });
-
 		pDragon->Set_HideOnBush(true);
 		break;
 	}
 	m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
+
+	if (m_ePhase != DRAGON_PHASE::PHASE3)
+	{
+		
+		//Cast<CEnderDragon_State>(pStateMachine)->Get();
+		//MONSOUND Sound_Desc{};
+		//_float3 vPos = pDragon->GetTransform().GetPosition();
+		//Sound_Desc.SoundKey = "Phase";
+		//Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
+		//Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+		//pDragon->Play_Sound(Sound_Desc);
+
+	}
 }
 
 void CEdg_Phase::Exit(CStateMachine* pStateMachine)
@@ -257,17 +270,27 @@ void CEdg_Phase::Before_Action5(CEnderDragon* pDragon, _float fTimeDelta)
 	auto pTarget = pDragon->Get_Target();
 	if (nullptr == pTarget) return;
 
+	_float3 vTargetPos = pTarget->GetTransform().GetPosition();
 	_float3 vSrcPos = pDragon->GetTransform().GetPosition();
-	_float3 vTarget = pTarget->GetTransform().GetPosition();
-	_float3 vDir{};
+	_float3 vDis{};
+	XMStoreFloat3(&vDis, XMVector3Normalize(XMLoadFloat3(&vTargetPos) - XMLoadFloat3(&vSrcPos)));
+	pMove->SetFacingIntentImmediate(vDis);
 
-	XMStoreFloat3(&vDir, XMVector3Normalize(
-		XMLoadFloat3(&vTarget) - XMLoadFloat3(&vSrcPos)));
-
-	pMove->SetFacingIntent(vDir, 180.f);
 	auto pAnimator = pDragon->Get_Animator();
 	if (nullptr == pAnimator) return;
-
+	///////
+	if (!m_bSound)
+	{
+		MONSOUND Sound_Desc{};
+		_float3 vPos = pDragon->GetTransform().GetPosition();
+		Sound_Desc.SoundKey = "WingDefault";
+		Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
+		Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+		pDragon->Play_Sound(Sound_Desc);
+		m_bSound = true;
+	}
+	
+	///////////
 	EDG_ANIM_FSM eAnim = m_Anims[ETOUI(m_ePhase)].front();
 	pAnimator->Play_Anim(eAnim.iAnimIndex, false, eAnim.fBlend);
 	_float fRatio = pAnimator->GetPlayAnimRatio();
@@ -281,6 +304,14 @@ void CEdg_Phase::Before_Action5(CEnderDragon* pDragon, _float fTimeDelta)
 			   1, // 지속시간
 			   15, // 초당 진동횟수
 			});
+
+		MONSOUND Sound_Desc{};
+		_float3 vPos = pDragon->GetTransform().GetPosition();
+		Sound_Desc.SoundKey = "Ground";
+		Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
+		Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+		pDragon->Play_Sound(Sound_Desc);
+		m_bSound = true;
 		m_bShake = true;
 	}
 	if (pAnimator->GetFinish())
@@ -385,11 +416,9 @@ void CEdg_Phase::Phase_After_Action(CEnderDragon* pDragon, _float fTimeDelta)
 		m_eNum = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	case DRAGON_PHASE::PHASE4:
-
 		m_eNum = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	case DRAGON_PHASE::PHASE5:
-
 		m_eNum = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	}
