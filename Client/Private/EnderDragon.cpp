@@ -167,7 +167,10 @@ HRESULT CEnderDragon::InitializePrototype(void* pArg)
 	if (m_pResDragonWingFXPixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_EtherealWing", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
 		if (FAILED(m_pResDragonWingFXPixelShader->Load(CResShader::DESC{ .sEntryPoint = "PSMain_EtherealWing", .sTarget = "ps_5_0" })))    return E_FAIL;
 	}
-
+	if (m_pResDragonEyePixelShader = CGameInstance::Get().AddResourceT<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_DragonEye", "./ShaderFiles/Shader_EnderDragon.hlsl")) {
+		if (FAILED(m_pResDragonEyePixelShader->Load(CResShader::DESC{ .sEntryPoint = "PSMain_DragonEye", .sTarget = "ps_5_0" })))    return E_FAIL;
+	}
+	
 	m_pBodyMaskTexture		= CResTexture2D::Create("./Resources/SampleClient/Textures/Skeleton/Dragon/T_ConjuredDragon_Body_MSK.dds");
 	if (!m_pBodyMaskTexture || FAILED(m_pBodyMaskTexture->Load()))	return E_FAIL;
 
@@ -351,7 +354,18 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
+	/*----------- 광윤 추가 -----------*/
+	{
+		CComModelInstance::DESC Desc{};
+		Desc.sGroupTag = MonDesc->LevelTag;
+		Desc.sResTag = "Model_Resource_Dragon_BoneModel";
 
+		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance_Outliner", &Desc, &m_pComOutlineModelInstance)))
+		{
+			return E_FAIL;
+		};
+	}
+	/*---------------------------------*/
 	{
 		CComAnimator::DESC DescAnim{};
 		DescAnim.sComTag = "ComCModelIntance";
@@ -361,7 +375,6 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-
 	{
 		CComCollider::DESC Desc{};
 		Desc.eCollType = CollType::Box;
@@ -388,6 +401,7 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	GetTransform().Update();
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
+
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
 	InitializeEffects();
@@ -601,15 +615,14 @@ void CEnderDragon::LateUpdate(E::_float fTimeDelta)
 	__super::LateUpdate(fTimeDelta);
 
 }
-/*----------- 광윤 추가 ---------펑--*/
-// 마스크 텍스쳐 테스트 중
+/*----------- 광윤 추가 -----------*/
 HRESULT	CEnderDragon::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) {
 	{
 		if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResDragonBodyPixelShader)	return E_FAIL;
 
 		SPtr<CResModel> pModel{};
 		uint32_t iInstanceCount = 0;
-
+		
 		HRESULT hr = Prepare_DragonInstancing(pContext, Batch, pModel, iInstanceCount);
 		if (FAILED(hr)) return hr;
 		if (S_FALSE == hr) return S_OK;
@@ -627,13 +640,23 @@ HRESULT	CEnderDragon::Render_Instanced(ID3D11DeviceContext* pContext, const E::R
 			if (!mesh) continue;
 
 			const uint32_t iMaterialIndex = mesh->Get_MaterialIndex();
-			if (iMaterialIndex != 3 && iMaterialIndex != 4)	continue;
+			if (iMaterialIndex != 1 && iMaterialIndex != 3 && iMaterialIndex != 4)	continue;
 
 			if (FAILED(Bind_SkinnedMeshConstantBuffer(pContext, pModel, mesh, iMeshIndex))) return E_FAIL;
 
 			ID3D11ShaderResourceView* pMaterialMaskSRV = nullptr;
 
 			switch (iMaterialIndex) {
+				case 1: {
+					pContext->PSSetShader(m_pResDragonEyePixelShader->GetPixelShader().Get(), nullptr, 0);
+
+					pContext->PSSetShaderResources(2, 1, m_pWingsMROTexture->GetSRV().GetAddressOf());
+
+					pMaterialMaskSRV = m_pWingsMaskTexture->GetSRV().Get();
+
+					pContext->RSSetState(NoCullRasterizer->GetRasterizerState().Get());
+					break;
+				}
 				case 3: {
 					pContext->PSSetShader(m_pResDragonWingPixelShader->GetPixelShader().Get(), nullptr, 0);
 
@@ -703,6 +726,15 @@ HRESULT CEnderDragon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX&
 
 		CGameInstance::Get().Reset_DefaultShader(RENDERGROUP::BLEND);
 	}
+
+	CGameInstance::Get().Remove_Instance(GetHandle());
+	
+	const auto& pModel = m_pComOutlineModelInstance->GetModel();
+	if (pModel || pModel->GetAnimations().empty())
+	
+	m_pComOutlineModelInstance->Set_CombinedBoneMatrices(m_pComModelInstance->Get_CombinedBoneMatrices());
+
+	CGameInstance::Get().Add_Instance(m_pComOutlineModelInstance, m_pModelAnimator, *GetTransform().GetCombinedWorldMatrix());
 
 	m_bWingFXQueued = false;
 

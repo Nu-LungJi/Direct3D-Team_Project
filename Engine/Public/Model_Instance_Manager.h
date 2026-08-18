@@ -64,6 +64,8 @@ public:
 
 	/*----------- 광윤 추가 -----------*/
 public:
+	HRESULT Remove_Instance(CHandle _Handle);
+
 	HRESULT Render_ShadowInstanced(ID3D11DeviceContext* pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch, int32_t _PointFaceIndex);
 	HRESULT Render_OutlineInstance(ID3D11DeviceContext* pContext, const RENDER_CTX& renderContext, CHandle targetHandle);
 	HRESULT Render_ShadowBatch(ID3D11DeviceContext* pContext, const MODEL_INSTANCE_BATCH& Batch);

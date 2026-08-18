@@ -1406,7 +1406,6 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 
 		const _float VolumeFarZ  = std::min(FarZ, MaxDistance);
 
-
 		D3D11_MAPPED_SUBRESOURCE MRES{};
 		if (SUCCEEDED(m_pContext->Map(m_pVolumetricFroxelCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 		{

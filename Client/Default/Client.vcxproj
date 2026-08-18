@@ -345,8 +345,8 @@
     <ClInclude Include="..\Public\UIController.h" />
     <ClInclude Include="..\Public\UIManager.h" />
     <ClInclude Include="..\Public\UI_Enums.h" />
-	<ClInclude Include="..\Public\Player_Weapon.h" />
-	<ClInclude Include="..\Public\Player_Broom.h" />
+    <ClInclude Include="..\Public\Player_Weapon.h" />
+    <ClInclude Include="..\Public\Player_Broom.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
     <ClInclude Include="..\public\Terrain.h" />
     <ClInclude Include="..\public\TriggerCRW_BridgeBring.h" />
@@ -506,8 +506,8 @@
     <ClCompile Include="..\private\TriggerCRW_SpawnMonster1.cpp" />
     <ClCompile Include="..\Private\UIController.cpp" />
     <ClCompile Include="..\Private\UIManager.cpp" />
-	<ClCompile Include="..\Private\Player_Weapon.cpp" />
-	<ClCompile Include="..\Private\Player_Broom.cpp" />
+    <ClCompile Include="..\Private\Player_Weapon.cpp" />
+    <ClCompile Include="..\Private\Player_Broom.cpp" />
     <ClCompile Include="..\private\ResTerrainVIBuffer.cpp" />
     <ClCompile Include="..\private\Terrain.cpp" />
     <ClCompile Include="..\private\TriggerCRW_BridgeBring.cpp" />

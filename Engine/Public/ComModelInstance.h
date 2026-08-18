@@ -47,6 +47,10 @@ public:
 	SPtr<const CResModel> GetModel() const { return m_pModel; }
 	HRESULT ChangeModel(const StringID& sGroupTag, const StringID& sResTag);
 
+	/*----------- 광윤 추가 -----------*/
+	void							Set_CombinedBoneMatrices(const std::vector<_float4x4>& _Matrices) { m_CombinedBoneMatrices = _Matrices; }
+	const std::vector<_float4x4>&	Get_CombinedBoneMatrices() const { return m_CombinedBoneMatrices; }
+	/*---------------------------------*/
 
 	std::vector<_float4x4>&			Get_CombinedBoneMatrices() { return m_CombinedBoneMatrices; }
 

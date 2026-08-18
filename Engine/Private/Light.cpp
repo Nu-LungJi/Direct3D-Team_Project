@@ -190,7 +190,7 @@ VOID CLight::Update_SpotShadowMatrices() {
 	_float	 fNearZ = 0.1f;
 
 	m_pDynamicLight.OuterAttanuation = std::clamp(m_pDynamicLight.OuterAttanuation, 1.f, 75.f);
-	m_pDynamicLight.LightRange = std::clamp(m_pDynamicLight.LightRange, 0.01f + 0.01f, 100.f);
+	m_pDynamicLight.LightRange = std::clamp(m_pDynamicLight.LightRange, 0.01f + 0.01f, 1000.f);
 
 	XMVECTOR	LightPosition = m_pComTransform->GetState(STATE::POSITION);
 	XMVECTOR	WorldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);

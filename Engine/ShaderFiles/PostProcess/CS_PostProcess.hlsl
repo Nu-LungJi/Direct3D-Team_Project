@@ -20,7 +20,7 @@ static const float	ChromaticRing_Radius	 = { 0.32f };
 static const float	ChromaticRing_Width		 = { 0.05f };
 static const float	ChromaticRing_Smoothness = { 0.06f };
 
-static const float  OutlineThickness = 1.f;
+static const float  OutlineThickness = 1.5f;
 static const float4 OutlineColor = float4(1.f, 1.f, 1.f, 1.f);
 // LUT ColorGrading Global Variable
 static const float LUT_Size = 16.f;
