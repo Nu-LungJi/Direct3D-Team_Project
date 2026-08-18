@@ -85,5 +85,19 @@ struct ACTIVE_BUTTON_INFO
 	_bool Removing{};
 };
 
+struct DIALOGUE_POPUP_INFO
+{
+	CHandle BackgroundHandle{};
+	CHandle SpeakerHandle{};
+	CHandle MessageHandle{};
+	_float SpeakerWidth{};
+	_float MessageWidth{};
+	_float TotalWidth{};
+	_float ElapsedTime{};
+	_float CurrentY{};
+	_float TargetY{};
+	_bool FadingOut{};
+};
+
 NS_END
 

@@ -21,6 +21,20 @@ NS_USING(Client)
 
 namespace
 {
+	constexpr _float DIALOGUE_FONT_SCALE = 1.f;
+	constexpr _float DIALOGUE_HOLD_TIME = 5.f;
+	constexpr _float DIALOGUE_FADE_IN_TIME = 0.15f;
+	constexpr _float DIALOGUE_FADE_OUT_TIME = 0.25f;
+	constexpr _float DIALOGUE_BOTTOM_MARGIN = 100.f;
+	constexpr _float DIALOGUE_ROW_INTERVAL = 28.f;
+	constexpr _float DIALOGUE_BACKGROUND_HEIGHT = 50.f;
+	constexpr _float DIALOGUE_SIDE_PADDING = 31.f;
+	constexpr _float DIALOGUE_TEXT_GAP = 11.f;
+	constexpr _float DIALOGUE_TEXT_Y_OFFSET = -13.f;
+	constexpr _float DIALOGUE_MIN_WIDTH = 0.f;
+	constexpr _float DIALOGUE_MAX_WIDTH = 1100.f;
+	constexpr size_t DIALOGUE_MAX_COUNT = 6u;
+
 	TEXT_ALIGN LoadTextAlignmentCompatible(
 		const nlohmann::ordered_json& obj)
 	{
@@ -63,9 +77,10 @@ UIManager::~UIManager()
 	MFShutdown();
 }
 
-void UIManager::Update()
+void UIManager::Update(_float fTimeDelta)
 {
 	UpdateActiveButtons();
+	UpdateDialoguePopups(fTimeDelta);
 }
 
 void UIManager::Initialize(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
@@ -1501,6 +1516,270 @@ void UIManager::UpdateActiveButtons()
 		RemoveActiveButton(nearestE);
 	if (foundNearestF && E::CGameInstance::Get().KeyDown(DIK_F))
 		RemoveActiveButton(nearestF);
+}
+
+void UIManager::AddDialoguePopup(
+	const std::string& speaker,
+	const std::string& message)
+{
+	if (speaker.empty() || message.empty())
+		return;
+
+	const std::wstring speakerText = StringToWUTF8(speaker + ":");
+	const std::wstring messageText = StringToWUTF8(message);
+	const _float2 screenSize = E::CGameInstance::Get().GetClientScreenSize();
+	const _float centerX = screenSize.x * 0.5f;
+	const _float bottomY = screenSize.y - DIALOGUE_BOTTOM_MARGIN;
+
+	const _float speakerWidth = E::CGameInstance::Get().FontMeasureString(
+		"Pretendard", speakerText.c_str(), DIALOGUE_FONT_SCALE).x;
+	const _float messageWidth = E::CGameInstance::Get().FontMeasureString(
+		"Pretendard", messageText.c_str(), DIALOGUE_FONT_SCALE).x;
+	const _float textWidth = speakerWidth + DIALOGUE_TEXT_GAP + messageWidth;
+	const _float totalWidth = std::clamp(
+		textWidth + DIALOGUE_SIDE_PADDING * 2.f,
+		DIALOGUE_MIN_WIDTH,
+		DIALOGUE_MAX_WIDTH);
+
+	const std::string currentLevel =
+		_string("LEVEL_") +
+		MagicEnumToStringView(
+			static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+
+	CTextureUI::UIOBJECT_DESC backgroundDesc{};
+	backgroundDesc.sObjectTag = "DialoguePopupBackground";
+	backgroundDesc.Name = "DialoguePopupBackground";
+	backgroundDesc.fX = centerX;
+	backgroundDesc.fY = bottomY;
+	backgroundDesc.fSizeX = totalWidth;
+	backgroundDesc.fSizeY = DIALOGUE_BACKGROUND_HEIGHT;
+	backgroundDesc.fAlpha = 0.f;
+	backgroundDesc.ResWeight = 880;
+	backgroundDesc.ResTag = "TEX_UI_T_TextTitle_BG";
+	backgroundDesc.UIType = ETOUI(UI_TYPE::TEXUI);
+
+	const auto backgroundHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+		currentLevel,
+		"Prototype_GameObject_TextureUI",
+		"Layer_UI",
+		&backgroundDesc);
+	if (!backgroundHandle)
+		return;
+
+	const _float textLeft = centerX - textWidth * 0.5f;
+	const _float speakerX = textLeft + speakerWidth * 0.5f;
+	const _float messageX = textLeft + speakerWidth +
+		DIALOGUE_TEXT_GAP + messageWidth * 0.5f;
+
+	CTextUI::TEXT_DESC speakerDesc{};
+	speakerDesc.sObjectTag = "DialoguePopupSpeaker";
+	speakerDesc.Name = "DialoguePopupSpeaker";
+	speakerDesc.fX = speakerX;
+	speakerDesc.fY = bottomY + DIALOGUE_TEXT_Y_OFFSET;
+	speakerDesc.fSizeX = DIALOGUE_FONT_SCALE;
+	speakerDesc.fSizeY = DIALOGUE_FONT_SCALE;
+	speakerDesc.fAlpha = 0.f;
+	speakerDesc.ResWeight = 881;
+	speakerDesc.UIType = ETOUI(UI_TYPE::TEXT);
+	speakerDesc.Alignment = TEXT_ALIGN::CENTER;
+
+	const auto speakerHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+		currentLevel,
+		"Prototype_GameObject_TextBox",
+		"Layer_UI",
+		&speakerDesc);
+	if (!speakerHandle)
+	{
+		DeleteUIRecursive(*backgroundHandle);
+		return;
+	}
+
+	CTextUI::TEXT_DESC messageDesc = speakerDesc;
+	messageDesc.sObjectTag = "DialoguePopupMessage";
+	messageDesc.Name = "DialoguePopupMessage";
+	messageDesc.fX = messageX;
+	messageDesc.ResWeight = 882;
+
+	const auto messageHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+		currentLevel,
+		"Prototype_GameObject_TextBox",
+		"Layer_UI",
+		&messageDesc);
+	if (!messageHandle)
+	{
+		DeleteUIRecursive(*backgroundHandle);
+		DeleteUIRecursive(*speakerHandle);
+		return;
+	}
+
+	auto* pBackground = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*backgroundHandle);
+	auto* pSpeaker = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*speakerHandle);
+	auto* pMessage = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(*messageHandle);
+	if (!pBackground || !pSpeaker || !pMessage)
+	{
+		if (pBackground) DeleteUIRecursive(*backgroundHandle);
+		if (pSpeaker) DeleteUIRecursive(*speakerHandle);
+		if (pMessage) DeleteUIRecursive(*messageHandle);
+		return;
+	}
+
+	pSpeaker->SetwText(speakerText);
+	pSpeaker->SetTextAlignment(TEXT_ALIGN::CENTER);
+	pSpeaker->SetColor({ 0.82f, 0.70f, 0.42f });
+	pSpeaker->SetInputLcok(true);
+	pSpeaker->CalcUICoord();
+
+	pMessage->SetwText(messageText);
+	pMessage->SetTextAlignment(TEXT_ALIGN::CENTER);
+	pMessage->SetColor({ 1.f, 1.f, 1.f });
+	pMessage->SetInputLcok(true);
+	pMessage->CalcUICoord();
+
+	pBackground->SetInputLcok(true);
+	pBackground->CalcUICoord();
+
+	DIALOGUE_POPUP_INFO popup{};
+	popup.BackgroundHandle = *backgroundHandle;
+	popup.SpeakerHandle = *speakerHandle;
+	popup.MessageHandle = *messageHandle;
+	popup.SpeakerWidth = speakerWidth;
+	popup.MessageWidth = messageWidth;
+	popup.TotalWidth = totalWidth;
+	popup.CurrentY = bottomY;
+	popup.TargetY = bottomY;
+	m_DialoguePopups.push_back(popup);
+
+	if (m_DialoguePopups.size() > DIALOGUE_MAX_COUNT)
+	{
+		auto& oldest = m_DialoguePopups.front();
+		oldest.ElapsedTime = DIALOGUE_HOLD_TIME;
+		oldest.FadingOut = true;
+	}
+
+	RefreshDialoguePopupLayout();
+}
+
+void UIManager::ClearDialoguePopups(_bool immediate)
+{
+	if (!immediate)
+	{
+		for (auto& popup : m_DialoguePopups)
+		{
+			popup.ElapsedTime = DIALOGUE_HOLD_TIME;
+			popup.FadingOut = true;
+		}
+		return;
+	}
+
+	for (const auto& popup : m_DialoguePopups)
+	{
+		if (SafeGetOBJ(popup.BackgroundHandle)) DeleteUIRecursive(popup.BackgroundHandle);
+		if (SafeGetOBJ(popup.SpeakerHandle)) DeleteUIRecursive(popup.SpeakerHandle);
+		if (SafeGetOBJ(popup.MessageHandle)) DeleteUIRecursive(popup.MessageHandle);
+	}
+	m_DialoguePopups.clear();
+	m_fDialogueTargetWidth = 0.f;
+}
+
+void UIManager::RefreshDialoguePopupLayout()
+{
+	const _float2 screenSize = E::CGameInstance::Get().GetClientScreenSize();
+	const _float bottomY = screenSize.y - DIALOGUE_BOTTOM_MARGIN;
+	m_fDialogueTargetWidth = 0.f;
+
+	for (const auto& popup : m_DialoguePopups)
+		m_fDialogueTargetWidth = std::max(m_fDialogueTargetWidth, popup.TotalWidth);
+
+	for (size_t i = 0; i < m_DialoguePopups.size(); ++i)
+	{
+		const size_t distanceFromNewest = m_DialoguePopups.size() - 1u - i;
+		m_DialoguePopups[i].TargetY = bottomY -
+			DIALOGUE_ROW_INTERVAL * static_cast<_float>(distanceFromNewest);
+	}
+}
+
+void UIManager::UpdateDialoguePopups(_float fTimeDelta)
+{
+	if (m_DialoguePopups.empty())
+		return;
+
+	const _float safeDelta = std::clamp(fTimeDelta, 0.f, 0.05f);
+	const _float positionBlend = 1.f - std::exp(-14.f * safeDelta);
+	const _float widthBlend = 1.f - std::exp(-12.f * safeDelta);
+	const _float2 screenSize = E::CGameInstance::Get().GetClientScreenSize();
+	const _float centerX = screenSize.x * 0.5f;
+	_bool layoutDirty{};
+
+	for (auto iter = m_DialoguePopups.begin(); iter != m_DialoguePopups.end();)
+	{
+		auto* pBackground = SafeGetOBJ(iter->BackgroundHandle);
+		auto* pSpeaker = SafeGetOBJ(iter->SpeakerHandle);
+		auto* pMessage = SafeGetOBJ(iter->MessageHandle);
+		if (!pBackground || !pSpeaker || !pMessage)
+		{
+			if (pBackground) DeleteUIRecursive(iter->BackgroundHandle);
+			if (pSpeaker) DeleteUIRecursive(iter->SpeakerHandle);
+			if (pMessage) DeleteUIRecursive(iter->MessageHandle);
+			iter = m_DialoguePopups.erase(iter);
+			layoutDirty = true;
+			continue;
+		}
+
+		iter->ElapsedTime += safeDelta;
+		if (iter->ElapsedTime >= DIALOGUE_HOLD_TIME)
+			iter->FadingOut = true;
+
+		if (iter->FadingOut &&
+			iter->ElapsedTime >= DIALOGUE_HOLD_TIME + DIALOGUE_FADE_OUT_TIME)
+		{
+			DeleteUIRecursive(iter->BackgroundHandle);
+			DeleteUIRecursive(iter->SpeakerHandle);
+			DeleteUIRecursive(iter->MessageHandle);
+			iter = m_DialoguePopups.erase(iter);
+			layoutDirty = true;
+			continue;
+		}
+
+		_float alpha = std::clamp(
+			iter->ElapsedTime / DIALOGUE_FADE_IN_TIME, 0.f, 1.f);
+		if (iter->FadingOut)
+		{
+			alpha = 1.f - std::clamp(
+				(iter->ElapsedTime - DIALOGUE_HOLD_TIME) /
+				DIALOGUE_FADE_OUT_TIME,
+				0.f, 1.f);
+		}
+
+		iter->CurrentY += (iter->TargetY - iter->CurrentY) * positionBlend;
+		const _float currentWidth = pBackground->GetSize().x;
+		const _float nextWidth = currentWidth +
+			(m_fDialogueTargetWidth - currentWidth) * widthBlend;
+		pBackground->SetSize({ nextWidth, DIALOGUE_BACKGROUND_HEIGHT });
+		pBackground->SetPos({ centerX, iter->CurrentY });
+		pBackground->SetAlpha(alpha * 0.75f);
+		pBackground->CalcUICoord();
+
+		const _float textWidth = iter->SpeakerWidth +
+			DIALOGUE_TEXT_GAP + iter->MessageWidth;
+		const _float textLeft = centerX - textWidth * 0.5f;
+		pSpeaker->SetPos({
+			textLeft + iter->SpeakerWidth * 0.5f,
+			iter->CurrentY + DIALOGUE_TEXT_Y_OFFSET });
+		pSpeaker->SetAlpha(alpha);
+		pSpeaker->CalcUICoord();
+
+		pMessage->SetPos({
+			textLeft + iter->SpeakerWidth + DIALOGUE_TEXT_GAP +
+				iter->MessageWidth * 0.5f,
+			iter->CurrentY + DIALOGUE_TEXT_Y_OFFSET });
+		pMessage->SetAlpha(alpha);
+		pMessage->CalcUICoord();
+
+		++iter;
+	}
+
+	if (layoutDirty)
+		RefreshDialoguePopupLayout();
 }
 
 std::optional<CHandle> UIManager::RootUIPicking()
