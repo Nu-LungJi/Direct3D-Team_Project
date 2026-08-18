@@ -462,6 +462,7 @@
     <ClInclude Include="..\public\Trail_CPU.h" />
     <ClInclude Include="..\Public\UICamera.h" />
     <ClInclude Include="..\Public\UIObject.h" />
+    <ClInclude Include="..\Public\Water.h" />
     <ClInclude Include="..\Public\WorkerManager.h" />
     <ClInclude Include="..\Public\Engine_PhysxDefines.h" />
     <ClInclude Include="..\Public\IPhysicsSync.h" />
@@ -799,6 +800,7 @@
     <ClCompile Include="..\private\Trail_CPU.cpp" />
     <ClCompile Include="..\Private\UICamera.cpp" />
     <ClCompile Include="..\Private\UIObject.cpp" />
+    <ClCompile Include="..\Private\Water.cpp" />
     <ClCompile Include="..\Private\WorkerManager.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -934,6 +936,7 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\VideoObject.hlsl" />
     <FxCompile Include="..\ShaderFiles\Decal\Shader_DecalVolume.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Water\Shader_Water.hlsl" />
     <None Include="..\ShaderFiles\Decal\DecalProjectionCommon.hlsli" />
   </ItemGroup>
   <ItemGroup>
