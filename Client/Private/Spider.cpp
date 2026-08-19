@@ -391,6 +391,10 @@ void CSpider::Set_Gravity(_bool bGravity)
 		else
 			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
 }
+const _float CSpider::Get_Damage()
+{
+	return 5.f;
+}
 void CSpider::Update_BBToFsm()
 {
 	auto pBB = Get_BlackBoard();

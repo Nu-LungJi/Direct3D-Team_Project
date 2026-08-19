@@ -2,7 +2,9 @@
 
 #include "Client_Defines.h"
 #include "Level.h"
-
+NS_BEGIN(Engine)
+class CTerrain;
+NS_END
 NS_BEGIN(Client)
 
 class CLevelHogwartWorld final : public CLevel
@@ -24,13 +26,14 @@ private:
 	std::optional<CHandle> SpawnPlayer();
 	HRESULT SpawnPlayerCape(CHandle hPlayer);
 	HRESULT SpawnTerrain(CHandle hPlayer);
+	HRESULT SpawnNaviMesh(class E::CTerrain* pTerrain);
 	HRESULT SpawnFlyCamera();
 	HRESULT SpawnUICamera();
 	HRESULT SpawnPlayerCamera(CHandle hPlayer);
 	HRESULT SpawnSkyBox();
 	HRESULT SpawnMonster(std::optional<CHandle> hPlayer);
 	HRESULT SpawnStaticCollision();
-
+	HRESULT SpanwNpc(CHandle hPlayer);
 public:
 	static UPtr<CLevelHogwartWorld> Create();
 

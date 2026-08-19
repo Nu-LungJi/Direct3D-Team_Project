@@ -57,7 +57,7 @@ public:
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
 	const _string&				Get_SkillNmae(SPIDER_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
 	void						Set_EndGame() { m_bEndGame = true; }
-	
+	const _float				Get_Damage() override;
 private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;

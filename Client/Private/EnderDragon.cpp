@@ -496,7 +496,7 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_EffectNames[ETOUI(DRAGON_SKILL::THREEBALL)]  = "FireBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::BLACKBALL)]  = "BlackBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::GASI)]		= "BreathSpike";
-	m_EffectNames[ETOUI(DRAGON_SKILL::GROUND)] = "GroundEffect";
+	m_EffectNames[ETOUI(DRAGON_SKILL::GROUND)] = "RanrokLanding.json";
 	////////////////////////////////////////////////////////////
 	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
 	int32_t iHeadBoneIndex{};
@@ -1098,7 +1098,9 @@ void CEnderDragon::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	ACTable.eType = static_cast<DRAGON_SKILL>(iSkillNum);
 	if (*pbEffect)
 	{
-		CGameInstance::Get().PlayEffect(ACTable.SkillName, *GetTransform().GetWorldMatrix(), _vector{});
+		_float4x4 mat;
+		XMStoreFloat4x4(&mat, GetTransform().GetLoadedWorldMatrix());
+		CGameInstance::Get().Spawn(ACTable.SkillName, mat);
 		Get_BlackBoard()->Set_Value<_bool>(EDG_KEY::EDGEFFECT, false);
 	}
 	else if (true == m_SkillHandle[iSkillNum].bPool)

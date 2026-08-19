@@ -517,6 +517,8 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTCinematic", CBTCinematic::Create())))
 		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTNaviMove", CBTNaviMove::Create())))
+		return E_FAIL;
 
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTRandMoveAnim", CBTRandMoveAnim::Create())))
 		return E_FAIL;
@@ -527,6 +529,8 @@ HRESULT CMainAppLoader::Create_ActionNode()
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTAttackAnimation", CBTAttackAnimation::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTHitAnimMonster", CBTHitAnimMonster::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTAnimNpc", CBTAnimNpc::Create())))
 		return E_FAIL;
 
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecSearch", CBTDecSearch::Create())))
@@ -601,6 +605,15 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "NPC1", CResJson::Create("./Resources/json/BeHavior/NPC1.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED NPC JSON");
+			return E_FAIL;
+		}
+	}
+	
 	////서브트리
 	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "FIREBALL", CResJson::Create("./Resources/json/BeHavior/SubTree/SubTreeTest.json")))
 	{

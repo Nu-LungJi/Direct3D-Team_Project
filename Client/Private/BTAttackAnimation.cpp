@@ -7,6 +7,7 @@
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
 #include "ClientEvents.h" 
+#include "NpcMom.h"
 NS_USING(Client)
 
 CBTAttackAnimation::CBTAttackAnimation()
@@ -91,7 +92,6 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				Gravity();
 				Play_Sound(fTimeDelta);
 				_bool bFinished = pAnimator->GetFinish();
-				//살려주세요 살려주세요!!!
 				Att(pOwner, pTransform, pTarget, fAnimRatio,fTimeDelta);
 				EventFlagToRatio(fAnimRatio);
 				ShakeCam(fAnimRatio);
@@ -307,6 +307,9 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 		
 		PX_OVERLAP_DESC   pxOverLabDesc{};
 		PX_OVERLAP_RESULT pxOverLapResult{};
+
+		PX_OVERLAP_DESC   pxOverLabNpcDesc{};
+		PX_OVERLAP_RESULT pxOverLapNpcResult{};
 		if (m_bOverLabMove)
 		{
 			XMStoreFloat3(&m_vLastPos, XMLoadFloat3(&m_vLastPos) + XMLoadFloat3(&m_vLastDir) * m_fOverLabSpeed * fTimeDelta);
@@ -316,6 +319,10 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 		pxOverLabDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX) };
 		pxOverLabDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = m_fCurOverLabSpeed };
 		pxOverLabDesc.tPose = PX_QUERY_POSE{ .vPosition = vPos };
+
+		pxOverLabNpcDesc.tFilter = PX_QUERY_FILTER_DESC{ .iQueryMask = ETOUI(COLLISION_LAYER::NPC_BODY) };
+		pxOverLabNpcDesc.tGeometry = PX_QUERY_GEOMETRY_DESC{ .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = m_fCurOverLabSpeed };
+		pxOverLabNpcDesc.tPose = PX_QUERY_POSE{ .vPosition = vPos };
 
 		vPos = pxOverLabDesc.tPose.vPosition;
 		
@@ -337,6 +344,17 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 				auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(pxOverLapResult.hGameObject);
 				_float MonDamange = pMon->Get_Damage();
 				pTarget->OnQueryHit(MonDamange, pMon->GetTransform().GetPosition());
+				m_bAttRatio = true;
+			}
+		}
+		if (CGameInstance::Get().GetPhysXManager()->Overlap(pxOverLabNpcDesc, pxOverLapNpcResult))
+		{
+			if (pxOverLapNpcResult.bHit)
+			{
+				//m_fDamage
+				auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CNpcMom>(pxOverLapNpcResult.hGameObject);
+				_float MonDamange = pMon->Get_Damage();
+				pTarget->OnQueryHit(MonDamange);
 				m_bAttRatio = true;
 			}
 		}

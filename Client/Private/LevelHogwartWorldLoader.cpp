@@ -31,6 +31,7 @@
 #include "Spider.h"
 #include "Mon_Spawner.h"
 #include "Mon_State.h"
+#include "WorldNpc.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 
@@ -73,6 +74,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 			}
 			if(FAILED(MonsterLoad_InWorker()))
+				return false;
+			if (FAILED(NpcLoad_InWorker()))
 				return false;
 
 			return SUCCEEDED(LoadPlayerResources());
@@ -374,5 +377,14 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 		}
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
 
+	}
+}
+
+HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
+{
+	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc, CWorldNpc::Create())))
+	{
+		MSG_BOX("TERRAIN Failed Prototype_GameObject_Npc");
+		return E_FAIL;
 	}
 }

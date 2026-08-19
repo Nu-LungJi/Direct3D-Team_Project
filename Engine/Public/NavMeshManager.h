@@ -83,12 +83,12 @@ public:
 	//void Load();
 	HRESULT Save(const std::string& path) const;
 	HRESULT Load(const std::string& path);
+	_bool FindPath(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const;
 
 public:
 	static UPtr<CNavMeshManager> Create();
 
 private:
-	_bool FindPath(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const;
 	void DrawPathTest();
 
 private:
@@ -108,7 +108,7 @@ private:
 	std::vector<_float3> m_PathTestPoints{};
 	_bool m_bHasPathTestStart = false;
 	_bool m_bHasPathTestEnd = false;
-	_bool m_bDebugDraw = true;
+	_bool m_bDebugDraw = false;
 };
 
 NS_END

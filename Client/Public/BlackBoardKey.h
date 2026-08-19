@@ -14,4 +14,10 @@ namespace EDG_KEY
 	inline const StringID LPATROL{ "EdgLeftPatrol" };
 	inline const StringID RPATROL{ "EdgRightPatrol" };
 }
+
+namespace NPC_KEY
+{
+	inline const StringID STARTPOS{ "PatrollStat" };
+	inline const StringID ENDPOS{ "PatrollEnd" };
+}
 NS_END

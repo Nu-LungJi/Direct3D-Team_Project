@@ -584,6 +584,10 @@ void CNavMeshManager::DrawPathTest()
 
 void CNavMeshManager::DrawDebug()
 {
+	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyPressing(DIK_LSHIFT)
+		&& CGameInstance::Get().KeyDown(DIK_A))
+		m_bDebugDraw = !m_bDebugDraw;
+
 	if (!m_bDebugDraw || !m_pPolyMesh)
 		return;
 
