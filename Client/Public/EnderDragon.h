@@ -1,7 +1,7 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
-enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL, TURNBREATH, THREEBALL, BLACKBALL,LONGBREATH,GASI,GASIBREATH,END};
+enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL, TURNBREATH, THREEBALL, BLACKBALL,LONGBREATH,GASI,GASIBREATH,GROUND, END};
 enum class DRAGON_PHASE{PHASE1, PHASE2, PHASE3, PHASE4, PHASE5, PHASE6, PHASE7, END};
 enum class EDG_SPAWN_NUMBER { FIRST, SECOND, THIRD, FOUR };
 
@@ -109,6 +109,7 @@ public:
 	void						Check_Phase();
 	void						Set_AttTable(ATTMON eType, _float2 fSkillRatio) override;
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
+	void						Set_WingParticlesEnabled(_bool bEnabled) { m_bWingParticlesEnabled = bEnabled; if (!bEnabled) m_fWingParticleSpawnAcc = 0.f; }
 	EDG_SKILL_INFO&				Get_SkillInfo(DRAGON_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
 	const _string&				Get_SkillNmae(DRAGON_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
 	void						Heal(uint32_t iHp) { m_iHp += iHp; if (m_iHp >= m_iMaxHp) m_iHp = m_iMaxHp; }
@@ -150,6 +151,8 @@ private:
 	int32_t						m_iRight2WingParticleBoneIndex{ -1 };
 	_float						m_fWingParticleSpawnAcc{};
 	_float						m_fWingParticleSpawnInterval{ 0.1f };
+	_bool						m_bWingParticlesEnabled{ true };
+	uint32_t					m_iDefaultEffectID{};
 public:
 	static E::UPtr<CEnderDragon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

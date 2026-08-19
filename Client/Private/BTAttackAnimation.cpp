@@ -4,6 +4,8 @@
 #include "ComCharacterMoveIntent.h"
 #include "Monster.h"
 #include "Player.h"
+#include "BlackBoardKey.h"
+#include "BTBlackBoard.h"
 #include "ClientEvents.h" 
 NS_USING(Client)
 
@@ -70,6 +72,14 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 							continue;
 						if (fAnimRatio >= iter.fRatio)
 						{
+							if (true == iter.bDefault)
+							{
+								auto pBB = pOwner->Get_BlackBoard();
+								if (nullptr != pBB)
+								{
+									pBB->Set_Value<_bool>(EDG_KEY::EDGEFFECT, true);
+								}
+							}
 							iter.bTrigger = true;
 							m_fSkillRatio.y = iter.fLifeTime;
 							ActiveTriggerSkill(iter.eSkill);
@@ -229,6 +239,9 @@ void CBTAttackAnimation::Update_Gui()
 			for (auto iter = m_Skills.begin(); iter != m_Skills.end(); ++ iter)
 			{
 				ImGui::PushID(iButton);
+
+				BoolButton("NoAttackEffect", (*iter).bDefault);
+				ImGui::SameLine();
 				DragFloat("StartRatio",(*iter).fRatio);
 				ImGui::Text("LifeTime");
 				ImGui::DragFloat("##LifeTime", &(*iter).fLifeTime,0.1f,0.f,100.f);
@@ -386,6 +399,8 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 			SaveJsonEnum(j, "NewSkillType" + std::to_string(i), m_Skills[i].eSkill);
 			SaveJsonValue(j, "NewSkillRatio" + std::to_string(i), m_Skills[i].fRatio);
 			SaveJsonValue(j, "NewSkillLife" + std::to_string(i), m_Skills[i].fLifeTime);
+
+			SaveJsonValue(j, "NewSkillNoAttEff" + std::to_string(i), m_Skills[i].bDefault);
 		}
 	}
 	return j;
@@ -417,6 +432,7 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 			LoadJsonEnum(j, "NewSkillType" + std::to_string(i), m_Skills[i].eSkill);
 			LoadJsonValue(j, "NewSkillRatio" + std::to_string(i), m_Skills[i].fRatio);
 			LoadJsonValue(j, "NewSkillLife" + std::to_string(i), m_Skills[i].fLifeTime);
+			LoadJsonValue(j, "NewSkillNoAttEff" + std::to_string(i), m_Skills[i].bDefault);
 		}
 	}
 	return S_OK;

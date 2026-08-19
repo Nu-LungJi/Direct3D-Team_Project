@@ -44,6 +44,7 @@ public:
 public:
 	_string						Get_SkillName(ATTMON SkillNode)override;
 
+	void						Set_Spawn(_bool bS) { m_bSpawn = bS; }
 	void						Set_StateFinished(_bool bFinished);
 	void						Set_Break(_bool bHit) { m_bIsBreak = bHit; }
 
@@ -66,7 +67,7 @@ private:
 	class CMon_State* m_pFsm{ nullptr };
 
 	_string			m_EffectNames[ETOUI(SPIDER_SKILL::END)];
-		_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false }, m_bPopupL{ false }, m_bEndGame{ false };
+	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false }, m_bPopupL{ false }, m_bEndGame{ false }, m_bSpawn{ true };
 
 	_string						m_WayName{};
 	std::list<_float3>			m_DebugPoint;

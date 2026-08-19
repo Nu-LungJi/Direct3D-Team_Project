@@ -556,6 +556,12 @@
     <Filter Include="GameObject\DecalVolume">
       <UniqueIdentifier>{b618bd73-0c04-4ba3-8935-5cdeb2ef48cc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Terrain\Water">
+      <UniqueIdentifier>{cdf803b4-0328-4865-8003-05e1e7e746d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ShaderFiles\Water">
+      <UniqueIdentifier>{7848e7e8-6884-4f43-bace-d1d37c9e0629}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1276,6 +1282,9 @@
     <ClInclude Include="..\Public\DecalVolume.h">
       <Filter>GameObject\DecalVolume</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Water.h">
+      <Filter>Terrain\Water</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1915,6 +1924,9 @@
     <ClCompile Include="..\Private\DecalVolume.cpp">
       <Filter>GameObject\DecalVolume</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Water.cpp">
+      <Filter>Terrain\Water</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -2096,6 +2108,9 @@
     <None Include="..\ShaderFiles\Decal\DecalProjectionCommon.hlsli">
       <Filter>ShaderFiles\Decal</Filter>
     </None>
+    <FxCompile Include="..\ShaderFiles\Water\Shader_Water.hlsl">
+      <Filter>ShaderFiles\Water</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">

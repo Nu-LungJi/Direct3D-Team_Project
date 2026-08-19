@@ -7,6 +7,7 @@
 #include "Button.h"
 #include "Cursor.h"
 #include "Monster.h"
+#include "EnderDragon.h"
 #include "MiniMap.h"
 #include "ClientEvents.h"
 #include "SpellMiniGame.h"
@@ -838,7 +839,7 @@ void CUIController::UseSpell(uint32_t SlotNumber)
 
 	pSpellSlot->StartCooldown();
 	if (dialogue)
-		GET_SINGLE(UIManager)->AddDialoguePopup("스네이프", dialogue);
+		GET_SINGLE(UIManager)->AddDialoguePopup("샤프교수", dialogue);
 }
 
 void CUIController::SetPotionCount(_float cnt)
@@ -901,7 +902,15 @@ void CUIController::CreateMonsterHP()
 	if (pMonster->Get_CurrentHp() <= 0.f)
 		return;
 
-	m_MonsterHP = GET_SINGLE(UIManager)->LoadPrefab("MonsterHP").front();
+	const char* pPrefabName = pMonster->Is<CEnderDragon>()
+		? "RanRockHP"
+		: "MonsterHP";
+
+	auto loadedHandles = GET_SINGLE(UIManager)->LoadPrefab(pPrefabName);
+	if (loadedHandles.empty())
+		return;
+
+	m_MonsterHP = loadedHandles.front();
 }
 
 void CUIController::UpdateMonsterHP()

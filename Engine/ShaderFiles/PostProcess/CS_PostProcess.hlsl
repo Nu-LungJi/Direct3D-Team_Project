@@ -5,6 +5,7 @@ Texture2D<float4> BlurPassTexture	: register(t1);
 
 Texture2D<float4> LUT_Texture		: register(t2);
 Texture2D<float4> FocusingTexture	: register(t3);
+Texture2D<float4> SceneDepthTexture : register(t4);
 
 static const float	CenterWeight		= { 0.227027f };
 static const float	BlurOffsets[2]		= { 1.3846154f, 3.2307692f };
@@ -24,6 +25,8 @@ static const float  OutlineThickness = 1.5f;
 static const float4 OutlineColor = float4(1.f, 1.f, 1.f, 1.f);
 // LUT ColorGrading Global Variable
 static const float LUT_Size = 16.f;
+
+static const float EPSILON = 1e-4f;
 
 // ToneMapping Global Variable
 static const float3x3 AGX_InMatrix = float3x3(
@@ -441,20 +444,21 @@ float3 ToneMap_AGXFilm(float3 _Color)
 ////////////////////////////////////////////// OutLiner
 float3 Render_ObjectEdge(float3 _Color, float2 _TexCoord)
 {
-	float CenterPixel = FocusingTexture.SampleLevel(LinearClamp, _TexCoord, 0).r;
+	float CenterPixel = FocusingTexture.SampleLevel(PointClamp, _TexCoord, 0).r;
+	if (CenterPixel > 0.999f)	return _Color;
 	
-	if (CenterPixel > 0.999f)
-		return _Color;
+	float SceneDepth = SceneDepthTexture.SampleLevel(PointClamp, _TexCoord, 0).r;
+	if (SceneDepth < CenterPixel - EPSILON) return _Color;
 	
 	float2 MaskTexelSize = TexelSize * OutlineThickness;
 	
-	float RightPixel = FocusingTexture.SampleLevel(LinearClamp, _TexCoord + float2(MaskTexelSize.x, 0.f), 0).r;
-	float LeftPixel = FocusingTexture.SampleLevel(LinearClamp, _TexCoord - float2(MaskTexelSize.x, 0.f), 0).r;
-	float UpPixel = FocusingTexture.SampleLevel(LinearClamp, _TexCoord - float2(0.f, MaskTexelSize.y), 0).r;
-	float DownPixel = FocusingTexture.SampleLevel(LinearClamp, _TexCoord + float2(0.f, MaskTexelSize.y), 0).r;
-
-	float DepthEdge = abs(CenterPixel - RightPixel) + abs(CenterPixel - LeftPixel)
-						+ abs(CenterPixel - UpPixel) + abs(CenterPixel - DownPixel);
+	float RightPixel = FocusingTexture.SampleLevel(PointClamp, _TexCoord + float2(MaskTexelSize.x, 0.f), 0).r;
+	float LeftPixel  = FocusingTexture.SampleLevel(PointClamp, _TexCoord - float2(MaskTexelSize.x, 0.f), 0).r;
+	float UpPixel	 = FocusingTexture.SampleLevel(PointClamp, _TexCoord - float2(0.f, MaskTexelSize.y), 0).r;
+	float DownPixel  = FocusingTexture.SampleLevel(PointClamp, _TexCoord + float2(0.f, MaskTexelSize.y), 0).r;
+					 
+	float DepthEdge  = abs(CenterPixel - RightPixel) + abs(CenterPixel - LeftPixel)
+					 + abs(CenterPixel - UpPixel)	 + abs(CenterPixel - DownPixel);
 	
 	return lerp(_Color, OutlineColor.rgb, saturate(DepthEdge) * 50.f);
 }

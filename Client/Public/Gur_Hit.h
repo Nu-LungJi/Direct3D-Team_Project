@@ -33,15 +33,20 @@ private:
 	void					MoveIntent(CTmbGurdian* pTmb, _float3 vDir, _float fSpeed);
 	void					Set_Gravity(_bool bGravity, CTmbGurdian* pTmb);
 	void					Jump(CTmbGurdian* pTmb, _float fPower, _bool bUp = true);
-	HIT_TYPE				Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround);
+	HIT_TYPE				Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround, CTmbGurdian* pTmb = nullptr);
 	void					Check_PendingHit(CTmbGurdian* pTmb);
 	void					MotionToPlay(CTmbGurdian* pTmb, CComAnimator* pAnimator, CMon_State* pTmbState);
 	_bool					PlayAnim(CComAnimator* pAnimator, _bool bLoop = false);
 	void					Finishied(CMon_State* pTmbState);
 	void					ChangeMotion(HIT_MOTION eMotion);
+
+	void					Effect_Loop(CTmbGurdian* pTmb);
+	void					Effect(CTmbGurdian* pTmb,const _string& SkillName);
+	void					ResetEffect();
 private:
+
 	_bool							m_bTurn{ false };
-	uint32_t						m_iAnimIndex{};
+	uint32_t						m_iAnimIndex{}, m_iSkillEffID{};
 	HIT_STEP						m_HitStep{};
 	NEW_HIT_TABLE					m_HitTable{};
 	std::vector<MON_ANIM_FSM>		m_Anims[ETOUI(HIT_TYPE::END)][ETOUI(HIT_MOTION::END)];

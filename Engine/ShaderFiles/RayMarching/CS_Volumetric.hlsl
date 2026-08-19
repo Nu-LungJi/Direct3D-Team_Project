@@ -198,7 +198,6 @@ float Compute_CascadeShadow(float3 _WorldPos)
 	float CascadeFar  = CascadeSplits[CascadeIndex];
 	
 	float CascadeBlendStart = lerp(CascadeNear, CascadeFar, 0.85f);
-	
 	if (ViewDepth <= CascadeBlendStart)	return CurrentShadow;
 	
 	float NextShadow = Sample_CascadeShadow(_WorldPos, CascadeIndex + 1);
@@ -215,8 +214,8 @@ float Compute_PointVolumetricShadow(float3 _WorldPos, uint _LightIndex)
 	if (ShadowSlotNumb < 0 || ShadowSlotNumb >= MAX_SHADOW_LIGHT_COUNT) return 1.f;
 
 	float3	LightToVoxel = _WorldPos - AffectedLight[_LightIndex].Position;
-	float	DistanceSQ	 = dot(LightToVoxel, LightToVoxel);
-	
+	float DistanceSQ = max(dot(LightToVoxel, LightToVoxel), 1.f);
+
 	if (DistanceSQ <= 0.0001f) return 1.f;
 	
 	float OuterRange = max(AffectedLight[_LightIndex].OuterAttanuation, 0.02f);
@@ -351,7 +350,10 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 	
 	float3	Scattering = DirectScattering + AmbientScattering + LocalScattering;
 	float	Extinction = FogDensity;
-
+		
+	float MaxScattering = max(Scattering.r, max(Scattering.g, Scattering.b));
+	Extinction = max(FogDensity, MaxScattering * 0.05f);
+	
 	OUTPUT3D[ID] = float4(Scattering, Extinction);
 	return;
 }

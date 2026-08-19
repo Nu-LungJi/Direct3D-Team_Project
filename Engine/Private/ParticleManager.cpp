@@ -2359,12 +2359,39 @@ HRESULT CParticleManager::Save_Beam_Json(std::string outpath, const std::string&
 }
 HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 {
+	auto ResolveParticleTexturePath = [](const std::string& sourcePath)
+		{
+			if (sourcePath.empty())
+				return sourcePath;
+
+			const std::filesystem::path originalPath = sourcePath;
+			const std::string extension = originalPath.extension().string();
+			const _bool bCanReplaceWithDDS =
+				_stricmp(extension.c_str(), ".png") == 0 ||
+				_stricmp(extension.c_str(), ".jpg") == 0 ||
+				_stricmp(extension.c_str(), ".jpeg") == 0 ||
+				_stricmp(extension.c_str(), ".tga") == 0 ||
+				_stricmp(extension.c_str(), ".bmp") == 0;
+
+			if (!bCanReplaceWithDDS)
+				return sourcePath;
+
+			std::filesystem::path ddsPath = originalPath;
+			ddsPath.replace_extension(".dds");
+
+			std::error_code errorCode{};
+			if (std::filesystem::exists(ddsPath, errorCode) && !errorCode)
+				return ddsPath.string();
+
+			return sourcePath;
+		};
+
 	// LoadParticleJson 안, "textures" 배열 for문 시작 직전에 추가
-	auto LoadAuxTexture = [](const nlohmann::json& entry,
+	auto LoadAuxTexture = [&ResolveParticleTexturePath](const nlohmann::json& entry,
 		const char* pathKey, const char* id1Key, const char* id2Key,
 		std::pair<StringID, StringID>& outID) -> _bool
 		{
-			std::string path = entry.value(pathKey, "");
+			std::string path = ResolveParticleTexturePath(entry.value(pathKey, ""));
 			std::string id1 = entry.value(id1Key, "");
 			std::string id2 = entry.value(id2Key, "");
 
@@ -2571,7 +2598,7 @@ HRESULT CParticleManager::LoadParticleJson(const std::string& strJsonPath)
 			if (!entry.contains("path") || !entry["path"].is_string())
 				continue;
 
-			std::string texPath = entry["path"].get<std::string>();
+			std::string texPath = ResolveParticleTexturePath(entry["path"].get<std::string>());
 			if (texPath.empty())
 				continue;
 			std::string whatKind = entry.value("whatKind", "TEXTURE");

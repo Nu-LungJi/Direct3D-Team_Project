@@ -28,6 +28,8 @@ private:
 	HRESULT SpawnUICamera();
 	HRESULT SpawnPlayerCamera(CHandle hPlayer);
 	HRESULT SpawnSkyBox();
+	HRESULT SpawnMonster(std::optional<CHandle> hPlayer);
+	HRESULT SpawnStaticCollision();
 
 public:
 	static UPtr<CLevelHogwartWorld> Create();

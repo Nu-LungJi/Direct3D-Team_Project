@@ -53,7 +53,7 @@ HRESULT CSpider_Hit::Initialize(const _string& strLevelTag, CSpider* pSpider)
 	
 	{
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::GROUND_SLAM)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Slam_FD_BounceUp_Fwd_anm.bin"),.fBlend = 0.1f });
+		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Slam_FD_BounceUp_Fwd_anm.bin"),.fBlend = 0.1f,.SkillName = "Descendo_Enemy",.fSkillRatio = 0.4f });
 
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::AIR)].push_back(MON_ANIM_FSM{ .iAnimIndex =
 		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Air_Descendo_anm.bin"),.fBlend = 0.1f });
@@ -62,7 +62,7 @@ HRESULT CSpider_Hit::Initialize(const _string& strLevelTag, CSpider* pSpider)
 		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Air_Loop_Fall_anm.bin"),.fBlend = 0.1f });
 
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::REBOUND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Fall_Fwd_Pose_anm.bin"),.fBlend = 0.1f });
+		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Fall_Fwd_Pose_anm.bin"),.fBlend = 0.1f,.SkillName = "Descendo_Enemy",.fSkillRatio = 0.4f });
 
 
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
@@ -86,6 +86,23 @@ HRESULT CSpider_Hit::Initialize(const _string& strLevelTag, CSpider* pSpider)
 
 		
 	}
+	{
+		m_Anims[ETOUI(HIT_TYPE::FIRE)][ETOUI(HIT_MOTION::BLOWBACK)].push_back(MON_ANIM_FSM{ .iAnimIndex =
+		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Stumble_Bwd_Fire_GetUp_Tank_Start_anm.bin"),.fBlend = 0.1f });
+	
+		m_Anims[ETOUI(HIT_TYPE::FIRE)][ETOUI(HIT_MOTION::BLOWBACK)].push_back(MON_ANIM_FSM{ .iAnimIndex =
+			pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Stumble_Bwd_Fire_GetUp_Tank_Loop_anm.bin"),.fBlend = 0.1f });
+	
+		m_Anims[ETOUI(HIT_TYPE::FIRE)][ETOUI(HIT_MOTION::AIR)].push_back(MON_ANIM_FSM{ .iAnimIndex =
+		pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Stumble_Bwd_Fire_GetUp_Tank_Start_anm.bin"),.fBlend = 0.1f });
+
+		m_Anims[ETOUI(HIT_TYPE::FIRE)][ETOUI(HIT_MOTION::FALLING)].push_back(MON_ANIM_FSM{ .iAnimIndex =
+			pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Stumble_Bwd_Fire_GetUp_Tank_Loop_anm.bin"),.fBlend = 0.1f });
+	
+		m_Anims[ETOUI(HIT_TYPE::FIRE)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
+			pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Rct_Stumble_Bwd_Fire_GetUp_Tank_End_anm.bin"),.fBlend = 0.1f });
+
+	}
 	
 	return S_OK;
 }
@@ -99,7 +116,7 @@ void CSpider_Hit::Enter(CStateMachine* pStateMachine)
 	if (!pSpider->Activate_PendingHit())
 		return;
 	MON_HIT_INFO Pending = pSpider->Get_ActiveHitInfo();
-	m_HitTable.eHitType = Reactive_TableMotion(Pending.eHitType,pSpider->Is_Grounded());
+	m_HitTable.eHitType = Reactive_TableMotion(Pending.eHitType,pSpider->Is_Grounded(),pSpider);
 	m_HitTable.eSkillType = Pending.eHitType;
 
 	m_iAnimIndex = 0;
@@ -109,7 +126,7 @@ void CSpider_Hit::Exit(CStateMachine* pStateMachine)
 {
 	auto pSpider = pStateMachine->GetOwner<CSpider>();
 	if (nullptr == pSpider) return;
-
+	 
 	m_HitTable.eHitMotion = HIT_MOTION::END;
 	pSpider->ReActiveTable();
 	Set_Gravity(true, pSpider);
@@ -177,7 +194,7 @@ void CSpider_Hit::MoveIntent(CSpider* pSpider, _float3 vDir, _float fSpeed)
 }
 
 
-HIT_TYPE CSpider_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround)
+HIT_TYPE CSpider_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround, CSpider* pSpider)
 {
 	 
 	switch (eType)
@@ -193,6 +210,7 @@ HIT_TYPE CSpider_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGro
 			m_HitTable.eHitMotion = HIT_MOTION::NORMAL;
 		return HIT_TYPE::NORMAL;
 	case PLAYER_SKILL_TYPE::ACCIO:
+		Effect(pSpider, "AccioGrab");
 		m_HitTable.eHitMotion = HIT_MOTION::AIR;
 		return HIT_TYPE::LAUNCH;
 	case PLAYER_SKILL_TYPE::DEPULSO:
@@ -208,6 +226,17 @@ HIT_TYPE CSpider_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGro
 
 	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
 		break;
+	case PLAYER_SKILL_TYPE::CONFRIGO:
+		if (m_HitTable.eHitMotion == HIT_MOTION::AIR || m_HitTable.eHitMotion == HIT_MOTION::FALLING)
+			m_HitTable.eHitMotion = HIT_MOTION::AIR;
+		else m_HitTable.eHitMotion = HIT_MOTION::BLOWBACK;
+
+		return HIT_TYPE::FIRE;
+		break;
+
+	case PLAYER_SKILL_TYPE::BOMBARDA:
+		m_HitTable.eHitMotion = HIT_MOTION::BLOWBACK;
+		return HIT_TYPE::KNOCKBACK;
 	}
 
 	return HIT_TYPE::END;
@@ -231,7 +260,7 @@ void CSpider_Hit::Check_PendingHit(CSpider* pSpider)
 	if (m_HitTable.eSkillType == HitInfo.eHitType && !bRestart)
 		return;
 	
-	m_HitTable.eHitType = Reactive_TableMotion(HitInfo.eHitType, pSpider->Is_Grounded());
+	m_HitTable.eHitType = Reactive_TableMotion(HitInfo.eHitType, pSpider->Is_Grounded(),pSpider);
 
 	
 	m_HitTable.eSkillType = HitInfo.eHitType;
@@ -271,7 +300,7 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CMon_S
 					else
 						ChangeMotion(HIT_MOTION::LAND);
 				}
-
+					
 				MoveIntent(pSpider, TargetDir(pSpider,true), 7.f);
 				break;
 			case HIT_MOTION::FALLING:
@@ -299,6 +328,7 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CMon_S
 			case HIT_MOTION::AIR:
 				if (PlayAnim(pAnimator))
 					ChangeMotion(HIT_MOTION::FALLING);
+				Effect_Loop(pSpider);
 				break;
 			case HIT_MOTION::FALLING:
 				PlayAnim(pAnimator);
@@ -321,10 +351,10 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CMon_S
 			case HIT_MOTION::GROUND_SLAM:
 				if (PlayAnim(pAnimator))
 					ChangeMotion(HIT_MOTION::FALLING);
+
 				Jump(pSpider, 8.f);
 				break;
 			case HIT_MOTION::FALLING:
-				//PlayAnim(pAnimator, true);
 				if(bGround)
 					ChangeMotion(HIT_MOTION::LAND);
 				Jump(pSpider, -150.f, false);
@@ -334,9 +364,7 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CMon_S
 				break;
 			case HIT_MOTION::LAND:
 				if (PlayAnim(pAnimator))
-				{
 					Finishied(pSpiderState);
-				}
 				break;
 			case HIT_MOTION::REBOUND:
 				PlayAnim(pAnimator,true);
@@ -376,6 +404,35 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CMon_S
 			}
 			break;
 		}
+		case HIT_TYPE::FIRE:
+		{
+			switch (m_HitTable.eHitMotion)
+			{
+			case HIT_MOTION::BLOWBACK:
+				if (PlayAnim(pAnimator))
+					if (bGround)
+						ChangeMotion(HIT_MOTION::LAND);
+					else
+						ChangeMotion(HIT_MOTION::FALLING);
+				MoveIntent(pSpider, TargetDir(pSpider, true), 12.f);
+				break;
+			case HIT_MOTION::AIR:
+				if (PlayAnim(pAnimator))
+					ChangeMotion(HIT_MOTION::FALLING);
+
+				MoveIntent(pSpider, TargetDir(pSpider, true), 12.f);
+				break;
+			case HIT_MOTION::FALLING:
+				PlayAnim(pAnimator, true);
+				if (bGround)
+					ChangeMotion(HIT_MOTION::LAND);
+				break;
+			case HIT_MOTION::LAND:
+				if (PlayAnim(pAnimator))
+					Finishied(pSpiderState);
+				break;
+			}
+		}
 	}
 }
 
@@ -383,11 +440,20 @@ void CSpider_Hit::MotionToPlay(CSpider* pSpider, CComAnimator* pAnimator, CMon_S
 _bool CSpider_Hit::PlayAnim(CComAnimator* pAnimator, _bool bLoop)
 {
 	if (nullptr == pAnimator) return true;
-
+	auto pSrc = Cast<CSpider>(pAnimator->GetGameObject());
+	if (nullptr == pSrc) return true;
 	if (m_iAnimIndex >= m_Anims[ETOUI(m_HitTable.eHitType)][ETOUI(m_HitTable.eHitMotion)].size()) return true;
 
-	auto pAnim = m_Anims[ETOUI(m_HitTable.eHitType)][ETOUI(m_HitTable.eHitMotion)];
-	
+	auto& pAnim = m_Anims[ETOUI(m_HitTable.eHitType)][ETOUI(m_HitTable.eHitMotion)];
+	if (pAnim[m_iAnimIndex].fSkillRatio != 0.f)
+	{
+		_float fRatio = pAnimator->GetPlayAnimRatio();
+		if (false == pAnim[m_iAnimIndex].bSkill && fRatio >= pAnim[m_iAnimIndex].fSkillRatio)
+		{
+			Effect(pSrc, pAnim[m_iAnimIndex].SkillName);
+			pAnim[m_iAnimIndex].bSkill = true;
+		}
+	}
 	pAnimator->Play_Anim(pAnim[m_iAnimIndex].iAnimIndex, bLoop, pAnim[m_iAnimIndex].fBlend);
 	
 	if (!bLoop && pAnimator->GetFinish())
@@ -407,6 +473,21 @@ void CSpider_Hit::ChangeMotion(HIT_MOTION eMotion)
 
 	m_HitTable.eHitMotion = eMotion;
 	m_iAnimIndex = 0;
+}
+void CSpider_Hit::Effect_Loop(CSpider* pSpider)
+{
+	if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
+		CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *pSpider->GetTransform().GetWorldMatrix());
+}
+void CSpider_Hit::Effect(CSpider* pSpider, const _string& SkillName)
+{
+	m_iSkillEffID = CGameInstance::Get().PlayEffect(SkillName, *pSpider->GetTransform().GetWorldMatrix(), _vector{},
+		[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+		{
+			if (effectId != m_iSkillEffID)
+				return;
+			m_iSkillEffID = INVALID_EFFECT_INSTANCE_ID;
+		});
 }
 void				CSpider_Hit::Set_Gravity(_bool bGravity, CSpider* pSpider)
 {
