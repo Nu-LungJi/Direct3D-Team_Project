@@ -210,6 +210,8 @@
     <ClInclude Include="..\public\BTDecEdgState.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
     <ClInclude Include="..\public\Edg_Godae.h" />
+    <ClInclude Include="..\Public\FlightRing.h" />
+    <ClInclude Include="..\Public\FlyminiGameController.h" />
     <ClInclude Include="..\public\Gur_Combat.h" />
     <ClInclude Include="..\public\Gur_Hit.h" />
     <ClInclude Include="..\public\DragonSkill.h" />
@@ -382,6 +384,8 @@
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
     <ClCompile Include="..\private\Edg_Godae.cpp" />
+    <ClCompile Include="..\Private\FlightRing.cpp" />
+    <ClCompile Include="..\Private\FlyminiGameController.cpp" />
     <ClCompile Include="..\private\Gur_Combat.cpp" />
     <ClCompile Include="..\private\Gur_Hit.cpp" />
     <ClCompile Include="..\private\EdgBreath.cpp" />

@@ -406,6 +406,12 @@
     <Filter Include="GameObject\Monster\01.Spanwer">
       <UniqueIdentifier>{08679333-751b-4ba5-a4c6-39daf5347c9b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\FlyMiniGame">
+      <UniqueIdentifier>{fcff308e-c352-483c-908c-c9ab93c71d83}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\FlyMiniGame\FlightRing">
+      <UniqueIdentifier>{252e67fa-d5f2-40ee-821a-0afa6ff63dbb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -934,6 +940,12 @@
     <ClInclude Include="..\public\Spider_Dead.h">
       <Filter>GameObject\Monster\Spider\FSM\State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\FlyminiGameController.h">
+      <Filter>GameObject\FlyMiniGame</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\FlightRing.h">
+      <Filter>GameObject\FlyMiniGame\FlightRing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1410,6 +1422,12 @@
     </ClCompile>
     <ClCompile Include="..\private\Spider_Dead.cpp">
       <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\FlyminiGameController.cpp">
+      <Filter>GameObject\FlyMiniGame</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\FlightRing.cpp">
+      <Filter>GameObject\FlyMiniGame\FlightRing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
