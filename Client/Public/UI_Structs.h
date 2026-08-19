@@ -99,5 +99,17 @@ struct DIALOGUE_POPUP_INFO
 	_bool FadingOut{};
 };
 
+struct NPC_SPEECH_BUBBLE_INFO
+{
+	CHandle TargetHandle{};
+	CHandle BackgroundHandle{};
+	CHandle TextHandle{};
+	_float3 WorldOffset{ 0.f, 2.2f, 0.f };
+	_float Duration{ 5.f };
+	_float ElapsedTime{};
+	_float CurrentScale{ 1.f };
+	_bool FadingOut{};
+};
+
 NS_END
 
