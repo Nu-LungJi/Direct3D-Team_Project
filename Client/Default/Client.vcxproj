@@ -231,6 +231,8 @@
     <ClInclude Include="..\public\Mon_Godae.h" />
     <ClInclude Include="..\public\Mon_Spawner.h" />
     <ClInclude Include="..\Public\Player_Fly_State.h" />
+    <ClInclude Include="..\public\PropBarrel.h" />
+    <ClInclude Include="..\public\PropBarrelDebris.h" />
     <ClInclude Include="..\public\SkillTarget.h" />
     <ClInclude Include="..\Public\SkyCloudyCube.h" />
     <ClInclude Include="..\public\BossMace.h" />
@@ -407,6 +409,8 @@
     <ClCompile Include="..\private\Mon_Godae.cpp" />
     <ClCompile Include="..\private\Mon_Spawner.cpp" />
     <ClCompile Include="..\Private\Player_Fly_State.cpp" />
+    <ClCompile Include="..\private\PropBarrel.cpp" />
+    <ClCompile Include="..\private\PropBarrelDebris.cpp" />
     <ClCompile Include="..\private\SkillTarget.cpp" />
     <ClCompile Include="..\Private\SkyCloudyCube.cpp" />
     <ClCompile Include="..\private\BossMace.cpp" />
