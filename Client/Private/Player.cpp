@@ -40,6 +40,7 @@
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
 #include "Player_BombardaSkill_State.h"
+#include "Player_TransformationSkill_State.h"
 #include "Player_ConfringoSkill_State.h"
 #include "Player_AvadaKedavraSkill_State.h"
 #include "Player_ProtegoSkill_State.h"
@@ -445,6 +446,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		}
 		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::TRANSFORMATION_SKILL,
+			CPlayer_TransformationSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::CONFRINGO_SKILL,
 			CPlayer_ConfringoSkill_State::Create()))
 		{
@@ -592,46 +599,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 		return E_FAIL;
 	if (FAILED(InitializeAvadaKedavra()))
 		return E_FAIL;
-
-#ifdef _DEBUG
-	{
-		CWiggenweldPotion::DESC debugPotionDesc{};
-		debugPotionDesc.sObjectTag = "Debug_WiggenweldPotion_Origin";
-		debugPotionDesc.sResourceGroup = m_LevelTag;
-		debugPotionDesc.vInitialPosition = { 0.f, 0.f, 0.f };
-		debugPotionDesc.vInitialScale = { 1.f, 1.f, 1.f };
-		debugPotionDesc.vConvexScale = debugPotionDesc.vInitialScale;
-
-		const auto debugPotionHandle = CGameInstance::Get().AddGameObjectToLayer(
-			m_LevelTag,
-			PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
-			"Debug_WiggenweldPotion_Origin",
-			&debugPotionDesc);
-		if (debugPotionHandle.has_value())
-			DEBUG_LOG("[PlayerPotion] Debug potion permanently spawned at (0, 0, 0).\n");
-		else
-			DEBUG_LOG("[PlayerPotion] Failed to spawn debug potion at (0, 0, 0).\n");
-
-		CWiggenweldPotion::DESC visiblePotionDesc = debugPotionDesc;
-		visiblePotionDesc.sObjectTag = "Debug_WiggenweldPotion_Visible";
-		visiblePotionDesc.vInitialPosition = {
-			pDesc->vInitialPosition.x,
-			pDesc->vInitialPosition.y + 2.f,
-			pDesc->vInitialPosition.z + 3.f };
-		visiblePotionDesc.vInitialScale = { 3.f, 3.f, 3.f };
-		visiblePotionDesc.vConvexScale = visiblePotionDesc.vInitialScale;
-
-		const auto visiblePotionHandle = CGameInstance::Get().AddGameObjectToLayer(
-			m_LevelTag,
-			PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
-			"Debug_WiggenweldPotion_Visible",
-			&visiblePotionDesc);
-		if (visiblePotionHandle.has_value())
-			DEBUG_LOG("[PlayerPotion] Large debug potion spawned near the player.\n");
-		else
-			DEBUG_LOG("[PlayerPotion] Failed to spawn the large debug potion.\n");
-	}
-#endif
 
 	return S_OK;
 }
@@ -1296,6 +1263,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		// 봄바르다 애니메이션 및 이펙트 큐 타이밍 확인용 임시 입력.
 		if (CGameInstance::Get().KeyDown(DIK_6))
 			m_pStateMachine->RequestState(PLAYER_STATE::BOMBARDA_SKILL);
+
+		// 변신 스킬 상태와 캐스팅 애니메이션 확인용 임시 입력.
+		if (CGameInstance::Get().KeyDown(DIK_7))
+			m_pStateMachine->RequestState(PLAYER_STATE::TRANSFORMATION_SKILL);
 
 #ifdef _DEBUG
 		// Lumos debug toggle. The Lumos state decides whether this request
@@ -2076,6 +2047,12 @@ void CPlayer::UpdateWiggenweldPotion()
 	for (uint32_t axis = 0; axis < 3; ++axis)
 		socketMatrix.r[axis] = XMVector3Normalize(socketMatrix.r[axis]);
 
+	const _matrix potionPivotOffset = XMMatrixTranslation(
+		-0.120f,
+		-0.305f,
+		0.105f) *
+		socketMatrix;
+	socketMatrix = potionPivotOffset;
 	if (!pPotion->SetHeldPose(
 		socketMatrix * GetTransform().GetLoadedWorldMatrix()))
 	{
@@ -2083,9 +2060,9 @@ void CPlayer::UpdateWiggenweldPotion()
 		return;
 	}
 
+	// 팔을 내리는 마지막 구간까지 재생한 뒤에만 포션을 드롭한다.
 	if (m_pModelAnimator->HasUpperAnimation() &&
-		!m_pModelAnimator->IsUpperAnimationFinished() &&
-		m_pModelAnimator->GetUpperAnimRatio() < 0.92f)
+		!m_pModelAnimator->IsUpperAnimationFinished())
 		return;
 
 	_float3 vLook{};

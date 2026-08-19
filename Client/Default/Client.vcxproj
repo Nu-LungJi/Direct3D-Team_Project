@@ -325,6 +325,7 @@
     <ClInclude Include="..\Public\Player_AccioSkill_State.h" />
     <ClInclude Include="..\Public\Player_AvadaKedavraSkill_State.h" />
     <ClInclude Include="..\Public\Player_BombardaSkill_State.h" />
+    <ClInclude Include="..\Public\Player_TransformationSkill_State.h" />
     <ClInclude Include="..\Public\Player_ConfringoSkill_State.h" />
     <ClInclude Include="..\Public\Player_AcientAttack_State.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
@@ -494,6 +495,7 @@
     <ClCompile Include="..\Private\Player_AccioSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_AvadaKedavraSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_BombardaSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_TransformationSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_ConfringoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_AcientAttack_State.cpp" />
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />

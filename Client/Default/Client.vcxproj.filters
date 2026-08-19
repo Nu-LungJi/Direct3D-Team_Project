@@ -205,6 +205,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State">
       <UniqueIdentifier>{dfc43f3f-1ab9-49d1-a6df-f7f34f58d750}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_TransformationSkill_State">
+      <UniqueIdentifier>{2b74c763-c2e4-4806-b5db-005127b93e97}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State">
       <UniqueIdentifier>{129836af-05a5-4e96-86f5-e6664ac3d91f}</UniqueIdentifier>
     </Filter>
@@ -405,6 +408,9 @@
     </Filter>
     <Filter Include="GameObject\Monster\01.Spanwer">
       <UniqueIdentifier>{08679333-751b-4ba5-a4c6-39daf5347c9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Potion_State">
+      <UniqueIdentifier>{b099f08f-a3b6-4d53-b3d4-ca55705c3190}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -644,6 +650,9 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_BombardaSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_TransformationSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_TransformationSkill_State</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Player_ConfringoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State</Filter>
@@ -915,7 +924,6 @@
     <ClInclude Include="..\public\Gur_Hit.h">
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\Player_Potion_State.h" />
     <ClInclude Include="..\Public\WiggenweldPotion.h">
       <Filter>GameObject\Player\Player_Potion</Filter>
     </ClInclude>
@@ -933,6 +941,9 @@
     </ClInclude>
     <ClInclude Include="..\public\Spider_Dead.h">
       <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Potion_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Potion_State</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1171,6 +1182,9 @@
     <ClCompile Include="..\Private\Player_BombardaSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_TransformationSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_TransformationSkill_State</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Player_ConfringoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State</Filter>
     </ClCompile>
@@ -1398,7 +1412,6 @@
     <ClCompile Include="..\private\Edg_Godae.cpp">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Player_Potion_State.cpp" />
     <ClCompile Include="..\Private\WiggenweldPotion.cpp">
       <Filter>GameObject\Player\Player_Potion</Filter>
     </ClCompile>
@@ -1410,6 +1423,9 @@
     </ClCompile>
     <ClCompile Include="..\private\Spider_Dead.cpp">
       <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Potion_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Potion_State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
