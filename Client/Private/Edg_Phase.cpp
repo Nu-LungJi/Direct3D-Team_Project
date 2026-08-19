@@ -48,6 +48,7 @@ void CEdg_Phase::Enter(CStateMachine* pStateMachine)
 	if (nullptr == pPhase) return;
 
 	m_ePhase = *pPhase;
+	pDragon->Set_WingParticlesEnabled(m_ePhase == DRAGON_PHASE::PHASE3);
 	m_eNum = EDG_SPAWN_NUMBER::FIRST;
 	m_eNextPhase = DRAGON_PHASE::END;
 	m_bNext = false;
@@ -91,6 +92,7 @@ void CEdg_Phase::Exit(CStateMachine* pStateMachine)
 {
 	auto pDragon = pStateMachine->GetOwner<CEnderDragon>();
 	if (nullptr == pDragon) return;
+	pDragon->Set_WingParticlesEnabled(true);
 
 	auto pBB = pDragon->Get_BlackBoard();
 	if (nullptr == pBB) return;
@@ -313,6 +315,9 @@ void CEdg_Phase::Before_Action5(CEnderDragon* pDragon, _float fTimeDelta)
 		pDragon->Play_Sound(Sound_Desc);
 		m_bSound = true;
 		m_bShake = true;
+		_float4x4 mat;
+		XMStoreFloat4x4(&mat, pDragon->GetTransform().GetLoadedWorldMatrix());
+		CGameInstance::Get().Spawn("RanrokLanding.json", mat);
 	}
 	if (pAnimator->GetFinish())
 	{
@@ -389,7 +394,8 @@ void CEdg_Phase::Phase_Change_Action(CEnderDragon* pDragon, _float fTimeDelta)
 
 	_float4x4 mat{};
 	XMStoreFloat4x4(&mat, pDragon->GetTransform().GetLoadedWorldMatrix());
-	CGameInstance::Get().Spawn("SpawnSmoke.json", mat);
+	if (m_ePhase != DRAGON_PHASE::PHASE3 && m_ePhase != DRAGON_PHASE::PHASE5)
+		CGameInstance::Get().Spawn("SpawnSmoke.json", mat);
 
 	if (m_ePhase == DRAGON_PHASE::PHASE5)
 	{

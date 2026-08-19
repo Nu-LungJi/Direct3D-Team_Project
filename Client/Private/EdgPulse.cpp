@@ -79,6 +79,9 @@ void CEdgPulse::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 	GetTransform().Update();
 	m_bActive = true;
 	m_bHit = false;
+	m_bPlayerHit = false;
+	m_bWorldStaticHit = false;
+	m_vClosestPointToPlayer = {};
 	m_fLife = 0.f;
 	m_fRadius = 1.5f;
 	Spawn_Skill_Effect(SkillTable.SkillName);
@@ -93,53 +96,124 @@ void CEdgPulse::Cancle()
 
 void CEdgPulse::ResetValue()
 {
+	if (m_iBurstParticleOwnerId != INVALID_PARTICLE_OWNER_ID)
+	{
+		CGameInstance::Get().ClearParticleOwner(m_iBurstParticleOwnerId);
+		m_iBurstParticleOwnerId = INVALID_PARTICLE_OWNER_ID;
+	}
+
 	__super::ResetValue();
+	m_bPlayerHit = false;
+	m_bWorldStaticHit = false;
+	m_vClosestPointToPlayer = {};
 }
 
 void CEdgPulse::Pulse(_float fTimeDelta)
 {
-	 _float4x4 BoneMatrix = Get_BoneMatrix(m_iBoneIndex);
+	_float4x4 BoneMatrix = Get_BoneMatrix(m_iBoneIndex);
 	_matrix matBone = XMLoadFloat4x4(&BoneMatrix);
-	_vector vQuat = XMQuaternionRotationMatrix(matBone);
-	m_fRadius += m_fSpeed * fTimeDelta;
-	if (PulseSweep(matBone.r[3]))
-	{
-		if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
-		GetTransform().SetPosition(matBone.r[3]);
-		GetTransform().Update();
-	}
 
+	m_fRadius += m_fSpeed * fTimeDelta;
+
+	GetTransform().SetPosition(matBone.r[3]);
+	GetTransform().Update();
+
+	PulseOverlap(matBone.r[3]);
+
+	if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
+		CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *GetTransform().GetWorldMatrix());
 }
 
-_bool CEdgPulse::PulseSweep(_vector vNextPos)
+void CEdgPulse::PulseOverlap(_vector vCenter)
 {
 	_float3 vPos = {};
-	XMStoreFloat3(&vPos, vNextPos);
-
-	PX_SWEEP_DESC SweepDesc{};
-	SweepDesc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
-	SweepDesc.tGeometry.fRadius = m_fRadius;
-	SweepDesc.tPose.vPosition = vPos;
-	SweepDesc.tFilter = m_pxQueryFilter;
+	XMStoreFloat3(&vPos, vCenter);
 
 	////////////////////////////////////
-	DebugLine(SweepDesc.tPose.vPosition);
+	DebugLine(vPos);
 	/////////////////////////////////////
 
-	PX_SWEEP_RESULT SweepResult{};
 	auto pPhysX = CGameInstance::Get().GetPhysXManager();
-	if (nullptr == pPhysX) return false;
+	if (nullptr == pPhysX)
+		return;
 
-	if (pPhysX->Sweep(SweepDesc, SweepResult) && SweepResult.bHit)
+	PX_OVERLAP_DESC OverlapDesc{};
+	OverlapDesc.tGeometry = { .eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = m_fRadius };
+	OverlapDesc.tPose = { .vPosition = vPos };
+
+	if (!m_bWorldStaticHit)
 	{
-		//auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(SweepResult.hGameObject);
-		//pTarget->OnQueryHit(m_fDamage);
+		OverlapDesc.tFilter = {
+			.iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC),
+			.bQueryStatic = true,
+			.bQueryDynamic = false,
+			.bIncludeTrigger = false
+		};
 
-		m_bHit = true;
-		return false;
+		PX_OVERLAP_RESULT WorldResult{};
+		if (pPhysX->Overlap(OverlapDesc, WorldResult) && WorldResult.bHit)
+		{
+			m_bWorldStaticHit = true;
+
+			auto pOwner = Get_Owner();
+			if (nullptr != pOwner)
+			{
+				auto pTarget = pOwner->Get_Target();
+				if (nullptr != pTarget)
+				{
+					_vector vPlayerPosition = XMLoadFloat3(&pTarget->GetTransform().GetPosition());
+					_float3 vEffectPosition = pOwner->GetTransform().GetPosition();
+					vEffectPosition.y = XMVectorGetY(vPlayerPosition) - 5.f;
+					m_vClosestPointToPlayer = vEffectPosition;
+
+					_vector vEffectForward = vPlayerPosition - XMLoadFloat3(&vEffectPosition);
+					if (XMVectorGetX(XMVector3LengthSq(vEffectForward)) <= FLT_EPSILON)
+						vEffectForward = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+					else
+						vEffectForward = XMVector3Normalize(vEffectForward);
+
+					_vector vWorldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+					if (fabsf(XMVectorGetX(XMVector3Dot(vEffectForward, vWorldUp))) > 0.999f)
+						vWorldUp = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+
+					_vector vEffectRight = XMVector3Normalize(XMVector3Cross(vWorldUp, vEffectForward));
+					_vector vEffectUp = XMVector3Normalize(XMVector3Cross(vEffectForward, vEffectRight));
+
+					_matrix matEffectWorld = XMMatrixIdentity();
+					matEffectWorld.r[0] = XMVectorSetW(vEffectRight, 0.f);
+					matEffectWorld.r[1] = XMVectorSetW(vEffectUp, 0.f);
+					matEffectWorld.r[2] = XMVectorSetW(vEffectForward, 0.f);
+					matEffectWorld.r[3] = XMVectorSetW(XMLoadFloat3(&vEffectPosition), 1.f);
+
+					_float4x4 effectWorld{};
+					XMStoreFloat4x4(&effectWorld, matEffectWorld);
+
+					m_iBurstParticleOwnerId = CGameInstance::Get().Spawn("Ranrok_BurstB.json", effectWorld);
+				}
+			}
+		}
 	}
-	return true;
+
+	if (!m_bPlayerHit)
+	{
+		OverlapDesc.tFilter = {
+			.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX),
+			.bQueryStatic = false,
+			.bQueryDynamic = true,
+			.bIncludeTrigger = false
+		};
+
+		PX_OVERLAP_RESULT PlayerResult{};
+		if (pPhysX->Overlap(OverlapDesc, PlayerResult) && PlayerResult.bHit)
+		{
+			auto pPlayer = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(PlayerResult.hGameObject);
+			if (nullptr != pPlayer)
+			{
+				m_bPlayerHit = true;
+				pPlayer->OnQueryHit(static_cast<int32_t>(m_fDamage), vPos);
+			}
+		}
+	}
 }
 
 E::UPtr<CEdgPulse> CEdgPulse::Create()

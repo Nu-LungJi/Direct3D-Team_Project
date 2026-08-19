@@ -643,6 +643,9 @@ void CEnderDragon::Spawn_EnvironmentParticles(uint32_t iParticleIndex, uint32_t 
 
 void CEnderDragon::Update_WingParticles(_float fTimeDelta)
 {
+	if (!m_bWingParticlesEnabled)
+		return;
+
 	m_fWingParticleSpawnAcc += fTimeDelta;
 	if (m_fWingParticleSpawnAcc < m_fWingParticleSpawnInterval)
 		return;

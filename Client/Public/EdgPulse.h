@@ -23,11 +23,17 @@ public:
 public:
 	void			Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos = XMVectorSet(0, 0, 0, 1)) override;
 	void			Cancle() override;
+	const _float3&	Get_ClosestPointToPlayer() const { return m_vClosestPointToPlayer; }
 
 private:
 	void			ResetValue()override;
 	void			Pulse(_float fTimeDelta);
-	_bool			PulseSweep(_vector vNextPos);
+	void			PulseOverlap(_vector vCenter);
+private:
+	_bool			m_bPlayerHit{ false };
+	_bool			m_bWorldStaticHit{ false };
+	_float3			m_vClosestPointToPlayer{};
+	uint32_t		m_iBurstParticleOwnerId{ INVALID_PARTICLE_OWNER_ID };
 public:
 	static E::UPtr<CEdgPulse> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
