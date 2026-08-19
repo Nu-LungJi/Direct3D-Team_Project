@@ -169,6 +169,7 @@ public:
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
 	void SetLumosActive(_bool bActive);
+	void SetLumosHoldAnimationIndex(int32_t iAnimation) { m_iLumosHoldAnimation = iAnimation; }
 	void ToggleLumos() { SetLumosActive(!m_bLumosActive); }
 	_bool IsLumosActive() const { return m_bLumosActive; }
 	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
@@ -338,6 +339,8 @@ private:
 	_float3 m_vLumosDebugWorldPosition{};
 	_float3 m_vPreviousLumosAttachPosition{};
 	_bool m_bHasPreviousLumosAttachPosition{};
+	int32_t m_iLumosHoldAnimation{ -1 };
+	void UpdateLumosHoldAnimation();
 	void UpdateLumosLight();
 	_bool TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const;
 	void UpdateWiggenweldPotion();

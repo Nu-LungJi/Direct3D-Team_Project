@@ -1462,6 +1462,8 @@ void CPlayer::UpdateLumosLight()
 		return;
 	}
 
+	UpdateLumosHoldAnimation();
+
 	_float4x4 matGlowWorld{};
 	if (!TryGetLumosGlowWorldMatrix(matGlowWorld))
 		return;
@@ -1508,6 +1510,24 @@ void CPlayer::UpdateLumosLight()
 		pLight->Set_LightPosition(vPosition);
 	else
 		m_hLumosLight.reset();
+}
+
+void CPlayer::UpdateLumosHoldAnimation()
+{
+	if (!m_bLumosActive || !m_pModelAnimator || m_iLumosHoldAnimation < 0)
+		return;
+
+	if (m_pModelAnimator->HasUpperAnimation() &&
+		!m_pModelAnimator->IsUpperAnimationFinished())
+	{
+		return;
+	}
+
+	// The Lumos state returns to locomotion immediately. Once its one-shot
+	// raise animation finishes, keep only the right arm in the looping hold
+	// pose so movement, turning, and jumping continue underneath it.
+	PlayUpperBodyAnimation(
+		m_iLumosHoldAnimation, "RightArm", 1, true, 0.18f);
 }
 
 _bool CPlayer::TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const

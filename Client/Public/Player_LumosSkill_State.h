@@ -10,6 +10,7 @@ public:
 
 private:
 	int32_t m_iStartAnimation{ -1 };
+	int32_t m_iHoldAnimation{ -1 };
 	int32_t m_iStopAnimation{ -1 };
 	_bool m_bAnimationCached{};
 	void CacheAnimation(const CPlayer& player);

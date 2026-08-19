@@ -16,6 +16,7 @@ void CPlayer_LumosSkill_State::Enter(CStateMachine* pStateMachine)
 
 	CacheAnimation(*pPlayer);
 	SetSkillControl(*pPlayer, false, false, false, false);
+	pPlayer->SetLumosHoldAnimationIndex(m_iHoldAnimation);
 
 	const _bool bTurningOff = pPlayer->IsLumosActive();
 	pPlayer->SetLumosActive(!bTurningOff);
@@ -59,6 +60,13 @@ void CPlayer_LumosSkill_State::CacheAnimation(const CPlayer& player)
 		return;
 	m_iStartAnimation = FindAnimationIndex(
 		player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Lumos_Start_anm.bin");
+	m_iHoldAnimation = FindAnimationIndex(
+		player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Lumos_Hold_anm.bin");
+	if (m_iHoldAnimation < 0)
+	{
+		m_iHoldAnimation = FindAnimationIndex(
+			player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Lumos_Hold_01_anm.bin");
+	}
 	m_iStopAnimation = FindAnimationIndex(
 		player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Lumos_Stop_anm.bin");
 	m_bAnimationCached = true;
