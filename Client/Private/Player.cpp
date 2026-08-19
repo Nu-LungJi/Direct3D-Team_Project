@@ -2036,6 +2036,12 @@ void CPlayer::UpdateWiggenweldPotion()
 	for (uint32_t axis = 0; axis < 3; ++axis)
 		socketMatrix.r[axis] = XMVector3Normalize(socketMatrix.r[axis]);
 
+	const _matrix potionPivotOffset = XMMatrixTranslation(
+		-0.120f,
+		-0.305f,
+		0.105f) *
+		socketMatrix;
+	socketMatrix = potionPivotOffset;
 	if (!pPotion->SetHeldPose(
 		socketMatrix * GetTransform().GetLoadedWorldMatrix()))
 	{
@@ -2043,9 +2049,9 @@ void CPlayer::UpdateWiggenweldPotion()
 		return;
 	}
 
+	// 팔을 내리는 마지막 구간까지 재생한 뒤에만 포션을 드롭한다.
 	if (m_pModelAnimator->HasUpperAnimation() &&
-		!m_pModelAnimator->IsUpperAnimationFinished() &&
-		m_pModelAnimator->GetUpperAnimRatio() < 0.92f)
+		!m_pModelAnimator->IsUpperAnimationFinished())
 		return;
 
 	_float3 vLook{};
