@@ -41,6 +41,9 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(gameInstance.LoadMap(CLevelHogwartWorldLoader::MAP_PATH, true)))
 		return E_FAIL;
 
+	if (FAILED(SpawnStaticCollision()))
+		return E_FAIL;
+
 	if (FAILED(SpawnTerrain(*hPlayer)))
 		return E_FAIL;
 
@@ -273,6 +276,20 @@ HRESULT CLevelHogwartWorld::SpawnMonster(std::optional<CHandle> hPlayer)
 		return E_FAIL;
 	}
 }
+HRESULT CLevelHogwartWorld::SpawnStaticCollision()
+{
+	auto handles = CGameInstance::Get()
+		.GetPhysXManager()
+		->CreateCollisionProxyObjectsFromFile(
+			"Level_HogwartWorld",
+			"00_MapCollision");
+
+	if (handles.empty())
+		return E_FAIL;
+
+	return S_OK;
+}
+
 UPtr<CLevelHogwartWorld> CLevelHogwartWorld::Create()
 {
 	auto instance = UPtr<CLevelHogwartWorld>(new CLevelHogwartWorld{});
