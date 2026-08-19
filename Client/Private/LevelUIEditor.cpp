@@ -16,6 +16,7 @@
 #include "FlipbookUI.h"
 #include "EffectUI.h"
 #include "UIManager.h"
+#include "UITextureResourceLoader.h"
 
 
 namespace fs = std::filesystem;
@@ -1495,55 +1496,8 @@ void CLevelUIEditor::RefreshTextureResources()
 {
 	const fs::path textureDirectory =
 		"./Resources/SampleClient/Textures/UI/TexUI";
-	std::error_code error{};
-	if (fs::exists(textureDirectory, error) &&
-		fs::is_directory(textureDirectory, error))
-	{
-		for (fs::directory_iterator iterator{
-				textureDirectory,
-				fs::directory_options::skip_permission_denied,
-				error }, end;
-			iterator != end;
-			iterator.increment(error))
-		{
-			if (error)
-			{
-				error.clear();
-				continue;
-			}
-			if (!iterator->is_regular_file(error))
-				continue;
-
-			std::string extension = iterator->path().extension().string();
-			std::ranges::transform(
-				extension,
-				extension.begin(),
-				[](unsigned char character)
-				{
-					return static_cast<char>(std::tolower(character));
-				});
-			if (extension != ".png")
-				continue;
-
-			const std::string resourceTag =
-				"TEX_" + iterator->path().stem().string();
-			auto resource = E::CGameInstance::Get().
-				GetResourceFirst<E::CResTexture2D>(
-					"LEVEL_UIEDITOR",
-					resourceTag);
-			if (!resource)
-			{
-				resource = std::dynamic_pointer_cast<E::CResTexture2D>(
-					E::CGameInstance::Get().AddResource(
-						"LEVEL_UIEDITOR",
-						resourceTag,
-						E::CResTexture2D::Create(
-							iterator->path().generic_string())));
-			}
-			if (resource && !resource->GetSRV())
-				resource->Load();
-		}
-	}
+	UITextureResourceLoader::LoadDirectory(
+		"LEVEL_UIEDITOR", textureDirectory);
 
 	m_vResTag.clear();
 	const auto resourceMap = E::CGameInstance::Get().
@@ -1604,6 +1558,12 @@ void CLevelUIEditor::RefreshFlipbookResources()
 		if (extension != ".png" && extension != ".dds" &&
 			extension != ".jpg" && extension != ".jpeg" &&
 			extension != ".tga")
+		{
+			continue;
+		}
+		if (extension == ".png" &&
+			UITextureResourceLoader::ResolvePreferredPath(iterator->path()) !=
+				iterator->path().generic_string())
 		{
 			continue;
 		}

@@ -12,6 +12,7 @@
 #include "MiniMap.h"
 #include "GameOverMask.h"
 #include "VideoObject.h"
+#include "UITextureResourceLoader.h"
 
 NS_USING(Client)
 
@@ -76,24 +77,24 @@ std::future<bool> CLevelUIEditorLoader::Load()
 			{
 				res->Load();
 			}
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_MAP", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/T_Map_OverlandPaper_D.png")))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_MAP", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/T_Map_OverlandPaper_D.png"))))
 			{
 				res->Load();
 			}
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Back_4k", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Back_4k.png")))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Back_4k", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Back_4k.png"))))
 			{
 				res->Load();
 			}
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Ready_4k", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Ready_4k.png")))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Ready_4k", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Ready_4k.png"))))
 			{
 				res->Load();
 			}
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Outer_4k", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Outer_4k.png")))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_NurtureMeterDiamond_Outer_4k", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/TexUI/UI_T_NurtureMeterDiamond_Outer_4k.png"))))
 			{
 				res->Load();
 			}
 			/* Mask */
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "MASK_UI_T_ButtonFlameTopClamp", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/UI_T_ButtonFlameTopClamp.png")))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "MASK_UI_T_ButtonFlameTopClamp", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/TexUI/UI_T_ButtonFlameTopClamp.png"))))
 			{
 				res->Load();
 			}
@@ -120,6 +121,13 @@ std::future<bool> CLevelUIEditorLoader::Load()
 						}
 						if (!iterator->is_regular_file(error) ||
 							!IsSupportedFlipbookTexture(iterator->path()))
+						{
+							continue;
+						}
+						if (UITextureResourceLoader::ToLowerExtension(
+							iterator->path()) == ".png" &&
+							UITextureResourceLoader::ResolvePreferredPath(
+								iterator->path()) != iterator->path().generic_string())
 						{
 							continue;
 						}
@@ -151,55 +159,34 @@ std::future<bool> CLevelUIEditorLoader::Load()
 					}
 				}
 			}
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_T_WaterCaustics_Disorder_A", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/T_WaterCaustics_Disorder_A.png")))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_T_WaterCaustics_Disorder_A", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/T_WaterCaustics_Disorder_A.png"))))
 			{
 				res->Load();
 			}
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_spellmeter_Generic", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/UI_T_spellmeter_Generic.png")))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_spellmeter_Generic", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/UI_T_spellmeter_Generic.png"))))
 			{
 				res->Load();
 			}
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_VFX_T_Wavy_N", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/VFX_T_Wavy_N.png")))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_VFX_T_Wavy_N", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/VFX_T_Wavy_N.png"))))
 			{
 				res->Load();
 			}
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_VFX_T_WispyNoise_D", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/VFX_T_WispyNoise_D.png")))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_VFX_T_WispyNoise_D", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/VFX_T_WispyNoise_D.png"))))
 			{
 				res->Load();
 			}
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_T_CollectionsMeterLine_A", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/T_CollectionsMeterLine_A.png")))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_T_CollectionsMeterLine_A", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/T_CollectionsMeterLine_A.png"))))
 			{
 				res->Load();
 			}
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_arrestomomentum", E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/UI_T_arrestomomentum.png")))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_UI_T_arrestomomentum", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/TexUI/SpellMeter/UI_T_arrestomomentum.png"))))
 			{
 				res->Load();
 			}
 			{
-				namespace fs = std::filesystem;
-
-				std::string targetDir = "./Resources/SampleClient/Textures/UI/TexUI";
-
-				if (fs::exists(targetDir) && fs::is_directory(targetDir))
-				{
-					for (const auto& entry : fs::directory_iterator(targetDir))
-					{
-						if (entry.is_regular_file() && entry.path().extension() == ".png")
-						{
-							std::string fileName = entry.path().stem().string();
-
-
-							std::string resTag = "TEX_" + fileName;
-
-							std::string fullPath = entry.path().generic_string();
-
-							if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", resTag, E::CResTexture2D::Create(fullPath)))
-							{
-								res->Load();
-							}
-						}
-					}
-				}
+				UITextureResourceLoader::LoadDirectory(
+					"LEVEL_UIEDITOR",
+					"./Resources/SampleClient/Textures/UI/TexUI");
 			}
 
 			// 워커 스레드

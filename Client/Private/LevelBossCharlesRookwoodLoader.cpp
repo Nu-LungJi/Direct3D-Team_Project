@@ -19,6 +19,7 @@
 #include "VideoObject.h"
 #include "Cursor.h"
 #include "SpellMiniGame.h"
+#include "UITextureResourceLoader.h"
 
 #include "DebugPlayer.h"
 #include "DebugPlayerThirdPersonCamera.h"
@@ -336,8 +337,6 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 	/**********************UI********************/
 	{
 		{
-			namespace fs = std::filesystem;
-
 			const char* targetDirectories[] = {
 				"./Resources/SampleClient/Textures/UI/UITexture/PlayScreen",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
@@ -346,27 +345,9 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame"
 			};
 
-			// 배열을 순회하며 기존 로직을 한 번만 작성하여 처리합니다.
 			for (const auto& targetDir : targetDirectories)
-			{
-				if (fs::exists(targetDir) && fs::is_directory(targetDir))
-				{
-					for (const auto& entry : fs::directory_iterator(targetDir))
-					{
-						if (entry.is_regular_file() && entry.path().extension() == ".png")
-						{
-							std::string fileName = entry.path().stem().string();
-							std::string resTag = "TEX_" + fileName;
-							std::string fullPath = entry.path().generic_string();
-
-							if (auto res = E::CGameInstance::Get().AddResource("LEVEL_BOSS_CHARLES_ROOKWOOD", resTag, E::CResTexture2D::Create(fullPath)))
-							{
-								res->Load();
-							}
-						}
-					}
-				}
-			}
+				UITextureResourceLoader::LoadDirectory(
+					"LEVEL_BOSS_CHARLES_ROOKWOOD", targetDir);
 		}
 
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_TextureUI", CTextureUI::Create())))

@@ -350,8 +350,9 @@
     <ClInclude Include="..\Public\TombBossBullet.h" />
     <ClInclude Include="..\public\TriggerCRW_SpawnMonster1.h" />
     <ClInclude Include="..\Public\UIController.h" />
-    <ClInclude Include="..\Public\UIManager.h" />
-    <ClInclude Include="..\Public\UI_Enums.h" />
+	<ClInclude Include="..\Public\UIManager.h" />
+	<ClInclude Include="..\Public\UITextureResourceLoader.h" />
+	<ClInclude Include="..\Public\UI_Enums.h" />
     <ClInclude Include="..\Public\Player_Weapon.h" />
     <ClInclude Include="..\Public\Player_Broom.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />

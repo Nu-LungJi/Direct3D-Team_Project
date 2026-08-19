@@ -681,9 +681,12 @@
     <ClInclude Include="..\Public\UI_Enums.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\UIManager.h">
-      <Filter>GameObject\UI</Filter>
-    </ClInclude>
+	<ClInclude Include="..\Public\UIManager.h">
+	  <Filter>GameObject\UI</Filter>
+	</ClInclude>
+	<ClInclude Include="..\Public\UITextureResourceLoader.h">
+	  <Filter>GameObject\UI</Filter>
+	</ClInclude>
     <ClInclude Include="..\Public\Button.h">
       <Filter>GameObject\UI\Button</Filter>
     </ClInclude>
