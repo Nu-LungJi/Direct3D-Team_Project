@@ -6,7 +6,7 @@
 #include "DbgLineRender.h"
 #include "PhysXManager.h"
 #include "SoundManager.h"
-
+#include "SkillTarget.h"
 NS_USING(Client)
 
 CPlayer_Bombarda_Bullet::CPlayer_Bombarda_Bullet() = default;
@@ -174,6 +174,18 @@ void CPlayer_Bombarda_Bullet::FixedUpdate(_float fTimeDelta)
 		PX_SWEEP_RESULT Hit{};
 		if (SweepTo(vMoveStart, vMoveEnd, Hit))
 		{
+			//충돌추가
+			if (auto* pHitObject =
+				CGameInstance::Get().GetGameObjectByHandle(
+					Hit.hGameObject))
+			{
+				if (auto* pSkillTarget =
+					dynamic_cast<CSkillTarget*>(pHitObject))
+				{
+					pSkillTarget->Check_Table(
+						PLAYER_SKILL_TYPE::BOMBARDA);
+				}
+			}
 			_float3 vHitPosition{};
 			XMStoreFloat3(
 				&vHitPosition,

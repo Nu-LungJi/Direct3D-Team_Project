@@ -274,7 +274,7 @@ _bool CPlayer_ConfringoController::FireProjectile()
 	Desc.vStartPosition = startPosition;
 	Desc.vEndPosition = targetPosition;
 	Desc.hOwner = m_Owner.GetHandle();
-	Desc.eSkillType = PLAYER_SKILL_TYPE::ATTACK;
+	Desc.eSkillType = PLAYER_SKILL_TYPE::CONFRIGO;
 	Desc.bDebugDraw = false;
 
 	const auto hProjectile = CGameInstance::Get().AddGameObjectToLayer(

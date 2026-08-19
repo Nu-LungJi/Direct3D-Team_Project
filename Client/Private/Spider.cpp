@@ -21,6 +21,7 @@
 #include "Spider_Spawn.h"
 #include "Spider_Combat.h"
 #include "Spider_Hit.h"
+#include "Spider_Dead.h"
 //BB
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
@@ -59,7 +60,7 @@ HRESULT CSpider::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-	m_iHp = m_iMaxHp = 555;
+	m_iHp = m_iMaxHp = 35;
 
 	{
 		CComPxRigidBody::DESC Desc{};
@@ -236,6 +237,7 @@ HRESULT CSpider::Ready_Fsm(const _string& LevelTag)
 	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CSpider_Combat::Create(LevelTag))) return E_FAIL;
 	
 	if (false == m_pFsm->Add_State(MON_STATE::HIT, CSpider_Hit::Create(LevelTag,this))) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::DEAD, CSpider_Dead::Create())) return E_FAIL;
 
 	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
 
@@ -259,6 +261,11 @@ void CSpider::Ready_BBKeyValue()
 }
 void CSpider::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_iHp <= 0.f)
+	{
+		m_pFsm->Request_State(MON_STATE::DEAD);
+	}
+	if (!m_bSpawn) return;
 	if (m_bEndGame)
 	{
 		SetPendingDestroy();
@@ -273,6 +280,7 @@ void CSpider::PriorityUpdate(E::_float fTimeDelta)
 
 void CSpider::Update(E::_float fTimeDelta)
 {
+	if (!m_bSpawn) return;
 	if (m_bEndGame) return;
 	__super::Update(fTimeDelta);
 
@@ -280,11 +288,13 @@ void CSpider::Update(E::_float fTimeDelta)
 
 void CSpider::FixedUpdate(E::_float fTimeDelta)
 {
+	if (!m_bSpawn) return;
 	if (m_bEndGame) return;
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 void CSpider::LateUpdate(E::_float fTimeDelta)
 {
+	if (!m_bSpawn) return;
 	m_pFsm->LateUpdate(fTimeDelta);
 	__super::LateUpdate(fTimeDelta);
 
@@ -324,6 +334,12 @@ _string CSpider::Get_SkillName(ATTMON SkillNode)
 
 _bool CSpider::Check_Table(PLAYER_SKILL_TYPE eType)
 {
+	if (eType == PLAYER_SKILL_TYPE::ACIENT_LIGHTNING || eType == PLAYER_SKILL_TYPE::ABRA)
+		m_iHp = 0;
+
+	if (m_iHp <= 0.f || m_pFsm->GetCurState() == MON_STATE::DEAD)
+		return false;
+
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
 		return false;
 

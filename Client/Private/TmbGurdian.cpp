@@ -24,6 +24,7 @@
 #include "Mon_State.h"
 #include "Gur_Hit.h"
 #include "Gur_Combat.h"
+#include "Gur_Spawn.h"
 NS_USING(Client)
 
 namespace
@@ -808,6 +809,10 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	ReadySound();
 	return S_OK;
 }
+void				CTmbGurdian::Ready_BBKeyValue()
+{
+
+}
 HRESULT CTmbGurdian::Ready_Fsm(const _string& LevelTag)
 {
 	if (m_eMonType != MONSTER_TYPE::NORMAL)
@@ -820,8 +825,10 @@ HRESULT CTmbGurdian::Ready_Fsm(const _string& LevelTag)
 	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CGur_Combat::Create(LevelTag))) return E_FAIL;
 
 	if (false == m_pFsm->Add_State(MON_STATE::HIT, CGur_Hit::Create(LevelTag, this))) return E_FAIL;
-	
-	if (false == m_pFsm->Initialize_State(MON_STATE::COMBAT)) return E_FAIL;
+
+	if (false == m_pFsm->Add_State(MON_STATE::SPAWN, CGur_Spawn::Create(LevelTag))) return E_FAIL;
+
+	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
 
 
 	return S_OK;
@@ -872,7 +879,14 @@ void CTmbGurdian::Active_Skill()
 
 
 }
+void CTmbGurdian::Set_StateFinished(_bool bFinished)
+{
+	//스테이트가 완료된 판정에 대해서 다시 초기회
+	auto pBB = Get_BlackBoard();
+	if (nullptr == pBB) return;
 
+	pBB->Set_Value(EDG_KEY::BSTATE_FINISHED, bFinished);
+}
 void CTmbGurdian::ReadySound()
 {
 	m_SoundTable["TmbWalk"] = { "./Resources/SampleClient/Sound/PensiveKnight/Foot_Impact/Foot_Impact_Walk1.wav",
@@ -966,6 +980,17 @@ void	CTmbGurdian::Update_BBToFsm()
 		return;
 
 	pBB->Set_Value(EDG_KEY::STATE, m_pFsm->GetCurState());
+}
+_bool CTmbGurdian::Is_StateFinished()
+{
+	//스테이트가 끝났는지 확인
+	auto pBB = Get_BlackBoard();
+	if (nullptr == pBB) return false;
+
+	auto pbFinished = pBB->Get_Value<_bool>(EDG_KEY::BSTATE_FINISHED);
+	if (nullptr == pbFinished) return false;
+
+	return *pbFinished;
 }
 void CTmbGurdian::Update(E::_float fTimeDelta)
 {

@@ -7,7 +7,7 @@
 #include "Player_Weapon.h"
 #include "Particle.h"
 #include "NvClothCape.h"
-
+#include "SkillTarget.h"
 NS_BEGIN(Client)
 
 CPlayer_AvadaKedavraController::CPlayer_AvadaKedavraController(CPlayer& Owner)
@@ -255,6 +255,18 @@ _bool CPlayer_AvadaKedavraController::ReleaseSpell()
 
 	// [LSY] 현재는 연출만 연결되어 있다. 실제 즉사/피해 처리는
 	// m_Owner.GetTargetHandle()을 대상으로 이 지점에 연결한다.
+	//충돌추가
+	if (auto* pTargetObject =
+		CGameInstance::Get().GetGameObjectByHandle(
+			m_Owner.GetTargetHandle()))
+	{
+		if (auto* pSkillTarget =
+			dynamic_cast<CSkillTarget*>(pTargetObject))
+		{
+			pSkillTarget->Check_Table(
+				PLAYER_SKILL_TYPE::ABRA);
+		}
+	}
 	m_vPendingImpactPosition = effectTargetPosition;
 	m_fImpactDelayRemaining = IMPACT_DELAY;
 	m_bImpactPending = true;

@@ -34,9 +34,13 @@ public:
 	_string						Get_SkillName(ATTMON SkillNode)override;
 	const _float				Get_Damage() override;
 	_bool						Check_Table(PLAYER_SKILL_TYPE eType) override;
+	
 
+	_bool						Is_StateFinished();
+	void						Set_StateFinished(_bool bFinished);
 	void						Set_Gravity(_bool bGravity);
 private:
+	void						Ready_BBKeyValue();
 	HRESULT						Ready_Fsm(const _string& LevelTag);
 	void						Damaged(PLAYER_SKILL_TYPE eType) override;
 	void						Active_Skill();

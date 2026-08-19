@@ -53,7 +53,7 @@ HRESULT CGur_Hit::Initialize(const _string& strLevelTag, CTmbGurdian* pTmb)
 
 	{
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::GROUND_SLAM)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Descendo_Grnd_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Descendo_Grnd_anm.bin"),.fBlend = 0.1f,.SkillName = "Descendo_Enemy",.fSkillRatio = 0.4f});
 
 
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::AIR)].push_back(MON_ANIM_FSM{ .iAnimIndex =
@@ -63,7 +63,7 @@ HRESULT CGur_Hit::Initialize(const _string& strLevelTag, CTmbGurdian* pTmb)
 		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Send_Fwd_Loop_anm.bin"),.fBlend = 0.1f });
 
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::REBOUND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
-		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Slam_FU_BounceUp_Fwd_anm.bin"),.fBlend = 0.1f });
+		pTmb->Find_AnimIndex("AN_SK_GOL_TombProtectorGrunt_LOD0_Skeleton_TMBG_Rct_Slam_FU_BounceUp_Fwd_anm.bin"),.fBlend = 0.1f ,.SkillName = "Descendo_Enemy",.fSkillRatio = 0.4f });
 
 
 		m_Anims[ETOUI(HIT_TYPE::SLAM)][ETOUI(HIT_MOTION::LAND)].push_back(MON_ANIM_FSM{ .iAnimIndex =
@@ -98,10 +98,12 @@ void CGur_Hit::Enter(CStateMachine* pStateMachine)
 	if (!pTmb->Activate_PendingHit())
 		return;
 	MON_HIT_INFO Pending = pTmb->Get_ActiveHitInfo();
-	m_HitTable.eHitType = Reactive_TableMotion(Pending.eHitType, pTmb->Is_Grounded());
+	m_HitTable.eHitType = Reactive_TableMotion(Pending.eHitType, pTmb->Is_Grounded(),pTmb);
 	m_HitTable.eSkillType = Pending.eHitType;
 
+	m_Anims[ETOUI(HIT_TYPE::END)][ETOUI(HIT_MOTION::END)];
 	m_iAnimIndex = 0;
+	ResetEffect();
 }
 
 void CGur_Hit::Exit(CStateMachine* pStateMachine)
@@ -176,9 +178,9 @@ void CGur_Hit::MoveIntent(CTmbGurdian* pTmb, _float3 vDir, _float fSpeed)
 }
 
 
-HIT_TYPE CGur_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround)
+HIT_TYPE CGur_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround, CTmbGurdian* pTmb)
 {
-
+	
 	switch (eType)
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
@@ -190,6 +192,7 @@ HIT_TYPE CGur_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround
 			m_HitTable.eHitMotion = HIT_MOTION::NORMAL;
 		return HIT_TYPE::NORMAL;
 	case PLAYER_SKILL_TYPE::ACCIO:
+		Effect(pTmb,"AccioGrab");
 		m_HitTable.eHitMotion = HIT_MOTION::AIR;
 		return HIT_TYPE::LAUNCH;
 	case PLAYER_SKILL_TYPE::DEPULSO:
@@ -229,7 +232,7 @@ void CGur_Hit::Check_PendingHit(CTmbGurdian* pTmb)
 	if (m_HitTable.eSkillType == HitInfo.eHitType && !bRestart)
 		return;
 
-	m_HitTable.eHitType = Reactive_TableMotion(HitInfo.eHitType, pTmb->Is_Grounded());
+	m_HitTable.eHitType = Reactive_TableMotion(HitInfo.eHitType, pTmb->Is_Grounded(),pTmb);
 
 
 	m_HitTable.eSkillType = HitInfo.eHitType;
@@ -296,6 +299,7 @@ void CGur_Hit::MotionToPlay(CTmbGurdian* pTmb, CComAnimator* pAnimator, CMon_Sta
 		case HIT_MOTION::AIR:
 			if (PlayAnim(pAnimator))
 				ChangeMotion(HIT_MOTION::FALLING);
+			Effect_Loop(pTmb);
 			break;
 		case HIT_MOTION::FALLING:
 			PlayAnim(pAnimator, true);
@@ -317,7 +321,10 @@ void CGur_Hit::MotionToPlay(CTmbGurdian* pTmb, CComAnimator* pAnimator, CMon_Sta
 		{
 		case HIT_MOTION::GROUND_SLAM:
 			if (PlayAnim(pAnimator))
+			{
+				ResetEffect();
 				ChangeMotion(HIT_MOTION::LAND);
+			}
 			break;
 		case HIT_MOTION::FALLING:
 			PlayAnim(pAnimator, true);
@@ -335,12 +342,17 @@ void CGur_Hit::MotionToPlay(CTmbGurdian* pTmb, CComAnimator* pAnimator, CMon_Sta
 			break;
 		case HIT_MOTION::LAND:
 			if (PlayAnim(pAnimator))
+
 				Finishied(pTmbState);
-	
+			
 			break;
 		case HIT_MOTION::REBOUND:
 			if (PlayAnim(pAnimator, false))
+			{
+				ResetEffect();
 				ChangeMotion(HIT_MOTION::FALLING);
+			}
+				
 			Jump(pTmb, 6.f, false);
 			break;
 		}
@@ -384,11 +396,22 @@ void CGur_Hit::MotionToPlay(CTmbGurdian* pTmb, CComAnimator* pAnimator, CMon_Sta
 _bool CGur_Hit::PlayAnim(CComAnimator* pAnimator, _bool bLoop)
 {
 	if (nullptr == pAnimator) return true;
+	auto pSrc = Cast<CTmbGurdian>(pAnimator->GetGameObject());
+	if (nullptr == pSrc) return true;
 
 	if (m_iAnimIndex >= m_Anims[ETOUI(m_HitTable.eHitType)][ETOUI(m_HitTable.eHitMotion)].size()) return true;
 
-	auto pAnim = m_Anims[ETOUI(m_HitTable.eHitType)][ETOUI(m_HitTable.eHitMotion)];
+	auto& pAnim = m_Anims[ETOUI(m_HitTable.eHitType)][ETOUI(m_HitTable.eHitMotion)];
 
+	if (pAnim[m_iAnimIndex].fSkillRatio != 0.f)
+	{
+		_float fRatio = pAnimator->GetPlayAnimRatio();
+		if (false == pAnim[m_iAnimIndex].bSkill && fRatio >= pAnim[m_iAnimIndex].fSkillRatio)
+		{
+			Effect(pSrc, pAnim[m_iAnimIndex].SkillName);
+			pAnim[m_iAnimIndex].bSkill = true;
+		}
+	}
 	pAnimator->Play_Anim(pAnim[m_iAnimIndex].iAnimIndex, bLoop, pAnim[m_iAnimIndex].fBlend);
 
 	if (!bLoop && pAnimator->GetFinish())
@@ -408,6 +431,32 @@ void CGur_Hit::ChangeMotion(HIT_MOTION eMotion)
 
 	m_HitTable.eHitMotion = eMotion;
 	m_iAnimIndex = 0;
+}
+void CGur_Hit::Effect_Loop(CTmbGurdian* pTmb)
+{
+	if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
+		CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *pTmb->GetTransform().GetWorldMatrix());
+}
+void CGur_Hit::Effect(CTmbGurdian* pTmb, const _string& SkillName)
+{
+	m_iSkillEffID = CGameInstance::Get().PlayEffect(SkillName, *pTmb->GetTransform().GetWorldMatrix(), _vector{},
+		[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+		{
+			if (effectId != m_iSkillEffID)
+				return;
+			m_iSkillEffID = INVALID_EFFECT_INSTANCE_ID;
+		});
+}
+void CGur_Hit::ResetEffect()
+{
+	for (uint32_t i = 0; i < ETOUI(HIT_TYPE::END); ++i)
+	{
+		for (uint32_t j = 0; j < ETOUI(HIT_MOTION::END); ++j)
+		{
+			for (auto& pSrc : m_Anims[i][j])
+				pSrc.bSkill = false;
+		}
+	}
 }
 void				CGur_Hit::Set_Gravity(_bool bGravity, CTmbGurdian* pTmb)
 {

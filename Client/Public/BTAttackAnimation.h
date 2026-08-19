@@ -16,6 +16,7 @@ typedef struct strattskillevent
 	_float fRatio{}, fLifeTime{};
 	ATTMON eSkill{ATTMON::END};
 	_bool bTrigger{ false };
+	_bool bDefault{ false };
 }ATT_SKILL_EVENT;
 public:
 	DECLARE_DERIVED_TYPE(CBTAttackAnimation, CBTAnimRoot)

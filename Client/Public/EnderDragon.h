@@ -1,7 +1,7 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
-enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL, TURNBREATH, THREEBALL, BLACKBALL,LONGBREATH,GASI,GASIBREATH,END};
+enum class DRAGON_SKILL{BOOM,BREATH,FIREBALL,PULSE,RANDOMBALL, TURNBREATH, THREEBALL, BLACKBALL,LONGBREATH,GASI,GASIBREATH,GROUND, END};
 enum class DRAGON_PHASE{PHASE1, PHASE2, PHASE3, PHASE4, PHASE5, PHASE6, PHASE7, END};
 enum class EDG_SPAWN_NUMBER { FIRST, SECOND, THIRD, FOUR };
 
@@ -152,6 +152,7 @@ private:
 	_float						m_fWingParticleSpawnAcc{};
 	_float						m_fWingParticleSpawnInterval{ 0.1f };
 	_bool						m_bWingParticlesEnabled{ true };
+	uint32_t					m_iDefaultEffectID{};
 public:
 	static E::UPtr<CEnderDragon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
