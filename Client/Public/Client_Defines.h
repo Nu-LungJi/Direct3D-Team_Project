@@ -94,6 +94,7 @@ namespace Client
 		Prototype_GameObject_BossBall,
 		Prototype_GameObject_TombBossBullet,
 		Prototype_GameObject_PlayerBombardaBullet,
+		Prototype_GameObject_Water,
 	};
 
 	enum class PROTO_COMPONENT
