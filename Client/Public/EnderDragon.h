@@ -59,7 +59,7 @@ public:
 	HRESULT						Ready_Fsm(const _string& LevelTag);
 	HRESULT						Ready_Skill(const _string& LevelTag);
 	void						Ready_BBKeyValue();
-
+	void						ReadySound();
 	/*----------- 광윤 추가 -----------*/ // MaskMap Test
 	HRESULT						Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	HRESULT						Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) override;
@@ -86,17 +86,20 @@ private:
 	SPtr<CResTexture2D> 	m_pCausticNoiseTexture{};
 	SPtr<CResTexture2D> 	m_pDetailNoiseTexture{};
 
+	SPtr<CResPixelShader>	m_pResDragonEyePixelShader{};
 	SPtr<CResPixelShader>	m_pResDragonBodyPixelShader{};
 	SPtr<CResPixelShader>	m_pResDragonWingPixelShader{};
 	SPtr<CResPixelShader>	m_pResDragonWingFXPixelShader{};
 
 	SPtr<CResDepthStencilState>	m_pResWingFXDSS{};
 	SPtr<CResRasterizerState>	m_pResWingFXRasterizer{};
+
+	CComModelInstance*		m_pComOutlineModelInstance{};
 	/*---------------------------------*/
 
 public:
 	_string						Get_SkillName(ATTMON SkillNode)override;
-
+	
 	void						Set_StateFinished(_bool bFinished);
 	void						Set_Break(_bool bHit) { m_bIsBreak = bHit; }
 
@@ -121,7 +124,10 @@ private:
 	void						InitializeEffects();
 	void						Update_EnvironmentParticles(_float fTimeDelta);
 	void						Spawn_EnvironmentParticles(uint32_t iParticleIndex, uint32_t iCount);
+	void						Update_WingParticles(_float fTimeDelta);
+	void						Spawn_WingParticle(int32_t iBoneIndex);
 
+	void						Stuck() override;
 private:
 	class CEnderDragon_State* m_pFsm{ nullptr };
 	
@@ -136,8 +142,14 @@ private:
 	std::array<_bool, ETOUI(DRAGON_PHASE::END)>	m_bPhaseLock{ false };
 	_float						m_fBlobEnvSpawnAcc{};
 	_float						m_fSwirlEnvSpawnAcc{};
-	_float						m_fBlobEnvSpawnInterval{ 0.35f };
-	_float						m_fSwirlEnvSpawnInterval{ 1.f };
+	_float						m_fBlobEnvSpawnInterval{ 0.25f };
+	_float						m_fSwirlEnvSpawnInterval{ 0.6f };
+	int32_t						m_iLeft1WingParticleBoneIndex{ -1 };
+	int32_t						m_iRight1WingParticleBoneIndex{ -1 };
+	int32_t						m_iLeft2WingParticleBoneIndex{ -1 };
+	int32_t						m_iRight2WingParticleBoneIndex{ -1 };
+	_float						m_fWingParticleSpawnAcc{};
+	_float						m_fWingParticleSpawnInterval{ 0.1f };
 public:
 	static E::UPtr<CEnderDragon> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

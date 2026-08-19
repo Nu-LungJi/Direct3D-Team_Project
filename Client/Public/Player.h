@@ -165,6 +165,7 @@ public:
 	void ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_float fTimeDelta);
 	void ApplyGroundFollow(_float fFixedTimeDelta);
 	void PrepareLocomotionResume();
+	_bool StartWiggenweldPotionUse();
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
 	void SetLumosActive(_bool bActive);
@@ -177,7 +178,7 @@ public:
 	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
 	void SetFlyRequested(_bool bRequested);
 	_bool IsFlyRequested() const { return m_bFlyRequested; }
-	
+
 	_bool GetRenderInfluence() { return m_bRenderInfluence; }
 	void SetRenderInfluence(_bool _RenderInfluence) { m_bRenderInfluence = _RenderInfluence; }
 
@@ -189,6 +190,10 @@ public:
 	void SetBroomMovementRatio(_float fRatio);
 	void SetBroomBoostEffectRatio(_float fRatio);
 	_bool IsBroomVisible() const;
+	CHandle GetBroomHandle() const
+	{
+		return m_Partes[ETOUI(PARTES::BROOM)];
+	}
 
 
 	_bool GetInvincible() const { return m_bInvincible; }
@@ -328,6 +333,10 @@ private:
 	_bool m_bHasPreviousLumosAttachPosition{};
 	void UpdateLumosLight();
 	_bool TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const;
+	void UpdateWiggenweldPotion();
+	CHandle m_hWiggenweldPotion{};
+	int32_t m_iWiggenweldPotionBoneIndex{ -1 };
+	_bool m_bWiggenweldPotionDropped{};
 
 #pragma region RAGDOLL
 	friend class CPlayerRagdollController;
@@ -382,6 +391,14 @@ public:
 private:
 	HRESULT InitializeAvadaKedavra();
 	UPtr<CPlayer_AvadaKedavraController> m_pAvadaKedavraController{};
+#pragma endregion
+
+#pragma region CAPE
+public:
+	CHandle GetCapeHandle() const { return m_hCape; }
+	void SetCapeHandle(CHandle h) { m_hCape = h; }
+private:
+	CHandle m_hCape{};
 #pragma endregion
 
 private:

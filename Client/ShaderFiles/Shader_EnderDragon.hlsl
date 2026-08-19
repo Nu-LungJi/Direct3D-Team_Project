@@ -15,6 +15,8 @@ Texture2D DefaultNoiseTexture	: register(t13);
 static const float DissolveEdgeWidth = 0.025f;
 static const float DRAGON_ALPHA_CLIP = 0.3333f;
 
+static const float3 Luminance = float3(0.2126f, 0.7152f, 0.0722f);
+
 struct PS_IN
 {
 	float4 vPosition : SV_POSITION;
@@ -71,6 +73,20 @@ float3 Dragon_SRGBToLinear(float3 Color)
 
 	return lerp(Low, High, step(0.04045f, Color));
 }
+PS_OUT PSMain_DragonEye(PS_IN IN)
+{
+	PS_OUT OUT;
+	
+	float3	EyeEmissiveColor = float3(1.f, 1.f, 1.f);
+	float	EyeEmissiveIntensity = 5.f;
+	
+	OUT.vDiffuse	= float4(0.f, 0.f, 0.f, 1.f);
+	OUT.vNormal		= float4(0.f, 0.f, 0.f, 1.f);
+	OUT.vSMRO		= float4(0.f, 0.f, 0.f, 1.f);
+	OUT.vEmissive	= float4(EyeEmissiveColor * EyeEmissiveIntensity, 1.f);
+	
+	return OUT;
+}
 
 PS_OUT PSMain_DragonWing(PS_IN IN)
 {
@@ -86,7 +102,7 @@ PS_OUT PSMain_DragonWing(PS_IN IN)
 	float3	SMRO = g_SMROTexture.Sample(LinearWrap, UV).rgb;
 	float4	MaterialMask = g_MaterialMaskTexture.Sample(LinearWrap, UV);
 	
-	float	DiffuseLuma = dot(Diffuse.rgb, float3(0.2126f, 0.7152f, 0.0722f));
+	float	DiffuseLuma = dot(Diffuse.rgb, Luminance);
 	float	PhysicalBoneMask = smoothstep(0.45f, 0.90f, MaterialMask.b);
 	float	BrightBoneMask = smoothstep(0.38f, 0.72f, DiffuseLuma);
 	BrightBoneMask *= PhysicalBoneMask;
@@ -101,7 +117,7 @@ PS_OUT PSMain_DragonWing(PS_IN IN)
 
 	float	RedThreadMask = saturate(MaterialMask.r);
 
-	float	ThreadLuma = dot(FinalDiffuse, float3(0.2126f, 0.7152f, 0.0722f));
+	float	ThreadLuma = dot(FinalDiffuse, Luminance);
 
 	float3	NeutralThreadColor = ThreadLuma * float3(0.95f, 0.99f, 1.00f);
 
@@ -158,7 +174,7 @@ PS_OUT PSMain_DragonBody(PS_IN IN)
 	FinalEmissive += BaseEnergyMask * EmissiveColor * EmissiveIntensity;
 	FinalEmissive = Apply_DissolveEffect(FinalEmissive, IN.vTexcoord);
 	
-	float	DiffuseLuma = dot(Diffuse.rgb, float3(0.2126f, 0.7152f, 0.0722f));
+	float	DiffuseLuma = dot(Diffuse.rgb, Luminance);
 	float	PhysicalBoneMask = smoothstep(0.45f, 0.90f, MaterialMask.b);
 	float	BrightBoneMask = smoothstep(0.36f, 0.72f, DiffuseLuma);
 	BrightBoneMask *= PhysicalBoneMask;

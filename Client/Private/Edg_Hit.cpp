@@ -49,9 +49,15 @@ void CEdg_Hit::Enter(CStateMachine* pStateMachine)
 				pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Rct_Stumble_Bwd_anm.bin"),.fBlend = 0.1f });
 			}
 		}
-		break;
 	}
-
+	
+	
+	MONSOUND Sound_Desc{};
+	_float3 vPos = pDragon->GetTransform().GetPosition();
+	Sound_Desc.SoundKey = "Hit";
+	Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
+	Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+	pDragon->Play_Sound(Sound_Desc);
 	
 	m_iIndex = 0;
 }

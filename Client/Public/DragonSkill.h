@@ -44,7 +44,7 @@ protected:
 	void						 Spawn_Skill_Effect(const _string& SkillName);
 	_bool						 Life_Check(_float fTimeDelta);
 	 _float4x4					 Get_BoneMatrix(int32_t iIndex);
-	void						 ResetValue();
+	virtual void				 ResetValue();
 	CEnderDragon*				 Get_Owner();
 	void						 Set_TargetDir(_vector vSrcPos);
 	void						 DebugLine(_float3 vPos);

@@ -137,6 +137,36 @@ _bool CComNvCloth::SetSimulationTransform(
 			bTeleport);
 }
 
+_bool CComNvCloth::SetWind(
+	const NVCLOTH_WIND_DESC& Desc)
+{
+	if (!m_hCloth)
+		return false;
+
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	return pManager &&
+		pManager->SetClothWind(
+			m_hCloth,
+			Desc);
+}
+
+_bool CComNvCloth::SetSelfCollision(
+	_float fDistance,
+	_float fStiffness)
+{
+	if (!m_hCloth)
+		return false;
+
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	return pManager &&
+		pManager->SetClothSelfCollision(
+			m_hCloth,
+			fDistance,
+			fStiffness);
+}
+
 _bool CComNvCloth::SetCollisions(
 	const NVCLOTH_COLLISION_DESC& Desc)
 {

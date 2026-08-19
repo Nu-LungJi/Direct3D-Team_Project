@@ -5,6 +5,7 @@
 #include "Terrain.h"
 #include "Client_Resources.h"
 #include "OilBarrel.h"
+#include "WiggenweldPotion.h"
 #include "TestPathPlaybackObject.h"
 #include "LuaTestObject.h"
 #include "RagdollTest.h"
@@ -91,6 +92,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 					return false;
 				}
 			}
+
 
 			if (FAILED(E::CGameInstance::Get().AddPrototype(
 				LEVEL::TERRAIN,
@@ -234,6 +236,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 			}
 			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "PLAYER_BROOM_RESOURCE", CResModel::Create("./Resources/SampleClient/Models/Skeleton/professor/Broom/SK_FlyingClassBroom_01.bin"))) {
 				E::CResModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixIdentity();
 				if (FAILED(res->Load(pDesc))) {
 					MSG_BOX("TERRAIN Failed PLAYER_BROOM_RESOURCE");
 					return false;
@@ -245,6 +248,19 @@ std::future<bool> CLevelTerrainLoader::Load()
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_Player");
 				return false;
 			}
+
+			if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+				LEVEL::TERRAIN, "Static_WiggenweldPotion_Resource",
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/Potion_Wiggenweld/SM_Potion_Wiggenweld.bin")))
+			{
+				CResStaticModel::DESC desc{};
+				desc.PreTransformMatrix = XMMatrixScaling(2.f, 2.f, 2.f);
+				if (FAILED(resource->Load(desc))) return false;
+			}
+			else return false;
+			if (FAILED(CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
+				CWiggenweldPotion::Create()))) return false;
 
 			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerThirdPersonCamera, CPlayerThirdPersonCamera::Create())))
 			{
@@ -540,6 +556,20 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		}
 
 	}
+	/*----------- 광윤 추가 -----------*/
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "Model_Resource_Dragon_BoneModel",
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Dragon/SK_Dragon_BoneMesh.bin"))) {
+
+		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(1.6f, 1.6f, 1.6f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			MSG_BOX("LAST_BOSS_RANROK Failed Model_Resource_Dragon_BoneModel");
+			return E_FAIL;
+		}
+	}
+	/*---------------------------------*/
 	//Dragon	
 	{ 
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::TERRAIN, "Model_Resource_Dragon",

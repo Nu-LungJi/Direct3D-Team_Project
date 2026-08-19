@@ -2873,6 +2873,11 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				entry["life"] = p.life;
 				entry["StartSize"] = { p.fSize.x, p.fSize.y, p.fSize.z }; 
 				entry["EndSize"] = { p.fEndSize.x, p.fEndSize.y, p.fEndSize.z };
+				entry["bRandomSize"] = p.bRandomSize;
+				entry["startSizeMin"] = { p.startSizeMin.x, p.startSizeMin.y, p.startSizeMin.z };
+				entry["startSizeMax"] = { p.startSizeMax.x, p.startSizeMax.y, p.startSizeMax.z };
+				entry["endSizeMin"] = { p.endSizeMin.x, p.endSizeMin.y, p.endSizeMin.z };
+				entry["endSizeMax"] = { p.endSizeMax.x, p.endSizeMax.y, p.endSizeMax.z };
 				entry["bKeepRotate"] = p.bKeepRotate;
 				entry["rotationAxis"] = { p.rotationAxis.x, p.rotationAxis.y,p.rotationAxis.z };
 				entry["rotationSpeed"] = p.rotationSpeed;
@@ -3021,6 +3026,15 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 			p.fSize = { startSize[0], startSize[1], startSize[2] };
 			auto endSize = entry.value("EndSize", std::vector<float>{0, 0, 0});
 			p.fEndSize = { endSize[0], endSize[1], endSize[2] };
+			p.bRandomSize = entry.value("bRandomSize", false);
+			auto startSizeMin = entry.value("startSizeMin", std::vector<float>{p.fSize.x, p.fSize.y, p.fSize.z});
+			auto startSizeMax = entry.value("startSizeMax", std::vector<float>{p.fSize.x, p.fSize.y, p.fSize.z});
+			auto endSizeMin = entry.value("endSizeMin", std::vector<float>{p.fEndSize.x, p.fEndSize.y, p.fEndSize.z});
+			auto endSizeMax = entry.value("endSizeMax", std::vector<float>{p.fEndSize.x, p.fEndSize.y, p.fEndSize.z});
+			p.startSizeMin = { startSizeMin[0], startSizeMin[1], startSizeMin[2] };
+			p.startSizeMax = { startSizeMax[0], startSizeMax[1], startSizeMax[2] };
+			p.endSizeMin = { endSizeMin[0], endSizeMin[1], endSizeMin[2] };
+			p.endSizeMax = { endSizeMax[0], endSizeMax[1], endSizeMax[2] };
 			p.fStopSizeTime = entry.value("stopSizeTime", 0.f);
 
 			p.bKeepRotate = entry.value("bKeepRotate", false);
@@ -3372,6 +3386,15 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 
 			auto endSize = entry.value("EndSize", std::vector<float>{0, 0, 0, 0});
 			p.fEndSize = { endSize[0], endSize[1], endSize[2] };
+			p.bRandomSize = entry.value("bRandomSize", false);
+			auto startSizeMin = entry.value("startSizeMin", std::vector<float>{p.fSize.x, p.fSize.y, p.fSize.z});
+			auto startSizeMax = entry.value("startSizeMax", std::vector<float>{p.fSize.x, p.fSize.y, p.fSize.z});
+			auto endSizeMin = entry.value("endSizeMin", std::vector<float>{p.fEndSize.x, p.fEndSize.y, p.fEndSize.z});
+			auto endSizeMax = entry.value("endSizeMax", std::vector<float>{p.fEndSize.x, p.fEndSize.y, p.fEndSize.z});
+			p.startSizeMin = { startSizeMin[0], startSizeMin[1], startSizeMin[2] };
+			p.startSizeMax = { startSizeMax[0], startSizeMax[1], startSizeMax[2] };
+			p.endSizeMin = { endSizeMin[0], endSizeMin[1], endSizeMin[2] };
+			p.endSizeMax = { endSizeMax[0], endSizeMax[1], endSizeMax[2] };
 			auto col = entry.value("color", std::vector<float>{1, 1, 1, 1});
 			auto emi = entry.value("emissive", std::vector<float>{0, 0, 0, 0});
 			auto endEmi = entry.value("endEmissive", std::vector<float>{0, 0, 0, 0});
