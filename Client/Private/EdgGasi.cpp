@@ -94,7 +94,6 @@ void CEdgGasi::Cancle()
 void CEdgGasi::ResetValue()
 {
 	__super::ResetValue();
-	CGameInstance::Get().StopEffect(m_iSkillEffID);
 }
 
 void CEdgGasi::MoveGasi(_float fTimeDelta)

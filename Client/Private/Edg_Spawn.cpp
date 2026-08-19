@@ -38,6 +38,7 @@ void CEdg_Spawn::Enter(CStateMachine* pStateMachine)
 	if (nullptr == pDragon)
 		return;
 
+	pDragon->Set_WingParticlesEnabled(false);
 	pDragon->Set_StateFinished(false);
 	
 	m_Anims[ETOUI(EDG_SPAWN_NUMBER::SECOND)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
@@ -58,6 +59,7 @@ void CEdg_Spawn::Exit(CStateMachine* pStateMachine)
 {
 	auto pDragon = pStateMachine->GetOwner<CEnderDragon>();
 	if (nullptr == pDragon) return;
+	pDragon->Set_WingParticlesEnabled(true);
 	
 	auto pBB = pDragon->Get_BlackBoard();
 	if (nullptr == pBB) return;
@@ -107,6 +109,11 @@ void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		_float4x4 mat{};
 		XMStoreFloat4x4(&mat, pDragon->GetTransform().GetLoadedWorldMatrix());
 		CGameInstance::Get().Spawn("SpawnSmoke.json", mat);
+		CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
+			.fIntensity = 1.f,
+			.fDuration = 2.5f,
+			.fFrequency = 25.f
+		});
 
 		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/LastBossRanrok/Ambient/Ranrock_Spawn.wav", SOUND_PLAY_DESC{
 		.sBusID = SOUND_BUS::SFX,
