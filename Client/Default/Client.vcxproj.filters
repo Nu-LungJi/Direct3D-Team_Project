@@ -205,6 +205,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State">
       <UniqueIdentifier>{dfc43f3f-1ab9-49d1-a6df-f7f34f58d750}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_TransformationSkill_State">
+      <UniqueIdentifier>{2b74c763-c2e4-4806-b5db-005127b93e97}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State">
       <UniqueIdentifier>{129836af-05a5-4e96-86f5-e6664ac3d91f}</UniqueIdentifier>
     </Filter>
@@ -647,6 +650,9 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_BombardaSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_TransformationSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_TransformationSkill_State</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Player_ConfringoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State</Filter>
@@ -1175,6 +1181,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_BombardaSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_TransformationSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_TransformationSkill_State</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_ConfringoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State</Filter>

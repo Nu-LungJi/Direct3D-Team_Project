@@ -40,6 +40,7 @@
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
 #include "Player_BombardaSkill_State.h"
+#include "Player_TransformationSkill_State.h"
 #include "Player_ConfringoSkill_State.h"
 #include "Player_AvadaKedavraSkill_State.h"
 #include "Player_ProtegoSkill_State.h"
@@ -441,6 +442,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::BOMBARDA_SKILL,
 			CPlayer_BombardaSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::TRANSFORMATION_SKILL,
+			CPlayer_TransformationSkill_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -1256,6 +1263,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		// 봄바르다 애니메이션 및 이펙트 큐 타이밍 확인용 임시 입력.
 		if (CGameInstance::Get().KeyDown(DIK_6))
 			m_pStateMachine->RequestState(PLAYER_STATE::BOMBARDA_SKILL);
+
+		// 변신 스킬 상태와 캐스팅 애니메이션 확인용 임시 입력.
+		if (CGameInstance::Get().KeyDown(DIK_7))
+			m_pStateMachine->RequestState(PLAYER_STATE::TRANSFORMATION_SKILL);
 
 #ifdef _DEBUG
 		// Lumos debug toggle. The Lumos state decides whether this request
