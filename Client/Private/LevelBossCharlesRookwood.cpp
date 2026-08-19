@@ -85,6 +85,9 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 
 	SubscribePlayerDeath(*hPlayer);
 
+	CGameInstance::Get().Initialize_VolumetricFogOption({ -28.f, 15.f, 7.f }, { 63.f / 255.f, 88.f / 255.f, 88.f / 255.f }, { 255.f / 255.f, 230.f / 255.f, 179.f / 255.f },
+		1.f, 0.02f, 500.f, 300.f, 0.05f, 100.f, 250.f);
+
 	return S_OK;
 }
 

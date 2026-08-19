@@ -1181,7 +1181,10 @@ VOID	CGameInstance::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Durati
 }
 VOID	CGameInstance::Set_ChromaticRingOpacity(_float _Opacity) { m_pRenderer->Set_ChromaticRingOpacity(_Opacity); }
 VOID	CGameInstance::Apply_OutlineEffect(std::optional<CHandle> targetHandle) { m_pRenderer->Apply_OutlineEffect(targetHandle); }
-
+VOID	CGameInstance::Initialize_VolumetricFogOption(XMFLOAT3 _CenterPos, XMFLOAT3 _FogColor, XMFLOAT3 _LightColor, _float _Intensity, _float _Density, _float _MaxHeight, _float _BaseHeight, _float _HeightFallOff,
+	_float _StartDistance, _float _EndDistance, _float _NoiseScale, _float _ScatteringWeight, _float _GA, _float _GB) {
+	m_pRenderer->Initialize_VolumetricFogOption(_CenterPos, _FogColor, _LightColor, _Intensity, _Density, _MaxHeight, _BaseHeight, _HeightFallOff, _StartDistance, _EndDistance, _NoiseScale, _ScatteringWeight, _GA, _GB);
+}
 
 #pragma endregion
 
