@@ -403,6 +403,9 @@
     <Filter Include="GameObject\Monster\00.Parents\State">
       <UniqueIdentifier>{f6a28477-befa-428d-b636-662eef20aab1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\01.Spanwer">
+      <UniqueIdentifier>{08679333-751b-4ba5-a4c6-39daf5347c9b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -922,6 +925,15 @@
     <ClInclude Include="..\public\Edg_Godae.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Gur_Spawn.h">
+      <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Mon_Spawner.h">
+      <Filter>GameObject\Monster\01.Spanwer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Spider_Dead.h">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1389,6 +1401,15 @@
     <ClCompile Include="..\Private\Player_Potion_State.cpp" />
     <ClCompile Include="..\Private\WiggenweldPotion.cpp">
       <Filter>GameObject\Player\Player_Potion</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Gur_Spawn.cpp">
+      <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Mon_Spawner.cpp">
+      <Filter>GameObject\Monster\01.Spanwer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Spider_Dead.cpp">
+      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

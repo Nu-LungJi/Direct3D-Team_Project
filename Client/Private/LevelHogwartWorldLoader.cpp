@@ -28,7 +28,9 @@
 #include "VideoObject.h"
 #include "Cursor.h"
 #include "SpellMiniGame.h"
-
+#include "Spider.h"
+#include "Mon_Spawner.h"
+#include "Mon_State.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 
@@ -70,6 +72,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			{
 				return false;
 			}
+			if(FAILED(MonsterLoad_InWorker()))
+				return false;
 
 			return SUCCEEDED(LoadPlayerResources());
 		});
@@ -286,7 +290,7 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 							std::string resTag = "TEX_" + fileName;
 							std::string fullPath = entry.path().generic_string();
 
-							if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LAST_BOSS_RANROK", resTag, E::CResTexture2D::Create(fullPath)))
+							if (auto res = E::CGameInstance::Get().AddResource("LEVEL_HOGWART_WORLD", resTag, E::CResTexture2D::Create(fullPath)))
 							{
 								res->Load();
 							}
@@ -342,4 +346,33 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 		}
 	}
 	return true;
+}
+HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
+{
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Spider",
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/Spider/SK_Spider.bin"))) {
+
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(6.f, 6.f, 6.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("TERRAIN Failed Model_Resource_Spider");
+				return E_FAIL;
+			}
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");
+			return E_FAIL;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_MonSpawner, CMon_Spawner::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spawner");
+			return E_FAIL;
+		}
+		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
+
+	}
 }

@@ -628,6 +628,19 @@ void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 	case PLAYER_SKILL_TYPE::DESTORY:
 		m_iHp -= 25.f;
 		break;
+	case PLAYER_SKILL_TYPE::ABRA:
+		m_iHp -= 50.f;
+		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
+		break;
+	case PLAYER_SKILL_TYPE::CONFRIGO:
+		m_iHp -= 18.f;
+		GET_SINGLE(UIManager)->CreateDamageFont(18, GetHandle(), true);
+		break;
+	case PLAYER_SKILL_TYPE::BOMBARDA:
+		m_iHp -= 18.f;
+		GET_SINGLE(UIManager)->CreateDamageFont(28, GetHandle(), true);
+		break;
+
 	}
 }
 

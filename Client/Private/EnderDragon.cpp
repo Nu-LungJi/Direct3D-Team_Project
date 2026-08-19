@@ -484,6 +484,7 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_MonSkillLists[ATTMON::SLOT8] = ETOUI(DRAGON_SKILL::LONGBREATH);
 	m_MonSkillLists[ATTMON::SLOT9] = ETOUI(DRAGON_SKILL::GASI);
 	m_MonSkillLists[ATTMON::SLOT10] = ETOUI(DRAGON_SKILL::GASIBREATH);
+	m_MonSkillLists[ATTMON::SLOT11] = ETOUI(DRAGON_SKILL::GROUND);
 	//////////////////////파티클 넣는곳/////////////////////////
 	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)]   = "FireBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)]	   = "DragonBreath";
@@ -495,6 +496,7 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_EffectNames[ETOUI(DRAGON_SKILL::THREEBALL)]  = "FireBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::BLACKBALL)]  = "BlackBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::GASI)]		= "BreathSpike";
+	m_EffectNames[ETOUI(DRAGON_SKILL::GROUND)] = "GroundEffect";
 	////////////////////////////////////////////////////////////
 	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
 	int32_t iHeadBoneIndex{};
@@ -552,7 +554,9 @@ void CEnderDragon::Ready_BBKeyValue()
 	auto pBB = Get_BlackBoard();
 	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, m_ePhase);
 	pBB->Set_Value<MOVE>(EDG_KEY::EPATROL, MOVE::LEFT);
+	pBB->Set_Value<_bool>(EDG_KEY::EDGEFFECT, false);
 
+	
 }
 void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 {
@@ -1080,6 +1084,7 @@ void CEnderDragon::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	if (eType == ATTMON::END)
 		return;
 
+	auto pbEffect = Get_BlackBoard()->Get_Value<_bool>(EDG_KEY::EDGEFFECT);
 	uint32_t iSkillNum = Find_SkillNum(eType);
 	if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(DRAGON_SKILL::END))
 		return;
@@ -1088,7 +1093,12 @@ void CEnderDragon::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	ACTable.SkillName = m_EffectNames[iSkillNum];
 	ACTable.fLifeTime = fSkillRatio.y;
 	ACTable.eType = static_cast<DRAGON_SKILL>(iSkillNum);
-	if (true == m_SkillHandle[iSkillNum].bPool)
+	if (*pbEffect)
+	{
+		CGameInstance::Get().PlayEffect(ACTable.SkillName, *GetTransform().GetWorldMatrix(), _vector{});
+		Get_BlackBoard()->Set_Value<_bool>(EDG_KEY::EDGEFFECT, false);
+	}
+	else if (true == m_SkillHandle[iSkillNum].bPool)
 	{
 		auto pSkill = CGameInstance::Get().GetGameObjectByHandleT<CDragonSkill>(m_SkillHandle[iSkillNum].handle);
 		if (nullptr == pSkill)
@@ -1153,6 +1163,9 @@ _bool CEnderDragon::BreakSkillType(PLAYER_SKILL_TYPE eType)
 		return true;
 		break;
 	case PLAYER_SKILL_TYPE::DESTORY:
+		return true;
+		break;
+	case PLAYER_SKILL_TYPE::ABRA:
 		return true;
 		break;
 	}

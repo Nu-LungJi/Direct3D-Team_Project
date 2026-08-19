@@ -10,7 +10,7 @@
 #include "NvClothCape.h"
 #include "UIController.h"
 #include "UIManager.h"
-
+#include "Mon_Spawner.h"
 // Client에도 같은 이름의 Terrain.h가 있으므로 Engine SDK 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 
@@ -54,6 +54,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnSkyBox()))
 		return E_FAIL;
 
+	if (FAILED(SpawnMonster(*hPlayer)))
+		return E_FAIL;
 	gameInstance.Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
 	return S_OK;
@@ -261,6 +263,16 @@ HRESULT CLevelHogwartWorld::SpawnSkyBox()
 	return S_OK;
 }
 
+HRESULT CLevelHogwartWorld::SpawnMonster(std::optional<CHandle> hPlayer)
+{
+	CMon_Spawner::MON_SPAWNER_DESC MonS{};
+	MonS.sObjectTag = "MonSpawn";
+	MonS.handle = hPlayer.value();
+	if (!CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_MonSpawner,"00.MonSpawn", & MonS))
+	{
+		return E_FAIL;
+	}
+}
 UPtr<CLevelHogwartWorld> CLevelHogwartWorld::Create()
 {
 	auto instance = UPtr<CLevelHogwartWorld>(new CLevelHogwartWorld{});

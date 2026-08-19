@@ -19,6 +19,7 @@ private:
 	static HRESULT LoadPlayerCape();
 	static _bool UILoad_InWorker();
 
+	static HRESULT MonsterLoad_InWorker();
 private:
 	constexpr static LEVEL CURR_LEVEL = LEVEL::HOGWART_WORLD;
 };

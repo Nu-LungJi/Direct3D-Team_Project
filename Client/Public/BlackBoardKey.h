@@ -9,9 +9,9 @@ namespace EDG_KEY
 	inline const StringID BSTATE_FINISHED{ "StateFinished" };
 	inline const StringID EDGPHASE{ "EdgPhase" };
 
+	inline const StringID EDGEFFECT{ "Effect" };
 	inline const StringID EPATROL{ "EdgPatrol" };
 	inline const StringID LPATROL{ "EdgLeftPatrol" };
 	inline const StringID RPATROL{ "EdgRightPatrol" };
 }
-
 NS_END
