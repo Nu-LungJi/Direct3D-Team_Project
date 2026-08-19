@@ -173,6 +173,7 @@ public:
 	_bool IsLumosActive() const { return m_bLumosActive; }
 	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
 	_bool IsSprintRequested() const { return m_bSprintRequested; }
+	_bool IsWalkRequested() const { return m_bWalkRequested; }
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
 	_float GetCurrentMoveSpeed() const { return m_fCurrentMoveSpeed; }
 	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
@@ -268,10 +269,12 @@ private:
 	_float m_fRootMotionTranslationScale{ 1.f };
 	_bool m_bRawMoveInput{};
 	_bool m_bSprintRequested{};
+	_bool m_bWalkRequested{};
 	_float3 m_vRawMoveDirection{};
 	_float3 m_vLastMoveDirection{ 0.f, 0.f, 1.f };
 	_float3 m_vSmoothedMoveDirection{ 0.f, 0.f, 1.f };
 	_float m_fCurrentMoveSpeed{};
+	_float m_fWalkSpeed{ 3.f };
 	_float m_fJogSpeed{ 7.5f };
 	_float m_fSprintSpeed{ 15.f };
 	static constexpr int32_t KNOCKDOWN_DAMAGE_THRESHOLD = 30;
@@ -285,9 +288,13 @@ private:
 	_bool m_bDeathEventPublished{};
 	_float3 m_vLastHitPosition{};
 	_float3 m_vKnockdownAttackPosition{};
-	_float m_fGroundFollowProbeStartHeight{ 0.1f };
-	_float m_fGroundFollowMaxStepDown{ 0.5f };
-	_float m_fGroundFollowProbeRadius{ 0.2f };
+	_float m_fGroundFollowProbeStartHeight{ 0.15f };
+	_float m_fGroundFollowMaxStepDown{ 2.f };
+	_float m_fGroundFollowProbeRadius{ 0.3f };
+	_float m_fGroundFollowMaxHeightDeltaPerProbe{ 0.3f };
+	_float m_fGroundFollowMaxCorrectionSpeed{ 14.f };
+	int32_t m_iGroundFollowPredictionFrames{ 7 };
+	int32_t m_iGroundFollowProbeCount{ 7 };
 	_bool  m_bInvincible{ false };
 	_bool  m_bProtegoActive{ false };
 	_float m_fProtegoRemainTime{};

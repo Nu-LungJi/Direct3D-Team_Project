@@ -329,8 +329,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 			pDesc->vInitialPosition.y + pDesc->vCCTCenterOffset.y,
 			pDesc->vInitialPosition.z + pDesc->vCCTCenterOffset.z };
 		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::CCT_CAPSULE);
-		//Desc.fStepOffset = 0.f;
-		//Desc.fSlopeLimit = 1.f;	
+		// 오르막은 CCT 기본 경사 제한을 사용한다.
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,"ComPxCharacterController", &Desc, &m_pComCharacterController)))
 		{
 			return E_FAIL;
@@ -349,8 +348,10 @@ HRESULT CPlayer::Initialize(void* pArg)
 		CComCharacterMotor::DESC Desc{};
 		Desc.pMoveIntent = m_pComMoveIntent;
 		Desc.pCharacterController = m_pComCharacterController;
-		Desc.fGravity = -9.81f;
-		Desc.fJumpVelocity = 7.f;
+		// 기존 -9.81/7 조합은 체공 시간이 길어 달에서 뛰는 느낌이 강했다.
+		// 강한 중력은 유지하고 초속도만 높여 체공감은 억제하면서 점프 높이를 확보한다.
+		Desc.fGravity = -16.f;
+		Desc.fJumpVelocity = 9.f;
 		Desc.vControllerCenterOffset = pDesc->vCCTCenterOffset;
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
@@ -784,6 +785,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 		m_bRawMoveInput = false;
 		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		m_fCurrentMoveSpeed = 0.f;
 		m_bRootMotionTranslationActive = false;
@@ -810,6 +812,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	{
 		m_bRawMoveInput = false;
 		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		return;
 	}
@@ -844,6 +847,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	{
 		m_bRawMoveInput = false;
 		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		m_fCurrentMoveSpeed = 0.f;
 		m_fControlHoldTime = 0.f;
@@ -856,6 +860,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (!pPlayerCamera)
 	{
 		m_bRawMoveInput = false;
+		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		m_pComMoveIntent->ClearMoveIntent();
 		return;
@@ -899,6 +905,9 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	const _float3 vMoveDirection{ vCameraForward.x * fForwardIntent + vCameraRight.x * fRightIntent, 0.f, vCameraForward.z * fForwardIntent + vCameraRight.z * fRightIntent };
 	m_bRawMoveInput = vMoveDirection.x != 0.f || vMoveDirection.z != 0.f;
 	m_bSprintRequested =m_bRawMoveInput &&CGameInstance::Get().KeyPressing(DIK_LSHIFT);
+	// 원작처럼 C를 누르는 동안만 걷는다. Shift가 함께 눌리면 Sprint를 우선한다.
+	m_bWalkRequested = m_bRawMoveInput && !m_bSprintRequested &&
+		CGameInstance::Get().KeyPressing(DIK_C);
 	m_vRawMoveDirection = m_bRawMoveInput ? vMoveDirection : _float3{};
 	
 	if (m_bRawMoveInput)
@@ -933,7 +942,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	else
 	{
 		const _float fTargetSpeed =m_bRawMoveInput
-				? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
+				? (m_bSprintRequested ? m_fSprintSpeed : (m_bWalkRequested ? m_fWalkSpeed : m_fJogSpeed))
 				: 0.f;
 		const _float fSpeedChange = (m_bRawMoveInput ? m_fAcceleration : m_fDeceleration) * fTimeDelta;
 
@@ -1654,16 +1663,17 @@ void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 	}
 
 	const _float3 vFootPosition = m_pComCharacterController->GetFootPosition();
+	const _float fPredictionDistance =
+		tMoveOutput.fMoveSpeed * fFixedTimeDelta *
+		static_cast<_float>(m_iGroundFollowPredictionFrames);
 	const _float3 vPredictedFootPosition{
 		vFootPosition.x +
 			tMoveOutput.vMoveDirection.x *
-			tMoveOutput.fMoveSpeed *
-			fFixedTimeDelta * 5,
+			fPredictionDistance,
 		vFootPosition.y,
 		vFootPosition.z +
 			tMoveOutput.vMoveDirection.z *
-			tMoveOutput.fMoveSpeed *
-			fFixedTimeDelta * 5
+			fPredictionDistance
 	};
 
 	CPhysXManager* pPhysXManager =CGameInstance::Get().GetPhysXManager();
@@ -1732,11 +1742,51 @@ void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 //	}
 //#endif
 
+	// 이동 경로를 여러 구간으로 나눠 검사한다. 끝점 한 곳만 검사하면 좁은 턱이나
+	// 급경사를 건너뛸 수 있으므로 각 샘플의 노멀과 인접 높이 차를 모두 확인한다.
+	const int32_t iProbeCount = std::max(1, m_iGroundFollowProbeCount);
+	const _float fSlopeLimit =
+		m_pComCharacterController->GetSlopeLimit();
+	_float fPreviousGroundHeight = vFootPosition.y;
 	PX_SWEEP_RESULT tGroundHit{};
-	if (!pPhysXManager->Sweep(tSweepDesc, tGroundHit) ||
-		!tGroundHit.bHit)
+	for (int32_t iProbe = 1; iProbe <= iProbeCount; ++iProbe)
 	{
-		return;
+		const _float fProbeRatio =
+			static_cast<_float>(iProbe) /
+			static_cast<_float>(iProbeCount);
+		tSweepDesc.tPose.vPosition.x =
+			vFootPosition.x +
+			(vPredictedFootPosition.x - vFootPosition.x) * fProbeRatio;
+		tSweepDesc.tPose.vPosition.z =
+			vFootPosition.z +
+			(vPredictedFootPosition.z - vFootPosition.z) * fProbeRatio;
+
+		PX_SWEEP_RESULT tProbeHit{};
+		if (!pPhysXManager->Sweep(tSweepDesc, tProbeHit) ||
+			!tProbeHit.bHit)
+		{
+			// 경로 중간에 지면이 없으면 낭떠러지로 보고 강제 지면 추종을 중단한다.
+			return;
+		}
+
+		if (tProbeHit.vHitNormal.y < fSlopeLimit)
+		{
+			// PhysX slopeLimit보다 급한 면에는 캐릭터를 아래로 붙이지 않는다.
+			return;
+		}
+
+		const _float fHeightDelta =
+			tProbeHit.vHitpos.y - fPreviousGroundHeight;
+		if (std::abs(fHeightDelta) >
+			m_fGroundFollowMaxHeightDeltaPerProbe)
+		{
+			// 인접 샘플의 높이가 갑자기 변하면 계단/절벽으로 판단한다.
+			return;
+		}
+
+		fPreviousGroundHeight = tProbeHit.vHitpos.y;
+		if (iProbe == iProbeCount)
+			tGroundHit = tProbeHit;
 	}
 
 #ifdef _DEBUG
@@ -1756,18 +1806,18 @@ void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 	}
 #endif
 
-	const _float fSlopeLimit =
-		m_pComCharacterController->GetSlopeLimit();
-	if (tGroundHit.vHitNormal.y < fSlopeLimit)
-		return;
-
 	const _float fStepDown =
 		tGroundHit.vHitpos.y - vFootPosition.y;
 	if (fStepDown < 0.f &&
 		fStepDown >= -m_fGroundFollowMaxStepDown)
 	{
+		// 검출된 높이 차를 한 프레임에 전부 적용하면 경계에서 튀므로
+		// 최대 추종 속도로 제한해 완만하게 지면에 붙인다.
+		const _float fCorrection = std::max(
+			fStepDown,
+			-m_fGroundFollowMaxCorrectionSpeed * fFixedTimeDelta);
 		m_pComMoveIntent->AddExternalDisplacement(
-			{ 0.f, fStepDown, 0.f });
+			{ 0.f, fCorrection, 0.f });
 	}
 }
 
@@ -1865,7 +1915,7 @@ void CPlayer::ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_
 void CPlayer::PrepareLocomotionResume()
 {
 	m_fCurrentMoveSpeed = m_bRawMoveInput
-		? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
+		? (m_bSprintRequested ? m_fSprintSpeed : (m_bWalkRequested ? m_fWalkSpeed : m_fJogSpeed))
 		: 0.f;
 
 	if (m_bRawMoveInput)
