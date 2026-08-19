@@ -593,46 +593,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 	if (FAILED(InitializeAvadaKedavra()))
 		return E_FAIL;
 
-#ifdef _DEBUG
-	{
-		CWiggenweldPotion::DESC debugPotionDesc{};
-		debugPotionDesc.sObjectTag = "Debug_WiggenweldPotion_Origin";
-		debugPotionDesc.sResourceGroup = m_LevelTag;
-		debugPotionDesc.vInitialPosition = { 0.f, 0.f, 0.f };
-		debugPotionDesc.vInitialScale = { 1.f, 1.f, 1.f };
-		debugPotionDesc.vConvexScale = debugPotionDesc.vInitialScale;
-
-		const auto debugPotionHandle = CGameInstance::Get().AddGameObjectToLayer(
-			m_LevelTag,
-			PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
-			"Debug_WiggenweldPotion_Origin",
-			&debugPotionDesc);
-		if (debugPotionHandle.has_value())
-			DEBUG_LOG("[PlayerPotion] Debug potion permanently spawned at (0, 0, 0).\n");
-		else
-			DEBUG_LOG("[PlayerPotion] Failed to spawn debug potion at (0, 0, 0).\n");
-
-		CWiggenweldPotion::DESC visiblePotionDesc = debugPotionDesc;
-		visiblePotionDesc.sObjectTag = "Debug_WiggenweldPotion_Visible";
-		visiblePotionDesc.vInitialPosition = {
-			pDesc->vInitialPosition.x,
-			pDesc->vInitialPosition.y + 2.f,
-			pDesc->vInitialPosition.z + 3.f };
-		visiblePotionDesc.vInitialScale = { 3.f, 3.f, 3.f };
-		visiblePotionDesc.vConvexScale = visiblePotionDesc.vInitialScale;
-
-		const auto visiblePotionHandle = CGameInstance::Get().AddGameObjectToLayer(
-			m_LevelTag,
-			PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
-			"Debug_WiggenweldPotion_Visible",
-			&visiblePotionDesc);
-		if (visiblePotionHandle.has_value())
-			DEBUG_LOG("[PlayerPotion] Large debug potion spawned near the player.\n");
-		else
-			DEBUG_LOG("[PlayerPotion] Failed to spawn the large debug potion.\n");
-	}
-#endif
-
 	return S_OK;
 }
 
