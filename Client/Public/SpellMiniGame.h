@@ -10,6 +10,17 @@ class CSpellMiniGame final : public E::CGameObject
 public:
 	DECLARE_DERIVED_TYPE(CSpellMiniGame, E::CGameObject)
 
+	enum class MODE : uint32_t
+	{
+		INCENDIO,
+		FLIPENDO
+	};
+
+	struct DESC : public E::CGameObject::GAMEOBJECT_DESC
+	{
+		MODE Mode{ MODE::INCENDIO };
+	};
+
 	enum class STATE
 	{
 		INTRO,
@@ -100,6 +111,7 @@ private:
 	_bool CreateVisuals();
 	void DestroyVisuals();
 	void BuildIncendioPath();
+	void BuildFlipendoPath();
 	void AppendLine(
 		const _float2& start,
 		const _float2& end,
@@ -178,6 +190,7 @@ private:
 
 private:
 	std::vector<PATH_SAMPLE> m_PathSamples{};
+	MODE m_eMode{ MODE::INCENDIO };
 	STATE m_eState{ STATE::INTRO };
 
 	_float2 m_vPathTopLeft{};

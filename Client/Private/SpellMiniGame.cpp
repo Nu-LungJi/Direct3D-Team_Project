@@ -61,6 +61,9 @@ HRESULT CSpellMiniGame::Initialize(void* pArg)
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
 
+	if (pArg)
+		m_eMode = static_cast<DESC*>(pArg)->Mode;
+
 	const _float2 clientSize =
 		E::CGameInstance::Get().GetClientScreenSize();
 	m_fPathSize = std::min(clientSize.x, clientSize.y) * 0.82f;
@@ -69,7 +72,10 @@ HRESULT CSpellMiniGame::Initialize(void* pArg)
 		(clientSize.y - m_fPathSize) * 0.5f
 	};
 
-	BuildIncendioPath();
+	if (m_eMode == MODE::FLIPENDO)
+		BuildFlipendoPath();
+	else
+		BuildIncendioPath();
 	if (m_PathSamples.size() < 2 || !CreateVisuals())
 		return E_FAIL;
 
@@ -493,6 +499,13 @@ _bool CSpellMiniGame::CreateVisuals()
 		m_vPathTopLeft.x + m_fPathSize * 0.5f,
 		m_vPathTopLeft.y + m_fPathSize * 0.5f
 	};
+	const _bool isSecondGame = m_eMode == MODE::FLIPENDO;
+	const char* pathResourceTag = isSecondGame
+		? "TEX_UI_T_SU_Flipendo_Path"
+		: "TEX_UI_T_SU_Incendio_Path";
+	const char* pathObjectPrefix = isSecondGame
+		? "SpellMiniGame_FlipendoPath"
+		: "SpellMiniGame_IncendioPath";
 
 	auto createTexture = [&currentLevel](
 		const std::string& objectTag,
@@ -535,15 +548,15 @@ _bool CSpellMiniGame::CreateVisuals()
 		return false;
 
 	m_hPath = createTexture(
-		"SpellMiniGame_IncendioPath",
-		"TEX_UI_T_SU_Incendio_Path",
+		pathObjectPrefix,
+		pathResourceTag,
 		screenCenter,
 		{ m_fPathSize, m_fPathSize },
 		900,
 		{ 0.20f, 0.20f, 0.20f });
 	m_hIntroPathProgress = createTexture(
-		"SpellMiniGame_IncendioPathIntro",
-		"TEX_UI_T_SU_Incendio_Path",
+		std::string{ pathObjectPrefix } + "Intro",
+		pathResourceTag,
 		screenCenter,
 		{ m_fPathSize, m_fPathSize },
 		901,
@@ -552,11 +565,12 @@ _bool CSpellMiniGame::CreateVisuals()
 		GetGameObjectByHandleT<CTextureUI>(m_hIntroPathProgress))
 	{
 		introPath->SetPathProgressMode(true);
+		introPath->SetPathProgressType(isSecondGame ? 1u : 0u);
 		introPath->SetPathProgress(0.f);
 	}
 	m_hPathProgress = createTexture(
-		"SpellMiniGame_IncendioPathProgress",
-		"TEX_UI_T_SU_Incendio_Path",
+		std::string{ pathObjectPrefix } + "Progress",
+		pathResourceTag,
 		screenCenter,
 		{ m_fPathSize, m_fPathSize },
 		902,
@@ -565,11 +579,12 @@ _bool CSpellMiniGame::CreateVisuals()
 		GetGameObjectByHandleT<CTextureUI>(m_hPathProgress))
 	{
 		pathProgress->SetPathProgressMode(true);
+		pathProgress->SetPathProgressType(isSecondGame ? 1u : 0u);
 		pathProgress->SetPathProgress(0.f);
 	}
 	m_hChaserPathProgress = createTexture(
 		"SpellMiniGame_ChaserPathProgress",
-		"TEX_UI_T_SU_Incendio_Path",
+		pathResourceTag,
 		screenCenter,
 		{ m_fPathSize, m_fPathSize },
 		903,
@@ -578,13 +593,16 @@ _bool CSpellMiniGame::CreateVisuals()
 		GetGameObjectByHandleT<CTextureUI>(m_hChaserPathProgress))
 	{
 		chaserPath->SetPathProgressMode(true);
+		chaserPath->SetPathProgressType(isSecondGame ? 1u : 0u);
 		chaserPath->SetPathProgress(0.f);
 		chaserPath->SetAlpha(0.f);
 	}
 
 	CSpellMeter::UIOBJECT_DESC spellMeterDesc{};
-	spellMeterDesc.sObjectTag = "SpellMiniGame_Destination_Bombarda";
-	spellMeterDesc.Name = "SpellMiniGame_Destination_Bombarda";
+	spellMeterDesc.sObjectTag = isSecondGame
+		? "SpellMiniGame_Destination_AvadaKedavra"
+		: "SpellMiniGame_Destination_Transformation";
+	spellMeterDesc.Name = spellMeterDesc.sObjectTag;
 	const _float2 destinationPosition =
 		EvaluatePosition(m_fTotalPathDistance);
 	if (!CreateDestinationSuccessFlame(destinationPosition, currentLevel))
@@ -613,8 +631,9 @@ _bool CSpellMiniGame::CreateVisuals()
 	spellMeterDesc.fSizeX = DESTINATION_SPELL_METER_SIZE;
 	spellMeterDesc.fSizeY = DESTINATION_SPELL_METER_SIZE;
 	spellMeterDesc.fAlpha = 1.f;
-	spellMeterDesc.ResTag =
-		"TEX_UI_T_spellmeter_Bombarda_Overlay";
+	spellMeterDesc.ResTag = isSecondGame
+		? "TEX_UI_T_spellmeter_AvadaKedavra_Overlay"
+		: "TEX_UI_T_spellmeter_TransformationOverlandOverlay";
 	spellMeterDesc.ResWeight = 906;
 	spellMeterDesc.UIType = ETOUI(UI_TYPE::SPELLMETER);
 	auto spellMeterHandle = E::CGameInstance::Get().AddGameObjectToLayer(
@@ -628,7 +647,9 @@ _bool CSpellMiniGame::CreateVisuals()
 		if (auto* spellMeter = E::CGameInstance::Get().
 			GetGameObjectByHandleT<CSpellMeter>(*spellMeterHandle))
 		{
-			spellMeter->SetSpellType(ETOUI(SPELL_TYPE::BOMBARDA));
+			spellMeter->SetSpellType(isSecondGame
+				? ETOUI(SPELL_TYPE::AVADAKEDAVRA)
+				: ETOUI(SPELL_TYPE::TRANSFORMATION));
 			spellMeter->SetFillAmount(0.f);
 			spellMeter->SetInputLcok(true);
 		}
@@ -714,11 +735,17 @@ _bool CSpellMiniGame::CreateVisuals()
 		const char* ObjectTag{};
 	};
 
-	constexpr BOOST_PAD_DESC boostPadDescs[] = {
-		{ 0.20f, DIK_X, "TEX_UI_T_cbi_buttonX", "SpellMiniGame_BoostPad_X_01" },
-		{ 0.61f, DIK_A, "TEX_UI_T_cbi_button_Abutton", "SpellMiniGame_BoostPad_A_01" },
-		{ 0.86f, DIK_A, "TEX_UI_T_cbi_button_Abutton", "SpellMiniGame_BoostPad_A_02" }
-	};
+	const std::array<BOOST_PAD_DESC, 3> boostPadDescs = isSecondGame
+		? std::array<BOOST_PAD_DESC, 3>{ {
+			{ 0.25f, DIK_X, "TEX_UI_T_cbi_buttonX", "SpellMiniGame2_BoostPad_X_01" },
+			{ 0.50f, DIK_A, "TEX_UI_T_cbi_button_Abutton", "SpellMiniGame2_BoostPad_A_01" },
+			{ 0.75f, DIK_X, "TEX_UI_T_cbi_buttonX", "SpellMiniGame2_BoostPad_X_02" }
+		} }
+		: std::array<BOOST_PAD_DESC, 3>{ {
+			{ 0.20f, DIK_X, "TEX_UI_T_cbi_buttonX", "SpellMiniGame_BoostPad_X_01" },
+			{ 0.61f, DIK_A, "TEX_UI_T_cbi_button_Abutton", "SpellMiniGame_BoostPad_A_01" },
+			{ 0.86f, DIK_A, "TEX_UI_T_cbi_button_Abutton", "SpellMiniGame_BoostPad_A_02" }
+		} };
 
 	m_BoostPads.clear();
 	for (const BOOST_PAD_DESC& padDesc : boostPadDescs)
@@ -870,6 +897,63 @@ void CSpellMiniGame::BuildIncendioPath()
 		curveControl,
 		end,
 		64);
+
+	if (!m_PathSamples.empty())
+		m_fTotalPathDistance =
+			m_PathSamples.back().AccumulatedDistance;
+}
+
+void CSpellMiniGame::BuildFlipendoPath()
+{
+	m_PathSamples.clear();
+	m_fTotalPathDistance = 0.f;
+
+	const auto toScreen = [this](const _float2& normalized)
+		{
+			return _float2{
+				m_vPathTopLeft.x + normalized.x * m_fPathSize,
+				m_vPathTopLeft.y + normalized.y * m_fPathSize
+			};
+		};
+
+	// Flipendo texture center line, ordered from the left endpoint to the
+	// right endpoint. The dense samples keep cursor steering smooth while
+	// matching the visible center line of the authored texture.
+	constexpr std::array<_float2, 25> pathPoints = { {
+		{ 0.144f, 0.541f },
+		{ 0.166f, 0.571f },
+		{ 0.197f, 0.618f },
+		{ 0.229f, 0.664f },
+		{ 0.260f, 0.710f },
+		{ 0.291f, 0.757f },
+		{ 0.328f, 0.830f },
+		{ 0.354f, 0.679f },
+		{ 0.385f, 0.566f },
+		{ 0.416f, 0.467f },
+		{ 0.447f, 0.382f },
+		{ 0.479f, 0.311f },
+		{ 0.510f, 0.253f },
+		{ 0.541f, 0.208f },
+		{ 0.572f, 0.178f },
+		{ 0.598f, 0.162f },
+		{ 0.635f, 0.188f },
+		{ 0.666f, 0.244f },
+		{ 0.697f, 0.307f },
+		{ 0.729f, 0.362f },
+		{ 0.766f, 0.378f },
+		{ 0.791f, 0.377f },
+		{ 0.822f, 0.345f },
+		{ 0.844f, 0.300f },
+		{ 0.859f, 0.223f }
+	} };
+
+	for (size_t index = 0; index + 1 < pathPoints.size(); ++index)
+	{
+		AppendLine(
+			toScreen(pathPoints[index]),
+			toScreen(pathPoints[index + 1]),
+			8u);
+	}
 
 	if (!m_PathSamples.empty())
 		m_fTotalPathDistance =
@@ -1855,8 +1939,11 @@ void CSpellMiniGame::UpdateCompletionSequence(_float fTimeDelta)
 
 void CSpellMiniGame::ShowSuccessAlarm()
 {
+	const char* alarmPrefabName = m_eMode == MODE::FLIPENDO
+		? "Alam2"
+		: "Alam";
 	const std::vector<CHandle> alarmRoots =
-		GET_SINGLE(UIManager)->LoadPrefab("SpellAlam");
+		GET_SINGLE(UIManager)->LoadPrefab(alarmPrefabName);
 	uint32_t flameIndex = 0;
 	_float minX = FLT_MAX;
 	_float minY = FLT_MAX;

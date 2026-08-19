@@ -210,7 +210,10 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 	{
 		E::CB_PER_UI perUI{};
-		perUI.texCoord = { m_fAmount, 0.f };
+		perUI.texCoord = {
+			m_fAmount,
+			static_cast<_float>(m_iPathProgressType)
+		};
 		perUI.uvSize = { 0.f, 0.f };
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
 		if (m_bSpellAlarmFlame)
