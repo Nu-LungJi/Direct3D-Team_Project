@@ -2,6 +2,7 @@
 #include "GameInstance.h"
 
 #include "TimeProvider.h"
+#include "TimeManager.h"
 #include "ImGuiManager.h"
 #include "DInputManager.h"
 #include "GraphicDevice.h"
@@ -154,6 +155,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 	m_pTimeProvider = CTimeProvider::Create();
 	if (m_pTimeProvider == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	m_pTimeManager = CTimeManager::Create();
+	if (m_pTimeManager == nullptr)
 	{
 		return E_FAIL;
 	}
@@ -319,20 +326,30 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
 {
-	m_pPhysXManager->PrepareCCTInteractions(fFixedTimeDelta);
+	const _float fGameFixedTimeDelta = m_pTimeManager
+		? m_pTimeManager->ScaleFixedDelta(fFixedTimeDelta)
+		: fFixedTimeDelta;
+
+	if (fGameFixedTimeDelta > 0.f)
+		m_pPhysXManager->PrepareCCTInteractions(fGameFixedTimeDelta);
 
 	{
 		ZoneScopedN("GameObjectManager_FixedUpdate");
-		m_pGameObjectManager->FixedUpdate(fFixedTimeDelta);
+		m_pGameObjectManager->FixedUpdate(
+			fGameFixedTimeDelta,
+			fFixedTimeDelta);
 	}
+
+	if (fGameFixedTimeDelta <= 0.f)
+		return;
 	
-	m_pPhysXManager->StepSimulation(fFixedTimeDelta);
+	m_pPhysXManager->StepSimulation(fGameFixedTimeDelta);
 
 
 	{
 		ZoneScopedN("pNvClothManager_StepSimulation");
 		if (m_pNvClothManager)
-			m_pNvClothManager->StepSimulation(fFixedTimeDelta);
+			m_pNvClothManager->StepSimulation(fGameFixedTimeDelta);
 	}
 
 }
@@ -415,6 +432,33 @@ void CGameInstance::UpdateGUI()
 
 void CGameInstance::UpdateEngine(_float fTimeDelta)
 {
+	const _float fUnscaledDelta = m_pTimeManager
+		? m_pTimeManager->GetUnscaledDelta()
+		: fTimeDelta;
+	const _float fGameDelta = m_pTimeManager
+		? m_pTimeManager->GetGameDelta()
+		: fTimeDelta;
+
+#ifdef _DEBUG
+	if (KeyDown(DIK_Y))
+	{
+		if (IsTimeScaleActive(m_hDebugTimeScale))
+		{
+			EndTimeScale(m_hDebugTimeScale, 0.15f);
+			m_hDebugTimeScale = INVALID_TIME_SCALE_HANDLE;
+		}
+		else
+		{
+			TIME_SCALE_REQUEST_DESC Desc{};
+			Desc.fTargetScale = 0.2f;
+			Desc.fBlendIn = 0.08f;
+			Desc.sTag = "Debug_Y_Toggle";
+
+			m_hDebugTimeScale = BeginTimeScale(Desc);
+		}
+	}
+#endif
+
 	// TODO: 마우스 가두기 함수화하기
 	{
 		if (CGameInstance::Get().KeyDown(DIK_TAB))
@@ -437,13 +481,13 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	{
 		ZoneScopedN("EffectManager_Update");
-		m_pEffectManager->Update(fTimeDelta);
+		m_pEffectManager->Update(fGameDelta);
 	}
 
 	// lua hot reload
 	{
 		ZoneScopedN("LuaManager_Update");
-		m_pLuaManager->Update(fTimeDelta);
+		m_pLuaManager->Update(fUnscaledDelta);
 	}
 
 	{
@@ -455,52 +499,52 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	{
 		ZoneScopedN("AnimEdit_Update");
-		m_pAnimEdit_Manager->Update(fTimeDelta);
+		m_pAnimEdit_Manager->Update(fUnscaledDelta);
 	}
 
 	{
 		ZoneScopedN("ParticleManager_Update");
-		m_pParticleManager->Update(fTimeDelta);
+		m_pParticleManager->Update(fGameDelta);
 	}
 	
 
 	{
 		ZoneScopedN("PhysXManager_Update");
-		m_pPhysXManager->Update(fTimeDelta);
+		m_pPhysXManager->Update(fUnscaledDelta);
 	}
 
 	{
 		ZoneScopedN("GameObjectManager_Update");
-		m_pGameObjectManager->Update(fTimeDelta);
+		m_pGameObjectManager->Update(fGameDelta, fUnscaledDelta);
 	}
 
 	{
 		ZoneScopedN("CameraManager_Update");
-		m_pCameraManager->Update(fTimeDelta);
+		m_pCameraManager->Update(fGameDelta);
 	}
 
 	{
 		ZoneScopedN("GameObjectManager_LateUpdate");
-		m_pGameObjectManager->LateUpdate(fTimeDelta);
+		m_pGameObjectManager->LateUpdate(fGameDelta, fUnscaledDelta);
 	}
 
 	{
 		ZoneScopedN("LevelManager_Update");
-		m_pLevelManager->Update(fTimeDelta);
+		m_pLevelManager->Update(fGameDelta);
 	}
 
 	{
 		ZoneScopedN("LightManager_Update");
-		m_pLightManager->Update(fTimeDelta);
+		m_pLightManager->Update(fGameDelta);
 	}
 	{
 		ZoneScopedN("Renderer_Update");
-		m_pRenderer->Update(fTimeDelta);
+		m_pRenderer->Update(fUnscaledDelta);
 	}
 
 	m_pColliderManager->Update();
 
-	m_pMapManager->Update(fTimeDelta);
+	m_pMapManager->Update(fGameDelta);
 	m_pMapMeshInstancingRenderer->Update();
 
 	if (m_pNvClothManager)
@@ -593,6 +637,8 @@ void CGameInstance::Release_Engine()
 	m_pNvClothManager.reset();
 	m_pEventManager.reset();
 	m_pEffectManager.reset();
+	m_pTimeManager.reset();
+	m_pTimeProvider.reset();
 	m_pGraphicDevice.reset();
 }
 
@@ -607,6 +653,13 @@ void CGameInstance::SetMouseFix(_bool mousefix)
 
 void CGameInstance::FrameStart(_float fTimeDelta)
 {
+	const _float fUnscaledDelta = m_pTimeManager
+		? m_pTimeManager->GetUnscaledDelta()
+		: fTimeDelta;
+	const _float fGameDelta = m_pTimeManager
+		? m_pTimeManager->GetGameDelta()
+		: fTimeDelta;
+
 	{
 		ZoneScopedN("InputManager_Update");
 		m_pDInputManager->Update_InputDev();
@@ -632,7 +685,9 @@ void CGameInstance::FrameStart(_float fTimeDelta)
 
 	{
 		ZoneScopedN("GameObjectManager_PriorityUpdate");
-		m_pGameObjectManager->PriorityUpdate(fTimeDelta);
+		m_pGameObjectManager->PriorityUpdate(
+			fGameDelta,
+			fUnscaledDelta);
 	}
 }
 void CGameInstance::FrameEnd(_float fTimeDelta)
@@ -778,6 +833,63 @@ void CGameInstance::ClearAllRunningEffect() {
 _float CGameInstance::UpdateTimeProvider()
 {
 	return m_pTimeProvider->UpdateTimeProvider();
+}
+#pragma endregion
+
+#pragma region TIME_MANAGER
+void CGameInstance::BeginFrameTime(_float fUnscaledDelta)
+{
+	if (m_pTimeManager)
+		m_pTimeManager->BeginFrame(fUnscaledDelta);
+}
+
+_float CGameInstance::GetUnscaledDelta() const
+{
+	return m_pTimeManager ? m_pTimeManager->GetUnscaledDelta() : 0.f;
+}
+
+_float CGameInstance::GetGameDelta() const
+{
+	return m_pTimeManager ? m_pTimeManager->GetGameDelta() : 0.f;
+}
+
+_float CGameInstance::GetTimeScale() const
+{
+	return m_pTimeManager ? m_pTimeManager->GetTimeScale() : 1.f;
+}
+
+TIME_SCALE_HANDLE CGameInstance::BeginTimeScale(
+	const TIME_SCALE_REQUEST_DESC& Desc)
+{
+	return m_pTimeManager
+		? m_pTimeManager->BeginTimeScale(Desc)
+		: INVALID_TIME_SCALE_HANDLE;
+}
+
+_bool CGameInstance::EndTimeScale(
+	TIME_SCALE_HANDLE hHandle,
+	_float fBlendOut)
+{
+	return m_pTimeManager &&
+		m_pTimeManager->EndTimeScale(hHandle, fBlendOut);
+}
+
+_bool CGameInstance::CancelTimeScale(TIME_SCALE_HANDLE hHandle)
+{
+	return m_pTimeManager &&
+		m_pTimeManager->CancelTimeScale(hHandle);
+}
+
+_bool CGameInstance::IsTimeScaleActive(TIME_SCALE_HANDLE hHandle) const
+{
+	return m_pTimeManager &&
+		m_pTimeManager->IsTimeScaleActive(hHandle);
+}
+
+void CGameInstance::ClearTimeScaleRequests()
+{
+	if (m_pTimeManager)
+		m_pTimeManager->ClearTimeScaleRequests();
 }
 #pragma endregion
 

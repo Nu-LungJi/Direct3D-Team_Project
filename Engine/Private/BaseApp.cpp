@@ -36,6 +36,7 @@ HRESULT CBaseApp::Loop()
 
 		//float fDeltaTime = std::min(fCurrTime, MAX_DELTA);
 		float fDeltaTime = fCurrTime;
+		Engine::CGameInstance::Get().BeginFrameTime(fDeltaTime);
 
 		{
 			ZoneScopedN("FrameStart");

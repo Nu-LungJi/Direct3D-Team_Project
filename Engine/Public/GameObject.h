@@ -8,6 +8,7 @@
 #include "IRenderable.h"
 #include "IPhysicsListener.h"
 #include "IPhysicsSync.h"
+#include "TimeManager.h"
 
 NS_BEGIN(Engine)
 
@@ -155,8 +156,11 @@ protected:
 public:
 	_string_view GetObjectTag() const { return m_sObjectTag; }
 	void SetObjectTag(_string_view sObjectTag) { m_sObjectTag = sObjectTag; }
+	void SetTimeDomain(TIME_DOMAIN eTimeDomain) { m_eTimeDomain = eTimeDomain; }
+	TIME_DOMAIN GetTimeDomain() const { return m_eTimeDomain; }
 protected:
 	_string m_sObjectTag{};
+	TIME_DOMAIN m_eTimeDomain{ TIME_DOMAIN::SCALED };
 
 
 private:

@@ -2115,7 +2115,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 	if (auto* pCamera = Cast<CPlayerThirdPersonCamera>(CGameInstance::Get().GetActiveCamera("PlayerCamera")))
 	{
-		pCamera->UpdateFollow(fTimeDelta);
+		pCamera->UpdateFollow(CGameInstance::Get().GetUnscaledDelta());
 	}
 
 	// PhysX render buffer와 무관하게 현재 게임오브젝트 Transform을 즉시 시각화한다.
