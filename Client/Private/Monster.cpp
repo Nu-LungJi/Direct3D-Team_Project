@@ -208,7 +208,27 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 	const auto& pModel = m_pComModelInstance->GetModel();
 
 	if (!pModel)
+		return;	
+	
+	BoundingBox WorldBounds{};
+
+	if (GetShadowBounds(WorldBounds)) {
+		/*애니메이션 포즈가 Collider 밖으로 나가는 상황과 카메라 경계에서 깜빡이는 현상 방지*/
+		constexpr _float CullPadding = 1.f;
+
+		WorldBounds.Extents.x += CullPadding;
+		WorldBounds.Extents.y += CullPadding;
+		WorldBounds.Extents.z += CullPadding;
+
+		UpdateRenderVisibility(WorldBounds);
+	}
+	else {
+
+	}
+
+	if (!ShouldSubmitRenderInstance())
 		return;
+
 
 	if (!pModel->GetAnimations().empty())
 	{
