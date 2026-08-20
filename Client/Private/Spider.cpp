@@ -218,12 +218,19 @@ HRESULT CSpider::Initialize(void* pArg)
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
+	GetTransform().SetScale(XMLoadFloat3(&MonDesc->vScale));
 	m_eMonType = MONSTER_TYPE::NORMAL;
 	
 	m_pComSphereCol->SetQueryEnabled(true);
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RigPelvisSocket");
 	m_pModelAnimator->Play_Anim(0, false);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+
+	m_bSpawn = MonDesc->bSpawn;
+	auto pBB = Get_BlackBoard();
+
+	pBB->Set_Value<_float3>(NPC_KEY::STARTPOS, MonDesc->vPatrollStart);
+	pBB->Set_Value<_float3>(NPC_KEY::ENDPOS, MonDesc->vPatrollEnd);
 	return S_OK;
 }
 HRESULT CSpider::Ready_Fsm(const _string& LevelTag)
@@ -246,13 +253,7 @@ HRESULT CSpider::Ready_Fsm(const _string& LevelTag)
 }
 HRESULT CSpider::Ready_Skill(const _string& LevelTag)
 {
-	//if (ETOUI(SPIDER_SKILL::END) > ETOUI(ATTMON::END))
-	//	return E_FAIL;
-	//
-	//m_MonSkillLists[ATTMON::SLOT0] = ETOUI(SPIDER_SKILL::BOOM);
-	////////////////////////파티클 넣는곳/////////////////////////
-	//m_EffectNames[ETOUI(SPIDER_SKILL::FIREBALL)] = "FireBall";
-	//////////////////////////////////////////////////////////////
+
 	return S_OK;
 }
 void CSpider::Ready_BBKeyValue()
@@ -261,10 +262,9 @@ void CSpider::Ready_BBKeyValue()
 }
 void CSpider::PriorityUpdate(E::_float fTimeDelta)
 {
-	if (m_iHp <= 0.f)
-	{
+	if (m_iHp <= 0.f || m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
 		m_pFsm->Request_State(MON_STATE::DEAD);
-	}
+	
 	if (!m_bSpawn) return;
 	if (m_bEndGame)
 	{

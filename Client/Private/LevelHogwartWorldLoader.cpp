@@ -365,6 +365,14 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 				return E_FAIL;
 			}
 		}
+		if (auto res = CGameInstance::Get().AddResource("SPAWNER", "SPIDERSPAWN", CResJson::Create("./Resources/json/Spawn/SPIDERSPAWN.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT SPAWNER JSON");
+				return E_FAIL;
+			}
+		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");

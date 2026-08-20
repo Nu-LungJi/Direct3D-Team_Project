@@ -21,6 +21,9 @@ public:
 public:
 	typedef struct tagSpiderDesc : public CMonster::MONSTER_DESC
 	{
+		_float3 vPatrollStart{};
+		_float3 vPatrollEnd{};
+		_bool bSpawn{false};
 
 	}SPIDER_DESC;
 

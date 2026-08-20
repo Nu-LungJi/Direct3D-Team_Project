@@ -32,6 +32,7 @@
 #include "LightPlacementObject.h"
 #include "StarBurst.h"
 #include "AmbientSound3DObject.h"
+#include "Mon_Spawner.h"
 // UI
 #include "UIController.h"
 #include "UIManager.h"
@@ -875,7 +876,16 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 		}
 
 	}
-	
+	{
+		CMon_Spawner::MON_SPAWNER_DESC MonS{};
+		MonS.sObjectTag = "MonSpawn";
+		MonS.handle = hPlayer.value();
+		MonS.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
+		if (!CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_MonSpawner, "00.MonSpawn", &MonS))
+		{
+			return E_FAIL;
+		}
+	}
 	{
 		CLightPlacementObject::DESC desc{};
 		desc.sObjectTag = "TerrainLightPlacement";

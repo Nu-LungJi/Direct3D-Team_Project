@@ -417,7 +417,6 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 			SaveJsonEnum(j, "NewSkillType" + std::to_string(i), m_Skills[i].eSkill);
 			SaveJsonValue(j, "NewSkillRatio" + std::to_string(i), m_Skills[i].fRatio);
 			SaveJsonValue(j, "NewSkillLife" + std::to_string(i), m_Skills[i].fLifeTime);
-
 			SaveJsonValue(j, "NewSkillNoAttEff" + std::to_string(i), m_Skills[i].bDefault);
 		}
 	}

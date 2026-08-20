@@ -605,6 +605,14 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "RUNSPIDER", CResJson::Create("./Resources/json/BeHavior/RUNSPIDER.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED RUNSPIDER JSON");
+			return E_FAIL;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResource("BTJSON", "NPC1", CResJson::Create("./Resources/json/BeHavior/NPC1.json")))
 	{
 		if (FAILED(res->Load()))
@@ -639,6 +647,7 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
+
 	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "RANDOMBALL", CResJson::Create("./Resources/json/BeHavior/SubTree/RandomBall.json")))
 	{
 		if (FAILED(res->Load()))

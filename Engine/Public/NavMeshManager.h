@@ -29,7 +29,13 @@ struct NAVMESH_BUILD_DESC
 	float detailSampleDist = 6.0f;
 	float detailSampleMaxError = 1.0f;
 };
-
+//수동 찍기용
+struct NAVMESH_BRIDGE
+{
+	_float3 vStart{};
+	_float3 vEnd{};
+	_float fWidth{ 6.f };
+};
 enum class ENavAreaType : uint8_t
 {
 	Walkable,
@@ -85,6 +91,10 @@ public:
 	HRESULT Load(const std::string& path);
 	_bool FindPath(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const;
 
+	//수동찍기
+	void AddBridge(const NAVMESH_BRIDGE& Bridge) { m_Bridges.push_back(Bridge); }
+	void ClearBridges() { m_Bridges.clear(); }
+	const std::vector<NAVMESH_BRIDGE>& GetBridges() const{ return m_Bridges; }
 public:
 	static UPtr<CNavMeshManager> Create();
 
@@ -101,7 +111,8 @@ private:
 	dtNavMeshQuery* m_pNavMeshQuery = nullptr;
 
 	std::unordered_map<uint32_t, ENavAreaType> m_TriangleAreas{};
-
+	//수동찍기
+	std::vector<NAVMESH_BRIDGE> m_Bridges;
 	// 길찾기 테스트
 	_float3 m_PathTestStart{};
 	_float3 m_PathTestEnd{};
