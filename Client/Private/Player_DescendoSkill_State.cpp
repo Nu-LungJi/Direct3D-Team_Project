@@ -12,6 +12,11 @@ NS_USING(Client)
 
 void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
 {
+	{
+		auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
+		static_cast<CTrail_CPU*>(a)->SetColor(_float4(243 / 255.f, 37 / 255.f, 14 / 255.f, 1.f));
+		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(243 / 255.f, 37 / 255.f, 14 / 255.f, 4.f));
+	}
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer)
 	{
@@ -63,11 +68,7 @@ void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
 		const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
 		m_iEffectID = CGameInstance::Get().PlayEffect("DescendoStick", spawnWorld);
 	}
-	{
-		auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
-		static_cast<CTrail_CPU*>(a)->SetColor(_float4(243 / 255.f, 37 / 255.f, 14 / 255.f, 1.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(243 / 255.f, 37 / 255.f, 14 / 255.f, 4.f));
-	}
+
 
 }
 

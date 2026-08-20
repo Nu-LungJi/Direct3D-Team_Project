@@ -145,6 +145,7 @@ void CParticleManager::UpdateGUI()
 	static _bool bSizeStop = false;
 	static _bool bEnergySphere = false;
 	static _bool bKeepRotate = false;
+	static _bool bOrbit = false;
 	// [LSY] CPU 파티클이 수명 종료 시 갑자기 사라지지 않도록 GUI에서 두 가지 페이드 옵션을 제공한다.
 	static _bool bFadeOut = false;
 	static _bool bFadeOutLate = false;
@@ -1031,6 +1032,7 @@ void CParticleManager::UpdateGUI()
 			bKeepRotate =
 				(preset.iBehaviorType &
 					CParticle::BEHAVIOR_KEEPROTATE) != 0;
+			bOrbit = (preset.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0;
 			bFadeOut =
 				(preset.iBehaviorType &
 					CParticle::BEHAVIOR_FADEOUT) != 0;
@@ -1094,6 +1096,8 @@ void CParticleManager::UpdateGUI()
 	ImGui::SameLine();
 	ImGui::Checkbox("KEEP ROTATE", &bKeepRotate);
 	ImGui::SameLine();
+	ImGui::Checkbox("ORBIT", &bOrbit);
+	ImGui::SameLine();
 	ImGui::Checkbox("FADE OUT", &bFadeOut);
 	ImGui::SameLine();
 	ImGui::Checkbox("FADE OUT LATE", &bFadeOutLate);
@@ -1149,7 +1153,7 @@ void CParticleManager::UpdateGUI()
 	}
 	
 	if (none) {
-		bFadeOutLate = bFadeOut = bKeepRotate = bEnergySphere = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+		bFadeOutLate = bFadeOut = bOrbit = bKeepRotate = bEnergySphere = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	}
 	previewParams.iBehaviorType = CParticle::BEHAVIOR_NONE;
 
@@ -1167,6 +1171,8 @@ void CParticleManager::UpdateGUI()
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_SIZESTOP;
 	if (bKeepRotate)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_KEEPROTATE;
+	if (bOrbit)
+		previewParams.iBehaviorType |= CParticle::BEHAVIOR_ORBIT;
 	if (bFadeOut)
 		previewParams.iBehaviorType |= CParticle::BEHAVIOR_FADEOUT;
 	if (bFadeOutLate)
@@ -1198,6 +1204,8 @@ void CParticleManager::UpdateGUI()
 	}
 	else
 		ImGui::DragFloat3("Position", &previewParams.position.x, 0.01f);
+	if (bOrbit)
+		ImGui::DragFloat3("Orbit Center", &previewParams.orbitCenter.x, 0.01f);
 
 	ImGui::Checkbox("RandomVelocity?", &previewParams.bRandomVel);
 	if (previewParams.bRandomVel) {
@@ -1229,7 +1237,7 @@ void CParticleManager::UpdateGUI()
 		ImGui::DragFloat3("EndSize", &previewParams.fEndSize.x, 0.01f);
 	}
 
-	if (bKeepRotate) {
+	if (bKeepRotate || bOrbit) {
 		ImGui::DragFloat3("Rotation Axis", &previewParams.rotationAxis.x, 0.01f);
 		ImGui::DragFloat("Rotation Speed", &previewParams.rotationSpeed, 0.01f);
 	}
@@ -1301,7 +1309,7 @@ void CParticleManager::UpdateGUI()
 			data.originalEmissive = data.emissive;
 			data.ownerID = PREVIEW_OWNER_ID;
 			data.iBehaviorType = p.iBehaviorType;
-			data.originalPosition = data.position;
+			data.originalPosition = (p.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0 ? p.orbitCenter : data.position;
 			data.loop = p.bLoop;
 			data.rotationAxis = p.rotationAxis;
 			data.fRotationSpeed = p.rotationSpeed;
@@ -1431,6 +1439,8 @@ void CParticleManager::UpdateGUI()
 		ImGui::Separator();
 		ImGui::Checkbox("KEEP ROTATE", &bKeepRotate);
 		ImGui::SameLine();
+		ImGui::Checkbox("ORBIT", &bOrbit);
+		ImGui::SameLine();
 		ImGui::Checkbox("FADE OUT", &bFadeOut);
 		ImGui::SameLine();
 		ImGui::Checkbox("FADE OUT LATE", &bFadeOutLate);
@@ -1454,7 +1464,7 @@ void CParticleManager::UpdateGUI()
 		ImGui::Checkbox("None", &none);
 
 		if (none)
-			bFadeOutLate = bFadeOut = bKeepRotate = bEnergySphere = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
+			bFadeOutLate = bFadeOut = bOrbit = bKeepRotate = bEnergySphere = bLightning = bSmokegw = bSmokegv = bSmokeJump = bSmoke = circleToWave = gravity = billboard = distortion = bSizeStop = false;
 	
 		pendingStandard.iBehaviorType = CParticle::BEHAVIOR_NONE;
 		pendingStandard.bKeepRotate = bKeepRotate;
@@ -1486,6 +1496,8 @@ void CParticleManager::UpdateGUI()
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_ENERGYSPHERE;
 		if (bKeepRotate) 
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_KEEPROTATE;
+		if (bOrbit)
+			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_ORBIT;
 		if (bFadeOut)
 			pendingStandard.iBehaviorType |= CParticle::BEHAVIOR_FADEOUT;
 		if (bFadeOutLate)
@@ -1513,6 +1525,8 @@ void CParticleManager::UpdateGUI()
 		}
 		else
 			ImGui::DragFloat3("Position", &pendingStandard.position.x, 0.01f);
+		if (bOrbit)
+			ImGui::DragFloat3("Orbit Center", &pendingStandard.orbitCenter.x, 0.01f);
 
 		ImGui::Checkbox("RandomVelocity?", &pendingStandard.bRandomVel);
 		if (pendingStandard.bRandomVel) {
@@ -1544,7 +1558,7 @@ void CParticleManager::UpdateGUI()
 		}
 
 		ImGui::Checkbox("RandomRotation?", &pendingStandard.bRandomRot);
-		if (pendingStandard.bKeepRotate) {
+		if (pendingStandard.bKeepRotate || bOrbit) {
 			ImGui::DragFloat3("Rotation Axis", &pendingStandard.rotationAxis.x, 0.01f);
 			ImGui::DragFloat("Rotation Speed", &pendingStandard.rotationSpeed, 0.01f);
 
@@ -1688,6 +1702,7 @@ void CParticleManager::UpdateGUI()
 			{
 				pendingStandard = std::get<STANDARD_PARAMS>(cmd.params);
 				bKeepRotate = pendingStandard.bKeepRotate;
+				bOrbit = (pendingStandard.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0;
 			}
 			else if (currentKind == SPAWN_COMMAND_KIND::BEAM && std::holds_alternative<BEAM_PARAMS>(cmd.params))
 			{
@@ -2170,7 +2185,7 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 				s.originalEmissive = s.emissive;
 				s.iBehaviorType = p.iBehaviorType;
 				s.ownerID = ownerId;
-				s.originalPosition = s.position;
+				s.originalPosition = (p.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0 ? p.orbitCenter : s.position;
 				s.loop = p.bLoop;
 				s.spawnDelay = p.fSpawnDelay;
 				s.rotationAxis = p.rotationAxis;
@@ -2896,6 +2911,7 @@ HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
 				const auto& p = std::get<STANDARD_PARAMS>(cmd.params);
 				entry["count"] = p.count;
 				entry["position"] = { p.position.x, p.position.y, p.position.z };
+				entry["orbitCenter"] = { p.orbitCenter.x, p.orbitCenter.y, p.orbitCenter.z };
 				entry["velocity"] = { p.velocity.x, p.velocity.y, p.velocity.z };
 				entry["life"] = p.life;
 				entry["StartSize"] = { p.fSize.x, p.fSize.y, p.fSize.z }; 
@@ -3037,6 +3053,8 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 
 			auto pos = entry.value("position", std::vector<float>{0, 0, 0});
 			p.position = { pos[0], pos[1], pos[2] };
+			auto orbitCenter = entry.value("orbitCenter", std::vector<float>{0, 0, 0});
+			p.orbitCenter = { orbitCenter[0], orbitCenter[1], orbitCenter[2] };
 
 			p.bRandomVel = entry.value("bRandomVel", false);
 			auto velMin = entry.value("velMin", std::vector<float>{0, 0, 0});
@@ -3066,7 +3084,7 @@ HRESULT CParticleManager::LoadCommandQueue(const std::string& strJsonPath)
 
 			p.bKeepRotate = entry.value("bKeepRotate", false);
 
-			auto rotationAxis = entry.value("rotationAxis",std::vector<float>{ 0.f, 0.f, 0.f });
+			auto rotationAxis = entry.value("rotationAxis",std::vector<float>{ 0.f, 1.f, 0.f });
 
 			if (rotationAxis.size() >= 3)
 			{
@@ -3368,6 +3386,8 @@ std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& st
 			p.posMin = { posMin[0], posMin[1], posMin[2] };
 			p.posMax = { posMax[0], posMax[1], posMax[2] };
 			p.position = { pos[0], pos[1], pos[2] };
+			auto orbitCenter = entry.value("orbitCenter", std::vector<float>{0, 0, 0});
+			p.orbitCenter = { orbitCenter[0], orbitCenter[1], orbitCenter[2] };
 
 			auto velMin = entry.value("velMin", std::vector<float>{0, 0, 0});
 			auto velMax = entry.value("velMax", std::vector<float>{0, 0, 0});
@@ -3558,6 +3578,13 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 			_float3 posT;
 			XMStoreFloat3(&posT, XMVector3TransformCoord(XMLoadFloat3(&p.position), matWorld));
 			p.position = posT;
+			if ((p.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0)
+			{
+				XMStoreFloat3(&p.orbitCenter, XMVector3TransformCoord(XMLoadFloat3(&p.orbitCenter), matWorld));
+				_vector vOrbitAxis = XMVector3TransformNormal(XMLoadFloat3(&p.rotationAxis), matWorld);
+				if (XMVectorGetX(XMVector3LengthSq(vOrbitAxis)) > 0.000001f)
+					XMStoreFloat3(&p.rotationAxis, XMVector3Normalize(vOrbitAxis));
+			}
 
 			_float3 velMinT, velMaxT;
 			XMStoreFloat3(&velMinT, XMVector3TransformNormal(XMLoadFloat3(&p.velMin), matWorld));
@@ -3604,11 +3631,20 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 
 			for (PARTICLE_SPAWN_DATA& spawnData : spawnList)
 			{
+				const _bool bOrbit = (spawnData.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0;
 				XMStoreFloat3(&spawnData.position, XMVector3TransformCoord(XMLoadFloat3(&spawnData.position), matWorld));
 				XMStoreFloat3(&spawnData.velocity, XMVector3TransformNormal(XMLoadFloat3(&spawnData.velocity), matWorld));
+				if (bOrbit)
+				{
+					XMStoreFloat3(&spawnData.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&spawnData.originalPosition), matWorld));
+					_vector vOrbitAxis = XMVector3TransformNormal(XMLoadFloat3(&spawnData.rotationAxis), matWorld);
+					if (XMVectorGetX(XMVector3LengthSq(vOrbitAxis)) > 0.000001f)
+						XMStoreFloat3(&spawnData.rotationAxis, XMVector3Normalize(vOrbitAxis));
+				}
 				if (cmd.bInheritWorldRotation)
 					spawnData.rotation = ComposeParticleRotation(spawnData.rotation, cmd.inheritedWorldRotation);
-				spawnData.originalPosition = spawnData.position;
+				if (!bOrbit)
+					spawnData.originalPosition = spawnData.position;
 				spawnData.originalVelocity = spawnData.velocity;
 			}
 			cmd.params = std::move(spawnList);

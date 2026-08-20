@@ -536,3 +536,40 @@ PS_OUT PSProtegoHitPulse(VS_OUT In)
 	Out.vDiffuse = float4(pulseColor, alpha);
 	return Out;
 }
+PS_OUT PSTransformation(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float2 uv = In.vTexcoord;
+	float age = max(In.maxLife - In.life, 0.f);
+	float phase = frac(uv.x - age * 0.35f);
+
+	float tailLength = 0.42f;
+	float tailProfile = saturate(1.f - phase / tailLength);
+	float tailMask = smoothstep(0.f, 0.06f, tailProfile);
+
+	float headMask = 1.f - smoothstep(0.f, 0.055f, phase);
+	float halfWidth = lerp(0.012f, 0.075f, pow(tailProfile, 3.f));
+	float widthDistance = abs(uv.y - 0.5f);
+	float widthMask = 1.f - smoothstep(halfWidth, halfWidth + 0.012f, widthDistance);
+
+	float2 noiseUV = uv * float2(2.f, 3.f) + float2(age * 0.04f, -age * 0.025f);
+	float noise = NoiseMap.Sample(LinearWrap, noiseUV).r;
+	float noiseDetail = lerp(0.9f, 1.f, noise);
+
+	float shapeMask = tailMask * widthMask * noiseDetail;
+	float brightMask = saturate(pow(tailProfile, 2.f) + headMask * 1.5f);
+
+	float lifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float4 emissive = lerp(In.vEmissive, In.vEndEmissive, 1.f - lifeRatio);
+
+	float3 tailColor = In.vColor.rgb;
+	float3 headColor = lerp(In.vColor.rgb, float3(1.f, 1.f, 0.78f), 0.75f);
+	float3 beamColor = lerp(tailColor, headColor, brightMask);
+	float3 finalColor = beamColor * shapeMask + emissive.rgb * emissive.a * brightMask * shapeMask;
+	float finalAlpha = shapeMask * In.vColor.a;
+
+	clip(finalAlpha - 0.002f);
+	Out.vDiffuse = float4(finalColor, finalAlpha);
+	return Out;
+}

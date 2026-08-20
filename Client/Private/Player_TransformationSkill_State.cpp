@@ -4,6 +4,7 @@
 #include "Player.h"
 #include "ComAnimator.h"
 #include "PlayerAnimationRatioGuard.h"
+#include "Player_Weapon.h"
 
 NS_USING(Client)
 
@@ -31,6 +32,21 @@ void CPlayer_TransformationSkill_State::Enter(CStateMachine* pStateMachine)
 	pPlayer->SetRootMotionTranslationActive(false);
 	m_ePhase = PHASE::CAST_BEGIN;
 	m_fAnimRatio = 0.f;
+
+	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+
+	if (!pWeapon)
+		return;
+	const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+	_vector weaPonPos = XMVectorSet(spawnWorld._41, spawnWorld._42, spawnWorld._43, spawnWorld._44);
+
+	m_iEffectID = CGameInstance::Get().PlayEffect("TransWand", spawnWorld, _vector{},
+		[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+		{
+			if (effectId != m_iEffectID)
+				return;
+			m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
+		});
 }
 
 void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _float)
@@ -50,6 +66,21 @@ void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _fl
 	switch (m_ePhase)
 	{
 	case PHASE::CAST_BEGIN:
+
+		if (m_iEffectID != INVALID_EFFECT_INSTANCE_ID)
+		{
+			auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+
+			if (!pWeapon)
+				return;
+
+			const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+
+			_float4x4 followWorld{};
+			XMStoreFloat4x4(&followWorld, XMMatrixTranslation(spawnWorld._41, spawnWorld._42, spawnWorld._43));
+
+			CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, followWorld);
+		}
 		// [TRANSFORMATION_CAST_BEGIN]
 		// 캐릭터가 주문을 준비하는 구간이다. 손/완드 차징 이펙트와 시전음을 연결한다.
 		// 타깃 변신 판정은 아직 수행하지 않는다.
@@ -61,6 +92,32 @@ void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _fl
 			// 2. 대상의 변신 가능 여부 판정 및 변신 적용 요청
 			// 3. 완드 발사/타깃 피격 이펙트와 주문 방출 사운드 시작
 			// 현재 단계에서는 요청대로 이펙트나 실제 변신 처리를 실행하지 않는다.
+
+			auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+			if (pWeapon)
+			{
+				const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+				_float4x4 particleWorld{};
+				XMStoreFloat4x4(&particleWorld, XMMatrixTranslation(spawnWorld._41, spawnWorld._42, spawnWorld._43));
+				const uint32_t iParticleOwnerID = CGameInstance::Get().Spawn("TransParticle.json", particleWorld);
+				if (iParticleOwnerID == INVALID_PARTICLE_OWNER_ID)
+					DEBUG_LOG("[Transformation] Failed to spawn TransParticle.json.\n");
+			}
+
+			auto pTarget = CGameInstance::Get().GetGameObjectByHandle(pPlayer->GetTargetHandle());
+
+			if (nullptr != pTarget)
+			{
+				_vector vTargetPosition = pTarget->GetTransform().GetState(STATE::POSITION);
+
+				_matrix matEffect = XMMatrixIdentity();
+				matEffect.r[3] = XMVectorSetW(vTargetPosition, 1.f);
+
+				_float4x4 effectWorld{};
+				XMStoreFloat4x4(&effectWorld, matEffect);
+
+				CGameInstance::Get().PlayEffect("Transformation", effectWorld);
+			}
 			m_ePhase = PHASE::RELEASE;
 		}
 		break;
@@ -73,7 +130,6 @@ void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _fl
 		{
 			// [TRANSFORMATION_RECOVERY_CUE]
 			// 주문 방출이 끝나고 후딜로 넘어가는 시점이다.
-			
 			m_ePhase = PHASE::RECOVERY;
 		}
 		break;
