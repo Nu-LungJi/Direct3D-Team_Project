@@ -38,9 +38,12 @@ namespace Engine
 		_float   DissolveIntensity;
 
 		_float	 ObjectAlpha;
+		_float	 NormalIntensity;
+		_float	 MetallicIntensity;
 		_float	 RoughnessIntensity;
-		_float2  ObjectPadding;
-
+		_float	 AmbientIntensity;
+		
+		_float3	 CB_MATERIAL_PADDING;
 	} CB_MATERIAL;
 	static_assert(sizeof(CB_MATERIAL) % 16 == 0);
 

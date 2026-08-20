@@ -100,8 +100,8 @@ HRESULT CMapMeshInstancingRenderer::BindMapMeshTextures(
 
 		return S_OK;
 	}
-
-HRESULT BindMapMeshMaterial(ID3D11DeviceContext* pContext, _float3 emissiveColor, _float emissiveIntensity, _float objectAlpha)
+/*----------- 광윤 추가 및 수정 : CB_MATERIAL 변수 추가 + m_DrawItems 변수 추가로 매개변수 수정, 바인딩 코드 추가-----------*/
+HRESULT BindMapMeshMaterial(ID3D11DeviceContext* pContext, const MATERIAL_DESC& materialDesc)
 	{
 		if (pContext == nullptr)
 		{
@@ -121,17 +121,23 @@ HRESULT BindMapMeshMaterial(ID3D11DeviceContext* pContext, _float3 emissiveColor
 		}
 
 		CB_MATERIAL material{};
-		material.EmissiveColor = emissiveColor;
-		material.EmissiveIntensity = emissiveIntensity;
-		material.ObjectAlpha = objectAlpha;
+		/*----------- 광윤 추가 및 수정 -----------*/
+		material.NormalIntensity = materialDesc.m_fNormalIntensity;
+		material.MetallicIntensity = materialDesc.m_fMetallicIntensity;
+		material.RoughnessIntensity = materialDesc.m_fRoughnessIntensity;
+		material.AmbientIntensity = materialDesc.m_fAmbientIntensity;
 
+		material.EmissiveColor = materialDesc.m_fEmissiveColor;
+		material.EmissiveIntensity = materialDesc.m_fEmissiveIntensity;
+		material.ObjectAlpha = materialDesc.m_fObjectAlpha;
+		/*---------------------------------*/
 		memcpy(mapped.pData, &material, sizeof(CB_MATERIAL));
 		pContext->Unmap(materialConstantBuffer->GetCBuffer().Get(), 0);
 		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, materialConstantBuffer->GetCBuffer().GetAddressOf());
 
 		return S_OK;
 	}
-
+/*---------------------------------*/
 
 CMapMeshInstancingRenderer::CMapMeshInstancingRenderer()
 {
@@ -207,7 +213,7 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 	ClearFrameScratchBuffers();
 	if (pContext == nullptr || s_InstanceBatches.empty())
 		return S_OK;
-
+	
 	const auto& vertexStaticShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced");
 	const auto& vertexFoliageShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced_Foliage");
 	const auto& pixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim_Instanced");
@@ -257,6 +263,7 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 			return E_FAIL;
 
 		const auto* textureCache = GetOrCreateMapMeshTextureCache(model);
+		const MATERIAL_DESC materialDesc = model->GetMaterialDesc();
 		if (textureCache == nullptr)
 			return E_FAIL;
 
@@ -276,7 +283,7 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 			D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS args{};
 			args.IndexCountPerInstance = static_cast<uint32_t>(mesh->GetNumIndices());
 			m_IndirectArgs.push_back(args);
-			m_DrawItems.push_back({ model, renderFeature, textureCache, meshIndex, instanceOffset });
+			m_DrawItems.push_back({ model, renderFeature, textureCache, materialDesc, meshIndex, instanceOffset });
 
 			const size_t featureIndex = static_cast<size_t>(renderFeature);
 			if (featureIndex >= RENDER_FEATURE_COUNT)
@@ -285,7 +292,6 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 		}
 		++batchIndex;
 	}
-
 	if (m_Instances.empty() || m_DrawItems.empty())
 		return S_OK;
 
@@ -297,13 +303,16 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 	{
 		return E_FAIL;
 	}
-
+	
 	ID3D11Buffer* visibleInstanceBuffer = s_pGpuCuller->GetVisibleInstanceBuffer();
 	ID3D11Buffer* argsBuffer = s_pGpuCuller->GetIndirectArgsBuffer();
 	if (!visibleInstanceBuffer || !argsBuffer)
 		return E_FAIL;
-	if (FAILED(BindMapMeshMaterial(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f)))
-		return E_FAIL;
+
+	/*----------- 광윤 수정 : MapMeshObject에 개별적인 Material 속성 부여로 하단의 for문 내부로 이동 -----------*/
+	//if (FAILED(BindMapMeshMaterial(pContext, { 1.f, 1.f, 1.f }, 0.f, 1.f)))
+	//	return E_FAIL;
+	/*---------------------------------*/
 
 	const auto RenderFeature = [&](EMapMeshRenderFeature renderFeature, const SPtr<CResVertexShader>& vertexShader) -> HRESULT
 	{
@@ -314,10 +323,10 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 		const auto& drawIndices = m_DrawIndicesByFeature[featureIndex];
 		if (drawIndices.empty())
 			return S_OK;
-
+		
 		pContext->IASetInputLayout(vertexShader->GetInputLayout().Get());
 		pContext->VSSetShader(vertexShader->GetVertexShader().Get(), nullptr, 0);
-
+		
 		for (const uint32_t drawIndex : drawIndices)
 		{
 			if (drawIndex >= m_DrawItems.size())
@@ -333,6 +342,8 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 			pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 			pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 			if (FAILED(BindMapMeshTextures(pContext, *item.textureCache, item.meshIndex)))
+				return E_FAIL;
+			if (FAILED(BindMapMeshMaterial(pContext, item.materialDesc)))
 				return E_FAIL;
 
 			pContext->DrawIndexedInstancedIndirect(

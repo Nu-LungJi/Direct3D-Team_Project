@@ -16,7 +16,7 @@ Texture2D<float>		DepthMap				: register(t5);
 
 // Image Based Lighting
 TextureCube				IrradianceMap			: register(t6);		// Enviroment Light
-TextureCube				PreFilterMap			: register(t7);					
+TextureCube				PreFilterMap			: register(t7);		
 Texture2D<float4>		LookUpTableMap			: register(t8);		// BRDF LUT
 
 // Shadow Texture
@@ -347,7 +347,7 @@ float3 Compute_EnviromentLight(float3 N, float3 V, float3 _Albedo, float _Roughn
 	return DiffuseAmbient + SpecularAmbient;
 }
 
-[numthreads(16, 16, 1)]
+[numthreads(16, 16, 1)]  
 void CSMain_NonBlend(uint3 ID : SV_DispatchThreadID)
 {
 	uint ScreenWidth;
@@ -410,7 +410,7 @@ void CSMain_NonBlend(uint3 ID : SV_DispatchThreadID)
 
 				float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
 
-				float3 Specular = D * F * V_Spec / 10.f;
+				float3 Specular = D * F * V_Spec / 10.f;	
 
 				float3 kS = F;
 				float3 kD = (1.f - kS) * (1.f - Metallic);
@@ -433,7 +433,7 @@ void CSMain_NonBlend(uint3 ID : SV_DispatchThreadID)
 						ShadowFactor = Compute_PointShadow(DepthWorld, RandomNoiseMatrix, ShadowSlot, i);
 					}
 					else
-					{
+					{	
 						ShadowFactor = Compute_SmoothShadow(DepthWorld, RandomNoiseMatrix, SamplingRange, ShadowSlot, i);
 					}
 				}
@@ -458,10 +458,10 @@ void CSMain_NonBlend(uint3 ID : SV_DispatchThreadID)
 				float NDL = clamp(RawNDL, 0.f, 1.f);
 
 				float3 H = normalize(V + L);
-				float D = DistributionGGX(WorldNormal, H, Roughness);
+				float  D = DistributionGGX(WorldNormal, H, Roughness);
 				float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
 
-				float V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
+				float  V_Spec = VisibilitySmithJointGGX(NDV, NDL, Roughness);
 
 				float3 Specular = D * F * V_Spec;
 
@@ -732,7 +732,7 @@ void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
 	float3 EffectLighting = EffectAccumulation * DirectLightBrightness;				// Light Face
 	
 	float3 FinalColor = EnviromentLight + FillLighting + DirectLighting + EffectLighting + BaseEmissive;
-	
+
 	OUTPUT[ID.xy] = float4(FinalColor, 1.f);
 	return;
 }

@@ -59,7 +59,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	if (FAILED(SpawnMonster(*hPlayer)))
 		return E_FAIL;
-	gameInstance.Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+
 
 	return S_OK;
 }

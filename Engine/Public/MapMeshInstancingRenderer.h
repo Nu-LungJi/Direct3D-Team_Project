@@ -50,6 +50,9 @@ private:
 		SPtr<CResStaticModel> model{};
 		EMapMeshRenderFeature renderFeature{};
 		const std::vector<MAPMESH_TEXTURE_SET>* textureCache = nullptr;
+		/*----------- 광윤 추가 -----------*/ // 메쉬 개별적으로 Material 속성 부여
+		MATERIAL_DESC	materialDesc{};
+		/*---------------------------------*/
 		uint32_t meshIndex = 0;
 		uint32_t instanceOffset = 0;
 	};

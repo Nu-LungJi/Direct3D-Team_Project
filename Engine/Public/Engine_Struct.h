@@ -310,7 +310,19 @@ namespace Engine
 		_float heightStart = 0.f;
 		_float heightEnd = 1.f;
 	};
+	/*----------- 광윤 추가 -----------*/
+	struct MATERIAL_DESC
+	{
+		_float3 m_fEmissiveColor = { 1.f, 1.f, 1.f };		// Emissive 색상. 텍스쳐가 있으면 {1.f, 1.f, 1.f} = 원색
+		_float	m_fEmissiveIntensity = 0.f;					// Emissive 강도,
+		_float	m_fObjectAlpha = 1.f;						// Object의 투명도,
 
+		_float	m_fNormalIntensity = 1.f;					// Normal 강도
+		_float	m_fMetallicIntensity = 1.f;					// Metallic 강도
+		_float	m_fRoughnessIntensity = 1.f;				// Roughness 강도
+		_float	m_fAmbientIntensity = 1.f;					// Ambient(Occlusion) 강도
+	};
+	/*---------------------------------*/
 	typedef struct tagMapMeshInstanceData
 	{
 		_float4x4 world;

@@ -29,19 +29,18 @@ float3x3 Make_TBNMatrix(float3 _Normal, float3 _Tangent)
 }
 float3 Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float4 _InNormal, float4 _InTangent)
 {
-    float3 LocalNormal = _NormalTex.Sample(LinearWrap, _TexCoord).rgb;
-    LocalNormal = normalize(LocalNormal * 2.f - 1.f);
-    float3x3 TBN = Make_TBNMatrix(_InNormal.xyz, _InTangent.xyz);
-
-    float3 N = normalize(_InNormal.xyz);
-    float3 T = normalize(_InTangent.xyz);
+	float2	LocalNormalXY	= _NormalTex.Sample(LinearWrap, _TexCoord).rg * 2.f - 1.f;
+	float	LocalNormalZ	= sqrt(saturate(1.f - dot(LocalNormalXY, LocalNormalXY)));
+	float3	LocalNormal		= normalize(float3(LocalNormalXY, LocalNormalZ));
+	
+	float3	Normal	= normalize(_InNormal.xyz);
+	float3	Tangent = normalize(_InTangent.xyz);
     
-    T = normalize(T - dot(T, N) * N);
-    float3 B = normalize(cross(N, T));
-    
-    float3 worldNormal = LocalNormal.x * T + LocalNormal.y * B + LocalNormal.z * N;
+	Tangent = normalize(Tangent - dot(Tangent, Normal) * Normal);
+	float3	BiNormal = normalize(cross(Normal, Tangent));
 
-    return normalize(worldNormal);
+	float3	WorldNormal = LocalNormal.x * Tangent + LocalNormal.y * BiNormal + LocalNormal.z * Normal;
+	return	normalize(WorldNormal); 
 }
 float Convert_ViewZPosByDepth(float _Depth)
 {

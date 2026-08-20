@@ -101,7 +101,8 @@ public:
 	void LateUpdate(_float fTimeDelta);
 
 public:
-	void ClearAllChunk(); // 씬 전환할 때 Clear하셈
+	void ClearAllChunk(); // 씬 전환할 때 Clear하셈 
+
 
 public:
 	HRESULT SaveMap(const std::string& path); // 메타 + 모든 청크 저장
