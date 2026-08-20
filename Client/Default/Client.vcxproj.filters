@@ -37,12 +37,6 @@
     <Filter Include="Loader\Level\Logo">
       <UniqueIdentifier>{7e9f7d17-14d6-4c04-adaf-777151b4c6b4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ShaderFiles">
-      <UniqueIdentifier>{6bd28087-0add-401b-9153-94d4f64a07f1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ShaderFiles\Decal">
-      <UniqueIdentifier>{c7198a28-a5af-4ed1-914d-b1609cf80b2b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resources">
       <UniqueIdentifier>{ea673d2d-2797-484e-8c21-2bc2a74e811d}</UniqueIdentifier>
     </Filter>
@@ -223,9 +217,6 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State">
       <UniqueIdentifier>{57c915ba-5887-48a0-b19f-15e26e1f248e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ShaderFiles\Particle">
-      <UniqueIdentifier>{c8302cb1-ec93-46b9-9ae9-21747c2503fe}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\UI">
       <UniqueIdentifier>{f607c9fe-6680-482f-9189-0dd92dc847f0}</UniqueIdentifier>
     </Filter>
@@ -285,9 +276,6 @@
     </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_RepairoSkill_State">
       <UniqueIdentifier>{f7968aef-760d-4af7-825c-ed68c788241f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ShaderFiles\SkyBox">
-      <UniqueIdentifier>{aa5df208-f22d-4fb8-9138-caea9933ba4c}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameObject\SkyBox">
       <UniqueIdentifier>{dcc79b65-c72c-402f-b79c-9a171f399c82}</UniqueIdentifier>
@@ -355,9 +343,6 @@
     <Filter Include="GameObject\Monster\EnderDragon\Skill\RandomBall">
       <UniqueIdentifier>{e1391e4d-8475-4d6d-b876-e945739bb89d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ShaderFiles\GameObject">
-      <UniqueIdentifier>{9a45fcfc-7add-40b1-8b4a-34c6753d1cfa}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ProtegoSkill_State">
       <UniqueIdentifier>{c2bc7a83-85f7-4724-8bc3-b2011caf5be4}</UniqueIdentifier>
     </Filter>
@@ -420,6 +405,39 @@
     </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_Potion_State">
       <UniqueIdentifier>{b099f08f-a3b6-4d53-b3d4-ca55705c3190}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\NPC">
+      <UniqueIdentifier>{f215cd79-c521-4fac-8859-0d8f4f6e10df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\NPC\00.Parents">
+      <UniqueIdentifier>{a9cd9686-5757-4795-ac3a-d99fef7f97e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\ShaderFiles">
+      <UniqueIdentifier>{6bd28087-0add-401b-9153-94d4f64a07f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\ShaderFiles\Decal">
+      <UniqueIdentifier>{c7198a28-a5af-4ed1-914d-b1609cf80b2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\ShaderFiles\Particle">
+      <UniqueIdentifier>{c8302cb1-ec93-46b9-9ae9-21747c2503fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\ShaderFiles\SkyBox">
+      <UniqueIdentifier>{aa5df208-f22d-4fb8-9138-caea9933ba4c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\ShaderFiles\GameObject">
+      <UniqueIdentifier>{9a45fcfc-7add-40b1-8b4a-34c6753d1cfa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\AnimRoot\Anim\NPC">
+      <UniqueIdentifier>{9b97b4ce-61a1-42cd-8013-51f0f9c91840}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Action\NPC">
+      <UniqueIdentifier>{c6258fc8-2bd1-4311-bf76-bb345a2c3d8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Action\Mon">
+      <UniqueIdentifier>{b130e623-ac5a-4d38-94a1-ddbd62ecab36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\AnimRoot\Anim\Mon">
+      <UniqueIdentifier>{f628f75b-2087-4c77-80c2-c2b8e5c6218e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -528,38 +546,11 @@
     <ClInclude Include="..\Public\Player_SkillStateBase.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\BTAnimation.h">
-      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\BTAnimRoot.h">
       <Filter>GameObject\AI\AnimRoot</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\BTAttackAnimation.h">
-      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\BTTurnSlow.h">
-      <Filter>GameObject\AI\Action</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\BTTeleport.h">
-      <Filter>GameObject\AI\Action</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\BTTurnDirect.h">
-      <Filter>GameObject\AI\Action</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\BTMove.h">
-      <Filter>GameObject\AI\Action</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\BTMonAttType.h">
-      <Filter>GameObject\AI\Action</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\BTHeader_Definse.h">
       <Filter>99.Defines</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\BTHitAnimMonster.h">
-      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\BTRandMoveAnim.h">
-      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\BTOnlyTrue.h">
       <Filter>GameObject\AI\Flow</Filter>
@@ -678,12 +669,6 @@
     <ClInclude Include="..\Public\Player_DescendoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\BTTurnAnimation.h">
-      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BTMonResetTable.h">
-      <Filter>GameObject\AI\Action</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\RagdollTest.h">
       <Filter>GameObject\Terrain\RagdollTest</Filter>
     </ClInclude>
@@ -788,9 +773,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\PlayerRagdollController.h">
       <Filter>GameObject\Player\Player_RagdollController</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\BTCinematic.h">
-      <Filter>GameObject\AI\Action</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\TombBossBullet.h">
       <Filter>GameObject\Monster\TombBoss\SYChild</Filter>
@@ -966,6 +948,54 @@
     <ClInclude Include="..\Public\Player_Potion_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Potion_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\NpcMom.h">
+      <Filter>GameObject\NPC\00.Parents</Filter>
+    </ClInclude>
+    <ClInclude Include="BTAnimNpc.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\WorldNpc.h">
+      <Filter>GameObject\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTNaviMove.h">
+      <Filter>GameObject\AI\Action\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTCinematic.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTMonAttType.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTMonResetTable.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTMove.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTeleport.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnDirect.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnSlow.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAttackAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTHitAnimMonster.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTRandMoveAnim.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1062,12 +1092,6 @@
     <ClCompile Include="..\Private\Monster.cpp">
       <Filter>GameObject\Monster</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\BTAnimation.cpp">
-      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\BTAttackAnimation.cpp">
-      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\BTCreatureFlag.cpp">
       <Filter>GameObject\AI\Flow</Filter>
     </ClCompile>
@@ -1077,29 +1101,8 @@
     <ClCompile Include="..\Private\BTOnlyFalse.cpp">
       <Filter>GameObject\AI\Flow</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\BTRandMoveAnim.cpp">
-      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\BTHitAnimMonster.cpp">
-      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\BTMonAttType.cpp">
-      <Filter>GameObject\AI\Action</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\BTMove.cpp">
-      <Filter>GameObject\AI\Action</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\BTTeleport.cpp">
-      <Filter>GameObject\AI\Action</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\BTTurnDirect.cpp">
-      <Filter>GameObject\AI\Action</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\BTAnimRoot.cpp">
       <Filter>GameObject\AI\AnimRoot</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\BTTurnSlow.cpp">
-      <Filter>GameObject\AI\Action</Filter>
     </ClCompile>
     <ClCompile Include="..\private\MyMagicSquareStep.cpp">
       <Filter>GameObject\CharlesRookwood\MyMagicSquareStep</Filter>
@@ -1221,12 +1224,6 @@
     <ClCompile Include="..\Private\Player_DescendoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DescendoSkill_State</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\BTTurnAnimation.cpp">
-      <Filter>GameObject\AI\AnimRoot\Anim</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\BTMonResetTable.cpp">
-      <Filter>GameObject\AI\Action</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\Player_Magic_Bullet.cpp">
       <Filter>GameObject\Player\Player_Magic_Bullet</Filter>
     </ClCompile>
@@ -1288,9 +1285,6 @@
     </ClCompile>
     <ClCompile Include="..\private\BossMace.cpp">
       <Filter>GameObject\Monster\TombBoss</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\BTCinematic.cpp">
-      <Filter>GameObject\AI\Action</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\TombBossBullet.cpp">
       <Filter>GameObject\Monster\TombBoss\SYChild</Filter>
@@ -1460,49 +1454,97 @@
     <ClCompile Include="..\Private\FlightRing.cpp">
       <Filter>GameObject\FlyMiniGame\FlightRing</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\NpcMom.cpp">
+      <Filter>GameObject\NPC\00.Parents</Filter>
+    </ClCompile>
+    <ClCompile Include="BTAnimNpc.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\WorldNpc.cpp">
+      <Filter>GameObject\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTNaviMove.cpp">
+      <Filter>GameObject\AI\Action\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTCinematic.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTMonAttType.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTMonResetTable.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTMove.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTeleport.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnDirect.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnSlow.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAttackAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTHitAnimMonster.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTRandMoveAnim.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_NoiseScroll.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_Particle_UvScroll.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Mesh_UV_XScroll.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Structured_Tex_Particle_Smoke.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Mesh.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Lightning_Tex.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Mesh_Particle.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Tex_Particle.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_GPU_Splash.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Trail.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_Ribbon.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <ClCompile Include="..\Private\UIManager.cpp">
       <Filter>GameObject\UI</Filter>
@@ -1532,7 +1574,7 @@
       <Filter>GameObject\UI\UIController</Filter>
     </ClCompile>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_ExtraEffect.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <ClCompile Include="..\Private\GameOverMask.cpp">
       <Filter>GameObject\UI\GameOverMask</Filter>
@@ -1541,49 +1583,49 @@
       <Filter>GameObject\UI\VideoObject</Filter>
     </ClCompile>
     <FxCompile Include="..\ShaderFiles\Shader_SkyCloudy.hlsl">
-      <Filter>ShaderFiles\SkyBox</Filter>
+      <Filter>GameObject\ShaderFiles\SkyBox</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Mesh.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Texture.hlsl">
-      <Filter>ShaderFiles\Particle</Filter>
+      <Filter>GameObject\ShaderFiles\Particle</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Shader_EnderDragon.hlsl">
-      <Filter>ShaderFiles\GameObject</Filter>
+      <Filter>GameObject\ShaderFiles\GameObject</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCorruption.hlsl">
-      <Filter>ShaderFiles\Decal</Filter>
+      <Filter>GameObject\ShaderFiles\Decal</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokVein.hlsl">
-      <Filter>ShaderFiles\Decal</Filter>
+      <Filter>GameObject\ShaderFiles\Decal</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokBlight.hlsl">
-      <Filter>ShaderFiles\Decal</Filter>
+      <Filter>GameObject\ShaderFiles\Decal</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCore.hlsl">
-      <Filter>ShaderFiles\Decal</Filter>
+      <Filter>GameObject\ShaderFiles\Decal</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokCrackedRock.hlsl">
-      <Filter>ShaderFiles\Decal</Filter>
+      <Filter>GameObject\ShaderFiles\Decal</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokWallRift.hlsl">
-      <Filter>ShaderFiles\Decal</Filter>
+      <Filter>GameObject\ShaderFiles\Decal</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokSurface.hlsl">
-      <Filter>ShaderFiles\Decal</Filter>
+      <Filter>GameObject\ShaderFiles\Decal</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokImpactScorch.hlsl">
-      <Filter>ShaderFiles\Decal</Filter>
+      <Filter>GameObject\ShaderFiles\Decal</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokEnergyPool.hlsl">
-      <Filter>ShaderFiles\Decal</Filter>
+      <Filter>GameObject\ShaderFiles\Decal</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokOrbGround.hlsl">
-      <Filter>ShaderFiles\Decal</Filter>
+      <Filter>GameObject\ShaderFiles\Decal</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokBranchCrack.hlsl">
-      <Filter>ShaderFiles\Decal</Filter>
+      <Filter>GameObject\ShaderFiles\Decal</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

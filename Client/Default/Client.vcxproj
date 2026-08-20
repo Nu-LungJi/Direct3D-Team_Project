@@ -209,6 +209,7 @@
     <ClInclude Include="..\public\BTDecEdgPhase.h" />
     <ClInclude Include="..\public\BTDecEdgState.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
+    <ClInclude Include="..\public\BTNaviMove.h" />
     <ClInclude Include="..\public\Edg_Godae.h" />
     <ClInclude Include="..\Public\FlightRing.h" />
     <ClInclude Include="..\Public\FlyminiGameController.h" />
@@ -232,6 +233,7 @@
     <ClInclude Include="..\public\LevelLastBossRanrokLoader.h" />
     <ClInclude Include="..\public\Mon_Godae.h" />
     <ClInclude Include="..\public\Mon_Spawner.h" />
+    <ClInclude Include="..\public\NpcMom.h" />
     <ClInclude Include="..\Public\Player_Fly_State.h" />
     <ClInclude Include="..\public\PropBarrel.h" />
     <ClInclude Include="..\public\PropBarrelDebris.h" />
@@ -378,6 +380,8 @@
     <ClInclude Include="..\Public\Mon_Weapon.h" />
     <ClInclude Include="..\Public\UI_Structs.h" />
     <ClInclude Include="..\Public\VideoObject.h" />
+    <ClInclude Include="..\public\WorldNpc.h" />
+    <ClInclude Include="BTAnimNpc.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -386,6 +390,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\BTNaviMove.cpp" />
     <ClCompile Include="..\private\Edg_Godae.cpp" />
     <ClCompile Include="..\Private\FlightRing.cpp" />
     <ClCompile Include="..\Private\FlyminiGameController.cpp" />
@@ -413,6 +418,7 @@
     <ClCompile Include="..\private\EnderDragon_State.cpp" />
     <ClCompile Include="..\private\Mon_Godae.cpp" />
     <ClCompile Include="..\private\Mon_Spawner.cpp" />
+    <ClCompile Include="..\private\NpcMom.cpp" />
     <ClCompile Include="..\Private\Player_Fly_State.cpp" />
     <ClCompile Include="..\private\PropBarrel.cpp" />
     <ClCompile Include="..\private\PropBarrelDebris.cpp" />
@@ -550,6 +556,8 @@
     <ClCompile Include="..\private\TriggerCRW_ToBoss.cpp" />
     <ClCompile Include="..\Private\Mon_Weapon.cpp" />
     <ClCompile Include="..\Private\VideoObject.cpp" />
+    <ClCompile Include="..\private\WorldNpc.cpp" />
+    <ClCompile Include="BTAnimNpc.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

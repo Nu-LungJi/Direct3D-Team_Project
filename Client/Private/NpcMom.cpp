@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Monster.h"
+#include "NpcMom.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
@@ -11,7 +11,6 @@
 #include "ComCollider.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
-#include "Player_Magic_Bullet.h"
 
 #include "CollBox.h"
 #include "UIManager.h"
@@ -25,71 +24,23 @@
 #include "ComSound.h"
 NS_USING(Client)
 
-CMonster::CMonster()
+CNpcMom::CNpcMom()
 {
 }
 
 
-CMonster::~CMonster()
+CNpcMom::~CNpcMom()
 {
 	// 구독해제
 	// CGameInstance::Get().EventUnsubscribeAll(GetHandle());
 }
 
-void CMonster::UpdateGUI()
+void CNpcMom::UpdateGUI()
 {
-	CGameObject::UpdateGUI();
-	ImGui::DragInt("HP", &m_iHp, 0, 1);
-	ImGui::DragFloat("EE", &m_fIntensive, 0.1f,0.f,100.f);
-	ImGui::DragFloat("DD", &m_fDissolve, 0.1f, 0.f, 1.f);
-	ImGui::DragFloat3("ff", reinterpret_cast<_float*>(&m_fEMissiveColor), 0.1f,0.f, 1.f);
-	ImGui::Text("NoramlAtt : %d", m_iNormalHitCnt);
-	
-	ImGui::Text("bPending : %s", m_bPending == true ? "TRUE" : "FALSE");
-	ImGui::Text("Pending AttType : %s", MagicEnumToStringView(m_PendingMonTable.eAttType).data());
-	ImGui::Text("Pending HitType : %s", MagicEnumToStringView(m_PendingMonTable.eHitType).data());
-
-	ImGui::Separator();
-	ImGui::Text("ActiveHit : %s", m_bActiveHit == true ? "TRUE" : "FALSE");
-	ImGui::Text("ActiveHit AttType : %s", MagicEnumToStringView(m_ActiveMonTable.eAttType).data());
-	ImGui::Text("ActiveHit HitType : %s", MagicEnumToStringView(m_ActiveMonTable.eHitType).data());
-	ImGui::Separator();
-	ImGui::Text("Current Attack:"); ImGui::SameLine();
-	ImGui::Text(MagicEnumToStringView(m_eAttType).data());
-
-	if (nullptr != m_pBeHavior)
-		ImGui::Text("BeHavior Att : %s", Check_Flag(ETOUI(CBTRoot::BTFLAG::ATTACK)) == true ? "ENABLE" : "DISABLE");
-
-	ImGui::Text(m_CurEffectName.c_str());
-	if (ImGui::TreeNode("Flag"))
-	{
-		struct GuiView
-		{
-			uint32_t iValue{};
-			const _char* pName{};
-		};
-#define X(name, value) value, #name,
-		const GuiView Flags[] = { BTFLAG_M };
-#undef X
-
-		for (uint32_t i = 0; i < std::size(Flags); ++i)
-		{
-			ImGui::PushID(i);
-			ImGui::Text(Flags[i].pName); ImGui::SameLine();
-			ImGui::Text(true == m_pBeHavior->Check_Flag(Flags[i].iValue) ? ": TRUE" : " FALSE");
-			ImGui::SameLine();
-			if (ImGui::Button("Invert"))
-			{
-				m_pBeHavior->Set_Flag(Flags[i].iValue, FLAGTYPE::INVERT);
-			}
-			ImGui::PopID();
-		}
-
-		ImGui::TreePop();
-	}
+	__super::UpdateGUI();
 }
 
-HRESULT CMonster::InitializePrototype(void* pArg)
+HRESULT CNpcMom::InitializePrototype(void* pArg)
 {
 	m_pResVertexCPUSkinningInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced");
 	if (!m_pResVertexCPUSkinningInstancedShader || FAILED(m_pResVertexCPUSkinningInstancedShader->Load()))
@@ -111,11 +62,11 @@ HRESULT CMonster::InitializePrototype(void* pArg)
 	return S_OK;
 }
 
-HRESULT CMonster::Initialize(void* pArg)
+HRESULT CNpcMom::Initialize(void* pArg)
 {
-	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
-	m_bDonMove = MonDesc->bDonMove;
-	m_TargetHandle = MonDesc->TargetHandle;
+	auto NpcDesc = static_cast<NPC_DESC*>(pArg);
+	m_TargetHandle = NpcDesc->TargetHandle;
+
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
@@ -138,43 +89,33 @@ HRESULT CMonster::Initialize(void* pArg)
 	return S_OK;
 }
 
-void CMonster::Stuck()
+void CNpcMom::Stuck()
 {
 
 }
-void CMonster::PriorityUpdate(E::_float fTimeDelta)
+void CNpcMom::PriorityUpdate(E::_float fTimeDelta)
 {
-	Activate_PendingHit();
-	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyDown(DIK_0))
-		m_pMoveIntent->RequestWarp(_float3(20, 20, 20));
-	
 	m_pMoveIntent->ClearMoveIntent();
 	m_pMoveIntent->ClearFacingIntent();
 	__super::PriorityUpdate(fTimeDelta);
-	
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DROP)| ETOUI(CBTRoot::BTFLAG::DEAD) | ETOUI(CBTRoot::BTFLAG::DEBRIS)))
-		m_pCharacterMotor->SetUseGravity(true);
-	else m_pCharacterMotor->SetUseGravity(false);
-		
-	Flag_Check(fTimeDelta);
+
 	m_pCharacterMotor->SetGravity(-9.8f);
 	m_pBeHavior->Update(fTimeDelta);
-	
+
 }
 
-void CMonster::Update(E::_float fTimeDelta)
+void CNpcMom::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
 	if (m_pComSound)
 		m_pComSound->Update();
 	Update_Animation(fTimeDelta);
 
-	EmissiveFadeOut(fTimeDelta);
 	m_pBeHavior->AbortNode();
 	Update_HurtBox();
 }
 
-void CMonster::Update_Animation(_float fTimeDelta)
+void CNpcMom::Update_Animation(_float fTimeDelta)
 {
 	if (m_pComModelInstance->GetModel()->GetAnimations().empty())
 		return;
@@ -185,25 +126,23 @@ void CMonster::Update_Animation(_float fTimeDelta)
 	{
 		const _float3 vRootMotionDelta = m_pModelAnimator->GetRootMotionDelta();
 		_float3 vWorldDisplacement{};
-		XMStoreFloat3(&vWorldDisplacement,XMVector3Rotate(XMLoadFloat3(&vRootMotionDelta) * m_fRootMotionTranslationScale,GetTransform().GetLoadedQuaternion()));
+		XMStoreFloat3(&vWorldDisplacement, XMVector3Rotate(XMLoadFloat3(&vRootMotionDelta) * m_fRootMotionTranslationScale, GetTransform().GetLoadedQuaternion()));
 		m_pMoveIntent->AddExternalDisplacement(vWorldDisplacement);
 	}
 
 	if (m_bRootMotionRotationActive)
 	{
-		const _float4 vRootMotionRotationDelta =m_pModelAnimator->GetRootMotionRotationDelta();
-		GetTransform().SetQuaternion(XMQuaternionNormalize(XMQuaternionMultiply(XMLoadFloat4(&vRootMotionRotationDelta),GetTransform().GetLoadedQuaternion())));
+		const _float4 vRootMotionRotationDelta = m_pModelAnimator->GetRootMotionRotationDelta();
+		GetTransform().SetQuaternion(XMQuaternionNormalize(XMQuaternionMultiply(XMLoadFloat4(&vRootMotionRotationDelta), GetTransform().GetLoadedQuaternion())));
 	}
 }
 
-void CMonster::LateUpdate(E::_float fTimeDelta)
+void CNpcMom::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
 	const _float3 vControllerPosition = m_pCharacterController->GetPosition();
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
-
-	if (m_bHide) return;
 
 	const auto& pModel = m_pComModelInstance->GetModel();
 
@@ -217,7 +156,7 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 		return;
 	}
 }
-HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
+HRESULT CNpcMom::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
 	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResPixelShader)
 		return E_FAIL;
@@ -311,7 +250,7 @@ HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
+		m_pComModelInstance->Bind_Materials(pContext,_float3{1,1,1}, 0, {1.f, 1.f, 1.f}, m_fDissolve, 1.f);
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
@@ -321,7 +260,7 @@ HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 	return S_OK;
 
 }
-HRESULT CMonster::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances)
+HRESULT CNpcMom::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances)
 {
 
 	m_iCurrentInstanceCount = static_cast<uint32_t>(Instances.size());
@@ -368,7 +307,7 @@ HRESULT CMonster::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std
 	return S_OK;
 
 }
-HRESULT CMonster::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
+HRESULT CNpcMom::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
 {
 	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
 
@@ -387,7 +326,7 @@ HRESULT CMonster::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
 }
 
 /*----------- 광윤 추가 -----------*/
-HRESULT CMonster::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx){
+HRESULT CNpcMom::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
 	if (!pContext || !m_pComModelInstance || !m_pComCBufferPerObject)
 		return E_FAIL;
 
@@ -418,7 +357,7 @@ HRESULT CMonster::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_C
 
 	return S_OK;
 }
-bool CMonster::GetShadowBounds(BoundingBox& OutBounds) const
+bool CNpcMom::GetShadowBounds(BoundingBox& OutBounds) const
 {
 	if (!m_pComCollider || !m_pComCollider->Get())	return false;
 
@@ -437,74 +376,24 @@ bool CMonster::GetShadowBounds(BoundingBox& OutBounds) const
 	return true;
 }
 /*---------------------------------*/
-
-void CMonster::Find_Target()
+_bool CNpcMom::OnQueryHit(int32_t iDamage)
 {
-	auto pPhysX =CGameInstance::Get().GetPhysXManager();
-	if (nullptr == pPhysX)return;
+	if (iDamage <= 0 || m_iHp <= 0)
+		return false;
 
-	PX_OVERLAP_DESC Desc{};
-	// 몬스터 주변 탐색 범위
-	Desc.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 2000.f};
-	Desc.tPose = {.vPosition = GetTransform().GetPosition()};
+	m_iHp -= iDamage;
 
-	// 플레이어 본체와 NPC 본체만 검색
-	Desc.tFilter = {.iQueryMask =ETOUI(COLLISION_LAYER::PLAYER_BODY) |ETOUI(COLLISION_LAYER::NPC_BODY),
-		.hIgnoreGameObject = GetHandle(),
-		.bQueryStatic = false,
-		.bQueryDynamic = true,
-		.bIncludeTrigger = false
-	};
+	if (m_iHp <= 0)
 
-	std::vector<PX_OVERLAP_RESULT> Results{};
-	if (!pPhysX->OverlapMultiple(Desc,	Results,32))
-	{
-		m_TargetHandle = {};
-		return;
-	}
-
-	CGameObject* pLastTarget = nullptr;
-	_float fMaxDist = FLT_MAX;
-
-	 _vector vPos =GetTransform().GetState(STATE::POSITION);
-
-	for (const auto& Result : Results)
-	{
-		CGameObject* pTarget = Result.pGameObject;
-
-		if (nullptr == pTarget || pTarget->GetPendingDestroy())
-			continue;
-
-		const _vector vTargetPos = pTarget->GetTransform().GetState(STATE::POSITION);
-
-		const _float fDis =	XMVectorGetX(XMVector3LengthSq(vTargetPos - vPos));
-
-		if (fDis < fMaxDist)
-		{
-			fMaxDist = fDis;
-			pLastTarget = pTarget;
-		}
-	}
-
-	if (nullptr != pLastTarget)
-		m_TargetHandle = pLastTarget->GetHandle();
-	else
-		m_TargetHandle = {};
+	return true;
 }
-
-void CMonster::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
+void CNpcMom::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 	if (nullptr == pObj)
 		return;
 
-	
-	if (auto pPlayerMagicBullet = Cast<CPlayer_Magic_Bullet>(pObj))
-	{
-		Check_Table(PLAYER_SKILL_TYPE::ATTACK);
-	}
-	
 }
-_bool CMonster::Activate_PendingHit()
+_bool CNpcMom::Activate_PendingHit()
 {
 	if (!m_bPending)return false;
 
@@ -512,8 +401,6 @@ _bool CMonster::Activate_PendingHit()
 		m_ActiveMonTable.eAttType == m_PendingMonTable.eAttType &&
 		m_ActiveMonTable.eHitType == m_PendingMonTable.eHitType;
 
-	if (!bSameHit)
-		++m_iHitCnt;
 
 	m_ActiveMonTable = m_PendingMonTable;
 	m_bActiveHit = true;
@@ -524,39 +411,22 @@ _bool CMonster::Activate_PendingHit()
 	return true;
 }
 
-void CMonster::ReActiveTable()
+void CNpcMom::ReActiveTable()
 {
 	m_PendingMonTable = {};
 	m_bPending = false;
 
-	m_ActiveMonTable = {}; 
+	m_ActiveMonTable = {};
 	m_bActiveHit = false;
-	m_iHitCnt = 0;
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::DEL);
 }
 
-_bool CMonster::Is_Grounded()
+_bool CNpcMom::Is_Grounded()
 {
 	return m_pCharacterController->IsGrounded();
 }
 
-
-uint32_t CMonster::Find_SkillNum(ATTMON eType)
-{
-	auto iter = m_MonSkillLists.find(eType);
-	
-	if (iter == m_MonSkillLists.end())
-		return UINT_MAX;
-	return iter->second;
-
-}
-
-_bool CMonster::Check_Flag(uint32_t iFlag)
-{
-	return m_pBeHavior->Check_Flag(iFlag);
-}
-
-SOUND_ID  CMonster::Play_Sound(const MONSOUND& MonSound)
+SOUND_ID  CNpcMom::Play_Sound(const MONSOUND& MonSound)
 {
 	auto iter = m_SoundTable.find(MonSound.SoundKey);
 
@@ -582,20 +452,12 @@ SOUND_ID  CMonster::Play_Sound(const MONSOUND& MonSound)
 	return id;
 }
 
-void CMonster::Skill_Finished()
-{
-	m_eAttType = ATTMON::END;
-	m_CurEffectName.clear();
-	m_eLastSkillTable = ATTMON::END;
-	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT) | ETOUI(CBTRoot::BTFLAG::ATTACK) | ETOUI(CBTRoot::BTFLAG::ENDHIT) |ETOUI(CBTRoot::BTFLAG::THROW),FLAGTYPE::DEL);
-}
-
-void CMonster::Get_SoundKey(_string& CurSoundName)
+void CNpcMom::Get_SoundKey(_string& CurSoundName)
 {
 	_string Key = "";
-	if (ImGui::BeginCombo("SoundTable",CurSoundName.c_str()))
+	if (ImGui::BeginCombo("SoundTable", CurSoundName.c_str()))
 	{
-		for (auto&[key, value] : m_SoundTable)
+		for (auto& [key, value] : m_SoundTable)
 		{
 			_bool bSelect = key == CurSoundName;
 			if (ImGui::Selectable(key.c_str(), bSelect))
@@ -604,7 +466,7 @@ void CMonster::Get_SoundKey(_string& CurSoundName)
 				break;
 			}
 
-			if(bSelect)
+			if (bSelect)
 				ImGui::SetItemDefaultFocus();
 		}
 
@@ -613,7 +475,7 @@ void CMonster::Get_SoundKey(_string& CurSoundName)
 	return;
 }
 
-const _float4x4* CMonster::Get_CombineBoneMatrix(int32_t iBoneIndex)
+const _float4x4* CNpcMom::Get_CombineBoneMatrix(int32_t iBoneIndex)
 {
 	if (iBoneIndex >= m_pComModelInstance->Get_CombinedBoneMatrices().size() || iBoneIndex < 0)
 		return nullptr;
@@ -621,22 +483,22 @@ const _float4x4* CMonster::Get_CombineBoneMatrix(int32_t iBoneIndex)
 	return &m_pComModelInstance->Get_CombinedBoneMatrices()[iBoneIndex];
 }
 
-CComAnimator* CMonster::Get_Animator()
+CComAnimator* CNpcMom::Get_Animator()
 {
 	return m_pModelAnimator;
 }
 
-CComCharacterMoveIntent* CMonster::Get_MoveIntent()
+CComCharacterMoveIntent* CNpcMom::Get_MoveIntent()
 {
 	return m_pMoveIntent;
 }
 
-CBTBlackBoard* CMonster::Get_BlackBoard()
+CBTBlackBoard* CNpcMom::Get_BlackBoard()
 {
 	if (nullptr == m_pBeHavior) return nullptr;
 	return m_pBeHavior->Get_Blackboard();
 }
-int32_t CMonster::Find_AnimIndex(const _string& AnimName)
+int32_t CNpcMom::Find_AnimIndex(const _string& AnimName)
 {
 	auto pModel = m_pComModelInstance->GetModel();
 	if (nullptr == pModel) return -1;
@@ -652,7 +514,7 @@ int32_t CMonster::Find_AnimIndex(const _string& AnimName)
 
 	return -1;
 }
-void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
+void CNpcMom::Damaged(PLAYER_SKILL_TYPE eType)
 {
 	switch (eType)
 	{
@@ -698,13 +560,13 @@ void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 	}
 }
 
-void CMonster::Update_HurtBox()
+void CNpcMom::Update_HurtBox()
 {
 	_bool bHurtBoxUpdated{ false };
 
 	if (m_iColliderBoneIndex >= 0 && m_pComModelInstance)
 	{
-		const auto& CombinedBones =m_pComModelInstance->Get_CombinedBoneMatrices();
+		const auto& CombinedBones = m_pComModelInstance->Get_CombinedBoneMatrices();
 
 		const size_t iBoneIndex =
 			static_cast<size_t>(m_iColliderBoneIndex);
@@ -736,7 +598,7 @@ void CMonster::Update_HurtBox()
 					&vHurtBoxRotation,
 					XMQuaternionNormalize(vRotation));
 
-				bHurtBoxUpdated = m_pComRigidBody->SetKinematicTarget(m_vHurtBoxPosition,vHurtBoxRotation);
+				bHurtBoxUpdated = m_pComRigidBody->SetKinematicTarget(m_vHurtBoxPosition, vHurtBoxRotation);
 			}
 		}
 	}
@@ -752,53 +614,6 @@ void CMonster::Update_HurtBox()
 	}
 }
 
-
-void CMonster::Flag_Check(_float fTimeDelta)
-{
-	//이미시브
-	if (m_fIntensive <= 0.f && Check_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
-	{
-		StartEmissive();
-		m_bWork = true;
-	}
-
-	//뭔말알?
-	if (m_iHp <= 0.f)
-		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DEAD), FLAGTYPE::ADD);
-
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::HIT)))
-		m_fIntensive = 0;
-
-	if (Check_Flag(ETOUI(CBTRoot::BTFLAG::ENDHIT)))
-		Skill_Finished();
-
-	if (!Check_Flag(ETOUI(CBTRoot::BTFLAG::LOOP)) && m_bSkillLoop)
-	{
-		if (m_iCurEffectID != INVALID_EFFECT_INSTANCE_ID)
-			CGameInstance::Get().StopEffect(m_iCurEffectID);
-		m_bSkillLoop = false;
-	}
-	
-}
-void CMonster::EmissiveFadeOut(_float fTimeDelta)
-{
-	if (m_fIntensive > 0.f &&  !Check_Flag(ETOUI(CBTRoot::BTFLAG::EMISSIVE)))
-	{
-		m_bWork = true;
-		m_fTimeTick += fTimeDelta;
-
-		_float t = m_fTimeTick / 0.5f;
-
-		m_fIntensive = std::lerp(m_fPreEmissive, 0, t);
-		if (t >= 1.f)
-		{
-			m_bWork = false;
-			m_fTimeTick = m_fIntensive = 0;
-		}
-
-	}
-
-}
 
 
 
