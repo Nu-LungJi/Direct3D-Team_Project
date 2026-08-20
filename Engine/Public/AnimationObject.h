@@ -33,6 +33,7 @@ public:
 
 public:
 	void UpdateRenderVisibility(const BoundingBox& WorldBounds);
+	static void UpdateCullingDebugGUI();
 
 	_bool IsMainViewVisible() const { return m_bMainViewVisible; }
 	_bool IsShadowVisible() const { return m_bShadowVisible; }
@@ -48,7 +49,7 @@ private:
 	static _bool IntersectsClipVolume(const BoundingBox& WorldBounds, _fmatrix ViewProj);
 
 private:
-	uint32_t m_iInstanceModelNum = 0.f;
+	uint32_t m_iInstanceModelNum{};
 
 	_bool m_bMainViewVisible{ true };
 	_bool m_bShadowVisible{ true };

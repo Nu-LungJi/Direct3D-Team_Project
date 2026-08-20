@@ -7,6 +7,39 @@
 
 NS_USING(Engine)
 
+namespace
+{
+	struct ANIMATION_CULLING_DEBUG_STATS
+	{
+		uint64_t iFrame{};
+		uint32_t iTested{};
+		uint32_t iMainVisible{};
+		uint32_t iShadowVisible{};
+		uint32_t iMainAndShadowVisible{};
+		uint32_t iShadowOnlyVisible{};
+		uint32_t iFullyCulled{};
+	};
+
+	ANIMATION_CULLING_DEBUG_STATS g_AnimationCullingStats{};
+
+	void RecordCullingResult(_bool bMainVisible, _bool bShadowVisible)
+	{
+		const uint64_t iCurrentFrame = CGameInstance::Get().GetFrameCnt();
+		if (g_AnimationCullingStats.iFrame != iCurrentFrame)
+		{
+			g_AnimationCullingStats = {};
+			g_AnimationCullingStats.iFrame = iCurrentFrame;
+		}
+
+		++g_AnimationCullingStats.iTested;
+		g_AnimationCullingStats.iMainVisible += bMainVisible ? 1u : 0u;
+		g_AnimationCullingStats.iShadowVisible += bShadowVisible ? 1u : 0u;
+		g_AnimationCullingStats.iMainAndShadowVisible += bMainVisible && bShadowVisible ? 1u : 0u;
+		g_AnimationCullingStats.iShadowOnlyVisible += !bMainVisible && bShadowVisible ? 1u : 0u;
+		g_AnimationCullingStats.iFullyCulled += !bMainVisible && !bShadowVisible ? 1u : 0u;
+	}
+}
+
 CAnimationObject::CAnimationObject(): CGameObject{}
 {
 }
@@ -81,7 +114,7 @@ void CAnimationObject::UpdateRenderVisibility(const BoundingBox& WorldBounds)
 
 	m_bMainViewVisible =
 		MainCamera == nullptr ||
-		MainCamera->IntersectsViewVolume(WorldBounds);
+		MainCamera->IntersectsViewVolume(MainViewBounds);
 
 	/*
 	  2. Shadow Cascade 판정
@@ -95,7 +128,10 @@ void CAnimationObject::UpdateRenderVisibility(const BoundingBox& WorldBounds)
 		CGameInstance::Get().Get_MainDirectionalLightData();
 
 	if (!CSM.m_pLightHandle || !CSM.m_pShadowSRV)
+	{
+		RecordCullingResult(m_bMainViewVisible, m_bShadowVisible);
 		return;
+	}
 
 
 	for(uint32_t i = 0; i < MAX_CASCADE_COUNT; ++i)
@@ -103,7 +139,7 @@ void CAnimationObject::UpdateRenderVisibility(const BoundingBox& WorldBounds)
 		const _matrix CascadeViewProj = CGameInstance::Get().Get_CascadeShadowViewProj(i);
 
 		if (IntersectsClipVolume(
-			WorldBounds,
+			ShadowBounds,
 			CascadeViewProj))
 		{
 			m_bShadowVisible = true;
@@ -111,8 +147,37 @@ void CAnimationObject::UpdateRenderVisibility(const BoundingBox& WorldBounds)
 		}
 	}
 
+	RecordCullingResult(m_bMainViewVisible, m_bShadowVisible);
+}
 
+void CAnimationObject::UpdateCullingDebugGUI()
+{
+	if (!ImGui::Begin("Animation Culling Debug"))
+	{
+		ImGui::End();
+		return;
+	}
 
+	const auto& Stats = g_AnimationCullingStats;
+	const _float fCullRatio = Stats.iTested > 0
+		? static_cast<_float>(Stats.iFullyCulled) / static_cast<_float>(Stats.iTested)
+		: 0.f;
+
+	ImGui::Text("Frame : %llu", static_cast<unsigned long long>(Stats.iFrame));
+	ImGui::Separator();
+	ImGui::Text("Tested               : %u", Stats.iTested);
+	ImGui::TextColored(ImVec4(0.25f, 1.f, 0.25f, 1.f), "Main Visible         : %u", Stats.iMainVisible);
+	ImGui::TextColored(ImVec4(0.35f, 0.75f, 1.f, 1.f), "Shadow Visible       : %u", Stats.iShadowVisible);
+	ImGui::Text("Main + Shadow         : %u", Stats.iMainAndShadowVisible);
+	ImGui::TextColored(ImVec4(1.f, 0.8f, 0.2f, 1.f), "Shadow Only           : %u", Stats.iShadowOnlyVisible);
+	ImGui::TextColored(ImVec4(1.f, 0.3f, 0.3f, 1.f), "Fully Culled          : %u", Stats.iFullyCulled);
+	ImGui::Separator();
+	ImGui::Text("Full Cull Ratio       : %.1f%%", fCullRatio * 100.f);
+	ImGui::ProgressBar(fCullRatio, ImVec2(-FLT_MIN, 0.f));
+	ImGui::Spacing();
+	ImGui::TextDisabled("Main=false, Shadow=true: shadow pass only");
+	ImGui::TextDisabled("Main=false, Shadow=false: no render submission");
+	ImGui::End();
 }
 
 _bool CAnimationObject::IntersectsClipVolume(const BoundingBox& WorldBounds, _fmatrix ViewProj)

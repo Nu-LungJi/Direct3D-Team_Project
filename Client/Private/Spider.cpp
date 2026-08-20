@@ -200,7 +200,7 @@ HRESULT CSpider::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-
+	
 	if (FAILED(Ready_Fsm(MonDesc->LevelTag)))
 	{
 		MSG_BOX("Create Failed Fsm");
