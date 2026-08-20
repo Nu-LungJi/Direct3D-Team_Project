@@ -427,6 +427,10 @@ void CMapEditorGUI::DrawGizmoToolbar()
 
 void CMapEditorGUI::RenderGizmo()
 {
+	//네비매시에서 쓰는동안은 막기
+	if (m_pNavMeshGUI && m_pNavMeshGUI->IsMouseEditing())
+		return;
+
 	auto pActiveCamera = E::CGameInstance::Get().GetActiveCamera();
 	if (pActiveCamera == nullptr)
 	{
@@ -553,6 +557,9 @@ void CMapEditorGUI::PickMapMeshObject()
 	{
 		return;
 	}
+	//네비매시 피킹중에는 잠시 막기
+	if (m_pNavMeshGUI && m_pNavMeshGUI->IsMouseEditing())
+		return;
 
 	auto* selectedHandle = GetSelectedHandle();
 	if (selectedHandle == nullptr || m_pMapPickingPass == nullptr)

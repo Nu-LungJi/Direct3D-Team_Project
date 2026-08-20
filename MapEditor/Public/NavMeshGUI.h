@@ -8,6 +8,7 @@ NS_END
 
 NS_BEGIN(Client)
 
+class CMapNaviPosPickPass;
 class CNavMeshGUI : public CGUIWindow
 {
 public:
@@ -24,11 +25,11 @@ public:
 
 public:
 	static E::UPtr<CNavMeshGUI> Create(E::CHandle* pSelectedObject);
-
+	bool IsMouseEditing() const {return m_bPathPickWithMouse || m_bPaintWithMouse || m_bManualTrianglePickWithMouse;}
 private:
 	bool BuildNavMeshFromTerrain(E::CTerrain& terrain, E::CNavMeshManager& navMeshManager);
+	bool BuildManualNavMesh(E::CNavMeshManager& navMeshManager);
 	E::CTerrain* FindFirstTerrain();
-
 private:
 	E::NAVMESH_BUILD_DESC m_NavDesc{};
 	bool m_bDebugDrawNavMesh = true;
@@ -44,6 +45,13 @@ private:
 	int m_iPathPickTarget = 0;
 	bool m_bPathFindTried = false;
 	bool m_bPathFindSucceeded = false;
+
+	// 수동 네비메시 추가용
+	UPtr<CMapNaviPosPickPass> m_pMapNaviPosPickPass{};
+	_bool		m_bManualTrianglePickWithMouse = false;
+	uint32_t	m_iManualPickCount = 0;
+	_float		m_fManualVertexSnapDistance = 3.f;
+	_float3		m_vManualPickPoints[3]{};
 };
 
 NS_END

@@ -30,11 +30,9 @@ struct NAVMESH_BUILD_DESC
 	float detailSampleMaxError = 1.0f;
 };
 //수동 찍기용
-struct NAVMESH_BRIDGE
+struct NAVMESH_MANUAL_TRIANGLE
 {
-	_float3 vStart{};
-	_float3 vEnd{};
-	_float fWidth{ 6.f };
+	_float3 vPoints[3]{};
 };
 enum class ENavAreaType : uint8_t
 {
@@ -57,7 +55,12 @@ private:
 	HRESULT Initialize();
 
 public:
-	_bool Build(const std::vector<_float3>& vertices, const std::vector<uint32_t>& indices, const NAVMESH_BUILD_DESC& desc);
+	_bool Build(
+		const std::vector<_float3>& vertices,
+		const std::vector<uint32_t>& indices,
+		const NAVMESH_BUILD_DESC& desc,
+		_bool bForceAllWalkable = false);
+	_bool BuildManual(const NAVMESH_BUILD_DESC& desc);
 
 	void Clear();
 	void DrawDebug();
@@ -87,14 +90,30 @@ public:
 
 	//void Save();
 	//void Load();
-	HRESULT Save(const std::string& path) const;
-	HRESULT Load(const std::string& path);
+	HRESULT Save(
+		const std::string& path,
+		const NAVMESH_BUILD_DESC* pBuildDesc = nullptr) const;
+	HRESULT Load(
+		const std::string& path,
+		NAVMESH_BUILD_DESC* pBuildDesc = nullptr);
 	_bool FindPath(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const;
+	_bool FindNearestManualVertex(
+		const _float3& vPosition,
+		_float fMaxDistance,
+		_float3& vOutVertex) const;
 
 	//수동찍기
-	void AddBridge(const NAVMESH_BRIDGE& Bridge) { m_Bridges.push_back(Bridge); }
-	void ClearBridges() { m_Bridges.clear(); }
-	const std::vector<NAVMESH_BRIDGE>& GetBridges() const{ return m_Bridges; }
+	void AddManualTriangle(const NAVMESH_MANUAL_TRIANGLE& Triangle){m_ManualTriangles.push_back(Triangle);}
+	void ClearManualTriangles(){m_ManualTriangles.clear();}
+	void RemoveLastManualTriangle()
+	{
+		if (!m_ManualTriangles.empty())
+		{
+			m_ManualTriangles.pop_back();
+		}
+	}
+
+	const std::vector<NAVMESH_MANUAL_TRIANGLE>&GetManualTriangles() const{return m_ManualTriangles;}
 public:
 	static UPtr<CNavMeshManager> Create();
 
@@ -112,7 +131,7 @@ private:
 
 	std::unordered_map<uint32_t, ENavAreaType> m_TriangleAreas{};
 	//수동찍기
-	std::vector<NAVMESH_BRIDGE> m_Bridges;
+	std::vector<NAVMESH_MANUAL_TRIANGLE> m_ManualTriangles{};
 	// 길찾기 테스트
 	_float3 m_PathTestStart{};
 	_float3 m_PathTestEnd{};

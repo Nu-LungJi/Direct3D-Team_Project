@@ -31,7 +31,8 @@ HRESULT CNavMeshManager::Initialize()
 _bool CNavMeshManager::Build(
 	const std::vector<_float3>& vertices,
 	const std::vector<uint32_t>& indices,
-	const NAVMESH_BUILD_DESC& desc)
+	const NAVMESH_BUILD_DESC& desc,
+	_bool bForceAllWalkable)
 {
 	Clear();
 
@@ -40,7 +41,6 @@ _bool CNavMeshManager::Build(
 
 	std::vector<float> verts;
 	verts.reserve(vertices.size() * 3);
-
 	for (const auto& v : vertices)
 	{
 		verts.push_back(v.x);
@@ -52,10 +52,12 @@ _bool CNavMeshManager::Build(
 	tris.reserve(indices.size());
 
 	for (uint32_t index : indices)
+	{
 		tris.push_back(static_cast<int>(index));
+	}
 
-	const int vertCount = static_cast<int>(vertices.size());
-	const int triCount = static_cast<int>(indices.size() / 3);
+	const int vertCount = static_cast<int>(verts.size() / 3);
+	const int triCount = static_cast<int>(tris.size() / 3);
 
 	rcContext ctx;
 	rcConfig cfg{};
@@ -97,11 +99,21 @@ _bool CNavMeshManager::Build(
 		triCount,
 		triAreas.data());
 
-	for (const auto& [triangleIndex, areaType] : m_TriangleAreas)
+	if (bForceAllWalkable)
 	{
-		if (areaType == ENavAreaType::Blocked && triangleIndex < triAreas.size())
+		std::fill(
+			triAreas.begin(),
+			triAreas.end(),
+			RC_WALKABLE_AREA);
+	}
+	else
+	{
+		for (const auto& [triangleIndex, areaType] : m_TriangleAreas)
 		{
-			triAreas[triangleIndex] = RC_NULL_AREA;
+			if (areaType == ENavAreaType::Blocked && triangleIndex < triAreas.size())
+			{
+				triAreas[triangleIndex] = RC_NULL_AREA;
+			}
 		}
 	}
 
@@ -302,6 +314,51 @@ _bool CNavMeshManager::Build(
 	return true;
 }
 
+_bool CNavMeshManager::BuildManual(const NAVMESH_BUILD_DESC& desc)
+{
+	std::vector<_float3> vertices{};
+	std::vector<uint32_t> indices{};
+
+	vertices.reserve(m_ManualTriangles.size() * 3);
+	indices.reserve(m_ManualTriangles.size() * 3);
+
+	for (const NAVMESH_MANUAL_TRIANGLE& Triangle : m_ManualTriangles)
+	{
+		_float3 vPoint0 = Triangle.vPoints[0];
+		_float3 vPoint1 = Triangle.vPoints[1];
+		_float3 vPoint2 = Triangle.vPoints[2];
+
+		const _vector vPoint0Vector = XMLoadFloat3(&vPoint0);
+		const _vector vPoint1Vector = XMLoadFloat3(&vPoint1);
+		const _vector vPoint2Vector = XMLoadFloat3(&vPoint2);
+		const _vector vNormal = XMVector3Cross(
+			vPoint1Vector - vPoint0Vector,
+			vPoint2Vector - vPoint0Vector);
+
+		if (XMVectorGetX(XMVector3LengthSq(vNormal)) <= FLT_EPSILON)
+			continue;
+
+		if (XMVectorGetY(vNormal) < 0.f)
+			std::swap(vPoint1, vPoint2);
+
+		const uint32_t iBaseIndex = static_cast<uint32_t>(vertices.size());
+		vertices.push_back(vPoint0);
+		vertices.push_back(vPoint1);
+		vertices.push_back(vPoint2);
+		indices.push_back(iBaseIndex + 0);
+		indices.push_back(iBaseIndex + 1);
+		indices.push_back(iBaseIndex + 2);
+	}
+
+	if (indices.empty())
+	{
+		Clear();
+		return false;
+	}
+
+	return Build(vertices, indices, desc, true);
+}
+
 void CNavMeshManager::Clear()
 {
 	if (m_pNavMeshQuery)
@@ -434,6 +491,38 @@ _bool CNavMeshManager::FindPath(const _float3& start, const _float3& end, std::v
 	}
 
 	return outPath.size() >= 2;
+}
+
+_bool CNavMeshManager::FindNearestManualVertex(
+	const _float3& vPosition,
+	_float fMaxDistance,
+	_float3& vOutVertex) const
+{
+	if (fMaxDistance <= 0.f)
+		return false;
+
+	const _vector vPickPosition = XMLoadFloat3(&vPosition);
+	_float fNearestDistanceSq = fMaxDistance * fMaxDistance;
+	_bool bFound = false;
+
+	for (const NAVMESH_MANUAL_TRIANGLE& Triangle : m_ManualTriangles)
+	{
+		for (const _float3& vVertex : Triangle.vPoints)
+		{
+			const _float fDistanceSq = XMVectorGetX(
+				XMVector3LengthSq(
+					vPickPosition - XMLoadFloat3(&vVertex)));
+
+			if (fDistanceSq > fNearestDistanceSq)
+				continue;
+
+			fNearestDistanceSq = fDistanceSq;
+			vOutVertex = vVertex;
+			bFound = true;
+		}
+	}
+
+	return bFound;
 }
 
 void CNavMeshManager::SetTriangleArea(uint32_t triangleIndex, ENavAreaType areaType)
@@ -634,7 +723,9 @@ void CNavMeshManager::DrawDebug()
 	DrawPathTest();
 }
 
-HRESULT CNavMeshManager::Save(const std::string& path) const
+HRESULT CNavMeshManager::Save(
+	const std::string& path,
+	const NAVMESH_BUILD_DESC* pBuildDesc) const
 {
 	const std::filesystem::path filePath(path);
 	std::error_code ec;
@@ -645,9 +736,29 @@ HRESULT CNavMeshManager::Save(const std::string& path) const
 	}
 
 	nlohmann::ordered_json rootJson = {};
-	rootJson["version"] = 1;
+	rootJson["version"] = 3;
 	rootJson["triangleAreas"] = nlohmann::ordered_json::array();
-
+	////////////
+	rootJson["manualTriangles"] = nlohmann::ordered_json::array();
+	////////////
+	if (pBuildDesc)
+	{
+		rootJson["buildDesc"] = {
+			{"cellSize", pBuildDesc->cellSize},
+			{"cellHeight", pBuildDesc->cellHeight},
+			{"agentHeight", pBuildDesc->agentHeight},
+			{"agentRadius", pBuildDesc->agentRadius},
+			{"agentMaxClimb", pBuildDesc->agentMaxClimb},
+			{"agentMaxSlope", pBuildDesc->agentMaxSlope},
+			{"maxEdgeLen", pBuildDesc->maxEdgeLen},
+			{"maxSimplificationError", pBuildDesc->maxSimplificationError},
+			{"minRegionArea", pBuildDesc->minRegionArea},
+			{"mergeRegionArea", pBuildDesc->mergeRegionArea},
+			{"maxVertsPerPoly", pBuildDesc->maxVertsPerPoly},
+			{"detailSampleDist", pBuildDesc->detailSampleDist},
+			{"detailSampleMaxError", pBuildDesc->detailSampleMaxError}
+		};
+	}
 	for (const auto& [triangleIndex, areaType] : m_TriangleAreas)
 	{
 		if (areaType == ENavAreaType::Walkable)
@@ -661,7 +772,35 @@ HRESULT CNavMeshManager::Save(const std::string& path) const
 			{"area", static_cast<uint32_t>(areaType)}
 		});
 	}
+	///////////////
+	for (const NAVMESH_MANUAL_TRIANGLE& Triangle : m_ManualTriangles)
+	{
+		rootJson["manualTriangles"].push_back(
+			nlohmann::ordered_json{
+				{
+					"points",
+					{
+						{
+							Triangle.vPoints[0].x,
+							Triangle.vPoints[0].y,
+							Triangle.vPoints[0].z
+						},
+						{
+							Triangle.vPoints[1].x,
+							Triangle.vPoints[1].y,
+							Triangle.vPoints[1].z
+						},
+						{
+							Triangle.vPoints[2].x,
+							Triangle.vPoints[2].y,
+							Triangle.vPoints[2].z
+						}
+					}
+				}
+			});
+	}
 
+	////////////////
 	std::ofstream outFile(filePath.string());
 	if (!outFile.is_open())
 	{
@@ -674,10 +813,12 @@ HRESULT CNavMeshManager::Save(const std::string& path) const
 	return S_OK;
 }
 
-HRESULT CNavMeshManager::Load(const std::string& path)
+HRESULT CNavMeshManager::Load(
+	const std::string& path,
+	NAVMESH_BUILD_DESC* pBuildDesc)
 {
 	ClearTriangleAreas();
-
+	ClearManualTriangles();
 	const std::filesystem::path filePath(path);
 	if (!std::filesystem::exists(filePath))
 	{
@@ -694,30 +835,82 @@ HRESULT CNavMeshManager::Load(const std::string& path)
 	inFile >> rootJson;
 	inFile.close();
 
-	if (!rootJson.contains("triangleAreas"))
+	if (pBuildDesc && rootJson.contains("buildDesc"))
 	{
-		return S_OK;
+		const auto& buildDescJson = rootJson["buildDesc"];
+		pBuildDesc->cellSize = buildDescJson.value("cellSize", pBuildDesc->cellSize);
+		pBuildDesc->cellHeight = buildDescJson.value("cellHeight", pBuildDesc->cellHeight);
+		pBuildDesc->agentHeight = buildDescJson.value("agentHeight", pBuildDesc->agentHeight);
+		pBuildDesc->agentRadius = buildDescJson.value("agentRadius", pBuildDesc->agentRadius);
+		pBuildDesc->agentMaxClimb = buildDescJson.value("agentMaxClimb", pBuildDesc->agentMaxClimb);
+		pBuildDesc->agentMaxSlope = buildDescJson.value("agentMaxSlope", pBuildDesc->agentMaxSlope);
+		pBuildDesc->maxEdgeLen = buildDescJson.value("maxEdgeLen", pBuildDesc->maxEdgeLen);
+		pBuildDesc->maxSimplificationError = buildDescJson.value("maxSimplificationError", pBuildDesc->maxSimplificationError);
+		pBuildDesc->minRegionArea = buildDescJson.value("minRegionArea", pBuildDesc->minRegionArea);
+		pBuildDesc->mergeRegionArea = buildDescJson.value("mergeRegionArea", pBuildDesc->mergeRegionArea);
+		pBuildDesc->maxVertsPerPoly = buildDescJson.value("maxVertsPerPoly", pBuildDesc->maxVertsPerPoly);
+		pBuildDesc->detailSampleDist = buildDescJson.value("detailSampleDist", pBuildDesc->detailSampleDist);
+		pBuildDesc->detailSampleMaxError = buildDescJson.value("detailSampleMaxError", pBuildDesc->detailSampleMaxError);
 	}
 
-	for (const auto& areaJson : rootJson["triangleAreas"])
+	if (rootJson.contains("triangleAreas"))
 	{
-		if (!areaJson.contains("triangle") || !areaJson.contains("area"))
+		for (const auto& areaJson : rootJson["triangleAreas"])
 		{
-			continue;
-		}
+			if (!areaJson.contains("triangle") ||
+				!areaJson.contains("area"))
+			{
+				continue;
+			}
 
-		const uint32_t triangleIndex = areaJson["triangle"].get<uint32_t>();
-		const uint32_t areaValue = areaJson["area"].get<uint32_t>();
-		if (areaValue > static_cast<uint32_t>(ENavAreaType::Reserved_Climbable))
-		{
-			continue;
-		}
+			const uint32_t triangleIndex =
+				areaJson["triangle"].get<uint32_t>();
 
-		SetTriangleArea(triangleIndex, static_cast<ENavAreaType>(areaValue));
+			const uint32_t areaValue =
+				areaJson["area"].get<uint32_t>();
+
+			if (areaValue >	static_cast<uint32_t>(ENavAreaType::Reserved_Climbable))
+				continue;
+
+			SetTriangleArea(triangleIndex, static_cast<ENavAreaType>(areaValue));
+		}
 	}
+	if (rootJson.contains("manualTriangles"))
+	{
+		for (const auto& TriangleJson : rootJson["manualTriangles"])
+		{
+			if (!TriangleJson.contains("points"))
+				continue;
 
+			const auto& PointsJson = TriangleJson["points"];
+
+			if (!PointsJson.is_array() || PointsJson.size() < 3)
+				continue;
+
+
+			if (!PointsJson[0].is_array() || PointsJson[0].size() < 3 ||
+				!PointsJson[1].is_array() || PointsJson[1].size() < 3 ||
+				!PointsJson[2].is_array() || PointsJson[2].size() < 3)
+				continue;
+
+			NAVMESH_MANUAL_TRIANGLE Triangle{};
+
+			for (size_t i = 0; i < 3; ++i)
+			{
+				Triangle.vPoints[i] =
+				{
+					PointsJson[i][0].get<_float>(),
+					PointsJson[i][1].get<_float>(),
+					PointsJson[i][2].get<_float>()
+				};
+			}
+
+			AddManualTriangle(Triangle);
+		}
+	}
 	return S_OK;
 }
+
 
 UPtr<CNavMeshManager> CNavMeshManager::Create()
 {
