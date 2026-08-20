@@ -55,7 +55,7 @@ HRESULT CPropBarrelDebris::Initialize(void* pArg)
 		return E_FAIL;
 
 	GetTransform().SetPosition(pDesc->vInitialPosition);
-	GetTransform().SetRotationEuler(pDesc->vInitialRotation);
+	GetTransform().SetQuaternion(pDesc->vInitialQuaternion);
 	m_vModelScale = pDesc->vInitialScale;
 	GetTransform().SetScale(m_vModelScale);
 	GetTransform().Update();
@@ -73,7 +73,7 @@ HRESULT CPropBarrelDebris::Initialize(void* pArg)
 		CComStaticModelInstance::DESC desc{};
 		desc.sGroupTag = pDesc->sResourceGroup;
 		
-		desc.sResTag = pDesc->sResorceTag;// "Static_Prop_Barrel_Resource";
+		desc.sResTag = pDesc->sResourceTag;
 		if (FAILED(AddComponentFromProto(
 			"PERMANENT", "Prototype_Component_StaticModelInstance",
 			"ComModelInstance", &desc, &m_pComModelInstance)))
@@ -82,7 +82,7 @@ HRESULT CPropBarrelDebris::Initialize(void* pArg)
 
 	{
 		CComPxRigidBody::DESC desc{};
-		desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
+		desc.eType = CComPxRigidBody::TYPE::DYNAMIC;
 		desc.fMass = std::max(pDesc->fMass, 0.001f);
 		desc.vPosition = pDesc->vInitialPosition;
 		desc.vRotation = GetTransform().GetQuaternion();
@@ -101,6 +101,8 @@ HRESULT CPropBarrelDebris::Initialize(void* pArg)
 				{
 					return CResPhysXConvexGeometry::CreateAndLoad(path);
 				});
+		if (!m_pResConvexGeometry)
+			return E_FAIL;
 
 		CComPxConvexCollider::DESC desc{};
 		desc.pComPxRigidBody = m_pComPxRigidBody;
@@ -118,10 +120,14 @@ HRESULT CPropBarrelDebris::Initialize(void* pArg)
 			return E_FAIL;
 	}
 
-	//if (!m_pComPxRigidBody->SetGravityEnabled(false) ||
-	//	!m_pComPxConvexCollider->SetSimulationEnabled(false) ||
-	//	!m_pComPxConvexCollider->SetQueryEnabled(false))
-	//	return E_FAIL;
+	if (!m_pComPxRigidBody->SetGravityEnabled(true) ||
+		!m_pComPxRigidBody->SetLinearDamping(0.1f) ||
+		!m_pComPxRigidBody->SetAngularDamping(0.2f) ||
+		!m_pComPxRigidBody->SetMaxDepenetrationVelocity(5.f) ||
+		!m_pComPxRigidBody->WakeUp())
+	{
+		return E_FAIL;
+	}
 
 	return S_OK;
 }

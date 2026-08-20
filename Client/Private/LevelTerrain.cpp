@@ -37,7 +37,6 @@
 #include "UIManager.h"
 
 #include "PropBarrel.h"
-#include "PropBarrelDebris.h";
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -92,36 +91,8 @@ HRESULT CLevelTerrain::Initialize()
 
 		if (!hPropBarrel)
 			return E_FAIL;
-	}
 
-	/*if(false)*/
-	{
-		for (uint32_t i = 1; i <= 12; ++i)
-		{
-			CPropBarrelDebris::DESC Desc{};
-			Desc.sResourceGroup = LEVEL::TERRAIN;
-			Desc.sResorceTag = "Static_Prop_Barrel_Debris_Resource_" + std::to_string(i);
-
-			{
-				std::string str = "./Resources/PhysX/Cooked/";
-				if (i < 10)
-					str += "SM_Prop_Barrel_Breakable_A_Fragment2_0" + std::to_string(i);
-				else
-					str += "SM_Prop_Barrel_Breakable_A_Fragment2_" + std::to_string(i);
-				str += ".pxconvex";
-				Desc.sConvexPath = str;
-			}
-
-			Desc.vInitialPosition = { 5.f, 5.f, 5.f };
-			const auto hPropBarrel = CGameInstance::Get().AddGameObjectToLayer(
-				LEVEL::TERRAIN,
-				PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrelDebris,
-				"PropBarrel",
-				&Desc);
-
-			if (!hPropBarrel)
-				return E_FAIL;
-		}
+		m_hPropBarrel = *hPropBarrel;
 	}
 
 	{
@@ -969,6 +940,22 @@ HRESULT CLevelTerrain::Render()
 void CLevelTerrain::UpdateGUI()
 {
 	ImGui::Begin("Terrain");
+	if (ImGui::CollapsingHeader("Prop Barrel Test"))
+	{
+		auto* pPropBarrel = CGameInstance::Get()
+			.GetGameObjectByHandleT<CPropBarrel>(m_hPropBarrel);
+		ImGui::Text("State: %s", pPropBarrel ? "Created" : "Destroyed");
+
+		if (pPropBarrel && ImGui::Button("Destroy Prop Barrel"))
+		{
+			if (pPropBarrel->DestroyBarrel())
+				m_hPropBarrel = {};
+			else
+				DEBUG_LOG("[PropBarrel] Failed to destroy barrel.\n");
+		}
+
+		ImGui::Separator();
+	}
 	if (ImGui::CollapsingHeader("Confringo Projectile Test"))
 	{
 		ImGui::DragFloat(

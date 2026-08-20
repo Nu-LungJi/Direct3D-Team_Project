@@ -292,9 +292,6 @@ std::future<bool> CLevelTerrainLoader::Load()
 				}
 				else return false;
 
-				if (FAILED(CGameInstance::Get().AddPrototype(
-					LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
-					CPropBarrel::Create()))) return false;
 			}
 
 			if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(

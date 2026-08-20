@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "PropBarrel.h"
+#include "PropBarrelDebris.h"
 
 #include "ComPxConvexCollider.h"
 #include "ComPxRigidBody.h"
@@ -21,6 +22,7 @@ CPropBarrel::CPropBarrel(const CPropBarrel& prototype)
 	, m_pResPhysXMaterial{ prototype.m_pResPhysXMaterial }
 	, m_pResVertexShader{ prototype.m_pResVertexShader }
 	, m_pResPixelShader{ prototype.m_pResPixelShader }
+	, m_sResourceGroup{ prototype.m_sResourceGroup }
 {
 }
 
@@ -54,7 +56,10 @@ HRESULT CPropBarrel::Initialize(void* pArg)
 
 	GetTransform().SetPosition(pDesc->vInitialPosition);
 	GetTransform().SetRotationEuler(pDesc->vInitialRotation);
+	m_sResourceGroup = pDesc->sResourceGroup;
 	m_vModelScale = pDesc->vInitialScale;
+	m_vDebrisConvexScale = pDesc->vConvexScale;
+	m_eState = BARREL_STATE::CREATED;
 	GetTransform().SetScale(m_vModelScale);
 	GetTransform().Update();
 
@@ -112,6 +117,64 @@ HRESULT CPropBarrel::Initialize(void* pArg)
 	//	return E_FAIL;
 
 	return S_OK;
+}
+
+_bool CPropBarrel::DestroyBarrel()
+{
+	if (m_eState == BARREL_STATE::DESTROYED)
+		return true;
+
+	const _float3 vPosition = GetTransform().GetPosition();
+	const _float4 vRotation = GetTransform().GetQuaternion();
+	std::vector<CHandle> spawnedDebrisHandles{};
+	spawnedDebrisHandles.reserve(12);
+
+	for (uint32_t i = 1; i <= 12; ++i)
+	{
+		CPropBarrelDebris::DESC desc{};
+		desc.sObjectTag = "PropBarrelDebris_" + std::to_string(i);
+		desc.sResourceGroup = m_sResourceGroup;
+		desc.sResourceTag =
+			"Static_Prop_Barrel_Debris_Resource_" + std::to_string(i);
+
+		desc.sConvexPath = "./Resources/PhysX/Cooked/";
+		if (i < 10)
+			desc.sConvexPath +=
+				"SM_Prop_Barrel_Breakable_A_Fragment2_0" + std::to_string(i);
+		else
+			desc.sConvexPath +=
+				"SM_Prop_Barrel_Breakable_A_Fragment2_" + std::to_string(i);
+		desc.sConvexPath += ".pxconvex";
+
+		desc.vInitialPosition = vPosition;
+		desc.vInitialScale = m_vModelScale;
+		desc.vConvexScale = m_vDebrisConvexScale;
+		desc.vInitialQuaternion = vRotation;
+
+		const auto hDebris = CGameInstance::Get().AddGameObjectToLayer(
+			m_sResourceGroup,
+			PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrelDebris,
+			"PropBarrelDebris",
+			&desc);
+		if (!hDebris)
+		{
+			for (const CHandle& hSpawnedDebris : spawnedDebrisHandles)
+			{
+				if (auto* pDebris = CGameInstance::Get().GetGameObjectByHandle(
+					hSpawnedDebris))
+				{
+					pDebris->SetPendingDestroy();
+				}
+			}
+			return false;
+		}
+
+		spawnedDebrisHandles.push_back(*hDebris);
+	}
+
+	m_eState = BARREL_STATE::DESTROYED;
+	SetPendingDestroy();
+	return true;
 }
 
 void CPropBarrel::LateUpdate(_float fTimeDelta)

@@ -21,6 +21,12 @@ class CPropBarrel final : public CGameObject
 public:
 	DECLARE_DERIVED_TYPE(CPropBarrel, CGameObject)
 
+	enum class BARREL_STATE : uint8_t
+	{
+		CREATED,
+		DESTROYED
+	};
+
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
 		StringID sResourceGroup{};
@@ -51,6 +57,10 @@ public:
 	void LateUpdate(_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
 
+	// 완성된 통을 현재 자세 그대로 파편으로 교체한다.
+	_bool DestroyBarrel();
+	BARREL_STATE GetBarrelState() const { return m_eState; }
+
 
 public:
 	static UPtr<CPropBarrel> Create();
@@ -65,7 +75,10 @@ private:
 	CComPxConvexCollider* m_pComPxConvexCollider{};
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResPixelShader> m_pResPixelShader{};
+	StringID m_sResourceGroup{};
 	_float3 m_vModelScale{ 1.f, 1.f, 1.f };
+	_float3 m_vDebrisConvexScale{ 1.f, 1.f, 1.f };
+	BARREL_STATE m_eState{ BARREL_STATE::CREATED };
 };
 
 NS_END

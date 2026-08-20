@@ -24,10 +24,10 @@ public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
 		StringID sResourceGroup{};
-		StringID sResorceTag{};
+		StringID sResourceTag{};
 		std::string sConvexPath{};
 		_float3 vInitialPosition{};
-		_float3 vInitialRotation{};
+		_float4 vInitialQuaternion{ 0.f, 0.f, 0.f, 1.f };
 		_float3 vInitialScale{ 1.f, 1.f, 1.f };
 		_float3 vConvexScale{ 1.f, 1.f, 1.f };
 		_float fMass{ 0.15f };
