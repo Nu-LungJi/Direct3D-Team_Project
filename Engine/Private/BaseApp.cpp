@@ -47,7 +47,11 @@ HRESULT CBaseApp::Loop()
 		{
 			const float fFixedGoalTime = m_FixedUpdateTimer.Get_GoalTime();
 			float fFixedCurrTime = m_FixedUpdateTimer.Get_CurrTime();
+#ifdef _DEBUG
+			constexpr uint32_t MAX_FIXED_UPDATE_COUNT_PER_FRAME = 1;
+#else
 			constexpr uint32_t MAX_FIXED_UPDATE_COUNT_PER_FRAME = 8;
+#endif // _DEBUG
 			uint32_t iFixedUpdateCount = 0;
 
 			while (fFixedCurrTime >= fFixedGoalTime)
