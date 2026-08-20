@@ -93,11 +93,23 @@ _bool CFlightRing::PassCheck(CHandle hPlayer)
 
 E::UPtr<CFlightRing> CFlightRing::Create()
 {
-
-	return nullptr;
+	auto pInstance = E::ToUPtr(new CFlightRing{});
+	if (FAILED(pInstance->InitializePrototype()))
+	{
+		MSG_BOX("Failed to Created : CFlightRing");
+		return nullptr;
+	}
+	return  pInstance;
 }
 
 E::UPtr<E::CPrototype> CFlightRing::Clone(void* pArg)
 {
-	return E::UPtr<E::CPrototype>();
+	auto	pInstance = E::ToUPtr(new CFlightRing{ *this });
+	if (FAILED(pInstance->Initialize(pArg)))
+	{
+		MSG_BOX("Failed to Cloned : CFlightRing");
+		return nullptr;
+	}
+
+	return pInstance;
 }

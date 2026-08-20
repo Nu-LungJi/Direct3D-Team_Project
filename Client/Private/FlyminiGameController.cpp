@@ -70,7 +70,25 @@ void CFlyminiGameController::LateUpdate(E::_float fTimeDelta)
 {
 }
 
+E::UPtr<CFlyminiGameController> CFlyminiGameController::Create()
+{
+	auto pInstance = E::ToUPtr(new CFlyminiGameController{});
+	if (FAILED(pInstance->InitializePrototype()))
+	{
+		MSG_BOX("Failed to Created : CFlyminiGameController");
+		return nullptr;
+	}
+	return  pInstance;
+}
+
 E::UPtr<E::CPrototype> CFlyminiGameController::Clone(void* pArg)
 {
-	return E::UPtr<E::CPrototype>();
+	auto	pInstance = E::ToUPtr(new CFlyminiGameController{ *this });
+	if (FAILED(pInstance->Initialize(pArg)))
+	{
+		MSG_BOX("Failed to Cloned : CFlyminiGameController");
+		return nullptr;
+	}
+
+	return pInstance;
 }
