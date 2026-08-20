@@ -3,6 +3,7 @@
 #include "Engine_Defines.h"
 #include "ResourceManager.h"
 #include "WorkerManager.h"
+#include "RenderWorkerManager.h"
 #include "GameObjectManager.h"
 #include "GameObjectPoolManager.h"
 #include "CameraManager.h"
@@ -181,6 +182,19 @@ public:
 			std::forward<Func>(f),
 			std::forward<Args>(args)...
 		);
+	}
+
+	template<typename Func>
+	auto RenderWorkerEnqueueWithFuture(_string_view svTaskName, Func&& f)
+		-> std::future<std::invoke_result_t<Func, ID3D11DeviceContext*>>
+	{
+		return m_pRenderWorkerManager->EnqueueWithFuture(
+			svTaskName,
+			std::forward<Func>(f));
+	}
+	uint32_t GetRenderWorkerCount() const
+	{
+		return m_pRenderWorkerManager ? m_pRenderWorkerManager->GetWorkerCount() : 0;
 	}
 #pragma endregion
 
@@ -656,6 +670,7 @@ private:
 	UPtr<CDInputManager> m_pDInputManager{};
 	UPtr<CLevelManager> m_pLevelManager{};
 	UPtr<CWorkerManager> m_pWorkerManager{};
+	UPtr<CRenderWorkerManager> m_pRenderWorkerManager{};
 	UPtr<CTimeProvider> m_pTimeProvider{};
 	UPtr<CPrototypeManager> m_pPrototypeManager{};
 	UPtr<CGameObjectManager> m_pGameObjectManager{};

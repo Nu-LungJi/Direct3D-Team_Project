@@ -158,8 +158,20 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 		return E_FAIL;
 	}
 
-	m_pWorkerManager = CWorkerManager::Create("Normal", std::thread::hardware_concurrency());
+	const uint32_t logicalThreadCount = std::max(1u, std::thread::hardware_concurrency());
+	const uint32_t renderWorkerCount = std::min(4u, std::max(1u, logicalThreadCount / 2));
+	const uint32_t normalWorkerCount = logicalThreadCount > renderWorkerCount + 2 
+		? logicalThreadCount - renderWorkerCount - 2
+		: 1u;
+
+	m_pWorkerManager = CWorkerManager::Create("Normal", normalWorkerCount);
 	if (m_pWorkerManager == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	m_pRenderWorkerManager = CRenderWorkerManager::Create("Render", renderWorkerCount);
+	if (m_pRenderWorkerManager == nullptr)
 	{
 		return E_FAIL;
 	}
@@ -353,6 +365,7 @@ void CGameInstance::UpdateGUI()
 
 
 	m_pWorkerManager->UpdateGUI();
+	m_pRenderWorkerManager->UpdateGUI();
 
 	m_pResourceManager->UpdateGUI();
 
@@ -558,6 +571,7 @@ void CGameInstance::Release_Engine()
 	m_pLevelManager.reset();
 	m_pColliderManager.reset();
 	m_pParticleManager.reset();
+	m_pRenderWorkerManager.reset();
 	m_pWorkerManager.reset();
 	m_pLightManager.reset();
 	m_pCameraManager.reset();
