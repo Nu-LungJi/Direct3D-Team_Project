@@ -575,6 +575,11 @@ HRESULT CPlayer::Initialize(void* pArg)
 			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
 		}
+		{
+			auto a = CGameInstance::Get().GetParticle("Repairo_Trail", "Repairo_Trail");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(255 / 255.f, 255 / 255.f, 40 / 255.f, 1.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 255 / 255.f, 40 / 255.f, 4.f));
+		}
 
 	}
 

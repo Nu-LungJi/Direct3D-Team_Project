@@ -29,6 +29,7 @@ public:
 		// [LSY] CPU 파티클의 종료 알파 정책. Late는 수명 후반부터 감소한다.
 		BEHAVIOR_FADEOUT				= 1 << 13,
 		BEHAVIOR_FADEOUT_LATE			= 1 << 14,
+		BEHAVIOR_ORBIT					= 1 << 15,
 	};
 
 protected:

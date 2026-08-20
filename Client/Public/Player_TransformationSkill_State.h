@@ -40,6 +40,8 @@ private:
 	static constexpr _float RECOVERY_RATIO = 0.38f;
 	// 상태 종료 Cue: Locomotion으로 복귀해 일반 조작을 다시 허용하는 지점.
 	static constexpr _float RECOVERY_EXIT_RATIO = 0.52f;
+
+	uint32_t m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
 };
 
 NS_END

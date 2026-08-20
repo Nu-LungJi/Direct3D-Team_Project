@@ -56,12 +56,28 @@ void CSMain(uint id : SV_DispatchThreadID)
 		return;
 
     p.life -= g_fTimeDelta;
-    if ((p.iBehaviorType & BEHAVIOR_GRAVITY) != 0)
+    if ((p.iBehaviorType & BEHAVIOR_GRAVITY) != 0 && (p.iBehaviorType & BEHAVIOR_ORBIT) == 0)
     {
         const float kGravity = -9.8f;
         p.velocity.y += kGravity * g_fTimeDelta; 
     }
-    p.position += p.velocity * g_fTimeDelta; 
+	if ((p.iBehaviorType & BEHAVIOR_ORBIT) != 0)
+	{
+		float axisLengthSq = dot(p.roationAxis, p.roationAxis);
+		float3 offset = p.position - p.originalPosition;
+		if (axisLengthSq > 0.000001f && dot(offset, offset) > 0.000001f)
+		{
+			float3 axis = normalize(p.roationAxis);
+			float angle = p.fRotationSpeed * g_fTimeDelta;
+			float sine = sin(angle);
+			float cosine = cos(angle);
+			p.position = p.originalPosition + offset * cosine + cross(axis, offset) * sine + axis * dot(axis, offset) * (1.f - cosine);
+		}
+	}
+	else
+	{
+		p.position += p.velocity * g_fTimeDelta;
+	}
 	float elapsedTime = p.maxLife - p.life;
 
 	float lifeRatio = saturate(elapsedTime / max(p.maxLife, 0.0001f));
@@ -99,8 +115,11 @@ void CSMain(uint id : SV_DispatchThreadID)
         if (p.loop == 1)
         {
             p.life = p.maxLife;
-            p.position = p.originalPosition;
-            p.velocity = p.originalVelocity;
+			if ((p.iBehaviorType & BEHAVIOR_ORBIT) == 0)
+			{
+				p.position = p.originalPosition;
+				p.velocity = p.originalVelocity;
+			}
             p.alive = 1;
             p.emissive = p.originalEmissive;
 			p.color = p.color;

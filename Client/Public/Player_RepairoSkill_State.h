@@ -41,6 +41,8 @@ private:
 
 
 	static constexpr _float PHASE_EXIT_RATIO = 0.98f;
+	static constexpr _float RECOVERY_EXIT_RATIO = 0.3f;
+	_bool trailEnd = false;
 };
 
 
