@@ -53,8 +53,9 @@ private:
 	int32_t m_iFallAnimation{ -1 };
 
 	_bool m_bWasAirborne{};
-	_float m_fFallStartVerticalSpeed{ -3.f };
+	_float m_fFallStartVerticalSpeed{ -0.5f };
 	_float m_fJumpStartEnd{ 1.f };
+	_float m_fMovingLandExitRatio{ 0.65f };
 
 
 

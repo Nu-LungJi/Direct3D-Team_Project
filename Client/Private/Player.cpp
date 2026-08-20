@@ -40,6 +40,7 @@
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
 #include "Player_BombardaSkill_State.h"
+#include "Player_TransformationSkill_State.h"
 #include "Player_ConfringoSkill_State.h"
 #include "Player_AvadaKedavraSkill_State.h"
 #include "Player_ProtegoSkill_State.h"
@@ -328,8 +329,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 			pDesc->vInitialPosition.y + pDesc->vCCTCenterOffset.y,
 			pDesc->vInitialPosition.z + pDesc->vCCTCenterOffset.z };
 		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::CCT_CAPSULE);
-		//Desc.fStepOffset = 0.f;
-		//Desc.fSlopeLimit = 1.f;	
+		// 오르막은 CCT 기본 경사 제한을 사용한다.
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,"ComPxCharacterController", &Desc, &m_pComCharacterController)))
 		{
 			return E_FAIL;
@@ -348,8 +348,10 @@ HRESULT CPlayer::Initialize(void* pArg)
 		CComCharacterMotor::DESC Desc{};
 		Desc.pMoveIntent = m_pComMoveIntent;
 		Desc.pCharacterController = m_pComCharacterController;
-		Desc.fGravity = -9.81f;
-		Desc.fJumpVelocity = 7.f;
+		// 기존 -9.81/7 조합은 체공 시간이 길어 달에서 뛰는 느낌이 강했다.
+		// 강한 중력은 유지하고 초속도만 높여 체공감은 억제하면서 점프 높이를 확보한다.
+		Desc.fGravity = -16.f;
+		Desc.fJumpVelocity = 9.f;
 		Desc.vControllerCenterOffset = pDesc->vCCTCenterOffset;
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
@@ -441,6 +443,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::BOMBARDA_SKILL,
 			CPlayer_BombardaSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::TRANSFORMATION_SKILL,
+			CPlayer_TransformationSkill_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -592,46 +600,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 		return E_FAIL;
 	if (FAILED(InitializeAvadaKedavra()))
 		return E_FAIL;
-
-#ifdef _DEBUG
-	{
-		CWiggenweldPotion::DESC debugPotionDesc{};
-		debugPotionDesc.sObjectTag = "Debug_WiggenweldPotion_Origin";
-		debugPotionDesc.sResourceGroup = m_LevelTag;
-		debugPotionDesc.vInitialPosition = { 0.f, 0.f, 0.f };
-		debugPotionDesc.vInitialScale = { 1.f, 1.f, 1.f };
-		debugPotionDesc.vConvexScale = debugPotionDesc.vInitialScale;
-
-		const auto debugPotionHandle = CGameInstance::Get().AddGameObjectToLayer(
-			m_LevelTag,
-			PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
-			"Debug_WiggenweldPotion_Origin",
-			&debugPotionDesc);
-		if (debugPotionHandle.has_value())
-			DEBUG_LOG("[PlayerPotion] Debug potion permanently spawned at (0, 0, 0).\n");
-		else
-			DEBUG_LOG("[PlayerPotion] Failed to spawn debug potion at (0, 0, 0).\n");
-
-		CWiggenweldPotion::DESC visiblePotionDesc = debugPotionDesc;
-		visiblePotionDesc.sObjectTag = "Debug_WiggenweldPotion_Visible";
-		visiblePotionDesc.vInitialPosition = {
-			pDesc->vInitialPosition.x,
-			pDesc->vInitialPosition.y + 2.f,
-			pDesc->vInitialPosition.z + 3.f };
-		visiblePotionDesc.vInitialScale = { 3.f, 3.f, 3.f };
-		visiblePotionDesc.vConvexScale = visiblePotionDesc.vInitialScale;
-
-		const auto visiblePotionHandle = CGameInstance::Get().AddGameObjectToLayer(
-			m_LevelTag,
-			PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
-			"Debug_WiggenweldPotion_Visible",
-			&visiblePotionDesc);
-		if (visiblePotionHandle.has_value())
-			DEBUG_LOG("[PlayerPotion] Large debug potion spawned near the player.\n");
-		else
-			DEBUG_LOG("[PlayerPotion] Failed to spawn the large debug potion.\n");
-	}
-#endif
 
 	return S_OK;
 }
@@ -817,6 +785,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 		m_bRawMoveInput = false;
 		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		m_fCurrentMoveSpeed = 0.f;
 		m_bRootMotionTranslationActive = false;
@@ -843,6 +812,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	{
 		m_bRawMoveInput = false;
 		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		return;
 	}
@@ -877,6 +847,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	{
 		m_bRawMoveInput = false;
 		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		m_fCurrentMoveSpeed = 0.f;
 		m_fControlHoldTime = 0.f;
@@ -889,6 +860,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (!pPlayerCamera)
 	{
 		m_bRawMoveInput = false;
+		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		m_pComMoveIntent->ClearMoveIntent();
 		return;
@@ -932,6 +905,9 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	const _float3 vMoveDirection{ vCameraForward.x * fForwardIntent + vCameraRight.x * fRightIntent, 0.f, vCameraForward.z * fForwardIntent + vCameraRight.z * fRightIntent };
 	m_bRawMoveInput = vMoveDirection.x != 0.f || vMoveDirection.z != 0.f;
 	m_bSprintRequested =m_bRawMoveInput &&CGameInstance::Get().KeyPressing(DIK_LSHIFT);
+	// 원작처럼 C를 누르는 동안만 걷는다. Shift가 함께 눌리면 Sprint를 우선한다.
+	m_bWalkRequested = m_bRawMoveInput && !m_bSprintRequested &&
+		CGameInstance::Get().KeyPressing(DIK_C);
 	m_vRawMoveDirection = m_bRawMoveInput ? vMoveDirection : _float3{};
 	
 	if (m_bRawMoveInput)
@@ -966,7 +942,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	else
 	{
 		const _float fTargetSpeed =m_bRawMoveInput
-				? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
+				? (m_bSprintRequested ? m_fSprintSpeed : (m_bWalkRequested ? m_fWalkSpeed : m_fJogSpeed))
 				: 0.f;
 		const _float fSpeedChange = (m_bRawMoveInput ? m_fAcceleration : m_fDeceleration) * fTimeDelta;
 
@@ -1297,6 +1273,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (CGameInstance::Get().KeyDown(DIK_6))
 			m_pStateMachine->RequestState(PLAYER_STATE::BOMBARDA_SKILL);
 
+		// 변신 스킬 상태와 캐스팅 애니메이션 확인용 임시 입력.
+		if (CGameInstance::Get().KeyDown(DIK_7))
+			m_pStateMachine->RequestState(PLAYER_STATE::TRANSFORMATION_SKILL);
+
 #ifdef _DEBUG
 		// Lumos debug toggle. The Lumos state decides whether this request
 		// enters Start/Hold or plays Stop based on the current active flag.
@@ -1482,6 +1462,8 @@ void CPlayer::UpdateLumosLight()
 		return;
 	}
 
+	UpdateLumosHoldAnimation();
+
 	_float4x4 matGlowWorld{};
 	if (!TryGetLumosGlowWorldMatrix(matGlowWorld))
 		return;
@@ -1528,6 +1510,24 @@ void CPlayer::UpdateLumosLight()
 		pLight->Set_LightPosition(vPosition);
 	else
 		m_hLumosLight.reset();
+}
+
+void CPlayer::UpdateLumosHoldAnimation()
+{
+	if (!m_bLumosActive || !m_pModelAnimator || m_iLumosHoldAnimation < 0)
+		return;
+
+	if (m_pModelAnimator->HasUpperAnimation() &&
+		!m_pModelAnimator->IsUpperAnimationFinished())
+	{
+		return;
+	}
+
+	// The Lumos state returns to locomotion immediately. Once its one-shot
+	// raise animation finishes, keep only the right arm in the looping hold
+	// pose so movement, turning, and jumping continue underneath it.
+	PlayUpperBodyAnimation(
+		m_iLumosHoldAnimation, "RightArm", 1, true, 0.18f);
 }
 
 _bool CPlayer::TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const
@@ -1683,16 +1683,17 @@ void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 	}
 
 	const _float3 vFootPosition = m_pComCharacterController->GetFootPosition();
+	const _float fPredictionDistance =
+		tMoveOutput.fMoveSpeed * fFixedTimeDelta *
+		static_cast<_float>(m_iGroundFollowPredictionFrames);
 	const _float3 vPredictedFootPosition{
 		vFootPosition.x +
 			tMoveOutput.vMoveDirection.x *
-			tMoveOutput.fMoveSpeed *
-			fFixedTimeDelta * 5,
+			fPredictionDistance,
 		vFootPosition.y,
 		vFootPosition.z +
 			tMoveOutput.vMoveDirection.z *
-			tMoveOutput.fMoveSpeed *
-			fFixedTimeDelta * 5
+			fPredictionDistance
 	};
 
 	CPhysXManager* pPhysXManager =CGameInstance::Get().GetPhysXManager();
@@ -1761,11 +1762,51 @@ void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 //	}
 //#endif
 
+	// 이동 경로를 여러 구간으로 나눠 검사한다. 끝점 한 곳만 검사하면 좁은 턱이나
+	// 급경사를 건너뛸 수 있으므로 각 샘플의 노멀과 인접 높이 차를 모두 확인한다.
+	const int32_t iProbeCount = std::max(1, m_iGroundFollowProbeCount);
+	const _float fSlopeLimit =
+		m_pComCharacterController->GetSlopeLimit();
+	_float fPreviousGroundHeight = vFootPosition.y;
 	PX_SWEEP_RESULT tGroundHit{};
-	if (!pPhysXManager->Sweep(tSweepDesc, tGroundHit) ||
-		!tGroundHit.bHit)
+	for (int32_t iProbe = 1; iProbe <= iProbeCount; ++iProbe)
 	{
-		return;
+		const _float fProbeRatio =
+			static_cast<_float>(iProbe) /
+			static_cast<_float>(iProbeCount);
+		tSweepDesc.tPose.vPosition.x =
+			vFootPosition.x +
+			(vPredictedFootPosition.x - vFootPosition.x) * fProbeRatio;
+		tSweepDesc.tPose.vPosition.z =
+			vFootPosition.z +
+			(vPredictedFootPosition.z - vFootPosition.z) * fProbeRatio;
+
+		PX_SWEEP_RESULT tProbeHit{};
+		if (!pPhysXManager->Sweep(tSweepDesc, tProbeHit) ||
+			!tProbeHit.bHit)
+		{
+			// 경로 중간에 지면이 없으면 낭떠러지로 보고 강제 지면 추종을 중단한다.
+			return;
+		}
+
+		if (tProbeHit.vHitNormal.y < fSlopeLimit)
+		{
+			// PhysX slopeLimit보다 급한 면에는 캐릭터를 아래로 붙이지 않는다.
+			return;
+		}
+
+		const _float fHeightDelta =
+			tProbeHit.vHitpos.y - fPreviousGroundHeight;
+		if (std::abs(fHeightDelta) >
+			m_fGroundFollowMaxHeightDeltaPerProbe)
+		{
+			// 인접 샘플의 높이가 갑자기 변하면 계단/절벽으로 판단한다.
+			return;
+		}
+
+		fPreviousGroundHeight = tProbeHit.vHitpos.y;
+		if (iProbe == iProbeCount)
+			tGroundHit = tProbeHit;
 	}
 
 #ifdef _DEBUG
@@ -1785,18 +1826,18 @@ void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 	}
 #endif
 
-	const _float fSlopeLimit =
-		m_pComCharacterController->GetSlopeLimit();
-	if (tGroundHit.vHitNormal.y < fSlopeLimit)
-		return;
-
 	const _float fStepDown =
 		tGroundHit.vHitpos.y - vFootPosition.y;
 	if (fStepDown < 0.f &&
 		fStepDown >= -m_fGroundFollowMaxStepDown)
 	{
+		// 검출된 높이 차를 한 프레임에 전부 적용하면 경계에서 튀므로
+		// 최대 추종 속도로 제한해 완만하게 지면에 붙인다.
+		const _float fCorrection = std::max(
+			fStepDown,
+			-m_fGroundFollowMaxCorrectionSpeed * fFixedTimeDelta);
 		m_pComMoveIntent->AddExternalDisplacement(
-			{ 0.f, fStepDown, 0.f });
+			{ 0.f, fCorrection, 0.f });
 	}
 }
 
@@ -1894,7 +1935,7 @@ void CPlayer::ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_
 void CPlayer::PrepareLocomotionResume()
 {
 	m_fCurrentMoveSpeed = m_bRawMoveInput
-		? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
+		? (m_bSprintRequested ? m_fSprintSpeed : (m_bWalkRequested ? m_fWalkSpeed : m_fJogSpeed))
 		: 0.f;
 
 	if (m_bRawMoveInput)
@@ -2076,6 +2117,12 @@ void CPlayer::UpdateWiggenweldPotion()
 	for (uint32_t axis = 0; axis < 3; ++axis)
 		socketMatrix.r[axis] = XMVector3Normalize(socketMatrix.r[axis]);
 
+	const _matrix potionPivotOffset = XMMatrixTranslation(
+		-0.120f,
+		-0.305f,
+		0.105f) *
+		socketMatrix;
+	socketMatrix = potionPivotOffset;
 	if (!pPotion->SetHeldPose(
 		socketMatrix * GetTransform().GetLoadedWorldMatrix()))
 	{
@@ -2083,9 +2130,9 @@ void CPlayer::UpdateWiggenweldPotion()
 		return;
 	}
 
+	// 팔을 내리는 마지막 구간까지 재생한 뒤에만 포션을 드롭한다.
 	if (m_pModelAnimator->HasUpperAnimation() &&
-		!m_pModelAnimator->IsUpperAnimationFinished() &&
-		m_pModelAnimator->GetUpperAnimRatio() < 0.92f)
+		!m_pModelAnimator->IsUpperAnimationFinished())
 		return;
 
 	_float3 vLook{};

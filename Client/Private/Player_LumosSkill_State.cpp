@@ -2,7 +2,6 @@
 #include "Player_LumosSkill_State.h"
 #include "Player.h"
 #include "ComAnimator.h"
-#include "PlayerAnimationRatioGuard.h"
 
 NS_USING(Client)
 
@@ -14,39 +13,25 @@ void CPlayer_LumosSkill_State::Enter(CStateMachine* pStateMachine)
 		RequestLocomotion(pStateMachine);
 		return;
 	}
+
 	CacheAnimation(*pPlayer);
-	m_bTurningOff = pPlayer->IsLumosActive();
-	m_bToggleApplied = false;
+	SetSkillControl(*pPlayer, false, false, false, false);
+	pPlayer->SetLumosHoldAnimationIndex(m_iHoldAnimation);
 
-	if (m_bTurningOff)
+	const _bool bTurningOff = pPlayer->IsLumosActive();
+	pPlayer->SetLumosActive(!bTurningOff);
+
+	const int32_t iToggleAnimation = bTurningOff
+		? m_iStopAnimation
+		: m_iStartAnimation;
+	if (iToggleAnimation >= 0)
 	{
-		pPlayer->SetLumosActive(false);
-		m_bToggleApplied = true;
-		if (m_iStopAnimation >= 0 && pPlayer->PlayUpperBodyAnimation(
-			m_iStopAnimation, "RightArm", 1, false, 0.1f))
+		if (pPlayer->PlayUpperBodyAnimation(
+			iToggleAnimation, "RightArm", 1, false, 0.14f))
 		{
-			SetSkillControl(*pPlayer, true, false, false, true);
-			return;
+			pPlayer->GetAnimator()->SetUpperAnimationFadeOutDuration(0.3f);
 		}
-
-		RequestLocomotion(pStateMachine);
-		return;
 	}
-
-	if (m_iStartAnimation < 0 || !pPlayer->PlayUpperBodyAnimation(
-		m_iStartAnimation, "RightArm", 1, false, 0.12f))
-	{
-		pPlayer->SetLumosActive(true);
-		m_bToggleApplied = true;
-		if (m_iHoldAnimation >= 0)
-			pPlayer->PlayUpperBodyAnimation(
-				m_iHoldAnimation, "RightArm", 1, true, 0.12f);
-		RequestLocomotion(pStateMachine);
-		return;
-	}
-
-
-	SetSkillControl(*pPlayer, true, false, false, true);
 }
 
 void CPlayer_LumosSkill_State::Update(CStateMachine* pStateMachine, _float)
@@ -57,47 +42,16 @@ void CPlayer_LumosSkill_State::Update(CStateMachine* pStateMachine, _float)
 		RequestLocomotion(pStateMachine);
 		return;
 	}
-	auto* pAnimator = pPlayer->GetAnimator();
-	const _float fRatio = PlayerAnimationRatioGuard::Sanitize(
-		pAnimator->GetUpperAnimRatio());
-	if (fRatio >= MOVEMENT_RELEASE_RATIO)
-		pPlayer->SetMovementLocked(false);
 
-	if (!m_bTurningOff && !m_bToggleApplied && fRatio >= TOGGLE_RATIO)
-	{
-		pPlayer->SetLumosActive(true);
-		m_bToggleApplied = true;
-	}
 
-	if (fRatio < EXIT_RATIO && !pAnimator->IsUpperAnimationFinished())
-		return;
-
-	if (!m_bTurningOff)
-	{
-		if (!m_bToggleApplied)
-			pPlayer->SetLumosActive(true);
-		if (m_iHoldAnimation >= 0)
-			pPlayer->PlayUpperBodyAnimation(
-				m_iHoldAnimation, "RightArm", 1, true, 0.1f);
-	}
-	else
-	{
-		pAnimator->Stop_UpperAnim(0.1f);
-	}
-
-	if (!RequestLocomotion(pStateMachine) && !m_bTurningOff)
-	{
-		pPlayer->SetLumosActive(false);
-		pAnimator->Stop_UpperAnim(0.1f);
-	}
+	pPlayer->PrepareLocomotionResume();
+	RequestLocomotion(pStateMachine);
 }
 
 void CPlayer_LumosSkill_State::Exit(CStateMachine* pStateMachine)
 {
 	if (auto* pPlayer = GetPlayer(pStateMachine))
 		ResetSkillControl(*pPlayer);
-	m_bToggleApplied = false;
-	m_bTurningOff = false;
 }
 
 void CPlayer_LumosSkill_State::CacheAnimation(const CPlayer& player)

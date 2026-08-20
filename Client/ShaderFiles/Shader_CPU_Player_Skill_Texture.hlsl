@@ -342,8 +342,13 @@ PS_OUT LumosWaver(VS_OUT In)
 	float insideFlareTexture =
 		step(0.f, flareTextureUV.x) * step(flareTextureUV.x, 1.f) *
 		step(0.f, flareTextureUV.y) * step(flareTextureUV.y, 1.f);
-	float3 flareSample = g_DiffuseTexture.Sample(LinearClamp, flareTextureUV).rgb *
+	float flareEdgeDistance = min(
+		min(flareTextureUV.x, 1.f - flareTextureUV.x),
+		min(flareTextureUV.y, 1.f - flareTextureUV.y));
+	float flareEdgeFade = smoothstep(0.f, 0.09f, flareEdgeDistance) *
 		insideFlareTexture;
+	float4 flareTexel = g_DiffuseTexture.Sample(LinearClamp, flareTextureUV);
+	float3 flareSample = flareTexel.rgb * flareTexel.a * flareEdgeFade;
 	float flareLuminance = dot(flareSample, float3(0.299f, 0.587f, 0.114f));
 	float textureBloom = pow(saturate(flareLuminance), 0.72f);
 	float angleWarp = (flowingNoise - 0.5f) * 1.25f +
@@ -360,8 +365,9 @@ PS_OUT LumosWaver(VS_OUT In)
 	float flicker = 0.88f + 0.12f * sin(time * 4.7f + flowingNoise * 6.283185f);
 	float breathing = 0.91f + 0.09f * sin(time * 3.1f + flowingNoise * 4.f);
 	float animatedFlare = textureBloom * breathing * lerp(0.86f, 1.14f, flowingNoise);
+	float softOuterFade = 1.f - smoothstep(0.7f, 1.02f, radius);
 	float outerSpread = animatedFlare * lerp(0.56f, 1.f,
-		pow(saturate(1.f - radius), 2.2f));
+		pow(saturate(1.f - radius), 2.2f)) * softOuterFade;
 	float concentratedCore = pow(saturate(1.f - radius * 4.35f), 2.7f);
 	float mask = saturate(max(outerSpread,
 		concentratedCore * 1.28f + hotCore * 0.92f + core * 0.54f) +
