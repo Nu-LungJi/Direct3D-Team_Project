@@ -113,6 +113,11 @@ public:
 	HRESULT LoadChunk(const MAPCHUNK_COORD& coord); // 메인스레드 동기 로드, 저장/툴용
 	HRESULT UnLoadChunk(const MAPCHUNK_COORD& coord);
 
+	/*----------- 광윤 추가 -----------*/
+	HRESULT SaveMaterial(const std::string& path);
+	HRESULT LoadMaterial(const std::string& path);
+	/*---------------------------------*/
+
 	// 모델 태그 → 모델 .bin 파일 경로
 	void SetMapModelResourceIndex(const std::filesystem::path& staticModelRoot, const std::string& resourceGroup, std::unordered_map<std::string, std::filesystem::path> modelPaths);
 
@@ -180,6 +185,9 @@ private:
 	std::vector<std::vector<MAP_MODEL_RESOURCE_KEY>> m_DeferredModelReleases;
 	std::vector<MAP_MODEL_RESOURCE_KEY> m_DeferredUnusedModelReleases;
 
+	/*----------- 광윤 추가 -----------*/
+	std::unordered_map<std::string, MATERIAL_DESC>	m_MaterialDescs;
+	/*---------------------------------*/
 
 // ---------------------------------MapChunk-----------------------------------
 

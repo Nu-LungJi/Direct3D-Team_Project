@@ -263,7 +263,9 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 			return E_FAIL;
 
 		const auto* textureCache = GetOrCreateMapMeshTextureCache(model);
+		/*----------- 광윤 추가 -----------*/ // Material 정보 Get
 		const MATERIAL_DESC materialDesc = model->GetMaterialDesc();
+		/*---------------------------------*/
 		if (textureCache == nullptr)
 			return E_FAIL;
 
@@ -283,8 +285,9 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 			D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS args{};
 			args.IndexCountPerInstance = static_cast<uint32_t>(mesh->GetNumIndices());
 			m_IndirectArgs.push_back(args);
+			/*----------- 광윤 수정 -----------*/	// Material 정보 적용
 			m_DrawItems.push_back({ model, renderFeature, textureCache, materialDesc, meshIndex, instanceOffset });
-
+			/*---------------------------------*/
 			const size_t featureIndex = static_cast<size_t>(renderFeature);
 			if (featureIndex >= RENDER_FEATURE_COUNT)
 				return E_FAIL;

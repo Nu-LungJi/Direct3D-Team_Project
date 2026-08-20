@@ -5,9 +5,7 @@
 #include "MapMeshObject.h"
 #include "DecalVolume.h"
 #include "Resources.h"
-/*----------- 광윤 추가 -----------*/
 #include "ComStaticModelInstance.h"
-/*---------------------------------*/
 
 NS_USING(Client)
 
