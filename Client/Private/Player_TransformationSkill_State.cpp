@@ -3,19 +3,27 @@
 
 #include "Player.h"
 #include "ComAnimator.h"
+#include "Monster.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_Weapon.h"
+#include "PropBarrel.h"
+#include "TmbGurdian.h"
 
 NS_USING(Client)
 
 void CPlayer_TransformationSkill_State::Enter(CStateMachine* pStateMachine)
 {
+	m_hTransformationTarget = {};
+	m_fTransformationElapsed = 0.f;
+	m_bTransformationResolved = false;
+
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer || !HasTarget(*pPlayer) || !pPlayer->GetAnimator())
 	{
 		RequestLocomotion(pStateMachine);
 		return;
 	}
+	m_hTransformationTarget = pPlayer->GetTargetHandle();
 
 	// [TRANSFORMATION_ENTER] 시전 시작 시 이동 입력을 잠그고 타깃 방향 회전만 허용한다.
 	// 완드 발광, 캐스팅 사운드처럼 즉시 시작할 연출은 이 아래에 연결한다.
@@ -49,7 +57,7 @@ void CPlayer_TransformationSkill_State::Enter(CStateMachine* pStateMachine)
 		});
 }
 
-void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _float)
+void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 {
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer || !pPlayer->GetAnimator())
@@ -87,11 +95,8 @@ void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _fl
 		if (m_fAnimRatio >= RELEASE_RATIO)
 		{
 			// [TRANSFORMATION_RELEASE_CUE]
-			// 주문이 실제로 방출되는 프레임이다. 이 위치에서 다음 작업을 연결한다.
-			// 1. 현재 타깃 유효성 재검사
-			// 2. 대상의 변신 가능 여부 판정 및 변신 적용 요청
-			// 3. 완드 발사/타깃 피격 이펙트와 주문 방출 사운드 시작
-			// 현재 단계에서는 요청대로 이펙트나 실제 변신 처리를 실행하지 않는다.
+			// 주문이 실제로 방출되는 프레임이다. 완드 발사와 타깃 피격
+			// 이펙트를 시작하고, 실제 교체는 이펙트 중간 Cue까지 지연한다.
 
 			auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
 			if (pWeapon)
@@ -104,7 +109,8 @@ void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _fl
 					DEBUG_LOG("[Transformation] Failed to spawn TransParticle.json.\n");
 			}
 
-			auto pTarget = CGameInstance::Get().GetGameObjectByHandle(pPlayer->GetTargetHandle());
+			auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(
+				m_hTransformationTarget);
 
 			if (nullptr != pTarget)
 			{
@@ -118,15 +124,23 @@ void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _fl
 
 				CGameInstance::Get().PlayEffect("Transformation", effectWorld);
 			}
+			m_fTransformationElapsed = 0.f;
 			m_ePhase = PHASE::RELEASE;
 		}
 		break;
 
 	case PHASE::RELEASE:
 		// [TRANSFORMATION_RELEASE]
-		// 변신 연출이 진행되는 구간이다. 빔/투사체 추적, 적중 결과 확인,
-		// 변신 성공·실패 후속 처리가 필요하면 이 구간에서 갱신한다.
-		if (m_fAnimRatio >= RECOVERY_RATIO)
+		// 변신 연출의 중간 Cue에서 몬스터를 완성된 오크통으로 교체한다.
+		// 파괴/파편 생성은 이후 던지기 스킬의 충돌 처리에서 별도로 호출한다.
+		m_fTransformationElapsed += std::max(fTimeDelta, 0.f);
+		if (!m_bTransformationResolved &&
+			m_fTransformationElapsed >= TRANSFORMATION_DELAY)
+		{
+			TransformTargetToBarrel();
+		}
+
+		if (m_bTransformationResolved && m_fAnimRatio >= RECOVERY_RATIO)
 		{
 			// [TRANSFORMATION_RECOVERY_CUE]
 			// 주문 방출이 끝나고 후딜로 넘어가는 시점이다.
@@ -157,6 +171,53 @@ void CPlayer_TransformationSkill_State::Exit(CStateMachine* pStateMachine)
 
 	m_ePhase = PHASE::CAST_BEGIN;
 	m_fAnimRatio = 0.f;
+	m_fTransformationElapsed = 0.f;
+	m_bTransformationResolved = false;
+	m_hTransformationTarget = {};
+}
+
+void CPlayer_TransformationSkill_State::TransformTargetToBarrel()
+{
+	// 유효하지 않은 타깃이나 생성 실패를 매 프레임 재시도하지 않는다.
+	m_bTransformationResolved = true;
+
+	auto* pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(
+		m_hTransformationTarget);
+	if (!pMonster || pMonster->GetPendingDestroy())
+	{
+		DEBUG_LOG("[Transformation] Target is no longer transformable.\n");
+		return;
+	}
+
+	CPropBarrel::DESC desc{};
+	desc.sObjectTag = "Transformation_PropBarrel";
+	desc.sResourceGroup = "PERMANENT";
+	desc.vInitialPosition = pMonster->GetTransform().GetPosition();
+	desc.vInitialRotation = pMonster->GetTransform().GetRotationEuler();
+
+	const auto hBarrel = CGameInstance::Get().AddGameObjectToLayer(
+		"PERMANENT",
+		PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
+		"PropBarrel",
+		&desc);
+	if (!hBarrel)
+	{
+		DEBUG_LOG("[Transformation] Failed to spawn PropBarrel; target was preserved.\n");
+		return;
+	}
+
+	// Tomb Guardian의 무기는 별도 레이어 오브젝트이므로 본체와 함께 정리한다.
+	if (auto* pTmbGurdian = Cast<CTmbGurdian>(pMonster))
+	{
+		if (auto* pWeapon = CGameInstance::Get().GetGameObjectByHandle(
+			pTmbGurdian->GetWeaponHandle()))
+		{
+			pWeapon->SetPendingDestroy();
+		}
+	}
+
+	// 생성 성공을 확인한 뒤에만 원본 몬스터를 지연 삭제한다.
+	pMonster->SetPendingDestroy();
 }
 
 SPtr<CPlayer_TransformationSkill_State> CPlayer_TransformationSkill_State::Create()

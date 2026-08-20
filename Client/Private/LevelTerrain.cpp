@@ -81,10 +81,10 @@ HRESULT CLevelTerrain::Initialize()
 	{
 
 		CPropBarrel::DESC Desc{};
-		Desc.sResourceGroup = LEVEL::TERRAIN;
+		Desc.sResourceGroup = "PERMANENT";
 		Desc.vInitialPosition = { 5.f, 5.f, 5.f };
 		const auto hPropBarrel = CGameInstance::Get().AddGameObjectToLayer(
-			LEVEL::TERRAIN,
+			"PERMANENT",
 			PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
 			"PropBarrel",
 			&Desc);

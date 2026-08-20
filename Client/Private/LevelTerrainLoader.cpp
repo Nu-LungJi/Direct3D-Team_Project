@@ -50,9 +50,6 @@
 #include "Cursor.h"
 #include "SpellMiniGame.h"
 
-#include "PropBarrel.h"
-#include "PropBarrelDebris.h"
-
 NS_USING(Client)
 
 std::future<bool> CLevelTerrainLoader::Load()
@@ -250,48 +247,6 @@ std::future<bool> CLevelTerrainLoader::Load()
 			{
 				MSG_BOX("TERRAIN Failed Prototype_GameObject_Player");
 				return false;
-			}
-
-			{
-				for (uint32_t i = 1; i <= 12; ++i)
-				{
-					std::string str = "./Resources/SampleClient/Models/Static/Prop_Barrel_Breakable_A_Fragment2/";
-					if (i < 10)
-						str += "SM_Prop_Barrel_Breakable_A_Fragment2_0" + std::to_string(i);
-					else
-						str += "SM_Prop_Barrel_Breakable_A_Fragment2_" + std::to_string(i);
-					str += ".bin";
-					if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
-						LEVEL::TERRAIN, "Static_Prop_Barrel_Debris_Resource_" + std::to_string(i),
-						CResStaticModel::Create(str)))
-					{
-						CResStaticModel::DESC desc{};
-						desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-						if (FAILED(resource->Load(desc))) return false;
-					}
-					else return false;
-				}
-
-				if (FAILED(CGameInstance::Get().AddPrototype(
-					LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrelDebris,
-					CPropBarrelDebris::Create()))) return false;
-			}
-
-			{
-				if (FAILED(CGameInstance::Get().AddPrototype(
-					LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
-					CPropBarrel::Create()))) return false;
-
-				if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
-					LEVEL::TERRAIN, "Static_Prop_Barrel_Resource",
-					CResStaticModel::Create("./Resources/SampleClient/Models/Static/Prop_Barrel_Breakable_A/SM_Prop_Barrel_Breakable_A.bin")))
-				{
-					CResStaticModel::DESC desc{};
-					desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
-					if (FAILED(resource->Load(desc))) return false;
-				}
-				else return false;
-
 			}
 
 			if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
