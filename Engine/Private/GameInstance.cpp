@@ -823,6 +823,24 @@ SPtr<CResource> CGameInstance::AddResource(const StringID& sGroupTag, const Stri
 {
 	return m_pResourceManager->AddResource(sGroupTag, sResTag, pAsset);
 }
+SPtr<CResModelAnim> CGameInstance::GetOrLoadModelAnimation(
+	const _string& sPath)
+{
+	if (!m_pResourceManager)
+		return nullptr;
+
+	return m_pResourceManager->GetOrLoadModelAnimation(sPath);
+}
+void CGameInstance::MoveResourcePathLookup(
+	const _string& sOldPath, const _string& sNewPath,
+	const SPtr<CResource>& pResource)
+{
+	if (!m_pResourceManager)
+		return;
+
+	m_pResourceManager->MoveResourcePathLookup(
+		sOldPath, sNewPath, pResource);
+}
 std::vector<SPtr<CResource>> CGameInstance::GetResource(const StringID& sGroupTag, const StringID& sResTag) const
 {
 	return m_pResourceManager->GetResource(sGroupTag, sResTag);
