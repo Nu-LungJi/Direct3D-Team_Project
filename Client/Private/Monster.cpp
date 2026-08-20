@@ -96,6 +96,16 @@ HRESULT CMonster::InitializePrototype(void* pArg)
 	{
 		return E_FAIL;
 	}
+	m_pResVertexGPUSkinningInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_Instanced");
+	if (!m_pResVertexGPUSkinningInstancedShader || FAILED(m_pResVertexGPUSkinningInstancedShader->Load()))
+	{
+		return E_FAIL;
+	}
+	m_pAnimComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Animation");
+	if (!m_pAnimComputeShader || FAILED(m_pAnimComputeShader->Load()))
+	{
+		return E_FAIL;
+	}
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
 	if (FAILED(m_pResPixelShader->Load()))
 	{
@@ -239,6 +249,15 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 }
 HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
+	const auto eEvaluationMode = static_cast<CComAnimator::EVALUATION_MODE>(Batch.Key.iEvaluationMode);
+	if (eEvaluationMode == CComAnimator::EVALUATION_MODE::GPU)
+		return Render_Instanced_GPU(pContext, ctx, Batch);
+
+	return Render_Instanced_CPU(pContext, ctx, Batch);
+}
+
+HRESULT CMonster::Render_Instanced_CPU(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
+{
 	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResPixelShader)
 		return E_FAIL;
 
@@ -340,6 +359,143 @@ HRESULT CMonster::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDE
 
 	return S_OK;
 
+}
+
+HRESULT CMonster::Render_Instanced_GPU(ID3D11DeviceContext* pContext, const E::RENDER_CTX&, const E::MODEL_INSTANCE_BATCH& Batch)
+{
+	if (!pContext || !m_pAnimComputeShader || !m_pResVertexGPUSkinningInstancedShader || !m_pResPixelShader)
+		return E_INVALIDARG;
+
+	const uint32_t iInstanceCount = static_cast<uint32_t>(Batch.Instances.size());
+	if (iInstanceCount == 0)
+		return S_OK;
+	if (iInstanceCount > 512)
+		return E_FAIL;
+
+	if (FAILED(Update_InstanceBuffer(pContext, Batch.Instances)) ||
+		FAILED(m_pComModelInstance->Bind_GPUAnimationSRVs_CS(pContext)) ||
+		FAILED(Bind_InstanceBuffer_CS(pContext)) ||
+		FAILED(Bind_FinalBoneUAV_CS(pContext)))
+	{
+		Unbind_GPUAnimation_CS(pContext);
+		return E_FAIL;
+	}
+
+	pContext->CSSetShader(m_pAnimComputeShader->GetComputeShader().Get(), nullptr, 0);
+	pContext->Dispatch(iInstanceCount, 1, 1);
+	Unbind_GPUAnimation_CS(pContext);
+
+	if (FAILED(Bind_InstanceBuffer(pContext)) ||
+		FAILED(Bind_FinalBoneSRV_VS(pContext)) ||
+		FAILED(m_pComModelInstance->Bind_GPUSkinBones_VS(pContext)))
+	{
+		Unbind_GPUAnimation_VS(pContext);
+		return E_FAIL;
+	}
+
+	const auto& vs = m_pResVertexGPUSkinningInstancedShader;
+	const auto& ps = m_pResPixelShader;
+	pContext->IASetInputLayout(vs->GetInputLayout().Get());
+	pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
+	pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
+
+	auto pModel = CGameInstance::Get().GetResourceFirst<CResModel>(Batch.Key.modelGroup, Batch.Key.modelTag);
+	if (!pModel)
+	{
+		Unbind_GPUAnimation_VS(pContext);
+		return E_FAIL;
+	}
+
+	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
+	{
+		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
+		if (!mesh)
+			continue;
+
+		const auto& skinRange = pModel->Get_GPUMeshSkinRange(iMeshIndex);
+		if (skinRange.iSkinBoneCount == 0)
+			continue;
+
+		E::GPU_SKIN_MESH_CONSTANTS skinningConstants{};
+		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
+		skinningConstants.iVertexCount = mesh->GetNumVertices();
+		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+		skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
+		skinningConstants.iMorphVertexCount = mesh->GetNumVertices();
+
+		D3D11_MAPPED_SUBRESOURCE mapped{};
+		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+		{
+			Unbind_GPUAnimation_VS(pContext);
+			return E_FAIL;
+		}
+		memcpy(mapped.pData, &skinningConstants, sizeof(skinningConstants));
+		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
+
+		ID3D11Buffer* pSkinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
+		pContext->VSSetConstantBuffers(5, 1, &pSkinningCB);
+
+		ID3D11Buffer* pVertexBuffer = mesh->GetVertexBuffer().Get();
+		const UINT iStride = mesh->GetVertexStride();
+		const UINT iOffset = 0;
+		pContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &iStride, &iOffset);
+		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+
+		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
+		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
+		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
+	}
+
+	Unbind_GPUAnimation_VS(pContext);
+	return S_OK;
+}
+
+HRESULT CMonster::Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext)
+{
+	auto pBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
+	if (!pBuffer || !pBuffer->GetSRV())
+		return E_FAIL;
+	ID3D11ShaderResourceView* pSRV = pBuffer->GetSRV().Get();
+	pContext->CSSetShaderResources(6, 1, &pSRV);
+	return S_OK;
+}
+
+HRESULT CMonster::Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext)
+{
+	auto pBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
+	if (!pBuffer || !pBuffer->GetUAV())
+		return E_FAIL;
+	ID3D11ShaderResourceView* pNullSRV = nullptr;
+	pContext->VSSetShaderResources(7, 1, &pNullSRV);
+	ID3D11UnorderedAccessView* pUAV = pBuffer->GetUAV().Get();
+	pContext->CSSetUnorderedAccessViews(0, 1, &pUAV, nullptr);
+	return S_OK;
+}
+
+HRESULT CMonster::Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext)
+{
+	auto pBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_FINALBONEMATRIX");
+	if (!pBuffer || !pBuffer->GetSRV())
+		return E_FAIL;
+	ID3D11ShaderResourceView* pSRV = pBuffer->GetSRV().Get();
+	pContext->VSSetShaderResources(7, 1, &pSRV);
+	return S_OK;
+}
+
+void CMonster::Unbind_GPUAnimation_CS(ID3D11DeviceContext* pContext)
+{
+	ID3D11ShaderResourceView* pNullSRVs[7]{};
+	pContext->CSSetShaderResources(0, 7, pNullSRVs);
+	ID3D11UnorderedAccessView* pNullUAV = nullptr;
+	pContext->CSSetUnorderedAccessViews(0, 1, &pNullUAV, nullptr);
+	pContext->CSSetShader(nullptr, nullptr, 0);
+}
+
+void CMonster::Unbind_GPUAnimation_VS(ID3D11DeviceContext* pContext)
+{
+	ID3D11ShaderResourceView* pNullSRVs[4]{};
+	pContext->VSSetShaderResources(6, 4, pNullSRVs);
 }
 HRESULT CMonster::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances)
 {
@@ -722,7 +878,11 @@ void CMonster::Update_HurtBox()
 {
 	_bool bHurtBoxUpdated{ false };
 
-	if (m_iColliderBoneIndex >= 0 && m_pComModelInstance)
+	// GPU 전용 평가는 CPU CombinedBoneMatrices를 매 프레임 갱신하지 않는다.
+	// 오래된 본 행렬로 HurtBox를 움직이는 대신 CCT 위치 fallback을 사용한다.
+	if (m_iColliderBoneIndex >= 0 && m_pComModelInstance &&
+		m_pModelAnimator &&
+		m_pModelAnimator->GetEvaluationMode() != CComAnimator::EVALUATION_MODE::GPU)
 	{
 		const auto& CombinedBones =m_pComModelInstance->Get_CombinedBoneMatrices();
 
