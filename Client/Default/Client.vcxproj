@@ -209,6 +209,7 @@
     <ClInclude Include="..\public\BTDecEdgPhase.h" />
     <ClInclude Include="..\public\BTDecEdgState.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
+    <ClInclude Include="..\public\Coin.h" />
     <ClInclude Include="..\public\Edg_Godae.h" />
     <ClInclude Include="..\public\Gur_Combat.h" />
     <ClInclude Include="..\public\Gur_Hit.h" />
@@ -382,6 +383,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\Coin.cpp" />
     <ClCompile Include="..\private\Edg_Godae.cpp" />
     <ClCompile Include="..\private\Gur_Combat.cpp" />
     <ClCompile Include="..\private\Gur_Hit.cpp" />

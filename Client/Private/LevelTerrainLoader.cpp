@@ -49,6 +49,7 @@
 #include "VideoObject.h"
 #include "Cursor.h"
 #include "SpellMiniGame.h"
+#include "Coin.h"
 
 NS_USING(Client)
 
@@ -618,6 +619,15 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		}
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
 
+	}
+
+	//Coin
+	{
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Coin, CCoin::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
+			return E_FAIL;
+		}
 	}
 	return S_OK;
 }

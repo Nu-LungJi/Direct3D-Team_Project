@@ -412,6 +412,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_Potion_State">
       <UniqueIdentifier>{b099f08f-a3b6-4d53-b3d4-ca55705c3190}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Coin">
+      <UniqueIdentifier>{5e844cdf-6e02-4c87-bc88-f38602810a3d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -945,6 +948,9 @@
     <ClInclude Include="..\Public\Player_Potion_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Potion_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Coin.h">
+      <Filter>GameObject\Coin</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1426,6 +1432,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Potion_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Potion_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Coin.cpp">
+      <Filter>GameObject\Coin</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

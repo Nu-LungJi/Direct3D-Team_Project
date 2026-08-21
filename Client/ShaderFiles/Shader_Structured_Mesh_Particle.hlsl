@@ -122,7 +122,8 @@ PS_OUT PSMain(VS_OUT In)
 
 	float3 SMRO = SMROMap.Sample(LinearWrap, In.vTexcoord).rgb;
 	float fMetallic = SMRO.r * MetallicIntensity;
-	float fRoughness = SMRO.g * RoughnessIntensity;
+	//float fRoughness = SMRO.g * RoughnessIntensity;
+	float fRoughness = 14.12f;
 	float fAmbient = SMRO.b * AmbientIntensity;
 
 	float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
@@ -149,7 +150,7 @@ PS_OUT PSMain(VS_OUT In)
 		float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
 		float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
 
-		float3 Specular = D * F * V_Spec * SpecularIntensity;
+		float3 Specular = D * F * V_Spec * SpecularIntensity ;
 		float3 kS = F;
 		float3 kD = (1.f - kS) * (1.f - fMetallic);
 		float3 Diffuse = kD * Albedo / PI;
@@ -167,7 +168,10 @@ PS_OUT PSMain(VS_OUT In)
 	float3 finalColor = constantAmbient + LightAccumulation + texEmissive + instanceEmissive;
 
 	Out.vDiffuse = float4(finalColor, AlbedoTex.a);
+	//Out.vDiffuse = float4(LightAccumulation, AlbedoTex.a);
 
+
+	
 	return Out;
 }
 
@@ -229,12 +233,12 @@ PS_OUT PSMain_Stone(VS_OUT In)
 
 	float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb;
 	texEmissive = pow(max(texEmissive, 0.f), 2.2f);
-
+		
 	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ageRatio);
 	float3 instanceEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
 
 	float3 constantAmbient = Albedo * 1.f * fAmbient;
-	float3 finalColor = constantAmbient + LightAccumulation + texEmissive + instanceEmissive;
+	float3 finalColor	 = constantAmbient + LightAccumulation + texEmissive + instanceEmissive;
 
 	Out.vDiffuse = float4(finalColor, AlbedoTex.a);
 
