@@ -10,9 +10,6 @@ enum class TIME_DOMAIN : uint8_t
 	UNSCALED
 };
 
-using TIME_SCALE_HANDLE = uint64_t;
-inline constexpr TIME_SCALE_HANDLE INVALID_TIME_SCALE_HANDLE = 0;
-
 struct TIME_SCALE_REQUEST_DESC
 {
 	_float fTargetScale{ 1.f };
@@ -34,7 +31,6 @@ private:
 
 	struct TIME_SCALE_REQUEST
 	{
-		TIME_SCALE_HANDLE hHandle{ INVALID_TIME_SCALE_HANDLE };
 		TIME_SCALE_REQUEST_DESC Desc{};
 		REQUEST_PHASE ePhase{ REQUEST_PHASE::BLEND_IN };
 		_float fCurrentScale{ 1.f };
@@ -51,15 +47,15 @@ private:
 public:
 	void BeginFrame(_float fUnscaledDelta);
 
-	TIME_SCALE_HANDLE BeginTimeScale(
+	_bool BeginTimeScale(
 		const TIME_SCALE_REQUEST_DESC& Desc);
 	_bool EndTimeScale(
-		TIME_SCALE_HANDLE hHandle,
+		const StringID& sTag,
 		_float fBlendOut);
-	_bool CancelTimeScale(TIME_SCALE_HANDLE hHandle);
+	_bool CancelTimeScale(const StringID& sTag);
 	void ClearTimeScaleRequests();
 
-	_bool IsTimeScaleActive(TIME_SCALE_HANDLE hHandle) const;
+	_bool IsTimeScaleActive(const StringID& sTag) const;
 
 	_float GetUnscaledDelta() const { return m_fUnscaledDelta; }
 	_float GetGameDelta() const { return m_fGameDelta; }
@@ -73,11 +69,9 @@ private:
 	static _float ApplySmoothStep(_float fRatio);
 	void UpdateRequest(TIME_SCALE_REQUEST& Request, _float fUnscaledDelta);
 	void RecalculateCurrentScale();
-	TIME_SCALE_HANDLE GenerateHandle();
 
 private:
-	std::unordered_map<TIME_SCALE_HANDLE, TIME_SCALE_REQUEST> m_Requests{};
-	TIME_SCALE_HANDLE m_hNextHandle{ 1 };
+	std::unordered_map<StringID, TIME_SCALE_REQUEST> m_Requests{};
 	_float m_fUnscaledDelta{};
 	_float m_fGameDelta{};
 	_float m_fCurrentScale{ 1.f };

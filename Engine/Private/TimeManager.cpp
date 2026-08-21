@@ -33,22 +33,19 @@ void CTimeManager::BeginFrame(_float fUnscaledDelta)
 	m_fGameDelta = m_fUnscaledDelta * m_fCurrentScale;
 }
 
-TIME_SCALE_HANDLE CTimeManager::BeginTimeScale(
+_bool CTimeManager::BeginTimeScale(
 	const TIME_SCALE_REQUEST_DESC& Desc)
 {
-	if (!std::isfinite(Desc.fTargetScale) ||
+	if (Desc.sTag.hash == 0 ||
+		!std::isfinite(Desc.fTargetScale) ||
 		!std::isfinite(Desc.fBlendIn) ||
 		!std::isfinite(Desc.fMaxUnscaledDuration) ||
 		!std::isfinite(Desc.fSafetyBlendOut))
 	{
-		return INVALID_TIME_SCALE_HANDLE;
+		return false;
 	}
 
 	TIME_SCALE_REQUEST Request{};
-	Request.hHandle = GenerateHandle();
-	if (Request.hHandle == INVALID_TIME_SCALE_HANDLE)
-		return INVALID_TIME_SCALE_HANDLE;
-
 	Request.Desc = Desc;
 	Request.Desc.fTargetScale = std::clamp(
 		Desc.fTargetScale,
@@ -66,18 +63,17 @@ TIME_SCALE_HANDLE CTimeManager::BeginTimeScale(
 		Request.fCurrentScale = Request.Desc.fTargetScale;
 	}
 
-	const TIME_SCALE_HANDLE hHandle = Request.hHandle;
-	m_Requests.emplace(hHandle, std::move(Request));
+	m_Requests.insert_or_assign(Desc.sTag, std::move(Request));
 	RecalculateCurrentScale();
 	m_fGameDelta = m_fUnscaledDelta * m_fCurrentScale;
-	return hHandle;
+	return true;
 }
 
 _bool CTimeManager::EndTimeScale(
-	TIME_SCALE_HANDLE hHandle,
+	const StringID& sTag,
 	_float fBlendOut)
 {
-	const auto Iter = m_Requests.find(hHandle);
+	const auto Iter = m_Requests.find(sTag);
 	if (Iter == m_Requests.end() || !std::isfinite(fBlendOut))
 		return false;
 
@@ -97,9 +93,9 @@ _bool CTimeManager::EndTimeScale(
 	return true;
 }
 
-_bool CTimeManager::CancelTimeScale(TIME_SCALE_HANDLE hHandle)
+_bool CTimeManager::CancelTimeScale(const StringID& sTag)
 {
-	if (m_Requests.erase(hHandle) == 0)
+	if (m_Requests.erase(sTag) == 0)
 		return false;
 
 	RecalculateCurrentScale();
@@ -114,10 +110,9 @@ void CTimeManager::ClearTimeScaleRequests()
 	m_fGameDelta = m_fUnscaledDelta;
 }
 
-_bool CTimeManager::IsTimeScaleActive(TIME_SCALE_HANDLE hHandle) const
+_bool CTimeManager::IsTimeScaleActive(const StringID& sTag) const
 {
-	return hHandle != INVALID_TIME_SCALE_HANDLE &&
-		m_Requests.contains(hHandle);
+	return sTag.hash != 0 && m_Requests.contains(sTag);
 }
 
 _float CTimeManager::ScaleFixedDelta(_float fUnscaledFixedDelta) const
@@ -208,19 +203,4 @@ void CTimeManager::RecalculateCurrentScale()
 		m_fCurrentScale,
 		MIN_TIME_SCALE,
 		MAX_TIME_SCALE);
-}
-
-TIME_SCALE_HANDLE CTimeManager::GenerateHandle()
-{
-	for (size_t i = 0; i <= m_Requests.size(); ++i)
-	{
-		TIME_SCALE_HANDLE hCandidate = m_hNextHandle++;
-		if (hCandidate == INVALID_TIME_SCALE_HANDLE)
-			hCandidate = m_hNextHandle++;
-
-		if (!m_Requests.contains(hCandidate))
-			return hCandidate;
-	}
-
-	return INVALID_TIME_SCALE_HANDLE;
 }

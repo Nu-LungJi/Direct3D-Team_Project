@@ -442,10 +442,10 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 #ifdef _DEBUG
 	if (KeyDown(DIK_Y))
 	{
-		if (IsTimeScaleActive(m_hDebugTimeScale))
+		const StringID sDebugTimeScaleTag{ "Debug_Y_Toggle" };
+		if (IsTimeScaleActive(sDebugTimeScaleTag))
 		{
-			EndTimeScale(m_hDebugTimeScale, 0.15f);
-			m_hDebugTimeScale = INVALID_TIME_SCALE_HANDLE;
+			EndTimeScale(sDebugTimeScaleTag, 0.15f);
 		}
 		else
 		{
@@ -454,7 +454,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 			Desc.fBlendIn = 0.08f;
 			Desc.sTag = "Debug_Y_Toggle";
 
-			m_hDebugTimeScale = BeginTimeScale(Desc);
+			BeginTimeScale(Desc);
 		}
 	}
 #endif
@@ -858,32 +858,32 @@ _float CGameInstance::GetTimeScale() const
 	return m_pTimeManager ? m_pTimeManager->GetTimeScale() : 1.f;
 }
 
-TIME_SCALE_HANDLE CGameInstance::BeginTimeScale(
+_bool CGameInstance::BeginTimeScale(
 	const TIME_SCALE_REQUEST_DESC& Desc)
 {
 	return m_pTimeManager
 		? m_pTimeManager->BeginTimeScale(Desc)
-		: INVALID_TIME_SCALE_HANDLE;
+		: false;
 }
 
 _bool CGameInstance::EndTimeScale(
-	TIME_SCALE_HANDLE hHandle,
+	const StringID& sTag,
 	_float fBlendOut)
 {
 	return m_pTimeManager &&
-		m_pTimeManager->EndTimeScale(hHandle, fBlendOut);
+		m_pTimeManager->EndTimeScale(sTag, fBlendOut);
 }
 
-_bool CGameInstance::CancelTimeScale(TIME_SCALE_HANDLE hHandle)
+_bool CGameInstance::CancelTimeScale(const StringID& sTag)
 {
 	return m_pTimeManager &&
-		m_pTimeManager->CancelTimeScale(hHandle);
+		m_pTimeManager->CancelTimeScale(sTag);
 }
 
-_bool CGameInstance::IsTimeScaleActive(TIME_SCALE_HANDLE hHandle) const
+_bool CGameInstance::IsTimeScaleActive(const StringID& sTag) const
 {
 	return m_pTimeManager &&
-		m_pTimeManager->IsTimeScaleActive(hHandle);
+		m_pTimeManager->IsTimeScaleActive(sTag);
 }
 
 void CGameInstance::ClearTimeScaleRequests()
