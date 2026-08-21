@@ -54,6 +54,10 @@ public:
 	const WIND_DESC& GetWindDesc() const { return m_WindDesc; }
 	void SetWindDesc(const WIND_DESC& windDesc) { m_WindDesc = windDesc; }
 
+	/*----------- 광윤 추가 -----------*/ // Inspector 호출용
+	CComStaticModelInstance* GetStaticModelInstance() const { return m_pComModelInstance; }
+	/*---------------------------------*/
+
 public:
 	void SetRenderEnable(_bool enable) { m_bRenderEnable = enable; }
 
@@ -68,9 +72,6 @@ private:
 private:
 	_bool m_bRenderEnable = true; // 렌더러에 들어갈 놈인가 (컬링 통과된 놈들)
 
-	_float3 m_fEmissiveColor		= { 1.f, 1.f, 1.f };		// Emissive 색상. 텍스쳐가 있으면 {1.f, 1.f, 1.f} = 원색
-	_float	m_fEmissiveIntensity	= 0.f;						// Emissive 강도,
-	_float	m_fObjectAlpha			= 1.f;						// Object의 투명도,
 
 private:
 	WIND_DESC m_WindDesc {};

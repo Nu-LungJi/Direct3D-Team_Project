@@ -630,6 +630,7 @@ HRESULT CLightManager::Render_ObjectNonShadow(){
 		m_pContext->Unmap(m_pNormalLightConstantBuffer->GetCBuffer().Get(), 0);
 	}
 	else { return E_FAIL; }
+	m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pNormalLightConstantBuffer->GetCBuffer().GetAddressOf());
 	m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pNormalLightConstantBuffer->GetCBuffer().GetAddressOf());
 	m_pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pNormalLightConstantBuffer->GetCBuffer().GetAddressOf());
 
