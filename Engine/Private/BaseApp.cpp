@@ -59,12 +59,12 @@ HRESULT CBaseApp::Loop()
 			{
 				if (iFixedUpdateCount >= MAX_FIXED_UPDATE_COUNT_PER_FRAME)
 				{
-					char szLog[192]{};
-					sprintf_s(szLog,
-						"[FixedUpdate] Per-frame limit exceeded. Limit: %u, discarded accumulated time: %.6fs\n",
-						MAX_FIXED_UPDATE_COUNT_PER_FRAME,
-						fFixedCurrTime);
-					DEBUG_LOG(szLog);
+					//char szLog[192]{};
+					//sprintf_s(szLog,
+					//	"[FixedUpdate] Per-frame limit exceeded. Limit: %u, discarded accumulated time: %.6fs\n",
+					//	MAX_FIXED_UPDATE_COUNT_PER_FRAME,
+					//	fFixedCurrTime);
+					//DEBUG_LOG(szLog);
 					fFixedCurrTime = fmodf(fFixedCurrTime, fFixedGoalTime);
 					break;
 				}
