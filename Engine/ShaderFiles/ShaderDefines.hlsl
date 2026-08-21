@@ -155,8 +155,7 @@ cbuffer CB_LIGHT_BUFFER : register(b4)
     uint			LightCount;
     float3			LightPadding;
 }
-
-
+ 
 
 cbuffer CB_PER_UI : register(b7)
 {
