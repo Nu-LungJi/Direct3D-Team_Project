@@ -82,7 +82,9 @@ HRESULT CPropBarrelDebris::Initialize(void* pArg)
 
 	{
 		CComPxRigidBody::DESC desc{};
-		desc.eType = CComPxRigidBody::TYPE::DYNAMIC;
+		// 파괴 순간 Dynamic 시뮬레이션으로 위치가 변하는지 확인하기 위한 테스트.
+		// 파편을 생성 위치에 고정해 원본 배럴 위치와 직접 비교한다.
+		desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
 		desc.fMass = std::max(pDesc->fMass, 0.001f);
 		desc.vPosition = pDesc->vInitialPosition;
 		desc.vRotation = GetTransform().GetQuaternion();
@@ -120,14 +122,9 @@ HRESULT CPropBarrelDebris::Initialize(void* pArg)
 			return E_FAIL;
 	}
 
-	if (!m_pComPxRigidBody->SetGravityEnabled(true) ||
-		!m_pComPxRigidBody->SetLinearDamping(0.1f) ||
-		!m_pComPxRigidBody->SetAngularDamping(0.2f) ||
-		!m_pComPxRigidBody->SetMaxDepenetrationVelocity(5.f) ||
-		!m_pComPxRigidBody->WakeUp())
-	{
-		return E_FAIL;
-	}
+	// 위치 비교 테스트 중에는 파편을 Kinematic으로 유지한다.
+	// Gravity, damping, WakeUp은 Dynamic 전용이라 여기서 호출하면
+	// 파편 초기화 자체가 실패한다.
 
 	return S_OK;
 }

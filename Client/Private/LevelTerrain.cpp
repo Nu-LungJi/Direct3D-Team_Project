@@ -1285,15 +1285,35 @@ void CLevelTerrain::UpdateGUI()
 	{
 		auto* pPropBarrel = CGameInstance::Get()
 			.GetGameObjectByHandleT<CPropBarrel>(m_hPropBarrel);
-		ImGui::Text("State: %s", pPropBarrel ? "Created" : "Destroyed");
+		const _bool bBarrelAlive = pPropBarrel &&
+			!pPropBarrel->GetPendingDestroy() &&
+			pPropBarrel->GetBarrelState() == CPropBarrel::BARREL_STATE::CREATED;
+		ImGui::Text("State: %s", bBarrelAlive ? "Created" : "Not Spawned");
+		ImGui::DragFloat3(
+			"Spawn Position",
+			&m_vPropBarrelSpawnPosition.x,
+			0.1f,
+			-1000.f,
+			1000.f,
+			"%.2f");
 
-		if (pPropBarrel && ImGui::Button("Destroy Prop Barrel"))
+		if (ImGui::Button("Spawn Prop Barrel"))
 		{
-			if (pPropBarrel->DestroyBarrel())
-				m_hPropBarrel = {};
+			CPropBarrel::DESC desc{};
+			desc.sObjectTag = "Terrain_Test_PropBarrel";
+			desc.sResourceGroup = "PERMANENT";
+			desc.vInitialPosition = m_vPropBarrelSpawnPosition;
+			const auto hPropBarrel = CGameInstance::Get().AddGameObjectToLayer(
+				"PERMANENT",
+				PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
+				"PropBarrel",
+				&desc);
+			if (hPropBarrel)
+				m_hPropBarrel = *hPropBarrel;
 			else
-				DEBUG_LOG("[PropBarrel] Failed to destroy barrel.\n");
+				DEBUG_LOG("[PropBarrel] Spawn button failed.\n");
 		}
+		ImGui::TextDisabled("Each click spawns a new CPropBarrel.");
 
 		ImGui::Separator();
 	}

@@ -54,8 +54,10 @@ private:
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
+	void Update(_float fTimeDelta) override;
 	void LateUpdate(_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	void UpdateGUI() override;
 
 	// 완성된 통을 현재 자세 그대로 파편으로 교체한다.
 	_bool DestroyBarrel();
@@ -79,6 +81,7 @@ private:
 	_float3 m_vModelScale{ 1.f, 1.f, 1.f };
 	_float3 m_vDebrisConvexScale{ 1.f, 1.f, 1.f };
 	BARREL_STATE m_eState{ BARREL_STATE::CREATED };
+	_bool m_bDestroyRequestedFromGUI{};
 };
 
 NS_END

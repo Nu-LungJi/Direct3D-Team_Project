@@ -62,6 +62,7 @@ private:
 	_bool m_bCreatePlayScreenUI{ false };
 	CHandle m_hPlayer{};
 	CHandle m_hPropBarrel{};
+	_float3 m_vPropBarrelSpawnPosition{ 5.f, 5.f, 5.f };
 	std::array<CHandle, 6> m_hAccioBalls{};
 	int32_t m_iSelectedAccioBall{};
 	_float m_fAccioBallPushTorque{ 20.f };

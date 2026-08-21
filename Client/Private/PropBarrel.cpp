@@ -126,6 +126,15 @@ _bool CPropBarrel::DestroyBarrel()
 
 	const _float3 vPosition = GetTransform().GetPosition();
 	const _float4 vRotation = GetTransform().GetQuaternion();
+	const _float3 vScale = GetTransform().GetScale();
+	_float4 vDebrisRotation{};
+	const _vector vRotateX90 = XMQuaternionRotationAxis(
+		XMVectorSet(0.f, 1.f, 0.f, 0.f),
+		XMConvertToRadians(-90.f));
+	XMStoreFloat4(
+		&vDebrisRotation,
+		XMQuaternionNormalize(
+			XMQuaternionMultiply(XMLoadFloat4(&vRotation), vRotateX90)));
 	std::vector<CHandle> spawnedDebrisHandles{};
 	spawnedDebrisHandles.reserve(12);
 
@@ -147,9 +156,10 @@ _bool CPropBarrel::DestroyBarrel()
 		desc.sConvexPath += ".pxconvex";
 
 		desc.vInitialPosition = vPosition;
-		desc.vInitialScale = m_vModelScale;
+		desc.vInitialScale = vScale;
 		desc.vConvexScale = m_vDebrisConvexScale;
-		desc.vInitialQuaternion = vRotation;
+		// 원본 GetTransform().GetQuaternion()을 기준으로 X축 +90도를 합성한다.
+		desc.vInitialQuaternion = vDebrisRotation;
 
 		const auto hDebris = CGameInstance::Get().AddGameObjectToLayer(
 			m_sResourceGroup,
@@ -173,8 +183,33 @@ _bool CPropBarrel::DestroyBarrel()
 	}
 
 	m_eState = BARREL_STATE::DESTROYED;
-	SetPendingDestroy();
+	// 원본 배럴과 Kinematic 파편의 위치가 겹치는지 확인하는 테스트 중이다.
+	// 파편을 만든 뒤에도 원본 배럴을 제거하지 않고 함께 렌더링한다.
 	return true;
+}
+
+void CPropBarrel::UpdateGUI()
+{
+	__super::UpdateGUI();
+	ImGui::Separator();
+	ImGui::Text("Prop Barrel State: %s",
+		m_eState == BARREL_STATE::CREATED ? "Created" : "Destroyed");
+	const _bool bCanDestroy =
+		m_eState == BARREL_STATE::CREATED && !GetPendingDestroy();
+	if (bCanDestroy && ImGui::Button("Destroy Prop Barrel"))
+		m_bDestroyRequestedFromGUI = true;
+	else if (!bCanDestroy)
+		ImGui::TextDisabled("Destroy unavailable");
+}
+
+void CPropBarrel::Update(_float)
+{
+	if (!m_bDestroyRequestedFromGUI)
+		return;
+
+	m_bDestroyRequestedFromGUI = false;
+	if (!DestroyBarrel())
+		DEBUG_LOG("[PropBarrel] Deferred GUI destroy failed.\n");
 }
 
 void CPropBarrel::LateUpdate(_float fTimeDelta)
