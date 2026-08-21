@@ -5,6 +5,7 @@
 #include "ComAnimator.h"
 #include "ComSound.h"
 #include "PlayerAnimationRatioGuard.h"
+#include "Player_Weapon.h"
 
 NS_USING(Client)
 
@@ -51,6 +52,7 @@ void CPlayer_RepairoSkill_State::Enter(CStateMachine* pStateMachine)
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
+	trailEnd = false;
 }
 
 void CPlayer_RepairoSkill_State::CacheAnimationIndices(const CPlayer& player)
@@ -93,16 +95,39 @@ void CPlayer_RepairoSkill_State::Update(CStateMachine* pStateMachine, _float)
 	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
 	pPlayer->SetCurrentMoveSpeed(0.f);
 
+	{
+		if (!trailEnd) {
+			auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+
+			if (!pWeapon)
+				return;
+
+			const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+			_float3 vstart, vend;
+			vstart = _float3(spawnWorld._41, spawnWorld._42 + 0.15f, spawnWorld._43);
+			vend = _float3(spawnWorld._41, spawnWorld._42 - 0.15f, spawnWorld._43);
+			CGameInstance::Get().AddTrailPoint("Repairo_Trail", "Repairo_Trail", pPlayer->GetHandle(), vstart, vend);
+		}
+	
+	}
+
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
 		if (m_fAnimRatio >= PHASE_EXIT_RATIO || pAnimator->GetFinish())
 		{
+
+			_float4x4 mat;
+			XMStoreFloat4x4(&mat, pPlayer->GetTransform().GetLoadedWorldMatrix());
+			CGameInstance::Get().Spawn("RepairoParticle.json", mat);
 			m_ePhase = PHASE::REPAIRO;
 			m_fAnimRatio = 0.f;
 			pAnimator->Play_Anim(m_iRepairoLoopAnimation, false, 0.15f);
 			// TODO: 탐색 범위 판정 및 오브젝트 강조 연출 호출
+
 		}
+	
+	
 		break;
 
 	case PHASE::REPAIRO:
@@ -115,8 +140,12 @@ void CPlayer_RepairoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		break;
 
 	case PHASE::RECOVERY:
-		if (m_fAnimRatio >= PHASE_EXIT_RATIO || pAnimator->GetFinish())
+
+		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO || pAnimator->GetFinish()) {
+			trailEnd = true;
 			RequestLocomotion(pStateMachine);
+		}
+		
 		break;
 	}
 }

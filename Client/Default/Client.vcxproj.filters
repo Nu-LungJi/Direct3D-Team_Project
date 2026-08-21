@@ -205,6 +205,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State">
       <UniqueIdentifier>{dfc43f3f-1ab9-49d1-a6df-f7f34f58d750}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_TransformationSkill_State">
+      <UniqueIdentifier>{2b74c763-c2e4-4806-b5db-005127b93e97}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State">
       <UniqueIdentifier>{129836af-05a5-4e96-86f5-e6664ac3d91f}</UniqueIdentifier>
     </Filter>
@@ -403,8 +406,65 @@
     <Filter Include="GameObject\Monster\00.Parents\State">
       <UniqueIdentifier>{f6a28477-befa-428d-b636-662eef20aab1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\PropBarrel">
+      <UniqueIdentifier>{33378d39-0858-4c64-98ef-efffcf08028f}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Monster\01.Spanwer">
       <UniqueIdentifier>{08679333-751b-4ba5-a4c6-39daf5347c9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\FlyMiniGame">
+      <UniqueIdentifier>{fcff308e-c352-483c-908c-c9ab93c71d83}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\FlyMiniGame\FlightRing">
+      <UniqueIdentifier>{252e67fa-d5f2-40ee-821a-0afa6ff63dbb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_Potion_State">
+      <UniqueIdentifier>{b099f08f-a3b6-4d53-b3d4-ca55705c3190}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\NPC">
+      <UniqueIdentifier>{f215cd79-c521-4fac-8859-0d8f4f6e10df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\NPC\00.Parents">
+      <UniqueIdentifier>{a9cd9686-5757-4795-ac3a-d99fef7f97e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\ShaderFiles">
+      <UniqueIdentifier>{6bd28087-0add-401b-9153-94d4f64a07f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\ShaderFiles\Decal">
+      <UniqueIdentifier>{c7198a28-a5af-4ed1-914d-b1609cf80b2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\ShaderFiles\Particle">
+      <UniqueIdentifier>{c8302cb1-ec93-46b9-9ae9-21747c2503fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\ShaderFiles\SkyBox">
+      <UniqueIdentifier>{aa5df208-f22d-4fb8-9138-caea9933ba4c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\ShaderFiles\GameObject">
+      <UniqueIdentifier>{9a45fcfc-7add-40b1-8b4a-34c6753d1cfa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\AnimRoot\Anim\NPC">
+      <UniqueIdentifier>{9b97b4ce-61a1-42cd-8013-51f0f9c91840}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Action\NPC">
+      <UniqueIdentifier>{c6258fc8-2bd1-4311-bf76-bb345a2c3d8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Action\Mon">
+      <UniqueIdentifier>{b130e623-ac5a-4d38-94a1-ddbd62ecab36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\AnimRoot\Anim\Mon">
+      <UniqueIdentifier>{f628f75b-2087-4c77-80c2-c2b8e5c6218e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\FlyMiniGame\FlightRing">
+      <UniqueIdentifier>{252e67fa-d5f2-40ee-821a-0afa6ff63dbb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Coin">
+      <UniqueIdentifier>{5e844cdf-6e02-4c87-bc88-f38602810a3d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AccioActivity">
+      <UniqueIdentifier>{7c3044d0-b480-43d2-bd36-85006667fca9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AccioActivity\AccioBall">
+      <UniqueIdentifier>{f312d994-35e8-4db6-a6d7-b50989c874c4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -645,6 +705,9 @@
     <ClInclude Include="..\Public\Player_BombardaSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Player_TransformationSkill_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_TransformationSkill_State</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Player_ConfringoSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State</Filter>
     </ClInclude>
@@ -681,12 +744,12 @@
     <ClInclude Include="..\Public\UI_Enums.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
-	<ClInclude Include="..\Public\UIManager.h">
-	  <Filter>GameObject\UI</Filter>
-	</ClInclude>
-	<ClInclude Include="..\Public\UITextureResourceLoader.h">
-	  <Filter>GameObject\UI</Filter>
-	</ClInclude>
+    <ClInclude Include="..\Public\UIManager.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UITextureResourceLoader.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Button.h">
       <Filter>GameObject\UI\Button</Filter>
     </ClInclude>
@@ -867,9 +930,9 @@
     <ClInclude Include="..\Public\SpellMiniGame.h">
       <Filter>GameObject\UI\SpellMiniGame</Filter>
     </ClInclude>
-	<ClInclude Include="..\Public\BoostTrailInstancedUI.h">
-	  <Filter>GameObject\UI\SpellMiniGame</Filter>
-	</ClInclude>
+    <ClInclude Include="..\Public\BoostTrailInstancedUI.h">
+      <Filter>GameObject\UI\SpellMiniGame</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\EdgRandomBall.h">
       <Filter>GameObject\Monster\EnderDragon\Skill\RandomBall</Filter>
     </ClInclude>
@@ -924,7 +987,6 @@
     <ClInclude Include="..\public\Gur_Hit.h">
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\Player_Potion_State.h" />
     <ClInclude Include="..\Public\WiggenweldPotion.h">
       <Filter>GameObject\Player\Player_Potion</Filter>
     </ClInclude>
@@ -934,6 +996,15 @@
     <ClInclude Include="..\public\Edg_Godae.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\AccioBall.h">
+      <Filter>GameObject\AccioActivity\AccioBall</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PropBarrel.h">
+      <Filter>GameObject\Player\PropBarrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PropBarrelDebris.h">
+      <Filter>GameObject\Player\PropBarrel</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\Gur_Spawn.h">
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
     </ClInclude>
@@ -942,6 +1013,87 @@
     </ClInclude>
     <ClInclude Include="..\public\Spider_Dead.h">
       <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\FlyminiGameController.h">
+      <Filter>GameObject\FlyMiniGame</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\FlightRing.h">
+      <Filter>GameObject\FlyMiniGame\FlightRing</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_Potion_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_Potion_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\NpcMom.h">
+      <Filter>GameObject\NPC\00.Parents</Filter>
+    </ClInclude>
+    <ClInclude Include="BTAnimNpc.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\WorldNpc.h">
+      <Filter>GameObject\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTNaviMove.h">
+      <Filter>GameObject\AI\Action\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTCinematic.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTMonAttType.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTMonResetTable.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTMove.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTeleport.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnDirect.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnSlow.h">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTAttackAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTHitAnimMonster.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTRandMoveAnim.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\BTTurnAnimation.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Coin.h">
+      <Filter>GameObject\Coin</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_Base.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_BumperA.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_BumperB.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_LampSmall.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_Platform.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_RampLarge.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivityPartBase.h">
+      <Filter>GameObject\AccioActivity</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1180,6 +1332,9 @@
     <ClCompile Include="..\Private\Player_BombardaSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_BombardaSkill_State</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Player_TransformationSkill_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_TransformationSkill_State</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\Player_ConfringoSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_ConfringoSkill_State</Filter>
     </ClCompile>
@@ -1350,9 +1505,9 @@
     <ClCompile Include="..\Private\SpellMiniGame.cpp">
       <Filter>GameObject\UI\SpellMiniGame</Filter>
     </ClCompile>
-	<ClCompile Include="..\Private\BoostTrailInstancedUI.cpp">
-	  <Filter>GameObject\UI\SpellMiniGame</Filter>
-	</ClCompile>
+    <ClCompile Include="..\Private\BoostTrailInstancedUI.cpp">
+      <Filter>GameObject\UI\SpellMiniGame</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\EdgRandomBall.cpp">
       <Filter>GameObject\Monster\EnderDragon\Skill\RandomBall</Filter>
     </ClCompile>
@@ -1410,9 +1565,17 @@
     <ClCompile Include="..\private\Edg_Godae.cpp">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Player_Potion_State.cpp" />
     <ClCompile Include="..\Private\WiggenweldPotion.cpp">
       <Filter>GameObject\Player\Player_Potion</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioBall.cpp">
+      <Filter>GameObject\AccioActivity\AccioBall</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PropBarrel.cpp">
+      <Filter>GameObject\Player\PropBarrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PropBarrelDebris.cpp">
+      <Filter>GameObject\Player\PropBarrel</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Gur_Spawn.cpp">
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
@@ -1422,6 +1585,87 @@
     </ClCompile>
     <ClCompile Include="..\private\Spider_Dead.cpp">
       <Filter>GameObject\Monster\Spider\FSM\State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_Potion_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_Potion_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\FlyminiGameController.cpp">
+      <Filter>GameObject\FlyMiniGame</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\FlightRing.cpp">
+      <Filter>GameObject\FlyMiniGame\FlightRing</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\NpcMom.cpp">
+      <Filter>GameObject\NPC\00.Parents</Filter>
+    </ClCompile>
+    <ClCompile Include="BTAnimNpc.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\WorldNpc.cpp">
+      <Filter>GameObject\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTNaviMove.cpp">
+      <Filter>GameObject\AI\Action\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTCinematic.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTMonAttType.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTMonResetTable.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTMove.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTeleport.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnDirect.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnSlow.cpp">
+      <Filter>GameObject\AI\Action\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTAttackAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTHitAnimMonster.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTRandMoveAnim.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\BTTurnAnimation.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Coin.cpp">
+      <Filter>GameObject\Coin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_Base.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_BumperA.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_BumperB.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_LampSmall.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_Platform.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_RampLarge.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivityPartBase.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

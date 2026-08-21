@@ -22,18 +22,18 @@ public:
 
 
 public:
-	_matrix Get_CombinedTransformationMatrix() {
+	_matrix Get_CombinedTransformationMatrix() const {
 		return XMLoadFloat4x4(&m_CombinedTransformationMatrix);
 	}
 
-	const _float4x4* Get_CombinedTransformationMatrixPtr() {
+	const _float4x4* Get_CombinedTransformationMatrixPtr() const {
 		return &m_CombinedTransformationMatrix;
 	}
-	_matrix Get_TransformationMatrix() {
+	_matrix Get_TransformationMatrix() const {
 		return XMLoadFloat4x4(&m_TransformationMatrix);
 	}
 
-	const _float4x4* Get_TransformationMatrixPtr() {
+	const _float4x4* Get_TransformationMatrixPtr() const {
 		return &m_TransformationMatrix;
 	}
 
@@ -43,7 +43,7 @@ public:
 
 	int32_t GetParendBoneIndex()const { return m_iParentBoneIndex; }
 
-	std::string GetBoneName() { return m_szName; }
+	std::string GetBoneName() const { return m_szName; }
 
 	uint32_t Get_Depth() const{return m_iDepth;}
 
@@ -53,7 +53,7 @@ public:
 	void Update_CombinedTransformationMatrix(const std::vector<SPtr<CResModelBone>>& Bones, _fmatrix PreTransformMatrix);
 
 public:
-	_bool Compare_Name(const _char* pBoneName) {
+	_bool Compare_Name(const _char* pBoneName) const {
 		return !strcmp(pBoneName, m_szName);
 	}
 

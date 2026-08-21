@@ -24,6 +24,8 @@ private:
 public:
 	HRESULT Initialize(void* pArg) override;
 	void UpdateGUI() override;
+	_bool SetMeshScale(const _float3& vScale);
+	_float3 GetMeshScale() const;
 
 private:
 	SPtr<CResPhysXConvexGeometry> m_pResConvex{};

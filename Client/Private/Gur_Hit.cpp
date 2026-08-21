@@ -435,7 +435,12 @@ void CGur_Hit::ChangeMotion(HIT_MOTION eMotion)
 void CGur_Hit::Effect_Loop(CTmbGurdian* pTmb)
 {
 	if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
-		CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *pTmb->GetTransform().GetWorldMatrix());
+	{
+		_float4x4 mat{};
+		XMStoreFloat4x4(&mat, pTmb->GetTransform().GetLoadedWorldMatrix());
+		mat._42 += 5.f;
+		CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, mat);
+	}
 }
 void CGur_Hit::Effect(CTmbGurdian* pTmb, const _string& SkillName)
 {

@@ -606,6 +606,9 @@
     <ClInclude Include="..\Public\TimeProvider.h">
       <Filter>Time</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\TimeManager.h">
+      <Filter>Time</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Timer.h">
       <Filter>Time</Filter>
     </ClInclude>
@@ -742,6 +745,9 @@
       <Filter>Font</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\WorkerManager.h">
+      <Filter>Worker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\RenderWorkerManager.h">
       <Filter>Worker</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Prototype.h">
@@ -1299,6 +1305,9 @@
     <ClCompile Include="..\Private\TimeProvider.cpp">
       <Filter>Time</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\TimeManager.cpp">
+      <Filter>Time</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\BaseApp.cpp">
       <Filter>BaseApp</Filter>
     </ClCompile>
@@ -1447,6 +1456,9 @@
       <Filter>99.Defines</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\WorkerManager.cpp">
+      <Filter>Worker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\RenderWorkerManager.cpp">
       <Filter>Worker</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Prototype.cpp">

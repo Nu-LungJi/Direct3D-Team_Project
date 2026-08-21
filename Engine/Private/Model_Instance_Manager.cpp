@@ -372,6 +372,8 @@ void CModel_Instance_Manager::Clear_Frame()
 
 void CModel_Instance_Manager::UpdateGUI()
 {
+	CAnimationObject::UpdateCullingDebugGUI();
+
 	if (!ImGui::Begin("Model Instance Manager"))
 	{
 		ImGui::End();

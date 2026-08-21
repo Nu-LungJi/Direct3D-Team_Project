@@ -25,7 +25,6 @@ HRESULT CResModelAnim::Load(const std::any& arg)
     m_eState = STATE::LOADING;
 
     m_AnimPath = descArg->path;
-    auto& pModel = descArg->pModel;
 
     std::ifstream file(m_AnimPath, std::ios::binary | std::ios::ate);
     if (!file.is_open())
@@ -73,9 +72,6 @@ HRESULT CResModelAnim::Load(const std::any& arg)
     m_Channels.clear();
     m_Channels.reserve(m_iNumChannels);
 
-    m_CurrentKeyFrameIndices.clear();
-    m_CurrentKeyFrameIndices.resize(m_iNumChannels, 0);
-
     for (uint32_t i = 0; i < m_iNumChannels; ++i)
     {
         if (ptr + sizeof(uint32_t) > end)
@@ -97,7 +93,6 @@ HRESULT CResModelAnim::Load(const std::any& arg)
 
         CResModelChanel::DESC channelDesc{};
         channelDesc.ptr = ptr;
-        channelDesc.pModel = pModel;
 
         if (FAILED(pChannel->Load(channelDesc)))
             return E_FAIL;
@@ -105,9 +100,6 @@ HRESULT CResModelAnim::Load(const std::any& arg)
         m_Channels.push_back(pChannel);
 
         ptr += channelSize;
-    
-		m_iRootBoneIndex = pModel->Get_BoneIndex("Reference");
-	
 	}
 
 	// Optional extension appended after the legacy bone channels.
@@ -174,18 +166,33 @@ HRESULT CResModelAnim::Load(const std::any& arg)
 		}
 	}
 
-	// m_Channels is serialized in channel order, not bone-index order.
-	// Build this once while loading so socket sampling can look up only the
-	// channels belonging to its cached bone chain.
-	m_ChannelsByBone.assign(pModel->GetBones().size(), nullptr);
+	// [LSY] Clip은 특정 모델을 참조하지 않는다. 파일에 기록된 가장 큰 BoneIndex를
+	// 기준으로 조회 테이블을 만들고, 실제 모델에 없는 Bone 채널은 Animator/GPU
+	// 평탄화 단계에서 건너뛴다.
+	size_t iChannelMapSize = 0;
+	for (const auto& pChannel : m_Channels)
+	{
+		if (!pChannel)
+			continue;
+
+		const int32_t iBoneIndex = pChannel->Get_BoneIndex();
+		if (iBoneIndex >= 0)
+		{
+			iChannelMapSize = std::max(
+				iChannelMapSize,
+				static_cast<size_t>(iBoneIndex) + 1);
+		}
+	}
+
+	m_ChannelsByBone.assign(iChannelMapSize, nullptr);
 	for (const auto& pChannel : m_Channels)
 	{
 		if (pChannel == nullptr)
 			continue;
 
 		const int32_t iBoneIndex = pChannel->Get_BoneIndex();
-		if (iBoneIndex < 0 || iBoneIndex >= static_cast<int32_t>(m_ChannelsByBone.size()))
-			return E_FAIL;
+		if (iBoneIndex < 0)
+			continue;
 
 		m_ChannelsByBone[iBoneIndex] = pChannel;
 	}
@@ -266,14 +273,7 @@ _bool CResModelAnim::SampleMorphWeights(
 }
 
 
-void CResModelAnim::SetCurrentTrackPosition(float fPos)
-{
-	m_fCurrentTrackPosition = fPos;
-
-	RebuildCurrentKeyFrameIndices();
-}
-
-SPtr<CResModelChanel> CResModelAnim::FindRootChannel(uint32_t iRootBoneIndex)
+SPtr<CResModelChanel> CResModelAnim::FindRootChannel(uint32_t iRootBoneIndex) const
 {
 	for (auto& pChannel : m_Channels)
 	{
@@ -282,16 +282,6 @@ SPtr<CResModelChanel> CResModelAnim::FindRootChannel(uint32_t iRootBoneIndex)
 	}
 
 	return nullptr;
-}
-
-void CResModelAnim::RebuildCurrentKeyFrameIndices()
-{
-	for (uint32_t i = 0; i < m_iNumChannels; ++i)
-	{
-		m_CurrentKeyFrameIndices[i] =
-			m_Channels[i]->FindKeyFrameIndex(
-				m_fCurrentTrackPosition);
-	}
 }
 
 SPtr<CResModelAnim> CResModelAnim::Create(const _string& sPath)

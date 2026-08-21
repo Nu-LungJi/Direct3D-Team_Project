@@ -342,8 +342,13 @@ PS_OUT LumosWaver(VS_OUT In)
 	float insideFlareTexture =
 		step(0.f, flareTextureUV.x) * step(flareTextureUV.x, 1.f) *
 		step(0.f, flareTextureUV.y) * step(flareTextureUV.y, 1.f);
-	float3 flareSample = g_DiffuseTexture.Sample(LinearClamp, flareTextureUV).rgb *
+	float flareEdgeDistance = min(
+		min(flareTextureUV.x, 1.f - flareTextureUV.x),
+		min(flareTextureUV.y, 1.f - flareTextureUV.y));
+	float flareEdgeFade = smoothstep(0.f, 0.09f, flareEdgeDistance) *
 		insideFlareTexture;
+	float4 flareTexel = g_DiffuseTexture.Sample(LinearClamp, flareTextureUV);
+	float3 flareSample = flareTexel.rgb * flareTexel.a * flareEdgeFade;
 	float flareLuminance = dot(flareSample, float3(0.299f, 0.587f, 0.114f));
 	float textureBloom = pow(saturate(flareLuminance), 0.72f);
 	float angleWarp = (flowingNoise - 0.5f) * 1.25f +
@@ -360,8 +365,9 @@ PS_OUT LumosWaver(VS_OUT In)
 	float flicker = 0.88f + 0.12f * sin(time * 4.7f + flowingNoise * 6.283185f);
 	float breathing = 0.91f + 0.09f * sin(time * 3.1f + flowingNoise * 4.f);
 	float animatedFlare = textureBloom * breathing * lerp(0.86f, 1.14f, flowingNoise);
+	float softOuterFade = 1.f - smoothstep(0.7f, 1.02f, radius);
 	float outerSpread = animatedFlare * lerp(0.56f, 1.f,
-		pow(saturate(1.f - radius), 2.2f));
+		pow(saturate(1.f - radius), 2.2f)) * softOuterFade;
 	float concentratedCore = pow(saturate(1.f - radius * 4.35f), 2.7f);
 	float mask = saturate(max(outerSpread,
 		concentratedCore * 1.28f + hotCore * 0.92f + core * 0.54f) +
@@ -380,4 +386,75 @@ PS_OUT LumosWaver(VS_OUT In)
 	clip(Out.vDiffuse.a - 0.004f);
 	return Out;
 }
+PS_OUT TransformationLight(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
 
+	float lifeRatio = saturate(1.f - In.life / max(In.maxLife, 0.0001f));
+	float4 tex = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
+	float mask = max(tex.r, max(tex.g, tex.b));
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, lifeRatio);
+	float3 diffuseColor = tex.rgb * In.vColor.rgb;
+	float3 emissiveColor = lerpedEmissive.rgb * lerpedEmissive.a * mask;
+	float3 finalColor = diffuseColor + emissiveColor;
+	float finalAlpha = tex.a * mask * In.vColor.a;
+
+	clip(finalAlpha - 0.002f);
+	Out.vDiffuse = float4(finalColor, finalAlpha);
+	return Out;
+}
+PS_OUT PSDepulsoRing(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float lifeRatio = saturate(1.f - In.life / max(In.maxLife, 0.0001f));
+
+	float2 uv = In.vTexcoord;
+	float2 noiseUV1 = uv * 1.4f + float2(g_fAccumulationTime * 1.28f, -g_fAccumulationTime * 1.31f);
+	float2 noiseUV2 = uv * 2.7f + float2(-g_fAccumulationTime * 1.43f, g_fAccumulationTime * 1.17f);
+
+	float2 noise1 = g_NoiseTexture.Sample(LinearWrap, noiseUV1).rg * 2.f - 1.f;
+	float2 noise2 = g_DistortionTexture.Sample(LinearWrap, noiseUV2).rg * 2.f - 1.f;
+	float2 distortion = noise1 * 0.035f + noise2 * 0.018f;
+
+	float2 warpedUV = uv + distortion;
+	float3 ringTexture = g_DiffuseTexture.Sample(LinearClamp, warpedUV).rgb;
+	float2 ringNormal = g_NormalTexture.Sample(LinearClamp, warpedUV).rg * 2.f - 1.f;
+	float ringMask = max(ringTexture.r, max(ringTexture.g, ringTexture.b));
+
+	float bodyMask = smoothstep(0.03f, 0.3f, ringMask);
+	float coreMask = smoothstep(0.45f, 0.9f, ringMask);
+	float glowMask = pow(saturate(ringMask), 0.65f);
+	float normalDetail = saturate(length(ringNormal) * 1.4f);
+
+	float colorNoise = g_NoiseTexture.Sample(LinearWrap, noiseUV2 + distortion).b;
+	float breakNoise = g_NoiseTexture.Sample(LinearWrap, noiseUV1 * 1.7f).r;
+	float breakMask = smoothstep(0.12f, 0.5f, breakNoise + ringMask);
+
+	float3 deepBlue = float3(0.015f, 0.08f, 0.28f);
+	float3 cyan = float3(0.02f, 0.65f, 1.f);
+	float3 whiteBlue = float3(0.72f, 0.95f, 1.f);
+
+	float3 ringColor = lerp(deepBlue, cyan, colorNoise);
+	ringColor = lerp(ringColor, whiteBlue, saturate(coreMask * (0.65f + normalDetail * 0.35f)));
+
+	float4 emissive = lerp(In.vEmissive, In.vEndEmissive, lifeRatio);
+	float3 baseColor = ringColor * bodyMask * In.vColor.rgb;
+	float3 emissiveColor = ringColor * emissive.rgb * emissive.a * coreMask;
+
+	float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
+	screenUV = screenUV * float2(0.5f, -0.5f) + 0.5f;
+	float2 refractionOffset = (ringNormal * 0.018f + distortion * 0.35f) * bodyMask;
+	float3 refractedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + refractionOffset).rgb;
+	float refractionMask = bodyMask * (1.f - coreMask) * 0.7f;
+	float3 finalColor = lerp(baseColor, refractedBackground, refractionMask) + emissiveColor;
+
+	float fadeIn = smoothstep(0.f, 0.08f, lifeRatio);
+	float fadeOut = 1.f - smoothstep(0.72f, 1.f, lifeRatio);
+	float finalAlpha = glowMask * breakMask * In.vColor.a * fadeIn * fadeOut;
+
+	clip(finalAlpha - 0.005f);
+
+	Out.vDiffuse = float4(finalColor, finalAlpha);
+	return Out;
+}

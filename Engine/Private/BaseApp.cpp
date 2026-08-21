@@ -36,6 +36,7 @@ HRESULT CBaseApp::Loop()
 
 		//float fDeltaTime = std::min(fCurrTime, MAX_DELTA);
 		float fDeltaTime = fCurrTime;
+		Engine::CGameInstance::Get().BeginFrameTime(fDeltaTime);
 
 		{
 			ZoneScopedN("FrameStart");
@@ -47,19 +48,20 @@ HRESULT CBaseApp::Loop()
 		{
 			const float fFixedGoalTime = m_FixedUpdateTimer.Get_GoalTime();
 			float fFixedCurrTime = m_FixedUpdateTimer.Get_CurrTime();
-			constexpr uint32_t MAX_FIXED_UPDATE_COUNT_PER_FRAME = 8;
+			const uint32_t iMaxFixedUpdateCountPerFrame =
+				m_bSingleFixedUpdatePerFrame ? 1u : 8u;
 			uint32_t iFixedUpdateCount = 0;
 
 			while (fFixedCurrTime >= fFixedGoalTime)
 			{
-				if (iFixedUpdateCount >= MAX_FIXED_UPDATE_COUNT_PER_FRAME)
+				if (iFixedUpdateCount >= iMaxFixedUpdateCountPerFrame)
 				{
-					char szLog[192]{};
-					sprintf_s(szLog,
-						"[FixedUpdate] Per-frame limit exceeded. Limit: %u, discarded accumulated time: %.6fs\n",
-						MAX_FIXED_UPDATE_COUNT_PER_FRAME,
-						fFixedCurrTime);
-					DEBUG_LOG(szLog);
+					//char szLog[192]{};
+					//sprintf_s(szLog,
+					//	"[FixedUpdate] Per-frame limit exceeded. Limit: %u, discarded accumulated time: %.6fs\n",
+					//	iMaxFixedUpdateCountPerFrame,
+					//	fFixedCurrTime);
+					//DEBUG_LOG(szLog);
 					fFixedCurrTime = fmodf(fFixedCurrTime, fFixedGoalTime);
 					break;
 				}
@@ -124,9 +126,20 @@ HRESULT CBaseApp::Loop()
 	return S_OK;
 }
 
-void CBaseApp::UpdateGUI() const
+void CBaseApp::UpdateGUI()
 {
 	Engine::CGameInstance::Get().ImguiNewFrame();
+
+	if (ImGui::Begin("BaseApp FixedUpdate"))
+	{
+		ImGui::Checkbox(
+			"Limit FixedUpdate To One Per Frame",
+			&m_bSingleFixedUpdatePerFrame);
+		ImGui::Text(
+			"Max Fixed Updates Per Frame: %u",
+			m_bSingleFixedUpdatePerFrame ? 1u : 8u);
+	}
+	ImGui::End();
 
 	Engine::CGameInstance::Get().UpdateGUI();
 }

@@ -5,8 +5,12 @@
 NS_BEGIN(Engine)
 
 class CMapMeshGpuCuller;
+class CResCBuffer;
+class CResPixelShader;
+class CResSamplerState;
 class CResStaticModel;
 class CResTexture2D;
+class CResVertexShader;
 
 
 class ENGINE_DLL CMapMeshInstancingRenderer final : public CEngineBase, public IRenderable
@@ -50,12 +54,47 @@ private:
 		SPtr<CResStaticModel> model{};
 		EMapMeshRenderFeature renderFeature{};
 		const std::vector<MAPMESH_TEXTURE_SET>* textureCache = nullptr;
+		/*----------- 광윤 추가 -----------*/ // 메쉬 개별적으로 Material 속성 부여
+		MATERIAL_DESC	materialDesc{};
+		/*---------------------------------*/
 		uint32_t meshIndex = 0;
 		uint32_t instanceOffset = 0;
 	};
 
+	struct DRAW_PACKET
+	{
+		static constexpr uint32_t RENDER_TARGET_COUNT = 4;
+
+		SPtr<CResVertexShader> vertexStaticShader{};
+		SPtr<CResVertexShader> vertexFoliageShader{};
+		SPtr<CResPixelShader> pixelShader{};
+		SPtr<CResSamplerState> sampler{};
+		SPtr<CResCBuffer> materialConstantBuffer{};
+		ComPtr<ID3D11Buffer> visibleInstanceBuffer{};
+		ComPtr<ID3D11Buffer> indirectArgsBuffer{};
+		ComPtr<ID3D11Buffer> perPassConstantBuffer{};
+		std::array<ComPtr<ID3D11RenderTargetView>, RENDER_TARGET_COUNT> renderTargets{};
+		ComPtr<ID3D11DepthStencilView> depthStencilView{};
+		ComPtr<ID3D11DepthStencilState> depthStencilState{};
+		ComPtr<ID3D11RasterizerState> rasterizerState{};
+		ComPtr<ID3D11BlendState> blendState{};
+		ComPtr<ID3D11ShaderResourceView> noiseShaderResourceView{};
+		D3D11_VIEWPORT viewport{};
+		std::array<_float, 4> blendFactor{};
+		uint32_t stencilRef = 0;
+		uint32_t sampleMask = 0xffffffff;
+		_bool bReady = false;
+	};
+
 	const std::vector<MAPMESH_TEXTURE_SET>* GetOrCreateMapMeshTextureCache(const SPtr<CResStaticModel>& pModel);
 	HRESULT BindMapMeshTextures(ID3D11DeviceContext* pContext, const std::vector<MAPMESH_TEXTURE_SET>& textureCache, uint32_t meshIndex) const;
+	HRESULT PrepareDrawPacket(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx, DRAW_PACKET& outPacket);
+	HRESULT RecordDrawCommands(
+		ID3D11DeviceContext* pContext,
+		const DRAW_PACKET& packet,
+		uint32_t commandBegin,
+		uint32_t commandEnd,
+		uint32_t& outDrawCalls);
 
 public:
 	HRESULT PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, EMapMeshRenderFeature renderFeature, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData);
@@ -86,6 +125,7 @@ private:
 	std::vector<uint32_t> m_DrawBatchIndices;
 	std::vector<D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS> m_IndirectArgs;
 	std::vector<DRAW_ITEM> m_DrawItems;
+	std::vector<uint32_t> m_DrawCommandIndices;
 
 	// 드로우 콜 확인용
 	_bool s_bInstancingEnabled = true; // 인스턴싱 On/Off

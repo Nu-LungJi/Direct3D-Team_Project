@@ -24,6 +24,8 @@
 #include "HPBar.h"
 #include "UITextureResourceLoader.h"
 #include "SkyCloudyCube.h"
+#include "PropBarrel.h"
+#include "PropBarrelDebris.h"
 
 NS_USING(Client)
 
@@ -33,6 +35,12 @@ HRESULT CMainAppLoader::Load()
 
 	if (FAILED(CClientLuaBindings::Register()))
 		return E_FAIL;
+
+	if (FAILED(Load_Transformation_Resources()))
+	{
+		MSG_BOX("Failed Load_Transformation_Resources");
+		return E_FAIL;
+	}
 
 	// 전체 레벨에서 사용할 라이트 오브젝트 프로토타입 등록
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
@@ -148,6 +156,71 @@ HRESULT CMainAppLoader::Load()
 	GET_SINGLE(UIManager)->Initialize(CGameInstance::Get().GetGraphicDevice(), CGameInstance::Get().GetGraphicDeviceContext());
 
 	LOG_MEMORY("CMainAppLoader::Load() end");
+	return S_OK;
+}
+
+HRESULT CMainAppLoader::Load_Transformation_Resources()
+{
+	constexpr char RESOURCE_GROUP[] = "PERMANENT";
+
+	if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+		RESOURCE_GROUP,
+		"Static_Prop_Barrel_Resource",
+		CResStaticModel::Create(
+			"./Resources/SampleClient/Models/Static/Prop_Barrel_Breakable_A/SM_Prop_Barrel_Breakable_A.bin")))
+	{
+		CResStaticModel::DESC desc{};
+		desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+		if (FAILED(resource->Load(desc)))
+			return E_FAIL;
+	}
+	else
+	{
+		return E_FAIL;
+	}
+
+	for (uint32_t i = 1; i <= 12; ++i)
+	{
+		std::string path =
+			"./Resources/SampleClient/Models/Static/Prop_Barrel_Breakable_A_Fragment2/";
+		if (i < 10)
+			path += "SM_Prop_Barrel_Breakable_A_Fragment2_0" + std::to_string(i);
+		else
+			path += "SM_Prop_Barrel_Breakable_A_Fragment2_" + std::to_string(i);
+		path += ".bin";
+
+		if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+			RESOURCE_GROUP,
+			"Static_Prop_Barrel_Debris_Resource_" + std::to_string(i),
+			CResStaticModel::Create(path)))
+		{
+			CResStaticModel::DESC desc{};
+			desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+			if (FAILED(resource->Load(desc)))
+				return E_FAIL;
+		}
+		else
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		RESOURCE_GROUP,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
+		CPropBarrel::Create())))
+	{
+		return E_FAIL;
+	}
+
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		RESOURCE_GROUP,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrelDebris,
+		CPropBarrelDebris::Create())))
+	{
+		return E_FAIL;
+	}
+
 	return S_OK;
 }
 
@@ -518,6 +591,8 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTCinematic", CBTCinematic::Create())))
 		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTNaviMove", CBTNaviMove::Create())))
+		return E_FAIL;
 
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTRandMoveAnim", CBTRandMoveAnim::Create())))
 		return E_FAIL;
@@ -528,6 +603,8 @@ HRESULT CMainAppLoader::Create_ActionNode()
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTAttackAnimation", CBTAttackAnimation::Create())))
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTHitAnimMonster", CBTHitAnimMonster::Create())))
+		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTAnimNpc", CBTAnimNpc::Create())))
 		return E_FAIL;
 
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecSearch", CBTDecSearch::Create())))
@@ -602,6 +679,23 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "RUNSPIDER", CResJson::Create("./Resources/json/BeHavior/RUNSPIDER.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED RUNSPIDER JSON");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "NPC1", CResJson::Create("./Resources/json/BeHavior/NPC1.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED NPC JSON");
+			return E_FAIL;
+		}
+	}
+	
 	////서브트리
 	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "FIREBALL", CResJson::Create("./Resources/json/BeHavior/SubTree/SubTreeTest.json")))
 	{
@@ -627,6 +721,7 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
+
 	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "RANDOMBALL", CResJson::Create("./Resources/json/BeHavior/SubTree/RandomBall.json")))
 	{
 		if (FAILED(res->Load()))

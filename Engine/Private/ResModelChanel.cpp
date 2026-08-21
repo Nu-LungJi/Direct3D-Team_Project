@@ -29,7 +29,6 @@ HRESULT CResModelChanel::Load(const std::any& arg)
         return S_OK;
     }
     m_eState = STATE::LOADING;
-    auto& pModel = descArg->pModel;
     auto pPoint = descArg->ptr;
     {
 

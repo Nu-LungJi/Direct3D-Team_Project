@@ -31,16 +31,19 @@ namespace Engine
 
 	typedef struct tagConstantBufferObjectMaterial
 	{
-		_float3  EmissiveColor;
-		_float   EmissiveIntensity;
+		_float3  EmissiveColor{};
+		_float   EmissiveIntensity{};
 
-		_float3  DissolveColor;
-		_float   DissolveIntensity;
+		_float3  DissolveColor{};
+		_float   DissolveIntensity{};
 
-		_float	 ObjectAlpha;
-		_float	 RoughnessIntensity;
-		_float2  ObjectPadding;
-
+		_float	 ObjectAlpha{};
+		_float	 NormalIntensity{};
+		_float	 MetallicIntensity{};
+		_float	 RoughnessIntensity{};
+		_float	 AmbientIntensity{};
+		
+		_float3	 CB_MATERIAL_PADDING{};
 	} CB_MATERIAL;
 	static_assert(sizeof(CB_MATERIAL) % 16 == 0);
 

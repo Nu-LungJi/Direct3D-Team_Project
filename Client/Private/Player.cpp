@@ -40,6 +40,7 @@
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
 #include "Player_BombardaSkill_State.h"
+#include "Player_TransformationSkill_State.h"
 #include "Player_ConfringoSkill_State.h"
 #include "Player_AvadaKedavraSkill_State.h"
 #include "Player_ProtegoSkill_State.h"
@@ -56,6 +57,7 @@
 #include "Player_Weapon.h"
 #include "Player_Broom.h"
 #include "WiggenweldPotion.h"
+#include "PropBarrel.h"
 #include "Light.h"
 #include "Trail_CPU.h"
 #include "UIController.h"
@@ -128,8 +130,6 @@ void CPlayer::UpdateGUI()
 		m_pConfringoController->UpdateGUI();
 
 	UpdateStupefyDebugGUI();
-
-
 	if (m_pRagdollController)
 		m_pRagdollController->UpdateGUI();
 
@@ -328,8 +328,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 			pDesc->vInitialPosition.y + pDesc->vCCTCenterOffset.y,
 			pDesc->vInitialPosition.z + pDesc->vCCTCenterOffset.z };
 		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::CCT_CAPSULE);
-		//Desc.fStepOffset = 0.f;
-		//Desc.fSlopeLimit = 1.f;	
+		// 오르막은 CCT 기본 경사 제한을 사용한다.
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,"ComPxCharacterController", &Desc, &m_pComCharacterController)))
 		{
 			return E_FAIL;
@@ -348,8 +347,10 @@ HRESULT CPlayer::Initialize(void* pArg)
 		CComCharacterMotor::DESC Desc{};
 		Desc.pMoveIntent = m_pComMoveIntent;
 		Desc.pCharacterController = m_pComCharacterController;
-		Desc.fGravity = -9.81f;
-		Desc.fJumpVelocity = 7.f;
+		// 기존 -9.81/7 조합은 체공 시간이 길어 달에서 뛰는 느낌이 강했다.
+		// 강한 중력은 유지하고 초속도만 높여 체공감은 억제하면서 점프 높이를 확보한다.
+		Desc.fGravity = -16.f;
+		Desc.fJumpVelocity = 9.f;
 		Desc.vControllerCenterOffset = pDesc->vCCTCenterOffset;
 		Desc.bUseGravity = true;
 		Desc.bSyncTransform = true;
@@ -441,6 +442,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::BOMBARDA_SKILL,
 			CPlayer_BombardaSkill_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::TRANSFORMATION_SKILL,
+			CPlayer_TransformationSkill_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -568,6 +575,11 @@ HRESULT CPlayer::Initialize(void* pArg)
 			static_cast<CTrail_CPU*>(a)->SetColor(_float4(182 / 255.f, 1.f, 241 / 255.f, 140 / 255.f));
 			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(182 / 255.f, 1.f, 241 / 255.f, 2.f));
 		}
+		{
+			auto a = CGameInstance::Get().GetParticle("Repairo_Trail", "Repairo_Trail");
+			static_cast<CTrail_CPU*>(a)->SetColor(_float4(255 / 255.f, 255 / 255.f, 40 / 255.f, 1.f));
+			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(255 / 255.f, 255 / 255.f, 40 / 255.f, 4.f));
+		}
 
 	}
 
@@ -592,46 +604,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 		return E_FAIL;
 	if (FAILED(InitializeAvadaKedavra()))
 		return E_FAIL;
-
-#ifdef _DEBUG
-	{
-		CWiggenweldPotion::DESC debugPotionDesc{};
-		debugPotionDesc.sObjectTag = "Debug_WiggenweldPotion_Origin";
-		debugPotionDesc.sResourceGroup = m_LevelTag;
-		debugPotionDesc.vInitialPosition = { 0.f, 0.f, 0.f };
-		debugPotionDesc.vInitialScale = { 1.f, 1.f, 1.f };
-		debugPotionDesc.vConvexScale = debugPotionDesc.vInitialScale;
-
-		const auto debugPotionHandle = CGameInstance::Get().AddGameObjectToLayer(
-			m_LevelTag,
-			PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
-			"Debug_WiggenweldPotion_Origin",
-			&debugPotionDesc);
-		if (debugPotionHandle.has_value())
-			DEBUG_LOG("[PlayerPotion] Debug potion permanently spawned at (0, 0, 0).\n");
-		else
-			DEBUG_LOG("[PlayerPotion] Failed to spawn debug potion at (0, 0, 0).\n");
-
-		CWiggenweldPotion::DESC visiblePotionDesc = debugPotionDesc;
-		visiblePotionDesc.sObjectTag = "Debug_WiggenweldPotion_Visible";
-		visiblePotionDesc.vInitialPosition = {
-			pDesc->vInitialPosition.x,
-			pDesc->vInitialPosition.y + 2.f,
-			pDesc->vInitialPosition.z + 3.f };
-		visiblePotionDesc.vInitialScale = { 3.f, 3.f, 3.f };
-		visiblePotionDesc.vConvexScale = visiblePotionDesc.vInitialScale;
-
-		const auto visiblePotionHandle = CGameInstance::Get().AddGameObjectToLayer(
-			m_LevelTag,
-			PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
-			"Debug_WiggenweldPotion_Visible",
-			&visiblePotionDesc);
-		if (visiblePotionHandle.has_value())
-			DEBUG_LOG("[PlayerPotion] Large debug potion spawned near the player.\n");
-		else
-			DEBUG_LOG("[PlayerPotion] Failed to spawn the large debug potion.\n");
-	}
-#endif
 
 	return S_OK;
 }
@@ -817,6 +789,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 		m_bRawMoveInput = false;
 		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		m_fCurrentMoveSpeed = 0.f;
 		m_bRootMotionTranslationActive = false;
@@ -843,6 +816,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	{
 		m_bRawMoveInput = false;
 		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		return;
 	}
@@ -877,6 +851,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	{
 		m_bRawMoveInput = false;
 		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		m_fCurrentMoveSpeed = 0.f;
 		m_fControlHoldTime = 0.f;
@@ -889,6 +864,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (!pPlayerCamera)
 	{
 		m_bRawMoveInput = false;
+		m_bSprintRequested = false;
+		m_bWalkRequested = false;
 		m_vRawMoveDirection = {};
 		m_pComMoveIntent->ClearMoveIntent();
 		return;
@@ -932,6 +909,9 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	const _float3 vMoveDirection{ vCameraForward.x * fForwardIntent + vCameraRight.x * fRightIntent, 0.f, vCameraForward.z * fForwardIntent + vCameraRight.z * fRightIntent };
 	m_bRawMoveInput = vMoveDirection.x != 0.f || vMoveDirection.z != 0.f;
 	m_bSprintRequested =m_bRawMoveInput &&CGameInstance::Get().KeyPressing(DIK_LSHIFT);
+	// 원작처럼 C를 누르는 동안만 걷는다. Shift가 함께 눌리면 Sprint를 우선한다.
+	m_bWalkRequested = m_bRawMoveInput && !m_bSprintRequested &&
+		CGameInstance::Get().KeyPressing(DIK_C);
 	m_vRawMoveDirection = m_bRawMoveInput ? vMoveDirection : _float3{};
 	
 	if (m_bRawMoveInput)
@@ -966,7 +946,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	else
 	{
 		const _float fTargetSpeed =m_bRawMoveInput
-				? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
+				? (m_bSprintRequested ? m_fSprintSpeed : (m_bWalkRequested ? m_fWalkSpeed : m_fJogSpeed))
 				: 0.f;
 		const _float fSpeedChange = (m_bRawMoveInput ? m_fAcceleration : m_fDeceleration) * fTimeDelta;
 
@@ -1297,12 +1277,14 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (CGameInstance::Get().KeyDown(DIK_6))
 			m_pStateMachine->RequestState(PLAYER_STATE::BOMBARDA_SKILL);
 
-#ifdef _DEBUG
-		// Lumos debug toggle. The Lumos state decides whether this request
-		// enters Start/Hold or plays Stop based on the current active flag.
+		// 변신 스킬 상태와 캐스팅 애니메이션 확인용 임시 입력.
+		if (CGameInstance::Get().KeyDown(DIK_7))
+			m_pStateMachine->RequestState(PLAYER_STATE::TRANSFORMATION_SKILL);
+
+		// L 키는 빌드 구성과 무관한 정식 루모스 토글 입력이다.
+		// Lumos 상태가 현재 활성 여부에 따라 Start/Hold 또는 Stop을 선택한다.
 		if (CGameInstance::Get().KeyDown(DIK_L))
 			m_pStateMachine->RequestState(PLAYER_STATE::LUMOS_SKILL);
-#endif
 
 		// [LSY] 아바다 케다브라 애니메이션과 이펙트 연결 확인용 임시 입력.
 		if (CGameInstance::Get().KeyDown(DIK_U))
@@ -1482,6 +1464,8 @@ void CPlayer::UpdateLumosLight()
 		return;
 	}
 
+	UpdateLumosHoldAnimation();
+
 	_float4x4 matGlowWorld{};
 	if (!TryGetLumosGlowWorldMatrix(matGlowWorld))
 		return;
@@ -1528,6 +1512,24 @@ void CPlayer::UpdateLumosLight()
 		pLight->Set_LightPosition(vPosition);
 	else
 		m_hLumosLight.reset();
+}
+
+void CPlayer::UpdateLumosHoldAnimation()
+{
+	if (!m_bLumosActive || !m_pModelAnimator || m_iLumosHoldAnimation < 0)
+		return;
+
+	if (m_pModelAnimator->HasUpperAnimation() &&
+		!m_pModelAnimator->IsUpperAnimationFinished())
+	{
+		return;
+	}
+
+	// The Lumos state returns to locomotion immediately. Once its one-shot
+	// raise animation finishes, keep only the right arm in the looping hold
+	// pose so movement, turning, and jumping continue underneath it.
+	PlayUpperBodyAnimation(
+		m_iLumosHoldAnimation, "RightArm", 1, true, 0.18f);
 }
 
 _bool CPlayer::TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const
@@ -1683,16 +1685,17 @@ void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 	}
 
 	const _float3 vFootPosition = m_pComCharacterController->GetFootPosition();
+	const _float fPredictionDistance =
+		tMoveOutput.fMoveSpeed * fFixedTimeDelta *
+		static_cast<_float>(m_iGroundFollowPredictionFrames);
 	const _float3 vPredictedFootPosition{
 		vFootPosition.x +
 			tMoveOutput.vMoveDirection.x *
-			tMoveOutput.fMoveSpeed *
-			fFixedTimeDelta * 5,
+			fPredictionDistance,
 		vFootPosition.y,
 		vFootPosition.z +
 			tMoveOutput.vMoveDirection.z *
-			tMoveOutput.fMoveSpeed *
-			fFixedTimeDelta * 5
+			fPredictionDistance
 	};
 
 	CPhysXManager* pPhysXManager =CGameInstance::Get().GetPhysXManager();
@@ -1761,11 +1764,51 @@ void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 //	}
 //#endif
 
+	// 이동 경로를 여러 구간으로 나눠 검사한다. 끝점 한 곳만 검사하면 좁은 턱이나
+	// 급경사를 건너뛸 수 있으므로 각 샘플의 노멀과 인접 높이 차를 모두 확인한다.
+	const int32_t iProbeCount = std::max(1, m_iGroundFollowProbeCount);
+	const _float fSlopeLimit =
+		m_pComCharacterController->GetSlopeLimit();
+	_float fPreviousGroundHeight = vFootPosition.y;
 	PX_SWEEP_RESULT tGroundHit{};
-	if (!pPhysXManager->Sweep(tSweepDesc, tGroundHit) ||
-		!tGroundHit.bHit)
+	for (int32_t iProbe = 1; iProbe <= iProbeCount; ++iProbe)
 	{
-		return;
+		const _float fProbeRatio =
+			static_cast<_float>(iProbe) /
+			static_cast<_float>(iProbeCount);
+		tSweepDesc.tPose.vPosition.x =
+			vFootPosition.x +
+			(vPredictedFootPosition.x - vFootPosition.x) * fProbeRatio;
+		tSweepDesc.tPose.vPosition.z =
+			vFootPosition.z +
+			(vPredictedFootPosition.z - vFootPosition.z) * fProbeRatio;
+
+		PX_SWEEP_RESULT tProbeHit{};
+		if (!pPhysXManager->Sweep(tSweepDesc, tProbeHit) ||
+			!tProbeHit.bHit)
+		{
+			// 경로 중간에 지면이 없으면 낭떠러지로 보고 강제 지면 추종을 중단한다.
+			return;
+		}
+
+		if (tProbeHit.vHitNormal.y < fSlopeLimit)
+		{
+			// PhysX slopeLimit보다 급한 면에는 캐릭터를 아래로 붙이지 않는다.
+			return;
+		}
+
+		const _float fHeightDelta =
+			tProbeHit.vHitpos.y - fPreviousGroundHeight;
+		if (std::abs(fHeightDelta) >
+			m_fGroundFollowMaxHeightDeltaPerProbe)
+		{
+			// 인접 샘플의 높이가 갑자기 변하면 계단/절벽으로 판단한다.
+			return;
+		}
+
+		fPreviousGroundHeight = tProbeHit.vHitpos.y;
+		if (iProbe == iProbeCount)
+			tGroundHit = tProbeHit;
 	}
 
 #ifdef _DEBUG
@@ -1785,18 +1828,18 @@ void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 	}
 #endif
 
-	const _float fSlopeLimit =
-		m_pComCharacterController->GetSlopeLimit();
-	if (tGroundHit.vHitNormal.y < fSlopeLimit)
-		return;
-
 	const _float fStepDown =
 		tGroundHit.vHitpos.y - vFootPosition.y;
 	if (fStepDown < 0.f &&
 		fStepDown >= -m_fGroundFollowMaxStepDown)
 	{
+		// 검출된 높이 차를 한 프레임에 전부 적용하면 경계에서 튀므로
+		// 최대 추종 속도로 제한해 완만하게 지면에 붙인다.
+		const _float fCorrection = std::max(
+			fStepDown,
+			-m_fGroundFollowMaxCorrectionSpeed * fFixedTimeDelta);
 		m_pComMoveIntent->AddExternalDisplacement(
-			{ 0.f, fStepDown, 0.f });
+			{ 0.f, fCorrection, 0.f });
 	}
 }
 
@@ -1894,7 +1937,7 @@ void CPlayer::ApplyDirectionalMovement(const _float3& vDirection,_float fSpeed,_
 void CPlayer::PrepareLocomotionResume()
 {
 	m_fCurrentMoveSpeed = m_bRawMoveInput
-		? (m_bSprintRequested ? m_fSprintSpeed : m_fJogSpeed)
+		? (m_bSprintRequested ? m_fSprintSpeed : (m_bWalkRequested ? m_fWalkSpeed : m_fJogSpeed))
 		: 0.f;
 
 	if (m_bRawMoveInput)
@@ -1911,6 +1954,7 @@ void CPlayer::PrepareLocomotionResume()
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
+	UpdateAncientThrowTargetDebugGUI();
 	{
 
 
@@ -2076,6 +2120,12 @@ void CPlayer::UpdateWiggenweldPotion()
 	for (uint32_t axis = 0; axis < 3; ++axis)
 		socketMatrix.r[axis] = XMVector3Normalize(socketMatrix.r[axis]);
 
+	const _matrix potionPivotOffset = XMMatrixTranslation(
+		-0.120f,
+		-0.305f,
+		0.105f) *
+		socketMatrix;
+	socketMatrix = potionPivotOffset;
 	if (!pPotion->SetHeldPose(
 		socketMatrix * GetTransform().GetLoadedWorldMatrix()))
 	{
@@ -2083,9 +2133,9 @@ void CPlayer::UpdateWiggenweldPotion()
 		return;
 	}
 
+	// 팔을 내리는 마지막 구간까지 재생한 뒤에만 포션을 드롭한다.
 	if (m_pModelAnimator->HasUpperAnimation() &&
-		!m_pModelAnimator->IsUpperAnimationFinished() &&
-		m_pModelAnimator->GetUpperAnimRatio() < 0.92f)
+		!m_pModelAnimator->IsUpperAnimationFinished())
 		return;
 
 	_float3 vLook{};
@@ -2115,7 +2165,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 	if (auto* pCamera = Cast<CPlayerThirdPersonCamera>(CGameInstance::Get().GetActiveCamera("PlayerCamera")))
 	{
-		pCamera->UpdateFollow(fTimeDelta);
+		pCamera->UpdateFollow(CGameInstance::Get().GetUnscaledDelta());
 	}
 
 	// PhysX render buffer와 무관하게 현재 게임오브젝트 Transform을 즉시 시각화한다.
@@ -2407,7 +2457,8 @@ HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISIO
 		vHitPosition.y += 1.f;
 		if (info.iContactCount > 0)
 			vHitPosition = info.Contacts[0].vWorldPosition;
-		TriggerProtegoHit(vHitPosition);
+		const _float3 vAttackPosition = pAttacker->GetTransform().GetPosition();
+		TriggerProtegoHit(vHitPosition, 0, &vAttackPosition);
 		return S_OK;
 	}
 	if (m_bInvincible)
@@ -2463,7 +2514,10 @@ _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,i
 {
 	if (m_bProtegoActive)
 	{
-		TriggerProtegoHit(vHitPosition, iDamage);
+		const _float3 vAttackPosition = pAttacker
+			? pAttacker->GetTransform().GetPosition()
+			: vHitPosition;
+		TriggerProtegoHit(vHitPosition, iDamage, &vAttackPosition);
 		return false;
 	}
 	if (m_bInvincible)
@@ -2596,15 +2650,22 @@ _bool CPlayer::RequestKnockdown(const _float3& vAttackPosition)
 	return m_pStateMachine->RequestState(PLAYER_STATE::KNOCKDOWN);
 }
 
-void CPlayer::TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage)
+void CPlayer::TriggerProtegoHit(
+	const _float3& vHitPosition, int32_t iDamage,
+	const _float3* pAttackPosition)
 {
+	const _bool bHeavyReaction =
+		iDamage >= PROTEGO_HEAVY_DAMAGE_THRESHOLD;
 	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
-		.fIntensity = 0.2f,
-		.fDuration = 0.16f,
-		.fFrequency = 24.f });
+		.fIntensity = bHeavyReaction ? 0.55f : 0.3f,
+		.fDuration = bHeavyReaction ? 0.3f : 0.18f,
+		.fFrequency = bHeavyReaction ? 34.f : 28.f });
 
 	_float3 vShieldCenter = GetTransform().GetPosition();
 	vShieldCenter.y += 1.f;
+	m_vLastProtegoAttackPosition = pAttackPosition
+		? *pAttackPosition
+		: vHitPosition;
 
 	_vector vNormal = XMLoadFloat3(&vHitPosition) - XMLoadFloat3(&vShieldCenter);
 	if (XMVectorGetX(XMVector3LengthSq(vNormal)) <= FLT_EPSILON)
@@ -2612,21 +2673,40 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage)
 	else
 		vNormal = XMVector3Normalize(vNormal);
 
-	// 방어 성공 자체의 반동이므로 스투페파이 반격 입력 여부와 무관하게 적용한다.
-	// 접촉점 반대 방향의 수평 변위만 사용해 지면에서 뜨지 않게 한다.
-	StartProtegoRecoil(vHitPosition);
-
 	// Sweep 접촉점, Overlap 투사체 중심 등 입력 의미가 달라도
 	// 최종 충돌 위치는 보호막 구 표면으로 통일한다.
 	constexpr _float PROTEGO_SHIELD_RADIUS = 2.5f;
 	const _vector vShieldSurfacePosition =
 		XMLoadFloat3(&vShieldCenter) + vNormal * PROTEGO_SHIELD_RADIUS;
 	XMStoreFloat3(&m_vLastProtegoHitPosition, vShieldSurfacePosition);
+
+	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager())
+	{
+		pSoundManager->Play3D(
+			"./Resources/SampleClient/Sound/Player/SkillEffect/Protego/Protego_Block.wav",
+			SOUND_3D_DESC{
+				.vPosition = m_vLastProtegoHitPosition,
+				.fMinDistance = 2.f,
+				.fMaxDistance = 80.f,
+				.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+			},
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 1.5f,
+				.fPitch = 1.f,
+				.iPriority = 86,
+				.bLoop = false
+			});
+	}
+
 	++m_iProtegoParrySequence;
 	m_fParryCounterRemainTime = PARRY_COUNTER_WINDOW;
-	if (iDamage >= 30 && m_pStateMachine)
+	m_bProtegoReactionRequested = true;
+	m_bProtegoHeavyReaction = bHeavyReaction;
+	if (!m_bProtegoHeavyReaction)
+		m_fProtegoRecoilRemainTime = 0.f;
+	if (m_pStateMachine)
 	{
-		m_bProtegoHeavyReactionRequested = true;
 		m_pStateMachine->RequestState(PLAYER_STATE::STUPEFY_SKILL);
 	}
 
@@ -2702,9 +2782,9 @@ void CPlayer::ActivateProtego(_float fDuration)
 		const _float3 vPlayerPosition = GetTransform().GetPosition();
 		_float4x4 shieldWorld{};
 		XMStoreFloat4x4(&shieldWorld,
-			XMMatrixScaling(1.2f, 1.2f, 1.2f) *
+			XMMatrixScaling(1.5f, 1.5f, 1.5f) *
 			XMMatrixTranslation(
-				vPlayerPosition.x, vPlayerPosition.y + 1.f, vPlayerPosition.z));
+				vPlayerPosition.x, vPlayerPosition.y + 1.3f, vPlayerPosition.z));
 		m_iProtegoShieldEffectID = CGameInstance::Get().PlayEffect(
 			"Protego_Shield", shieldWorld, XMVectorZero());
 	}
@@ -2719,17 +2799,20 @@ _bool CPlayer::ConsumeParryCounter(_float3& outAttackPosition)
 
 	m_bStupefyCounterRequested = false;
 	m_fParryCounterRemainTime = 0.f;
-	outAttackPosition = m_vLastProtegoHitPosition;
+	outAttackPosition = m_vLastProtegoAttackPosition;
 	return true;
 }
 
-_bool CPlayer::ConsumeProtegoHeavyReaction(_float3& outAttackPosition)
+_bool CPlayer::ConsumeProtegoReaction(
+	_float3& outAttackPosition, _bool& outHeavyReaction)
 {
-	if (!m_bProtegoHeavyReactionRequested)
+	if (!m_bProtegoReactionRequested)
 		return false;
 
-	m_bProtegoHeavyReactionRequested = false;
-	outAttackPosition = m_vLastProtegoHitPosition;
+	m_bProtegoReactionRequested = false;
+	outAttackPosition = m_vLastProtegoAttackPosition;
+	outHeavyReaction = m_bProtegoHeavyReaction;
+	m_bProtegoHeavyReaction = false;
 	return true;
 }
 
@@ -2968,6 +3051,113 @@ void CPlayer::UpdateStupefyDebugGUI()
 	ImGui::TextColored(ImVec4(0.52f, 0.86f, 1.f, 1.f), "Meteor Core: cyan-white");
 	ImGui::TextColored(ImVec4(0.72f, 0.42f, 1.f, 1.f), "Galaxy Dust: blue-violet");
 	ImGui::TextDisabled("Missing effect data is isolated per layer; disable that layer while testing.");
+}
+
+void CPlayer::UpdateAncientThrowTargetDebugGUI()
+{
+	if (!ImGui::Begin("Ancient Throw Target Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::End();
+		return;
+	}
+
+	auto& gameInstance = CGameInstance::Get();
+	auto* pEnemyTarget = gameInstance.GetGameObjectByHandle(m_hAutoTarget);
+	const _bool bEnemyTargetValid = pEnemyTarget && !pEnemyTarget->GetPendingDestroy();
+	ImGui::TextColored(
+		bEnemyTargetValid ? ImVec4(0.25f, 1.f, 0.35f, 1.f) : ImVec4(1.f, 0.25f, 0.2f, 1.f),
+		"Enemy Target: %s", bEnemyTargetValid ? "FOUND" : "NONE");
+	if (bEnemyTargetValid)
+	{
+		const _float3 position = pEnemyTarget->GetTransform().GetPosition();
+		ImGui::Text("Tag: %s", pEnemyTarget->GetObjectTag().data());
+		ImGui::Text("Position: %.2f, %.2f, %.2f", position.x, position.y, position.z);
+	}
+
+	auto* pCamera = gameInstance.GetActiveCamera();
+	uint32_t iTotalBarrels{};
+	uint32_t iUsableBarrels{};
+	uint32_t iVisibleBarrels{};
+	CPropBarrel* pBestBarrel{};
+	_float fBestAlignment = -FLT_MAX;
+
+	_vector vCameraPosition{};
+	_vector vCameraLook{};
+	_bool bCameraValid{};
+	if (pCamera)
+	{
+		vCameraPosition = pCamera->GetTransform().GetState(STATE::POSITION);
+		vCameraLook = pCamera->GetTransform().GetState(STATE::LOOK);
+		if (XMVectorGetX(XMVector3LengthSq(vCameraLook)) > FLT_EPSILON)
+		{
+			vCameraLook = XMVector3Normalize(vCameraLook);
+			bCameraValid = true;
+		}
+	}
+
+	for (const auto& [_, handles] : gameInstance.GetGameObjectLayers())
+	{
+		for (const CHandle& handle : handles)
+		{
+			auto* pBarrel = gameInstance.GetGameObjectByHandleT<CPropBarrel>(handle);
+			if (!pBarrel)
+				continue;
+
+			++iTotalBarrels;
+			if (pBarrel->GetPendingDestroy() ||
+				pBarrel->GetBarrelState() != CPropBarrel::BARREL_STATE::CREATED)
+			{
+				continue;
+			}
+			++iUsableBarrels;
+			if (!bCameraValid)
+				continue;
+
+			const _float3 position = pBarrel->GetTransform().GetPosition();
+			const BoundingBox bounds{ position, { 0.9f, 0.9f, 0.9f } };
+			if (!pCamera->IntersectsViewVolume(bounds))
+				continue;
+
+			++iVisibleBarrels;
+			_vector vToBarrel = XMLoadFloat3(&position) - vCameraPosition;
+			if (XMVectorGetX(XMVector3LengthSq(vToBarrel)) <= FLT_EPSILON)
+				continue;
+
+			vToBarrel = XMVector3Normalize(vToBarrel);
+			const _float fAlignment = XMVectorGetX(XMVector3Dot(vCameraLook, vToBarrel));
+			if (fAlignment > fBestAlignment)
+			{
+				fBestAlignment = fAlignment;
+				pBestBarrel = pBarrel;
+			}
+		}
+	}
+
+	ImGui::Separator();
+	ImGui::Text("Camera: %s", bCameraValid ? "VALID" : "NONE / INVALID");
+	ImGui::Text("CPropBarrel Total: %u", iTotalBarrels);
+	ImGui::Text("CPropBarrel Usable: %u", iUsableBarrels);
+	ImGui::Text("CPropBarrel In View: %u", iVisibleBarrels);
+	ImGui::TextColored(
+		pBestBarrel ? ImVec4(0.25f, 1.f, 0.35f, 1.f) : ImVec4(1.f, 0.25f, 0.2f, 1.f),
+		"Throw Target: %s", pBestBarrel ? "FOUND" : "NONE");
+
+	if (pBestBarrel)
+	{
+		const _float3 position = pBestBarrel->GetTransform().GetPosition();
+		const _float3 playerPosition = GetTransform().GetPosition();
+		const _float dx = position.x - playerPosition.x;
+		const _float dy = position.y - playerPosition.y;
+		const _float dz = position.z - playerPosition.z;
+		const _float distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+		ImGui::Text("Barrel Tag: %s", pBestBarrel->GetObjectTag().data());
+		ImGui::Text("Barrel Position: %.2f, %.2f, %.2f", position.x, position.y, position.z);
+		ImGui::Text("Distance (display only): %.2f", distance);
+		ImGui::Text("Camera Alignment: %.3f", fBestAlignment);
+	}
+
+	ImGui::TextDisabled("Read-only diagnostics: this panel does not change targeting.");
+	ImGui::End();
 }
 
 void CPlayer::OnWake()

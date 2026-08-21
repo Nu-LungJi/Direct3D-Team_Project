@@ -195,8 +195,11 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			if (p.loop)
 			{
 				p.life = 0.f;
-				p.vPosition = p.originalPosition;
-				p.vVelocity = p.originalVelocity;
+				if ((p.iBehaviorType & CParticle::BEHAVIOR_ORBIT) == 0)
+				{
+					p.vPosition = p.originalPosition;
+					p.vVelocity = p.originalVelocity;
+				}
 				// [LSY] Fade가 적용된 Loop 파티클은 다음 주기 시작 시 원래 알파로 복원한다.
 				p.vColor.w = p.fStartAlpha;
 				p.fGravityVelocity = 0.f;
@@ -211,7 +214,8 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		float ageRatio = std::clamp(p.life / p.fMaxLife, 0.f, 1.f);
 
 		UpdateBehavior(p, fTimeDelta);
-		XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.vPosition) + XMLoadFloat3(&p.vVelocity) * fTimeDelta);
+		if ((p.iBehaviorType & CParticle::BEHAVIOR_ORBIT) == 0)
+			XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.vPosition) + XMLoadFloat3(&p.vVelocity) * fTimeDelta);
 
 		if (m_vecInstancedData.size() >= m_iNumElements)
 			continue;
@@ -263,10 +267,10 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			_matrix matView = camera->GetView();
 			_matrix matInvView = XMMatrixInverse(nullptr, matView);
 
-			// 1. 카메라 회전(빌보드 기저 벡터) 추출
-			XMVECTOR camRight = XMVector3Normalize(matInvView.r[0]);
-			XMVECTOR camUp = XMVector3Normalize(matInvView.r[1]);
-			XMVECTOR camForward = XMVector3Normalize(matInvView.r[2]);
+			// 카메라 회전(빌보드 기저 벡터) 추출
+			XMVECTOR camRight = XMVectorSetW(XMVector3Normalize(matInvView.r[0]), 0.f);
+			XMVECTOR camUp = XMVectorSetW(XMVector3Normalize(matInvView.r[1]), 0.f);
+			XMVECTOR camForward = XMVectorSetW(XMVector3Normalize(matInvView.r[2]), 0.f);
 
 			_matrix matBillboardRot = XMMatrixIdentity();
 			matBillboardRot.r[0] = camRight;
@@ -274,11 +278,13 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			matBillboardRot.r[2] = camForward;
 			matBillboardRot.r[3] = XMVectorSet(0.f, 0.f, 0.f, 1.f);
 
-			// 로컬축 자전 후 파티클 방향을 적용하고 마지막으로 카메라를 향하게 한다.
-			_matrix matFinalRot = matKeepRotation * matDirectionRotation * matBillboardRot;
+			// 빌보드는 항상 카메라 정면을 유지하고 로컬 Z축으로만 회전한다.
+			_float fLocalZRotation = p.rotation.z;
+			if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0)
+				fLocalZRotation += p.rotation.w;
 
-			// 4. 최종 월드 행렬 계산
-			matWorld = matScale * matFinalRot * matTrans;
+			_matrix matLocalZRotation = XMMatrixRotationZ(fLocalZRotation);
+			matWorld = matScale * matLocalZRotation * matBillboardRot * matTrans;
 		}
 		else
 		{
@@ -317,6 +323,7 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 	}
 	const bool hasCircleToWave = (p.iBehaviorType & BEHAVIOR_CIRCLE_TO_WAVE) != 0;
 	const bool hasGravity = (p.iBehaviorType & BEHAVIOR_GRAVITY) != 0;
+	const bool hasOrbit = (p.iBehaviorType & BEHAVIOR_ORBIT) != 0;
 	if (hasCircleToWave)
 	{
 		const uint32_t particleIndex = static_cast<uint32_t>(&p - m_Particles.data());
@@ -399,7 +406,7 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		const XMVECTOR finalVelocity = ringVelocity + chaosVelocity * chaosT + planeNormal * (depthVelocity * chaosT);
 		XMStoreFloat3(&p.vVelocity, finalVelocity);
 	}
-	if (hasGravity)
+	if (hasGravity && !hasOrbit)
 	{
 		constexpr float gravity = -9.8f;
 		if (hasCircleToWave)
@@ -433,6 +440,9 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 	}
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0) {
 		KeepRotate(p, fTimeDelta);
+	}
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0) {
+		Orbit(p, fTimeDelta);
 	}
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_FADEOUT_LATE) != 0) {
 		FadeOutLate(p);
@@ -511,6 +521,18 @@ void CParticle_CPU::SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 void CParticle_CPU::KeepRotate(PARTICLE_CPU_DATA& p,_float fTimeDelta)
 {
 	p.rotation.w = std::remainder(p.rotation.w + p.fRotationSpeed * fTimeDelta, XM_2PI);
+}
+
+void CParticle_CPU::Orbit(PARTICLE_CPU_DATA& p, _float fTimeDelta)
+{
+	_vector vAxis = XMLoadFloat3(&p.roationAxis);
+	_vector vOffset = XMLoadFloat3(&p.vPosition) - XMLoadFloat3(&p.originalPosition);
+	if (XMVectorGetX(XMVector3LengthSq(vAxis)) <= 0.000001f || XMVectorGetX(XMVector3LengthSq(vOffset)) <= 0.000001f)
+		return;
+
+	vAxis = XMVector3Normalize(vAxis);
+	const _vector vOrbitRotation = XMQuaternionRotationAxis(vAxis, p.fRotationSpeed * fTimeDelta);
+	XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.originalPosition) + XMVector3Rotate(vOffset, vOrbitRotation));
 }
 
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
@@ -1087,6 +1109,8 @@ void CParticle_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatri
 		XMStoreFloat3(&particle.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.originalPosition), deltaMatrix));
 		XMStoreFloat3(&particle.vVelocity, XMVector3Rotate(XMLoadFloat3(&particle.vVelocity), deltaRotation));
 		XMStoreFloat3(&particle.originalVelocity, XMVector3Rotate(XMLoadFloat3(&particle.originalVelocity), deltaRotation));
+		if ((particle.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0)
+			XMStoreFloat3(&particle.roationAxis, XMVector3Rotate(XMLoadFloat3(&particle.roationAxis), deltaRotation));
 
 		particle.rotation.x = std::remainder(particle.rotation.x + fDeltaPitch, XM_2PI);
 		particle.rotation.y = std::remainder(particle.rotation.y + fDeltaYaw, XM_2PI);

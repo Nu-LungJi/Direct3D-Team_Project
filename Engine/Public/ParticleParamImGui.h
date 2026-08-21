@@ -144,6 +144,9 @@ inline void DrawImGui(SStairsParam& p) {
 }
 inline void DrawImGui(SCircleParam& p) {
 	CIRCLE_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
+	bool bOrbit = (p.iBehaviorType & BEHAVIOR_ORBIT) != 0;
+	if (ImGui::Checkbox("Orbit", &bOrbit))
+		p.iBehaviorType = bOrbit ? (p.iBehaviorType | BEHAVIOR_ORBIT) : (p.iBehaviorType & ~BEHAVIOR_ORBIT);
 }
 inline void DrawImGui(SCircleSpreadParam& p) {
 	CIRCLE_SPREAD_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);

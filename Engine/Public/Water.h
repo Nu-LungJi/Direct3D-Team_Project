@@ -10,6 +10,7 @@ class CResPixelShader;
 class CResTexture2D;
 class CResSamplerState;
 class CResBlendState;
+class CResDepthStencilState;
 
 class ENGINE_DLL CWater : public CGameObject
 {
@@ -18,7 +19,19 @@ public:
 
 	struct WATER_DESC : public CGameObject::GAMEOBJECT_DESC
 	{
-
+		_float3 vPosition{};
+		_float2 vSize{ 8000.f, 8000.f };
+		_float4 vWaterColor{ 0.012f, 0.055f, 0.16f, 0.9f };
+		_float4 vShallowColor{ 0.018f, 0.10f, 0.24f, 1.f };
+		_float4 vDeepColor{ 0.002f, 0.012f, 0.055f, 1.f };
+		_float4 vReflectionColor{ 0.10f, 0.20f, 0.38f, 1.f };
+		_float2 vScrollSpeed1{ 0.025f, 0.015f };
+		_float2 vScrollSpeed2{ -0.018f, 0.022f };
+		_float fWaveIntensity = 0.95f;
+		_float fUVScale = 0.018f;
+		_float fSecondaryNormalScale = 2.7f;
+		_float fFollowSnap = 50.f;
+		_bool bFollowCamera = true;
 	};
 
 private:
@@ -29,12 +42,16 @@ private:
 private:
 	struct CB_WATER
 	{
-		_float4 waterColor = _float4(0.1f, 0.5f, 0.6f, 0.85f);  // 물 기본 색상 및 투명도 (RGB, A)
-		_float2 scrollSpeed1 = _float2(0.5f, 0.3f); // 첫 번째 노멀 맵 스크롤 속도
-		_float2 scrollSpeed2 = _float2(-0.4f, 0.6f); // 두 번째 노멀 맵 스크롤 속도
-		_float  time = 0.f;         // 누적 시간 (Shader Animation 용)
-		_float  waveIntensity = 100.0f;// 파도 요동 / 노멀 강도
-		_float2 padding;      // 16바이트 배수 맞추기용 패딩
+		_float4 waterColor{};
+		_float4 shallowColor{};
+		_float4 deepColor{};
+		_float4 reflectionColor{};
+		_float2 scrollSpeed1{};
+		_float2 scrollSpeed2{};
+		_float time{};
+		_float waveIntensity{};
+		_float uvScale{};
+		_float secondaryNormalScale{};
 	};
 	static_assert(sizeof(CB_WATER) % 16 == 0);
 
@@ -47,6 +64,10 @@ public:
 
 private:
 	_float m_fTime = 0.f;
+	_float m_fSeaLevel = 0.f;
+	_float m_fFollowSnap = 50.f;
+	_bool m_bFollowCamera = true;
+	CB_WATER m_WaterData{};
 
 private:
 	CComConstantBuffer* m_pComCBufferPerObject{};
@@ -60,6 +81,7 @@ private:
 	SPtr<CResTexture2D> m_pNormalTex1{};
 	SPtr<CResSamplerState> m_pSamplerState{};
 	SPtr<CResBlendState> m_pBlendState{};
+	SPtr<CResDepthStencilState> m_pDepthStencilState{};
 
 public:
 	static UPtr<CWater> Create();

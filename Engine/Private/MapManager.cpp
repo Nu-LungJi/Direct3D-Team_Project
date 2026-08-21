@@ -10,6 +10,7 @@
 #include "CollFrustum.h"
 #include "MapStaticModelLoader.h"
 #include "OctreeNode.h"
+#include "ComStaticModelInstance.h"
 NS_USING(Engine)
 
 struct Engine::PENDING_CHUNK_APPLY_STATE
@@ -402,7 +403,38 @@ namespace
 		}
 		return handle;
 	}
+	/*----------- 광윤 추가 -----------*/	// Material 정보 읽기/쓰기
+	nlohmann::ordered_json MakeMaterialJson(const MATERIAL_DESC& matDesc)
+	{
+		_float3 EmissiveColor = matDesc.m_fEmissiveColor;
+		return nlohmann::ordered_json
+		{
+			{ "NormalIntensity", matDesc.m_fNormalIntensity },
+			{ "MetallicIntensity", matDesc.m_fMetallicIntensity },
+			{ "RoughnessIntensity", matDesc.m_fRoughnessIntensity },
+			{ "AmbientIntensity", matDesc.m_fAmbientIntensity },
+			{ "EmissiveColor", { EmissiveColor.x, EmissiveColor.y, EmissiveColor.z } },
+			{ "EmissiveIntensity", matDesc.m_fEmissiveIntensity },
+			{ "ObjectAlpha", matDesc.m_fObjectAlpha }
+		};
+	}
+	MATERIAL_DESC ReadMaterialJson(const nlohmann::ordered_json& objectJson)
+	{
+		MATERIAL_DESC matDesc{};
+		if (!objectJson.is_object())
+			return matDesc;
 
+		matDesc.m_fNormalIntensity = objectJson.value("NormalIntensity", matDesc.m_fNormalIntensity);
+		matDesc.m_fMetallicIntensity = objectJson.value("MetallicIntensity", matDesc.m_fMetallicIntensity);
+		matDesc.m_fRoughnessIntensity = objectJson.value("RoughnessIntensity", matDesc.m_fRoughnessIntensity);
+		matDesc.m_fAmbientIntensity = objectJson.value("AmbientIntensity", matDesc.m_fAmbientIntensity);
+		matDesc.m_fEmissiveColor = ReadFloat3(objectJson, "EmissiveColor", matDesc.m_fEmissiveColor);
+		matDesc.m_fEmissiveIntensity = objectJson.value("EmissiveIntensity", matDesc.m_fEmissiveIntensity);
+		matDesc.m_fObjectAlpha = objectJson.value("ObjectAlpha", matDesc.m_fObjectAlpha);
+
+		return matDesc;
+	}
+	/*---------------------------------*/
 }
 
 #ifdef _DEBUG
@@ -1001,6 +1033,9 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 	outFile << rootJson.dump(4);
 	outFile.close();
 
+	/*----------- 광윤 추가 -----------*/
+	SaveMaterial(mapDir.string());
+	/*---------------------------------*/
 	return S_OK;
 }
 
@@ -1016,6 +1051,11 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 	}
 
 	const std::filesystem::path mapDir(path);
+
+	/*----------- 광윤 추가 -----------*/
+	LoadMaterial(mapDir.string());
+	/*---------------------------------*/
+
 	std::filesystem::path mapFilePath = mapDir / "map.json";
 	if (std::filesystem::exists(mapFilePath))
 	{
@@ -1378,7 +1418,112 @@ HRESULT CMapManager::UnLoadChunk(const MAPCHUNK_COORD& coord)
 
 	return S_OK;
 }
+/*----------- 광윤 추가 -----------*/
+HRESULT CMapManager::SaveMaterial(const std::string& path)
+{
+	const std::filesystem::path matDir(path);
 
+	nlohmann::ordered_json rootJson = nlohmann::ordered_json::object();
+	rootJson["Version"] = 1;
+	rootJson["Materials"] = nlohmann::ordered_json::object();
+
+	std::unordered_set<std::string> LoadedResTag;
+
+	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
+	for (const auto& pair : layers)
+	{
+		const auto& objects = pair.second;
+
+		for (const auto& objectHandle : objects)
+		{
+			CMapMeshObject* pMeshObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
+			if (pMeshObj == nullptr)
+				continue;
+
+			const std::string ResTag = pMeshObj->GetModelResourceTag();
+			if (ResTag.empty())
+				continue;
+
+			if (LoadedResTag.find(ResTag) != LoadedResTag.end())
+				continue;
+
+			const MATERIAL_DESC matDesc = pMeshObj->GetStaticModelInstance()->GetModel()->GetMaterialDesc();
+			rootJson["Materials"][ResTag] = MakeMaterialJson(matDesc);
+
+			LoadedResTag.insert(ResTag);
+		}
+	}
+
+	std::ofstream outFile(matDir / "Material.json");
+	if (!outFile.is_open())
+	{
+		return E_FAIL;
+	}
+
+	outFile << rootJson.dump(4);
+	outFile.close();
+
+	return S_OK;
+}
+
+HRESULT CMapManager::LoadMaterial(const std::string& path)
+{
+	m_MaterialDescs.clear();
+	const std::filesystem::path matFilePath = std::filesystem::path(path) / "Material.json";
+	if (!std::filesystem::exists(matFilePath))	 return S_OK;
+
+	std::ifstream inFile(matFilePath.string());
+	if (!inFile.is_open())
+	{
+		return E_FAIL;
+	}
+
+	nlohmann::ordered_json rootJson;
+	inFile >> rootJson;
+
+	inFile.close();
+
+	if (!rootJson.contains("Materials") || !rootJson["Materials"].is_object())
+	{
+		return E_FAIL;
+	}
+
+	const auto& MaterialsJson = rootJson["Materials"];
+
+	m_MaterialDescs.clear();
+
+	for (const auto& [matName, matJson] : MaterialsJson.items())
+	{
+		m_MaterialDescs[matName] = ReadMaterialJson(matJson);
+	}
+
+	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
+	for (const auto& pair : layers)
+	{
+		const auto& objects = pair.second;
+
+		for (const auto& objectHandle : objects)
+		{
+			CMapMeshObject* pMeshObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
+			if (pMeshObj == nullptr)	continue;
+
+			auto iter = m_MaterialDescs.find(pMeshObj->GetModelResourceTag());
+			if (iter != m_MaterialDescs.end())
+			{
+				pMeshObj->GetStaticModelInstance()->GetModel()->SetMaterialDesc(iter->second);
+			}
+		}
+	}
+
+	return S_OK;
+}
+const MATERIAL_DESC CMapManager::FindMaterial(const std::string& ModelName) {
+	auto iter = std::find_if(m_MaterialDescs.begin(), m_MaterialDescs.end(), [ModelName](const std::pair<std::string, MATERIAL_DESC> Desc) {
+			return Desc.first == ModelName;
+		});
+	return iter != m_MaterialDescs.end() ? iter->second : MATERIAL_DESC{};
+}
+/*---------------------------------*/
 _float3 CMapManager::GetChunkCenter(const MAPCHUNK_COORD& coord)
 {
 	return _float3(

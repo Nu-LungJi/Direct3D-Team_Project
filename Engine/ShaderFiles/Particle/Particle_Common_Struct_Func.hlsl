@@ -13,6 +13,7 @@
 #define BEHAVIOR_SIZESTOP (1u << 10)
 #define BEHAVIOR_EXTRALIGHTNING (1u << 11)
 #define BEHAVIOR_KEEPROTATE (1u << 12)
+#define BEHAVIOR_ORBIT (1u << 15)
 
 struct SPAWN_DATA
 {

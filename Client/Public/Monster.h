@@ -7,6 +7,7 @@ class CComConstantBuffer;
 class CResTexture2D;
 class CResVertexShader;
 class CResPixelShader;
+class CResComputeShader;
 class CResSamplerState;
 class CResModel;
 class CComModelInstance;
@@ -109,12 +110,20 @@ public:
 	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch);
 	HRESULT Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances);
 	HRESULT Bind_InstanceBuffer(ID3D11DeviceContext* pContext);
+	HRESULT Render_Instanced_CPU(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch);
+	HRESULT Render_Instanced_GPU(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch);
+	HRESULT Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext);
+	HRESULT Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext);
+	HRESULT Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext);
+	void Unbind_GPUAnimation_CS(ID3D11DeviceContext* pContext);
+	void Unbind_GPUAnimation_VS(ID3D11DeviceContext* pContext);
 		
 	/*----------- 광윤 추가 -----------*/
 	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
 	bool	GetShadowBounds(BoundingBox& OutBounds) const override;
 	/*---------------------------------*/
 public:
+	void Find_Target();
 	void OnTriggerEnter(CGameObject* pObj,const PX_ON_TRIGGER_DATA& info) override;
 public:
 	virtual _bool				Check_Table(PLAYER_SKILL_TYPE eType) { return true; };
@@ -126,7 +135,7 @@ public:
 	void						Set_Emissive(_float fEmissive) { m_fPreEmissive = m_fIntensive = fEmissive; }
 	virtual _bool				Activate_PendingHit();
 	const MON_HIT_INFO			Get_ActiveHitInfo()const { return m_ActiveMonTable; }
-	const MON_HIT_INFO			Get_PendingHitInfo() const { return m_PendingMonTable; }
+	const MON_HIT_INFO		 	Get_PendingHitInfo() const { return m_PendingMonTable; }
 	_bool						Is_PendingHit() { return m_bPending; }
 	_bool						Is_ActiveHit() { return m_bActiveHit; }
 	void						ReActiveTable();
@@ -187,6 +196,8 @@ protected:
 	// Anim
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	SPtr<CResVertexShader> m_pResVertexCPUSkinningInstancedShader{};
+	SPtr<CResVertexShader> m_pResVertexGPUSkinningInstancedShader{};
+	SPtr<CResComputeShader> m_pAnimComputeShader{};
 	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
 
 

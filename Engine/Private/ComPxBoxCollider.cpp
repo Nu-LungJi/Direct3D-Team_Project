@@ -19,6 +19,49 @@ void CComPxBoxCollider::UpdateGUI()
 {
     CComPxCollider::UpdateGUI();
 
+	ImGui::PushID(this);
+	ImGui::TextUnformatted("Collider Type: Box");
+	_float3 vHalfExtents = GetHalfExtents();
+	if (ImGui::DragFloat3(
+		"Half Extents", &vHalfExtents.x, 0.05f, 0.001f, 10000.f))
+	{
+		SetHalfExtents(vHalfExtents);
+	}
+	ImGui::PopID();
+}
+
+_bool CComPxBoxCollider::SetHalfExtents(const _float3& vHalfExtents)
+{
+	if (!m_pShape || vHalfExtents.x <= 0.f ||
+		vHalfExtents.y <= 0.f || vHalfExtents.z <= 0.f)
+	{
+		return false;
+	}
+
+	m_pShape->setGeometry(PxBoxGeometry{
+		vHalfExtents.x, vHalfExtents.y, vHalfExtents.z });
+
+	if (auto* pActor = m_pShape->getActor())
+	{
+		if (auto* pDynamic = pActor->is<PxRigidDynamic>();
+			pDynamic && !pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+		{
+			if (!PxRigidBodyExt::setMassAndUpdateInertia(*pDynamic, pDynamic->getMass()))
+				return false;
+		}
+	}
+	return true;
+}
+
+_float3 CComPxBoxCollider::GetHalfExtents() const
+{
+	if (!m_pShape)
+		return {};
+	const PxGeometryHolder geometryHolder = m_pShape->getGeometry();
+	if (geometryHolder.getType() != PxGeometryType::eBOX)
+		return {};
+	const PxBoxGeometry& geometry = geometryHolder.box();
+	return { geometry.halfExtents.x, geometry.halfExtents.y, geometry.halfExtents.z };
 }
 
 CComPxBoxCollider::CComPxBoxCollider()
@@ -80,8 +123,12 @@ HRESULT CComPxBoxCollider::Initialize(void* pArg)
 
     pActor->attachShape(*m_pShape);
 
-    if (auto* dynamic = pActor->is<PxRigidDynamic>())
-        PxRigidBodyExt::updateMassAndInertia(*dynamic, dynamic->getMass());
+    if (auto* dynamic = pActor->is<PxRigidDynamic>();
+        dynamic && !dynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+    {
+        if (!PxRigidBodyExt::setMassAndUpdateInertia(*dynamic, dynamic->getMass()))
+            return E_FAIL;
+    }
     
     return S_OK;
 }

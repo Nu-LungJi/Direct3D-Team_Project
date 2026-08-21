@@ -50,7 +50,16 @@
 #include "VideoObject.h"
 #include "Cursor.h"
 #include "SpellMiniGame.h"
+#include "Mon_Spawner.h"
 #include "UITextureResourceLoader.h"
+#include "Coin.h"
+#include "AccioBall.h"
+#include "AccioActivity_Base.h"
+#include "AccioActivity_Platform.h"
+#include "AccioActivity_BumperA.h"
+#include "AccioActivity_BumperB.h"
+#include "AccioActivity_RampLarge.h"
+#include "AccioActivity_LampSmall.h"
 
 NS_USING(Client)
 
@@ -73,6 +82,91 @@ std::future<bool> CLevelTerrainLoader::Load()
 			}
 
 			UILoad();
+			// Accio 물리 상호작용 테스트용 Quaffle 공.
+			{
+				const auto loadAccioBallResource = [](
+					const StringID& resourceTag, const _char* modelPath)
+				{
+					auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+						LEVEL::TERRAIN, resourceTag, CResStaticModel::Create(modelPath));
+					if (!resource)
+						return false;
+
+					CResStaticModel::DESC desc{};
+					desc.PreTransformMatrix = XMMatrixIdentity();
+					return SUCCEEDED(resource->Load(desc));
+				};
+
+				if (!loadAccioBallResource(
+					"Static_AccioBall_Blue_Resource",
+					"./Resources/SampleClient/Models/Static/SM_SM_HM_Quid_BallBox_Quaffle_RoundA_Blue.bin") ||
+					!loadAccioBallResource(
+						"Static_AccioBall_Red_Resource",
+						"./Resources/SampleClient/Models/Static/SM_SM_HM_Quid_BallBox_Quaffle_RoundA_Red.bin"))
+					return false;
+
+				if (FAILED(CGameInstance::Get().AddPrototype(
+					LEVEL::TERRAIN,
+					PROTO_GAMEOBJECT::Prototype_GameObject_AccioBall,
+					CAccioBall::Create())))
+				{
+					return false;
+				}
+			}
+
+			// Accio Activity 경기장 파츠. 충돌체 없이 정적 MapMesh 모델만 등록한다.
+			{
+				struct ACCIO_ACTIVITY_RESOURCE
+				{
+					const _char* pTag;
+					const _char* pPath;
+					_matrix PreTransformMatrix;
+				};
+
+				const ACCIO_ACTIVITY_RESOURCE resources[] =
+				{
+					{ "Static_AccioActivity_Resource", "./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity.bin", XMMatrixScaling(500, 500, 500) * XMMatrixRotationRollPitchYaw(XMConvertToRadians(90.f), 0.f, 0.f)},
+					{ "Static_AccioActivity_Platform_Resource", "./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity_Platform.bin", XMMatrixScaling(600, 600, 600	) * XMMatrixRotationRollPitchYaw(XMConvertToRadians(90.f), 0.f, 0.f) },
+					{ "Static_AccioActivity_Bumper_Resource", "./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity_Bumper.bin", XMMatrixIdentity() },
+					{ "Static_AccioActivity_BumperA_Resource", "./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity_Bumper_A.bin", XMMatrixIdentity() },
+					{ "Static_AccioActivity_RampLarge_Resource", "./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity_RampLarge.bin", XMMatrixIdentity() },
+					{ "Static_AccioActivity_RampSmall_Resource", "./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity_RampSmall.bin", XMMatrixIdentity() },
+				};
+
+				for (const auto& entry : resources)
+				{
+					auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+						LEVEL::TERRAIN, entry.pTag, CResStaticModel::Create(entry.pPath));
+					if (!resource)
+						return false;
+
+					CResStaticModel::DESC desc{};
+					desc.PreTransformMatrix = entry.PreTransformMatrix;
+					if (FAILED(resource->Load(desc)))
+						return false;
+				}
+
+				if (FAILED(CGameInstance::Get().AddPrototype(
+					LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Base,
+					CAccioActivity_Base::Create())) ||
+					FAILED(CGameInstance::Get().AddPrototype(
+						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Platform,
+						CAccioActivity_Platform::Create())) ||
+					FAILED(CGameInstance::Get().AddPrototype(
+						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_BumperA,
+						CAccioActivity_BumperA::Create())) ||
+					FAILED(CGameInstance::Get().AddPrototype(
+						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_BumperB,
+						CAccioActivity_BumperB::Create())) ||
+					FAILED(CGameInstance::Get().AddPrototype(
+						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_RampLarge,
+						CAccioActivity_RampLarge::Create())) ||
+					FAILED(CGameInstance::Get().AddPrototype(
+						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_LampSmall,
+						CAccioActivity_LampSmall::Create())))
+					return false;
+			}
+
 			// oilbarrel
 			{
 				if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::TERRAIN, "Static_OilBarrel_Resource",
@@ -603,7 +697,21 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			return E_FAIL;
 		}
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
+		
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_MonSpawner, CMon_Spawner::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spawner");
+			return E_FAIL;
+		}
+	}
 
+	//Coin
+	{
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Coin, CCoin::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
+			return E_FAIL;
+		}
 	}
 	return S_OK;
 }

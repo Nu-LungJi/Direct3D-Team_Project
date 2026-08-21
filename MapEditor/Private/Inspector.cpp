@@ -1,10 +1,11 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "Inspector.h"
 #include "ComTransform.h"
 #include "GameInstance.h"
 #include "MapMeshObject.h"
 #include "DecalVolume.h"
 #include "Resources.h"
+#include "ComStaticModelInstance.h"
 
 NS_USING(Client)
 
@@ -178,6 +179,25 @@ namespace
 			windDesc.type = static_cast<E::EWindType>(windType);
 			mapMeshObject.SetWindDesc(windDesc);
 		}
+
+		/*----------- 광윤 추가 -----------*/
+		
+		ImGui::Separator();
+		ImGui::TextUnformatted("Material");
+		SPtr<CResStaticModel> MapStaticMesh = mapMeshObject.GetStaticModelInstance()->GetModel();
+		E::MATERIAL_DESC matDesc = MapStaticMesh->GetMaterialDesc();
+
+		_bool Matchanged = false;
+		Matchanged |= ImGui::DragFloat("Normal"		, &matDesc.m_fNormalIntensity	, 0.01f, 0.f, 10.f, "%.3f");
+		Matchanged |= ImGui::DragFloat("Metallic"	, &matDesc.m_fMetallicIntensity	, 0.01f, 0.f, 10.f, "%.3f");
+		Matchanged |= ImGui::DragFloat("Roughness"	, &matDesc.m_fRoughnessIntensity, 0.01f, 0.f, 10.f, "%.3f");
+		Matchanged |= ImGui::DragFloat("Ambient"	, &matDesc.m_fAmbientIntensity	, 0.01f, 0.f, 10.f, "%.3f");
+		Matchanged |= ImGui::ColorEdit3("EmissiveColor", (_float*)&matDesc.m_fEmissiveColor);
+		Matchanged |= ImGui::DragFloat("Emissive", &matDesc.m_fEmissiveIntensity, 0.01f, 0.f, 10.f, "%.3f");
+
+		if (Matchanged) MapStaticMesh->SetMaterialDesc(matDesc);
+		/*---------------------------------*/
+
 	}
 }
 	void DrawDecalVolumeInspector(E::CDecalVolume& decal)
