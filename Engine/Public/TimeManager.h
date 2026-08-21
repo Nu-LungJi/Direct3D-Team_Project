@@ -58,9 +58,9 @@ public:
 	_bool IsTimeScaleActive(const StringID& sTag) const;
 
 	_float GetUnscaledDelta() const { return m_fUnscaledDelta; }
-	_float GetGameDelta() const { return m_fGameDelta; }
+	_float GetScaledDelta() const { return m_fScaledDelta; }
 	_float GetTimeScale() const { return m_fCurrentScale; }
-	_float ScaleFixedDelta(_float fUnscaledFixedDelta) const;
+	_float GetScaledFixedDelta(_float fUnscaledFixedDelta) const;
 
 public:
 	static UPtr<CTimeManager> Create();
@@ -73,7 +73,7 @@ private:
 private:
 	std::unordered_map<StringID, TIME_SCALE_REQUEST> m_Requests{};
 	_float m_fUnscaledDelta{};
-	_float m_fGameDelta{};
+	_float m_fScaledDelta{};
 	_float m_fCurrentScale{ 1.f };
 };
 

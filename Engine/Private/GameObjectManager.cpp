@@ -777,7 +777,7 @@ void CGameObjectManager::DelLayer(std::string_view sLayerName)
 }
 
 void CGameObjectManager::FixedUpdate(
-	_float fGameDelta,
+	_float fScaledDelta,
 	_float fUnscaledDelta)
 {
 	ZoneScopedN("CGameObjectManager_FixedUpdate");
@@ -799,14 +799,14 @@ void CGameObjectManager::FixedUpdate(
 			const _float fObjectDelta =
 				pObj->GetTimeDomain() == TIME_DOMAIN::UNSCALED
 				? fUnscaledDelta
-				: fGameDelta;
+				: fScaledDelta;
 			pObj->FixedUpdate(fObjectDelta);
 		}
 	}
 }
 
 void CGameObjectManager::PriorityUpdate(
-	_float fGameDelta,
+	_float fScaledDelta,
 	_float fUnscaledDelta)
 {
 	ZoneScopedN("CGameObjectManager_PriorityUpdate");
@@ -828,14 +828,14 @@ void CGameObjectManager::PriorityUpdate(
 			const _float fObjectDelta =
 				pObj->GetTimeDomain() == TIME_DOMAIN::UNSCALED
 				? fUnscaledDelta
-				: fGameDelta;
+				: fScaledDelta;
 			pObj->PriorityUpdate(fObjectDelta);
 		}
 	}
 }
 
 void CGameObjectManager::Update(
-	_float fGameDelta,
+	_float fScaledDelta,
 	_float fUnscaledDelta)
 {
 	ZoneScopedN("CGameObjectManager_Update");
@@ -857,14 +857,14 @@ void CGameObjectManager::Update(
 			const _float fObjectDelta =
 				pObj->GetTimeDomain() == TIME_DOMAIN::UNSCALED
 				? fUnscaledDelta
-				: fGameDelta;
+				: fScaledDelta;
 			pObj->Update(fObjectDelta);
 		}
 	}
 }
 
 void CGameObjectManager::LateUpdate(
-	_float fGameDelta,
+	_float fScaledDelta,
 	_float fUnscaledDelta)
 {
 	ZoneScopedN("CGameObjectManager_LateUpdate");
@@ -886,7 +886,7 @@ void CGameObjectManager::LateUpdate(
 			const _float fObjectDelta =
 				pObj->GetTimeDomain() == TIME_DOMAIN::UNSCALED
 				? fUnscaledDelta
-				: fGameDelta;
+				: fScaledDelta;
 			pObj->LateUpdate(fObjectDelta);
 		}
 	}

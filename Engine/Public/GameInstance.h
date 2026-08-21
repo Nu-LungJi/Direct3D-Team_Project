@@ -91,7 +91,7 @@ public:
 public:
 	void BeginFrameTime(_float fUnscaledDelta);
 	_float GetUnscaledDelta() const;
-	_float GetGameDelta() const;
+	_float GetScaledDelta() const;
 	_float GetTimeScale() const;
 	_bool BeginTimeScale(
 		const TIME_SCALE_REQUEST_DESC& Desc);

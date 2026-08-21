@@ -91,10 +91,10 @@ private:
 	std::unordered_set<std::string> m_PendingResetTargetLayers{};
 
 public:
-	void FixedUpdate(_float fGameDelta, _float fUnscaledDelta);
-	void PriorityUpdate(_float fGameDelta, _float fUnscaledDelta);
-	void Update(_float fGameDelta, _float fUnscaledDelta);
-	void LateUpdate(_float fGameDelta, _float fUnscaledDelta);
+	void FixedUpdate(_float fScaledDelta, _float fUnscaledDelta);
+	void PriorityUpdate(_float fScaledDelta, _float fUnscaledDelta);
+	void Update(_float fScaledDelta, _float fUnscaledDelta);
+	void LateUpdate(_float fScaledDelta, _float fUnscaledDelta);
 
 private:
 	std::vector<CSlot<CGameObject>> m_Objects{};

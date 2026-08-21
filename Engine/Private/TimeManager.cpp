@@ -30,7 +30,7 @@ void CTimeManager::BeginFrame(_float fUnscaledDelta)
 		});
 
 	RecalculateCurrentScale();
-	m_fGameDelta = m_fUnscaledDelta * m_fCurrentScale;
+	m_fScaledDelta = m_fUnscaledDelta * m_fCurrentScale;
 }
 
 _bool CTimeManager::BeginTimeScale(
@@ -65,7 +65,7 @@ _bool CTimeManager::BeginTimeScale(
 
 	m_Requests.insert_or_assign(Desc.sTag, std::move(Request));
 	RecalculateCurrentScale();
-	m_fGameDelta = m_fUnscaledDelta * m_fCurrentScale;
+	m_fScaledDelta = m_fUnscaledDelta * m_fCurrentScale;
 	return true;
 }
 
@@ -87,7 +87,7 @@ _bool CTimeManager::EndTimeScale(
 	{
 		m_Requests.erase(Iter);
 		RecalculateCurrentScale();
-		m_fGameDelta = m_fUnscaledDelta * m_fCurrentScale;
+		m_fScaledDelta = m_fUnscaledDelta * m_fCurrentScale;
 	}
 
 	return true;
@@ -99,7 +99,7 @@ _bool CTimeManager::CancelTimeScale(const StringID& sTag)
 		return false;
 
 	RecalculateCurrentScale();
-	m_fGameDelta = m_fUnscaledDelta * m_fCurrentScale;
+	m_fScaledDelta = m_fUnscaledDelta * m_fCurrentScale;
 	return true;
 }
 
@@ -107,7 +107,7 @@ void CTimeManager::ClearTimeScaleRequests()
 {
 	m_Requests.clear();
 	m_fCurrentScale = 1.f;
-	m_fGameDelta = m_fUnscaledDelta;
+	m_fScaledDelta = m_fUnscaledDelta;
 }
 
 _bool CTimeManager::IsTimeScaleActive(const StringID& sTag) const
@@ -115,7 +115,7 @@ _bool CTimeManager::IsTimeScaleActive(const StringID& sTag) const
 	return sTag.hash != 0 && m_Requests.contains(sTag);
 }
 
-_float CTimeManager::ScaleFixedDelta(_float fUnscaledFixedDelta) const
+_float CTimeManager::GetScaledFixedDelta(_float fUnscaledFixedDelta) const
 {
 	if (!std::isfinite(fUnscaledFixedDelta) || fUnscaledFixedDelta <= 0.f)
 		return 0.f;

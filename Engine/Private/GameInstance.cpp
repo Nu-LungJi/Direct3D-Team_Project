@@ -326,30 +326,30 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 
 void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
 {
-	const _float fGameFixedTimeDelta = m_pTimeManager
-		? m_pTimeManager->ScaleFixedDelta(fFixedTimeDelta)
+	const _float fScaledFixedDelta = m_pTimeManager
+		? m_pTimeManager->GetScaledFixedDelta(fFixedTimeDelta)
 		: fFixedTimeDelta;
 
-	if (fGameFixedTimeDelta > 0.f)
-		m_pPhysXManager->PrepareCCTInteractions(fGameFixedTimeDelta);
+	if (fScaledFixedDelta > 0.f)
+		m_pPhysXManager->PrepareCCTInteractions(fScaledFixedDelta);
 
 	{
 		ZoneScopedN("GameObjectManager_FixedUpdate");
 		m_pGameObjectManager->FixedUpdate(
-			fGameFixedTimeDelta,
+			fScaledFixedDelta,
 			fFixedTimeDelta);
 	}
 
-	if (fGameFixedTimeDelta <= 0.f)
+	if (fScaledFixedDelta <= 0.f)
 		return;
 	
-	m_pPhysXManager->StepSimulation(fGameFixedTimeDelta);
+	m_pPhysXManager->StepSimulation(fScaledFixedDelta);
 
 
 	{
 		ZoneScopedN("pNvClothManager_StepSimulation");
 		if (m_pNvClothManager)
-			m_pNvClothManager->StepSimulation(fGameFixedTimeDelta);
+			m_pNvClothManager->StepSimulation(fScaledFixedDelta);
 	}
 
 }
@@ -435,8 +435,8 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 	const _float fUnscaledDelta = m_pTimeManager
 		? m_pTimeManager->GetUnscaledDelta()
 		: fTimeDelta;
-	const _float fGameDelta = m_pTimeManager
-		? m_pTimeManager->GetGameDelta()
+	const _float fScaledDelta = m_pTimeManager
+		? m_pTimeManager->GetScaledDelta()
 		: fTimeDelta;
 
 #ifdef _DEBUG
@@ -481,7 +481,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	{
 		ZoneScopedN("EffectManager_Update");
-		m_pEffectManager->Update(fGameDelta);
+		m_pEffectManager->Update(fScaledDelta);
 	}
 
 	// lua hot reload
@@ -504,7 +504,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	{
 		ZoneScopedN("ParticleManager_Update");
-		m_pParticleManager->Update(fGameDelta);
+		m_pParticleManager->Update(fScaledDelta);
 	}
 	
 
@@ -515,27 +515,27 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	{
 		ZoneScopedN("GameObjectManager_Update");
-		m_pGameObjectManager->Update(fGameDelta, fUnscaledDelta);
+		m_pGameObjectManager->Update(fScaledDelta, fUnscaledDelta);
 	}
 
 	{
 		ZoneScopedN("CameraManager_Update");
-		m_pCameraManager->Update(fGameDelta);
+		m_pCameraManager->Update(fScaledDelta);
 	}
 
 	{
 		ZoneScopedN("GameObjectManager_LateUpdate");
-		m_pGameObjectManager->LateUpdate(fGameDelta, fUnscaledDelta);
+		m_pGameObjectManager->LateUpdate(fScaledDelta, fUnscaledDelta);
 	}
 
 	{
 		ZoneScopedN("LevelManager_Update");
-		m_pLevelManager->Update(fGameDelta);
+		m_pLevelManager->Update(fScaledDelta);
 	}
 
 	{
 		ZoneScopedN("LightManager_Update");
-		m_pLightManager->Update(fGameDelta);
+		m_pLightManager->Update(fScaledDelta);
 	}
 	{
 		ZoneScopedN("Renderer_Update");
@@ -544,7 +544,7 @@ void CGameInstance::UpdateEngine(_float fTimeDelta)
 
 	m_pColliderManager->Update();
 
-	m_pMapManager->Update(fGameDelta);
+	m_pMapManager->Update(fScaledDelta);
 	m_pMapMeshInstancingRenderer->Update();
 
 	if (m_pNvClothManager)
@@ -656,8 +656,8 @@ void CGameInstance::FrameStart(_float fTimeDelta)
 	const _float fUnscaledDelta = m_pTimeManager
 		? m_pTimeManager->GetUnscaledDelta()
 		: fTimeDelta;
-	const _float fGameDelta = m_pTimeManager
-		? m_pTimeManager->GetGameDelta()
+	const _float fScaledDelta = m_pTimeManager
+		? m_pTimeManager->GetScaledDelta()
 		: fTimeDelta;
 
 	{
@@ -686,7 +686,7 @@ void CGameInstance::FrameStart(_float fTimeDelta)
 	{
 		ZoneScopedN("GameObjectManager_PriorityUpdate");
 		m_pGameObjectManager->PriorityUpdate(
-			fGameDelta,
+			fScaledDelta,
 			fUnscaledDelta);
 	}
 }
@@ -848,9 +848,9 @@ _float CGameInstance::GetUnscaledDelta() const
 	return m_pTimeManager ? m_pTimeManager->GetUnscaledDelta() : 0.f;
 }
 
-_float CGameInstance::GetGameDelta() const
+_float CGameInstance::GetScaledDelta() const
 {
-	return m_pTimeManager ? m_pTimeManager->GetGameDelta() : 0.f;
+	return m_pTimeManager ? m_pTimeManager->GetScaledDelta() : 0.f;
 }
 
 _float CGameInstance::GetTimeScale() const
