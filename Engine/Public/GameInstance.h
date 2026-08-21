@@ -438,6 +438,10 @@ public:
 	const _float3& GetMapChunkSize() const;
 	void SetMapChunkStreaming(_bool enable);
 	_bool IsMapChunkStreaming() const;
+
+	/*----------- 광윤 추가 -----------*/
+	const MATERIAL_DESC& FindMaterial(const std::string& ModelName);
+	/*---------------------------------*/
 #ifdef _DEBUG
 	void SetDebugDrawMapChunk(_bool draw);
 #endif

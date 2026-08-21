@@ -116,6 +116,8 @@ public:
 	/*----------- 광윤 추가 -----------*/
 	HRESULT SaveMaterial(const std::string& path);
 	HRESULT LoadMaterial(const std::string& path);
+
+	const MATERIAL_DESC& FindMaterial(const std::string& ModelName);
 	/*---------------------------------*/
 
 	// 모델 태그 → 모델 .bin 파일 경로
@@ -185,7 +187,7 @@ private:
 	std::vector<std::vector<MAP_MODEL_RESOURCE_KEY>> m_DeferredModelReleases;
 	std::vector<MAP_MODEL_RESOURCE_KEY> m_DeferredUnusedModelReleases;
 
-	/*----------- 광윤 추가 -----------*/
+	/*----------- 광윤 추가 -----------*/ // CResStaticModel 원본에 넣을 Material 정보 저장소
 	std::unordered_map<std::string, MATERIAL_DESC>	m_MaterialDescs;
 	/*---------------------------------*/
 

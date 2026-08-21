@@ -1263,6 +1263,13 @@ _bool CGameInstance::IsMapChunkStreaming() const
 {
 	return m_pMapManager->IsChunkStreaming();
 }
+
+/*----------- 광윤 추가 -----------*/
+const MATERIAL_DESC& CGameInstance::FindMaterial(const std::string& ModelName) {
+	return m_pMapManager->FindMaterial(ModelName);
+}
+/*---------------------------------*/
+
 #ifdef _DEBUG
 void CGameInstance::SetDebugDrawMapChunk(_bool draw)
 {
