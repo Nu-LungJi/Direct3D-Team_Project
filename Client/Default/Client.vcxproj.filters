@@ -409,9 +409,6 @@
     <Filter Include="GameObject\Player\PropBarrel">
       <UniqueIdentifier>{33378d39-0858-4c64-98ef-efffcf08028f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Player\AccioBall">
-      <UniqueIdentifier>{f312d994-35e8-4db6-a6d7-b50989c874c4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\Monster\01.Spanwer">
       <UniqueIdentifier>{08679333-751b-4ba5-a4c6-39daf5347c9b}</UniqueIdentifier>
     </Filter>
@@ -462,6 +459,12 @@
     </Filter>
     <Filter Include="GameObject\Coin">
       <UniqueIdentifier>{5e844cdf-6e02-4c87-bc88-f38602810a3d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AccioActivity">
+      <UniqueIdentifier>{7c3044d0-b480-43d2-bd36-85006667fca9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AccioActivity\AccioBall">
+      <UniqueIdentifier>{f312d994-35e8-4db6-a6d7-b50989c874c4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -741,12 +744,12 @@
     <ClInclude Include="..\Public\UI_Enums.h">
       <Filter>99.Defines</Filter>
     </ClInclude>
-	<ClInclude Include="..\Public\UIManager.h">
-	  <Filter>GameObject\UI</Filter>
-	</ClInclude>
-	<ClInclude Include="..\Public\UITextureResourceLoader.h">
-	  <Filter>GameObject\UI</Filter>
-	</ClInclude>
+    <ClInclude Include="..\Public\UIManager.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UITextureResourceLoader.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Button.h">
       <Filter>GameObject\UI\Button</Filter>
     </ClInclude>
@@ -927,9 +930,9 @@
     <ClInclude Include="..\Public\SpellMiniGame.h">
       <Filter>GameObject\UI\SpellMiniGame</Filter>
     </ClInclude>
-	<ClInclude Include="..\Public\BoostTrailInstancedUI.h">
-	  <Filter>GameObject\UI\SpellMiniGame</Filter>
-	</ClInclude>
+    <ClInclude Include="..\Public\BoostTrailInstancedUI.h">
+      <Filter>GameObject\UI\SpellMiniGame</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\EdgRandomBall.h">
       <Filter>GameObject\Monster\EnderDragon\Skill\RandomBall</Filter>
     </ClInclude>
@@ -993,16 +996,9 @@
     <ClInclude Include="..\public\Edg_Godae.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
-	<ClInclude Include="..\public\AccioBall.h">
-	  <Filter>GameObject\Player\AccioBall</Filter>
-	</ClInclude>
-	<ClInclude Include="..\public\AccioActivityPartBase.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_Base.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_Platform.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_BumperA.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_BumperB.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_RampLarge.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_LampSmall.h"><Filter>GameObject\Player</Filter></ClInclude>
+    <ClInclude Include="..\public\AccioBall.h">
+      <Filter>GameObject\AccioActivity\AccioBall</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\PropBarrel.h">
       <Filter>GameObject\Player\PropBarrel</Filter>
     </ClInclude>
@@ -1077,6 +1073,27 @@
     </ClInclude>
     <ClInclude Include="..\public\Coin.h">
       <Filter>GameObject\Coin</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_Base.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_BumperA.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_BumperB.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_LampSmall.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_Platform.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_RampLarge.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivityPartBase.h">
+      <Filter>GameObject\AccioActivity</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1488,9 +1505,9 @@
     <ClCompile Include="..\Private\SpellMiniGame.cpp">
       <Filter>GameObject\UI\SpellMiniGame</Filter>
     </ClCompile>
-	<ClCompile Include="..\Private\BoostTrailInstancedUI.cpp">
-	  <Filter>GameObject\UI\SpellMiniGame</Filter>
-	</ClCompile>
+    <ClCompile Include="..\Private\BoostTrailInstancedUI.cpp">
+      <Filter>GameObject\UI\SpellMiniGame</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\EdgRandomBall.cpp">
       <Filter>GameObject\Monster\EnderDragon\Skill\RandomBall</Filter>
     </ClCompile>
@@ -1551,16 +1568,9 @@
     <ClCompile Include="..\Private\WiggenweldPotion.cpp">
       <Filter>GameObject\Player\Player_Potion</Filter>
     </ClCompile>
-	<ClCompile Include="..\private\AccioBall.cpp">
-	  <Filter>GameObject\Player\AccioBall</Filter>
-	</ClCompile>
-	<ClCompile Include="..\private\AccioActivityPartBase.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_Base.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_Platform.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_BumperA.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_BumperB.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_RampLarge.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_LampSmall.cpp"><Filter>GameObject\Player</Filter></ClCompile>
+    <ClCompile Include="..\private\AccioBall.cpp">
+      <Filter>GameObject\AccioActivity\AccioBall</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\PropBarrel.cpp">
       <Filter>GameObject\Player\PropBarrel</Filter>
     </ClCompile>
@@ -1635,6 +1645,27 @@
     </ClCompile>
     <ClCompile Include="..\private\Coin.cpp">
       <Filter>GameObject\Coin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_Base.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_BumperA.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_BumperB.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_LampSmall.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_Platform.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_RampLarge.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivityPartBase.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
