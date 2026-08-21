@@ -27,6 +27,12 @@ void CSMain(uint id : SV_DispatchThreadID)
 	p.originalPosition = mul(float4(p.originalPosition, 1.f), g_matDelta).xyz;
 	p.velocity = mul(float4(p.velocity, 0.f), g_matDelta).xyz;
 	p.originalVelocity = mul(float4(p.originalVelocity, 0.f), g_matDelta).xyz;
+	if ((p.iBehaviorType & BEHAVIOR_ORBIT) != 0)
+	{
+		float3 transformedAxis = mul(float4(p.roationAxis, 0.f), g_matDelta).xyz;
+		if (dot(transformedAxis, transformedAxis) > 0.000001f)
+			p.roationAxis = normalize(transformedAxis);
+	}
 
 	float3 rotatedRight = normalize(mul(float4(RotateXYZ(float3(1.f, 0.f, 0.f), p.rotation), 0.f), g_matDelta).xyz);
 	float3 rotatedUp = normalize(mul(float4(RotateXYZ(float3(0.f, 1.f, 0.f), p.rotation), 0.f), g_matDelta).xyz);

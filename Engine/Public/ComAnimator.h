@@ -330,6 +330,7 @@ public:
 	_float	GetUpperAnimRatio() const;
 	_float	GetUpperLayerWeight() const { return m_fUpperLayerWeight; }
 	void	SetUpperAnimationSpeed(_float fSpeed) { m_UpperAnimState.fSpeed = std::max(fSpeed, 0.f); }
+	void	SetUpperAnimationFadeOutDuration(_float fDuration) { m_fUpperAutoFadeDuration = std::max(fDuration, 0.f); }
 	void	Build_BoneMatrices_CPU(_float fTimeDelta);
 	_bool Sample_CombinedBoneMatrices(int32_t iAnimIndex, _float fTrackPosition, const std::vector<uint32_t>& boneChain, _float4x4& outMatrix) const;
 
@@ -446,6 +447,7 @@ private:
 	_float			m_fUpperFadeTargetWeight{ 0.f };
 	_float			m_fUpperFadeTime{ 0.f };
 	_float			m_fUpperFadeDuration{ 0.f };
+	_float			m_fUpperAutoFadeDuration{ 0.1f };
 
 
 private:

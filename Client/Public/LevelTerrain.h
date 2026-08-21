@@ -53,6 +53,7 @@ private:
 private:
 	_bool m_bCreatePlayScreenUI{ false };
 	CHandle m_hPlayer{};
+	CHandle m_hPropBarrel{};
 	_float m_fTombBossBulletSpawnYawDegrees{};
 	_float m_fConfringoBulletSpeed{ 35.f };
 	_float m_fConfringoBulletLifeTime{ 5.f };

@@ -239,40 +239,23 @@ PS_OUT PSPlayerDash1(VS_OUT In) : SV_TARGET
 
 PS_OUT PSRemoveBlack(VS_OUT In)
 {
-    PS_OUT Out = (PS_OUT)0;
+	PS_OUT Out = (PS_OUT) 0;
 
-    float2 uv = In.vUV;
+	float2 uv = In.vUV;
+	float wave1 = sin(uv.x * 8.f + g_fAccumulationTime * 6.f);
+	float wave2 = sin(uv.x * 17.f - g_fAccumulationTime * 9.f);
+	uv.y += wave1 * 0.135f + wave2 * 0.112f;
 
-    // 트레일을 따라 서로 다른 위치가 좌우로 흔들림
-    float wave1 = sin(uv.x * 8.0f + g_fAccumulationTime * 6.0f);
-    float wave2 = sin(uv.x * 17.0f - g_fAccumulationTime * 9.0f);
+	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, uv);
+	float mask = max(texColor.r, max(texColor.g, texColor.b));
 
-    // V가 트레일 폭 방향
-    uv.y += wave1 * 0.135f;
-    uv.y += wave2 * 0.112f;
+	clip(mask - 0.2f);
 
-    float4 texColor =
-        g_DiffuseTexture.Sample(LinearClamp, uv);
+	float3 baseColor = texColor.rgb * In.vColor.rgb;
+	float3 emissive = In.vEmissive.rgb * In.vEmissive.a * mask;
 
-    float mask =
-        max(texColor.r, max(texColor.g, texColor.b));
-
-    clip(mask - 0.2f);
-
-    float3 baseColor =
-        texColor.rgb * In.vColor.rgb;
-
-    float3 emissive =
-        In.vEmissive.rgb *
-        In.vEmissive.a *
-        mask;
-
-    Out.vDiffuse = float4(
-        baseColor + emissive,
-        mask * texColor.a * In.vColor.a
-    );
-
-    return Out;
+	Out.vDiffuse = float4(baseColor + emissive, mask * texColor.a * In.vColor.a);
+	return Out;
 }
 PS_OUT PSMarble(VS_OUT In)
 {
@@ -333,6 +316,34 @@ PS_OUT PSDarkWispTrail(VS_OUT In)
 	float3 finalColor = blackColor + emissiveColor * brightMask * 8.f;
 	
 	clip(alpha - 0.01f);
+
+	Out.vDiffuse = float4(finalColor, alpha);
+	return Out;
+}
+PS_OUT PSRepairoTrail(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float2 uv = In.vUV;
+	uv.x = frac(uv.x - g_fAccumulationTime * 0.12f);
+
+	float wave1 = sin(In.vUV.x * 7.f + g_fAccumulationTime * 3.f);
+	float wave2 = sin(In.vUV.x * 13.f - g_fAccumulationTime * 4.f);
+	uv.y = saturate(uv.y + wave1 * 0.025f + wave2 * 0.012f);
+
+	float4 texColor = g_DiffuseTexture.Sample(LinearClamp, uv);
+	float mask = max(texColor.r, max(texColor.g, texColor.b));
+	float bodyMask = smoothstep(0.01f, 0.16f, mask);
+	float emissiveMask = smoothstep(0.28f, 0.75f, mask);
+	float edgeMask = smoothstep(0.f, 0.15f, In.vUV.y) * (1.f - smoothstep(0.85f, 1.f, In.vUV.y));
+
+	float alpha = bodyMask * edgeMask * In.vColor.a;
+	float3 baseColor = In.vColor.rgb * texColor.rgb;
+	float3 emissiveColor = In.vEmissive.rgb * In.vEmissive.a * emissiveMask;
+	float3 finalColor = baseColor + emissiveColor;
+
+	clip(mask - 0.1f);
+	clip(alpha - 0.002f);
 
 	Out.vDiffuse = float4(finalColor, alpha);
 	return Out;

@@ -163,6 +163,7 @@ void CPlayerRagdollController::DisableGameplayPhysics()
 	m_Owner.m_bRootMotionTranslationActive = false;
 	m_Owner.m_bRawMoveInput = false;
 	m_Owner.m_bSprintRequested = false;
+	m_Owner.m_bWalkRequested = false;
 	m_Owner.m_vRawMoveDirection = {};
 	m_Owner.m_fCurrentMoveSpeed = 0.f;
 	m_Owner.m_fControlHoldTime = 0.f;
@@ -275,6 +276,7 @@ _bool CPlayerRagdollController::PrePriorityUpdate()
 
 	m_Owner.m_bRawMoveInput = false;
 	m_Owner.m_bSprintRequested = false;
+	m_Owner.m_bWalkRequested = false;
 	m_Owner.m_vRawMoveDirection = {};
 	m_Owner.m_fCurrentMoveSpeed = 0.f;
 	m_Owner.m_fControlHoldTime = 0.f;

@@ -29,9 +29,11 @@ float3x3 Make_TBNMatrix(float3 _Normal, float3 _Tangent)
 }
 float3 Compute_WorldNormal(Texture2D _NormalTex, float2 _TexCoord, float4 _InNormal, float4 _InTangent)
 {
-    float3 LocalNormal = _NormalTex.Sample(LinearWrap, _TexCoord).rgb;
-    LocalNormal = normalize(LocalNormal * 2.f - 1.f);
-    float3x3 TBN = Make_TBNMatrix(_InNormal.xyz, _InTangent.xyz);
+    // BC5 normal maps store only tangent-space X/Y. Their sampled B channel is
+    // zero, so decoding RGB directly would produce Z=-1 and invert lighting.
+    float2 LocalNormalXY = _NormalTex.Sample(LinearWrap, _TexCoord).rg * 2.f - 1.f;
+    float LocalNormalZ = sqrt(saturate(1.f - dot(LocalNormalXY, LocalNormalXY)));
+    float3 LocalNormal = normalize(float3(LocalNormalXY, LocalNormalZ));
 
     float3 N = normalize(_InNormal.xyz);
     float3 T = normalize(_InTangent.xyz);
