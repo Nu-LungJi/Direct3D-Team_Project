@@ -57,7 +57,7 @@ void CCoin::OnTriggerEnter(E::CGameObject* pObj, const E::PX_ON_TRIGGER_DATA& in
 	}
 
 	_float4x4 effectWorld = *GetTransform().GetWorldMatrix();
-	CGameInstance::Get().Spawn("CoinEarn.json", effectWorld);
+	CGameInstance::Get().PlayEffect("CoinEarn", effectWorld);
 
 	SetCollisionEnabled(false);
 	SetPendingDestroy();
