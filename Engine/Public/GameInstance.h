@@ -19,6 +19,7 @@
 #include "EventManager.h"
 #include "PhysXManager.h"
 #include "NvClothManager.h"
+#include "TimeManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -84,6 +85,22 @@ public:
 #pragma region TIME_PROVIDER
 public:
 	_float UpdateTimeProvider();
+#pragma endregion
+
+#pragma region TIME_MANAGER
+public:
+	void BeginFrameTime(_float fUnscaledDelta);
+	_float GetUnscaledDelta() const;
+	_float GetScaledDelta() const;
+	_float GetTimeScale() const;
+	_bool BeginTimeScale(
+		const TIME_SCALE_REQUEST_DESC& Desc);
+	_bool EndTimeScale(
+		const StringID& sTag,
+		_float fBlendOut);
+	_bool CancelTimeScale(const StringID& sTag);
+	_bool IsTimeScaleActive(const StringID& sTag) const;
+	void ClearTimeScaleRequests();
 #pragma endregion
 
 #pragma region IMGUI_MANAGER
@@ -672,6 +689,7 @@ private:
 	UPtr<CWorkerManager> m_pWorkerManager{};
 	UPtr<CRenderWorkerManager> m_pRenderWorkerManager{};
 	UPtr<CTimeProvider> m_pTimeProvider{};
+	UPtr<CTimeManager> m_pTimeManager{};
 	UPtr<CPrototypeManager> m_pPrototypeManager{};
 	UPtr<CGameObjectManager> m_pGameObjectManager{};
 	UPtr<CGameObjectPoolManager> m_pGameObjectPoolManager{};

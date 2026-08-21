@@ -606,6 +606,9 @@
     <ClInclude Include="..\Public\TimeProvider.h">
       <Filter>Time</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\TimeManager.h">
+      <Filter>Time</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\Timer.h">
       <Filter>Time</Filter>
     </ClInclude>
@@ -1300,6 +1303,9 @@
       <Filter>Time</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\TimeProvider.cpp">
+      <Filter>Time</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\TimeManager.cpp">
       <Filter>Time</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\BaseApp.cpp">
