@@ -59,6 +59,12 @@ HRESULT CPropBarrel::Initialize(void* pArg)
 	m_sResourceGroup = pDesc->sResourceGroup;
 	m_vModelScale = pDesc->vInitialScale;
 	m_vDebrisConvexScale = pDesc->vConvexScale;
+	m_fCollisionDestroySpeed = std::max(
+		pDesc->fCollisionDestroySpeed, 0.f);
+	m_fCollisionDestroyGraceTime = std::max(
+		pDesc->fCollisionDestroyGraceTime, 0.f);
+	m_fCollisionDestroyElapsed = 0.f;
+	m_fCachedLinearSpeedSquared = 0.f;
 	m_eState = BARREL_STATE::CREATED;
 	GetTransform().SetScale(m_vModelScale);
 	GetTransform().Update();
@@ -111,6 +117,31 @@ HRESULT CPropBarrel::Initialize(void* pArg)
 			return E_FAIL;
 	}
 
+	const _bool bHasInitialImpulse =
+		pDesc->vInitialImpulse.x != 0.f ||
+		pDesc->vInitialImpulse.y != 0.f ||
+		pDesc->vInitialImpulse.z != 0.f;
+	const _bool bHasInitialAngularVelocity =
+		pDesc->vInitialAngularVelocityRadians.x != 0.f ||
+		pDesc->vInitialAngularVelocityRadians.y != 0.f ||
+		pDesc->vInitialAngularVelocityRadians.z != 0.f;
+
+	if (!m_pComPxRigidBody->SetAngularDamping(
+			std::max(pDesc->fAngularDamping, 0.f)) ||
+		!m_pComPxRigidBody->SetAngularVelocity(
+			pDesc->vInitialAngularVelocityRadians) ||
+		(bHasInitialImpulse &&
+			!m_pComPxRigidBody->AddImpulse(pDesc->vInitialImpulse)))
+	{
+		return E_FAIL;
+	}
+
+	if ((bHasInitialImpulse || bHasInitialAngularVelocity) &&
+		!m_pComPxRigidBody->WakeUp())
+	{
+		return E_FAIL;
+	}
+
 	//if (!m_pComPxRigidBody->SetGravityEnabled(false) ||
 	//	!m_pComPxConvexCollider->SetSimulationEnabled(false) ||
 	//	!m_pComPxConvexCollider->SetQueryEnabled(false))
@@ -124,17 +155,24 @@ _bool CPropBarrel::DestroyBarrel()
 	if (m_eState == BARREL_STATE::DESTROYED)
 		return true;
 
+	// 파괴 요청이 Update에서 처리되므로, LateUpdate를 기다리지 않고
+	// 이번 프레임의 최신 PhysX 자세를 먼저 Transform에 반영한다.
+	UpdatePhysicData();
+	GetTransform().Update();
+
 	const _float3 vPosition = GetTransform().GetPosition();
 	const _float4 vRotation = GetTransform().GetQuaternion();
 	const _float3 vScale = GetTransform().GetScale();
 	_float4 vDebrisRotation{};
-	const _vector vRotateX90 = XMQuaternionRotationAxis(
-		XMVectorSet(0.f, 1.f, 0.f, 0.f),
+	const _vector qAxisCorrection = XMQuaternionRotationAxis(
+		XMVectorSet(1.f, 0.f, 0.f, 0.f),
 		XMConvertToRadians(-90.f));
 	XMStoreFloat4(
 		&vDebrisRotation,
 		XMQuaternionNormalize(
-			XMQuaternionMultiply(XMLoadFloat4(&vRotation), vRotateX90)));
+			XMQuaternionMultiply(
+				qAxisCorrection,
+				XMLoadFloat4(&vRotation))));
 	std::vector<CHandle> spawnedDebrisHandles{};
 	spawnedDebrisHandles.reserve(12);
 
@@ -158,7 +196,8 @@ _bool CPropBarrel::DestroyBarrel()
 		desc.vInitialPosition = vPosition;
 		desc.vInitialScale = vScale;
 		desc.vConvexScale = m_vDebrisConvexScale;
-		// 원본 GetTransform().GetQuaternion()을 기준으로 X축 +90도를 합성한다.
+		// 파편 리소스의 X축 -90도 보정을 먼저 적용한 뒤,
+		// 원본 배럴의 현재 월드 회전을 이어서 적용한다.
 		desc.vInitialQuaternion = vDebrisRotation;
 
 		const auto hDebris = CGameInstance::Get().AddGameObjectToLayer(
@@ -183,8 +222,15 @@ _bool CPropBarrel::DestroyBarrel()
 	}
 
 	m_eState = BARREL_STATE::DESTROYED;
-	// 원본 배럴과 Kinematic 파편의 위치가 겹치는지 확인하는 테스트 중이다.
-	// 파편을 만든 뒤에도 원본 배럴을 제거하지 않고 함께 렌더링한다.
+	// 새로 생성된 파편은 다음 프레임부터 렌더 목록에 들어갈 수 있으므로,
+	// 원본 배럴은 이번 프레임까지 렌더하고 다음 Update에서 제거한다.
+	// 대기 중에는 파편과 원본 콜라이더가 겹쳐 밀어내지 않도록 충돌만 끈다.
+	if (m_pComPxConvexCollider)
+	{
+		m_pComPxConvexCollider->SetSimulationEnabled(false);
+		m_pComPxConvexCollider->SetQueryEnabled(false);
+	}
+	m_bDestroyOriginalNextFrame = true;
 	return true;
 }
 
@@ -197,19 +243,56 @@ void CPropBarrel::UpdateGUI()
 	const _bool bCanDestroy =
 		m_eState == BARREL_STATE::CREATED && !GetPendingDestroy();
 	if (bCanDestroy && ImGui::Button("Destroy Prop Barrel"))
-		m_bDestroyRequestedFromGUI = true;
+		m_bDestroyRequested = true;
 	else if (!bCanDestroy)
 		ImGui::TextDisabled("Destroy unavailable");
 }
 
-void CPropBarrel::Update(_float)
+void CPropBarrel::FixedUpdate(_float fTimeDelta)
 {
-	if (!m_bDestroyRequestedFromGUI)
+	if (m_eState != BARREL_STATE::CREATED || !m_pComPxRigidBody)
 		return;
 
-	m_bDestroyRequestedFromGUI = false;
+	m_fCollisionDestroyElapsed += std::max(fTimeDelta, 0.f);
+	const _float3 vVelocity = m_pComPxRigidBody->GetLinearVelocity();
+	m_fCachedLinearSpeedSquared =
+		vVelocity.x * vVelocity.x +
+		vVelocity.y * vVelocity.y +
+		vVelocity.z * vVelocity.z;
+}
+
+void CPropBarrel::Update(_float)
+{
+	if (m_bDestroyOriginalNextFrame)
+	{
+		m_bDestroyOriginalNextFrame = false;
+		SetPendingDestroy();
+		return;
+	}
+
+	if (!m_bDestroyRequested)
+		return;
+
+	m_bDestroyRequested = false;
 	if (!DestroyBarrel())
-		DEBUG_LOG("[PropBarrel] Deferred GUI destroy failed.\n");
+		DEBUG_LOG("[PropBarrel] Deferred destroy failed.\n");
+}
+
+void CPropBarrel::OnCollisionEnter(
+	CGameObject*,
+	const PX_ON_COLLISION_DATA&)
+{
+	if (m_eState != BARREL_STATE::CREATED ||
+		GetPendingDestroy() ||
+		m_fCollisionDestroyElapsed < m_fCollisionDestroyGraceTime)
+	{
+		return;
+	}
+
+	const _float fThresholdSquared =
+		m_fCollisionDestroySpeed * m_fCollisionDestroySpeed;
+	if (m_fCachedLinearSpeedSquared >= fThresholdSquared)
+		m_bDestroyRequested = true;
 }
 
 void CPropBarrel::LateUpdate(_float fTimeDelta)

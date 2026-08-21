@@ -177,7 +177,7 @@ std::future<bool> CLevelTerrainLoader::Load()
 
 					if (FAILED(res->Load(pDesc)))
 					{
-						MSG_BOX("TERRAIN Failed Static_OilBarrel_Resource");
+						MSG_BOX("TERRAIN Failed Static_Oil	Resource");
 						//return false;
 					}
 				}
