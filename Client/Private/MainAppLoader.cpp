@@ -22,6 +22,7 @@
 #include "TextureUI.h"
 #include "TextBox.h"
 #include "HPBar.h"
+#include "UITextureResourceLoader.h"
 #include "SkyCloudyCube.h"
 #include "PropBarrel.h"
 #include "PropBarrelDebris.h"
@@ -791,33 +792,13 @@ HRESULT CMainAppLoader::Create_ActionNode()
 HRESULT CMainAppLoader::Load_UIStaitc_Resource()
 {
 	{
-		namespace fs = std::filesystem;
-
-		std::string targetDir = "./Resources/SampleClient/Textures/UI/UITexture/Loading";
-
-		if (fs::exists(targetDir) && fs::is_directory(targetDir))
-		{
-			for (const auto& entry : fs::directory_iterator(targetDir))
-			{
-				if (entry.is_regular_file() && entry.path().extension() == ".png")
-				{
-					std::string fileName = entry.path().stem().string();
-
-
-					std::string resTag = "TEX_" + fileName;
-
-					std::string fullPath = entry.path().generic_string();
-
-					if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", resTag, E::CResTexture2D::Create(fullPath)))
-					{
-						res->Load();
-					}
-				}
-			}
-		}
+		UITextureResourceLoader::LoadDirectory(
+			"LEVEL_LOADING",
+			"./Resources/SampleClient/Textures/UI/UITexture/Loading");
 	}
 	if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOADING", "Flipbook_LoadingWidget_Houses", 
-		E::CResTexture2D::Create("./Resources/SampleClient/Textures/UI/UITexture/Loading/UI_T_LoadingWidget_Houses.png")))
+		E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath(
+			"./Resources/SampleClient/Textures/UI/UITexture/Loading/UI_T_LoadingWidget_Houses.png"))))
 	{
 		res->Load();
 	}

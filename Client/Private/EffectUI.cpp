@@ -239,6 +239,7 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 	}
 
 	const _bool useAdditiveBlend =
+		m_bAdditiveBlend ||
 		m_UIINFO.Restag == "TEX_UI_T_PointFlame" ||
 		m_UIINFO.Restag == "TEX_VFX_T_SmokeWispy_Tile_D";
 	if (useAdditiveBlend)

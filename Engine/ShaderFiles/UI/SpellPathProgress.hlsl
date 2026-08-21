@@ -55,7 +55,7 @@ float2 EvaluateCurve(float t)
 		t * t * end;
 }
 
-float CalculatePathProgress(float2 uv)
+float CalculateIncendioPathProgress(float2 uv)
 {
 	const float2 start = float2(0.122f, 0.883f);
 	const float2 top = float2(0.480f, 0.086f);
@@ -103,6 +103,68 @@ float CalculatePathProgress(float2 uv)
 	return bestProgress;
 }
 
+float CalculateFlipendoPathProgress(float2 uv)
+{
+	static const uint pointCount = 25u;
+	static const float2 pathPoints[pointCount] =
+	{
+		float2(0.144f, 0.541f),
+		float2(0.166f, 0.571f),
+		float2(0.197f, 0.618f),
+		float2(0.229f, 0.664f),
+		float2(0.260f, 0.710f),
+		float2(0.291f, 0.757f),
+		float2(0.328f, 0.830f),
+		float2(0.354f, 0.679f),
+		float2(0.385f, 0.566f),
+		float2(0.416f, 0.467f),
+		float2(0.447f, 0.382f),
+		float2(0.479f, 0.311f),
+		float2(0.510f, 0.253f),
+		float2(0.541f, 0.208f),
+		float2(0.572f, 0.178f),
+		float2(0.598f, 0.162f),
+		float2(0.635f, 0.188f),
+		float2(0.666f, 0.244f),
+		float2(0.697f, 0.307f),
+		float2(0.729f, 0.362f),
+		float2(0.766f, 0.378f),
+		float2(0.791f, 0.377f),
+		float2(0.822f, 0.345f),
+		float2(0.844f, 0.300f),
+		float2(0.859f, 0.223f)
+	};
+
+	float totalDistance = 0.f;
+	[unroll]
+	for (uint i = 0u; i + 1u < pointCount; ++i)
+		totalDistance += length(pathPoints[i + 1u] - pathPoints[i]);
+
+	float bestDistanceSq = 1e10f;
+	float bestProgress = 0.f;
+	float accumulatedDistance = 0.f;
+	[unroll]
+	for (uint segmentIndex = 0u;
+		segmentIndex + 1u < pointCount;
+		++segmentIndex)
+	{
+		const float segmentDistance = length(
+			pathPoints[segmentIndex + 1u] -
+			pathPoints[segmentIndex]);
+		TestSegment(
+			uv,
+			pathPoints[segmentIndex],
+			pathPoints[segmentIndex + 1u],
+			accumulatedDistance / totalDistance,
+			(accumulatedDistance + segmentDistance) / totalDistance,
+			bestDistanceSq,
+			bestProgress);
+		accumulatedDistance += segmentDistance;
+	}
+
+	return bestProgress;
+}
+
 float4 PSMain(PS_IN input) : SV_Target
 {
 	const float4 pathColor =
@@ -110,7 +172,9 @@ float4 PSMain(PS_IN input) : SV_Target
 	if (pathColor.a < 0.01f)
 		discard;
 
-	const float pixelProgress = CalculatePathProgress(input.uv);
+	const float pixelProgress = g_ui_texCoord.y > 0.5f
+		? CalculateFlipendoPathProgress(input.uv)
+		: CalculateIncendioPathProgress(input.uv);
 	const float currentProgress = saturate(g_ui_texCoord.x);
 	if (currentProgress <= 0.0001f)
 		discard;

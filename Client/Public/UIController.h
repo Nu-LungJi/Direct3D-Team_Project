@@ -40,7 +40,7 @@ public:
 	void CreateSpellType();  // b눌렀을때 스펠 슬롯 설정 생성
 	void DeleteSpellType(); // b눌렀을때 스펠 슬롯 설정 해제
 	void CreateDeathScene(); // 죽는 화면
-	_bool StartSpellMiniGame();
+	_bool StartSpellMiniGame(_bool secondGame = false);
 	void StopSpellMiniGame();
 
 	// ******** HP

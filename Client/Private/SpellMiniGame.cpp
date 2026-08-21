@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "SpellMiniGame.h"
 
+#include "BoostTrailInstancedUI.h"
 #include "GameInstance.h"
 #include "EffectUI.h"
 #include "Level_Defines.h"
@@ -61,15 +62,24 @@ HRESULT CSpellMiniGame::Initialize(void* pArg)
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
 
+	if (pArg)
+		m_eMode = static_cast<DESC*>(pArg)->Mode;
+
 	const _float2 clientSize =
 		E::CGameInstance::Get().GetClientScreenSize();
-	m_fPathSize = std::min(clientSize.x, clientSize.y) * 0.82f;
+	const _float pathScreenRatio = m_eMode == MODE::FLIPENDO ?
+		FLIPENDO_PATH_SCREEN_RATIO : INCENDIO_PATH_SCREEN_RATIO;
+	m_fPathSize = std::min(clientSize.x, clientSize.y) *
+		pathScreenRatio;
 	m_vPathTopLeft = {
 		(clientSize.x - m_fPathSize) * 0.5f,
 		(clientSize.y - m_fPathSize) * 0.5f
 	};
 
-	BuildIncendioPath();
+	if (m_eMode == MODE::FLIPENDO)
+		BuildFlipendoPath();
+	else
+		BuildIncendioPath();
 	if (m_PathSamples.size() < 2 || !CreateVisuals())
 		return E_FAIL;
 
@@ -92,6 +102,7 @@ void CSpellMiniGame::Update(_float fTimeDelta)
 		MAX_MOVEMENT_DELTA);
 	UpdateTransientEffects(safeDelta);
 	UpdateBoostTrailParticles(safeDelta);
+	UpdateChaserTrailParticles(safeDelta);
 	if (m_eState == STATE::INTRO)
 	{
 		UpdateIntro(fTimeDelta);
@@ -205,9 +216,16 @@ void CSpellMiniGame::Update(_float fTimeDelta)
 		EvaluatePosition(m_fPathDistance),
 		facingDirection);
 	UpdateBoostCursorRipple(safeDelta);
+	_float2 boostTrailOrigin = EvaluatePosition(m_fPathDistance);
+	if (auto* cursor = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_hCursor))
+	{
+		// Use the cursor UI's final screen-space center after its visual update.
+		boostTrailOrigin = cursor->GetPos();
+	}
 	UpdateBoostTrailEmitter(
 		safeDelta,
-		EvaluatePosition(m_fPathDistance),
+		boostTrailOrigin,
 		EvaluateForward(m_fPathDistance));
 	if (auto* pathProgress = E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextureUI>(m_hPathProgress))
@@ -223,6 +241,55 @@ void CSpellMiniGame::Update(_float fTimeDelta)
 
 void CSpellMiniGame::LateUpdate(_float)
 {
+	if (!m_pBoostTrailRenderer)
+		return;
+
+	m_pBoostTrailRenderer->ClearInstances();
+	for (const BOOST_TRAIL_PARTICLE& particle : m_BoostTrailParticles)
+	{
+		if (particle.RemainingTime <= 0.f ||
+			particle.RenderSize.x <= 0.f ||
+			particle.RenderSize.y <= 0.f)
+		{
+			continue;
+		}
+
+		m_pBoostTrailRenderer->AddInstance({
+			.Position = particle.RenderPosition,
+			.Size = particle.RenderSize,
+			.Rotation = particle.Rotation,
+			.Color = { 0.34f, 0.82f, 1.65f, BOOST_TRAIL_ALPHA },
+			.Frame = particle.Frame
+			});
+	}
+	m_pBoostTrailRenderer->LateUpdate(0.f);
+
+	if (!m_pChaserTrailRenderer)
+		return;
+
+	m_pChaserTrailRenderer->ClearInstances();
+	for (const BOOST_TRAIL_PARTICLE& particle : m_ChaserTrailParticles)
+	{
+		if (particle.RemainingTime <= 0.f ||
+			particle.RenderSize.x <= 0.f ||
+			particle.RenderSize.y <= 0.f)
+		{
+			continue;
+		}
+
+		m_pChaserTrailRenderer->AddInstance({
+			.Position = particle.RenderPosition,
+			.Size = particle.RenderSize,
+			.Rotation = particle.Rotation,
+			.Color = {
+				CHASER_TRAIL_MAX_BRIGHTNESS,
+				CHASER_TRAIL_MAX_BRIGHTNESS * 0.12f,
+				CHASER_TRAIL_MAX_BRIGHTNESS * 0.08f,
+				CHASER_TRAIL_ALPHA },
+			.Frame = particle.Frame
+			});
+	}
+	m_pChaserTrailRenderer->LateUpdate(0.f);
 }
 
 HRESULT CSpellMiniGame::Render(
@@ -493,6 +560,13 @@ _bool CSpellMiniGame::CreateVisuals()
 		m_vPathTopLeft.x + m_fPathSize * 0.5f,
 		m_vPathTopLeft.y + m_fPathSize * 0.5f
 	};
+	const _bool isSecondGame = m_eMode == MODE::FLIPENDO;
+	const char* pathResourceTag = isSecondGame
+		? "TEX_UI_T_SU_Flipendo_Path"
+		: "TEX_UI_T_SU_Incendio_Path";
+	const char* pathObjectPrefix = isSecondGame
+		? "SpellMiniGame_FlipendoPath"
+		: "SpellMiniGame_IncendioPath";
 
 	auto createTexture = [&currentLevel](
 		const std::string& objectTag,
@@ -535,15 +609,15 @@ _bool CSpellMiniGame::CreateVisuals()
 		return false;
 
 	m_hPath = createTexture(
-		"SpellMiniGame_IncendioPath",
-		"TEX_UI_T_SU_Incendio_Path",
+		pathObjectPrefix,
+		pathResourceTag,
 		screenCenter,
 		{ m_fPathSize, m_fPathSize },
 		900,
 		{ 0.20f, 0.20f, 0.20f });
 	m_hIntroPathProgress = createTexture(
-		"SpellMiniGame_IncendioPathIntro",
-		"TEX_UI_T_SU_Incendio_Path",
+		std::string{ pathObjectPrefix } + "Intro",
+		pathResourceTag,
 		screenCenter,
 		{ m_fPathSize, m_fPathSize },
 		901,
@@ -552,11 +626,12 @@ _bool CSpellMiniGame::CreateVisuals()
 		GetGameObjectByHandleT<CTextureUI>(m_hIntroPathProgress))
 	{
 		introPath->SetPathProgressMode(true);
+		introPath->SetPathProgressType(isSecondGame ? 1u : 0u);
 		introPath->SetPathProgress(0.f);
 	}
 	m_hPathProgress = createTexture(
-		"SpellMiniGame_IncendioPathProgress",
-		"TEX_UI_T_SU_Incendio_Path",
+		std::string{ pathObjectPrefix } + "Progress",
+		pathResourceTag,
 		screenCenter,
 		{ m_fPathSize, m_fPathSize },
 		902,
@@ -565,11 +640,12 @@ _bool CSpellMiniGame::CreateVisuals()
 		GetGameObjectByHandleT<CTextureUI>(m_hPathProgress))
 	{
 		pathProgress->SetPathProgressMode(true);
+		pathProgress->SetPathProgressType(isSecondGame ? 1u : 0u);
 		pathProgress->SetPathProgress(0.f);
 	}
 	m_hChaserPathProgress = createTexture(
 		"SpellMiniGame_ChaserPathProgress",
-		"TEX_UI_T_SU_Incendio_Path",
+		pathResourceTag,
 		screenCenter,
 		{ m_fPathSize, m_fPathSize },
 		903,
@@ -578,13 +654,16 @@ _bool CSpellMiniGame::CreateVisuals()
 		GetGameObjectByHandleT<CTextureUI>(m_hChaserPathProgress))
 	{
 		chaserPath->SetPathProgressMode(true);
+		chaserPath->SetPathProgressType(isSecondGame ? 1u : 0u);
 		chaserPath->SetPathProgress(0.f);
 		chaserPath->SetAlpha(0.f);
 	}
 
 	CSpellMeter::UIOBJECT_DESC spellMeterDesc{};
-	spellMeterDesc.sObjectTag = "SpellMiniGame_Destination_Bombarda";
-	spellMeterDesc.Name = "SpellMiniGame_Destination_Bombarda";
+	spellMeterDesc.sObjectTag = isSecondGame
+		? "SpellMiniGame_Destination_AvadaKedavra"
+		: "SpellMiniGame_Destination_Transformation";
+	spellMeterDesc.Name = spellMeterDesc.sObjectTag;
 	const _float2 destinationPosition =
 		EvaluatePosition(m_fTotalPathDistance);
 	if (!CreateDestinationSuccessFlame(destinationPosition, currentLevel))
@@ -613,8 +692,9 @@ _bool CSpellMiniGame::CreateVisuals()
 	spellMeterDesc.fSizeX = DESTINATION_SPELL_METER_SIZE;
 	spellMeterDesc.fSizeY = DESTINATION_SPELL_METER_SIZE;
 	spellMeterDesc.fAlpha = 1.f;
-	spellMeterDesc.ResTag =
-		"TEX_UI_T_spellmeter_Bombarda_Overlay";
+	spellMeterDesc.ResTag = isSecondGame
+		? "TEX_UI_T_spellmeter_AvadaKedavra_Overlay"
+		: "TEX_UI_T_spellmeter_TransformationOverlandOverlay";
 	spellMeterDesc.ResWeight = 906;
 	spellMeterDesc.UIType = ETOUI(UI_TYPE::SPELLMETER);
 	auto spellMeterHandle = E::CGameInstance::Get().AddGameObjectToLayer(
@@ -628,7 +708,9 @@ _bool CSpellMiniGame::CreateVisuals()
 		if (auto* spellMeter = E::CGameInstance::Get().
 			GetGameObjectByHandleT<CSpellMeter>(*spellMeterHandle))
 		{
-			spellMeter->SetSpellType(ETOUI(SPELL_TYPE::BOMBARDA));
+			spellMeter->SetSpellType(isSecondGame
+				? ETOUI(SPELL_TYPE::AVADAKEDAVRA)
+				: ETOUI(SPELL_TYPE::TRANSFORMATION));
 			spellMeter->SetFillAmount(0.f);
 			spellMeter->SetInputLcok(true);
 		}
@@ -661,10 +743,17 @@ _bool CSpellMiniGame::CreateVisuals()
 			BOOST_CURSOR_RIPPLE_MIN_SIZE
 		},
 		909,
-		{ 0.32f, 1.05f, 1.85f });
+		{
+			0.32f * BOOST_CURSOR_RIPPLE_BRIGHTNESS,
+			1.05f * BOOST_CURSOR_RIPPLE_BRIGHTNESS,
+			1.85f * BOOST_CURSOR_RIPPLE_BRIGHTNESS
+		});
 	if (auto* ripple = E::CGameInstance::Get().
-		GetGameObjectByHandleT<E::CUIObject>(m_hBoostCursorRipple))
+		GetGameObjectByHandleT<CTextureUI>(m_hBoostCursorRipple))
 	{
+		// LoadingGlow has an opaque black background in its source image.
+		// Additive blending keeps only the luminous ring visible.
+		ripple->SetAdditiveBlend(true);
 		ripple->SetAlpha(0.f);
 		ripple->SetActive(false);
 		ripple->SetVisible(false);
@@ -679,14 +768,22 @@ _bool CSpellMiniGame::CreateVisuals()
 		{ 0.f, 0.f, 0.f });
 	m_hChaserCursor = createTexture(
 		"SpellMiniGame_ChaserCursor",
-		"TEX_UI_T_SpellMinigame_SpeedBurstDropBack",
+		"TEX_VFX_T_Mask_BrazierFlare_D",
 		startPosition,
 		{ CHASER_CURSOR_SIZE, CHASER_CURSOR_SIZE },
 		905,
-		{ 0.f, 0.f, 0.f });
+		{
+			CHASER_CURSOR_BRIGHTNESS,
+			CHASER_CURSOR_BRIGHTNESS * 0.020833f,
+			CHASER_CURSOR_BRIGHTNESS * 0.01f
+		});
 	if (auto* chaserCursor = E::CGameInstance::Get().
-		GetGameObjectByHandleT<E::CUIObject>(m_hChaserCursor))
+		GetGameObjectByHandleT<CTextureUI>(m_hChaserCursor))
 	{
+		// The mask's white luminance becomes red while its black background
+		// disappears through additive blending. Its bright top faces forward,
+		// leaving the dark lower notch opposite the smoothed travel direction.
+		chaserCursor->SetAdditiveBlend(true);
 		chaserCursor->SetAlpha(0.f);
 	}
 	m_hStartPadBackdrop = createTexture(
@@ -714,11 +811,17 @@ _bool CSpellMiniGame::CreateVisuals()
 		const char* ObjectTag{};
 	};
 
-	constexpr BOOST_PAD_DESC boostPadDescs[] = {
-		{ 0.20f, DIK_X, "TEX_UI_T_cbi_buttonX", "SpellMiniGame_BoostPad_X_01" },
-		{ 0.61f, DIK_A, "TEX_UI_T_cbi_button_Abutton", "SpellMiniGame_BoostPad_A_01" },
-		{ 0.86f, DIK_A, "TEX_UI_T_cbi_button_Abutton", "SpellMiniGame_BoostPad_A_02" }
-	};
+	const std::array<BOOST_PAD_DESC, 3> boostPadDescs = isSecondGame
+		? std::array<BOOST_PAD_DESC, 3>{ {
+			{ 0.25f, DIK_X, "TEX_UI_T_cbi_buttonX", "SpellMiniGame2_BoostPad_X_01" },
+			{ 0.50f, DIK_A, "TEX_UI_T_cbi_button_Abutton", "SpellMiniGame2_BoostPad_A_01" },
+			{ 0.75f, DIK_X, "TEX_UI_T_cbi_buttonX", "SpellMiniGame2_BoostPad_X_02" }
+		} }
+		: std::array<BOOST_PAD_DESC, 3>{ {
+			{ 0.20f, DIK_X, "TEX_UI_T_cbi_buttonX", "SpellMiniGame_BoostPad_X_01" },
+			{ 0.61f, DIK_A, "TEX_UI_T_cbi_button_Abutton", "SpellMiniGame_BoostPad_A_01" },
+			{ 0.86f, DIK_A, "TEX_UI_T_cbi_button_Abutton", "SpellMiniGame_BoostPad_A_02" }
+		} };
 
 	m_BoostPads.clear();
 	for (const BOOST_PAD_DESC& padDesc : boostPadDescs)
@@ -833,9 +936,10 @@ void CSpellMiniGame::DestroyVisuals()
 	DestroyUIHandle(m_hDestinationSpellMeter);
 	DestroyUIHandle(m_hDestinationSuccessDiamond);
 	DestroyUIHandle(m_hDestinationSuccessFlame);
-	for (BOOST_TRAIL_PARTICLE& particle : m_BoostTrailParticles)
-		DestroyUIHandle(particle.Handle);
 	m_BoostTrailParticles.clear();
+	m_pBoostTrailRenderer.reset();
+	m_ChaserTrailParticles.clear();
+	m_pChaserTrailRenderer.reset();
 	DestroyUIHandle(m_hChaserPathProgress);
 	DestroyUIHandle(m_hPathProgress);
 	DestroyUIHandle(m_hIntroPathProgress);
@@ -870,6 +974,63 @@ void CSpellMiniGame::BuildIncendioPath()
 		curveControl,
 		end,
 		64);
+
+	if (!m_PathSamples.empty())
+		m_fTotalPathDistance =
+			m_PathSamples.back().AccumulatedDistance;
+}
+
+void CSpellMiniGame::BuildFlipendoPath()
+{
+	m_PathSamples.clear();
+	m_fTotalPathDistance = 0.f;
+
+	const auto toScreen = [this](const _float2& normalized)
+		{
+			return _float2{
+				m_vPathTopLeft.x + normalized.x * m_fPathSize,
+				m_vPathTopLeft.y + normalized.y * m_fPathSize
+			};
+		};
+
+	// Flipendo texture center line, ordered from the left endpoint to the
+	// right endpoint. The dense samples keep cursor steering smooth while
+	// matching the visible center line of the authored texture.
+	constexpr std::array<_float2, 25> pathPoints = { {
+		{ 0.144f, 0.541f },
+		{ 0.166f, 0.571f },
+		{ 0.197f, 0.618f },
+		{ 0.229f, 0.664f },
+		{ 0.260f, 0.710f },
+		{ 0.291f, 0.757f },
+		{ 0.328f, 0.830f },
+		{ 0.354f, 0.679f },
+		{ 0.385f, 0.566f },
+		{ 0.416f, 0.467f },
+		{ 0.447f, 0.382f },
+		{ 0.479f, 0.311f },
+		{ 0.510f, 0.253f },
+		{ 0.541f, 0.208f },
+		{ 0.572f, 0.178f },
+		{ 0.598f, 0.162f },
+		{ 0.635f, 0.188f },
+		{ 0.666f, 0.244f },
+		{ 0.697f, 0.307f },
+		{ 0.729f, 0.362f },
+		{ 0.766f, 0.378f },
+		{ 0.791f, 0.377f },
+		{ 0.822f, 0.345f },
+		{ 0.844f, 0.300f },
+		{ 0.859f, 0.223f }
+	} };
+
+	for (size_t index = 0; index + 1 < pathPoints.size(); ++index)
+	{
+		AppendLine(
+			toScreen(pathPoints[index]),
+			toScreen(pathPoints[index + 1]),
+			8u);
+	}
 
 	if (!m_PathSamples.empty())
 		m_fTotalPathDistance =
@@ -1013,53 +1174,24 @@ _float2 CSpellMiniGame::EvaluateForward(_float distance) const
 _bool CSpellMiniGame::CreateBoostTrailPool(
 	const std::string& currentLevel)
 {
+	(void)currentLevel;
 	m_BoostTrailParticles.clear();
-	m_BoostTrailParticles.reserve(BOOST_TRAIL_POOL_SIZE);
-
-	for (size_t index = 0; index < BOOST_TRAIL_POOL_SIZE; ++index)
-	{
-		CEffectUI::FLIPBOOK_DESC desc{};
-		desc.sObjectTag =
-			"SpellMiniGame_BoostTrailWispy_" + std::to_string(index);
-		desc.Name = desc.sObjectTag;
-		desc.fX = 0.f;
-		desc.fY = 0.f;
-		desc.fSizeX = BOOST_TRAIL_WIDTH;
-		desc.fSizeY = BOOST_TRAIL_HEIGHT;
-		desc.fAlpha = 0.f;
-		desc.ResTag = "TEX_VFX_T_SmokeWispy_Tile_D";
-		desc.ResWeight = 908;
-		desc.UIType = ETOUI(UI_TYPE::FLIPBOOK);
-		desc.cellsize = 2048;
-		desc.Padding = 0;
-		desc.TotalFrame = 36;
-		desc.Columns = 6;
-		desc.Rows = 6;
-		desc.Duration = BOOST_TRAIL_FLIPBOOK_DURATION;
-
-		const auto handle = E::CGameInstance::Get().AddGameObjectToLayer(
-			currentLevel,
-			"Prototype_GameObject_EffectUI",
-			"Layer_UI",
-			&desc);
-		if (!handle)
-			return false;
-
-		auto* particle = E::CGameInstance::Get().
-			GetGameObjectByHandleT<CEffectUI>(*handle);
-		if (!particle)
-			return false;
-
-		particle->SetColor({ 0.12f, 0.52f, 1.75f });
-		particle->SetAlpha(0.f);
-		particle->SetInputLcok(true);
-		particle->SetActive(false);
-		particle->SetVisible(false);
-		particle->CalcUICoord();
-		m_BoostTrailParticles.push_back({ .Handle = *handle });
-	}
-
-	return m_BoostTrailParticles.size() == BOOST_TRAIL_POOL_SIZE;
+	m_BoostTrailParticles.resize(BOOST_TRAIL_POOL_SIZE);
+	m_pBoostTrailRenderer = CBoostTrailInstancedUI::Create(
+		BOOST_TRAIL_POOL_SIZE,
+		BOOST_TRAIL_WEIGHT);
+	m_ChaserTrailParticles.clear();
+	m_ChaserTrailParticles.resize(CHASER_TRAIL_POOL_SIZE);
+	m_pChaserTrailRenderer = CBoostTrailInstancedUI::Create(
+		CHASER_TRAIL_POOL_SIZE,
+		CHASER_TRAIL_WEIGHT,
+		"TEX_VFX_T_SmokeMedium_8x8_D",
+		8,
+		8,
+		CHASER_TRAIL_ATLAS_SIZE,
+		true);
+	return m_pBoostTrailRenderer != nullptr &&
+		m_pChaserTrailRenderer != nullptr;
 }
 
 void CSpellMiniGame::UpdateBoostTrailEmitter(
@@ -1083,7 +1215,61 @@ void CSpellMiniGame::UpdateBoostTrailEmitter(
 	while (m_fBoostTrailSpawnAccumulator >= BOOST_TRAIL_SPAWN_INTERVAL)
 	{
 		m_fBoostTrailSpawnAccumulator -= BOOST_TRAIL_SPAWN_INTERVAL;
-		EmitBoostTrailParticle(position, facingDirection);
+		const _float rotationCenter =
+			(BOOST_TRAIL_ROTATION_OFFSET_MIN +
+				BOOST_TRAIL_ROTATION_OFFSET_MAX) * 0.5f;
+		const _float rotationAmplitude =
+			std::max(
+				0.f,
+				(BOOST_TRAIL_ROTATION_OFFSET_MAX -
+					BOOST_TRAIL_ROTATION_OFFSET_MIN) * 0.5f -
+					BOOST_TRAIL_ROTATION_JITTER);
+		const _float rotationOffset = rotationCenter +
+			sinf(m_fBoostTrailWavePhase) * rotationAmplitude;
+
+		static std::mt19937 jitterGenerator{ std::random_device{}() };
+		static std::uniform_real_distribution<_float> jitterDistribution{
+			-BOOST_TRAIL_ROTATION_JITTER,
+			BOOST_TRAIL_ROTATION_JITTER
+		};
+		static std::uniform_real_distribution<_float> randomRotationDistribution{
+			BOOST_TRAIL_ROTATION_OFFSET_MIN,
+			BOOST_TRAIL_ROTATION_OFFSET_MAX
+		};
+		const _float boostLifeRatio = std::clamp(
+			BOOST_DURATION > FLT_EPSILON ?
+				m_fBoostTimeRemaining / BOOST_DURATION : 0.f,
+			0.f,
+			1.f);
+		const _float emissionScale = std::lerp(
+			BOOST_TRAIL_EMISSION_END_SCALE,
+			1.f,
+			boostLifeRatio);
+		for (size_t particleIndex = 0;
+			particleIndex < BOOST_TRAIL_BURST_COUNT;
+			++particleIndex)
+		{
+			const _bool useSineRotation =
+				particleIndex % BOOST_TRAIL_SINE_ROTATION_PERIOD == 0;
+			const _float particleRotationOffset = useSineRotation ?
+				rotationOffset + jitterDistribution(jitterGenerator) :
+				randomRotationDistribution(jitterGenerator);
+			const _float distanceScale = useSineRotation ?
+				BOOST_TRAIL_SINE_DISTANCE_SCALE :
+				BOOST_TRAIL_RANDOM_DISTANCE_SCALE;
+			EmitBoostTrailParticle(
+				position,
+				facingDirection,
+				particleRotationOffset,
+				emissionScale,
+				distanceScale);
+		}
+
+		m_fBoostTrailWavePhase = fmodf(
+			m_fBoostTrailWavePhase +
+				BOOST_TRAIL_ROTATION_WAVE_SPEED *
+				BOOST_TRAIL_SPAWN_INTERVAL,
+			XM_2PI);
 	}
 }
 
@@ -1094,14 +1280,6 @@ void CSpellMiniGame::UpdateBoostTrailParticles(_float fTimeDelta)
 		if (particle.RemainingTime <= 0.f)
 			continue;
 
-		auto* effect = E::CGameInstance::Get().
-			GetGameObjectByHandleT<CEffectUI>(particle.Handle);
-		if (!effect || effect->GetPendingDestroy())
-		{
-			particle.RemainingTime = 0.f;
-			continue;
-		}
-
 		particle.RemainingTime = std::max(
 			0.f,
 			particle.RemainingTime - fTimeDelta);
@@ -1110,10 +1288,8 @@ void CSpellMiniGame::UpdateBoostTrailParticles(_float fTimeDelta)
 			particle.RemainingTime / particle.Duration : 0.f,
 			0.f,
 			1.f);
-		const _float fadeRatio =
-			lifeRatio * (2.f - lifeRatio);
 		const _float elapsedRatio = 1.f - lifeRatio;
-		const _float driftRatio = elapsedRatio * elapsedRatio;
+		const _float driftRatio = elapsedRatio * (2.f - elapsedRatio);
 		const _float2 driftedPosition = Lerp(
 			particle.SpawnPosition,
 			particle.CenterPosition,
@@ -1134,29 +1310,37 @@ void CSpellMiniGame::UpdateBoostTrailParticles(_float fTimeDelta)
 			driftedPosition.y +
 				particle.LateralDirection.y * waveOffset
 		};
-		const _float sizeScale = std::lerp(
-			1.f,
-			BOOST_TRAIL_END_SIZE_SCALE,
-			elapsedRatio);
-		effect->SetPos(currentPosition);
-		effect->SetAlpha(BOOST_TRAIL_MAX_ALPHA * fadeRatio);
-		effect->SetSize({
+		const _float sizeScale = particle.InitialScale * lifeRatio;
+		const _float effectRotationRadians =
+			XMConvertToRadians(particle.Rotation);
+		const _float visualCenterCorrection =
+			BOOST_TRAIL_VISUAL_CENTER_CORRECTION * sizeScale;
+		particle.RenderPosition = {
+			currentPosition.x +
+				cosf(effectRotationRadians) * visualCenterCorrection,
+			currentPosition.y -
+				sinf(effectRotationRadians) * visualCenterCorrection
+		};
+		particle.RenderSize = {
 			BOOST_TRAIL_WIDTH * sizeScale,
 			BOOST_TRAIL_HEIGHT * sizeScale
-			});
-		effect->CalcUICoord();
+		};
+		const _float elapsed = particle.Duration - particle.RemainingTime;
+		particle.Frame = std::min(
+			35u,
+			static_cast<uint32_t>(std::max(0.f, elapsed) /
+				std::max(BOOST_TRAIL_FLIPBOOK_DURATION, FLT_EPSILON) * 36.f));
 		if (particle.RemainingTime <= 0.f)
-		{
-			effect->SetAlpha(0.f);
-			effect->SetActive(false);
-			effect->SetVisible(false);
-		}
+			particle.RenderSize = {};
 	}
 }
 
 void CSpellMiniGame::EmitBoostTrailParticle(
 	const _float2& position,
-	const _float2& facingDirection)
+	const _float2& facingDirection,
+	_float rotationOffset,
+	_float initialScale,
+	_float distanceScale)
 {
 	if (m_BoostTrailParticles.empty())
 		return;
@@ -1165,56 +1349,68 @@ void CSpellMiniGame::EmitBoostTrailParticle(
 		m_BoostTrailParticles[m_iNextBoostTrailParticle];
 	m_iNextBoostTrailParticle =
 		(m_iNextBoostTrailParticle + 1) % m_BoostTrailParticles.size();
-	auto* effect = E::CGameInstance::Get().
-		GetGameObjectByHandleT<CEffectUI>(particle.Handle);
-	if (!effect)
-		return;
 
 	const _float2 direction = Normalize(facingDirection);
-	const _float2 lateralDirection = { -direction.y, direction.x };
-	const _float2 anchoredPosition = {
-		position.x - direction.x *
-			BOOST_TRAIL_SOURCE_ANCHOR_OFFSET,
-		position.y - direction.y *
-			BOOST_TRAIL_SOURCE_ANCHOR_OFFSET
-	};
 	static std::mt19937 generator{ std::random_device{}() };
-	static std::uniform_real_distribution<_float> lateralOffsetDistribution{
-		BOOST_TRAIL_LATERAL_OFFSET_MIN,
-		BOOST_TRAIL_LATERAL_OFFSET_MAX
+	static std::uniform_real_distribution<_float> backwardDistanceDistribution{
+		BOOST_TRAIL_BACKWARD_DISTANCE_MIN,
+		BOOST_TRAIL_BACKWARD_DISTANCE_MAX
 	};
-	const _float lateralOffset = lateralOffsetDistribution(generator);
-	const _float side = m_bNextBoostTrailLeft ? -1.f : 1.f;
-	m_bNextBoostTrailLeft = !m_bNextBoostTrailLeft;
+	static std::uniform_real_distribution<_float> phaseDistribution{
+		0.f,
+		XM_2PI
+	};
+	const _float backwardDistance =
+		backwardDistanceDistribution(generator) *
+		std::max(0.f, distanceScale);
+	const _float rotationOffsetRadians = XMConvertToRadians(rotationOffset);
+	const _float cosOffset = cosf(rotationOffsetRadians);
+	const _float sinOffset = sinf(rotationOffsetRadians);
+	const _float2 backwardDirection = { -direction.x, -direction.y };
+	const _float2 smokeDirection = Normalize({
+		backwardDirection.x * cosOffset - backwardDirection.y * sinOffset,
+		backwardDirection.x * sinOffset + backwardDirection.y * cosOffset
+		});
+	const _float2 smokeLateralDirection = {
+		-smokeDirection.y,
+		smokeDirection.x
+	};
 	const _float2 driftTarget = {
-		anchoredPosition.x + lateralDirection.x * lateralOffset * side,
-		anchoredPosition.y + lateralDirection.y * lateralOffset * side
+		position.x + smokeDirection.x * backwardDistance,
+		position.y + smokeDirection.y * backwardDistance
 	};
-	const _float angle = XMConvertToDegrees(
-		atan2f(direction.y, direction.x));
+	_float cursorRotation = 0.f;
+	if (auto* cursor = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_hCursor))
+	{
+		cursorRotation = cursor->GetUIInfo().Rot;
+	}
 
-	effect->Restart();
-	// Place the first frame's visible smoke center on the cursor. The atlas
-	// frame itself is not visually centered, so the quad needs a local offset.
-	effect->SetPos(anchoredPosition);
-	// SmokeWispy animates from the bottom toward the top of each frame.
-	// Aim that visual motion opposite to the cursor's travel direction.
-	effect->GetUIInfo().Rot = 90.f - angle;
-	effect->SetSize({ BOOST_TRAIL_WIDTH, BOOST_TRAIL_HEIGHT });
-	effect->SetColor({ 0.12f, 0.52f, 1.75f });
-	effect->SetAlpha(BOOST_TRAIL_MAX_ALPHA);
-	effect->SetActive(true);
-	effect->SetVisible(true);
-	effect->CalcUICoord();
+	// Keep the visible smoke centered on the cursor. The atlas artwork itself
+	// is biased toward local -X, so offset its quad in rotated local +X.
+	// Screen-space positive rotation and UI rotation use opposite signs.
+	particle.Rotation = cursorRotation + 180.f - rotationOffset;
+	const _float effectRotationRadians = XMConvertToRadians(
+		particle.Rotation);
+	initialScale = std::clamp(initialScale, 0.f, 1.f);
+	particle.RenderPosition = {
+		position.x + cosf(effectRotationRadians) *
+			BOOST_TRAIL_VISUAL_CENTER_CORRECTION * initialScale,
+		position.y - sinf(effectRotationRadians) *
+			BOOST_TRAIL_VISUAL_CENTER_CORRECTION * initialScale
+	};
+	particle.RenderSize = {
+		BOOST_TRAIL_WIDTH * initialScale,
+		BOOST_TRAIL_HEIGHT * initialScale
+	};
 	particle.RemainingTime = BOOST_TRAIL_PARTICLE_DURATION;
 	particle.Duration = BOOST_TRAIL_PARTICLE_DURATION;
-	particle.SpawnPosition = anchoredPosition;
+	particle.SpawnPosition = position;
 	particle.CenterPosition = driftTarget;
-	particle.LateralDirection = lateralDirection;
-	particle.WavePhase = m_fBoostTrailWavePhase;
-	m_fBoostTrailWavePhase = fmodf(
-		m_fBoostTrailWavePhase + BOOST_TRAIL_WAVE_PHASE_STEP,
-		XM_2PI);
+	particle.LateralDirection = smokeLateralDirection;
+	particle.WavePhase = phaseDistribution(generator);
+	particle.InitialScale = initialScale;
+	particle.Frame = 0;
 }
 
 void CSpellMiniGame::ClearBoostTrailParticles()
@@ -1230,15 +1426,152 @@ void CSpellMiniGame::ClearBoostTrailParticles()
 		particle.SpawnPosition = {};
 		particle.CenterPosition = {};
 		particle.LateralDirection = {};
+		particle.RenderPosition = {};
+		particle.RenderSize = {};
+		particle.Rotation = 0.f;
 		particle.WavePhase = 0.f;
-		if (auto* effect = E::CGameInstance::Get().
-			GetGameObjectByHandleT<CEffectUI>(particle.Handle))
+		particle.InitialScale = 1.f;
+		particle.Frame = 0;
+	}
+	if (m_pBoostTrailRenderer)
+		m_pBoostTrailRenderer->ClearInstances();
+}
+
+void CSpellMiniGame::UpdateChaserTrailEmitter(
+	_float fTimeDelta,
+	const _float2& position,
+	const _float2& facingDirection)
+{
+	if (!m_bChaserActive || m_eState != STATE::RUNNING)
+	{
+		m_fChaserTrailSpawnAccumulator = 0.f;
+		return;
+	}
+
+	m_fChaserTrailSpawnAccumulator += std::max(0.f, fTimeDelta);
+	static std::mt19937 generator{ std::random_device{}() };
+	static std::uniform_real_distribution<_float> rotationDistribution{
+		CHASER_TRAIL_ROTATION_OFFSET_MIN,
+		CHASER_TRAIL_ROTATION_OFFSET_MAX
+	};
+	while (m_fChaserTrailSpawnAccumulator >= CHASER_TRAIL_SPAWN_INTERVAL)
+	{
+		m_fChaserTrailSpawnAccumulator -= CHASER_TRAIL_SPAWN_INTERVAL;
+		for (size_t index = 0; index < CHASER_TRAIL_BURST_COUNT; ++index)
 		{
-			effect->SetAlpha(0.f);
-			effect->SetActive(false);
-			effect->SetVisible(false);
+			EmitChaserTrailParticle(
+				position,
+				facingDirection,
+				rotationDistribution(generator));
 		}
 	}
+}
+
+void CSpellMiniGame::UpdateChaserTrailParticles(_float fTimeDelta)
+{
+	for (BOOST_TRAIL_PARTICLE& particle : m_ChaserTrailParticles)
+	{
+		if (particle.RemainingTime <= 0.f)
+			continue;
+
+		particle.RemainingTime = std::max(
+			0.f,
+			particle.RemainingTime - std::max(0.f, fTimeDelta));
+		const _float lifeRatio = std::clamp(
+			particle.Duration > FLT_EPSILON ?
+				particle.RemainingTime / particle.Duration : 0.f,
+			0.f,
+			1.f);
+		const _float elapsedRatio = 1.f - lifeRatio;
+		const _float driftRatio = elapsedRatio * (2.f - elapsedRatio);
+		particle.RenderPosition = Lerp(
+			particle.SpawnPosition,
+			particle.CenterPosition,
+			driftRatio);
+		particle.RenderSize = {
+			CHASER_TRAIL_WIDTH * lifeRatio,
+			CHASER_TRAIL_HEIGHT * lifeRatio
+		};
+		particle.Frame = std::min(
+			63u,
+			static_cast<uint32_t>(
+				elapsedRatio * 64.f));
+
+		if (particle.RemainingTime <= 0.f)
+			particle.RenderSize = {};
+	}
+}
+
+void CSpellMiniGame::EmitChaserTrailParticle(
+	const _float2& position,
+	const _float2& facingDirection,
+	_float rotationOffset)
+{
+	if (m_ChaserTrailParticles.empty())
+		return;
+
+	BOOST_TRAIL_PARTICLE& particle =
+		m_ChaserTrailParticles[m_iNextChaserTrailParticle];
+	m_iNextChaserTrailParticle =
+		(m_iNextChaserTrailParticle + 1) %
+		m_ChaserTrailParticles.size();
+
+	const _float2 direction = Normalize(facingDirection);
+	if (Length(direction) <= FLT_EPSILON)
+		return;
+
+	static std::mt19937 generator{ std::random_device{}() };
+	static std::uniform_real_distribution<_float> distanceDistribution{
+		CHASER_TRAIL_DISTANCE_MIN,
+		CHASER_TRAIL_DISTANCE_MAX
+	};
+	const _float rotationRadians = XMConvertToRadians(rotationOffset);
+	const _float cosOffset = cosf(rotationRadians);
+	const _float sinOffset = sinf(rotationRadians);
+	const _float2 backwardDirection = { -direction.x, -direction.y };
+	const _float2 smokeDirection = Normalize({
+		backwardDirection.x * cosOffset - backwardDirection.y * sinOffset,
+		backwardDirection.x * sinOffset + backwardDirection.y * cosOffset
+	});
+	const _float distance = distanceDistribution(generator);
+
+	_float cursorRotation = 0.f;
+	if (auto* cursor = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(m_hChaserCursor))
+	{
+		cursorRotation = cursor->GetUIInfo().Rot;
+	}
+
+	particle.RemainingTime = CHASER_TRAIL_PARTICLE_DURATION;
+	particle.Duration = CHASER_TRAIL_PARTICLE_DURATION;
+	particle.SpawnPosition = position;
+	particle.CenterPosition = {
+		position.x + smokeDirection.x * distance,
+		position.y + smokeDirection.y * distance
+	};
+	particle.LateralDirection = {};
+	particle.RenderPosition = position;
+	particle.RenderSize = {
+		CHASER_TRAIL_WIDTH,
+		CHASER_TRAIL_HEIGHT
+	};
+	particle.Rotation = cursorRotation + 180.f - rotationOffset;
+	particle.WavePhase = 0.f;
+	particle.InitialScale = 1.f;
+	particle.Frame = 0;
+}
+
+void CSpellMiniGame::ClearChaserTrailParticles()
+{
+	m_fChaserTrailSpawnAccumulator = 0.f;
+	m_iNextChaserTrailParticle = 0;
+	for (BOOST_TRAIL_PARTICLE& particle : m_ChaserTrailParticles)
+	{
+		particle = {};
+		particle.InitialScale = 1.f;
+	}
+	if (m_pChaserTrailRenderer)
+		m_pChaserTrailRenderer->ClearInstances();
 }
 
 void CSpellMiniGame::UpdateArrowVisual(
@@ -1320,7 +1653,11 @@ void CSpellMiniGame::PlayBoostCursorRipple()
 		BOOST_CURSOR_RIPPLE_MIN_SIZE,
 		BOOST_CURSOR_RIPPLE_MIN_SIZE
 		});
-	ripple->SetColor({ 0.32f, 1.05f, 1.85f });
+	ripple->SetColor({
+		0.32f * BOOST_CURSOR_RIPPLE_BRIGHTNESS,
+		1.05f * BOOST_CURSOR_RIPPLE_BRIGHTNESS,
+		1.85f * BOOST_CURSOR_RIPPLE_BRIGHTNESS
+		});
 	ripple->SetAlpha(1.f);
 	ripple->SetActive(true);
 	ripple->SetVisible(true);
@@ -1417,12 +1754,38 @@ void CSpellMiniGame::UpdateChaser(
 
 		m_bChaserActive = true;
 		m_fChaserPathDistance = 0.f;
+		m_vChaserFacingDirection = EvaluateForward(0.f);
+		m_fChaserTrailSpawnAccumulator = CHASER_TRAIL_SPAWN_INTERVAL;
 		SetChaserVisible(true);
 	}
 
 	m_fChaserPathDistance = std::min(
 		m_fTotalPathDistance,
 		m_fChaserPathDistance + CHASER_MOVE_SPEED * movementDelta);
+
+	const _float2 targetDirection =
+		Normalize(EvaluateForward(m_fChaserPathDistance));
+	if (Length(targetDirection) > FLT_EPSILON)
+	{
+		const _float currentAngle = atan2f(
+			m_vChaserFacingDirection.y,
+			m_vChaserFacingDirection.x);
+		const _float targetAngle = atan2f(
+			targetDirection.y,
+			targetDirection.x);
+		const _float shortestDelta = atan2f(
+			sinf(targetAngle - currentAngle),
+			cosf(targetAngle - currentAngle));
+		const _float safeTimerDelta = std::clamp(timerDelta, 0.f, 0.05f);
+		const _float turnRatio =
+			1.f - expf(-CHASER_TURN_RESPONSE * safeTimerDelta);
+		const _float smoothedAngle =
+			currentAngle + shortestDelta * turnRatio;
+		m_vChaserFacingDirection = {
+			cosf(smoothedAngle),
+			sinf(smoothedAngle)
+		};
+	}
 
 	if (auto* chaserPath = E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextureUI>(m_hChaserPathProgress))
@@ -1435,8 +1798,19 @@ void CSpellMiniGame::UpdateChaser(
 	if (auto* chaserCursor = E::CGameInstance::Get().
 		GetGameObjectByHandleT<E::CUIObject>(m_hChaserCursor))
 	{
-		chaserCursor->SetPos(EvaluatePosition(m_fChaserPathDistance));
+		const _float2 chaserPosition =
+			EvaluatePosition(m_fChaserPathDistance);
+		chaserCursor->SetPos(chaserPosition);
+		const _float directionAngle = XMConvertToDegrees(atan2f(
+			m_vChaserFacingDirection.y,
+			m_vChaserFacingDirection.x));
+		chaserCursor->GetUIInfo().Rot =
+			90.f - directionAngle + 180.f;
 		chaserCursor->CalcUICoord();
+		UpdateChaserTrailEmitter(
+			std::clamp(timerDelta, 0.f, 0.05f),
+			chaserPosition,
+			m_vChaserFacingDirection);
 	}
 
 	if (m_fChaserPathDistance + CHASER_COLLISION_DISTANCE >=
@@ -1451,6 +1825,8 @@ void CSpellMiniGame::ResetChaser()
 	m_bChaserActive = false;
 	m_fChaserPathDistance = 0.f;
 	m_fChaserStartDelayRemaining = CHASER_START_DELAY;
+	m_vChaserFacingDirection = EvaluateForward(0.f);
+	ClearChaserTrailParticles();
 	if (auto* chaserPath = E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextureUI>(m_hChaserPathProgress))
 	{
@@ -1855,8 +2231,23 @@ void CSpellMiniGame::UpdateCompletionSequence(_float fTimeDelta)
 
 void CSpellMiniGame::ShowSuccessAlarm()
 {
+	const char* alarmPrefabName = m_eMode == MODE::FLIPENDO
+		? "Alam2"
+		: "Alam";
 	const std::vector<CHandle> alarmRoots =
-		GET_SINGLE(UIManager)->LoadPrefab("SpellAlam");
+		GET_SINGLE(UIManager)->LoadPrefab(alarmPrefabName);
+	if (!alarmRoots.empty())
+	{
+		E::CGameInstance::Get().GetSoundManager()->Play2D(
+			"./Resources/SampleClient/Sound/UI/Succes.wav",
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::UI,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+	}
 	uint32_t flameIndex = 0;
 	_float minX = FLT_MAX;
 	_float minY = FLT_MAX;
@@ -2232,12 +2623,6 @@ void CSpellMiniGame::FadeOutCompletionSecondaryVisuals()
 	{
 		FadeOutUIHierarchy(
 			handle,
-			DESTINATION_SUCCESS_CENTER_MOVE_DURATION);
-	}
-	for (const BOOST_TRAIL_PARTICLE& particle : m_BoostTrailParticles)
-	{
-		FadeOutUIHierarchy(
-			particle.Handle,
 			DESTINATION_SUCCESS_CENTER_MOVE_DURATION);
 	}
 	auto fadeEffect = [this](const SUCCESS_EFFECT& effect)
