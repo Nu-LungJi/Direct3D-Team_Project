@@ -15,6 +15,8 @@ public:
 
 public:
 	void UpdateGUI() override;
+	_bool SetHalfExtents(const _float3& vHalfExtents);
+	_float3 GetHalfExtents() const;
 
 private:
 	explicit CComPxBoxCollider();
