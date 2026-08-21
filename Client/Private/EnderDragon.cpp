@@ -992,6 +992,9 @@ _string CEnderDragon::Get_SkillName(ATTMON SkillNode)
 
 _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 {
+	if (m_iHp <= 0 && m_pFsm->GetCurState() == MON_STATE::DEAD)
+		return false;
+
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
 		return false;
 

@@ -484,6 +484,7 @@ _bool CNavMeshManager::FindPath(const _float3& start, const _float3& end, std::v
 	}
 
 	outPath.reserve(static_cast<size_t>(straightPathCount));
+	_float fCornerPadding = 0.5f;
 	for (int i = 0; i < straightPathCount; ++i)
 	{
 		const float* pos = &straightPath[i * 3];
@@ -491,6 +492,160 @@ _bool CNavMeshManager::FindPath(const _float3& start, const _float3& end, std::v
 	}
 
 	return outPath.size() >= 2;
+}
+
+_bool CNavMeshManager::FindPathCenter(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const
+{
+	outPath.clear();
+
+	if (nullptr == m_pNavMeshQuery)
+		return false;
+	_float fStartPos[3] = {start.x, start.y, start.z};
+	_float fEndPos[3] = {end.x, end.y, end.z};
+	_float fHalf[3] = {2.f, 4.f, 2.f};
+
+	dtQueryFilter Filter{};
+	Filter.setIncludeFlags(0xffff);
+	Filter.setExcludeFlags(0);
+
+	dtPolyRef StartRef{};
+	dtPolyRef EndRef{};
+
+	_float NearestStart[3]{};
+	_float NearestEnd[3]{};
+
+	if (dtStatusFailed(m_pNavMeshQuery->findNearestPoly(fStartPos, fHalf, &Filter, &StartRef,
+			NearestStart)) || 0 == StartRef)
+		return false;
+
+	if (dtStatusFailed(
+		m_pNavMeshQuery->findNearestPoly(fEndPos, fHalf, &Filter, &EndRef,
+			NearestEnd)) || 0 == EndRef)
+		return false;
+
+	const int32_t iMaxPolys = 256;
+	dtPolyRef Polys[iMaxPolys]{};
+	int32_t iPolyCount{};
+
+	if (dtStatusFailed(m_pNavMeshQuery->findPath(StartRef, EndRef, NearestStart, NearestEnd, &Filter,
+			Polys, &iPolyCount, iMaxPolys)) || 0 == iPolyCount)
+		return false;
+
+	if (Polys[iPolyCount - 1] != EndRef)
+		return false;
+
+	outPath.reserve(static_cast<size_t>(iPolyCount) + 1);
+
+	outPath.push_back({NearestStart[0],
+						NearestStart[1] + 0.18f,
+						NearestStart[2]
+		});
+
+	const int32_t iMaxSegments = 32;
+
+	for (int32_t i = 0; i + 1 < iPolyCount; ++i)
+	{
+		_float SegmentVertices[iMaxSegments * 6]{};
+		dtPolyRef SegmentRefs[iMaxSegments]{};
+		int32_t iSegmentCount{};
+
+		if (dtStatusFailed(m_pNavMeshQuery->getPolyWallSegments(Polys[i], &Filter,SegmentVertices,
+				SegmentRefs, &iSegmentCount, iMaxSegments)))
+			return false;
+
+		_bool bPortalFound = false;
+		_float fLongestSegmentSq = -1.f;
+		_float3 vPortalCenter{};
+
+		for (int32_t j = 0; j < iSegmentCount; ++j)
+		{
+			if (SegmentRefs[j] != Polys[i + 1])
+				continue;
+
+			_float* pPoint0 = &SegmentVertices[j * 6];
+			_float* pPoint1 = &SegmentVertices[j * 6 + 3];
+			_float fDiffX = pPoint1[0] - pPoint0[0];
+			_float fDiffZ = pPoint1[2] - pPoint0[2];
+			_float fSegmentLengthSq = fDiffX * fDiffX + fDiffZ * fDiffZ;
+
+			if (fSegmentLengthSq <= fLongestSegmentSq)
+				continue;
+
+			fLongestSegmentSq = fSegmentLengthSq;
+
+			vPortalCenter =
+			{
+				(pPoint0[0] + pPoint1[0]) * 0.5f,
+				(pPoint0[1] + pPoint1[1]) * 0.5f + 0.18f,
+				(pPoint0[2] + pPoint1[2]) * 0.5f
+			};
+
+			bPortalFound = true;
+		}
+
+		if (!bPortalFound)
+			return false;
+
+		outPath.push_back(vPortalCenter);
+	}
+
+	outPath.push_back(
+		{
+			NearestEnd[0],
+			NearestEnd[1] + 0.18f,
+			NearestEnd[2]
+		});
+
+	return outPath.size() >= 2;
+}
+
+_bool CNavMeshManager::NavMeshRayCast(const _float3& vStart, const _float3& vEnd)
+{
+	if (nullptr == m_pNavMeshQuery) return false;
+
+	const _float fStartPos[3] = { vStart.x,  vStart.y, vStart.z};
+	const _float fEndPos[3] = { vEnd.x, vEnd.y, vEnd.z};
+	const _float fHalf[3] = { 2.f, 4.f, 2.f };
+
+	dtQueryFilter Filter{};
+	Filter.setIncludeFlags(0xffff);
+	Filter.setExcludeFlags(0);
+
+	_float NearStart[3]{}, NearEnd[3]{};
+
+	dtPolyRef StartRef{}, EndRef{};
+	if (dtStatusFailed(m_pNavMeshQuery->findNearestPoly(&fStartPos[0], &fHalf[0], &Filter, &StartRef,
+		&NearStart[0])) || 0 == StartRef)
+		return false;
+
+	if (dtStatusFailed(m_pNavMeshQuery->findNearestPoly(&fEndPos[0], &fHalf[0], &Filter, &EndRef,
+		&NearEnd[0])) || 0 == EndRef)
+		return false;
+
+	const int32_t iMaxPolys = 256;
+	dtPolyRef PassedPolys[iMaxPolys]{};
+	int32_t iPassedPolyCnt{};
+
+	_float fHitTime{}, fHitNormal[3]{};
+	//StartRef 출발점이 속한 네비메시 폴리곤 번호
+	//NearStart 네비매시 위로 보정된 출발 좌표
+	//Filter 어떤 종류의 네비메시 영역을 통과 할수 있는지 설정
+	//fHitTime 검사결과가 들어갈거 0 ~ 1 사이면 영역에 들어감
+	//PassedPolys 출발점부터 검사하면서 통과한 폴리곤 번호를 담는 배열
+	//iPassedPolyCnt PassedPolys에 실제 몇개가 들어갔는지
+	//iMaxPolys 배열에 최대 몇개까지 담을 수 있는지
+	const dtStatus Status = m_pNavMeshQuery->raycast(StartRef, NearStart, NearEnd, &Filter, &fHitTime,
+		&fHitNormal[0], PassedPolys, &iPassedPolyCnt, iMaxPolys);
+	
+	if (dtStatusFailed(Status)) return false;
+
+	_float fDiffX = fEndPos[0] - NearEnd[0];
+	_float fDiffZ = fEndPos[2] - NearEnd[2];
+	
+	if (fDiffX * fDiffX + fDiffZ * fDiffZ > 0.04f)
+		return false;
+
+	return fHitTime > 1.f;
 }
 
 _bool CNavMeshManager::FindNearestManualVertex(
@@ -523,6 +678,15 @@ _bool CNavMeshManager::FindNearestManualVertex(
 	}
 
 	return bFound;
+}
+
+_bool CNavMeshManager::RemoveManualTriangle(uint32_t iTriangleIndex)
+{
+	if (iTriangleIndex >= m_ManualTriangles.size())
+		return false;
+
+	m_ManualTriangles.erase(m_ManualTriangles.begin() + iTriangleIndex);
+	return true;
 }
 
 void CNavMeshManager::SetTriangleArea(uint32_t triangleIndex, ENavAreaType areaType)

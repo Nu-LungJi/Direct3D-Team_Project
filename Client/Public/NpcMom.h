@@ -40,7 +40,7 @@ public:
 		// 모델 로컬 크기이며 생성 시 vScale을 적용해 CCT 월드 크기로 변환한다.
 		_float fCCTHeight{ 2.1f };
 		_float fCCTRadius{ 0.45f };
-		_float fCCTStepOffset{ 0.1f };
+		_float fCCTStepOffset{ 0.4f };
 		_float3 vCCTCenterOffset{ 0.f, 1.5f, 0.f };
 
 		_string resBeHaviorMajor{}, resBeHaviorMinor{};

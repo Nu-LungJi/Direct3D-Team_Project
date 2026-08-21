@@ -177,6 +177,44 @@ namespace
 			vOutPosition);
 	}
 
+	_bool PickManualTriangle(
+		const std::vector<E::NAVMESH_MANUAL_TRIANGLE>& Triangles,
+		uint32_t& iOutTriangleIndex)
+	{
+		E::_float3 vRayOrigin{};
+		E::_float3 vRayDirection{};
+
+		if (!MakeMouseRay(vRayOrigin, vRayDirection))
+			return false;
+
+		const E::_vector vOrigin = XMLoadFloat3(&vRayOrigin);
+		const E::_vector vDirection = XMLoadFloat3(&vRayDirection);
+		_float fNearestDistance = FLT_MAX;
+		_bool bFound = false;
+
+		for (uint32_t i = 0; i < Triangles.size(); ++i)
+		{
+			const E::NAVMESH_MANUAL_TRIANGLE& Triangle = Triangles[i];
+			_float fDistance{};
+
+			if (IntersectRayTriangle(
+				vOrigin,
+				vDirection,
+				XMLoadFloat3(&Triangle.vPoints[0]),
+				XMLoadFloat3(&Triangle.vPoints[1]),
+				XMLoadFloat3(&Triangle.vPoints[2]),
+				fDistance) &&
+				fDistance < fNearestDistance)
+			{
+				fNearestDistance = fDistance;
+				iOutTriangleIndex = i;
+				bFound = true;
+			}
+		}
+
+		return bFound;
+	}
+
 	_bool IsValidManualTriangle(
 		const E::NAVMESH_MANUAL_TRIANGLE& Triangle)
 	{
@@ -282,8 +320,17 @@ void CNavMeshGUI::LoadNavMesh(const std::string& mapPath)
 	if (auto* terrain = FindFirstTerrain())
 	{
 		m_bBuildTried = true;
-		m_bBuildSucceeded =
-			BuildNavMeshFromTerrain(*terrain, *navMeshManager);
+
+		if (!navMeshManager->GetManualTriangles().empty())
+		{
+			m_bBuildSucceeded =
+				BuildManualNavMesh(*navMeshManager);
+		}
+		else
+		{
+			m_bBuildSucceeded =
+				BuildNavMeshFromTerrain(*terrain, *navMeshManager);
+		}
 	}
 }
 
@@ -516,6 +563,19 @@ void CNavMeshGUI::UpdateGUI(E::_float fTimeDelta)
 				// 다른 마우스 편집 기능과 동시에 실행하지 않는다.
 				m_bPathPickWithMouse = false;
 				m_bPaintWithMouse = false;
+				m_bManualTriangleDeleteWithMouse = false;
+			}
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Checkbox("Delete Manual Triangle", &m_bManualTriangleDeleteWithMouse))
+		{
+			if (m_bManualTriangleDeleteWithMouse)
+			{
+				m_bPathPickWithMouse = false;
+				m_bPaintWithMouse = false;
+				m_bManualTrianglePickWithMouse = false;
+				m_iManualPickCount = 0;
 			}
 		}
 
@@ -592,6 +652,28 @@ void CNavMeshGUI::UpdateGUI(E::_float fTimeDelta)
 				}
 			}
 		}
+
+		if (m_bManualTriangleDeleteWithMouse)
+		{
+			ImGui::TextDisabled("Delete: click a manual triangle. Rebuild after deleting.");
+
+			const ImGuiIO& io = ImGui::GetIO();
+			if (!io.WantCaptureMouse &&
+				!ImGuizmo::IsOver() &&
+				!ImGuizmo::IsUsing() &&
+				ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+			{
+				uint32_t iPickedManualTriangle{};
+				if (PickManualTriangle(
+					navMeshManager->GetManualTriangles(),
+					iPickedManualTriangle))
+				{
+					navMeshManager->RemoveManualTriangle(
+						iPickedManualTriangle);
+				}
+			}
+		}
+
 		if (ImGui::Button("Reset Manual Picks", ImVec2(160.f, 0.f)))
 		{
 			m_iManualPickCount = 0;

@@ -22,6 +22,7 @@
 #include "Spider_Combat.h"
 #include "Spider_Hit.h"
 #include "Spider_Dead.h"
+#include "Mon_Godae.h"
 //BB
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
@@ -240,11 +241,10 @@ HRESULT CSpider::Ready_Fsm(const _string& LevelTag)
 	
 	
 	if (false == m_pFsm->Add_State(MON_STATE::SPAWN, CSpider_Spawn::Create(LevelTag))) return E_FAIL;
-	
 	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CSpider_Combat::Create(LevelTag))) return E_FAIL;
-	
 	if (false == m_pFsm->Add_State(MON_STATE::HIT, CSpider_Hit::Create(LevelTag,this))) return E_FAIL;
 	if (false == m_pFsm->Add_State(MON_STATE::DEAD, CSpider_Dead::Create())) return E_FAIL;
+	//if (false == m_pFsm->Add_State(MON_STATE::GODAE, CMon_Godae::Create(,this))) return E_FAIL;
 
 	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
 

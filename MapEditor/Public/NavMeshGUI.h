@@ -25,7 +25,7 @@ public:
 
 public:
 	static E::UPtr<CNavMeshGUI> Create(E::CHandle* pSelectedObject);
-	bool IsMouseEditing() const {return m_bPathPickWithMouse || m_bPaintWithMouse || m_bManualTrianglePickWithMouse;}
+	bool IsMouseEditing() const {return m_bPathPickWithMouse || m_bPaintWithMouse || m_bManualTrianglePickWithMouse || m_bManualTriangleDeleteWithMouse;}
 private:
 	bool BuildNavMeshFromTerrain(E::CTerrain& terrain, E::CNavMeshManager& navMeshManager);
 	bool BuildManualNavMesh(E::CNavMeshManager& navMeshManager);
@@ -49,6 +49,7 @@ private:
 	// 수동 네비메시 추가용
 	UPtr<CMapNaviPosPickPass> m_pMapNaviPosPickPass{};
 	_bool		m_bManualTrianglePickWithMouse = false;
+	_bool		m_bManualTriangleDeleteWithMouse = false;
 	uint32_t	m_iManualPickCount = 0;
 	_float		m_fManualVertexSnapDistance = 3.f;
 	_float3		m_vManualPickPoints[3]{};

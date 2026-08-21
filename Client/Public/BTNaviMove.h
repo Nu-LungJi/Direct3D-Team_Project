@@ -25,11 +25,14 @@ private:
 	void						Abort()override;
 	void						OnEnter()override;
 	void						OnExit(EVALUATE eResult)override;
+	_bool						Sweep(_vector vNextDir, _vector vCurDir,_float3 vCurPos,_float fDist);
 private:
 	MOVE						m_eMove{};
 	int32_t						m_iNaviPathIndex;
-	_bool						m_bMoveToEnd{ true };
+	_float3						m_vLastDir{}, m_vSlideDir{};
+	_bool						m_bMoveToEnd{ true }, m_bSweep{ false};
 	std::vector<_float3>		m_NaviPath;
+	std::vector<_float3>		m_Separations;
 public:
 	static UPtr<CBTNaviMove> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

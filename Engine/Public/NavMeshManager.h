@@ -97,6 +97,9 @@ public:
 		const std::string& path,
 		NAVMESH_BUILD_DESC* pBuildDesc = nullptr);
 	_bool FindPath(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const;
+	_bool FindPathCenter(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const;
+
+	_bool NavMeshRayCast(const _float3& vStart, const _float3& vEnd);
 	_bool FindNearestManualVertex(
 		const _float3& vPosition,
 		_float fMaxDistance,
@@ -104,6 +107,7 @@ public:
 
 	//수동찍기
 	void AddManualTriangle(const NAVMESH_MANUAL_TRIANGLE& Triangle){m_ManualTriangles.push_back(Triangle);}
+	_bool RemoveManualTriangle(uint32_t iTriangleIndex);
 	void ClearManualTriangles(){m_ManualTriangles.clear();}
 	void RemoveLastManualTriangle()
 	{

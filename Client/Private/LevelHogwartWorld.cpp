@@ -251,14 +251,19 @@ HRESULT CLevelHogwartWorld::SpawnNaviMesh(E::CTerrain* pTerrain)
 	Desc.agentMaxClimb = 0.6f;
 	Desc.agentMaxSlope = 45.f;
 
-	if (!pNavMesh->Build(
-		Vertices,
-		pTerrain->GetIndices(),
-		Desc))
-	{
+	//if (!pNavMesh->Build(
+	//	Vertices,
+	//	pTerrain->GetIndices(),
+	//	Desc))
+	//{
+	//	return E_FAIL;
+	//}
+	NAVMESH_BUILD_DESC StaticNaviDesc{};
+	if (FAILED(pNavMesh->Load(strPath, &StaticNaviDesc)))
 		return E_FAIL;
-	}
 
+	if (!pNavMesh->BuildManual(StaticNaviDesc))
+		return E_FAIL;
 	return S_OK;
 }
 
