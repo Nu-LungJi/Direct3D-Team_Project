@@ -41,6 +41,8 @@ HRESULT CPlayerThirdPersonCamera::Initialize(void* pArg)
 	if (FAILED(CCameraObject::Initialize(pArg)))
 		return E_FAIL;
 
+	SetTimeDomain(TIME_DOMAIN::UNSCALED);
+
 	m_hTarget = pDesc->hTarget;
 	m_fYaw = pDesc->fYaw;
 	m_fPitch = std::clamp(
