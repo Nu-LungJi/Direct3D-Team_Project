@@ -5,7 +5,6 @@
 
 NS_BEGIN(Engine)
 
-class CResModel;
 class CResModelBone;
 class ENGINE_DLL CResModelChanel final : public CResource
 {
@@ -13,8 +12,7 @@ public:
 	DECLARE_DERIVED_TYPE(CResModelChanel, CResource)
 public:
 	typedef struct tagDesc {
-		_char* ptr;
-		CResModel* pModel;
+		_char* ptr{};
 	}DESC;
 private:
 	explicit CResModelChanel(const _string& sPath);

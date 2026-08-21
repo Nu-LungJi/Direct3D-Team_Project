@@ -201,7 +201,7 @@ HRESULT CSpider::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-
+	
 	if (FAILED(Ready_Fsm(MonDesc->LevelTag)))
 	{
 		MSG_BOX("Create Failed Fsm");
@@ -216,6 +216,7 @@ HRESULT CSpider::Initialize(void* pArg)
 
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
+	//m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::GPU);
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));

@@ -23,6 +23,8 @@
 #include "TextBox.h"
 #include "HPBar.h"
 #include "SkyCloudyCube.h"
+#include "PropBarrel.h"
+#include "PropBarrelDebris.h"
 
 NS_USING(Client)
 
@@ -32,6 +34,12 @@ HRESULT CMainAppLoader::Load()
 
 	if (FAILED(CClientLuaBindings::Register()))
 		return E_FAIL;
+
+	if (FAILED(Load_Transformation_Resources()))
+	{
+		MSG_BOX("Failed Load_Transformation_Resources");
+		return E_FAIL;
+	}
 
 	// 전체 레벨에서 사용할 라이트 오브젝트 프로토타입 등록
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;
@@ -147,6 +155,71 @@ HRESULT CMainAppLoader::Load()
 	GET_SINGLE(UIManager)->Initialize(CGameInstance::Get().GetGraphicDevice(), CGameInstance::Get().GetGraphicDeviceContext());
 
 	LOG_MEMORY("CMainAppLoader::Load() end");
+	return S_OK;
+}
+
+HRESULT CMainAppLoader::Load_Transformation_Resources()
+{
+	constexpr char RESOURCE_GROUP[] = "PERMANENT";
+
+	if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+		RESOURCE_GROUP,
+		"Static_Prop_Barrel_Resource",
+		CResStaticModel::Create(
+			"./Resources/SampleClient/Models/Static/Prop_Barrel_Breakable_A/SM_Prop_Barrel_Breakable_A.bin")))
+	{
+		CResStaticModel::DESC desc{};
+		desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+		if (FAILED(resource->Load(desc)))
+			return E_FAIL;
+	}
+	else
+	{
+		return E_FAIL;
+	}
+
+	for (uint32_t i = 1; i <= 12; ++i)
+	{
+		std::string path =
+			"./Resources/SampleClient/Models/Static/Prop_Barrel_Breakable_A_Fragment2/";
+		if (i < 10)
+			path += "SM_Prop_Barrel_Breakable_A_Fragment2_0" + std::to_string(i);
+		else
+			path += "SM_Prop_Barrel_Breakable_A_Fragment2_" + std::to_string(i);
+		path += ".bin";
+
+		if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+			RESOURCE_GROUP,
+			"Static_Prop_Barrel_Debris_Resource_" + std::to_string(i),
+			CResStaticModel::Create(path)))
+		{
+			CResStaticModel::DESC desc{};
+			desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+			if (FAILED(resource->Load(desc)))
+				return E_FAIL;
+		}
+		else
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		RESOURCE_GROUP,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
+		CPropBarrel::Create())))
+	{
+		return E_FAIL;
+	}
+
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		RESOURCE_GROUP,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrelDebris,
+		CPropBarrelDebris::Create())))
+	{
+		return E_FAIL;
+	}
+
 	return S_OK;
 }
 

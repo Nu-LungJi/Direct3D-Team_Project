@@ -5,6 +5,7 @@
 NS_BEGIN(Engine)
 
 class CShaderWatcher;
+class CResModelAnim;
 
 class ENGINE_DLL CResourceManager final: public CEngineBase
 {
@@ -34,6 +35,11 @@ public:
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, SPtr<T> pAsset);
 	template<typename T, typename CreateFunc>
 	SPtr<T> GetOrCreateResourceByPath(const _string& sPath, CreateFunc&& createFunc);
+	// [LSY] Clip 원본은 모델/Skeleton과 무관하게 정규화된 파일 경로당 한 번만 로드한다.
+	SPtr<CResModelAnim> GetOrLoadModelAnimation(const _string& sPath);
+	void MoveResourcePathLookup(
+		const _string& sOldPath, const _string& sNewPath,
+		const SPtr<CResource>& pResource);
 	SPtr<CResource> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const;
 	template<typename T>
 	SPtr<T> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const;

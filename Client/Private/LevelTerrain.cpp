@@ -36,6 +36,8 @@
 // UI
 #include "UIController.h"
 #include "UIManager.h"
+
+#include "PropBarrel.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -75,6 +77,23 @@ HRESULT CLevelTerrain::Initialize()
 		{
 			return E_FAIL;
 		}
+	}
+
+	{
+
+		CPropBarrel::DESC Desc{};
+		Desc.sResourceGroup = "PERMANENT";
+		Desc.vInitialPosition = { 5.f, 5.f, 5.f };
+		const auto hPropBarrel = CGameInstance::Get().AddGameObjectToLayer(
+			"PERMANENT",
+			PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
+			"PropBarrel",
+			&Desc);
+
+		if (!hPropBarrel)
+			return E_FAIL;
+
+		m_hPropBarrel = *hPropBarrel;
 	}
 
 	{
@@ -931,6 +950,22 @@ HRESULT CLevelTerrain::Render()
 void CLevelTerrain::UpdateGUI()
 {
 	ImGui::Begin("Terrain");
+	if (ImGui::CollapsingHeader("Prop Barrel Test"))
+	{
+		auto* pPropBarrel = CGameInstance::Get()
+			.GetGameObjectByHandleT<CPropBarrel>(m_hPropBarrel);
+		ImGui::Text("State: %s", pPropBarrel ? "Created" : "Destroyed");
+
+		if (pPropBarrel && ImGui::Button("Destroy Prop Barrel"))
+		{
+			if (pPropBarrel->DestroyBarrel())
+				m_hPropBarrel = {};
+			else
+				DEBUG_LOG("[PropBarrel] Failed to destroy barrel.\n");
+		}
+
+		ImGui::Separator();
+	}
 	if (ImGui::CollapsingHeader("Confringo Projectile Test"))
 	{
 		ImGui::DragFloat(

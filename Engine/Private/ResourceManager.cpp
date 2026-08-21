@@ -10,6 +10,7 @@
 #include "ResGeometryShader.h"
 #include "ResGeoShaderStreamOut.h"
 #include "ResPathPlayback.h"
+#include "ResModelAnim.h"
 #include "ResShader.h"
 #include "ShaderWatcher.h"
 
@@ -296,6 +297,75 @@ void CResourceManager::Initialize()
 #ifdef _DEBUG
 	m_pShaderWatcher = CShaderWatcher::Create();
 #endif
+}
+
+SPtr<CResModelAnim> CResourceManager::GetOrLoadModelAnimation(
+	const _string& sPath)
+{
+	if (sPath.empty())
+		return nullptr;
+
+	auto pAnimation = GetOrCreateResourceByPath<CResModelAnim>(
+		sPath,
+		[&sPath]() -> SPtr<CResModelAnim>
+		{
+			auto pCreated = CResModelAnim::Create(sPath);
+			if (!pCreated)
+				return nullptr;
+
+			CResModelAnim::DESC Desc{};
+			Desc.path = sPath;
+			if (FAILED(pCreated->Load(Desc)))
+				return nullptr;
+
+			pCreated->SetAnimName(
+				std::filesystem::path{ sPath }.filename().string());
+			return pCreated;
+		});
+
+	return pAnimation;
+}
+
+void CResourceManager::MoveResourcePathLookup(
+	const _string& sOldPath, const _string& sNewPath,
+	const SPtr<CResource>& pResource)
+{
+	if (!pResource || sOldPath.empty() || sNewPath.empty())
+		return;
+
+	const _string oldPath = NormalizeResourcePath(sOldPath);
+	const _string newPath = NormalizeResourcePath(sNewPath);
+	if (oldPath == newPath)
+		return;
+
+	std::unique_lock<std::shared_mutex> lock{ m_Mutex };
+	if (m_bIsShutdown)
+		return;
+
+	if (auto oldIter = m_PathLookup.find(oldPath);
+		oldIter != m_PathLookup.end())
+	{
+		std::erase_if(
+			oldIter->second,
+			[&pResource](const WPtr<CResource>& weakResource)
+			{
+				const auto resource = weakResource.lock();
+				return !resource || resource == pResource;
+			});
+
+		if (oldIter->second.empty())
+			m_PathLookup.erase(oldIter);
+	}
+
+	auto& newResources = m_PathLookup[newPath];
+	const auto duplicate = std::ranges::find_if(
+		newResources,
+		[&pResource](const WPtr<CResource>& weakResource)
+		{
+			return weakResource.lock() == pResource;
+		});
+	if (duplicate == newResources.end())
+		newResources.emplace_back(pResource);
 }
 
 void CResourceManager::UpdateShaderHotReload()

@@ -34,6 +34,8 @@ HRESULT CUIObject::Initialize(void* pArg)
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
 
+	SetTimeDomain(TIME_DOMAIN::UNSCALED);
+
 	m_CurrentState = UI_STATE::APPEAR;
 
 	return S_OK;

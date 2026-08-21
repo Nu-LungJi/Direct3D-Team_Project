@@ -110,12 +110,14 @@ public:
 	const _float3& GetKnockdownAttackPosition() const { return m_vKnockdownAttackPosition; }
 private:
 	void HandleDeath();
-	void TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage = 0);
+	void TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage = 0,
+		const _float3* pAttackPosition = nullptr);
 public:
 	void Attack_Magic_Bullet();
 	_bool FireStupefyProjectile();
 private:
 	void UpdateStupefyDebugGUI();
+	void UpdateAncientThrowTargetDebugGUI();
 	struct STUPEFY_DEBUG_SETTINGS
 	{
 		_float fSpeed{ 120.f };
@@ -169,10 +171,12 @@ public:
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
 	void SetLumosActive(_bool bActive);
+	void SetLumosHoldAnimationIndex(int32_t iAnimation) { m_iLumosHoldAnimation = iAnimation; }
 	void ToggleLumos() { SetLumosActive(!m_bLumosActive); }
 	_bool IsLumosActive() const { return m_bLumosActive; }
 	_bool HasRawMoveInput() const { return m_bRawMoveInput; }
 	_bool IsSprintRequested() const { return m_bSprintRequested; }
+	_bool IsWalkRequested() const { return m_bWalkRequested; }
 	const _float3& GetRawMoveDirection() const { return m_vRawMoveDirection; }
 	_float GetCurrentMoveSpeed() const { return m_fCurrentMoveSpeed; }
 	void SetCurrentMoveSpeed(_float fSpeed) { m_fCurrentMoveSpeed = std::max(0.f, fSpeed); }
@@ -201,7 +205,7 @@ public:
 	_bool IsProtegoActive() const { return m_bProtegoActive; }
 	void ActivateProtego(_float fDuration);
 	_bool ConsumeParryCounter(_float3& outAttackPosition);
-	_bool ConsumeProtegoHeavyReaction(_float3& outAttackPosition);
+	_bool ConsumeProtegoReaction(_float3& outAttackPosition, _bool& outHeavyReaction);
 	void StartProtegoRecoil(const _float3& vHitPosition);
 	uint32_t GetProtegoParrySequence() const { return m_iProtegoParrySequence; }
 	const _float3& GetLastProtegoHitPosition() const { return m_vLastProtegoHitPosition; }
@@ -268,10 +272,12 @@ private:
 	_float m_fRootMotionTranslationScale{ 1.f };
 	_bool m_bRawMoveInput{};
 	_bool m_bSprintRequested{};
+	_bool m_bWalkRequested{};
 	_float3 m_vRawMoveDirection{};
 	_float3 m_vLastMoveDirection{ 0.f, 0.f, 1.f };
 	_float3 m_vSmoothedMoveDirection{ 0.f, 0.f, 1.f };
 	_float m_fCurrentMoveSpeed{};
+	_float m_fWalkSpeed{ 3.f };
 	_float m_fJogSpeed{ 7.5f };
 	_float m_fSprintSpeed{ 15.f };
 	static constexpr int32_t KNOCKDOWN_DAMAGE_THRESHOLD = 30;
@@ -285,9 +291,13 @@ private:
 	_bool m_bDeathEventPublished{};
 	_float3 m_vLastHitPosition{};
 	_float3 m_vKnockdownAttackPosition{};
-	_float m_fGroundFollowProbeStartHeight{ 0.1f };
-	_float m_fGroundFollowMaxStepDown{ 0.5f };
-	_float m_fGroundFollowProbeRadius{ 0.2f };
+	_float m_fGroundFollowProbeStartHeight{ 0.15f };
+	_float m_fGroundFollowMaxStepDown{ 2.f };
+	_float m_fGroundFollowProbeRadius{ 0.3f };
+	_float m_fGroundFollowMaxHeightDeltaPerProbe{ 0.3f };
+	_float m_fGroundFollowMaxCorrectionSpeed{ 14.f };
+	int32_t m_iGroundFollowPredictionFrames{ 7 };
+	int32_t m_iGroundFollowProbeCount{ 7 };
 	_bool  m_bInvincible{ false };
 	_bool  m_bProtegoActive{ false };
 	_float m_fProtegoRemainTime{};
@@ -295,10 +305,12 @@ private:
 	_float m_fProtegoRecoilRemainTime{};
 	_float3 m_vProtegoRecoilDirection{};
 	_bool  m_bStupefyCounterRequested{};
-	_bool  m_bProtegoHeavyReactionRequested{};
+	_bool  m_bProtegoReactionRequested{};
+	_bool  m_bProtegoHeavyReaction{};
 	static constexpr _float PARRY_COUNTER_WINDOW = 1.0f;
+	static constexpr int32_t PROTEGO_HEAVY_DAMAGE_THRESHOLD = 50;
 	static constexpr _float PROTEGO_RECOIL_DURATION = 0.2f;
-	static constexpr _float PROTEGO_RECOIL_SPEED = 5.f;
+	static constexpr _float PROTEGO_RECOIL_SPEED = 10.f;
 	EFFECT_INSTANCE_ID m_iProtegoShieldEffectID{ INVALID_EFFECT_INSTANCE_ID };
 	struct PROTEGO_HIT_EFFECT
 	{
@@ -308,6 +320,7 @@ private:
 	std::vector<PROTEGO_HIT_EFFECT> m_ProtegoHitEffects{};
 	uint32_t m_iProtegoParrySequence{};
 	_float3 m_vLastProtegoHitPosition{};
+	_float3 m_vLastProtegoAttackPosition{};
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
 	//[LSY] 테스트 로그니 지우셔도 됩니다.
@@ -331,6 +344,8 @@ private:
 	_float3 m_vLumosDebugWorldPosition{};
 	_float3 m_vPreviousLumosAttachPosition{};
 	_bool m_bHasPreviousLumosAttachPosition{};
+	int32_t m_iLumosHoldAnimation{ -1 };
+	void UpdateLumosHoldAnimation();
 	void UpdateLumosLight();
 	_bool TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const;
 	void UpdateWiggenweldPotion();

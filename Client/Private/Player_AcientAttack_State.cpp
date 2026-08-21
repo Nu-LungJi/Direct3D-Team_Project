@@ -13,6 +13,13 @@ NS_USING(Client)
 
 void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 {
+	auto* pTrail = dynamic_cast<CTrail_CPU*>(CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail"));
+
+	if (pTrail)
+	{
+		pTrail->SetColor(_float4(67.f / 255.f, 97.f / 255.f, 174.f / 255.f, 1.f));
+		pTrail->SetEmissive(_float4(51.f / 255.f, 77.f / 255.f, 126.f / 255.f, 4.f));
+	}
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer)
 	{
@@ -51,13 +58,9 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 	m_fAcientElapsed = 0.f;
 
 	// 고대마법 발동 이벤트 발행
-	{
-		auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
-		static_cast<CTrail_CPU*>(a)->SetColor(_float4(67 / 255.f, 97 / 255.f, 174 / 255.f, 1.f));
-		static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(51 / 255.f, 77 / 255.f, 126 / 255.f, 4.f));
+
+		CGameInstance::Get().EventPublish<FAcientMagicStart>();
 	}
-	CGameInstance::Get().EventPublish<FAcientMagicStart>();
-}
 
 void CPlayer_AcientAttack_State::CacheAnimationIndices(const CPlayer& player)
 {

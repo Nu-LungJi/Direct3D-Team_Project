@@ -15,6 +15,7 @@ CGameObject::CGameObject()
 
 CGameObject::CGameObject(const CGameObject& Prototype)
     : CPrototype{ Prototype }
+	, m_eTimeDomain{ Prototype.m_eTimeDomain }
 {
 }
 

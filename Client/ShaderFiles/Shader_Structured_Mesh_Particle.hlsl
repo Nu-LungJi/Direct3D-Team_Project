@@ -178,9 +178,10 @@ PS_OUT PSMain_Stone(VS_OUT In)
 	float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord);
 	AlbedoTex *= In.vColor;
 
-	clip(AlbedoTex.a - 0.05f);
-
-	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float remainingRatio = saturate(In.life / max(In.maxLife, 0.0001f));
+	float ageRatio = 1.f - remainingRatio;
+	AlbedoTex.a *= remainingRatio;
+	clip(AlbedoTex.a - 0.01f);
 	float3 Albedo = pow(max(AlbedoTex.rgb, 0.f), 2.2f);
 
 	float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
@@ -229,7 +230,7 @@ PS_OUT PSMain_Stone(VS_OUT In)
 	float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb;
 	texEmissive = pow(max(texEmissive, 0.f), 2.2f);
 
-	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ageRatio);
 	float3 instanceEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
 
 	float3 constantAmbient = Albedo * 1.f * fAmbient;

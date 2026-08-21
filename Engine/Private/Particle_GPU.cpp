@@ -380,15 +380,47 @@ void CParticle_GPU::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
+void CParticle_GPU::RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList)
+{
+	CParticle::RequestSpawn(spawnList);
+
+	if (!spawnList.empty())
+		MarkActive(spawnList.data(), static_cast<uint32_t>(spawnList.size()), true);
+}
+
+void CParticle_GPU::MarkActive(const PARTICLE_SPAWN_DATA* pSpawnData, uint32_t count, _bool bIncludeSpawnDelay)
+{
+	if (nullptr == pSpawnData || 0u == count)
+		return;
+
+	m_bSimulationActive = true;
+
+	for (uint32_t i = 0; i < count; ++i)
+	{
+		const PARTICLE_SPAWN_DATA& data = pSpawnData[i];
+		const _float fActiveTime = data.life + (bIncludeSpawnDelay ? data.spawnDelay : 0.f);
+		m_fActiveRemain = std::max(m_fActiveRemain, fActiveTime);
+
+		if (data.loop)
+			m_LoopOwners.insert(data.ownerID);
+	}
+}
+
 void CParticle_GPU::Update(E::_float fTimeDelta)
 {
+	m_fTime += fTimeDelta;
+	ProcessPendingSpawns(fTimeDelta);
+
+	if (!m_bSimulationActive)
+		return;
+
+	m_fActiveRemain = std::max(0.f, m_fActiveRemain - fTimeDelta);
 
     UINT initialCounts[] = { (UINT)-1, (UINT)-1 };
     ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr,nullptr };
 
 
 	auto pContext = CGameInstance::Get().GetGraphicDeviceContext();
-	m_fTime += fTimeDelta;
 
     // 1. 스폰
     if (m_iCurrentSpawnCount > 0)
@@ -459,7 +491,9 @@ void CParticle_GPU::Update(E::_float fTimeDelta)
 
     pContext->CSSetUnorderedAccessViews(0, 3, nullUAVs, nullptr);
     pContext->CSSetShader(nullptr, nullptr, 0);
-	ProcessPendingSpawns(fTimeDelta);
+
+	if (m_fActiveRemain <= 0.f && m_LoopOwners.empty() && 0u == m_iCurrentSpawnCount)
+		m_bSimulationActive = false;
 }
 
 void CParticle_GPU::LateUpdate(E::_float fTimeDelta)
@@ -468,6 +502,8 @@ void CParticle_GPU::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CParticle_GPU::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+	if (!m_bSimulationActive)
+		return S_OK;
 
 	if (m_Desc.whatKind == MESHORTEXTURE::MESH) {
 		if (FAILED(Render_Mesh(pContext, ctx))) {
@@ -684,6 +720,8 @@ HRESULT CParticle_GPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 	if (count == 0)
 		return E_FAIL;
 
+	MarkActive(pSpawnData, count, false);
+
 	auto context = CGameInstance::Get().GetGraphicDeviceContext();
 
 	D3D11_BOX uploadRange{};
@@ -740,6 +778,11 @@ UPtr<CParticle> CParticle_GPU::Create(void* pArg)
 }
 void CParticle_GPU::ClearByOwner(uint32_t ownerID)
 {
+	m_LoopOwners.erase(ownerID);
+
+	if (!m_bSimulationActive)
+		return;
+
 	auto context = CGameInstance::Get().GetGraphicDeviceContext();
 
 	CB_OWNER_OPERATION cb{};

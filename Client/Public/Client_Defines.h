@@ -96,7 +96,9 @@ namespace Client
 		Prototype_GameObject_PlayerBombardaBullet,
 		Prototype_GameObject_Water,
 		Prototype_GameObject_MonSpawner,
-		Prototype_GameObject_WorldNpc
+		Prototype_GameObject_WorldNpc,
+		Prototype_GameObject_PropBarrel,
+		Prototype_GameObject_PropBarrelDebris,
 	};
 
 	enum class PROTO_COMPONENT

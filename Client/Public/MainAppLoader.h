@@ -12,6 +12,7 @@ public:
 private:
 	static HRESULT Load_Particle_Resources();
 	static HRESULT Load_PhysX_Resource();
+	static HRESULT Load_Transformation_Resources();
 	static HRESULT Create_ActionNode();
 	static HRESULT Load_UIStaitc_Resource();
 	static HRESULT Initialize_Sound();

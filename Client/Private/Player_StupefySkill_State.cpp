@@ -11,11 +11,13 @@ void CPlayer_StupefySkill_State::Enter(CStateMachine* pStateMachine)
 {
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer || !pPlayer->GetAnimator()) { RequestLocomotion(pStateMachine); return; }
-	const _bool bHeavyReaction =
-		pPlayer->ConsumeProtegoHeavyReaction(m_vParryPosition);
+	_bool bHeavyReaction = false;
+	const _bool bProtegoReaction =
+		pPlayer->ConsumeProtegoReaction(m_vParryPosition, bHeavyReaction);
 	m_bCounterQueued = pPlayer->ConsumeParryCounter(m_vParryPosition);
-	if (!bHeavyReaction && !m_bCounterQueued) { RequestLocomotion(pStateMachine); return; }
-	pPlayer->StartProtegoRecoil(m_vParryPosition);
+	if (!bProtegoReaction && !m_bCounterQueued) { RequestLocomotion(pStateMachine); return; }
+	if (bHeavyReaction)
+		pPlayer->StartProtegoRecoil(m_vParryPosition);
 	CacheAnimationIndices(*pPlayer);
 	SetSkillControl(*pPlayer, true, true, true);
 	pPlayer->SetCurrentMoveSpeed(0.f);
@@ -25,9 +27,9 @@ void CPlayer_StupefySkill_State::Enter(CStateMachine* pStateMachine)
 	m_fPreviousAnimRatio = 0.f;
 	m_ePhase = PHASE::PARRY_REACTION;
 
-	// 패링 충격을 받은 직후 뒤로 짧게 밀려난 다음 반격한다.
+	// 약한 공격은 제자리 방어, 강한 공격은 슬라이드 방어 후 반격한다.
 	// 반동 애니메이션이 없는 데이터에서는 기존 반격 애니메이션으로 바로 넘어간다.
-	if (!PlayParryReaction(*pPlayer))
+	if (!PlayParryReaction(*pPlayer, bHeavyReaction))
 	{
 		if (!m_bCounterQueued)
 			m_bCounterQueued = pPlayer->ConsumeParryCounter(m_vParryPosition);
@@ -108,18 +110,24 @@ void CPlayer_StupefySkill_State::CacheAnimationIndices(const CPlayer& player)
 	m_Animations[2] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Rht_90_Spin_Rht_Slam_anm.bin");
 	m_Animations[3] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Lft_180_Spin_Rht_Send_anm.bin");
 	m_Animations[4] = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Rht_180_Spin_Rht_anm.bin");
-	m_iParryReactionAnimation = FindAnimationIndex(player,
+	m_iLightParryReactionAnimation = FindAnimationIndex(player,
+		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Protego_Parry_Fwd_R2L_Up_anm.bin");
+	m_iHeavyParryReactionAnimation = FindAnimationIndex(player,
 		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Protego_Parry_Fwd_Heavy_Slide_anm.bin");
 	m_bAnimationsCached = true;
 }
 
-_bool CPlayer_StupefySkill_State::PlayParryReaction(CPlayer& player)
+_bool CPlayer_StupefySkill_State::PlayParryReaction(
+	CPlayer& player, _bool bHeavyReaction)
 {
 	auto* pAnimator = player.GetAnimator();
-	if (!pAnimator || m_iParryReactionAnimation < 0)
+	const int32_t iReactionAnimation = bHeavyReaction
+		? m_iHeavyParryReactionAnimation
+		: m_iLightParryReactionAnimation;
+	if (!pAnimator || iReactionAnimation < 0)
 		return false;
 
-	pAnimator->Play_Anim(m_iParryReactionAnimation, false, REACTION_BLEND_DURATION);
+	pAnimator->Play_Anim(iReactionAnimation, false, REACTION_BLEND_DURATION);
 	pAnimator->GetCurAnimState().fSpeed = REACTION_SPEED;
 	return true;
 }

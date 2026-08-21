@@ -463,6 +463,7 @@ void CComAnimator::Play_UpperAnim(int32_t iAnimIndex, _bool bLoop, _float fFadeD
 	m_UpperAnimState.Reset();
 	m_UpperAnimState.SetAnim(iAnimIndex, bLoop);
 	m_UpperAnimState.KeyFrameIndices.resize(Anims[iAnimIndex]->GetNumChannel(), 0);
+	m_fUpperAutoFadeDuration = 0.1f;
 
 	m_fUpperFadeStartWeight = m_fUpperLayerWeight;
 	m_fUpperFadeTargetWeight = 1.f;
@@ -902,7 +903,7 @@ void CComAnimator::Update_UpperLayer(_float fTimeDelta)
 	}
 
 	if (m_UpperAnimState.bFinished && !m_UpperAnimState.bLoop && m_fUpperFadeTargetWeight > 0.f)
-		Stop_UpperAnim(0.1f);
+		Stop_UpperAnim(m_fUpperAutoFadeDuration);
 
 	if (m_fUpperLayerWeight <= 0.f && m_fUpperFadeTargetWeight <= 0.f)
 	{
