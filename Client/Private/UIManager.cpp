@@ -2406,6 +2406,7 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 
 	if (auto* button = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(pUI->GetHandle()))
 	{
+		button->RefreshBaseScale();
 		button->SetButtonType(static_cast<GENERAL_BUTTON_TYPE>(
 			obj.value("ButtonType", static_cast<uint32_t>(GENERAL_BUTTON_TYPE::DEFAULT))));
 		button->SetCommandParameter(obj.value("CommandParameter", std::string{}));
