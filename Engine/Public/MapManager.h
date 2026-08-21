@@ -117,7 +117,7 @@ public:
 	HRESULT SaveMaterial(const std::string& path);
 	HRESULT LoadMaterial(const std::string& path);
 
-	const MATERIAL_DESC& FindMaterial(const std::string& ModelName);
+	const MATERIAL_DESC FindMaterial(const std::string& ModelName);
 	/*---------------------------------*/
 
 	// 모델 태그 → 모델 .bin 파일 경로

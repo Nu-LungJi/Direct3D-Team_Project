@@ -1468,6 +1468,7 @@ HRESULT CMapManager::SaveMaterial(const std::string& path)
 
 HRESULT CMapManager::LoadMaterial(const std::string& path)
 {
+	m_MaterialDescs.clear();
 	const std::filesystem::path matFilePath = std::filesystem::path(path) / "Material.json";
 	if (!std::filesystem::exists(matFilePath))	 return S_OK;
 
@@ -1516,7 +1517,7 @@ HRESULT CMapManager::LoadMaterial(const std::string& path)
 
 	return S_OK;
 }
-const MATERIAL_DESC& CMapManager::FindMaterial(const std::string& ModelName) {
+const MATERIAL_DESC CMapManager::FindMaterial(const std::string& ModelName) {
 	auto iter = std::find_if(m_MaterialDescs.begin(), m_MaterialDescs.end(), [ModelName](const std::pair<std::string, MATERIAL_DESC> Desc) {
 			return Desc.first == ModelName;
 		});
