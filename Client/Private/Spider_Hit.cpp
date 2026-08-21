@@ -477,7 +477,13 @@ void CSpider_Hit::ChangeMotion(HIT_MOTION eMotion)
 void CSpider_Hit::Effect_Loop(CSpider* pSpider)
 {
 	if (m_iSkillEffID != INVALID_EFFECT_INSTANCE_ID)
-		CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, *pSpider->GetTransform().GetWorldMatrix());
+	{
+		_float4x4 mat{};
+		XMStoreFloat4x4(&mat, pSpider->GetTransform().GetLoadedWorldMatrix());
+		mat._42 += 5.f;
+		CGameInstance::Get().SetEffectWorldMatrix(m_iSkillEffID, mat);
+	}
+
 }
 void CSpider_Hit::Effect(CSpider* pSpider, const _string& SkillName)
 {

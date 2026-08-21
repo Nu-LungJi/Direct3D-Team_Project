@@ -16,6 +16,18 @@ CMon_Spawner::~CMon_Spawner()
 
 void CMon_Spawner::UpdateGUI()
 {
+	ImGui::Text(m_bPick == true ? "Pick : TRUE" : "Pick FALSE");
+	
+	if (ImGui::Button("Save"))
+	{
+		nlohmann::json j;
+		JsonSaveLoadManager::SaveJsonTypeFloat3list(j, "SPIDERSPAWN", m_SpawnPos);
+		std::ofstream path("./Resources/json/Spawn/SPIDERSPAWN.json");
+		path << j.dump(4);
+		path.close();
+	}
+
+	
 }
 
 HRESULT CMon_Spawner::InitializePrototype(void* pArg)
@@ -30,12 +42,12 @@ HRESULT CMon_Spawner::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	auto Desc = static_cast<MON_SPAWNER_DESC*>(pArg);
-
-	
+	m_LeveTag = Desc->LevelTag;
+	if (Desc->LevelTag != "TERRAIN")
 	{
 		CSpider::SPIDER_DESC Spider{};
 		Spider.sObjectTag = "Spider";
-		Spider.TargetHandle = Desc->handle;
+		m_Handle = Spider.TargetHandle = Desc->handle;
 		Spider.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
 		Spider.ReSourceTag = "Model_Resource_Spider";
 		Spider.resBeHaviorMajor = "BTJSON";
@@ -68,7 +80,40 @@ HRESULT CMon_Spawner::Initialize(void* pArg)
 		m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
 
 	}
+	
+	if (Desc->LevelTag != "TERRAIN")
+	{
 
+		auto pRes = CGameInstance::Get().GetResourceFirst<CResJson>("SPAWNER", "SPIDERSPAWN");
+		if (nullptr == pRes)
+		{
+			MSG_BOX("Load Failed Json To SPIDER SPAWN");
+			return E_FAIL;
+		}
+		auto json = pRes->Get_Json();
+		JsonSaveLoadManager::LoadJsonTypeFloat3list(json, "SPIDERSPAWN", m_SpawnPos);
+		{
+			CSpider::SPIDER_DESC Spider{};
+			Spider.sObjectTag = "Spider";
+			Spider.TargetHandle = Desc->handle;
+			Spider.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+			Spider.ReSourceTag = "Model_Resource_Spider";
+			Spider.resBeHaviorMajor = "BTJSON";
+			Spider.resBeHaviorMinor = "RUNSPIDER";
+			Spider.MonType = MONSTER_TYPE::NORMAL;
+			Spider.vScale = _float3(0.1f, 0.1f, 0.1f);
+			for (auto& iter : m_SpawnPos)
+			{
+				Spider.vPos = iter;
+				Spider.vPatrollStart = iter;
+				Spider.vPatrollEnd = _float3(48.357f, 8.653, -11.853f);
+				Spider.bSpawn = true;
+				E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider);
+
+			}
+
+		}
+	}
 	return S_OK;
 }
 
@@ -88,16 +133,90 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 
 void CMon_Spawner::FixedUpdate(E::_float fTimeDelta)
 {
+	
 }
 
 void CMon_Spawner::Update(E::_float fTimeDelta)
 {
+	if (CGameInstance::Get().KeyPressing(DIK_LCONTROL) && CGameInstance::Get().KeyPressing(DIK_LSHIFT) &&
+		CGameInstance::Get().KeyDown(DIK_B))
+		m_bPick = !m_bPick;
+	if (m_bPick)
+		Picking();
+
+	if (m_bPick)
+		Picking_TerrainMon();
 }
 
 void CMon_Spawner::LateUpdate(E::_float fTimeDelta)
 {
 }
 
+void CMon_Spawner::Picking()
+{
+	if (CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	{
+		if (auto pObj = CGameInstance::Get().GetActiveCamera())
+		{
+			const _float2 vMousePosition = CGameInstance::Get().GetMousePos();
+			const _float2 vViewportSize = CGameInstance::Get().GetClientScreenSize();
+			const auto& [ori, dir] = pObj->GetRayFromScreenPixel(vMousePosition, vViewportSize);
+			PX_RAYCAST_RESULT rayResult{};
+			if (CGameInstance::Get().GetPhysXManager()
+				->RayCast(
+					{
+						.vOrigin = ori,
+						.vDirection = dir,
+						.fMaxDistance = 1000.f,
+						.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC)}
+					}
+					, rayResult))
+			{
+				rayResult.vHitpos.y += 0.5f;
+				m_SpawnPos.push_back(rayResult.vHitpos);
+			}
+		}
+	}
+	
+}
+void CMon_Spawner::Picking_TerrainMon()
+{
+	if (m_LeveTag == MagicEnumToStringView(LEVEL::TERRAIN) && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	{
+		if (auto pObj = CGameInstance::Get().GetActiveCamera())
+		{
+			const _float2 vMousePosition = CGameInstance::Get().GetMousePos();
+			const _float2 vViewportSize = CGameInstance::Get().GetClientScreenSize();
+			const auto& [ori, dir] = pObj->GetRayFromScreenPixel(vMousePosition, vViewportSize);
+			PX_RAYCAST_RESULT rayResult{};
+			if (CGameInstance::Get().GetPhysXManager()
+				->RayCast(
+					{
+						.vOrigin = ori,
+						.vDirection = dir,
+						.fMaxDistance = 1000.f,
+						.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::WORLD_STATIC)}
+					}
+					, rayResult))
+			{
+				rayResult.vHitpos.y += 0.5f;
+
+				CSpider::SPIDER_DESC Spider{};
+				Spider.sObjectTag = "Spider";
+				Spider.TargetHandle = m_Handle;
+				Spider.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
+				Spider.ReSourceTag = "Model_Resource_Spider";
+				Spider.resBeHaviorMajor = "BTJSON";
+				Spider.resBeHaviorMinor = "SPIDER";
+				Spider.MonType = MONSTER_TYPE::NORMAL;
+				Spider.bSpawn = true;
+				Spider.vPos = rayResult.vHitpos;
+				m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
+
+			}
+		}
+	}
+}
 E::UPtr<CMon_Spawner> CMon_Spawner::Create()
 {
 	auto pInstance = E::ToUPtr(new CMon_Spawner{});

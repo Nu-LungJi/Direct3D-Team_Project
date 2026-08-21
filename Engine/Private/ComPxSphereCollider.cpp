@@ -77,8 +77,12 @@ HRESULT CComPxSphereCollider::Initialize(void* pArg)
 
     pActor->attachShape(*m_pShape);
 
-    if (auto* dynamic = pActor->is<PxRigidDynamic>())
-        PxRigidBodyExt::updateMassAndInertia(*dynamic, dynamic->getMass());
+    if (auto* dynamic = pActor->is<PxRigidDynamic>();
+        dynamic && !dynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+    {
+        if (!PxRigidBodyExt::setMassAndUpdateInertia(*dynamic, dynamic->getMass()))
+            return E_FAIL;
+    }
 
     return S_OK;
 }

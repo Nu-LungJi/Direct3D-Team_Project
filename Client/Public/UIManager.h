@@ -55,6 +55,13 @@ public:
 	void AddDialoguePopup(const std::string& speaker, const std::string& message);
 	void ClearDialoguePopups(_bool immediate = false);
 
+	/********NPC 말풍선***********/
+	void ShowNPCSpeechBubble(CHandle npcHandle, const std::string& message,
+		_float duration = 5.f,
+		const _float3& worldOffset = { 0.f, 2.2f, 0.f });
+	void RemoveNPCSpeechBubble(CHandle npcHandle, _bool fadeOut = true);
+	void ClearNPCSpeechBubbles(_bool immediate = false);
+
 public:
 	std::optional<CHandle> RootUIPicking();
 
@@ -74,11 +81,13 @@ private:
 	std::optional<CHandle> m_UIController = std::nullopt;
 	std::vector<ACTIVE_BUTTON_INFO> m_ActiveButtons{};
 	std::vector<DIALOGUE_POPUP_INFO> m_DialoguePopups{};
+	std::vector<NPC_SPEECH_BUBBLE_INFO> m_NPCSpeechBubbles{};
 	_float m_fDialogueTargetWidth{};
 
 	void UpdateActiveButtons();
 	void UpdateDialoguePopups(_float fTimeDelta);
 	void RefreshDialoguePopupLayout();
+	void UpdateNPCSpeechBubbles(_float fTimeDelta);
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
 public:

@@ -52,7 +52,8 @@ HRESULT CComBeHavior::Initialize(void* pArg)
 		Load_DataByResource(pDesc->resBeHaviorMajor, pDesc->resBeHaviorMinor);
 	else
 	{
-		Load_Data(pDesc->LoadPath);
+		if(!pDesc->LoadPath.empty())
+			Load_Data(pDesc->LoadPath);
 	}
 
 	

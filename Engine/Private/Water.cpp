@@ -2,6 +2,8 @@
 #include "Water.h"
 #include "ResQuadTexBuffer.h"
 #include "ResTexture2D.h"
+#include "ResDepthStencilState.h"
+#include "CameraObject.h"
 
 NS_USING(Engine)
 
@@ -67,13 +69,19 @@ HRESULT CWater::InitializePrototype(void* Arg)
 			return E_FAIL;
 	}
 
-	if (auto res = E::CGameInstance::Get().AddResourceT<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER00", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/T_Water00_N.png")))
+	if (!gameInstance.GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER00"))
 	{
+		auto res = gameInstance.AddResourceT<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER00", CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/T_OceanSwell_N.png"));
+		if (!res)
+			return E_FAIL;
 		if (FAILED(res->Load()))
 			return E_FAIL;
 	}
-	if (auto res = E::CGameInstance::Get().AddResourceT<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER01", E::CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/T_Water01_N.png")))
+	if (!gameInstance.GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER01"))
 	{
+		auto res = gameInstance.AddResourceT<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER01", CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/T_Water01_N.png"));
+		if (!res)
+			return E_FAIL;
 		if (FAILED(res->Load()))
 			return E_FAIL;
 	}
@@ -83,8 +91,30 @@ HRESULT CWater::InitializePrototype(void* Arg)
 
 HRESULT CWater::Initialize(void* Arg)
 {
+	if (Arg == nullptr)
+		return E_INVALIDARG;
 	if (FAILED(__super::Initialize(Arg)))
 		return E_FAIL;
+
+	const auto* desc = static_cast<const WATER_DESC*>(Arg);
+	m_fSeaLevel = desc->vPosition.y;
+	m_fFollowSnap = std::max(1.f, desc->fFollowSnap);
+	m_bFollowCamera = desc->bFollowCamera;
+	m_WaterData.waterColor = desc->vWaterColor;
+	m_WaterData.shallowColor = desc->vShallowColor;
+	m_WaterData.deepColor = desc->vDeepColor;
+	m_WaterData.reflectionColor = desc->vReflectionColor;
+	m_WaterData.scrollSpeed1 = desc->vScrollSpeed1;
+	m_WaterData.scrollSpeed2 = desc->vScrollSpeed2;
+	m_WaterData.waveIntensity = std::max(0.f, desc->fWaveIntensity);
+	m_WaterData.uvScale = std::max(0.0001f, desc->fUVScale);
+	m_WaterData.secondaryNormalScale = std::max(0.01f, desc->fSecondaryNormalScale);
+
+	auto& transform = GetTransform();
+	transform.SetPosition(desc->vPosition);
+	transform.SetScale(_float3{ std::max(1.f, desc->vSize.x), std::max(1.f, desc->vSize.y), 1.f });
+	transform.SetRotation({ 1.f, 0.f, 0.f }, 90.f);
+	transform.Update();
 
 	auto& gameInstance = CGameInstance::Get();
 
@@ -117,6 +147,10 @@ HRESULT CWater::Initialize(void* Arg)
 	if (m_pSamplerState == nullptr)
 		return E_FAIL;
 
+	m_pDepthStencilState = gameInstance.GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_ALPHA_BLEND_DEPTH");
+	if (m_pDepthStencilState == nullptr)
+		return E_FAIL;
+
 	return S_OK;
 }
 
@@ -124,6 +158,18 @@ void CWater::LateUpdate(_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
 	m_fTime = std::fmod(m_fTime + std::max(0.f, fTimeDelta), 10000.f);
+
+	if (m_bFollowCamera)
+	{
+		if (const auto* camera = CGameInstance::Get().GetActiveCamera())
+		{
+			const auto cameraPosition = camera->GetTransform().GetPosition();
+			const _float snappedX = std::floor(cameraPosition.x / m_fFollowSnap) * m_fFollowSnap;
+			const _float snappedZ = std::floor(cameraPosition.z / m_fFollowSnap) * m_fFollowSnap;
+			GetTransform().SetPosition(_float3{ snappedX, m_fSeaLevel, snappedZ });
+		}
+	}
+
 	GetTransform().Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::BLEND, this);
 }
@@ -142,9 +188,8 @@ HRESULT CWater::Render(ID3D11DeviceContext* context, const RENDER_CTX& ctx)
 		return E_FAIL;
 
 	// 물 전용 상수 버퍼 업데이트 (시간, 색상, 스크롤 속도 등)
-	CB_WATER waterData{};
-	waterData.time = m_fTime;
-	if (FAILED(m_pComCBufferWater->MapDiscard(context, &waterData, sizeof(waterData))))
+	m_WaterData.time = m_fTime;
+	if (FAILED(m_pComCBufferWater->MapDiscard(context, &m_WaterData, sizeof(m_WaterData))))
 		return E_FAIL;
 
 
@@ -172,7 +217,12 @@ HRESULT CWater::Render(ID3D11DeviceContext* context, const RENDER_CTX& ctx)
 
 	context->PSSetSamplers(0, 1, m_pSamplerState->GetSamplerState().GetAddressOf());
 
+	ComPtr<ID3D11DepthStencilState> previousDepthState{};
+	UINT previousStencilRef = 0;
+	context->OMGetDepthStencilState(previousDepthState.GetAddressOf(), &previousStencilRef);
+	context->OMSetDepthStencilState(m_pDepthStencilState->GetDepthStencilState().Get(), 0);
 	context->DrawIndexed(m_pQuadTexBuffer->GetNumIndices(), 0, 0);
+	context->OMSetDepthStencilState(previousDepthState.Get(), previousStencilRef);
 
 	return S_OK;
 }

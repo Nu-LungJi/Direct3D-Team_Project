@@ -77,14 +77,17 @@ VS_OUT VSMain(VS_IN In, uint instID : SV_InstanceID)
 	float3 spunLocal = RotateAxisAngle(localPos, p.roationAxis, p.rotation.w);
 	float3 rotatedLocal = RotateXYZ(spunLocal, p.rotation);
     float3 vWorldPos = rotatedLocal + p.position;
+	float3 spunNormal = RotateAxisAngle(In.vNormal, p.roationAxis, p.rotation.w);
+	float3 spunTangent = RotateAxisAngle(In.vTangent, p.roationAxis, p.rotation.w);
+	float3 spunBinormal = RotateAxisAngle(In.vBinormal, p.roationAxis, p.rotation.w);
 
 
     Out.vPosition = mul(float4(vWorldPos, 1.0f), g_matViewProj);
     Out.vWorldPos = vWorldPos;
     //Out.vTexcoord = In.vTexcoord;
-    Out.vNormal = In.vNormal;
-    Out.vTangent = In.vTangent;
-    Out.vBinormal = In.vBinormal;
+    Out.vNormal = normalize(RotateXYZ(spunNormal, p.rotation));
+    Out.vTangent = normalize(RotateXYZ(spunTangent, p.rotation));
+    Out.vBinormal = normalize(RotateXYZ(spunBinormal, p.rotation));
     Out.vColor = p.alive ? p.color : float4(p.color.rgb, 0.0f);
     Out.vEmissive = p.emissive;
     Out.vEndEmissive = p.endEmissive;

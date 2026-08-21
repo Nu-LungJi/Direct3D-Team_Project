@@ -29,6 +29,7 @@ void CPlayer_Locomotion_State::Enter(CStateMachine* pStateMachine)
 	m_bJogStopping = false;
 	m_bWasMoving = false;
 	m_iActiveMoveLoopAnimation = -1;
+	m_fAirborneTime = 0.f;
 	player->SetMovementLocked(false);
 	player->SetRootMotionRotationActive(false);
 	player->SetRootMotionTranslationActive(false);
@@ -50,6 +51,9 @@ void CPlayer_Locomotion_State::CacheAnimationIndices(const CPlayer& player)
 		return;
 
 	m_iIdleAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_anm.bin");
+	m_iWalkForwardAnimation = FindAnimationIndex(
+		player,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_Walk_Loop_Fwd_anm.bin");
 	m_iJogStartForwardAnimation = FindAnimationIndex(
 		player,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Jog_Start_Fwd_anm.bin");
@@ -85,10 +89,22 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 	if (!pMoveIntent || !pAnimator || !pMotor || !pPlayerStateMachine)
 		return;
 
-	// 짧은 단차에서는 Locomotion 포즈를 유지하고, 실제 하강 속도가
-	// 기준값에 도달했을 때 Jump State의 FALL 페이즈로 진입한다.
-	if (!pMotor->IsGrounded() &&pMotor->GetVelocity().y <= m_fFallStateVerticalSpeed)
+	// 내리막과 작은 단차에서는 CCT 접지가 잠깐 풀릴 수 있다. 즉시 FALL로
+	// 전환하면 다시 지면을 만날 때 착지 애니메이션이 반복되므로 공중 상태가
+	// 일정 시간 지속된 경우에만 실제 낙하로 판단한다.
+	if (pMotor->IsGrounded())
 	{
+		m_fAirborneTime = 0.f;
+	}
+	else
+	{
+		m_fAirborneTime += fTimeDelta;
+	}
+
+	if (m_fAirborneTime >= m_fFallStateGraceTime &&
+		pMotor->GetVelocity().y <= m_fFallStateVerticalSpeed)
+	{
+		m_fAirborneTime = 0.f;
 		pPlayerStateMachine->RequestState(PLAYER_STATE::JUMP);
 		return;
 	}
@@ -247,7 +263,9 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 			360.f);
 	}
 
-	int32_t iDesiredMoveAnimation = m_iJogForwardAnimation;
+	int32_t iDesiredMoveAnimation =
+		player->IsWalkRequested() && m_iWalkForwardAnimation >= 0
+		? m_iWalkForwardAnimation : m_iJogForwardAnimation;
 	if (player->IsSprintRequested())
 	{
 		const _float fLeanAngle = CalculateSignedAngle(

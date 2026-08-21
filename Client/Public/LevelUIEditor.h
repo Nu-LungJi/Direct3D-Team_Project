@@ -20,8 +20,22 @@ public:
 		std::string fullPath; 
 	};
 public:
-	enum class UiEditorMode { ARRANGE, PREFAB, FLIPBOOK, END };
+	enum class UiEditorMode { ARRANGE, PREFAB, FLIPBOOK, RTT, END };
 	enum class UiButtonMode { DEFAULT, CREATE, SELECT, END };
+
+	struct RTTCanvasSettings
+	{
+		int CanvasWidth{ 1280 };
+		int CanvasHeight{ 720 };
+		char RenderTargetTag[128]{ "RT_WandShop" };
+		_float4 ClearColor{ 0.f, 0.f, 0.f, 0.f };
+		_float3 PanelWorldPosition{ 0.f, 0.f, 0.f };
+		_float3 PanelWorldRotation{ 0.f, 0.f, 0.f };
+		_float2 PanelWorldSize{ 8.f, 4.5f };
+		_bool EnablePicking{ true };
+		_bool IgnoreDepth{ false };
+		_bool RenderEveryFrame{ true };
+	};
 
 private:
 	explicit CLevelUIEditor();
@@ -55,10 +69,14 @@ private:
 
 	char m_cTextBuf[1024] = "";
 	std::string m_sText{};
+	uint32_t m_iGeneralButtonType{};
+	char m_cGeneralButtonParameter[128] = "";
+	_float4 m_vNineSliceMargins{};
 
 	_bool m_IsWorldSpace{ false };
 	_float m_fWorldScaleFactor = 0.01f;
 	_float3 m_WorldPos{0.f, 0.f, 0.f};
+	RTTCanvasSettings m_RTTCanvas{};
 private:
 	uint32_t count{};
 	_float2 m_vDragOffset{};
@@ -77,6 +95,7 @@ private:
 	void ArrangeMode();
 	void PrefabMode();
 	void FlipbookMode();
+	void RTTMode();
 	void AnimationMode();
 
 private:
@@ -98,6 +117,8 @@ private:
 
 	void StateView();
 	void LocalStateView();
+	void DrawGeneralButtonSettings();
+	void DrawNineSliceSettings();
 	void UpdateTargetState();
 	void DrawFileExplorer();
 
@@ -117,6 +138,7 @@ private:
 	std::string g_LevelPath = "./Resources/SampleClient/UIData/LevelUI/";
 	std::string g_PrefabPath = "./Resources/SampleClient/UIData/Prefabs/";
 	std::string g_FlipbookPath = "./Resources/SampleClient/UIData/FlipBook/";
+	std::string g_RTTPath = "./Resources/SampleClient/UIData/RTT/";
 
 public:
 	static Engine::UPtr<CLevelUIEditor> Create();

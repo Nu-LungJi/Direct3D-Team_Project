@@ -107,13 +107,8 @@ HRESULT CMapMeshInstancingRenderer::BindMapMeshTextures(
 
 		return S_OK;
 	}
-
-HRESULT BindMapMeshMaterial(
-	ID3D11DeviceContext* pContext,
-	const SPtr<CResCBuffer>& materialConstantBuffer,
-	_float3 emissiveColor,
-	_float emissiveIntensity,
-	_float objectAlpha)
+/*----------- 광윤 추가 및 수정 : CB_MATERIAL 변수 추가 + m_DrawItems 변수 추가로 매개변수 수정, 바인딩 코드 추가-----------*/
+HRESULT BindMapMeshMaterial(ID3D11DeviceContext* pContext,const SPtr<CResCBuffer>& materialConstantBuffer, const MATERIAL_DESC& materialDesc)
 	{
 		if (pContext == nullptr || materialConstantBuffer == nullptr)
 		{
@@ -127,17 +122,23 @@ HRESULT BindMapMeshMaterial(
 		}
 
 		CB_MATERIAL material{};
-		material.EmissiveColor = emissiveColor;
-		material.EmissiveIntensity = emissiveIntensity;
-		material.ObjectAlpha = objectAlpha;
+		/*----------- 광윤 추가 및 수정 -----------*/
+		material.NormalIntensity = materialDesc.m_fNormalIntensity;
+		material.MetallicIntensity = materialDesc.m_fMetallicIntensity;
+		material.RoughnessIntensity = materialDesc.m_fRoughnessIntensity;
+		material.AmbientIntensity = materialDesc.m_fAmbientIntensity;
 
+		material.EmissiveColor = materialDesc.m_fEmissiveColor;
+		material.EmissiveIntensity = materialDesc.m_fEmissiveIntensity;
+		material.ObjectAlpha = materialDesc.m_fObjectAlpha;
+		/*---------------------------------*/
 		memcpy(mapped.pData, &material, sizeof(CB_MATERIAL));
 		pContext->Unmap(materialConstantBuffer->GetCBuffer().Get(), 0);
 		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, materialConstantBuffer->GetCBuffer().GetAddressOf());
 
 		return S_OK;
 	}
-
+/*---------------------------------*/
 
 CMapMeshInstancingRenderer::CMapMeshInstancingRenderer()
 {
@@ -347,6 +348,9 @@ HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(ID3D11DeviceContext* pCont
 			return E_FAIL;
 
 		const auto* textureCache = GetOrCreateMapMeshTextureCache(model);
+		/*----------- 광윤 추가 -----------*/ // Material 정보 Get
+		const MATERIAL_DESC materialDesc = model->GetMaterialDesc();
+		/*---------------------------------*/
 		if (textureCache == nullptr)
 			return E_FAIL;
 
@@ -368,10 +372,11 @@ HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(ID3D11DeviceContext* pCont
 			D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS args{};
 			args.IndexCountPerInstance = static_cast<uint32_t>(mesh->GetNumIndices());
 			m_IndirectArgs.push_back(args);
-			m_DrawItems.push_back({ model, renderFeature, textureCache, meshIndex, instanceOffset });
+			/*----------- 광윤 수정 -----------*/	// 메쉬별 Material 정보 추가
+			m_DrawItems.push_back({ model, renderFeature, textureCache, materialDesc, meshIndex, instanceOffset });
+			/*---------------------------------*/
 
 			const size_t featureIndex = static_cast<size_t>(renderFeature);
-
 			if (featureIndex >= RENDER_FEATURE_COUNT)
 				return E_FAIL;
 
@@ -379,7 +384,6 @@ HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(ID3D11DeviceContext* pCont
 		}
 		++batchIndex;
 	}
-
 	if (m_Instances.empty() || m_DrawItems.empty())
 		return S_OK;
 
@@ -392,13 +396,14 @@ HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(ID3D11DeviceContext* pCont
 	if (m_DrawCommandIndices.size() != m_DrawItems.size())
 		return E_FAIL;
 
-	if (FAILED(BindMapMeshMaterial(
-		pContext, outPacket.materialConstantBuffer,
-		{ 1.f, 1.f, 1.f }, 0.f, 1.f)))
-	{
-		return E_FAIL;
-	}
-
+	/*----------- 광윤 수정 -----------*/ // Material 메쉬 종류별 Material 적용으로 RecordDrawCommands의 DrawIndexedInstancedIndirect 이전으로 이관
+	//if (FAILED(BindMapMeshMaterial(
+	//	pContext, outPacket.materialConstantBuffer,
+	//	{ 1.f, 1.f, 1.f }, 0.f, 1.f)))
+	//{
+	//	return E_FAIL;
+	//}
+	/*---------------------------------*/
 	if (FAILED(s_pGpuCuller->BuildVisibleInstancesAndIndirectArgs(
 		pContext, m_Instances, m_OcclusionData, m_CullMeta, batchIndex,
 		m_DrawBatchIndices, m_IndirectArgs,
@@ -539,13 +544,15 @@ HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
 		uint32_t strides[] = { mesh->GetVertexStride(), static_cast<uint32_t>(sizeof(MAPMESH_INSTANCE_DATA)) };
 		uint32_t offsets[] = { 0, item.instanceOffset * static_cast<uint32_t>(sizeof(MAPMESH_INSTANCE_DATA)) };
 
-		pContext->IASetVertexBuffers(0, 2, vertexBuffers, strides, offsets);
-		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
-		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
-
-		if (FAILED(BindMapMeshTextures(pContext, *item.textureCache, item.meshIndex)))
-			return E_FAIL;
-
+			pContext->IASetVertexBuffers(0, 2, vertexBuffers, strides, offsets);
+			pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+			pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+			if (FAILED(BindMapMeshTextures(pContext, *item.textureCache, item.meshIndex)))
+				return E_FAIL;
+			/*----------- 광윤 수정 -----------*/ // Material 메쉬 종류별 Material 적용으로 RecordDrawCommands의 DrawIndexedInstancedIndirect 이전으로 이관
+			if (FAILED(BindMapMeshMaterial(pContext, packet.materialConstantBuffer, item.materialDesc)))
+				return E_FAIL;
+			/*---------------------------------*/
 		pContext->DrawIndexedInstancedIndirect(packet.indirectArgsBuffer.Get(),
 			drawIndex * static_cast<uint32_t>(sizeof(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS)));
 		++outDrawCalls;

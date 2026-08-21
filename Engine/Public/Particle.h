@@ -29,6 +29,7 @@ public:
 		// [LSY] CPU 파티클의 종료 알파 정책. Late는 수명 후반부터 감소한다.
 		BEHAVIOR_FADEOUT				= 1 << 13,
 		BEHAVIOR_FADEOUT_LATE			= 1 << 14,
+		BEHAVIOR_ORBIT					= 1 << 15,
 	};
 
 protected:
@@ -53,7 +54,7 @@ public:
 	virtual void SetColor(const _float4& color) {}
 	virtual void SetEmissive(const _float4& emissvie) {}
 	virtual void SetColorByOwner(uint32_t ownerId, const _float4& color) {}
-	void RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList);
+	virtual void RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList);
 	HRESULT Set_BlendState(BLENDTYPE blendNum);
 	uint32_t Get_BlendState() { return m_iBlendIndex; }
 

@@ -39,6 +39,10 @@ public:
 	_bool						Is_StateFinished();
 	void						Set_StateFinished(_bool bFinished);
 	void						Set_Gravity(_bool bGravity);
+	CHandle					GetWeaponHandle() const
+	{
+		return m_Partes[ETOUI(PARTES::WEAPON)];
+	}
 private:
 	void						Ready_BBKeyValue();
 	HRESULT						Ready_Fsm(const _string& LevelTag);

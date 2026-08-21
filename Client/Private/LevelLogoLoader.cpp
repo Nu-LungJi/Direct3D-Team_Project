@@ -9,6 +9,7 @@
 #include "EffectUI.h"
 #include "TextureUI.h"
 #include "VideoObject.h"
+#include "UITextureResourceLoader.h"
 
 
 NS_USING(Client)
@@ -57,33 +58,13 @@ _bool CLevelLogoLoader::UILoad()
 	/**********************UI********************/
 	{
 		{
-			namespace fs = std::filesystem;
-
 			const char* targetDirectories[] = {
 				"./Resources/SampleClient/Textures/UI/UITexture/LOGO"
 			};
 
-			// 배열을 순회하며 기존 로직을 한 번만 작성하여 처리합니다.
 			for (const auto& targetDir : targetDirectories)
-			{
-				if (fs::exists(targetDir) && fs::is_directory(targetDir))
-				{
-					for (const auto& entry : fs::directory_iterator(targetDir))
-					{
-						if (entry.is_regular_file() && entry.path().extension() == ".png")
-						{
-							std::string fileName = entry.path().stem().string();
-							std::string resTag = "TEX_" + fileName;
-							std::string fullPath = entry.path().generic_string();
-
-							if (auto res = E::CGameInstance::Get().AddResource("LEVEL_LOGO", resTag, E::CResTexture2D::Create(fullPath)))
-							{
-								res->Load();
-							}
-						}
-					}
-				}
-			}
+				UITextureResourceLoader::LoadDirectory(
+					"LEVEL_LOGO", targetDir);
 		}
 
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LOGO", "Prototype_GameObject_TextureUI", CTextureUI::Create())))

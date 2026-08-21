@@ -301,6 +301,9 @@ void CAnimEdit_Manager::IMGUI_TopBar_Animation(CGameObject* pSampleObj,CComAnima
 							s_szRenameBuffer,
 							newPath))
 						{
+							// [LSY] 공유 Clip의 파일명 변경과 ResourceManager 경로 캐시를 함께 갱신한다.
+							CGameInstance::Get().MoveResourcePathLookup(
+								oldPath, newPath, pAnim);
 							pAnim->SetAnimName(s_szRenameBuffer);
 							pAnim->SetAnimPath(newPath);
 						}

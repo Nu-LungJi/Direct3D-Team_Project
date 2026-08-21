@@ -23,6 +23,8 @@ HRESULT CDebugPlayerThirdPersonCamera::Initialize(void* pArg)
 	if (FAILED(CCameraObject::Initialize(pArg)))
 		return E_FAIL;
 
+	SetTimeDomain(TIME_DOMAIN::UNSCALED);
+
 	m_hTarget = pDesc->hTarget;
 	m_fPitch = std::clamp(pDesc->fPitch, pDesc->fMinPitch, pDesc->fMaxPitch);
 	m_fDistance = pDesc->fDistance;

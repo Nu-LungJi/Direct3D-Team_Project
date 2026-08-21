@@ -55,6 +55,7 @@ EVALUATE CBTDecSearch::Evaluate(_float fTimeDelta)
 	{
 		if (auto pOwner = static_cast<CMonster*>(pBT->GetGameObject()))
 		{
+			pOwner->Find_Target();
 			if (auto pTarget = pOwner->Get_Target())
 			{
 				auto& vDest = pTarget->GetTransform();

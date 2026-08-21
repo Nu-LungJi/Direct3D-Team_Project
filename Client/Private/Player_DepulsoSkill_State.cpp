@@ -12,6 +12,15 @@ NS_USING(Client)
 
 void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 {
+
+	auto* pTrail = dynamic_cast<CTrail_CPU*>(CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail"));
+
+	if (pTrail)
+	{
+		pTrail->SetColor(_float4(67 / 255.f, 97 / 255.f, 174 / 255.f, 1.f));
+		pTrail->SetEmissive(_float4(51 / 255.f, 77 / 255.f, 126 / 255.f, 4.f));
+	}
+
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer)
 	{
@@ -55,7 +64,6 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 	SetSkillControl(*pPlayer, true, false, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::DEPULSO);
-	TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DEPULSO); //창준 변경
 	//if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
 	//{
 	//	pMonster->Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
@@ -66,13 +74,9 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 	m_fAnimRatio = 0.f;
 	m_fPreviousAnimRatio = 0.f;
 
-	{
-		{
-			auto a = CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail");
-			static_cast<CTrail_CPU*>(a)->SetColor(_float4(67 / 255.f, 97 / 255.f, 174 / 255.f, 1.f));
-			static_cast<CTrail_CPU*>(a)->SetEmissive(_float4(51 / 255.f, 77 / 255.f, 126 / 255.f, 4.f));
-		}
-	}
+
+
+
 }
 
 void CPlayer_DepulsoSkill_State::CacheAnimationIndices(const CPlayer& player)
@@ -174,7 +178,14 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
 			{
 				_vector monsterPos = XMVectorSet(pMonster->GetHurtBoxPosition().x, pMonster->GetHurtBoxPosition().y, pMonster->GetHurtBoxPosition().z, 1);
-				_float3 camPos = CGameInstance::Get().GetActiveCamera()->GetTransform().GetPosition();
+				_float4x4 mat;
+				XMStoreFloat4x4(&mat, XMMatrixTranslation(pMonster->GetHurtBoxPosition().x, pMonster->GetHurtBoxPosition().y, pMonster->GetHurtBoxPosition().z));
+
+
+				CGameInstance::Get().PlayEffect("Depulso", mat);
+				TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DEPULSO); //창준 변경
+
+			/*	_float3 camPos = CGameInstance::Get().GetActiveCamera()->GetTransform().GetPosition();
 				_vector vCamPos = XMVectorSet(camPos.x, camPos.y, camPos.z, 1);
 
 				_vector dirToCam = vCamPos - monsterPos;
@@ -191,7 +202,7 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 				_float4x4 storedMatrix;
 				XMStoreFloat4x4(&storedMatrix, effectMatrix);
 
-				CGameInstance::Get().PlayEffect("Depulso", storedMatrix);
+				CGameInstance::Get().PlayEffect("Depulso", storedMatrix);*/
 			}
 			
 			m_ePhase = PHASE::PUSH;

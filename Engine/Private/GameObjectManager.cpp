@@ -776,7 +776,9 @@ void CGameObjectManager::DelLayer(std::string_view sLayerName)
 	SortLayer();
 }
 
-void CGameObjectManager::FixedUpdate(_float fTimeDelta)
+void CGameObjectManager::FixedUpdate(
+	_float fScaledDelta,
+	_float fUnscaledDelta)
 {
 	ZoneScopedN("CGameObjectManager_FixedUpdate");
 	const _bool bTraceObjects =
@@ -794,12 +796,18 @@ void CGameObjectManager::FixedUpdate(_float fTimeDelta)
 				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
 			}
 
-			pObj->FixedUpdate(fTimeDelta);
+			const _float fObjectDelta =
+				pObj->GetTimeDomain() == TIME_DOMAIN::UNSCALED
+				? fUnscaledDelta
+				: fScaledDelta;
+			pObj->FixedUpdate(fObjectDelta);
 		}
 	}
 }
 
-void CGameObjectManager::PriorityUpdate(_float fTimeDelta)
+void CGameObjectManager::PriorityUpdate(
+	_float fScaledDelta,
+	_float fUnscaledDelta)
 {
 	ZoneScopedN("CGameObjectManager_PriorityUpdate");
 	const _bool bTraceObjects =
@@ -817,12 +825,18 @@ void CGameObjectManager::PriorityUpdate(_float fTimeDelta)
 				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
 			}
 
-			pObj->PriorityUpdate(fTimeDelta);
+			const _float fObjectDelta =
+				pObj->GetTimeDomain() == TIME_DOMAIN::UNSCALED
+				? fUnscaledDelta
+				: fScaledDelta;
+			pObj->PriorityUpdate(fObjectDelta);
 		}
 	}
 }
 
-void CGameObjectManager::Update(_float fTimeDelta)
+void CGameObjectManager::Update(
+	_float fScaledDelta,
+	_float fUnscaledDelta)
 {
 	ZoneScopedN("CGameObjectManager_Update");
 	const _bool bTraceObjects =
@@ -840,12 +854,18 @@ void CGameObjectManager::Update(_float fTimeDelta)
 				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
 			}
 
-			pObj->Update(fTimeDelta);
+			const _float fObjectDelta =
+				pObj->GetTimeDomain() == TIME_DOMAIN::UNSCALED
+				? fUnscaledDelta
+				: fScaledDelta;
+			pObj->Update(fObjectDelta);
 		}
 	}
 }
 
-void CGameObjectManager::LateUpdate(_float fTimeDelta)
+void CGameObjectManager::LateUpdate(
+	_float fScaledDelta,
+	_float fUnscaledDelta)
 {
 	ZoneScopedN("CGameObjectManager_LateUpdate");
 	const _bool bTraceObjects =
@@ -863,7 +883,11 @@ void CGameObjectManager::LateUpdate(_float fTimeDelta)
 				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
 			}
 
-			pObj->LateUpdate(fTimeDelta);
+			const _float fObjectDelta =
+				pObj->GetTimeDomain() == TIME_DOMAIN::UNSCALED
+				? fUnscaledDelta
+				: fScaledDelta;
+			pObj->LateUpdate(fObjectDelta);
 		}
 	}
 }

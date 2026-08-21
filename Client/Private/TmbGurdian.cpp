@@ -344,27 +344,8 @@ _string CTmbGurdian::Get_SkillName(ATTMON SkillNode)
 
 const _float CTmbGurdian::Get_Damage()
 {
-	//TOMB_SKILL::JUMP_END, TOMB_SKILL::SLASH
-	uint32_t SkillID = Find_SkillNum(m_eAttType);
-
-	if(SkillID == ETOUI(TOMB_SKILL::JUMP_END))
-	{
-		m_fDamage = 25.f;
-	}
-	else if (SkillID == ETOUI(TOMB_SKILL::SLASH))
-	{
-		m_fDamage = 5.f;
-	}
-	else if (SkillID == ETOUI(TOMB_SKILL::SMASH))
-	{
-		m_fDamage = 15.f;
-	}
-	else if (SkillID == ETOUI(TOMB_SKILL::STING))
-	{
-		m_fDamage = 10.f;
-	}
-	
-	return m_fDamage;
+	// 기사 공격은 종류와 관계없이 동일한 방어 판정 기준을 사용한다.
+	return 50.f;
 }
 
 _bool CTmbGurdian::Check_Table(PLAYER_SKILL_TYPE eType)

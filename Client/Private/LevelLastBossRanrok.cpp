@@ -74,8 +74,8 @@ HRESULT CLevelLastBossRanrok::Initialize()
 	if (FAILED(SpawnLightPlacement()))
 		return E_FAIL;
 
-	//if (FAILED(SpawnSkyBox()))
-	//	return E_FAIL;
+	if (FAILED(SpawnSkyBox()))
+		return E_FAIL;
 
 	if (FAILED(PlayBGM()))
 		return E_FAIL;

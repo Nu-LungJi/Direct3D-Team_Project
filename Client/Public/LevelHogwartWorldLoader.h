@@ -20,6 +20,8 @@ private:
 	static _bool UILoad_InWorker();
 
 	static HRESULT MonsterLoad_InWorker();
+
+	static HRESULT NpcLoad_InWorker();
 private:
 	constexpr static LEVEL CURR_LEVEL = LEVEL::HOGWART_WORLD;
 };
