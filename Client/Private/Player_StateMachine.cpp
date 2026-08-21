@@ -137,7 +137,10 @@ _bool CPlayer_StateMachine::CanTransition(PLAYER_STATE eCurrent, PLAYER_STATE eN
 
 	if (IsSkillState(eCurrent))
 	{
+		// 프로테고가 공격을 실제로 막았을 때의 방어 반응은 Q 입력이나
+		// 현재 스킬 동작과 무관하게 즉시 재생되어야 한다.
 		return eNext == PLAYER_STATE::LOCOMOTION ||
+			eNext == PLAYER_STATE::STUPEFY_SKILL ||
 			eNext == PLAYER_STATE::HIT ||
 			eNext == PLAYER_STATE::KNOCKDOWN ||
 			eNext == PLAYER_STATE::DEAD;

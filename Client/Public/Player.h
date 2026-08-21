@@ -110,7 +110,8 @@ public:
 	const _float3& GetKnockdownAttackPosition() const { return m_vKnockdownAttackPosition; }
 private:
 	void HandleDeath();
-	void TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage = 0);
+	void TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage = 0,
+		const _float3* pAttackPosition = nullptr);
 public:
 	void Attack_Magic_Bullet();
 	_bool FireStupefyProjectile();
@@ -203,7 +204,7 @@ public:
 	_bool IsProtegoActive() const { return m_bProtegoActive; }
 	void ActivateProtego(_float fDuration);
 	_bool ConsumeParryCounter(_float3& outAttackPosition);
-	_bool ConsumeProtegoHeavyReaction(_float3& outAttackPosition);
+	_bool ConsumeProtegoReaction(_float3& outAttackPosition, _bool& outHeavyReaction);
 	void StartProtegoRecoil(const _float3& vHitPosition);
 	uint32_t GetProtegoParrySequence() const { return m_iProtegoParrySequence; }
 	const _float3& GetLastProtegoHitPosition() const { return m_vLastProtegoHitPosition; }
@@ -303,10 +304,12 @@ private:
 	_float m_fProtegoRecoilRemainTime{};
 	_float3 m_vProtegoRecoilDirection{};
 	_bool  m_bStupefyCounterRequested{};
-	_bool  m_bProtegoHeavyReactionRequested{};
+	_bool  m_bProtegoReactionRequested{};
+	_bool  m_bProtegoHeavyReaction{};
 	static constexpr _float PARRY_COUNTER_WINDOW = 1.0f;
+	static constexpr int32_t PROTEGO_HEAVY_DAMAGE_THRESHOLD = 50;
 	static constexpr _float PROTEGO_RECOIL_DURATION = 0.2f;
-	static constexpr _float PROTEGO_RECOIL_SPEED = 5.f;
+	static constexpr _float PROTEGO_RECOIL_SPEED = 10.f;
 	EFFECT_INSTANCE_ID m_iProtegoShieldEffectID{ INVALID_EFFECT_INSTANCE_ID };
 	struct PROTEGO_HIT_EFFECT
 	{
@@ -316,6 +319,7 @@ private:
 	std::vector<PROTEGO_HIT_EFFECT> m_ProtegoHitEffects{};
 	uint32_t m_iProtegoParrySequence{};
 	_float3 m_vLastProtegoHitPosition{};
+	_float3 m_vLastProtegoAttackPosition{};
 	std::vector<PROJECTILE_LIFETIME> m_Projectiles{};
 
 	//[LSY] 테스트 로그니 지우셔도 됩니다.

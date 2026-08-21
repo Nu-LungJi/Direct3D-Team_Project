@@ -238,10 +238,31 @@ void CPlayer_Stupefy_Bullet::Finish(const _float3& position, const _float3& norm
 		XMStoreFloat4x4(&world, impactWorld);
 		CGameInstance::Get().PlayEffect(m_sImpactEffect, world, vLook);
 	}
+	// Impact Sound
+	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager())
+	{
+		SOUND_3D_DESC Sound3DDesc{
+			.vPosition = position,
+			.fMinDistance = 2.f,
+			.fMaxDistance = 80.f,
+			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		};
+
+		pSoundManager->Play3D(
+			"./Resources/SampleClient/Sound/Player/SkillEffect/Stupefy/Stupefy_Impact.wav",
+			Sound3DDesc,
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 0.55f,
+				.fPitch = 1.f,
+				.iPriority = 84,
+				.bLoop = false
+			});
+	}
 	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
-		.fIntensity = 0.085f,
-		.fDuration = 0.1f,
-		.fFrequency = 27.f });
+		.fIntensity = 0.7f,
+		.fDuration = 1.f,
+		.fFrequency = 40.f });
 	if (auto* monster = Cast<CMonster>(hitObject)) monster->Check_Table(m_eSkillType);
 	SetPendingDestroy();
 }

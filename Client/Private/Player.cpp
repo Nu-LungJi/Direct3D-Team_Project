@@ -1282,12 +1282,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (CGameInstance::Get().KeyDown(DIK_7))
 			m_pStateMachine->RequestState(PLAYER_STATE::TRANSFORMATION_SKILL);
 
-#ifdef _DEBUG
-		// Lumos debug toggle. The Lumos state decides whether this request
-		// enters Start/Hold or plays Stop based on the current active flag.
+		// L 키는 빌드 구성과 무관한 정식 루모스 토글 입력이다.
+		// Lumos 상태가 현재 활성 여부에 따라 Start/Hold 또는 Stop을 선택한다.
 		if (CGameInstance::Get().KeyDown(DIK_L))
 			m_pStateMachine->RequestState(PLAYER_STATE::LUMOS_SKILL);
-#endif
 
 		// [LSY] 아바다 케다브라 애니메이션과 이펙트 연결 확인용 임시 입력.
 		if (CGameInstance::Get().KeyDown(DIK_U))
@@ -2459,7 +2457,8 @@ HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISIO
 		vHitPosition.y += 1.f;
 		if (info.iContactCount > 0)
 			vHitPosition = info.Contacts[0].vWorldPosition;
-		TriggerProtegoHit(vHitPosition);
+		const _float3 vAttackPosition = pAttacker->GetTransform().GetPosition();
+		TriggerProtegoHit(vHitPosition, 0, &vAttackPosition);
 		return S_OK;
 	}
 	if (m_bInvincible)
@@ -2515,7 +2514,10 @@ _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,i
 {
 	if (m_bProtegoActive)
 	{
-		TriggerProtegoHit(vHitPosition, iDamage);
+		const _float3 vAttackPosition = pAttacker
+			? pAttacker->GetTransform().GetPosition()
+			: vHitPosition;
+		TriggerProtegoHit(vHitPosition, iDamage, &vAttackPosition);
 		return false;
 	}
 	if (m_bInvincible)
@@ -2648,15 +2650,22 @@ _bool CPlayer::RequestKnockdown(const _float3& vAttackPosition)
 	return m_pStateMachine->RequestState(PLAYER_STATE::KNOCKDOWN);
 }
 
-void CPlayer::TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage)
+void CPlayer::TriggerProtegoHit(
+	const _float3& vHitPosition, int32_t iDamage,
+	const _float3* pAttackPosition)
 {
+	const _bool bHeavyReaction =
+		iDamage >= PROTEGO_HEAVY_DAMAGE_THRESHOLD;
 	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
-		.fIntensity = 0.2f,
-		.fDuration = 0.16f,
-		.fFrequency = 24.f });
+		.fIntensity = bHeavyReaction ? 0.55f : 0.3f,
+		.fDuration = bHeavyReaction ? 0.3f : 0.18f,
+		.fFrequency = bHeavyReaction ? 34.f : 28.f });
 
 	_float3 vShieldCenter = GetTransform().GetPosition();
 	vShieldCenter.y += 1.f;
+	m_vLastProtegoAttackPosition = pAttackPosition
+		? *pAttackPosition
+		: vHitPosition;
 
 	_vector vNormal = XMLoadFloat3(&vHitPosition) - XMLoadFloat3(&vShieldCenter);
 	if (XMVectorGetX(XMVector3LengthSq(vNormal)) <= FLT_EPSILON)
@@ -2664,21 +2673,40 @@ void CPlayer::TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage)
 	else
 		vNormal = XMVector3Normalize(vNormal);
 
-	// 방어 성공 자체의 반동이므로 스투페파이 반격 입력 여부와 무관하게 적용한다.
-	// 접촉점 반대 방향의 수평 변위만 사용해 지면에서 뜨지 않게 한다.
-	StartProtegoRecoil(vHitPosition);
-
 	// Sweep 접촉점, Overlap 투사체 중심 등 입력 의미가 달라도
 	// 최종 충돌 위치는 보호막 구 표면으로 통일한다.
 	constexpr _float PROTEGO_SHIELD_RADIUS = 2.5f;
 	const _vector vShieldSurfacePosition =
 		XMLoadFloat3(&vShieldCenter) + vNormal * PROTEGO_SHIELD_RADIUS;
 	XMStoreFloat3(&m_vLastProtegoHitPosition, vShieldSurfacePosition);
+
+	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager())
+	{
+		pSoundManager->Play3D(
+			"./Resources/SampleClient/Sound/Player/SkillEffect/Protego/Protego_Block.wav",
+			SOUND_3D_DESC{
+				.vPosition = m_vLastProtegoHitPosition,
+				.fMinDistance = 2.f,
+				.fMaxDistance = 80.f,
+				.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+			},
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 1.5f,
+				.fPitch = 1.f,
+				.iPriority = 86,
+				.bLoop = false
+			});
+	}
+
 	++m_iProtegoParrySequence;
 	m_fParryCounterRemainTime = PARRY_COUNTER_WINDOW;
-	if (iDamage >= 30 && m_pStateMachine)
+	m_bProtegoReactionRequested = true;
+	m_bProtegoHeavyReaction = bHeavyReaction;
+	if (!m_bProtegoHeavyReaction)
+		m_fProtegoRecoilRemainTime = 0.f;
+	if (m_pStateMachine)
 	{
-		m_bProtegoHeavyReactionRequested = true;
 		m_pStateMachine->RequestState(PLAYER_STATE::STUPEFY_SKILL);
 	}
 
@@ -2754,9 +2782,9 @@ void CPlayer::ActivateProtego(_float fDuration)
 		const _float3 vPlayerPosition = GetTransform().GetPosition();
 		_float4x4 shieldWorld{};
 		XMStoreFloat4x4(&shieldWorld,
-			XMMatrixScaling(1.2f, 1.2f, 1.2f) *
+			XMMatrixScaling(1.5f, 1.5f, 1.5f) *
 			XMMatrixTranslation(
-				vPlayerPosition.x, vPlayerPosition.y + 1.f, vPlayerPosition.z));
+				vPlayerPosition.x, vPlayerPosition.y + 1.3f, vPlayerPosition.z));
 		m_iProtegoShieldEffectID = CGameInstance::Get().PlayEffect(
 			"Protego_Shield", shieldWorld, XMVectorZero());
 	}
@@ -2771,17 +2799,20 @@ _bool CPlayer::ConsumeParryCounter(_float3& outAttackPosition)
 
 	m_bStupefyCounterRequested = false;
 	m_fParryCounterRemainTime = 0.f;
-	outAttackPosition = m_vLastProtegoHitPosition;
+	outAttackPosition = m_vLastProtegoAttackPosition;
 	return true;
 }
 
-_bool CPlayer::ConsumeProtegoHeavyReaction(_float3& outAttackPosition)
+_bool CPlayer::ConsumeProtegoReaction(
+	_float3& outAttackPosition, _bool& outHeavyReaction)
 {
-	if (!m_bProtegoHeavyReactionRequested)
+	if (!m_bProtegoReactionRequested)
 		return false;
 
-	m_bProtegoHeavyReactionRequested = false;
-	outAttackPosition = m_vLastProtegoHitPosition;
+	m_bProtegoReactionRequested = false;
+	outAttackPosition = m_vLastProtegoAttackPosition;
+	outHeavyReaction = m_bProtegoHeavyReaction;
+	m_bProtegoHeavyReaction = false;
 	return true;
 }
 
