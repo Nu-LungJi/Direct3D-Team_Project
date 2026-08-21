@@ -98,6 +98,13 @@ namespace Client
 		Prototype_GameObject_MonSpawner,
 		Prototype_GameObject_PropBarrel,
 		Prototype_GameObject_PropBarrelDebris,
+		Prototype_GameObject_AccioBall,
+		Prototype_GameObject_AccioActivity_Base,
+		Prototype_GameObject_AccioActivity_Platform,
+		Prototype_GameObject_AccioActivity_BumperA,
+		Prototype_GameObject_AccioActivity_BumperB,
+		Prototype_GameObject_AccioActivity_RampLarge,
+		Prototype_GameObject_AccioActivity_LampSmall,
 	};
 
 	enum class PROTO_COMPONENT
