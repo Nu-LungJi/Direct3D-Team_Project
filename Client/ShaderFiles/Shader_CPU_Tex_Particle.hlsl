@@ -419,25 +419,24 @@ PS_OUT PSOnlyForDistortion(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
 
-
 	float2 screenUV = In.vScreenPos.xy / In.vScreenPos.w;
-	screenUV.x = screenUV.x * 0.5f + 0.5f;
-	screenUV.y = -screenUV.y * 0.5f + 0.5f;
+	screenUV = screenUV * float2(0.5f, -0.5f) + 0.5f;
 
-	float4 vDistortionColor = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
-	
-	if (vDistortionColor.r <0.51f)
-		discard;
-	float2 distortion = vDistortionColor.rg * 2.0f - 1.0f;
-	float distortionStrength = 0.15f * In.vColor.a ;
+	float4 distortionTexture = g_DistortionTexture.Sample(LinearWrap, In.vTexcoord);
+	float2 distortion = distortionTexture.rg * 2.f - 1.f;
 
-	distortion *= distortionStrength;
-	float4 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion); 
-	
+	float distortionMagnitude = length(distortion);
+	float distortionMask = smoothstep(0.02f, 0.25f, distortionMagnitude);
 
-	Out.vDiffuse = float4(distortedBackground.rgb, 1.0f);
+	clip(distortionMask - 0.01f);
+
+	float distortionStrength = 0.025f * In.vColor.a;
+	distortion *= distortionStrength * distortionMask;
+
+	float3 distortedBackground = g_BackgroundTex.Sample(LinearClamp, screenUV + distortion).rgb;
+
+	Out.vDiffuse = float4(distortedBackground, 1.f);
 	return Out;
-	
 }
 PS_OUT PSSphereShield(VS_OUT In)
 {

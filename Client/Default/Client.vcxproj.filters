@@ -460,6 +460,9 @@
     <Filter Include="GameObject\FlyMiniGame\FlightRing">
       <UniqueIdentifier>{252e67fa-d5f2-40ee-821a-0afa6ff63dbb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Coin">
+      <UniqueIdentifier>{5e844cdf-6e02-4c87-bc88-f38602810a3d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -1072,6 +1075,9 @@
     <ClInclude Include="..\Public\BTTurnAnimation.h">
       <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Coin.h">
+      <Filter>GameObject\Coin</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1626,6 +1632,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\BTTurnAnimation.cpp">
       <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Coin.cpp">
+      <Filter>GameObject\Coin</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -210,6 +210,7 @@
     <ClInclude Include="..\public\BTDecEdgState.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
     <ClInclude Include="..\public\BTNaviMove.h" />
+    <ClInclude Include="..\public\Coin.h" />
     <ClInclude Include="..\public\Edg_Godae.h" />
     <ClInclude Include="..\Public\FlightRing.h" />
     <ClInclude Include="..\Public\FlyminiGameController.h" />
@@ -394,6 +395,7 @@
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
     <ClCompile Include="..\private\BTNaviMove.cpp" />
+    <ClCompile Include="..\private\Coin.cpp" />
     <ClCompile Include="..\private\Edg_Godae.cpp" />
     <ClCompile Include="..\Private\FlightRing.cpp" />
     <ClCompile Include="..\Private\FlyminiGameController.cpp" />

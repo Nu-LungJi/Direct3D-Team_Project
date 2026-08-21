@@ -38,6 +38,7 @@
 #include "UIManager.h"
 
 #include "PropBarrel.h"
+#include "Coin.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -207,6 +208,44 @@ HRESULT CLevelTerrain::Initialize()
 			}
 		}
 
+		///////////////////
+		// 코인 소환 //////
+		{
+			PX_COLLISION_PROXY_FILE collisionData{};
+			collisionData.iVersion = 3;
+
+			PX_COLLISION_PROXY_ACTOR actor{};
+			actor.sName = "TestCoin";
+			actor.eType = PX_COLLISION_PROXY_ACTOR_TYPE::STATIC;
+			actor.vPosition = _float3(8.f, 8.f, 8.f);
+			actor.vRotation = _float4(0.f, 0.f, 0.f, 1.f);
+			actor.bEnabled = true;
+
+			PX_COLLISION_PROXY_SHAPE shape{};
+			shape.sName = "CoinTrigger";
+			shape.eType = PX_COLLISION_PROXY_SHAPE_TYPE::SPHERE;
+			shape.vLocalPosition = _float3(0.f, 0.f, 0.f);
+			shape.vLocalRotation = _float4(0.f, 0.f, 0.f, 1.f);
+			shape.fRadius = 1.f;
+			shape.iLayer = ETOUI(COLLISION_LAYER::TRIGGER);
+			shape.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_BODY);
+			shape.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_BODY);
+			shape.bTrigger = true;
+			shape.bSimulationEnabled = true;
+			shape.bQueryEnabled = true;
+			shape.bEnabled = true;
+
+			actor.shapes.push_back(shape);
+			collisionData.actors.push_back(actor);
+
+			CPhysXCollisionProxyObject::DESC coinDesc{};
+			coinDesc.sObjectTag = "TestCoin";
+			coinDesc.pCollisionData = &collisionData;
+
+			const auto hCoin = CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, "Prototype_GameObject_Coin", "03_Coin", &coinDesc);
+			if (!hCoin)
+				return E_FAIL;
+		}
 	}
 
 	//if (FAILED(InitializeJointTests(*hPlayer, hOilBarrels)))

@@ -99,6 +99,7 @@ namespace Client
 		Prototype_GameObject_WorldNpc,
 		Prototype_GameObject_PropBarrel,
 		Prototype_GameObject_PropBarrelDebris,
+		Prototype_GameObject_Coin,
 	};
 
 	enum class PROTO_COMPONENT
