@@ -60,7 +60,7 @@ HRESULT CComPxConvexCollider::Initialize(void* pArg)
 	if (auto* dynamicActor = actor->is<PxRigidDynamic>();
 		dynamicActor && !dynamicActor->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
 	{
-		if (!PxRigidBodyExt::updateMassAndInertia(*dynamicActor, dynamicActor->getMass()))
+		if (!PxRigidBodyExt::setMassAndUpdateInertia(*dynamicActor, dynamicActor->getMass()))
 			return E_FAIL;
 	}
 
@@ -70,6 +70,55 @@ HRESULT CComPxConvexCollider::Initialize(void* pArg)
 void CComPxConvexCollider::UpdateGUI()
 {
 	CComPxCollider::UpdateGUI();
+
+	ImGui::PushID(this);
+	ImGui::TextUnformatted("Collider Type: Convex Mesh");
+	_float3 vScale = GetMeshScale();
+	if (ImGui::DragFloat3(
+		"Mesh Scale", &vScale.x, 0.05f, 0.001f, 10000.f))
+	{
+		SetMeshScale(vScale);
+	}
+	ImGui::PopID();
+}
+
+_bool CComPxConvexCollider::SetMeshScale(const _float3& vScale)
+{
+	if (!m_pShape || vScale.x <= 0.f || vScale.y <= 0.f || vScale.z <= 0.f)
+		return false;
+
+	const PxGeometryHolder geometryHolder = m_pShape->getGeometry();
+	if (geometryHolder.getType() != PxGeometryType::eCONVEXMESH)
+		return false;
+	PxConvexMeshGeometry geometry = geometryHolder.convexMesh();
+
+	geometry.scale = PxMeshScale{ PxVec3{ vScale.x, vScale.y, vScale.z } };
+	if (!geometry.isValid())
+		return false;
+	m_pShape->setGeometry(geometry);
+
+	if (auto* pActor = m_pShape->getActor())
+	{
+		if (auto* pDynamic = pActor->is<PxRigidDynamic>();
+			pDynamic && !pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC))
+		{
+			if (!PxRigidBodyExt::setMassAndUpdateInertia(*pDynamic, pDynamic->getMass()))
+				return false;
+		}
+	}
+	return true;
+}
+
+_float3 CComPxConvexCollider::GetMeshScale() const
+{
+	if (!m_pShape)
+		return {};
+	const PxGeometryHolder geometryHolder = m_pShape->getGeometry();
+	if (geometryHolder.getType() != PxGeometryType::eCONVEXMESH)
+		return {};
+	const PxConvexMeshGeometry& geometry = geometryHolder.convexMesh();
+	const PxVec3 scale = geometry.scale.scale;
+	return { scale.x, scale.y, scale.z };
 }
 
 UPtr<CComPxConvexCollider> CComPxConvexCollider::Create()
