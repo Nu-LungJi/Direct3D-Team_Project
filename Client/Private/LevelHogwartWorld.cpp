@@ -13,6 +13,7 @@
 #include "Mon_Spawner.h"
 // Client에도 같은 이름의 Terrain.h가 있으므로 Engine SDK 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
+#include "Water.h"
 
 NS_USING(Client)
 
@@ -55,6 +56,9 @@ HRESULT CLevelHogwartWorld::Initialize()
 	}
 
 	if (FAILED(SpawnSkyBox()))
+		return E_FAIL;
+
+	if (FAILED(SpawnWater()))
 		return E_FAIL;
 
 	if (FAILED(SpawnMonster(*hPlayer)))
@@ -264,6 +268,31 @@ HRESULT CLevelHogwartWorld::SpawnSkyBox()
 	}
 
 	return S_OK;
+}
+
+HRESULT CLevelHogwartWorld::SpawnWater()
+{
+	E::CWater::WATER_DESC desc{};
+	desc.sObjectTag = "HogwartWorldOcean";
+	desc.vPosition = { 200.f, -75.f, 80.f };
+	desc.vSize = { 8000.f, 8000.f };
+	desc.vWaterColor = { 0.012f, 0.055f, 0.16f, 0.9f };
+	desc.vShallowColor = { 0.018f, 0.10f, 0.24f, 1.f };
+	desc.vDeepColor = { 0.002f, 0.012f, 0.055f, 1.f };
+	desc.vReflectionColor = { 0.10f, 0.20f, 0.38f, 1.f };
+	desc.fUVScale = 0.018f;
+	desc.fSecondaryNormalScale = 2.7f;
+	desc.fWaveIntensity = 0.95f;
+	desc.fFollowSnap = 50.f;
+	desc.bFollowCamera = true;
+
+	return E::CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_Water,
+		"00_WATER",
+		&desc)
+		? S_OK
+		: E_FAIL;
 }
 
 HRESULT CLevelHogwartWorld::SpawnMonster(std::optional<CHandle> hPlayer)

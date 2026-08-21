@@ -33,6 +33,7 @@
 #include "Mon_State.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
+#include "Water.h"
 
 NS_USING(Client)
 
@@ -69,6 +70,13 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				LEVEL::HOGWART_WORLD,
 				PROTO_GAMEOBJECT::Prototype_GameObject_Terrain,
 				E::CTerrain::Create())))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::HOGWART_WORLD,
+				PROTO_GAMEOBJECT::Prototype_GameObject_Water,
+				E::CWater::Create())))
 			{
 				return false;
 			}

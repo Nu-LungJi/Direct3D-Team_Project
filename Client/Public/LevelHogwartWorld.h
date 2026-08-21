@@ -28,6 +28,7 @@ private:
 	HRESULT SpawnUICamera();
 	HRESULT SpawnPlayerCamera(CHandle hPlayer);
 	HRESULT SpawnSkyBox();
+	HRESULT SpawnWater();
 	HRESULT SpawnMonster(std::optional<CHandle> hPlayer);
 	HRESULT SpawnStaticCollision();
 
