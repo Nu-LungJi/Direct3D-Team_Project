@@ -11,6 +11,7 @@
 #include "UIObject.h"
 #include <fstream>
 #include "TextureUI.h"
+#include "GeneralButton.h"
 #include "TextBox.h"
 #include "TextUI.h"
 #include "FlipbookUI.h"
@@ -392,6 +393,9 @@ void CLevelUIEditor::UpdateGUI()
 	case ETOUI(UiEditorMode::FLIPBOOK):
 		FlipbookMode();
 		break;
+	case ETOUI(UiEditorMode::RTT):
+		RTTMode();
+		break;
 	default:
 		break;
 	}
@@ -425,10 +429,36 @@ void CLevelUIEditor::CreateMode()
 			Desc.fY = mousePos.y;
 			Desc.fAlpha = 1.f;
 			Desc.ResTag = selectInfo.Restag;
-			Desc.UIType = ETOUI(UI_TYPE::TEXUI);
+			const _bool isGeneralButton =
+				m_UIINFO.UIType == ETOUI(UI_TYPE::GENERAL_BUTTON);
+			const _bool isNineSlice =
+				m_UIINFO.UIType == ETOUI(UI_TYPE::NINE_SLICE);
+			Desc.UIType = isGeneralButton ? ETOUI(UI_TYPE::GENERAL_BUTTON) :
+				(isNineSlice ? ETOUI(UI_TYPE::NINE_SLICE) : ETOUI(UI_TYPE::TEXUI));
 			Desc.ResWeight = count;
 
-			E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
+			auto handle = E::CGameInstance::Get().AddGameObjectToLayer(
+				"LEVEL_UIEDITOR",
+				isGeneralButton ? "Prototype_GameObject_GeneralButton" : "Prototype_GameObject_TextureUI",
+				"Layer_UI",
+				&Desc);
+
+			if (isGeneralButton && handle)
+			{
+				if (auto* button = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(*handle))
+				{
+					button->SetButtonType(static_cast<GENERAL_BUTTON_TYPE>(m_iGeneralButtonType));
+					button->SetCommandParameter(m_cGeneralButtonParameter);
+				}
+			}
+			else if (isNineSlice && handle)
+			{
+				if (auto* nineSlice = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*handle))
+				{
+					nineSlice->SetUIType(ETOUI(UI_TYPE::NINE_SLICE));
+					nineSlice->SetNineSliceMargins(m_vNineSliceMargins);
+				}
+			}
 		}
 	}
 }
@@ -523,6 +553,11 @@ void CLevelUIEditor::ArrangeMode()
 			m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
 			RefreshJsonFileList();
 		}
+		ImGui::SameLine();
+		if (ImGui::Button("RTT", ImVec2(90, 0))) {
+			m_iEditorMode = ETOUI(UiEditorMode::RTT);
+			RefreshJsonFileList();
+		}
 
 		ImGui::Spacing();
 		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "[ Clear ]");
@@ -583,18 +618,23 @@ void CLevelUIEditor::PrefabMode()
 	if (ImGui::CollapsingHeader("File & Mode Settings", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::AlignTextToFramePadding();
-		ImGui::Text("Prefab Name:");
+		ImGui::Text(m_iEditorMode == ETOUI(UiEditorMode::RTT) ? "RTT Canvas Name:" : "Prefab Name:");
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(200);
 		ImGui::InputText("##PrefabName", m_cPrefabName, sizeof(m_cPrefabName));
 	
-		if (ImGui::Button("Save Prefab", ImVec2(120, 0)))
+		if (ImGui::Button(m_iEditorMode == ETOUI(UiEditorMode::RTT) ? "Save RTT" : "Save Prefab", ImVec2(120, 0)))
 			PrefabSave();
 	
 		ImGui::SameLine();
 	
-		if (ImGui::Button("Load Prefab", ImVec2(120, 0)))
-			GET_SINGLE(UIManager)->LoadPrefab(m_cPrefabName, g_PrefabPath);
+		if (ImGui::Button(m_iEditorMode == ETOUI(UiEditorMode::RTT) ? "Load RTT" : "Load Prefab", ImVec2(120, 0)))
+		{
+			if (m_iEditorMode == ETOUI(UiEditorMode::RTT))
+				PrefabLoad();
+			else
+				GET_SINGLE(UIManager)->LoadPrefab(m_cPrefabName, g_PrefabPath);
+		}
 	
 		ImGui::Spacing();
 		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "[ Editor Mode ]");
@@ -614,6 +654,35 @@ void CLevelUIEditor::PrefabMode()
 		if (ImGui::Button("Text", ImVec2(90, 0))) {
 			m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
 			RefreshJsonFileList();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("RTT", ImVec2(90, 0))) {
+			m_iEditorMode = ETOUI(UiEditorMode::RTT);
+			RefreshJsonFileList();
+		}
+
+		if (m_iEditorMode == ETOUI(UiEditorMode::RTT))
+		{
+			ImGui::Separator();
+			ImGui::TextColored(ImVec4(0.35f, 0.8f, 1.f, 1.f), "[ RTT Canvas Settings ]");
+			ImGui::SetNextItemWidth(220.f);
+			ImGui::InputText("RenderTarget Tag", m_RTTCanvas.RenderTargetTag, sizeof(m_RTTCanvas.RenderTargetTag));
+			ImGui::DragInt("Canvas Width", &m_RTTCanvas.CanvasWidth, 1.f, 64, 8192);
+			ImGui::DragInt("Canvas Height", &m_RTTCanvas.CanvasHeight, 1.f, 64, 8192);
+			ImGui::ColorEdit4("Clear Color", reinterpret_cast<float*>(&m_RTTCanvas.ClearColor));
+			ImGui::DragFloat3("Panel World Position", reinterpret_cast<float*>(&m_RTTCanvas.PanelWorldPosition), 0.05f);
+			ImGui::DragFloat3("Panel Rotation (Degree)", reinterpret_cast<float*>(&m_RTTCanvas.PanelWorldRotation), 0.5f);
+			ImGui::DragFloat2("Panel World Size", reinterpret_cast<float*>(&m_RTTCanvas.PanelWorldSize), 0.05f, 0.01f, 1000.f);
+			ImGui::Checkbox("Enable Ray Picking", &m_RTTCanvas.EnablePicking);
+			ImGui::Checkbox("Ignore World Depth", &m_RTTCanvas.IgnoreDepth);
+			ImGui::Checkbox("Render Every Frame", &m_RTTCanvas.RenderEveryFrame);
+
+			const float pixelsPerWorldX = m_RTTCanvas.PanelWorldSize.x > 0.f ?
+				static_cast<float>(m_RTTCanvas.CanvasWidth) / m_RTTCanvas.PanelWorldSize.x : 0.f;
+			const float pixelsPerWorldY = m_RTTCanvas.PanelWorldSize.y > 0.f ?
+				static_cast<float>(m_RTTCanvas.CanvasHeight) / m_RTTCanvas.PanelWorldSize.y : 0.f;
+			ImGui::TextDisabled("Pixel / World Unit : %.2f x %.2f", pixelsPerWorldX, pixelsPerWorldY);
+			ImGui::TextWrapped("Keep RTT children as normal 2D UI. The final panel uses this world transform.");
 		}
 
 		ImGui::Spacing();
@@ -763,7 +832,12 @@ void CLevelUIEditor::PrefabMode()
 	// ---------------------------------------------------------
 	// 4. Event & Action Settings (새로 추가된 구역)
 	// ---------------------------------------------------------
-	if (ImGui::CollapsingHeader("Event & Action Settings", ImGuiTreeNodeFlags_DefaultOpen))
+	if (m_UIINFO.UIType == ETOUI(UI_TYPE::GENERAL_BUTTON))
+	{
+		if (ImGui::CollapsingHeader("Event & Action Settings", ImGuiTreeNodeFlags_DefaultOpen))
+			ImGui::TextDisabled("GENERAL_BUTTON events are implemented by button type in code.");
+	}
+	else if (ImGui::CollapsingHeader("Event & Action Settings", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		// 검색과 스크롤이 지원되는 고급 콤보박스 람다
 		auto DrawEventCombo = [](const char* label, std::string& current_item, const std::vector<std::string>* items) {
@@ -971,6 +1045,13 @@ void CLevelUIEditor::PrefabMode()
 	ImGui::PopStyleVar();
 }
 
+void CLevelUIEditor::RTTMode()
+{
+	// RTT contents use the same hierarchy, event and texture tools as a prefab.
+	// Only RTT canvas metadata is stored separately at the JSON root.
+	PrefabMode();
+}
+
 void CLevelUIEditor::FlipbookMode()
 {
 	auto clientSize = CGameInstance::Get().GetClientScreenSize();
@@ -1002,6 +1083,11 @@ void CLevelUIEditor::FlipbookMode()
 		ImGui::SameLine();
 		if (ImGui::Button("Text", ImVec2(90, 0))) {
 			m_iEditorMode = ETOUI(UiEditorMode::ARRANGE);
+			RefreshJsonFileList();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("RTT", ImVec2(90, 0))) {
+			m_iEditorMode = ETOUI(UiEditorMode::RTT);
 			RefreshJsonFileList();
 		}
 	
@@ -1401,6 +1487,22 @@ void CLevelUIEditor::PrefabSave()
 	nlohmann::ordered_json root;
 
 	root["PrefabName"] = m_cPrefabName;
+	if (m_iEditorMode == ETOUI(UiEditorMode::RTT))
+	{
+		root["RTTCanvas"] = {
+			{ "Version", 1 },
+			{ "RenderTargetTag", m_RTTCanvas.RenderTargetTag },
+			{ "CanvasWidth", m_RTTCanvas.CanvasWidth },
+			{ "CanvasHeight", m_RTTCanvas.CanvasHeight },
+			{ "ClearColor", { m_RTTCanvas.ClearColor.x, m_RTTCanvas.ClearColor.y, m_RTTCanvas.ClearColor.z, m_RTTCanvas.ClearColor.w } },
+			{ "PanelWorldPosition", { m_RTTCanvas.PanelWorldPosition.x, m_RTTCanvas.PanelWorldPosition.y, m_RTTCanvas.PanelWorldPosition.z } },
+			{ "PanelWorldRotation", { m_RTTCanvas.PanelWorldRotation.x, m_RTTCanvas.PanelWorldRotation.y, m_RTTCanvas.PanelWorldRotation.z } },
+			{ "PanelWorldSize", { m_RTTCanvas.PanelWorldSize.x, m_RTTCanvas.PanelWorldSize.y } },
+			{ "EnablePicking", m_RTTCanvas.EnablePicking },
+			{ "IgnoreDepth", m_RTTCanvas.IgnoreDepth },
+			{ "RenderEveryFrame", m_RTTCanvas.RenderEveryFrame }
+		};
+	}
 	root["UI"] = nlohmann::ordered_json::array();
 
 	for (CHandle handle : uiHandles)
@@ -1431,7 +1533,12 @@ void CLevelUIEditor::PrefabSave()
 	case ETOUI(UiEditorMode::FLIPBOOK):
 		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/FlipBook/");
 		break;
+	case ETOUI(UiEditorMode::RTT):
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/RTT/");
+		break;
 	}
+
+	fs::create_directories(g_BasePath);
 	
 	char path[256] = "";
 	strcpy_s(path, sizeof(path), g_BasePath);
@@ -1467,6 +1574,9 @@ void CLevelUIEditor::PrefabLoad()
 	case ETOUI(UiEditorMode::FLIPBOOK):
 		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/FlipBook/");
 		break;
+	case ETOUI(UiEditorMode::RTT):
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/RTT/");
+		break;
 	}
 
 	char path[256] = "";
@@ -1485,6 +1595,35 @@ void CLevelUIEditor::PrefabLoad()
 	nlohmann::ordered_json root;
 	file >> root;
 	file.close();
+
+	if (m_iEditorMode == ETOUI(UiEditorMode::RTT) && root.contains("RTTCanvas"))
+	{
+		const auto& canvas = root["RTTCanvas"];
+		m_RTTCanvas.CanvasWidth = canvas.value("CanvasWidth", 1280);
+		m_RTTCanvas.CanvasHeight = canvas.value("CanvasHeight", 720);
+		const std::string targetTag = canvas.value("RenderTargetTag", std::string("RT_WandShop"));
+		strcpy_s(m_RTTCanvas.RenderTargetTag, sizeof(m_RTTCanvas.RenderTargetTag), targetTag.c_str());
+
+		const auto clearColor = canvas.value("ClearColor", nlohmann::ordered_json::array({ 0.f, 0.f, 0.f, 0.f }));
+		if (clearColor.size() >= 4)
+			m_RTTCanvas.ClearColor = { clearColor[0], clearColor[1], clearColor[2], clearColor[3] };
+
+		const auto worldPosition = canvas.value("PanelWorldPosition", nlohmann::ordered_json::array({ 0.f, 0.f, 0.f }));
+		if (worldPosition.size() >= 3)
+			m_RTTCanvas.PanelWorldPosition = { worldPosition[0], worldPosition[1], worldPosition[2] };
+
+		const auto worldRotation = canvas.value("PanelWorldRotation", nlohmann::ordered_json::array({ 0.f, 0.f, 0.f }));
+		if (worldRotation.size() >= 3)
+			m_RTTCanvas.PanelWorldRotation = { worldRotation[0], worldRotation[1], worldRotation[2] };
+
+		const auto worldSize = canvas.value("PanelWorldSize", nlohmann::ordered_json::array({ 8.f, 4.5f }));
+		if (worldSize.size() >= 2)
+			m_RTTCanvas.PanelWorldSize = { worldSize[0], worldSize[1] };
+
+		m_RTTCanvas.EnablePicking = canvas.value("EnablePicking", true);
+		m_RTTCanvas.IgnoreDepth = canvas.value("IgnoreDepth", false);
+		m_RTTCanvas.RenderEveryFrame = canvas.value("RenderEveryFrame", true);
+	}
 
 	for (const auto& obj : root["UI"])
 	{
@@ -1701,6 +1840,27 @@ void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& 
 		obj["TextAlignment"] = static_cast<uint32_t>(textInfo.Alignment);
 		break;
 	}
+	case ETOUI(UI_TYPE::GENERAL_BUTTON):
+	{
+		if (auto* button = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(pUI->GetHandle()))
+		{
+			obj["ButtonType"] = static_cast<uint32_t>(button->GetButtonType());
+			obj["CommandParameter"] = button->GetCommandParameter();
+		}
+		else
+		{
+			obj["ButtonType"] = m_iGeneralButtonType;
+			obj["CommandParameter"] = std::string(m_cGeneralButtonParameter);
+		}
+		break;
+	}
+	case ETOUI(UI_TYPE::NINE_SLICE):
+	{
+		const auto* nineSlice = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(pUI->GetHandle());
+		const _float4 margins = nineSlice ? nineSlice->GetNineSliceMargins() : m_vNineSliceMargins;
+		obj["NineSliceMargins"] = { margins.x, margins.y, margins.z, margins.w };
+		break;
+	}
 	default:
 		break;
 	}
@@ -1775,12 +1935,28 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 			textInfo.Alignment = LoadTextAlignmentCompatible(obj);
 		}
 		break;
+	case ETOUI(UI_TYPE::GENERAL_BUTTON):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_GeneralButton", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(*uiHandle);
+		break;
+	case ETOUI(UI_TYPE::NINE_SLICE):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer("LEVEL_UIEDITOR", "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
+		pUI->SetUIType(ETOUI(UI_TYPE::NINE_SLICE));
+		break;
 	default:
 		break;
 	}
 
 	if (pUI == nullptr)
 		return nullptr;
+
+	// SaveUIRecursive writes both values for every node. Restore them before
+	// CalcUICoord so RTT/prefab previews use the saved scale on the first frame.
+	if (obj.contains("ScaleRatio"))
+		pUI->SetScaleRatio(obj["ScaleRatio"]);
+	if (obj.contains("LocalScaleRatio"))
+		pUI->SetLocalScaleRatio(obj["LocalScaleRatio"]);
 
 	UI_INFO& uiInfo = static_cast<CUIObject*>(pUI)->GetUIInfo();
 
@@ -1810,6 +1986,26 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 	auto color = obj["Color"];
 	uiInfo.Color = { color[0], color[1], color[2] };
 
+	if (auto* button = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(pUI->GetHandle()))
+	{
+		button->SetButtonType(static_cast<GENERAL_BUTTON_TYPE>(
+			obj.value("ButtonType", static_cast<uint32_t>(GENERAL_BUTTON_TYPE::DEFAULT))));
+		button->SetCommandParameter(obj.value("CommandParameter", std::string{}));
+	}
+	if (uiType == ETOUI(UI_TYPE::NINE_SLICE))
+	{
+		if (auto* nineSlice = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(pUI->GetHandle()))
+		{
+			_float4 margins{};
+			if (obj.contains("NineSliceMargins") && obj["NineSliceMargins"].is_array() && obj["NineSliceMargins"].size() >= 4)
+			{
+				const auto& savedMargins = obj["NineSliceMargins"];
+				margins = { savedMargins[0], savedMargins[1], savedMargins[2], savedMargins[3] };
+			}
+			nineSlice->SetNineSliceMargins(margins);
+		}
+	}
+
 	UI_EVENT& eventInfo = pUI->GetUIEvent();
 
 	eventInfo.ClickFunc = obj.value("ClickFunc", "");
@@ -1827,9 +2023,12 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 		}
 	};
 
-	bindAction(eventInfo.ClickAction, pUI->OnClicked);
-	bindAction(eventInfo.EnterAction, pUI->OnHoverEnter);
-	bindAction(eventInfo.ExitAction, pUI->OnHoverExit);
+	if (uiType != ETOUI(UI_TYPE::GENERAL_BUTTON))
+	{
+		bindAction(eventInfo.ClickAction, pUI->OnClicked);
+		bindAction(eventInfo.EnterAction, pUI->OnHoverEnter);
+		bindAction(eventInfo.ExitAction, pUI->OnHoverExit);
+	}
 
 	if (parent == nullptr)
 	{
@@ -1966,7 +2165,7 @@ void CLevelUIEditor::StateView()
 
 		// Enums (UI Type & Effect)
 		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR", "HPFILL",
-			"LEFTHPFILL", "MINIMAP","SPELLBTN", "SHORTCUT_ICON", "DISOLVE", "GAMEOVERMASK", "VIDEOOBJ"};
+			"LEFTHPFILL", "MINIMAP","SPELLBTN", "SHORTCUT_ICON", "DISOLVE", "GAMEOVERMASK", "VIDEOOBJ", "CURSOR", "GENERAL_BUTTON", "NINE_SLICE"};
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("UI Type"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(150);
@@ -2021,6 +2220,8 @@ void CLevelUIEditor::StateView()
 	
 		ImGui::EndTable();
 	}
+	DrawGeneralButtonSettings();
+	DrawNineSliceSettings();
 
 	//UpdateTargetState();
 }
@@ -2131,7 +2332,7 @@ void CLevelUIEditor::LocalStateView()
 
 		// Enums
 		static const char* UITypeNames[] = { "CONTAINER", "TEXUI", "FLIPBOOK", "TEXT", "BUTTON", "SPELLMETER", "HPBAR"
-			, "HPFILL", "LEFTHPFILL", "MINIMAP", "SPELLBTN", "SHORTCUT_ICON", "DISOLVE", "GAMEOVERMASK", "VIDEOOBJ" };
+			, "HPFILL", "LEFTHPFILL", "MINIMAP", "SPELLBTN", "SHORTCUT_ICON", "DISOLVE", "GAMEOVERMASK", "VIDEOOBJ", "CURSOR", "GENERAL_BUTTON", "NINE_SLICE" };
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("UI Type"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(150);
@@ -2186,6 +2387,8 @@ void CLevelUIEditor::LocalStateView()
 
 		ImGui::EndTable();
 	}
+	DrawGeneralButtonSettings();
+	DrawNineSliceSettings();
 
 	// Update Target Properties
 	selectInfo.LocalX = localX;
@@ -2198,6 +2401,71 @@ void CLevelUIEditor::LocalStateView()
 	m_ScaleRatio = scaleRatio;
 	selectInfo.LocalRot = localRot;
 	m_LocalScaleRatio = localScaleRatio;
+}
+
+void CLevelUIEditor::DrawGeneralButtonSettings()
+{
+	if (m_UIINFO.UIType != ETOUI(UI_TYPE::GENERAL_BUTTON))
+		return;
+
+	if (!ImGui::CollapsingHeader("General Button Settings", ImGuiTreeNodeFlags_DefaultOpen))
+		return;
+
+	static const char* buttonTypeNames[] = {
+		"DEFAULT", "WAND_CATEGORY", "WAND_MATERIAL", "WAND_ITEM", "CONFIRM", "CANCEL"
+	};
+
+	int buttonType = static_cast<int>(m_iGeneralButtonType);
+	ImGui::SetNextItemWidth(220.f);
+	if (ImGui::Combo("Button Type", &buttonType, buttonTypeNames, IM_ARRAYSIZE(buttonTypeNames)))
+		m_iGeneralButtonType = static_cast<uint32_t>(buttonType);
+
+	ImGui::SetNextItemWidth(300.f);
+	ImGui::InputText("Command Parameter", m_cGeneralButtonParameter, sizeof(m_cGeneralButtonParameter));
+	ImGui::TextDisabled("Motion/effect: CGeneralButton::PlayEffect (UI_STATE + Button Type)");
+	ImGui::TextDisabled("Command callback is assigned by the controller in code.");
+
+	if (Target_UI)
+	{
+		if (auto* button = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(*Target_UI))
+		{
+			button->SetButtonType(static_cast<GENERAL_BUTTON_TYPE>(m_iGeneralButtonType));
+			button->SetCommandParameter(m_cGeneralButtonParameter);
+		}
+		else
+		{
+			ImGui::TextColored(ImVec4(1.f, 0.75f, 0.25f, 1.f),
+				"Existing objects changed from another type must be recreated as GENERAL_BUTTON.");
+		}
+	}
+}
+
+void CLevelUIEditor::DrawNineSliceSettings()
+{
+	if (m_UIINFO.UIType != ETOUI(UI_TYPE::NINE_SLICE))
+		return;
+
+	if (!ImGui::CollapsingHeader("9-Slice Settings", ImGuiTreeNodeFlags_DefaultOpen))
+		return;
+
+	ImGui::TextDisabled("Padding uses source texture pixels.");
+	ImGui::SetNextItemWidth(120.f);
+	ImGui::DragFloat("Left Padding", &m_vNineSliceMargins.x, 1.f, 0.f, 4096.f, "%.0f px");
+	ImGui::SetNextItemWidth(120.f);
+	ImGui::DragFloat("Top Padding", &m_vNineSliceMargins.y, 1.f, 0.f, 4096.f, "%.0f px");
+	ImGui::SetNextItemWidth(120.f);
+	ImGui::DragFloat("Right Padding", &m_vNineSliceMargins.z, 1.f, 0.f, 4096.f, "%.0f px");
+	ImGui::SetNextItemWidth(120.f);
+	ImGui::DragFloat("Bottom Padding", &m_vNineSliceMargins.w, 1.f, 0.f, 4096.f, "%.0f px");
+
+	if (Target_UI)
+	{
+		if (auto* nineSlice = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*Target_UI))
+		{
+			nineSlice->SetUIType(ETOUI(UI_TYPE::NINE_SLICE));
+			nineSlice->SetNineSliceMargins(m_vNineSliceMargins);
+		}
+	}
 }
 
 void CLevelUIEditor::DrawFileExplorer()
@@ -2245,6 +2513,9 @@ void CLevelUIEditor::RefreshJsonFileList()
 	case ETOUI(UiEditorMode::FLIPBOOK):
 		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/FlipBook/");
 		break;
+	case ETOUI(UiEditorMode::RTT):
+		strcpy_s(g_BasePath, "./Resources/SampleClient/UIData/RTT/");
+		break;
 	}
 
 	if (!fs::exists(g_BasePath) || !fs::is_directory(g_BasePath))
@@ -2289,6 +2560,9 @@ void CLevelUIEditor::DrawJsonFileLoader(uint32_t EditorMode)
 	case ETOUI(UiEditorMode::FLIPBOOK):
 		title = "FLIPBOOK Selector";
 		break;
+	case ETOUI(UiEditorMode::RTT):
+		title = "RTT Canvas Selector";
+		break;
 	}
 
 	ImGui::Begin(title.c_str());
@@ -2329,6 +2603,10 @@ void CLevelUIEditor::DrawJsonFileLoader(uint32_t EditorMode)
 					strcpy_s(m_cPrefabName, sizeof(m_cPrefabName), file.fileName.substr(0, file.fileName.length() - 5).c_str());
 					GET_SINGLE(UIManager)->LoadPrefab(m_cPrefabName, g_FlipbookPath);
 					break;
+				case ETOUI(UiEditorMode::RTT):
+					strcpy_s(m_cPrefabName, sizeof(m_cPrefabName), file.fileName.substr(0, file.fileName.length() - 5).c_str());
+					PrefabLoad();
+					break;
 				}
 
 				// 디버깅용 콘솔 출력
@@ -2361,6 +2639,17 @@ void CLevelUIEditor::UpdateTargetState()
 		selectInfo.Rot = m_UIINFO.Rot;
 		selectUI->SetScaleRatio(m_ScaleRatio);
 		selectUI->SetLocalScaleRatio(m_LocalScaleRatio);
+
+		if (auto* button = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(selectUI->GetHandle()))
+		{
+			button->SetButtonType(static_cast<GENERAL_BUTTON_TYPE>(m_iGeneralButtonType));
+			button->SetCommandParameter(m_cGeneralButtonParameter);
+		}
+		if (selectInfo.UIType == ETOUI(UI_TYPE::NINE_SLICE))
+		{
+			if (auto* nineSlice = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(selectUI->GetHandle()))
+				nineSlice->SetNineSliceMargins(m_vNineSliceMargins);
+		}
 
 		if (ETOUI(UI_TYPE::FLIPBOOK) == *selectUI->GetUIType())
 		{
@@ -2434,6 +2723,9 @@ void CLevelUIEditor::ResetProperty(std::optional<Engine::CHandle> newTargetHandl
 	{
 		m_UIINFO = UI_INFO{};		
 		m_FLIPINFO = FLIP_INFO{};
+		m_iGeneralButtonType = static_cast<uint32_t>(GENERAL_BUTTON_TYPE::DEFAULT);
+		m_cGeneralButtonParameter[0] = '\0';
+		m_vNineSliceMargins = {};
 		return;
 	}
 
@@ -2460,6 +2752,19 @@ void CLevelUIEditor::ResetProperty(std::optional<Engine::CHandle> newTargetHandl
 		CTextBox* textBox = static_cast<CTextBox*>(pTargetUI);
 		m_sText = WStringToUTF8(textBox->GetwText());
 		strcpy_s(m_cTextBuf, sizeof(m_cTextBuf), m_sText.c_str());
+	}
+	else if (*pTargetUI->GetUIType() == ETOUI(UI_TYPE::GENERAL_BUTTON))
+	{
+		if (auto* button = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(pTargetUI->GetHandle()))
+		{
+			m_iGeneralButtonType = static_cast<uint32_t>(button->GetButtonType());
+			strcpy_s(m_cGeneralButtonParameter, sizeof(m_cGeneralButtonParameter), button->GetCommandParameter().c_str());
+		}
+	}
+	else if (*pTargetUI->GetUIType() == ETOUI(UI_TYPE::NINE_SLICE))
+	{
+		if (auto* nineSlice = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(pTargetUI->GetHandle()))
+			m_vNineSliceMargins = nineSlice->GetNineSliceMargins();
 	}
 
 	m_WorldPos = pTargetUI->GetTransform().GetPosition();

@@ -10,12 +10,12 @@ NS_END
 
 NS_BEGIN(Client)
 
-class CTextureUI final : public E::CUITex
+class CTextureUI : public E::CUITex
 {
 public:
 	DECLARE_DERIVED_TYPE(CTextureUI, E::CUITex)
 
-private:
+protected:
 	CTextureUI();
 	~CTextureUI() override;
 
@@ -37,6 +37,8 @@ public:
 	void SetPathProgressType(uint32_t type) { m_iPathProgressType = type; }
 	void SetSpellAlarmFlame(uint32_t flameIndex);
 	void SetAdditiveBlend(_bool enabled) { m_bAdditiveBlend = enabled; }
+	void SetNineSliceMargins(const _float4& margins) { m_vNineSliceMargins = margins; }
+	const _float4& GetNineSliceMargins() const { return m_vNineSliceMargins; }
 private:
 	_bool m_bMouseTracking{false};
 	_bool m_bPathProgressMode{ false };
@@ -47,6 +49,7 @@ private:
 	_float m_fSpellAlarmFlamePhase{};
 	_float m_fSpellAlarmFlameSwayScale{ 1.f };
 	_float m_fSpellAlarmFlameSpeed{ 1.f };
+	_float4 m_vNineSliceMargins{}; // left, top, right, bottom (texture pixels)
 
 private:
 	bool m_bOutline{};

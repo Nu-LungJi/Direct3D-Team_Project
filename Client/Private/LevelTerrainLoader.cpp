@@ -41,6 +41,7 @@
 #include "EffectUI.h"
 #include "TextureUI.h"
 #include "Button.h"
+#include "GeneralButton.h"
 #include "TextBox.h"
 #include "SpellMeter.h"
 #include "HPBar.h"
@@ -356,6 +357,10 @@ _bool CLevelTerrainLoader::UILoad()
 			return false;
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TERRAIN", "Prototype_GameObject_Button", CButton::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_TERRAIN", "Prototype_GameObject_GeneralButton", CGeneralButton::Create())))
 		{
 			return false;
 		}

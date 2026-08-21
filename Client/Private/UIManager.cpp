@@ -5,6 +5,7 @@
 #include "EffectUI.h"
 #include "TextBox.h"
 #include "Button.h"
+#include "GeneralButton.h"
 #include <fstream>
 #include "LevelLogo.h"
 #include "LevelLoading.h"
@@ -2314,6 +2315,15 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_Button", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CButton>(*uiHandle);
 		break;
+	case ETOUI(UI_TYPE::GENERAL_BUTTON):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_GeneralButton", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(*uiHandle);
+		break;
+	case ETOUI(UI_TYPE::NINE_SLICE):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
+		pUI->SetUIType(ETOUI(UI_TYPE::NINE_SLICE));
+		break;
 	case ETOUI(UI_TYPE::SPELLMETER):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_SpellMeter", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CSpellMeter>(*uiHandle);
@@ -2356,16 +2366,15 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	if (pUI == nullptr)
 		return nullptr;
 
-	if (parent == nullptr)
-	{
-		if (obj.contains("ScaleRatio"))
-			pUI->SetScaleRatio(obj["ScaleRatio"]);
-
-		m_vLoadPrefabRoot.push_back(pUI->GetHandle());
-	}
-		
+	if (obj.contains("ScaleRatio"))
+		pUI->SetScaleRatio(obj["ScaleRatio"]);
 	if (obj.contains("LocalScaleRatio"))
 		pUI->SetLocalScaleRatio(obj["LocalScaleRatio"]);
+
+	if (parent == nullptr)
+	{
+		m_vLoadPrefabRoot.push_back(pUI->GetHandle());
+	}
 
 	UI_INFO& uiInfo = static_cast<CUIObject*>(pUI)->GetUIInfo();
 
@@ -2395,6 +2404,26 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	auto color = obj["Color"];
 	uiInfo.Color = { color[0], color[1], color[2] };
 
+	if (auto* button = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(pUI->GetHandle()))
+	{
+		button->SetButtonType(static_cast<GENERAL_BUTTON_TYPE>(
+			obj.value("ButtonType", static_cast<uint32_t>(GENERAL_BUTTON_TYPE::DEFAULT))));
+		button->SetCommandParameter(obj.value("CommandParameter", std::string{}));
+	}
+	if (uiType == ETOUI(UI_TYPE::NINE_SLICE))
+	{
+		if (auto* nineSlice = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(pUI->GetHandle()))
+		{
+			_float4 margins{};
+			if (obj.contains("NineSliceMargins") && obj["NineSliceMargins"].is_array() && obj["NineSliceMargins"].size() >= 4)
+			{
+				const auto& savedMargins = obj["NineSliceMargins"];
+				margins = { savedMargins[0], savedMargins[1], savedMargins[2], savedMargins[3] };
+			}
+			nineSlice->SetNineSliceMargins(margins);
+		}
+	}
+
 	UI_EVENT& eventInfo = pUI->GetUIEvent();
 
 	eventInfo.ClickFunc = obj.value("ClickFunc", "");
@@ -2410,14 +2439,17 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		}
 	};
 
-	bindAction(eventInfo.ClickAction, pUI->OnClicked);
-	bindAction(eventInfo.EnterAction, pUI->OnHoverEnter);
-	bindAction(eventInfo.ExitAction, pUI->OnHoverExit);
-	bindAction(eventInfo.AppearAction, pUI->Appear);
-	bindAction(eventInfo.DisappearAction, pUI->Disappear);
+	if (uiInfo.UIType != ETOUI(UI_TYPE::GENERAL_BUTTON))
+	{
+		bindAction(eventInfo.ClickAction, pUI->OnClicked);
+		bindAction(eventInfo.EnterAction, pUI->OnHoverEnter);
+		bindAction(eventInfo.ExitAction, pUI->OnHoverExit);
+		bindAction(eventInfo.AppearAction, pUI->Appear);
+		bindAction(eventInfo.DisappearAction, pUI->Disappear);
 
-	if(!eventInfo.ClickFunc.empty() && eventInfo.ClickFunc != "None")
-		pUI->OnClickedAction = GET_SINGLE(UIManager)->GetFunc(eventInfo.ClickFunc);
+		if(!eventInfo.ClickFunc.empty() && eventInfo.ClickFunc != "None")
+			pUI->OnClickedAction = GET_SINGLE(UIManager)->GetFunc(eventInfo.ClickFunc);
+	}
 
 
 	if (parent == nullptr)

@@ -166,6 +166,12 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 	auto vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
 	auto ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
+	const _bool isNineSlice = m_UIINFO.UIType == ETOUI(UI_TYPE::NINE_SLICE);
+	if (isNineSlice)
+	{
+		vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_9SliceUI");
+		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_9SliceUI");
+	}
 	if (m_bSpellAlarmFlame)
 	{
 		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
@@ -216,6 +222,27 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		};
 		perUI.uvSize = { 0.f, 0.f };
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
+		if (isNineSlice)
+		{
+			perUI.uvSize = { 1.f, 1.f };
+			const auto& texture = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
+			const D3D11_TEXTURE2D_DESC& textureDesc = texture->GetTexture2DDesc();
+			const _float textureWidth = static_cast<_float>(textureDesc.Width);
+			const _float textureHeight = static_cast<_float>(textureDesc.Height);
+			const _float quadWidth = std::max(1.f, m_UIINFO.SizeX);
+			const _float quadHeight = std::max(1.f, m_UIINFO.SizeY);
+			const _float maxHorizontal = std::max(0.f, std::min(textureWidth, quadWidth) * 0.5f - 0.001f);
+			const _float maxVertical = std::max(0.f, std::min(textureHeight, quadHeight) * 0.5f - 0.001f);
+
+			perUI.texSize = { textureWidth, textureHeight };
+			perUI.quadSize = { quadWidth, quadHeight };
+			perUI.margins = {
+				std::clamp(m_vNineSliceMargins.x, 0.f, maxHorizontal),
+				std::clamp(m_vNineSliceMargins.y, 0.f, maxVertical),
+				std::clamp(m_vNineSliceMargins.z, 0.f, maxHorizontal),
+				std::clamp(m_vNineSliceMargins.w, 0.f, maxVertical)
+			};
+		}
 		if (m_bSpellAlarmFlame)
 		{
 			perUI.margins = {

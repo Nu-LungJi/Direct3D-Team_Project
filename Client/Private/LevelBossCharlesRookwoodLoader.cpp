@@ -11,6 +11,7 @@
 #include "EffectUI.h"
 #include "TextureUI.h"
 #include "Button.h"
+#include "GeneralButton.h"
 #include "TextBox.h"
 #include "SpellMeter.h"
 #include "HPBar.h"
@@ -363,6 +364,10 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 			return false;
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_Button", CButton::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_BOSS_CHARLES_ROOKWOOD", "Prototype_GameObject_GeneralButton", CGeneralButton::Create())))
 		{
 			return false;
 		}

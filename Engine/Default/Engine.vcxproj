@@ -925,6 +925,12 @@
     <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
+	<FxCompile Include="..\ShaderFiles\UI\BoostTrailInstancedUI.hlsl">
+	  <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+	</FxCompile>
+	<FxCompile Include="..\ShaderFiles\UI\ChaserTrailInstancedUI.hlsl">
+	  <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+	</FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>

@@ -16,6 +16,7 @@
 #include "EffectUI.h"
 #include "TextureUI.h"
 #include "Button.h"
+#include "GeneralButton.h"
 #include "TextBox.h"
 #include "SpellMeter.h"
 #include "HPBar.h"
@@ -307,6 +308,10 @@ _bool CLevelLastBossRanrokLoader::UILoad_InWorker()
 			return false;
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_Button", CButton::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_LAST_BOSS_RANROK", "Prototype_GameObject_GeneralButton", CGeneralButton::Create())))
 		{
 			return false;
 		}

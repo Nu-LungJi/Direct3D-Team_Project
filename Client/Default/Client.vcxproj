@@ -263,6 +263,7 @@
     <ClInclude Include="..\Public\BTTurnDirect.h" />
     <ClInclude Include="..\Public\BTTurnSlow.h" />
     <ClInclude Include="..\Public\Button.h" />
+    <ClInclude Include="..\Public\GeneralButton.h" />
     <ClInclude Include="..\Public\ClientEvents.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
@@ -344,6 +345,7 @@
     <ClInclude Include="..\Public\Player_StateMachine.h" />
     <ClInclude Include="..\Public\SpellMeter.h" />
     <ClInclude Include="..\Public\SpellMiniGame.h" />
+	<ClInclude Include="..\Public\BoostTrailInstancedUI.h" />
     <ClInclude Include="..\Public\StarBurst.h" />
     <ClInclude Include="..\Public\TextBox.h" />
     <ClInclude Include="..\Public\TextureUI.h" />
@@ -440,6 +442,7 @@
     <ClCompile Include="..\Private\BridgeCRW.cpp" />
     <ClCompile Include="..\Private\CinematicEditor.cpp" />
     <ClCompile Include="..\Private\Button.cpp" />
+    <ClCompile Include="..\Private\GeneralButton.cpp" />
     <ClCompile Include="..\Private\Cursor.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
@@ -514,6 +517,7 @@
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
     <ClCompile Include="..\Private\SpellMeter.cpp" />
     <ClCompile Include="..\Private\SpellMiniGame.cpp" />
+	<ClCompile Include="..\Private\BoostTrailInstancedUI.cpp" />
     <ClCompile Include="..\Private\StarBurst.cpp" />
     <ClCompile Include="..\Private\TextBox.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />

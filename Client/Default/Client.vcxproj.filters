@@ -690,6 +690,9 @@
     <ClInclude Include="..\Public\Button.h">
       <Filter>GameObject\UI\Button</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\GeneralButton.h">
+      <Filter>GameObject\UI\Button</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\EffectUI.h">
       <Filter>GameObject\UI\Flipbook</Filter>
     </ClInclude>
@@ -864,6 +867,9 @@
     <ClInclude Include="..\Public\SpellMiniGame.h">
       <Filter>GameObject\UI\SpellMiniGame</Filter>
     </ClInclude>
+	<ClInclude Include="..\Public\BoostTrailInstancedUI.h">
+	  <Filter>GameObject\UI\SpellMiniGame</Filter>
+	</ClInclude>
     <ClInclude Include="..\public\EdgRandomBall.h">
       <Filter>GameObject\Monster\EnderDragon\Skill\RandomBall</Filter>
     </ClInclude>
@@ -1344,6 +1350,9 @@
     <ClCompile Include="..\Private\SpellMiniGame.cpp">
       <Filter>GameObject\UI\SpellMiniGame</Filter>
     </ClCompile>
+	<ClCompile Include="..\Private\BoostTrailInstancedUI.cpp">
+	  <Filter>GameObject\UI\SpellMiniGame</Filter>
+	</ClCompile>
     <ClCompile Include="..\private\EdgRandomBall.cpp">
       <Filter>GameObject\Monster\EnderDragon\Skill\RandomBall</Filter>
     </ClCompile>
@@ -1462,6 +1471,9 @@
       <Filter>GameObject\UI</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Button.cpp">
+      <Filter>GameObject\UI\Button</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\GeneralButton.cpp">
       <Filter>GameObject\UI\Button</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\EffectUI.cpp">
