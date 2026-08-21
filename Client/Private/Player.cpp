@@ -57,6 +57,7 @@
 #include "Player_Weapon.h"
 #include "Player_Broom.h"
 #include "WiggenweldPotion.h"
+#include "PropBarrel.h"
 #include "Light.h"
 #include "Trail_CPU.h"
 #include "UIController.h"
@@ -129,8 +130,6 @@ void CPlayer::UpdateGUI()
 		m_pConfringoController->UpdateGUI();
 
 	UpdateStupefyDebugGUI();
-
-
 	if (m_pRagdollController)
 		m_pRagdollController->UpdateGUI();
 
@@ -1955,6 +1954,7 @@ void CPlayer::PrepareLocomotionResume()
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
+	UpdateAncientThrowTargetDebugGUI();
 	{
 
 
@@ -3051,6 +3051,113 @@ void CPlayer::UpdateStupefyDebugGUI()
 	ImGui::TextColored(ImVec4(0.52f, 0.86f, 1.f, 1.f), "Meteor Core: cyan-white");
 	ImGui::TextColored(ImVec4(0.72f, 0.42f, 1.f, 1.f), "Galaxy Dust: blue-violet");
 	ImGui::TextDisabled("Missing effect data is isolated per layer; disable that layer while testing.");
+}
+
+void CPlayer::UpdateAncientThrowTargetDebugGUI()
+{
+	if (!ImGui::Begin("Ancient Throw Target Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::End();
+		return;
+	}
+
+	auto& gameInstance = CGameInstance::Get();
+	auto* pEnemyTarget = gameInstance.GetGameObjectByHandle(m_hAutoTarget);
+	const _bool bEnemyTargetValid = pEnemyTarget && !pEnemyTarget->GetPendingDestroy();
+	ImGui::TextColored(
+		bEnemyTargetValid ? ImVec4(0.25f, 1.f, 0.35f, 1.f) : ImVec4(1.f, 0.25f, 0.2f, 1.f),
+		"Enemy Target: %s", bEnemyTargetValid ? "FOUND" : "NONE");
+	if (bEnemyTargetValid)
+	{
+		const _float3 position = pEnemyTarget->GetTransform().GetPosition();
+		ImGui::Text("Tag: %s", pEnemyTarget->GetObjectTag().data());
+		ImGui::Text("Position: %.2f, %.2f, %.2f", position.x, position.y, position.z);
+	}
+
+	auto* pCamera = gameInstance.GetActiveCamera();
+	uint32_t iTotalBarrels{};
+	uint32_t iUsableBarrels{};
+	uint32_t iVisibleBarrels{};
+	CPropBarrel* pBestBarrel{};
+	_float fBestAlignment = -FLT_MAX;
+
+	_vector vCameraPosition{};
+	_vector vCameraLook{};
+	_bool bCameraValid{};
+	if (pCamera)
+	{
+		vCameraPosition = pCamera->GetTransform().GetState(STATE::POSITION);
+		vCameraLook = pCamera->GetTransform().GetState(STATE::LOOK);
+		if (XMVectorGetX(XMVector3LengthSq(vCameraLook)) > FLT_EPSILON)
+		{
+			vCameraLook = XMVector3Normalize(vCameraLook);
+			bCameraValid = true;
+		}
+	}
+
+	for (const auto& [_, handles] : gameInstance.GetGameObjectLayers())
+	{
+		for (const CHandle& handle : handles)
+		{
+			auto* pBarrel = gameInstance.GetGameObjectByHandleT<CPropBarrel>(handle);
+			if (!pBarrel)
+				continue;
+
+			++iTotalBarrels;
+			if (pBarrel->GetPendingDestroy() ||
+				pBarrel->GetBarrelState() != CPropBarrel::BARREL_STATE::CREATED)
+			{
+				continue;
+			}
+			++iUsableBarrels;
+			if (!bCameraValid)
+				continue;
+
+			const _float3 position = pBarrel->GetTransform().GetPosition();
+			const BoundingBox bounds{ position, { 0.9f, 0.9f, 0.9f } };
+			if (!pCamera->IntersectsViewVolume(bounds))
+				continue;
+
+			++iVisibleBarrels;
+			_vector vToBarrel = XMLoadFloat3(&position) - vCameraPosition;
+			if (XMVectorGetX(XMVector3LengthSq(vToBarrel)) <= FLT_EPSILON)
+				continue;
+
+			vToBarrel = XMVector3Normalize(vToBarrel);
+			const _float fAlignment = XMVectorGetX(XMVector3Dot(vCameraLook, vToBarrel));
+			if (fAlignment > fBestAlignment)
+			{
+				fBestAlignment = fAlignment;
+				pBestBarrel = pBarrel;
+			}
+		}
+	}
+
+	ImGui::Separator();
+	ImGui::Text("Camera: %s", bCameraValid ? "VALID" : "NONE / INVALID");
+	ImGui::Text("CPropBarrel Total: %u", iTotalBarrels);
+	ImGui::Text("CPropBarrel Usable: %u", iUsableBarrels);
+	ImGui::Text("CPropBarrel In View: %u", iVisibleBarrels);
+	ImGui::TextColored(
+		pBestBarrel ? ImVec4(0.25f, 1.f, 0.35f, 1.f) : ImVec4(1.f, 0.25f, 0.2f, 1.f),
+		"Throw Target: %s", pBestBarrel ? "FOUND" : "NONE");
+
+	if (pBestBarrel)
+	{
+		const _float3 position = pBestBarrel->GetTransform().GetPosition();
+		const _float3 playerPosition = GetTransform().GetPosition();
+		const _float dx = position.x - playerPosition.x;
+		const _float dy = position.y - playerPosition.y;
+		const _float dz = position.z - playerPosition.z;
+		const _float distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+		ImGui::Text("Barrel Tag: %s", pBestBarrel->GetObjectTag().data());
+		ImGui::Text("Barrel Position: %.2f, %.2f, %.2f", position.x, position.y, position.z);
+		ImGui::Text("Distance (display only): %.2f", distance);
+		ImGui::Text("Camera Alignment: %.3f", fBestAlignment);
+	}
+
+	ImGui::TextDisabled("Read-only diagnostics: this panel does not change targeting.");
+	ImGui::End();
 }
 
 void CPlayer::OnWake()

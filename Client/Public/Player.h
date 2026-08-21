@@ -117,6 +117,7 @@ public:
 	_bool FireStupefyProjectile();
 private:
 	void UpdateStupefyDebugGUI();
+	void UpdateAncientThrowTargetDebugGUI();
 	struct STUPEFY_DEBUG_SETTINGS
 	{
 		_float fSpeed{ 120.f };
