@@ -1409,7 +1409,7 @@ _bool CGameInstance::IsMapChunkStreaming() const
 }
 
 /*----------- 광윤 추가 -----------*/
-const MATERIAL_DESC& CGameInstance::FindMaterial(const std::string& ModelName) {
+const MATERIAL_DESC CGameInstance::FindMaterial(const std::string& ModelName) {
 	return m_pMapManager->FindMaterial(ModelName);
 }
 /*---------------------------------*/
