@@ -64,6 +64,29 @@
 #include "UIManager.h"
 NS_USING(Client)
 
+namespace
+{
+	_bool IsAncientThrowTargetInCameraView(
+		const _float3& worldPosition,
+		const _matrix& view,
+		const _matrix& projection)
+	{
+		const _vector clip = XMVector4Transform(
+			XMVectorSet(worldPosition.x, worldPosition.y, worldPosition.z, 1.f),
+			view * projection);
+		const _float w = XMVectorGetW(clip);
+		if (w <= FLT_EPSILON)
+			return false;
+
+		const _float inverseW = 1.f / w;
+		const _float ndcX = XMVectorGetX(clip) * inverseW;
+		const _float ndcY = XMVectorGetY(clip) * inverseW;
+		const _float ndcZ = XMVectorGetZ(clip) * inverseW;
+		return std::abs(ndcX) <= 1.f && std::abs(ndcY) <= 1.f &&
+			ndcZ >= 0.f && ndcZ <= 1.f;
+	}
+}
+
 
 
 void CPlayer::UpdateGUI()
@@ -1205,6 +1228,20 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
 	}
 
+	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_E))
+	{
+		auto* pEnemyTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+		if (pEnemyTarget && !pEnemyTarget->GetPendingDestroy())
+		{
+			m_hPendingAncientThrowTarget = FindAncientThrowTarget();
+			if (m_hPendingAncientThrowTarget &&
+				!m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL))
+			{
+				m_hPendingAncientThrowTarget.reset();
+			}
+		}
+	}
+
 	 // 임시
 	if (m_bCoolTime_Num1 == true) {
 		if (m_fCoolTime_Num1 > 3.f) {
@@ -1954,7 +1991,6 @@ void CPlayer::PrepareLocomotionResume()
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
-	UpdateAncientThrowTargetDebugGUI();
 	{
 
 
@@ -3083,11 +3119,15 @@ void CPlayer::UpdateAncientThrowTargetDebugGUI()
 
 	_vector vCameraPosition{};
 	_vector vCameraLook{};
+	_matrix cameraView{};
+	_matrix cameraProjection{};
 	_bool bCameraValid{};
 	if (pCamera)
 	{
 		vCameraPosition = pCamera->GetTransform().GetState(STATE::POSITION);
 		vCameraLook = pCamera->GetTransform().GetState(STATE::LOOK);
+		cameraView = pCamera->GetView();
+		cameraProjection = pCamera->GetProj();
 		if (XMVectorGetX(XMVector3LengthSq(vCameraLook)) > FLT_EPSILON)
 		{
 			vCameraLook = XMVector3Normalize(vCameraLook);
@@ -3113,9 +3153,10 @@ void CPlayer::UpdateAncientThrowTargetDebugGUI()
 			if (!bCameraValid)
 				continue;
 
-			const _float3 position = pBarrel->GetTransform().GetPosition();
-			const BoundingBox bounds{ position, { 0.9f, 0.9f, 0.9f } };
-			if (!pCamera->IntersectsViewVolume(bounds))
+			_float3 position = pBarrel->GetTransform().GetPosition();
+			position.y += 0.75f;
+			if (!IsAncientThrowTargetInCameraView(
+				position, cameraView, cameraProjection))
 				continue;
 
 			++iVisibleBarrels;
@@ -3141,6 +3182,9 @@ void CPlayer::UpdateAncientThrowTargetDebugGUI()
 	ImGui::TextColored(
 		pBestBarrel ? ImVec4(0.25f, 1.f, 0.35f, 1.f) : ImVec4(1.f, 0.25f, 0.2f, 1.f),
 		"Throw Target: %s", pBestBarrel ? "FOUND" : "NONE");
+	const auto hLiveTarget = FindAncientThrowTarget();
+	ImGui::Text("Live Finder: %s", hLiveTarget ? "FOUND" : "NONE");
+	ImGui::Text("Pending Handle: %s", m_hPendingAncientThrowTarget ? "SET" : "EMPTY");
 
 	if (pBestBarrel)
 	{
@@ -3158,6 +3202,60 @@ void CPlayer::UpdateAncientThrowTargetDebugGUI()
 
 	ImGui::TextDisabled("Read-only diagnostics: this panel does not change targeting.");
 	ImGui::End();
+}
+
+std::optional<CHandle> CPlayer::FindAncientThrowTarget() const
+{
+	auto& gameInstance = CGameInstance::Get();
+	auto* pCamera = gameInstance.GetActiveCamera();
+	if (!pCamera)
+		return std::nullopt;
+
+	const _vector vCameraPosition = pCamera->GetTransform().GetState(STATE::POSITION);
+	_vector vCameraLook = pCamera->GetTransform().GetState(STATE::LOOK);
+	const _matrix cameraView = pCamera->GetView();
+	const _matrix cameraProjection = pCamera->GetProj();
+	if (XMVectorGetX(XMVector3LengthSq(vCameraLook)) <= FLT_EPSILON)
+		return std::nullopt;
+	vCameraLook = XMVector3Normalize(vCameraLook);
+
+	std::optional<CHandle> hBestTarget{};
+	_float fBestAlignment = -FLT_MAX;
+	for (const auto& [_, handles] : gameInstance.GetGameObjectLayers())
+	{
+		for (const CHandle& handle : handles)
+		{
+			auto* pBarrel = gameInstance.GetGameObjectByHandleT<CPropBarrel>(handle);
+			if (!pBarrel || pBarrel->GetPendingDestroy() ||
+				pBarrel->GetBarrelState() != CPropBarrel::BARREL_STATE::CREATED)
+				continue;
+
+			_float3 position = pBarrel->GetTransform().GetPosition();
+			position.y += 0.75f;
+			if (!IsAncientThrowTargetInCameraView(
+				position, cameraView, cameraProjection))
+				continue;
+
+			_vector vToBarrel = XMLoadFloat3(&position) - vCameraPosition;
+			if (XMVectorGetX(XMVector3LengthSq(vToBarrel)) <= FLT_EPSILON)
+				continue;
+			vToBarrel = XMVector3Normalize(vToBarrel);
+			const _float alignment = XMVectorGetX(XMVector3Dot(vCameraLook, vToBarrel));
+			if (alignment > fBestAlignment)
+			{
+				fBestAlignment = alignment;
+				hBestTarget = handle;
+			}
+		}
+	}
+	return hBestTarget;
+}
+
+std::optional<CHandle> CPlayer::ConsumeAncientThrowTarget()
+{
+	auto target = m_hPendingAncientThrowTarget;
+	m_hPendingAncientThrowTarget.reset();
+	return target;
 }
 
 void CPlayer::OnWake()

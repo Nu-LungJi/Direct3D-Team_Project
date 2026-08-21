@@ -3,11 +3,13 @@
 
 #include "Player.h"
 #include "ComAnimator.h"
+#include "ComCharacterMoveIntent.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_Weapon.h"
 #include "Monster.h"
 #include "ClientEvents.h"
 #include "Trail_CPU.h"
+#include "PropBarrel.h"
 
 NS_USING(Client)
 
@@ -27,7 +29,11 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
-	if (!HasValidTarget(*pPlayer))
+	m_hThrowBarrel = pPlayer->ConsumeAncientThrowTarget();
+	const _bool bThrowBranch = m_hThrowBarrel.has_value();
+	if (bThrowBranch)
+		m_hThrowDestination = pPlayer->GetTargetHandle();
+	if (!bThrowBranch && !HasValidTarget(*pPlayer))
 	{
 		RequestLocomotion(pStateMachine);
 		return;
@@ -35,8 +41,10 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 
 	CacheAnimationIndices(*pPlayer);
 	const auto iSkillIndex = ETOUI(ACIENT_SKILL::ACIENT_LIGHTENING);
-	if (m_AcientCast_Animations[iSkillIndex] < 0 ||
-		m_AcientEnd_Animations[iSkillIndex] < 0)
+	if ((bThrowBranch && m_iAncientThrowLeftAnimation < 0 &&
+		m_iAncientThrowRightAnimation < 0) ||
+		(!bThrowBranch && (m_AcientCast_Animations[iSkillIndex] < 0 ||
+		m_AcientEnd_Animations[iSkillIndex] < 0)))
 	{
 		RequestLocomotion(pStateMachine);
 		return;
@@ -51,11 +59,49 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 
 	SetSkillControl(*pPlayer, true, true, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
-	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::ACIENT_LIGHTNING);
+	pPlayer->SetPlayerCurSKill(
+		bThrowBranch ? PLAYER_SKILL_TYPE::DEFAULT : PLAYER_SKILL_TYPE::ACIENT_LIGHTNING);
 
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
 	m_fAcientElapsed = 0.f;
+	if (bThrowBranch)
+	{
+		auto* pBarrel = CGameInstance::Get()
+			.GetGameObjectByHandleT<CPropBarrel>(*m_hThrowBarrel);
+		if (!pBarrel || pBarrel->GetPendingDestroy())
+		{
+			RequestLocomotion(pStateMachine);
+			return;
+		}
+
+		int32_t animation = m_iAncientThrowRightAnimation;
+		if (auto* pDestination = CGameInstance::Get().GetGameObjectByHandle(
+			*m_hThrowDestination);
+			pDestination && !pDestination->GetPendingDestroy())
+		{
+			_vector direction =
+				pDestination->GetTransform().GetState(STATE::POSITION) -
+				pPlayer->GetTransform().GetState(STATE::POSITION);
+			direction = XMVectorSetY(direction, 0.f);
+			_vector playerRight = XMVectorSetY(
+				pPlayer->GetTransform().GetState(STATE::RIGHT), 0.f);
+			if (XMVectorGetX(XMVector3LengthSq(direction)) > FLT_EPSILON &&
+				XMVectorGetX(XMVector3LengthSq(playerRight)) > FLT_EPSILON &&
+				XMVectorGetX(XMVector3Dot(
+					XMVector3Normalize(playerRight), XMVector3Normalize(direction))) < 0.f)
+			{
+				animation = m_iAncientThrowLeftAnimation;
+			}
+		}
+		if (animation < 0)
+			animation = m_iAncientThrowLeftAnimation >= 0
+				? m_iAncientThrowLeftAnimation
+				: m_iAncientThrowRightAnimation;
+		pAnimator->Play_Anim(animation, false, 0.18f);
+		DEBUG_LOG("[AncientMagic] Throw target connected; test animation started.\n");
+		return;
+	}
 
 	// 고대마법 발동 이벤트 발행
 
@@ -81,9 +127,18 @@ void CPlayer_AcientAttack_State::CacheAnimationIndices(const CPlayer& player)
 		player,
 		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Slam_Dwn_anm.bin");
 
+	m_iAncientThrowLeftAnimation = FindAnimationIndex(
+		player,
+		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Fwd_ArmLft_Spin_Lft_Send_anm.bin");
+	m_iAncientThrowRightAnimation = FindAnimationIndex(
+		player,
+		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Fwd_ArmRht_Spin_Rht_Send_anm.bin");
+
 	m_bAnimationIndicesCached =
 		m_AcientCast_Animations[iSkillIndex] >= 0 &&
-		m_AcientEnd_Animations[iSkillIndex] >= 0;
+		m_AcientEnd_Animations[iSkillIndex] >= 0 &&
+		(m_iAncientThrowLeftAnimation >= 0 ||
+		m_iAncientThrowRightAnimation >= 0);
 }
 
 void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -96,6 +151,51 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 	}
 
 	pPlayer->SetCurrentMoveSpeed(0.f);
+	if (m_hThrowBarrel)
+	{
+		auto* pAnimator = pPlayer->GetAnimator();
+		if (!pAnimator)
+		{
+			RequestLocomotion(pStateMachine);
+			return;
+		}
+
+		const _float throwAnimRatio = PlayerAnimationRatioGuard::Sanitize(
+			pAnimator->GetPlayAnimRatio());
+		if (auto* pMoveIntent = pPlayer->GetMoveIntent())
+		{
+			if (throwAnimRatio < ACIENT_THROW_FACING_END_RATIO && m_hThrowDestination)
+			{
+				if (auto* pDestination = CGameInstance::Get().GetGameObjectByHandle(
+					*m_hThrowDestination);
+					pDestination && !pDestination->GetPendingDestroy())
+				{
+					_vector direction =
+						pDestination->GetTransform().GetState(STATE::POSITION) -
+						pPlayer->GetTransform().GetState(STATE::POSITION);
+					direction = XMVectorSetY(direction, 0.f);
+					if (XMVectorGetX(XMVector3LengthSq(direction)) > FLT_EPSILON)
+					{
+						_float3 facingDirection{};
+						XMStoreFloat3(&facingDirection, XMVector3Normalize(direction));
+						pMoveIntent->SetFacingIntent(
+							facingDirection, ACIENT_THROW_TURN_SPEED);
+					}
+				}
+			}
+			else
+			{
+				pMoveIntent->ClearFacingIntent();
+			}
+		}
+
+		if (throwAnimRatio >= ACIENT_THROW_STATE_RELEASE_RATIO ||
+			pAnimator->GetFinish())
+		{
+			RequestLocomotion(pStateMachine);
+		}
+		return;
+	}
 
 	auto* pAnimator = pPlayer->GetAnimator();
 	if (!pAnimator)
@@ -209,12 +309,18 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 void CPlayer_AcientAttack_State::Exit(CStateMachine* pStateMachine)
 {
 	if (auto* pPlayer = GetPlayer(pStateMachine))
+	{
+		if (auto* pMoveIntent = pPlayer->GetMoveIntent())
+			pMoveIntent->ClearFacingIntent();
 		ResetSkillControl(*pPlayer);
+	}
 	m_bOnceLighting = false;
 	m_bOnceLastLighting = false;
 	m_ePhase = PHASE::CAST;
 	m_fAnimRatio = 0.f;
 	m_fAcientElapsed = 0.f;
+	m_hThrowBarrel.reset();
+	m_hThrowDestination.reset();
 }
 
 SPtr<CPlayer_AcientAttack_State> CPlayer_AcientAttack_State::Create()

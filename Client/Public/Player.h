@@ -170,6 +170,7 @@ public:
 	_bool StartWiggenweldPotionUse();
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
+	std::optional<CHandle> ConsumeAncientThrowTarget();
 	void SetLumosActive(_bool bActive);
 	void SetLumosHoldAnimationIndex(int32_t iAnimation) { m_iLumosHoldAnimation = iAnimation; }
 	void ToggleLumos() { SetLumosActive(!m_bLumosActive); }
@@ -333,6 +334,7 @@ private:
 	CHandle m_hAutoTarget;
 	CHandle m_hPrevAutoTarget;
 	CHandle m_hMonsterHPUITarget{};
+	std::optional<CHandle> m_hPendingAncientThrowTarget{};
 	StringID m_LevelTag;
 private:
 	CHandle m_UIHandle;
@@ -347,6 +349,7 @@ private:
 	int32_t m_iLumosHoldAnimation{ -1 };
 	void UpdateLumosHoldAnimation();
 	void UpdateLumosLight();
+	std::optional<CHandle> FindAncientThrowTarget() const;
 	_bool TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const;
 	void UpdateWiggenweldPotion();
 	CHandle m_hWiggenweldPotion{};

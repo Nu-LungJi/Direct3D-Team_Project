@@ -14,6 +14,7 @@ public:
 public:
 	enum class ACIENT_SKILL {
 		ACIENT_LIGHTENING,
+		ACIENT_THROW,
 		END
 	};
 private:
@@ -41,6 +42,8 @@ private:
 
 	std::array<int32_t, (size_t)ETOUI(ACIENT_SKILL::END)> m_AcientCast_Animations{};
 	std::array<int32_t, (size_t)ETOUI(ACIENT_SKILL::END)> m_AcientEnd_Animations{};
+	int32_t m_iAncientThrowLeftAnimation{ -1 };
+	int32_t m_iAncientThrowRightAnimation{ -1 };
 
 	PHASE m_ePhase = PHASE::CAST;
 	static constexpr _float ACIENT_LIGHTENING_CAST_START_RATIO = 0.55f;
@@ -54,6 +57,11 @@ private:
 	_float	m_fAnimRatio = 0.f;
 	_float	m_fAcientElapsed = 0.f;
 	_float	m_fSpawnDelay = 0.f;
+	std::optional<CHandle> m_hThrowBarrel{};
+	std::optional<CHandle> m_hThrowDestination{};
+	static constexpr _float ACIENT_THROW_FACING_END_RATIO = 0.2f;
+	static constexpr _float ACIENT_THROW_STATE_RELEASE_RATIO = 0.85f;
+	static constexpr _float ACIENT_THROW_TURN_SPEED = 540.f;
 };
 
 
