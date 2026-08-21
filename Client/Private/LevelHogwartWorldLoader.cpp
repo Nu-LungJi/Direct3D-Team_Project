@@ -31,6 +31,7 @@
 #include "Spider.h"
 #include "Mon_Spawner.h"
 #include "Mon_State.h"
+#include "WorldNpc.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
@@ -81,6 +82,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 			}
 			if(FAILED(MonsterLoad_InWorker()))
+				return false;
+			if (FAILED(NpcLoad_InWorker()))
 				return false;
 
 			return SUCCEEDED(LoadPlayerResources());
@@ -370,6 +373,14 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 				return E_FAIL;
 			}
 		}
+		if (auto res = CGameInstance::Get().AddResource("SPAWNER", "SPIDERSPAWN", CResJson::Create("./Resources/json/Spawn/SPIDERSPAWN.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT SPAWNER JSON");
+				return E_FAIL;
+			}
+		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");
@@ -382,5 +393,14 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 		}
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
 
+	}
+}
+
+HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
+{
+	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc, CWorldNpc::Create())))
+	{
+		MSG_BOX("TERRAIN Failed Prototype_GameObject_Npc");
+		return E_FAIL;
 	}
 }

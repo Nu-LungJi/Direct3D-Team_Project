@@ -32,3 +32,7 @@
 #include "BTEdgStateFinished.h"
 #include "BTDecEdgPhase.h"
 #include "BTDecEdgPatroll.h"
+
+//NPC
+#include "BTNaviMove.h"
+#include "BTAnimNpc.h"

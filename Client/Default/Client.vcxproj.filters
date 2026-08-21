@@ -403,6 +403,12 @@
     <Filter Include="GameObject\Monster\00.Parents\State">
       <UniqueIdentifier>{f6a28477-befa-428d-b636-662eef20aab1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\PropBarrel">
+      <UniqueIdentifier>{33378d39-0858-4c64-98ef-efffcf08028f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Player\AccioBall">
+      <UniqueIdentifier>{f312d994-35e8-4db6-a6d7-b50989c874c4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Monster\01.Spanwer">
       <UniqueIdentifier>{08679333-751b-4ba5-a4c6-39daf5347c9b}</UniqueIdentifier>
     </Filter>
@@ -931,6 +937,22 @@
     <ClInclude Include="..\public\Edg_Godae.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
     </ClInclude>
+	<ClInclude Include="..\public\AccioBall.h">
+	  <Filter>GameObject\Player\AccioBall</Filter>
+	</ClInclude>
+	<ClInclude Include="..\public\AccioActivityPartBase.h"><Filter>GameObject\Player</Filter></ClInclude>
+	<ClInclude Include="..\public\AccioActivity_Base.h"><Filter>GameObject\Player</Filter></ClInclude>
+	<ClInclude Include="..\public\AccioActivity_Platform.h"><Filter>GameObject\Player</Filter></ClInclude>
+	<ClInclude Include="..\public\AccioActivity_BumperA.h"><Filter>GameObject\Player</Filter></ClInclude>
+	<ClInclude Include="..\public\AccioActivity_BumperB.h"><Filter>GameObject\Player</Filter></ClInclude>
+	<ClInclude Include="..\public\AccioActivity_RampLarge.h"><Filter>GameObject\Player</Filter></ClInclude>
+	<ClInclude Include="..\public\AccioActivity_LampSmall.h"><Filter>GameObject\Player</Filter></ClInclude>
+    <ClInclude Include="..\public\PropBarrel.h">
+      <Filter>GameObject\Player\PropBarrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PropBarrelDebris.h">
+      <Filter>GameObject\Player\PropBarrel</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\Gur_Spawn.h">
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
     </ClInclude>
@@ -1413,6 +1435,22 @@
     <ClCompile Include="..\Private\Player_Potion_State.cpp" />
     <ClCompile Include="..\Private\WiggenweldPotion.cpp">
       <Filter>GameObject\Player\Player_Potion</Filter>
+    </ClCompile>
+	<ClCompile Include="..\private\AccioBall.cpp">
+	  <Filter>GameObject\Player\AccioBall</Filter>
+	</ClCompile>
+	<ClCompile Include="..\private\AccioActivityPartBase.cpp"><Filter>GameObject\Player</Filter></ClCompile>
+	<ClCompile Include="..\private\AccioActivity_Base.cpp"><Filter>GameObject\Player</Filter></ClCompile>
+	<ClCompile Include="..\private\AccioActivity_Platform.cpp"><Filter>GameObject\Player</Filter></ClCompile>
+	<ClCompile Include="..\private\AccioActivity_BumperA.cpp"><Filter>GameObject\Player</Filter></ClCompile>
+	<ClCompile Include="..\private\AccioActivity_BumperB.cpp"><Filter>GameObject\Player</Filter></ClCompile>
+	<ClCompile Include="..\private\AccioActivity_RampLarge.cpp"><Filter>GameObject\Player</Filter></ClCompile>
+	<ClCompile Include="..\private\AccioActivity_LampSmall.cpp"><Filter>GameObject\Player</Filter></ClCompile>
+    <ClCompile Include="..\private\PropBarrel.cpp">
+      <Filter>GameObject\Player\PropBarrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PropBarrelDebris.cpp">
+      <Filter>GameObject\Player\PropBarrel</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Gur_Spawn.cpp">
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
