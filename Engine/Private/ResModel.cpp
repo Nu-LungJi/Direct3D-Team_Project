@@ -92,7 +92,6 @@ HRESULT CResModel::Load(const std::any& arg)
 		}
 	}
 
-
 	if (FAILED(Ready_Animation()))
 		return E_FAIL;
 
@@ -199,7 +198,6 @@ HRESULT CResModel::Ready_Animation()
 
 	std::filesystem::path folderPath = modelPath.parent_path();
 
-	int count = 0;
 	for (const auto& entry : std::filesystem::directory_iterator(folderPath))
 	{
 		if (!entry.is_regular_file())
@@ -207,29 +205,58 @@ HRESULT CResModel::Ready_Animation()
 
 		const auto& path = entry.path();
 
-		std::string fileName = path.filename().string();
-
-		if (fileName.rfind("AN_", 0) != 0)
+		if (path.filename().string().rfind("AN_", 0) != 0)
 			continue;
 
 		std::string animPath = path.string();
 
-		auto pAnimation = CResModelAnim::Create();
-		if (nullptr == pAnimation) {
+		if (FAILED(LoadAndAppendSharedAnimation(animPath)))
 			return E_FAIL;
-		}
-				
-
-		if (FAILED(pAnimation->Load(CResModelAnim::DESC{.pModel = this, .path = animPath }))){
-				return E_FAIL;
-		}
-
-		pAnimation->SetAnimName(fileName);
-		m_Animations.emplace_back(pAnimation);
-		count++;
 	}
 
-	count++;
+	return S_OK;
+}
+
+HRESULT CResModel::LoadAndAppendSharedAnimation(
+	const _string& sAnimationPath)
+{
+	const auto normalizedPath = std::filesystem::path{ sAnimationPath }
+		.lexically_normal().generic_string();
+
+	const auto duplicate = std::ranges::find_if(
+		m_Animations,
+		[&normalizedPath](const SPtr<CResModelAnim>& pAnimation)
+		{
+			if (!pAnimation)
+				return false;
+
+			return std::filesystem::path{ pAnimation->GetAnimPath() }
+				.lexically_normal().generic_string() == normalizedPath;
+		});
+
+	if (duplicate != m_Animations.end())
+		return S_FALSE;
+
+	auto pAnimation = CGameInstance::Get().GetOrLoadModelAnimation(
+		normalizedPath);
+	if (!pAnimation)
+		return E_FAIL;
+
+	m_Animations.emplace_back(std::move(pAnimation));
+	return S_OK;
+}
+
+HRESULT CResModel::Add_SharedAnimation(const _string& sAnimationPath)
+{
+	const HRESULT result = LoadAndAppendSharedAnimation(sAnimationPath);
+	if (FAILED(result) || result == S_FALSE)
+		return result;
+
+	if (m_eState == STATE::LOADED && FAILED(Ready_GPU_Animation()))
+	{
+		m_Animations.pop_back();
+		return E_FAIL;
+	}
 
 	return S_OK;
 }
@@ -342,8 +369,6 @@ HRESULT CResModel::Ready_GPU_Animation()
 
 		const auto& channels = pAnimation->GetChannels();
 
-		gpuAnim.iChannelCount = static_cast<uint32_t>(channels.size());
-
 		/*
 		 * 현재 애니메이션용 BoneChannelMap 공간 생성
 		 *
@@ -358,12 +383,18 @@ HRESULT CResModel::Ready_GPU_Animation()
 			if (!pChannel)
 				return E_FAIL;
 
+			const int32_t iBoneIndex = pChannel->Get_BoneIndex();
+			if (iBoneIndex < 0 ||
+				static_cast<uint32_t>(iBoneIndex) >= iBoneCount)
+			{
+				// [LSY] 공유 Clip에만 존재하는 Bone 채널은 이 모델에서 사용하지 않는다.
+				// CPU Animator도 동일하게 범위 밖 채널을 건너뛴다.
+				continue;
+			}
+
 			GPU_CHANNEL_DESC gpuChannel{};
 
-			gpuChannel.iBoneIndex =pChannel->Get_BoneIndex();
-
-			if (gpuChannel.iBoneIndex >= iBoneCount)
-				return E_FAIL;
+			gpuChannel.iBoneIndex = static_cast<uint32_t>(iBoneIndex);
 
 			// 이 채널의 KeyFrame 시작 위치
 			gpuChannel.iKeyFrameOffset = static_cast<uint32_t>(gpuKeyFrames.size());
@@ -400,8 +431,19 @@ HRESULT CResModel::Ready_GPU_Animation()
 			gpuChannels.push_back(gpuChannel);
 		}
 
+		gpuAnim.iChannelCount =
+			static_cast<uint32_t>(gpuChannels.size()) -
+			gpuAnim.iChannelOffset;
+
 		gpuAnimations.push_back(gpuAnim);
 	}
+
+	// 모든 채널이 현재 모델의 Bone 범위를 벗어나도 빈 D3D11 Buffer 생성으로
+	// 실패하지 않게 더미 원소를 둔다. BoneChannelMap은 INVALID이므로 접근되지 않는다.
+	if (gpuChannels.empty())
+		gpuChannels.emplace_back();
+	if (gpuKeyFrames.empty())
+		gpuKeyFrames.emplace_back();
 
 	// 여기까지 오면 CPU 평탄화 데이터가 모두 완성된 상태
 	// 이제 각각 Structured Buffer로 올린다.
@@ -676,7 +718,7 @@ HRESULT CResModel::Calculate_BoneDepth(uint32_t iBoneIndex,std::vector<int32_t>&
 
 	return S_OK;
 }
-int32_t CResModel::Get_BoneIndex(const _char* pBoneName)
+int32_t CResModel::Get_BoneIndex(const _char* pBoneName) const
 {
 	int32_t iBoneIndex = { 0 };
 	auto    iter = find_if(m_Bones.begin(), m_Bones.end(), [&](SPtr<CResModelBone> pBone)->_bool

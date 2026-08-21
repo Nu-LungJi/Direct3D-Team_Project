@@ -57,6 +57,7 @@ class CComPxDistanceJoint;
 class CComPxRevoluteJoint;
 class CComPxD6Joint;
 class CPathPlaybackEditor;
+class CResModelAnim;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -110,6 +111,10 @@ public:
 	template<typename T, typename CreateFunc>
 	SPtr<T> GetOrCreateResourceByPath(const _string& sPath, CreateFunc&& createFunc)
 	{ return m_pResourceManager->GetOrCreateResourceByPath<T>(sPath, std::forward<CreateFunc>(createFunc)); }
+	SPtr<CResModelAnim> GetOrLoadModelAnimation(const _string& sPath);
+	void MoveResourcePathLookup(
+		const _string& sOldPath, const _string& sNewPath,
+		const SPtr<CResource>& pResource);
 	template<typename T>
 	SPtr<T> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const
 	{ return m_pResourceManager->GetResourceFirst<T>(sGroupTag, sResTag); }

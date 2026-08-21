@@ -6,7 +6,6 @@ struct aiAnimation;
 
 NS_BEGIN(Engine)
 class CResModelChanel;
-class CResModel;
 class ENGINE_DLL CResModelAnim final : public CResource
 {
 public:
@@ -24,8 +23,7 @@ public:
 	DECLARE_DERIVED_TYPE(CResModelAnim, CResource)
 public:
 	typedef struct tagDesc {
-		CResModel* pModel;
-		std::string& path;
+		std::string path{};
 	}DESC;
 private:
 	explicit CResModelAnim(const _string& sPath);
@@ -36,53 +34,41 @@ public:
 	HRESULT Unload(const std::any& arg = {}) override;
 
 
-	SPtr<CResModelChanel> FindRootChannel(uint32_t iRootBoneIndex);
-	void RebuildCurrentKeyFrameIndices();
+	SPtr<CResModelChanel> FindRootChannel(uint32_t iRootBoneIndex) const;
 
 public:
 	_float  GetDuration() const { return m_fDuration; }
 	_float  GetTickPerSecond() const { return m_fTickPerSecond; }
-	_float  GetCurrentTrackPosition() const { return m_fCurrentTrackPosition; }
 
-	void    SetDuration(_float fDuration) { m_fDuration = fDuration; }
-	void    SetTickPerSecond(_float fTickPerSecond) { m_fTickPerSecond = fTickPerSecond; }
-	void    SetCurrentTrackPosition(_float fCurrentTrackPosition) ;
-
-	std::string& GetAnimName() { return m_AnimName; }
+	const std::string& GetAnimName() const { return m_AnimName; }
 	void		 SetAnimName(std::string _name) { m_AnimName = _name; }
 
-	std::string& GetAnimPath() { return m_AnimPath; }
+	const std::string& GetAnimPath() const { return m_AnimPath; }
 	void	 SetAnimPath(std::string _path) { m_AnimPath = _path; }	
 
-	uint32_t	GetNumChannel() { return m_iNumChannels; };
-	std::vector<SPtr<CResModelChanel>>& GetChannels() { return m_Channels; }
+	uint32_t	GetNumChannel() const { return m_iNumChannels; };
+	const std::vector<SPtr<CResModelChanel>>& GetChannels() const { return m_Channels; }
 	CResModelChanel* GetChannelByBoneIndex(uint32_t iBoneIndex) const;
 	_bool SampleMorphWeights(_float fTrackPosition,
 		DirectX::XMUINT4& outIndices, _float4& outWeights) const;
 	_bool HasMorphCurves() const { return !m_MorphChannels.empty(); }
-
-
-	int32_t     GetRootBoneIndex() { return m_iRootBoneIndex; }
 
 private:
 	// 런 타임 도중만 가지는 주소
 	std::string			m_AnimPath;
 	std::string			m_AnimName;
 
-	/* 이 애니메이션의 총 길이. */
+	// [LSY] 모든 Animator가 공유하는 불변 Clip 원본 데이터다.
+	// 현재 재생 시간과 KeyFrame cursor는 CComAnimator::ANIMSTRUCT가 객체별로 가진다.
 	_float				m_fDuration = {};
 	_float				m_fTickPerSecond = {};
-	_float				m_fCurrentTrackPosition = {};
 
 	/* 컨트롤해야하는 뼈의 갯수 */
 	uint32_t							m_iNumChannels = {};
 	std::vector<SPtr<CResModelChanel>>	m_Channels;
 
 	std::vector<SPtr<CResModelChanel>>	m_ChannelsByBone;
-	std::vector<uint32_t>					m_CurrentKeyFrameIndices;
 	std::vector<MORPH_CHANNEL> m_MorphChannels{};
-
-	int32_t								m_iRootBoneIndex{};
 	_float3								m_vRootDelta;
 
 public:
