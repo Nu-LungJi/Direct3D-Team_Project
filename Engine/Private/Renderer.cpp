@@ -2342,7 +2342,7 @@ VOID	CRenderer::PostProcessGUI() {
 	ImGui::EndChild();
 
 	if (m_bApplyEnvLight) {
-		_float TextToSlotDistance = 180.f;
+		_float TextToSlotDistance = 100.f;
 		if (ImGui::CollapsingHeader("Enviroment Option")) {
 			_bool DirtyFlag = false;
 			m_pEnvLight = CGameInstance::Get().Get_EnviromentLight();

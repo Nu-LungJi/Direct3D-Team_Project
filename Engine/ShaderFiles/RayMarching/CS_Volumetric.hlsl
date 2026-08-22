@@ -140,24 +140,20 @@ float Henyey_Greenstein_DualPhase(float3 _RayDirection, float3 _FogLightDirectio
 
 float Compute_FogFlow(float3 _WorldPos, float3 _FlowDirection)
 {
-	float3	Direction = normalize(_FlowDirection);
-	
-	float3	BaseOffset = Direction * (FogTime * BaseFlowSpeed);
-	float3	DetailOffset = Direction * (FogTime * DetailFlowSpeed);
+	float3	BaseDirection = normalize(_FlowDirection);
+
 	float3	NoiseCoord = _WorldPos * FogNoiseScale;
 	
+	float3	BaseOffset = BaseDirection * (FogTime * BaseFlowSpeed);
 	float3	BaseCoord = NoiseCoord + BaseOffset;
-	float3	DetailCoord = (NoiseCoord * 2.7f) + DetailOffset + DetailWindDirection;
-	
 	float	BaseNoise = VolumeTexture.SampleLevel(LinearWrap, BaseCoord, 0.f).r;
-	float	DetailNoise = VolumeTexture.SampleLevel(LinearWrap, DetailCoord, 0.f).g;
 	
-	//float3	NoiseCoord  = (_WorldPos - float3(0.f, 0.f, 0.f)) * FogNoiseScale;
-	//float3	BaseCoord	= (NoiseCoord + BaseWindDirection) * (FogTime * BaseFlowSpeed);
-	//float3	DetailCoord = (NoiseCoord * 2.7f + DetailWindDirection) * (FogTime * DetailFlowSpeed);
-	//
-	//float	BaseNoise	= VolumeTexture.SampleLevel(LinearWrap, BaseCoord, 0.f).r;
-	//float	DetailNoise	= VolumeTexture.SampleLevel(LinearWrap, DetailCoord, 0.f).g;
+	float3	Wobble = float3(BaseNoise, -BaseNoise, BaseNoise * 0.5f) * 0.1f;
+	float3	DetailedDirection = normalize(BaseDirection + Wobble);
+	
+	float3	DetailOffset = DetailedDirection * (FogTime * DetailFlowSpeed);
+	float3	DetailCoord = (NoiseCoord * 2.7f) + DetailOffset;
+	float	DetailNoise = VolumeTexture.SampleLevel(LinearWrap, DetailCoord, 0.f).g;
 	
 	return smoothstep(0.25f, 0.75f, BaseNoise * 0.7f + DetailNoise * 0.3f);
 }
