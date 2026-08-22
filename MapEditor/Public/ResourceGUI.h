@@ -47,8 +47,10 @@ private:
 	void HandleModelDropToScene();
 	void CreateDroppedMapMeshObject(const E::_float3& worldPosition);
 	void SelectAndImportWholeMapManifest();
+	void SelectAndImportObjectMapManifest();
 	void SelectAndLoadStaticModelFolder();
 	_bool ImportWholeMapManifest(const std::filesystem::path& manifestPath);
+	_bool ImportObjectMapManifest(const std::filesystem::path& manifestPath);
 
 private:
 	char m_SearchBuffer[128]{};
