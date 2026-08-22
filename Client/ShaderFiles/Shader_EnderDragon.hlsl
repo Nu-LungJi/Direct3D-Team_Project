@@ -79,11 +79,13 @@ PS_OUT PSMain_DragonEye(PS_IN IN)
 	
 	float3	EyeEmissiveColor = float3(1.f, 1.f, 1.f);
 	float	EyeEmissiveIntensity = 5.f;
+	float3  finalEmissive = Apply_DissolveEffect(EyeEmissiveColor, IN.vTexcoord);
+	
 	
 	OUT.vDiffuse	= float4(0.f, 0.f, 0.f, 1.f);
 	OUT.vNormal		= float4(0.f, 0.f, 0.f, 1.f);
 	OUT.vSMRO		= float4(0.f, 0.f, 0.f, 1.f);
-	OUT.vEmissive	= float4(EyeEmissiveColor * EyeEmissiveIntensity, 1.f);
+	OUT.vEmissive = float4(finalEmissive * EyeEmissiveIntensity, 1.f);
 	
 	return OUT;
 }
@@ -233,13 +235,15 @@ PS_FX_OUT PSMain_EtherealWing(PS_IN IN)
 	float3 flameColor = lerp(darkRed, deepRed, middleHeat);
 	flameColor = lerp(flameColor, hotPink, rootHeat);
 
+	
+	float3 finalEmissive = Apply_DissolveEffect(flameColor, IN.vTexcoord);
 	float emissiveStrength = 1.15f;
 	emissiveStrength += core * 2.35f;
 	emissiveStrength += flameRidges * 1.15f;
 	emissiveStrength *= flicker;
 	emissiveStrength += 0.08f;
 
-	OUT.vColor = float4(flameColor * emissiveStrength, Opacity);
+	OUT.vColor = float4(finalEmissive * emissiveStrength, Opacity);
 	
 	return OUT;
 }

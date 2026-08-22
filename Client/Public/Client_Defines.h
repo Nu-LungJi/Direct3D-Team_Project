@@ -97,6 +97,8 @@ namespace Client
 		Prototype_GameObject_Water,
 		Prototype_GameObject_MonSpawner,
 		Prototype_GameObject_WorldNpc,
+		Prototype_GameObject_Griff,
+		Prototype_GameObject_GriffChild,
 		Prototype_GameObject_PropBarrel,
 		Prototype_GameObject_PropBarrelDebris,
 		Prototype_GameObject_Coin,
