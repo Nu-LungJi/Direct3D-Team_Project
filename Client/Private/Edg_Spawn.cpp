@@ -345,6 +345,29 @@ void CEdg_Spawn::Play_Anim(CEnderDragon* pDragon, _float fTimeDelta)
 					Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f,.eRolloff = SOUND_3D_ROLLOFF::LINEAR };
 					m_bSoundH = true;
 					pDragon->Play_Sound(Sound_Desc);
+					auto* pModelInstance = pDragon->GetComponent<CComModelInstance>("ComCModelIntance");
+					if (nullptr != pModelInstance)
+					{
+						const int32_t iMouthBoneIndex = pModelInstance->GetModel()->Get_BoneIndex("SKT_Mouth");
+						const _float4x4* pMouthBoneMatrix = pDragon->Get_CombineBoneMatrix(iMouthBoneIndex);
+
+						if (nullptr != pMouthBoneMatrix)
+						{
+							_matrix dragonWorld = pDragon->GetTransform().GetLoadedWorldMatrix();
+							_matrix mouthWorld = XMLoadFloat4x4(pMouthBoneMatrix) * dragonWorld;
+
+							_matrix roarWorld = XMMatrixIdentity();
+							roarWorld.r[0] = XMVectorSetW(XMVector3Normalize(dragonWorld.r[0]), 0.f);
+							roarWorld.r[1] = XMVectorSetW(XMVector3Normalize(dragonWorld.r[1]), 0.f);
+							roarWorld.r[2] = XMVectorSetW(XMVector3Normalize(dragonWorld.r[2]), 0.f);
+							roarWorld.r[3] = XMVectorSetW(mouthWorld.r[3], 1.f);
+
+							_float4x4 roarWorldData{};
+							XMStoreFloat4x4(&roarWorldData, roarWorld);
+
+							CGameInstance::Get().Spawn("DragonRoar.json", roarWorldData);
+						}
+					}
 					CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
 						{
 						   3, // 강도 0 ~ 1

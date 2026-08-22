@@ -195,6 +195,34 @@ namespace Engine
     X(_float, fSpawnDelay, 0.f)\
    COMMON_PATTERN_FIELDS(X)
 
+#define CIRCLE_TO_CENTER_FIELDS(X) \
+    X(_float3, vCenter, _float3(0,0,0)) \
+    X(_float, fRadius, 3.f) \
+    X(_float, fRadiusJitter, 0.f) \
+    X(uint32_t, iCount, 12) \
+    X(_float, fLife, 1.f) \
+    X(_bool, bRandomSize, false) \
+    X(_float3, fSizeMin, _float3(1,1,1)) \
+    X(_float3, fSizeMax, _float3(1,1,1)) \
+    X(_float3, fSize, _float3(1,1,1)) \
+    X(_float3, fEndSize, _float3(1,1,1)) \
+    X(_bool, bRandomRot, false) \
+    X(_float3, vMinRot, _float3(0,0,0)) \
+    X(_float3, vMaxRot, _float3(0,0,0)) \
+    X(_float3, vRotation, _float3(0,0,0)) \
+    X(_float4, color, _float4(1,1,1,1)) \
+    X(_float4, emissive, _float4(0,0,0,0)) \
+    X(_float, startIntensity, 0.f) \
+    X(_float4, endEmissive, _float4(0,0,0,0)) \
+    X(_float, endIntensity, 0.f) \
+    X(_float, fYOffset, 0.f) \
+    X(_bool, bStand, false) \
+    X(_float, fSpawnDelay, 0.f) \
+    X(_float, fSpawnDuration, 0.5f) \
+    X(_float3, rotationAxis, _float3(0.f,1.f,0.f)) \
+    X(_float, rotationSpeed, 0.f) \
+    COMMON_PATTERN_FIELDS(X)
+
 #define SPIRAL_FIELDS(X) \
     X(_float3, vCenter, _float3(0,0,0)) \
     X(_float, fRadius, 3.f) \
@@ -399,6 +427,7 @@ struct StructName \
 	struct SStairsParam { STAIRS_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SCircleParam { CIRCLE_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SCircleSpreadParam { CIRCLE_SPREAD_FIELDS(DECLARE_PARAM_FIELD) };
+	struct SCircleToCenterParam { CIRCLE_TO_CENTER_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SSpiralParam { SPIRAL_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SStraightGroundParam { STRAIGHT_GROUND_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SMOKE { SMOKE_FIELDS(DECLARE_PARAM_FIELD) };
@@ -412,12 +441,12 @@ struct StructName \
 
 
 	//3. STRUCT 추가
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning, SConeParam, SEnergySphere, SSpikeParam, SIrregularRingParam>;
+	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning, SConeParam, SEnergySphere, SSpikeParam, SIrregularRingParam, SCircleToCenterParam>;
 
 	// 4. 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
 	inline constexpr const char* PATTERN_KIND_NAMES[] =
 	{
-		"Stairs", "Circle",  "Spiral", "StraightGround", "CircleToWave", "SMOKE", "SLightning", "Cone", "EnergySphere","Spike", "IrregularRing"
+		"Stairs", "Circle",  "Spiral", "StraightGround", "CircleToWave", "SMOKE", "SLightning", "Cone", "EnergySphere","Spike", "IrregularRing", "CircleToCenter"
 	};
 
 	//5. 여기에 CASE 추가
@@ -437,6 +466,7 @@ struct StructName \
 		case 8: return SEnergySphere{};
 		case 9: return SSpikeParam{};
 		case 10: return SIrregularRingParam{};
+		case 11: return SCircleToCenterParam{};
 			  
 		default: return SStairsParam{};
 		}

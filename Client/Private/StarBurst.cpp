@@ -85,7 +85,7 @@ void CBoss_StarBurst::FixedUpdate(E::_float fTimeDelta)
 void CBoss_StarBurst::Update(E::_float fTimeDelta) {
 
 	Dead_Check(fTimeDelta);
-	if (m_pLightEffectID == INVALID_EFFECT_INSTANCE_ID || m_bDead || m_fDeadTick >5.f)  {
+	if (m_pLightEffectID == INVALID_EFFECT_INSTANCE_ID || m_bDead || m_fDeadTick >10.f)  {
 		SetPendingDestroy();
 		return;
 	}
@@ -252,7 +252,9 @@ _bool CBoss_StarBurst::HandleSweepHit(
 			pPlayer->OnQueryHit(m_iDamage, tHit.vHitpos);
 
 			CGameInstance::Get().StopEffect(m_pLightEffectID);
-
+			_float4x4 mat;
+			XMStoreFloat4x4(&mat, XMMatrixTranslation(tHit.vHitpos.x, tHit.vHitpos.y, tHit.vHitpos.z));
+			CGameInstance::Get().PlayEffect("Boss_HitSplash", mat);
 			// 기존 피격 이펙트 코드
 			SetPendingDestroy();
 			return true;

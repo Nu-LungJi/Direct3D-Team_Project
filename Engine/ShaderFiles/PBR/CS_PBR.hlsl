@@ -34,7 +34,7 @@ static const float		PointShadowDepthBias	= 0.002f;
 static const float		SpotShadowDepthBias		= 0.00001f;
 
 static const float		EnviromentIntensity		= 0.75f;			// 환경광 밝기
-static const float		FillLightBrightness		= 0.25f;			// 등지는 영역의 밝기
+static const float		FillLightBrightness		= 0.05f;			// 등지는 영역의 밝기
 static const float		DirectLightBrightness	= 0.60f;			// 빛받는 영역의 밝기
 
 static const float2		PoissonDisk_EightTab[8] =		

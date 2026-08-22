@@ -118,6 +118,8 @@ void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 	.iPriority = 64,
 	.bLoop = false
 		});
+
+	CGameInstance::Get().Spawn("BreathReady.json", BoneMatrix);
 }
 
 void CEdgBreath::Cancle()
@@ -135,7 +137,7 @@ void CEdgBreath::Cancle()
 }
 
 void CEdgBreath::SpawnGasi(_vector vPos, _vector vDirection)
-{
+{		
 	auto pSrc = Get_Owner();
 	if (nullptr == pSrc)
 		return;
