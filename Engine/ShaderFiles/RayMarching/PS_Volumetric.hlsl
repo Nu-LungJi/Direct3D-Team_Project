@@ -23,27 +23,23 @@ cbuffer CB_FroxelConfig : register(b10)
 };
 cbuffer CB_VLFOG : register(b11)
 {
-	float3	FogColor;
+	float3 FogColor;
 	float	FogIntensity;
-	   
-	float3	FogCenterPos;
-	float	FogHeight;
-	
-	float	FogStartPos;
-	float	FogEndPos;
 	float	FogDensity;
 	float	FogNoiseScale;
-	
-	float3	FogLightDirection;
-	float	FogAnisotropyGA; // 전방 산란도
+	float	FogScattering; // 전방/후방 가중치
+	float	FogBaseBrightness;
 	
 	float3	FogLightColor;
-	float	FogAnisotropyGB; // 후방 산란도
-	
-	float	FogScatteringWeight; // 전방/후방 가중치
+	float3	FogLightDirection;
 	
 	float	FogBaseHeight;
+	float	FogMaxHeight;
 	float	FogHeightFallOff;
+	
+	float	FogStartDistance;
+	float	FogEndDistance;
+	
 	float	FogTime;
 };
 
@@ -55,15 +51,15 @@ float ViewDepthToFroxelZ(float _Depth, float _Near, float _Far)
 
 float4 Compute_AnalyticFog(float ViewDepth, float3 WorldPos)
 {
-	if (FogHeight <= 0.0001f)	return float4(0.f, 0.f, 0.f, 1.f);
+	if (FogMaxHeight <= 0.0001f) return float4(0.f, 0.f, 0.f, 1.f);
 	
 	float HeightDistance = max(WorldPos.y - FogBaseHeight, 0.f);
 	float HeightFactor	 = exp(-HeightDistance * FogHeightFallOff);
-	float HeightLimit	 = 1.f - smoothstep(FogHeight * 0.8f, FogHeight, HeightDistance);
+	float HeightLimit = 1.f - smoothstep(FogMaxHeight * 0.8f, FogMaxHeight, HeightDistance);
 
 	float FogAmount = 1.f - exp(-ViewDepth * FogDensity * 0.1f * HeightFactor * HeightLimit);
 	
-	float FogDistanceFactor = smoothstep(FogStartPos, max(FogEndPos, FogStartPos + 0.0001f), ViewDepth);
+	float FogDistanceFactor = smoothstep(FogStartDistance, max(FogEndDistance, FogStartDistance + 0.0001f), ViewDepth);
 	
 	FogAmount *= FogDistanceFactor;
 	

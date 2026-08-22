@@ -1,12 +1,26 @@
 
-const static float PI = 3.14159265359f;
+const static float	PI = 3.14159265359f;
 
 const static float3 AlbedoColor = { 1.f, 1.f, 1.f };
 
-const static float SpecularIntensity	= 1.f;
+const static float	SpecularIntensity	= 1.f;
 
-#define MAX_LIGHT_COUNT				16
-#define MAX_SHADOW_LIGHT_COUNT      8
+#define GAME_QUALITY_LEVEL2
+
+#ifdef GAME_QUALITY_LEVEL1				// 영상 및 최종 리허설 용
+#define MAX_LIGHT_COUNT			32
+#define MAX_SHADOW_LIGHT_COUNT	8
+#endif
+
+#ifdef GAME_QUALITY_LEVEL2				// 편집용
+#define MAX_LIGHT_COUNT			16
+#define MAX_SHADOW_LIGHT_COUNT	8
+#endif
+
+#ifdef GAME_QUALITY_LEVEL3				// 저사양
+#define MAX_LIGHT_COUNT			16
+#define MAX_SHADOW_LIGHT_COUNT	4
+#endif
 
 #define MAX_LIGHT_MAPCOUNT  6
 
@@ -155,7 +169,13 @@ cbuffer CB_LIGHT_BUFFER : register(b4)
     uint			LightCount;
     float3			LightPadding;
 }
- 
+cbuffer CB_ENVLIGHT : register(b5)
+{
+	float EnviromentIntensity;
+	float FillLightBrightness;
+	float DirectLightBrightness;
+	float EnvLightPadding;
+}
 
 cbuffer CB_PER_UI : register(b7)
 {

@@ -427,21 +427,6 @@
     <Filter Include="GameObject\NPC\00.Parents">
       <UniqueIdentifier>{a9cd9686-5757-4795-ac3a-d99fef7f97e7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\ShaderFiles">
-      <UniqueIdentifier>{6bd28087-0add-401b-9153-94d4f64a07f1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\ShaderFiles\Decal">
-      <UniqueIdentifier>{c7198a28-a5af-4ed1-914d-b1609cf80b2b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\ShaderFiles\Particle">
-      <UniqueIdentifier>{c8302cb1-ec93-46b9-9ae9-21747c2503fe}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\ShaderFiles\SkyBox">
-      <UniqueIdentifier>{aa5df208-f22d-4fb8-9138-caea9933ba4c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\ShaderFiles\GameObject">
-      <UniqueIdentifier>{9a45fcfc-7add-40b1-8b4a-34c6753d1cfa}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\AI\AnimRoot\Anim\NPC">
       <UniqueIdentifier>{9b97b4ce-61a1-42cd-8013-51f0f9c91840}</UniqueIdentifier>
     </Filter>

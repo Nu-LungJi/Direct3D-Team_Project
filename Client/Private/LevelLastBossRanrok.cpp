@@ -80,8 +80,15 @@ HRESULT CLevelLastBossRanrok::Initialize()
 	if (FAILED(PlayBGM()))
 		return E_FAIL;
 
+	if (FAILED(Initialize_VolumetricFog()))
+		return E_FAIL;
+
+	if (FAILED(Initialize_EnviromentLight()))
+		return E_FAIL;
+
 	SubscribePlayerDeath(*hPlayer);
 
+	CGameInstance::Get().Set_EnviromentLight(CB_ENVLIGHT{ 0.75f, 0.25f, 0.60f });
 
 	return S_OK;
 }
@@ -416,6 +423,45 @@ void CLevelLastBossRanrok::SubscribePlayerDeath(const CHandle& hPlayer)
 
 			StopBGM(Event.fLevelBgmFadeDuration);
 		});
+}
+
+HRESULT CLevelLastBossRanrok::Initialize_VolumetricFog() {
+
+	CB_VLFOG FogOption{};
+
+	FogOption.g_fFogColor			= { 63.f / 255.f, 88.f / 255.f, 88.f / 255.f };
+	FogOption.g_fFogIntensity		= 1.f;
+	FogOption.g_fFogDensity			= 0.02f;
+	FogOption.g_fFogNoiseScale		= 0.05f;
+	FogOption.g_fFogScattering		= 0.5f;
+	FogOption.g_fFogBaseBrightness	= 0.01f;
+
+	FogOption.g_fFogLightColor		= { 255.f / 255.f, 230.f / 255.f, 180.f / 255.f };
+	FogOption.g_fFogLightDirection	= { 0.577f, -0.577f, 0.577f };
+
+	FogOption.g_fFogBaseHeight		= 300.f;
+	FogOption.g_fFogMaxHeight		= 500.f;
+	FogOption.g_fFogHeightFallOff	= 0.05f;
+
+	FogOption.g_fFogStartDistance	= 100.f;
+	FogOption.g_fFogEndDistance		= 250.f;
+
+	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
+
+	return S_OK;
+}
+
+HRESULT CLevelLastBossRanrok::Initialize_EnviromentLight() {
+
+	CB_ENVLIGHT EnviromentLightOption{};
+
+	EnviromentLightOption.m_fEnviromentIntensity = 0.75f;
+	EnviromentLightOption.m_fFillLightBrightness = 0.25f;
+	EnviromentLightOption.m_fDirectLightBrightness = 0.60f;
+
+	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
+
+	return S_OK;
 }
 
 void CLevelLastBossRanrok::Free()

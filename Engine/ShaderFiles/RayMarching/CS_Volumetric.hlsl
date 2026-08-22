@@ -14,6 +14,9 @@ RWTexture3D<float4>		OUTPUT3D				: register(u1);
 
 static const float		GodRayStrength				= { 3.5f };
 
+static const float		FogAnisotropyGA				= { +0.7f }; // 전방 산란도
+static const float		FogAnisotropyGB				= { -0.3f }; // 후방 산란도
+
 static const float		SpotVolumetricShadowBias	= { 0.0001f };
 static const float		PointVolumetricShadowBias	= { 0.002f };
 
@@ -51,26 +54,24 @@ cbuffer CB_VLFOG : register(b11)
 {
 	float3	FogColor;
 	float	FogIntensity;
-	   
-	float3	FogCenterPos;
-	float	FogHeight;
-	
-	float	FogStartPos;
-	float	FogEndPos;
 	float	FogDensity;
 	float	FogNoiseScale;
-	
-	float3	FogLightDirection;
-	float	FogAnisotropyGA;		// 전방 산란도
+	float	FogScattering; // 전방/후방 가중치
+	float	FogBaseBrightness;
 	
 	float3	FogLightColor;
-	float	FogAnisotropyGB;		// 후방 산란도
-	
-	float	FogScatteringWeight;	// 전방/후방 가중치
+	float	CB_VLFOGPADDING01;
+	float3	FogLightDirection;
 	
 	float	FogBaseHeight;
+	float	FogMaxHeight;
 	float	FogHeightFallOff;
+	
+	float	FogStartDistance;
+	float	FogEndDistance;
+	
 	float	FogTime;
+	float3	CB_VLFOGPADDING02;
 };
 
 cbuffer CB_CSM : register(b12)
@@ -122,7 +123,7 @@ float Henyey_Greenstein_DualPhase(float3 _RayDirection, float3 _FogLightDirectio
 
 float Compute_FogFlow(float3 _WorldPos)
 {
-	float3	NoiseCoord	= (_WorldPos - FogCenterPos) * FogNoiseScale;
+	float3	NoiseCoord  = (_WorldPos - float3(0.f, 0.f, 0.f)) * FogNoiseScale;
 	float3	BaseCoord	= (NoiseCoord + BaseWindDirection) * (FogTime * BaseFlowSpeed);
 	float3	DetailCoord = (NoiseCoord * 2.7f + DetailWindDirection) * (FogTime * DetailFlowSpeed);
 	
@@ -134,17 +135,17 @@ float Compute_FogFlow(float3 _WorldPos)
 
 float GetVolumeFogDensity(float3 _WorldPos)    
 {
-	if (FogHeight <= 0.0001f)	return 0.f;
+	if (FogMaxHeight <= 0.0001f)	return 0.f;
 	
 	float	FogMaxHeight = max(0.f, _WorldPos.y - FogBaseHeight);
 
 	float	HeightFactor = exp(-FogMaxHeight * FogHeightFallOff);
 	
-	float	HeightLimit = 1.f - smoothstep(FogHeight * 0.8f, FogHeight, FogMaxHeight);
+	float	HeightLimit = 1.f - smoothstep(FogMaxHeight * 0.8f, FogMaxHeight, FogMaxHeight);
 	
-	float	FinalFlowNoise = Compute_FogFlow(_WorldPos);
+	float	FinalFlowNoise = Compute_FogFlow(_WorldPos);	
 
-	return HeightFactor * FogDensity * HeightLimit;// * FinalFlowNoise;
+	return HeightFactor * FogDensity * HeightLimit * FinalFlowNoise;
 }
 
 float Sample_CascadeShadow(float3 _WorldPos, uint _CascadeIndex)
@@ -214,7 +215,7 @@ float Compute_PointVolumetricShadow(float3 _WorldPos, uint _LightIndex)
 	if (ShadowSlotNumb < 0 || ShadowSlotNumb >= MAX_SHADOW_LIGHT_COUNT) return 1.f;
 
 	float3	LightToVoxel = _WorldPos - AffectedLight[_LightIndex].Position;
-	float DistanceSQ = max(dot(LightToVoxel, LightToVoxel), 1.f);
+	float DistanceSQ = dot(LightToVoxel, LightToVoxel);
 
 	if (DistanceSQ <= 0.0001f) return 1.f;
 	
@@ -328,7 +329,7 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 	float	FogDensity	  = GetVolumeFogDensity(VoxelWorldPos);
 	
 	float	FogDistance		  = abs(mul(float4(VoxelWorldPos, 1.f), g_matView).z);
-	float	FogDistanceFactor = smoothstep(FogStartPos, max(FogEndPos, FogStartPos + 0.0001f), FogDistance);
+	float	FogDistanceFactor = smoothstep(FogStartDistance, max(FogEndDistance, FogStartDistance + 0.0001f), FogDistance);
 	
 	FogDensity *= FogDistanceFactor;
 	
@@ -340,19 +341,19 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 	
 	float3	RayDirection  = normalize(VoxelWorldPos - g_vCamPos);
 	
-	float	PhaseValue = Henyey_Greenstein_DualPhase(RayDirection, FogLightDirection, FogAnisotropyGA, FogAnisotropyGB, FogScatteringWeight);
+	float	PhaseValue = Henyey_Greenstein_DualPhase(RayDirection, FogLightDirection, FogAnisotropyGA, FogAnisotropyGB, FogScattering);
 	
-	float ShadowBrightness = Compute_CascadeShadow(VoxelWorldPos);
-	
+	float	ShadowBrightness = Compute_CascadeShadow(VoxelWorldPos);
+
 	float3	DirectScattering	= FogColor * FogLightColor * FogIntensity * FogDensity * ShadowBrightness * PhaseValue * GodRayStrength;
-	float3	AmbientScattering	= FogColor * FogDensity * 0.002f;
+	float3	AmbientScattering	= FogColor * FogDensity * FogBaseBrightness;
 	float3	LocalScattering		= Compute_LocalScattering(VoxelWorldPos, RayDirection, FogDensity);
-	
+
 	float3	Scattering = DirectScattering + AmbientScattering + LocalScattering;
 	float	Extinction = FogDensity;
-		
-	float MaxScattering = max(Scattering.r, max(Scattering.g, Scattering.b));
-	Extinction = max(FogDensity, MaxScattering * 0.05f);
+	
+	//float MaxScattering = max(Scattering.r, max(Scattering.g, Scattering.b));
+	//Extinction = max(FogDensity, MaxScattering * 0.05f);
 	
 	OUTPUT3D[ID] = float4(Scattering, Extinction);
 	return;

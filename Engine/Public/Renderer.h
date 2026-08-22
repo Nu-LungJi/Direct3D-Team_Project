@@ -133,8 +133,8 @@ public:			// Append Render Queue
 public:			// Extra Function
 	HRESULT		Reset_DefaultShader(RENDERGROUP _Group);
 
-	VOID		Initialize_VolumetricFogOption(XMFLOAT3 _CenterPos, XMFLOAT3 _FogColor, XMFLOAT3 _LightColor, _float _Intensity, _float _Density, _float _MaxHeight,
-		_float _BaseHeight, _float _HeightFallOff, _float _StartDistance, _float _EndDistance, _float _NoiseScale = 0.05f, _float _ScatteringWeight = 0.5f, _float _GA = 0.7f, _float _GB = -0.3f);
+	const CB_VLFOG	Get_VolumetricFogOption() { return m_pFogInfo; }
+	VOID			Set_VolumetricFogOption(const CB_VLFOG& _FogOption);
 
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
@@ -228,6 +228,7 @@ private:		// FSR
 	UPtr<CMyFSR2_2> m_pFSR2_2{};
 
 private:
+	_bool			m_bApplyEnvLight	= { true };		// 환경광 ON-OFF
 	_bool			m_bApplyFilter		= { true };		// 필터 적용 ON-OFF
 	_bool			m_bApplyVolumetric	= { false };	// 볼류메트릭 효과 ON-OFF
 	_bool			m_bApplyShadow		= { false };	// 그림자 ON-OFF
@@ -250,6 +251,7 @@ private:		// Volumetric Fog
 	TEXTURE3D					m_pVoxelAccumulated{};
 
 	CB_VLFOG					m_pFogInfo{};
+	CB_ENVLIGHT					m_pEnvLight{};
 
 	ComPtr<ID3D11ShaderResourceView>	m_pCSMShadowMapTexture	= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pBlueNoiseTexture		= { nullptr };

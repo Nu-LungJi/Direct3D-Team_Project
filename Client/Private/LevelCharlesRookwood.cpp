@@ -91,9 +91,14 @@ HRESULT CLevelCharlesRookwood::Initialize()
 	if (FAILED(PlayBGM()))
 		return E_FAIL;
 
+	if (FAILED(Initialize_VolumetricFog()))
+		return E_FAIL;
+
+	if (FAILED(Initialize_EnviromentLight()))
+		return E_FAIL;
+
 	SubscribePlayerDeath(*hPlayer);
 	
-
 	return S_OK;
 }
 
@@ -618,6 +623,42 @@ void CLevelCharlesRookwood::ToggleGPUShadowDebugObject()
 
 	pBridge->GetTransform().SetPosition(vDebugPosition);
 	m_bGPUShadowDebugObjectVisible = true;
+}
+
+HRESULT CLevelCharlesRookwood::Initialize_VolumetricFog() {
+	CB_VLFOG FogOption{};
+
+	FogOption.g_fFogColor			= { 0.8f, 0.85f, 0.9f };
+	FogOption.g_fFogIntensity		= 1.f;
+	FogOption.g_fFogDensity			= 0.02f;
+	FogOption.g_fFogNoiseScale		= 0.05f;
+	FogOption.g_fFogScattering		= 0.5f;
+	FogOption.g_fFogBaseBrightness	= 0.01f;
+
+	FogOption.g_fFogLightColor		= { 255.f / 255.f, 230.f / 255.f, 180.f / 255.f };
+	FogOption.g_fFogLightDirection	= { 0.577f, -0.577f, 0.577f };
+
+	FogOption.g_fFogBaseHeight		= 250.f;
+	FogOption.g_fFogMaxHeight		= 500.f;
+	FogOption.g_fFogHeightFallOff	= 0.01f;
+
+	FogOption.g_fFogStartDistance	= 0.f;
+	FogOption.g_fFogEndDistance		= 30.f;
+
+	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
+
+	return S_OK;
+}
+HRESULT CLevelCharlesRookwood::Initialize_EnviromentLight() {
+	CB_ENVLIGHT EnviromentLightOption{};
+
+	EnviromentLightOption.m_fEnviromentIntensity	= 0.75f;
+	EnviromentLightOption.m_fFillLightBrightness	= 0.25f;
+	EnviromentLightOption.m_fDirectLightBrightness	= 0.60f;
+
+	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
+
+	return S_OK;
 }
 
 void CLevelCharlesRookwood::Free()

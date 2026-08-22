@@ -62,6 +62,9 @@ public:
 	std::optional<CHandle> FindPlacementLightHandleByAlias(std::string_view sGroup,	std::string_view sAlias) const;
 	const std::vector<std::optional<CHandle>>& GetLightHandles() const { return m_LightHandleList; }
 
+	VOID	Set_EnviromentLight(const CB_ENVLIGHT _EnvLight);
+	const CB_ENVLIGHT Get_EnviromentLight() { return m_pEnviromentLight; }
+
 
 
 	VOID	Clear_DynamicLightList();
@@ -164,6 +167,7 @@ private:	// PBR
 	SPtr<CResCBuffer>					m_pShadowLightConstantBuffer		= { nullptr };
 	SPtr<CResCBuffer>					m_pEffectLightConstantBuffer		= { nullptr };
 	SPtr<CResCBuffer>					m_pPBRCSMConstantBuffer				= { nullptr };
+	SPtr<CResCBuffer>					m_pEnvLightConstantBuffer	= { nullptr };
 
 private:	// PointLight Face
 	SPtr<CResVertexShader>				m_pInstancedPointFaceVertexShader	= { nullptr };
@@ -207,6 +211,9 @@ private:	// Render
 	std::array<std::optional<CHandle>, MAX_SHADOW_LIGHT_RENDER_COUNT>	m_PointShadowSlotOwners{};
 	std::array<std::optional<CHandle>, MAX_SHADOW_LIGHT_RENDER_COUNT>	m_2DShadowSlotOwners{};
 
+private:
+
+	CB_ENVLIGHT							m_pEnviromentLight{};
 public:
 	static UPtr<CLightManager> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
 };

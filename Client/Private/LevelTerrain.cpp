@@ -269,6 +269,7 @@ HRESULT CLevelTerrain::Initialize()
 	if (FAILED(InitializeCamerasAndLighting(hPlayer)))
 		return E_FAIL;
 
+	CGameInstance::Get().Set_EnviromentLight(CB_ENVLIGHT{ 0.75f, 0.25f, 0.60f });
 
 	//{
 	//	CAmbientSound3DObject::DESC desc{};
