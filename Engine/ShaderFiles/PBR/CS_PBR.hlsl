@@ -498,13 +498,10 @@ void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 	[branch]
 	if (ID.x >= ScreenWidth || ID.y >= ScreenHeight)
 		return;
-	//[branch]
-	//if (ID.x >= SCREENX || ID.y >= SCREENY) return; // 스레드가 해상도 넘어가면 출력X
+	
 	int3 PixelCoord = int3(ID.xy, 0);
 	
-	//float2	TexCoord = (float2(ID.xy) + 0.5f) / float2(SCREENX, SCREENY);
 	float2 TexCoord = (float2(ID.xy) + 0.5f) / float2(ScreenWidth, ScreenHeight);
-    //float	Depth = DepthMap.SampleLevel(LinearWrap, TexCoord, 0.f).r; // 해당 픽셀 깊이 계산
 	float Depth = DepthMap.Load(PixelCoord); // 해당 픽셀 깊이 계산
 
 	[branch]
@@ -516,14 +513,11 @@ void CSMain_Blend(uint3 ID : SV_DispatchThreadID)
 	
 	float4 DepthWorld = Convert_WorldPosByDepth(Depth, TexCoord);
 	
-    //float3 WorldNormal = normalize(NormalMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb * 2.f - 1.f);
 	float3 WorldNormal = normalize(NormalMap.Load(PixelCoord).rgb * 2.f - 1.f);
 	
-    //float3 AlbedoTex = AlbedoMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
 	float4 AlbedoTex = AlbedoMap.Load(PixelCoord);
 	float3 Albedo = pow(AlbedoTex.rgb, 2.2f);
-
-    //float3 MultipleTex = SMROMap.SampleLevel(LinearWrap, TexCoord, 0.f).rgb;
+	
 	float3 MultipleTex = SMROMap.Load(PixelCoord).rgb;
 	float Metallic = MultipleTex.r;
 	float Roughness = clamp(MultipleTex.g, 0.15f, 1.f);

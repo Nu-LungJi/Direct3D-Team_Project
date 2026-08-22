@@ -25,6 +25,10 @@ VOID	CRenderer::Update(_float fTimeDelta) {
 	m_fCurrentLifeTime += fTimeDelta;
 	m_fDeltaTime = fTimeDelta;
 	m_fTimeAccumulation += fTimeDelta;
+
+	if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyPressing(DIK_L)) {
+		m_fBlurIntensity += fTimeDelta;
+	}
 }
 
 HRESULT CRenderer::Initialize()
@@ -935,7 +939,6 @@ HRESULT CRenderer::Draw() {
 	// m_pRasterizer Setting - BackCull
 	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 
-
 	if (FAILED(Render_Shadow()))		 return E_FAIL;
 
 	// DepthMap
@@ -1618,10 +1621,6 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 	}
 	
 	return S_OK;
-}
-
-VOID CRenderer::Set_VolumetricFogOption(const CB_VLFOG& _FogOption) {
-	m_pFogInfo = _FogOption;
 }
 
 _float CRenderer::Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base){
@@ -2321,10 +2320,10 @@ HRESULT CRenderer::RenderUI()
 #pragma endregion
 
 VOID	CRenderer::PostProcessGUI() {
-	ImGui::Begin("PostProcess");
+	ImGui::Begin("Renderer Controller");
 
 	ImGui::TextDisabled("Shader Effect Controller");
-	ImGui::BeginChild("##Inspector", ImVec2(0.f, 130.f), true);
+	ImGui::BeginChild("##Inspector", ImVec2(0.f, 110.f), true);
 	{
 		if (m_bApplyEnvLight ? ImGui::Button("EnviromentLight OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("EnviromentLight ON", ImVec2(-FLT_MIN, 20))) {
 			m_bApplyEnvLight = !m_bApplyEnvLight;
@@ -2342,22 +2341,22 @@ VOID	CRenderer::PostProcessGUI() {
 	ImGui::EndChild();
 
 	if (m_bApplyEnvLight) {
-		_float TextToSlotDistance = 100.f;
+		_float TextToSlotDistance = 130.f;
 		if (ImGui::CollapsingHeader("Enviroment Option")) {
 			_bool DirtyFlag = false;
 			m_pEnvLight = CGameInstance::Get().Get_EnviromentLight();
 
-			ImGui::TextUnformatted("EnvLightIntensity");
+			ImGui::TextUnformatted("EnvLight Intensity");
 			ImGui::SameLine(TextToSlotDistance);
-			DirtyFlag |= ImGui::DragFloat("Intensity", &m_pEnvLight.m_fEnviromentIntensity, 0.001f, 0.f, 1.f, "%.3f");
+			DirtyFlag |= ImGui::DragFloat("##Intensity", &m_pEnvLight.m_fEnviromentIntensity, 0.001f, 0.f, 1.f, "%.3f");
 			
-			ImGui::TextUnformatted("FillLightIntensity");
+			ImGui::TextUnformatted("FillLight Intensity");
 			ImGui::SameLine(TextToSlotDistance);
-			DirtyFlag |= ImGui::DragFloat("FillLight", &m_pEnvLight.m_fFillLightBrightness, 0.001f, 0.f, 1.f, "%.3f");
+			DirtyFlag |= ImGui::DragFloat("##FillLight", &m_pEnvLight.m_fFillLightBrightness, 0.001f, 0.f, 1.f, "%.3f");
 			
-			ImGui::TextUnformatted("DirectLightIntensity");
+			ImGui::TextUnformatted("DirectLight Intensity");
 			ImGui::SameLine(TextToSlotDistance);
-			DirtyFlag |= ImGui::DragFloat("DirectLight", &m_pEnvLight.m_fDirectLightBrightness, 0.001f, 0.f, 1.f, "%.3f");
+			DirtyFlag |= ImGui::DragFloat("##DirectLight", &m_pEnvLight.m_fDirectLightBrightness, 0.001f, 0.f, 1.f, "%.3f");
 
 			if (DirtyFlag) 	CGameInstance::Get().Set_EnviromentLight(m_pEnvLight);
 		}
@@ -2365,9 +2364,14 @@ VOID	CRenderer::PostProcessGUI() {
 
 	if (m_bApplyFilter) {
 		ImGui::Separator();
+		if (ImGui::CollapsingHeader("PostProcess")) {
+			ImGui::TextUnformatted("Blur Intensity");
+			ImGui::SameLine(120.f);
+			ImGui::DragFloat("##BlurIntensity", &m_fBlurIntensity, 0.01f, 0.f, 10.f, "%.2f");
+		}
 	}
 	if (m_bApplyVolumetric) {
-		_float TextToSlotDistance = 140.f;
+		_float TextToSlotDistance = 110.f;
 		ImGui::Separator();
 		if (ImGui::CollapsingHeader("Volumetric Fog CoreOption")) {
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
@@ -2599,7 +2603,8 @@ VOID CRenderer::Clear_OutlineEffect() {
 HRESULT	CRenderer::Update_TexelSize(_float _Width, _float _Height){
 	CB_BLOOM	BloomBuffer{};
 
-	BloomBuffer.g_TexelSize = { _Width, _Height };
+	BloomBuffer.g_fTexelSize = { _Width, _Height };
+	BloomBuffer.g_fBlurIntensity = m_fBlurIntensity / 100.f;	// 0.01같은 작은 값에도 Blur가 너무 많이 먹어서 조정
 
 	D3D11_MAPPED_SUBRESOURCE BLURMRES{};
 	if (FAILED(m_pContext->Map(m_pBloomCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &BLURMRES)))	return E_FAIL;

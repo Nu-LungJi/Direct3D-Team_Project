@@ -212,8 +212,9 @@ namespace Engine
 
 	struct CB_BLOOM
 	{
-		_float2	g_TexelSize;
-		_float2	g_padding;
+		_float2	g_fTexelSize;
+		_float	g_fBlurIntensity;
+		_float	CB_BLOOMPADDING;
 	};
 	static_assert(sizeof(CB_BLOOM) % 16 == 0);
 

@@ -88,8 +88,6 @@ HRESULT CLevelLastBossRanrok::Initialize()
 
 	SubscribePlayerDeath(*hPlayer);
 
-	CGameInstance::Get().Set_EnviromentLight(CB_ENVLIGHT{ 0.75f, 0.25f, 0.60f });
-
 	return S_OK;
 }
 
@@ -456,7 +454,7 @@ HRESULT CLevelLastBossRanrok::Initialize_EnviromentLight() {
 	CB_ENVLIGHT EnviromentLightOption{};
 
 	EnviromentLightOption.m_fEnviromentIntensity = 0.75f;
-	EnviromentLightOption.m_fFillLightBrightness = 0.25f;
+	EnviromentLightOption.m_fFillLightBrightness = 0.05f;
 	EnviromentLightOption.m_fDirectLightBrightness = 0.60f;
 
 	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);

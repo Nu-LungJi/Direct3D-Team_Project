@@ -169,7 +169,8 @@ cbuffer CB_LIGHT_BUFFER : register(b4)
     uint			LightCount;
     float3			LightPadding;
 }
-cbuffer CB_ENVLIGHT : register(b5)
+
+cbuffer CB_ENVLIGHT : register(b6)
 {
 	float EnviromentIntensity;
 	float FillLightBrightness;

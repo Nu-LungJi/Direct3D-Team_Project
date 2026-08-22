@@ -133,11 +133,15 @@ public:			// Append Render Queue
 public:			// Extra Function
 	HRESULT		Reset_DefaultShader(RENDERGROUP _Group);
 
-	const CB_VLFOG	Get_VolumetricFogOption() { return m_pFogInfo; }
-	VOID			Set_VolumetricFogOption(const CB_VLFOG& _FogOption);
+public:			// Volumetric Fog
+	const CB_VLFOG	Get_VolumetricFogOption()							{ return m_pFogInfo; }
+	VOID			Set_VolumetricFogOption(const CB_VLFOG& _FogOption) { m_pFogInfo = _FogOption; }
 
 	_float			Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base);
 
+public:
+	VOID			Apply_RadialBlur(_float _Intensity) { m_fBlurIntensity = _Intensity; }
+	
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
@@ -272,6 +276,8 @@ private:		// PostProcess
 	ComPtr<ID3D11ShaderResourceView>	m_pSRVIrradianceMap{};
 	ComPtr<ID3D11ShaderResourceView>	m_pSRVPreFilteredMap{};
 	ComPtr<ID3D11ShaderResourceView>	m_pSRVBRDFLookUpMap{};
+
+	_float	m_fBlurIntensity{};
 
 public:			// Hi-Z Fuction
 	const CHizBuffer* GetPrevHizBuffer() const { return m_bHasPrevHizBuffer ? m_pPrevHizBuffer.get() : nullptr; }
