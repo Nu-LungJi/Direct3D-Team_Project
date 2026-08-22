@@ -2122,7 +2122,7 @@ _bool CPlayer::StartWiggenweldPotionUse()
 	desc.sResourceGroup = m_LevelTag;
 	desc.vInitialPosition = GetTransform().GetPosition();
 	desc.vInitialScale = { 1.f, 1.f, 1.f };
-	desc.vConvexScale = desc.vInitialScale;
+	desc.vConvexScale = { 2.f, 2.f, 2.f };
 	const auto handle = CGameInstance::Get().AddGameObjectToLayer(
 		m_LevelTag,
 		PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
@@ -2176,12 +2176,26 @@ void CPlayer::UpdateWiggenweldPotion()
 
 	_float3 vLook{};
 	XMStoreFloat3(&vLook, XMVector3Normalize(GetTransform().GetState(STATE::LOOK)));
-	const _float3 vImpulse{
-		vLook.x * 0.35f,
-		0.12f,
-		vLook.z * 0.35f
+	_float3 vRight{};
+	XMStoreFloat3(&vRight, XMVector3Normalize(GetTransform().GetState(STATE::RIGHT)));
+
+	_float3 vPlayerVelocity{};
+	if (m_pComCharacterMotor)
+		vPlayerVelocity = m_pComCharacterMotor->GetVelocity();
+
+	// Inherit the player's horizontal motion and let the bottle leave the hand
+	// with a small forward/downward velocity instead of applying a sudden impulse.
+	const _float3 vReleaseVelocity{
+		vPlayerVelocity.x + vLook.x * 0.65f,
+		std::min(vPlayerVelocity.y, 0.f) - 0.75f,
+		vPlayerVelocity.z + vLook.z * 0.65f
 	};
-	if (pPotion->Drop(vImpulse, { 0.08f, 0.14f, -0.1f }))
+	const _float3 vReleaseAngularVelocity{
+		vRight.x * 5.f,
+		0.f,
+		vRight.z * 5.f
+	};
+	if (pPotion->Drop(vReleaseVelocity, vReleaseAngularVelocity))
 		m_bWiggenweldPotionDropped = true;
 }
 
