@@ -96,6 +96,16 @@ void CPrototypeManager::DelPrototype(
 	groupIter->second.erase(sPrototypeTag);
 }
 
+std::vector<StringID> CPrototypeManager::GetPrototypeGroupTags() const
+{
+	std::vector<StringID> tags{};
+	std::shared_lock lock{ m_PrototypeMutex };
+	tags.reserve(m_pPrototypes.size());
+	for (const auto& [groupTag, prototypes] : m_pPrototypes)
+		tags.emplace_back(groupTag);
+	return tags;
+}
+
 std::vector<StringID> CPrototypeManager::GetPrototypeTags(const StringID& svGroupTag) const
 {
 	std::vector<StringID> tags{};

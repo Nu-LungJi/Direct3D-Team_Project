@@ -34,7 +34,7 @@ private:
 	HRESULT SpawnWater();
 	HRESULT SpawnMonster(std::optional<CHandle> hPlayer);
 	HRESULT SpawnStaticCollision();
-	HRESULT SpanwNpc(CHandle hPlayer);
+	HRESULT SpawnNpcPlacements(CHandle hPlayer);
 public:
 	static UPtr<CLevelHogwartWorld> Create();
 

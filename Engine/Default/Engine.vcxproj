@@ -361,6 +361,8 @@
     <ClInclude Include="..\Public\GraphicDevice.h" />
     <ClInclude Include="..\Public\Handle.h" />
     <ClInclude Include="..\Public\ImguiManager.h" />
+    <ClInclude Include="..\Public\NpcPlacementManager.h" />
+    <ClInclude Include="..\Public\NpcPlacementData.h" />
     <ClInclude Include="..\Public\IPhysicsListener.h" />
     <ClInclude Include="..\Public\IRenderable.h" />
     <ClInclude Include="..\Public\HizOcclusionCuller.h" />
@@ -704,6 +706,7 @@
     <ClCompile Include="..\Private\GameObjectPoolManager.cpp" />
     <ClCompile Include="..\Private\GraphicDevice.cpp" />
     <ClCompile Include="..\Private\ImguiManager.cpp" />
+    <ClCompile Include="..\Private\NpcPlacementManager.cpp" />
     <ClCompile Include="..\Private\Level.cpp" />
     <ClCompile Include="..\Private\LevelManager.cpp" />
     <ClCompile Include="..\Private\Light.cpp" />
