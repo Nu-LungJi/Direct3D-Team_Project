@@ -126,7 +126,22 @@ _bool CComPxRigidBody::SetKinematic(_bool bKinematic)
 	if (!pDynamic)
 		return false;
 
+	const _bool bWasKinematic =
+		pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC);
+	if (bWasKinematic == bKinematic)
+	{
+		m_eType = bKinematic ? TYPE::KINEMATIC : TYPE::DYNAMIC;
+		return true;
+	}
+
 	pDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, bKinematic);
+	if (!bKinematic &&
+		!PxRigidBodyExt::setMassAndUpdateInertia(*pDynamic, m_fMass))
+	{
+		pDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+		return false;
+	}
+
 	m_eType = bKinematic ? TYPE::KINEMATIC : TYPE::DYNAMIC;
 	return true;
 }
