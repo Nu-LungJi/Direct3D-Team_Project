@@ -68,6 +68,7 @@ public:
     virtual void Update(E::_float fTimeDelta) override;
     virtual void LateUpdate(E::_float fTimeDelta) override;
     virtual HRESULT Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) override;
+    virtual void RequestSpawn(const std::vector<PARTICLE_SPAWN_DATA>& spawnList) override;
     HRESULT Render_Texture(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
     HRESULT Render_Mesh(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx);
     virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) override;
@@ -77,6 +78,9 @@ public:
 	virtual void TranslateOwner(uint32_t ownerId, const _float3& delta) override;
 	virtual void TransformOwner(uint32_t ownerId, const _float4x4& deltaMatrixData) override;
 	virtual void SetColorByOwner(uint32_t ownerId, const _float4& color) override;
+private:
+	void MarkActive(const PARTICLE_SPAWN_DATA* pSpawnData, uint32_t count, _bool bIncludeSpawnDelay);
+
 private:
     DESC m_Desc;
 
@@ -102,7 +106,9 @@ private:
     uint32_t                         m_iCurrentSpawnCount = 0;
 	SPtr<CResComputeShader> m_pResClearByOwnerCS;
 	_float				m_fTime{};
-	
+	_bool				m_bSimulationActive = false;
+	_float				m_fActiveRemain = 0.f;
+	std::unordered_set<uint32_t> m_LoopOwners;
 
 	uint32_t m_iDeadCountReadIdx = 0;
 private:

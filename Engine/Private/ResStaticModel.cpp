@@ -107,6 +107,10 @@ HRESULT CResStaticModel::Load(const std::any& arg)
 		return S_OK;
 	}
 
+	/*----------- 광윤 추가 -----------*/ // 마지막(맵 저장때) 수정된 Material 정보 탐색
+	m_pMaterialDesc = CGameInstance::Get().FindMaterial(fsPath.stem().string());
+	/*---------------------------------*/
+
 	m_eState = STATE::LOADED;
 	return S_OK;
 }

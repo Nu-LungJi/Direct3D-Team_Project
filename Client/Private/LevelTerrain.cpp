@@ -18,6 +18,7 @@
 #include "ComPxDistanceJoint.h"
 #include "ComPxRevoluteJoint.h"
 #include "ComPxRigidBody.h"
+#include "DbgLineRender.h"
 #include "OilBarrel.h"
 #include "TestPathPlaybackObject.h"
 #include "LuaTestObject.h"
@@ -32,9 +33,21 @@
 #include "LightPlacementObject.h"
 #include "StarBurst.h"
 #include "AmbientSound3DObject.h"
+#include "Mon_Spawner.h"
 // UI
 #include "UIController.h"
 #include "UIManager.h"
+
+#include "PropBarrel.h"
+#include "Coin.h"
+#include "AccioBall.h"
+#include "AccioActivityPartBase.h"
+#include "AccioActivity_Base.h"
+#include "AccioActivity_Platform.h"
+#include "AccioActivity_BumperA.h"
+#include "AccioActivity_BumperB.h"
+#include "AccioActivity_RampLarge.h"
+#include "AccioActivity_LampSmall.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -62,6 +75,20 @@ HRESULT CLevelTerrain::Initialize()
 		return E_FAIL;
 	}
 
+	// 동적 PhysX 오브젝트보다 먼저 지형의 정적 TriMesh 충돌체를 씬에 등록한다.
+	{
+		CGameObject::GAMEOBJECT_DESC desc{};
+		desc.sObjectTag = "Terrain";
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			LEVEL::TERRAIN,
+			PROTO_GAMEOBJECT::Prototype_GameObject_Terrain,
+			"01_Terrain",
+			&desc))
+		{
+			return E_FAIL;
+		}
+	}
+
 	{
 		CRagdollTest::DESC tDesc{};
 		tDesc.sObjectTag = "RagdollTest";
@@ -77,15 +104,24 @@ HRESULT CLevelTerrain::Initialize()
 	}
 
 	{
-		
-		CGameObject::GAMEOBJECT_DESC Desc{};
-		Desc.sObjectTag = "Terrain";
-		if (auto h = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Terrain,
-			"01_Terrain", &Desc))
-		{
-			int x = 0;
-		}
+
+		CPropBarrel::DESC Desc{};
+		Desc.sResourceGroup = "PERMANENT";
+		Desc.vInitialPosition = { 5.f, 5.f, 5.f };
+		const auto hPropBarrel = CGameInstance::Get().AddGameObjectToLayer(
+			"PERMANENT",
+			PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
+			"PropBarrel",
+			&Desc);
+
+		if (!hPropBarrel)
+			return E_FAIL;
+
+		m_hPropBarrel = *hPropBarrel;
 	}
+
+	if (FAILED(InitializeAccioActivityTest()))
+		return E_FAIL;
 
 	if (FAILED(InitializePathPlaybackTests()))
 		return E_FAIL;
@@ -187,6 +223,44 @@ HRESULT CLevelTerrain::Initialize()
 			}
 		}
 
+		///////////////////
+		// 코인 소환 //////
+		{
+			PX_COLLISION_PROXY_FILE collisionData{};
+			collisionData.iVersion = 3;
+
+			PX_COLLISION_PROXY_ACTOR actor{};
+			actor.sName = "TestCoin";
+			actor.eType = PX_COLLISION_PROXY_ACTOR_TYPE::STATIC;
+			actor.vPosition = _float3(8.f, 8.f, 8.f);
+			actor.vRotation = _float4(0.f, 0.f, 0.f, 1.f);
+			actor.bEnabled = true;
+
+			PX_COLLISION_PROXY_SHAPE shape{};
+			shape.sName = "CoinTrigger";
+			shape.eType = PX_COLLISION_PROXY_SHAPE_TYPE::SPHERE;
+			shape.vLocalPosition = _float3(0.f, 0.f, 0.f);
+			shape.vLocalRotation = _float4(0.f, 0.f, 0.f, 1.f);
+			shape.fRadius = 1.f;
+			shape.iLayer = ETOUI(COLLISION_LAYER::TRIGGER);
+			shape.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_BODY);
+			shape.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_BODY);
+			shape.bTrigger = true;
+			shape.bSimulationEnabled = true;
+			shape.bQueryEnabled = true;
+			shape.bEnabled = true;
+
+			actor.shapes.push_back(shape);
+			collisionData.actors.push_back(actor);
+
+			CPhysXCollisionProxyObject::DESC coinDesc{};
+			coinDesc.sObjectTag = "TestCoin";
+			coinDesc.pCollisionData = &collisionData;
+
+			const auto hCoin = CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, "Prototype_GameObject_Coin", "03_Coin", &coinDesc);
+			if (!hCoin)
+				return E_FAIL;
+		}
 	}
 
 	//if (FAILED(InitializeJointTests(*hPlayer, hOilBarrels)))
@@ -875,7 +949,16 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 		}
 
 	}
-	
+	{
+		CMon_Spawner::MON_SPAWNER_DESC MonS{};
+		MonS.sObjectTag = "MonSpawn";
+		MonS.handle = hPlayer.value();
+		MonS.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
+		if (!CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_MonSpawner, "00.MonSpawn", &MonS))
+		{
+			return E_FAIL;
+		}
+	}
 	{
 		CLightPlacementObject::DESC desc{};
 		desc.sObjectTag = "TerrainLightPlacement";
@@ -911,6 +994,282 @@ void CLevelTerrain::Update(E::_float fTimeDelta)
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 
 	Picking();
+	DrawSelectedAccioBallDebug();
+}
+
+HRESULT CLevelTerrain::InitializeAccioActivityTest()
+{
+	if (FAILED(SpawnAccioBalls()))
+		return E_FAIL;
+
+	return SpawnAccioActivityObjects();
+}
+
+HRESULT CLevelTerrain::SpawnAccioBalls()
+{
+	struct ACCIO_BALL_PLACEMENT
+	{
+		const _char* pObjectTag;
+		const _char* pResourceTag;
+		_float3 vPosition;
+	};
+
+	constexpr ACCIO_BALL_PLACEMENT ballPlacements[] =
+	{
+		{ "AccioBall_Blue_1", "Static_AccioBall_Blue_Resource", { 20.f, 9.25f, 126.f } },
+		{ "AccioBall_Red_1", "Static_AccioBall_Red_Resource", { 23.f, 9.25f, 126.f } },
+		{ "AccioBall_Blue_2", "Static_AccioBall_Blue_Resource", { 26.f, 9.25f, 126.f } },
+		{ "AccioBall_Red_2", "Static_AccioBall_Red_Resource", { 29.f, 9.25f, 126.f } },
+		{ "AccioBall_Blue_3", "Static_AccioBall_Blue_Resource", { 32.f, 9.25f, 126.f } },
+		{ "AccioBall_Red_3", "Static_AccioBall_Red_Resource", { 35.f, 9.25f, 126.f } },
+	};
+
+	static_assert(std::size(ballPlacements) == 6);
+	for (size_t i = 0; i < std::size(ballPlacements); ++i)
+	{
+		const auto& placement = ballPlacements[i];
+		CAccioBall::DESC desc{};
+		desc.sObjectTag = placement.pObjectTag;
+		desc.sResourceGroup = LEVEL::TERRAIN;
+		desc.sModelResourceTag = placement.pResourceTag;
+		desc.vInitialPosition = placement.vPosition;
+		desc.vInitialScale = { 2.f, 2.f, 2.f };
+		desc.fSphereRadius = 0.5f;
+		desc.fMass = 1.f;
+
+		const auto handle = CGameInstance::Get().AddGameObjectToLayer(
+			LEVEL::TERRAIN,
+			PROTO_GAMEOBJECT::Prototype_GameObject_AccioBall,
+			"AccioBall",
+			&desc);
+		if (!handle)
+			return E_FAIL;
+
+		m_hAccioBalls[i] = *handle;
+	}
+
+	ApplyAccioBallMotionTuning();
+	return S_OK;
+}
+
+HRESULT CLevelTerrain::SpawnAccioActivityObjects()
+{
+	CAccioActivity_Base::DESC baseDesc{};
+	baseDesc.sObjectTag = "AccioActivity_Base";
+	baseDesc.vInitialPosition = { 27.f, 5.f, 100.f };
+	if (!CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::TERRAIN,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Base,
+		"01_Terrain",
+		&baseDesc))
+	{
+		return E_FAIL;
+	}
+
+	struct ACCIO_ACTIVITY_PLACEMENT
+	{
+		const _char* pObjectTag;
+		PROTO_GAMEOBJECT ePrototype;
+		_float3 vPosition;
+	};
+
+	constexpr ACCIO_ACTIVITY_PLACEMENT placements[] =
+	{
+		{ "AccioActivity_BumperA", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_BumperA, { 37.f, 5.f, 20.f } },
+		{ "AccioActivity_BumperB", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_BumperB, { 33.f, 5.f, 20.f } },
+		{ "AccioActivity_RampLarge", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_RampLarge, { 41.f, 5.f, 20.f } },
+		{ "AccioActivity_LampSmall", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_LampSmall, { 47.f, 5.f, 20.f } },
+	};
+
+	for (const auto& placement : placements)
+	{
+		CAccioActivityPartBase::DESC desc{};
+		desc.sObjectTag = placement.pObjectTag;
+		desc.vInitialPosition = placement.vPosition;
+
+		if (!CGameInstance::Get().AddGameObjectToLayer(
+			LEVEL::TERRAIN,
+			placement.ePrototype,
+			"01_Terrain",
+			&desc))
+		{
+			return E_FAIL;
+		}
+	}
+
+	CAccioActivity_Platform::DESC platformDesc{};
+	platformDesc.sObjectTag = "AccioActivity_Platform";
+	platformDesc.vInitialPosition = { 27.f, 5.f, 100.f };
+	if (!CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::TERRAIN,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Platform,
+		"01_Terrain",
+		&platformDesc))
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
+void CLevelTerrain::DrawSelectedAccioBallDebug()
+{
+	if (m_iSelectedAccioBall < 0 ||
+		m_iSelectedAccioBall >= static_cast<int32_t>(m_hAccioBalls.size()))
+	{
+		return;
+	}
+
+	auto* pBall = CGameInstance::Get().GetGameObjectByHandleT<CAccioBall>(
+		m_hAccioBalls[static_cast<size_t>(m_iSelectedAccioBall)]);
+	auto* pDebug = CGameInstance::Get().GetDbgLineRender();
+	if (!pBall || !pDebug)
+		return;
+
+	const _float4 previousColor = pDebug->GetColor();
+	const auto previousDepthMode = pDebug->GetDepthMode();
+	const _float3 position = pBall->GetTransform().GetPosition();
+	pDebug->SetColor({ 1.f, 0.85f, 0.05f, 1.f });
+	pDebug->SetDepthTest(false);
+	pDebug->AddArrow(
+		{ position.x, position.y + pBall->GetSphereRadius() + 2.f, position.z },
+		{ 0.f, -1.f, 0.f },
+		1.5f,
+		0.35f,
+		30.f);
+	pDebug->SetColor(previousColor);
+	pDebug->SetDepthMode(previousDepthMode);
+}
+
+_bool CLevelTerrain::PushSelectedAccioBallTowardPlayer()
+{
+	if (m_iSelectedAccioBall < 0 ||
+		m_iSelectedAccioBall >= static_cast<int32_t>(m_hAccioBalls.size()))
+	{
+		return false;
+	}
+
+	auto* pBall = CGameInstance::Get().GetGameObjectByHandleT<CAccioBall>(
+		m_hAccioBalls[static_cast<size_t>(m_iSelectedAccioBall)]);
+	auto* pPlayer = CGameInstance::Get().GetGameObjectByHandle(m_hPlayer);
+	if (!pBall || !pPlayer)
+		return false;
+
+	const _float3 ballPosition = pBall->GetTransform().GetPosition();
+	const _float3 playerPosition = pPlayer->GetTransform().GetPosition();
+	_float3 direction{
+		playerPosition.x - ballPosition.x,
+		0.f,
+		playerPosition.z - ballPosition.z
+	};
+	const _vector loadedDirection = XMLoadFloat3(&direction);
+	if (XMVectorGetX(XMVector3LengthSq(loadedDirection)) <= FLT_EPSILON)
+		return false;
+
+	XMStoreFloat3(&direction, XMVector3Normalize(loadedDirection));
+	_float3 torqueAxis{};
+	XMStoreFloat3(
+		&torqueAxis,
+		XMVector3Normalize(XMVector3Cross(
+			XMVectorSet(0.f, 1.f, 0.f, 0.f),
+			XMLoadFloat3(&direction))));
+
+	return pBall->ApplyTorque({
+		torqueAxis.x * m_fAccioBallPushTorque,
+		torqueAxis.y * m_fAccioBallPushTorque,
+		torqueAxis.z * m_fAccioBallPushTorque
+	});
+}
+
+void CLevelTerrain::ApplyAccioBallMotionTuning()
+{
+	for (size_t i = 0; i < m_hAccioBalls.size(); ++i)
+	{
+		if (auto* pBall = CGameInstance::Get()
+			.GetGameObjectByHandleT<CAccioBall>(m_hAccioBalls[i]))
+		{
+			const _float mass = i == static_cast<size_t>(m_iSelectedAccioBall)
+				? m_fAccioBallSelectedMass
+				: m_fAccioBallIdleMass;
+			pBall->SetMotionTuning(
+				mass,
+				m_fAccioBallLinearDamping,
+				m_fAccioBallAngularDamping);
+		}
+	}
+}
+
+void CLevelTerrain::ResetAccioBalls()
+{
+	for (const CHandle& hBall : m_hAccioBalls)
+	{
+		auto* pBall = CGameInstance::Get()
+			.GetGameObjectByHandleT<CAccioBall>(hBall);
+		if (pBall && !pBall->ResetToInitialPose())
+			DEBUG_LOG("[AccioBall] Failed to reset ball.\n");
+	}
+}
+
+void CLevelTerrain::UpdateAccioActivityTestGUI()
+{
+	if (!ImGui::CollapsingHeader("Accio Activity Test"))
+		return;
+
+	constexpr const _char* ballNames[] =
+	{
+		"Blue 1", "Red 1", "Blue 2",
+		"Red 2", "Blue 3", "Red 3"
+	};
+	if (m_iSelectedAccioBall < 0 ||
+		m_iSelectedAccioBall >= static_cast<int32_t>(std::size(ballNames)))
+	{
+		m_iSelectedAccioBall = 0;
+	}
+
+	for (size_t i = 0; i < std::size(ballNames); ++i)
+	{
+		ImGui::PushID(static_cast<int32_t>(i));
+		if (ImGui::Button(ballNames[i]))
+		{
+			m_iSelectedAccioBall = static_cast<int32_t>(i);
+			ApplyAccioBallMotionTuning();
+		}
+		ImGui::PopID();
+		if (i % 3 != 2)
+			ImGui::SameLine();
+	}
+
+	ImGui::Text("Selected Ball: %s",
+		ballNames[static_cast<size_t>(m_iSelectedAccioBall)]);
+	ImGui::DragFloat(
+		"Roll Torque", &m_fAccioBallPushTorque,
+		0.5f, 0.f, 100.f, "%.1f");
+	ImGui::Button("Hold To Roll Selected Ball To Player");
+	if (ImGui::IsItemActive() && !PushSelectedAccioBallTowardPlayer())
+		DEBUG_LOG("[AccioBall] Failed to push selected ball.\n");
+
+	_bool motionTuningChanged{};
+	motionTuningChanged |= ImGui::DragFloat(
+		"Selected Ball Mass", &m_fAccioBallSelectedMass,
+		0.05f, 0.05f, 100.f, "%.2f");
+	motionTuningChanged |= ImGui::DragFloat(
+		"Idle Ball Mass", &m_fAccioBallIdleMass,
+		0.05f, 0.05f, 100.f, "%.2f");
+	motionTuningChanged |= ImGui::DragFloat(
+		"Linear Damping", &m_fAccioBallLinearDamping,
+		0.05f, 0.f, 20.f, "%.2f");
+	motionTuningChanged |= ImGui::DragFloat(
+		"Angular Damping", &m_fAccioBallAngularDamping,
+		0.05f, 0.f, 20.f, "%.2f");
+	if (motionTuningChanged)
+		ApplyAccioBallMotionTuning();
+
+	if (ImGui::Button("Ball Reset"))
+		ResetAccioBalls();
+
+	ImGui::TextUnformatted("Order: Blue / Red / Blue / Red / Blue / Red");
+	ImGui::TextUnformatted("X: 20, 23, 26, 29, 32, 35 / Y: 9.25 / Z: 126");
+	ImGui::Separator();
 }
 
 HRESULT CLevelTerrain::Render()
@@ -921,6 +1280,23 @@ HRESULT CLevelTerrain::Render()
 void CLevelTerrain::UpdateGUI()
 {
 	ImGui::Begin("Terrain");
+	UpdateAccioActivityTestGUI();
+	if (ImGui::CollapsingHeader("Prop Barrel Test"))
+	{
+		auto* pPropBarrel = CGameInstance::Get()
+			.GetGameObjectByHandleT<CPropBarrel>(m_hPropBarrel);
+		ImGui::Text("State: %s", pPropBarrel ? "Created" : "Destroyed");
+
+		if (pPropBarrel && ImGui::Button("Destroy Prop Barrel"))
+		{
+			if (pPropBarrel->DestroyBarrel())
+				m_hPropBarrel = {};
+			else
+				DEBUG_LOG("[PropBarrel] Failed to destroy barrel.\n");
+		}
+
+		ImGui::Separator();
+	}
 	if (ImGui::CollapsingHeader("Confringo Projectile Test"))
 	{
 		ImGui::DragFloat(

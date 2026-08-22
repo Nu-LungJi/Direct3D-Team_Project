@@ -14,7 +14,7 @@ class ENGINE_DLL CAnimationObject abstract : public CGameObject
 public:
 	DECLARE_DERIVED_TYPE(CAnimationObject,CGameObject)
 
-	CAnimationObject & operator=( const CAnimationObject&) = delete;
+	CAnimationObject & operator=(const CAnimationObject&) = delete;
 public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
@@ -32,12 +32,28 @@ public:
 	void Update(_float fTimeDelta) override;
 
 public:
+	void UpdateRenderVisibility(const BoundingBox& WorldBounds);
+	static void UpdateCullingDebugGUI();
+
+	_bool IsMainViewVisible() const { return m_bMainViewVisible; }
+	_bool IsShadowVisible() const { return m_bShadowVisible; }
+	_bool ShouldSubmitRenderInstance() const { return m_bMainViewVisible || m_bShadowVisible; }
+
+
+
+public:
 	uint32_t GetInstanceModelNum() { return m_iInstanceModelNum; }
 	void     SetInstanceModelNum(uint32_t iInstacneNum) override { m_iInstanceModelNum = iInstacneNum; }
 
 private:
-	uint32_t m_iInstanceModelNum = 0.f;
-	
+	static _bool IntersectsClipVolume(const BoundingBox& WorldBounds, _fmatrix ViewProj);
+
+private:
+	uint32_t m_iInstanceModelNum{};
+
+	_bool m_bMainViewVisible{ true };
+	_bool m_bShadowVisible{ true };
+
 
 };
 

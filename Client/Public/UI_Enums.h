@@ -31,6 +31,17 @@ enum class ACTIVE_BUTTON_KEY : uint8_t
 	F
 };
 
+enum class GENERAL_BUTTON_TYPE : uint32_t
+{
+	DEFAULT,
+	WAND_CATEGORY,
+	WAND_MATERIAL,
+	WAND_ITEM,
+	CONFIRM,
+	CANCEL,
+	END
+};
+
 enum class BUTTON_EVENT
 {
 	NONE,

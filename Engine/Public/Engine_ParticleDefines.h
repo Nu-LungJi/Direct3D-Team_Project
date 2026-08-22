@@ -44,8 +44,9 @@ namespace Engine
 		uint32_t	iBehaviorType;
 		_float fStopSizeTime = 0.f;
 		_bool    bKeepRotate = false;
-		_float3  rotationAxis= {};
+		_float3  rotationAxis= { 0.f, 1.f, 0.f };
 		_float  rotationSpeed = {};
+		_float3 orbitCenter = {};
 	}STANDARD_PARAMS;
 
 	typedef struct BEAM_PARAMS
@@ -102,6 +103,7 @@ namespace Engine
 	// [LSY] CPU 파티클의 수명 종료를 자연스럽게 표현하기 위한 알파 감소 정책이다.
 	constexpr uint32_t BEHAVIOR_FADEOUT = 1 << 13;
 	constexpr uint32_t BEHAVIOR_FADEOUT_LATE = 1 << 14;
+	constexpr uint32_t BEHAVIOR_ORBIT = 1 << 15;
 	// ============================================================
 	// X-매크로: 필드 목록을 한 곳에서만 정의
 	// X(타입, 이름, 기본값)
@@ -171,8 +173,10 @@ namespace Engine
     X(_float, startIntensity, 0.f) \
     X(_float4, endEmissive, _float4(0,0,0,0)) \
 	X(_float, endIntensity, 0.f) \
-    X(_float, fYOffset, 0.f)\
+	X(_float, fYOffset, 0.f)\
     X(_bool, bStand, false)\
+	X(_float3, rotationAxis, _float3(0.f,1.f,0.f))\
+	X(_float, rotationSpeed, 0.f)\
    COMMON_PATTERN_FIELDS(X)
 
 #define CIRCLE_SPREAD_FIELDS(X) \

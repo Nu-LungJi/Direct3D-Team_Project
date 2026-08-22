@@ -29,7 +29,11 @@ struct NAVMESH_BUILD_DESC
 	float detailSampleDist = 6.0f;
 	float detailSampleMaxError = 1.0f;
 };
-
+//수동 찍기용
+struct NAVMESH_MANUAL_TRIANGLE
+{
+	_float3 vPoints[3]{};
+};
 enum class ENavAreaType : uint8_t
 {
 	Walkable,
@@ -51,7 +55,12 @@ private:
 	HRESULT Initialize();
 
 public:
-	_bool Build(const std::vector<_float3>& vertices, const std::vector<uint32_t>& indices, const NAVMESH_BUILD_DESC& desc);
+	_bool Build(
+		const std::vector<_float3>& vertices,
+		const std::vector<uint32_t>& indices,
+		const NAVMESH_BUILD_DESC& desc,
+		_bool bForceAllWalkable = false);
+	_bool BuildManual(const NAVMESH_BUILD_DESC& desc);
 
 	void Clear();
 	void DrawDebug();
@@ -81,14 +90,38 @@ public:
 
 	//void Save();
 	//void Load();
-	HRESULT Save(const std::string& path) const;
-	HRESULT Load(const std::string& path);
+	HRESULT Save(
+		const std::string& path,
+		const NAVMESH_BUILD_DESC* pBuildDesc = nullptr) const;
+	HRESULT Load(
+		const std::string& path,
+		NAVMESH_BUILD_DESC* pBuildDesc = nullptr);
+	_bool FindPath(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const;
+	_bool FindPathCenter(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const;
 
+	_bool NavMeshRayCast(const _float3& vStart, const _float3& vEnd);
+	_bool FindNearestManualVertex(
+		const _float3& vPosition,
+		_float fMaxDistance,
+		_float3& vOutVertex) const;
+
+	//수동찍기
+	void AddManualTriangle(const NAVMESH_MANUAL_TRIANGLE& Triangle){m_ManualTriangles.push_back(Triangle);}
+	_bool RemoveManualTriangle(uint32_t iTriangleIndex);
+	void ClearManualTriangles(){m_ManualTriangles.clear();}
+	void RemoveLastManualTriangle()
+	{
+		if (!m_ManualTriangles.empty())
+		{
+			m_ManualTriangles.pop_back();
+		}
+	}
+
+	const std::vector<NAVMESH_MANUAL_TRIANGLE>&GetManualTriangles() const{return m_ManualTriangles;}
 public:
 	static UPtr<CNavMeshManager> Create();
 
 private:
-	_bool FindPath(const _float3& start, const _float3& end, std::vector<_float3>& outPath) const;
 	void DrawPathTest();
 
 private:
@@ -101,14 +134,15 @@ private:
 	dtNavMeshQuery* m_pNavMeshQuery = nullptr;
 
 	std::unordered_map<uint32_t, ENavAreaType> m_TriangleAreas{};
-
+	//수동찍기
+	std::vector<NAVMESH_MANUAL_TRIANGLE> m_ManualTriangles{};
 	// 길찾기 테스트
 	_float3 m_PathTestStart{};
 	_float3 m_PathTestEnd{};
 	std::vector<_float3> m_PathTestPoints{};
 	_bool m_bHasPathTestStart = false;
 	_bool m_bHasPathTestEnd = false;
-	_bool m_bDebugDraw = true;
+	_bool m_bDebugDraw = false;
 };
 
 NS_END

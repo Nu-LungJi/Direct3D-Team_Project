@@ -87,13 +87,21 @@ void CUIController::Update(E::_float fTimeDelta)
 		}
 	}
 
-	// Temporary test entry. F8 opens/closes the Incendio mini game.
+	// Temporary test entries for the two spell mini-game layouts.
+	if (E::CGameInstance::Get().KeyDown(DIK_F6))
+	{
+		if (m_hSpellMiniGame)
+			StopSpellMiniGame();
+		else
+			StartSpellMiniGame(true);
+	}
+
 	if (E::CGameInstance::Get().KeyDown(DIK_F7))
 	{
 		if (m_hSpellMiniGame)
 			StopSpellMiniGame();
 		else
-			StartSpellMiniGame();
+			StartSpellMiniGame(false);
 	}
 
 	if (!CursorCreate)
@@ -214,7 +222,7 @@ HRESULT CUIController::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX
 	return S_OK;
 }
 
-_bool CUIController::StartSpellMiniGame()
+_bool CUIController::StartSpellMiniGame(_bool secondGame)
 {
 	if (m_hSpellMiniGame && E::CGameInstance::Get().
 		GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
@@ -227,8 +235,13 @@ _bool CUIController::StartSpellMiniGame()
 		MagicEnumToStringView(static_cast<LEVEL>(
 			E::CGameInstance::Get().GetCurrentLevelID())).data();
 
-	CGameObject::GAMEOBJECT_DESC desc{};
-	desc.sObjectTag = "SpellMiniGame_Incendio";
+	CSpellMiniGame::DESC desc{};
+	desc.sObjectTag = secondGame
+		? "SpellMiniGame_Flipendo"
+		: "SpellMiniGame_Incendio";
+	desc.Mode = secondGame
+		? CSpellMiniGame::MODE::FLIPENDO
+		: CSpellMiniGame::MODE::INCENDIO;
 	auto handle = E::CGameInstance::Get().AddGameObjectToLayer(
 		currentLevel,
 		"Prototype_GameObject_SpellMiniGame",

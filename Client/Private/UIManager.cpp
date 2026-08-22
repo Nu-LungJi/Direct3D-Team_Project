@@ -5,6 +5,7 @@
 #include "EffectUI.h"
 #include "TextBox.h"
 #include "Button.h"
+#include "GeneralButton.h"
 #include <fstream>
 #include "LevelLogo.h"
 #include "LevelLoading.h"
@@ -34,6 +35,19 @@ namespace
 	constexpr _float DIALOGUE_MIN_WIDTH = 0.f;
 	constexpr _float DIALOGUE_MAX_WIDTH = 1100.f;
 	constexpr size_t DIALOGUE_MAX_COUNT = 6u;
+
+	constexpr _float NPC_SPEECH_FONT_SCALE = 1.f;
+	constexpr _float NPC_SPEECH_DEFAULT_DURATION = 5.f;
+	constexpr _float NPC_SPEECH_FADE_IN_TIME = 0.15f;
+	constexpr _float NPC_SPEECH_FADE_OUT_TIME = 0.25f;
+	constexpr _float NPC_SPEECH_BACKGROUND_HEIGHT = 50.f;
+	constexpr _float NPC_SPEECH_SIDE_PADDING = 28.f;
+	constexpr _float NPC_SPEECH_TEXT_Y_OFFSET = -13.f;
+	constexpr _float NPC_SPEECH_NEAR_DISTANCE = 3.f;
+	constexpr _float NPC_SPEECH_FAR_DISTANCE = 20.f;
+	constexpr _float NPC_SPEECH_MAX_SCALE = 1.15f;
+	constexpr _float NPC_SPEECH_MIN_SCALE = 0.55f;
+	constexpr _float NPC_SPEECH_SCALE_SMOOTH_SPEED = 10.f;
 
 	TEXT_ALIGN LoadTextAlignmentCompatible(
 		const nlohmann::ordered_json& obj)
@@ -81,6 +95,7 @@ void UIManager::Update(_float fTimeDelta)
 {
 	UpdateActiveButtons();
 	UpdateDialoguePopups(fTimeDelta);
+	UpdateNPCSpeechBubbles(fTimeDelta);
 }
 
 void UIManager::Initialize(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
@@ -1782,6 +1797,313 @@ void UIManager::UpdateDialoguePopups(_float fTimeDelta)
 		RefreshDialoguePopupLayout();
 }
 
+void UIManager::ShowNPCSpeechBubble(
+	CHandle npcHandle,
+	const std::string& message,
+	_float duration,
+	const _float3& worldOffset)
+{
+	auto* pTarget = E::CGameInstance::Get().GetGameObjectByHandle(npcHandle);
+	if (!pTarget || pTarget->GetPendingDestroy() || message.empty())
+		return;
+
+	const std::wstring messageText = StringToWUTF8(message);
+	const _float textWidth = E::CGameInstance::Get().FontMeasureString(
+		"Pretendard", messageText.c_str(), NPC_SPEECH_FONT_SCALE).x;
+	const _float backgroundWidth = textWidth + NPC_SPEECH_SIDE_PADDING * 2.f;
+	const _float displayDuration = duration > 0.f ?
+		duration : NPC_SPEECH_DEFAULT_DURATION;
+
+	const auto duplicate = std::find_if(
+		m_NPCSpeechBubbles.begin(),
+		m_NPCSpeechBubbles.end(),
+		[npcHandle](const NPC_SPEECH_BUBBLE_INFO& info)
+		{
+			return info.TargetHandle == npcHandle;
+		});
+
+	if (duplicate != m_NPCSpeechBubbles.end())
+	{
+		auto* pBackground = SafeGetOBJ(duplicate->BackgroundHandle);
+		auto* pText = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(
+			duplicate->TextHandle);
+
+		if (pBackground && pText)
+		{
+			pText->SetwText(messageText);
+			pBackground->SetSize({ backgroundWidth, NPC_SPEECH_BACKGROUND_HEIGHT });
+			duplicate->WorldOffset = worldOffset;
+			duplicate->Duration = displayDuration;
+			duplicate->ElapsedTime = 0.f;
+			duplicate->FadingOut = false;
+			pBackground->SetActive(true);
+			pText->SetActive(true);
+			return;
+		}
+
+		if (pBackground)
+			DeleteUIRecursive(duplicate->BackgroundHandle);
+		else if (pText)
+			DeleteUIRecursive(duplicate->TextHandle);
+		m_NPCSpeechBubbles.erase(duplicate);
+	}
+
+	const std::string currentLevel =
+		_string("LEVEL_") +
+		MagicEnumToStringView(
+			static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+
+	CTextureUI::UIOBJECT_DESC backgroundDesc{};
+	backgroundDesc.sObjectTag = "NPCSpeechBubbleBackground";
+	backgroundDesc.Name = "NPCSpeechBubbleBackground";
+	backgroundDesc.fSizeX = backgroundWidth;
+	backgroundDesc.fSizeY = NPC_SPEECH_BACKGROUND_HEIGHT;
+	backgroundDesc.fAlpha = 0.f;
+	backgroundDesc.ResWeight = 900;
+	backgroundDesc.ResTag = "TEX_UI_T_TextTitle_BG";
+	backgroundDesc.UIType = ETOUI(UI_TYPE::TEXUI);
+
+	const auto backgroundHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+		currentLevel,
+		"Prototype_GameObject_TextureUI",
+		"Layer_UI",
+		&backgroundDesc);
+	if (!backgroundHandle)
+		return;
+
+	CTextUI::TEXT_DESC textDesc{};
+	textDesc.sObjectTag = "NPCSpeechBubbleText";
+	textDesc.Name = "NPCSpeechBubbleText";
+	textDesc.fSizeX = NPC_SPEECH_FONT_SCALE;
+	textDesc.fSizeY = NPC_SPEECH_FONT_SCALE;
+	textDesc.fAlpha = 1.f;
+	textDesc.ResWeight = 901;
+	textDesc.UIType = ETOUI(UI_TYPE::TEXT);
+	textDesc.Alignment = TEXT_ALIGN::CENTER;
+
+	const auto textHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+		currentLevel,
+		"Prototype_GameObject_TextBox",
+		"Layer_UI",
+		&textDesc);
+	if (!textHandle)
+	{
+		DeleteUIRecursive(*backgroundHandle);
+		return;
+	}
+
+	auto* pBackground = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(
+		*backgroundHandle);
+	auto* pText = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(
+		*textHandle);
+	if (!pBackground || !pText)
+	{
+		if (pBackground)
+			DeleteUIRecursive(*backgroundHandle);
+		if (pText)
+			DeleteUIRecursive(*textHandle);
+		return;
+	}
+
+	pBackground->SetInputLcok(true);
+	pBackground->SetAlpha(0.f);
+	pBackground->SetActive(false);
+	pBackground->AddChildren(*textHandle);
+	pBackground->CalcUICoord();
+
+	pText->SetwText(messageText);
+	pText->SetTextAlignment(TEXT_ALIGN::CENTER);
+	pText->SetColor({ 1.f, 1.f, 1.f });
+	pText->SetInputLcok(true);
+	pText->SetParent(*backgroundHandle);
+	pText->SetLocalPos({ 0.f, NPC_SPEECH_TEXT_Y_OFFSET });
+	pText->SetAlphaRatio(1.f);
+	pText->GetUIInfo().WeightOffset = 1;
+	pText->SetActive(false);
+
+	NPC_SPEECH_BUBBLE_INFO bubble{};
+	bubble.TargetHandle = npcHandle;
+	bubble.BackgroundHandle = *backgroundHandle;
+	bubble.TextHandle = *textHandle;
+	bubble.WorldOffset = worldOffset;
+	bubble.Duration = displayDuration;
+	bubble.CurrentScale = 1.f;
+	m_NPCSpeechBubbles.push_back(bubble);
+}
+
+void UIManager::RemoveNPCSpeechBubble(CHandle npcHandle, _bool fadeOut)
+{
+	const auto iter = std::find_if(
+		m_NPCSpeechBubbles.begin(),
+		m_NPCSpeechBubbles.end(),
+		[npcHandle](const NPC_SPEECH_BUBBLE_INFO& info)
+		{
+			return info.TargetHandle == npcHandle;
+		});
+
+	if (iter == m_NPCSpeechBubbles.end())
+		return;
+
+	if (fadeOut)
+	{
+		iter->ElapsedTime = iter->Duration;
+		iter->FadingOut = true;
+		return;
+	}
+
+	if (SafeGetOBJ(iter->BackgroundHandle))
+		DeleteUIRecursive(iter->BackgroundHandle);
+	else if (SafeGetOBJ(iter->TextHandle))
+		DeleteUIRecursive(iter->TextHandle);
+	m_NPCSpeechBubbles.erase(iter);
+}
+
+void UIManager::ClearNPCSpeechBubbles(_bool immediate)
+{
+	if (!immediate)
+	{
+		for (auto& bubble : m_NPCSpeechBubbles)
+		{
+			bubble.ElapsedTime = bubble.Duration;
+			bubble.FadingOut = true;
+		}
+		return;
+	}
+
+	for (const auto& bubble : m_NPCSpeechBubbles)
+	{
+		if (SafeGetOBJ(bubble.BackgroundHandle))
+			DeleteUIRecursive(bubble.BackgroundHandle);
+		else if (SafeGetOBJ(bubble.TextHandle))
+			DeleteUIRecursive(bubble.TextHandle);
+	}
+	m_NPCSpeechBubbles.clear();
+}
+
+void UIManager::UpdateNPCSpeechBubbles(_float fTimeDelta)
+{
+	if (m_NPCSpeechBubbles.empty())
+		return;
+
+	const _float safeDelta = std::clamp(fTimeDelta, 0.f, 0.05f);
+	const _float scaleBlend = 1.f - std::exp(
+		-NPC_SPEECH_SCALE_SMOOTH_SPEED * safeDelta);
+	auto* pCamera = E::CGameInstance::Get().GetActiveCamera();
+	const _float2 screenSize = E::CGameInstance::Get().GetClientScreenSize();
+
+	for (auto iter = m_NPCSpeechBubbles.begin();
+		iter != m_NPCSpeechBubbles.end();)
+	{
+		auto* pTarget = E::CGameInstance::Get().GetGameObjectByHandle(
+			iter->TargetHandle);
+		auto* pBackground = SafeGetOBJ(iter->BackgroundHandle);
+		auto* pText = E::CGameInstance::Get().GetGameObjectByHandleT<CTextBox>(
+			iter->TextHandle);
+
+		if (!pTarget || pTarget->GetPendingDestroy() ||
+			!pBackground || pBackground->GetPendingDestroy() ||
+			!pText || pText->GetPendingDestroy())
+		{
+			if (pBackground && !pBackground->GetPendingDestroy())
+				DeleteUIRecursive(iter->BackgroundHandle);
+			else if (pText && !pText->GetPendingDestroy())
+				DeleteUIRecursive(iter->TextHandle);
+			iter = m_NPCSpeechBubbles.erase(iter);
+			continue;
+		}
+
+		iter->ElapsedTime += safeDelta;
+		if (iter->ElapsedTime >= iter->Duration)
+			iter->FadingOut = true;
+
+		if (iter->FadingOut &&
+			iter->ElapsedTime >= iter->Duration + NPC_SPEECH_FADE_OUT_TIME)
+		{
+			DeleteUIRecursive(iter->BackgroundHandle);
+			iter = m_NPCSpeechBubbles.erase(iter);
+			continue;
+		}
+
+		_float alpha = std::clamp(
+			iter->ElapsedTime / NPC_SPEECH_FADE_IN_TIME, 0.f, 1.f);
+		if (iter->FadingOut)
+		{
+			alpha = 1.f - std::clamp(
+				(iter->ElapsedTime - iter->Duration) /
+				NPC_SPEECH_FADE_OUT_TIME,
+				0.f, 1.f);
+		}
+
+		_bool visible = pCamera != nullptr;
+		_float3 screenPosition{};
+		_float targetScale = NPC_SPEECH_MIN_SCALE;
+
+		if (visible)
+		{
+			_float3 worldPosition = pTarget->GetTransform().GetPosition();
+			worldPosition.x += iter->WorldOffset.x;
+			worldPosition.y += iter->WorldOffset.y;
+			worldPosition.z += iter->WorldOffset.z;
+
+			const _matrix view = pCamera->GetView();
+			const _matrix proj = pCamera->GetProj();
+			const _vector clipPosition = XMVector4Transform(
+				XMVectorSet(
+					worldPosition.x,
+					worldPosition.y,
+					worldPosition.z,
+					1.f),
+				view * proj);
+			visible = XMVectorGetW(clipPosition) > 0.f;
+
+			if (visible)
+			{
+				const _vector projected = XMVector3Project(
+					XMLoadFloat3(&worldPosition),
+					0.f, 0.f,
+					screenSize.x, screenSize.y,
+					0.f, 1.f,
+					proj, view, XMMatrixIdentity());
+				XMStoreFloat3(&screenPosition, projected);
+
+				visible = screenPosition.z >= 0.f && screenPosition.z <= 1.f &&
+					screenPosition.x >= 0.f && screenPosition.x <= screenSize.x &&
+					screenPosition.y >= 0.f && screenPosition.y <= screenSize.y;
+			}
+
+			const _float3 cameraPosition = pCamera->GetTransform().GetPosition();
+			const _float dx = worldPosition.x - cameraPosition.x;
+			const _float dy = worldPosition.y - cameraPosition.y;
+			const _float dz = worldPosition.z - cameraPosition.z;
+			const _float distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+			_float distanceRatio = std::clamp(
+				(distance - NPC_SPEECH_NEAR_DISTANCE) /
+				(NPC_SPEECH_FAR_DISTANCE - NPC_SPEECH_NEAR_DISTANCE),
+				0.f, 1.f);
+			distanceRatio = distanceRatio * distanceRatio *
+				(3.f - 2.f * distanceRatio);
+			targetScale = NPC_SPEECH_MAX_SCALE +
+				(NPC_SPEECH_MIN_SCALE - NPC_SPEECH_MAX_SCALE) * distanceRatio;
+		}
+
+		iter->CurrentScale +=
+			(targetScale - iter->CurrentScale) * scaleBlend;
+		pBackground->SetActive(visible);
+		pText->SetActive(visible);
+
+		if (visible)
+		{
+			pBackground->SetPos({ screenPosition.x, screenPosition.y });
+			pBackground->SetScaleRatio(iter->CurrentScale);
+			pBackground->SetAlpha(alpha);
+			pBackground->CalcUICoord();
+			pText->SetAlphaRatio(1.f);
+		}
+
+		++iter;
+	}
+}
+
 std::optional<CHandle> UIManager::RootUIPicking()
 {
 	std::optional<CHandle> targetHandle = std::nullopt;
@@ -1993,6 +2315,15 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_Button", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CButton>(*uiHandle);
 		break;
+	case ETOUI(UI_TYPE::GENERAL_BUTTON):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_GeneralButton", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(*uiHandle);
+		break;
+	case ETOUI(UI_TYPE::NINE_SLICE):
+		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextureUI", "Layer_UI", &Desc);
+		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*uiHandle);
+		pUI->SetUIType(ETOUI(UI_TYPE::NINE_SLICE));
+		break;
 	case ETOUI(UI_TYPE::SPELLMETER):
 		uiHandle = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_SpellMeter", "Layer_UI", &Desc);
 		pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CSpellMeter>(*uiHandle);
@@ -2035,16 +2366,15 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	if (pUI == nullptr)
 		return nullptr;
 
-	if (parent == nullptr)
-	{
-		if (obj.contains("ScaleRatio"))
-			pUI->SetScaleRatio(obj["ScaleRatio"]);
-
-		m_vLoadPrefabRoot.push_back(pUI->GetHandle());
-	}
-		
+	if (obj.contains("ScaleRatio"))
+		pUI->SetScaleRatio(obj["ScaleRatio"]);
 	if (obj.contains("LocalScaleRatio"))
 		pUI->SetLocalScaleRatio(obj["LocalScaleRatio"]);
+
+	if (parent == nullptr)
+	{
+		m_vLoadPrefabRoot.push_back(pUI->GetHandle());
+	}
 
 	UI_INFO& uiInfo = static_cast<CUIObject*>(pUI)->GetUIInfo();
 
@@ -2074,6 +2404,26 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	auto color = obj["Color"];
 	uiInfo.Color = { color[0], color[1], color[2] };
 
+	if (auto* button = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(pUI->GetHandle()))
+	{
+		button->SetButtonType(static_cast<GENERAL_BUTTON_TYPE>(
+			obj.value("ButtonType", static_cast<uint32_t>(GENERAL_BUTTON_TYPE::DEFAULT))));
+		button->SetCommandParameter(obj.value("CommandParameter", std::string{}));
+	}
+	if (uiType == ETOUI(UI_TYPE::NINE_SLICE))
+	{
+		if (auto* nineSlice = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(pUI->GetHandle()))
+		{
+			_float4 margins{};
+			if (obj.contains("NineSliceMargins") && obj["NineSliceMargins"].is_array() && obj["NineSliceMargins"].size() >= 4)
+			{
+				const auto& savedMargins = obj["NineSliceMargins"];
+				margins = { savedMargins[0], savedMargins[1], savedMargins[2], savedMargins[3] };
+			}
+			nineSlice->SetNineSliceMargins(margins);
+		}
+	}
+
 	UI_EVENT& eventInfo = pUI->GetUIEvent();
 
 	eventInfo.ClickFunc = obj.value("ClickFunc", "");
@@ -2089,14 +2439,17 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 		}
 	};
 
-	bindAction(eventInfo.ClickAction, pUI->OnClicked);
-	bindAction(eventInfo.EnterAction, pUI->OnHoverEnter);
-	bindAction(eventInfo.ExitAction, pUI->OnHoverExit);
-	bindAction(eventInfo.AppearAction, pUI->Appear);
-	bindAction(eventInfo.DisappearAction, pUI->Disappear);
+	if (uiInfo.UIType != ETOUI(UI_TYPE::GENERAL_BUTTON))
+	{
+		bindAction(eventInfo.ClickAction, pUI->OnClicked);
+		bindAction(eventInfo.EnterAction, pUI->OnHoverEnter);
+		bindAction(eventInfo.ExitAction, pUI->OnHoverExit);
+		bindAction(eventInfo.AppearAction, pUI->Appear);
+		bindAction(eventInfo.DisappearAction, pUI->Disappear);
 
-	if(!eventInfo.ClickFunc.empty() && eventInfo.ClickFunc != "None")
-		pUI->OnClickedAction = GET_SINGLE(UIManager)->GetFunc(eventInfo.ClickFunc);
+		if(!eventInfo.ClickFunc.empty() && eventInfo.ClickFunc != "None")
+			pUI->OnClickedAction = GET_SINGLE(UIManager)->GetFunc(eventInfo.ClickFunc);
+	}
 
 
 	if (parent == nullptr)

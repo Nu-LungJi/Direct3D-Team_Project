@@ -145,6 +145,7 @@ private:
 	void		 EnergySphere(PARTICLE_CPU_DATA& p, _float fTimeDelta);
     void		 SizeLerp(PARTICLE_CPU_DATA& p, _float fTimeDelta);
     void		 KeepRotate(PARTICLE_CPU_DATA& p, _float fTimeDelta);
+	void		 Orbit(PARTICLE_CPU_DATA& p, _float fTimeDelta);
 	void		 FadeOut(PARTICLE_CPU_DATA& p);
 	void		 FadeOutLate(PARTICLE_CPU_DATA& p);
 private:

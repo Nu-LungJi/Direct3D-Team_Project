@@ -13,7 +13,7 @@ public:
 	HRESULT Loop();
 
 protected:
-	void UpdateGUI() const;
+	void UpdateGUI();
 	void RenderGUI() const;
 
 protected:
@@ -38,6 +38,7 @@ protected:
 
 	uint32_t m_iMeasureUpdateCnt{};
 	uint32_t m_iMeasureUpdateCntPerSec{};
+	_bool m_bSingleFixedUpdatePerFrame{};
 };
 
 NS_END

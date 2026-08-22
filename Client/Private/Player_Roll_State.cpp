@@ -153,8 +153,9 @@ void CPlayer_Roll_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 				(m_fRollMoveEndRatio - m_fRollStopStartRatio),
 				0.f,
 				1.f);
-			const _float fSmoothStop =fStopRatio * fStopRatio * (3.f - 2.f * fStopRatio);
-			fSpeedScale = 1.f - fSmoothStop;
+			// 중반부터 잔여 속도까지 일정하게 낮춰 감속이 확실히 느껴지게 한다.
+			fSpeedScale = 1.f -
+				(1.f - m_fRollMinSpeedScale) * fStopRatio;
 		}
 
 		player->ApplyDirectionalMovement(

@@ -3,10 +3,7 @@ const static float PI = 3.14159265359f;
 
 const static float3 AlbedoColor = { 1.f, 1.f, 1.f };
 
-const static float NormalIntensity		= 1.f;
-const static float MetallicIntensity = 1.f;
-const static float AmbientIntensity = 1.f;
-const static float SpecularIntensity = 1.f;
+const static float SpecularIntensity	= 1.f;
 
 #define MAX_LIGHT_COUNT				16
 #define MAX_SHADOW_LIGHT_COUNT      8
@@ -16,7 +13,7 @@ const static float SpecularIntensity = 1.f;
 #define LIGHT_DIRECTIONAL   0
 #define LIGHT_POINT         1
 #define LIGHT_SPOTLIGHT     2
-
+		
 #define MAX_REFLECTION_LOD  6.f
 
 #define SCREENX 1280
@@ -143,9 +140,12 @@ cbuffer CB_MATERIAL : register(b3)
     float   DissolveIntensity;
     
     float   ObjectAlpha;
+	float	NormalIntensity;
+	float	MetallicIntensity;
 	float	RoughnessIntensity;
+	float	AmbientIntensity;
 
-    float2  MaterialPadding;
+    float3  MaterialPadding;
 }
 
 cbuffer CB_LIGHT_BUFFER : register(b4) 

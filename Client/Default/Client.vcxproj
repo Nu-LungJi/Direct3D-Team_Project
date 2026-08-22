@@ -209,6 +209,8 @@
     <ClInclude Include="..\public\BTDecEdgPhase.h" />
     <ClInclude Include="..\public\BTDecEdgState.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
+    <ClInclude Include="..\public\BTNaviMove.h" />
+    <ClInclude Include="..\public\Coin.h" />
     <ClInclude Include="..\public\Edg_Godae.h" />
     <ClInclude Include="..\Public\FlightRing.h" />
     <ClInclude Include="..\Public\FlyminiGameController.h" />
@@ -232,7 +234,18 @@
     <ClInclude Include="..\public\LevelLastBossRanrokLoader.h" />
     <ClInclude Include="..\public\Mon_Godae.h" />
     <ClInclude Include="..\public\Mon_Spawner.h" />
+    <ClInclude Include="..\public\NpcMom.h" />
     <ClInclude Include="..\Public\Player_Fly_State.h" />
+	<ClInclude Include="..\public\AccioBall.h" />
+	<ClInclude Include="..\public\AccioActivityPartBase.h" />
+	<ClInclude Include="..\public\AccioActivity_Base.h" />
+	<ClInclude Include="..\public\AccioActivity_Platform.h" />
+	<ClInclude Include="..\public\AccioActivity_BumperA.h" />
+	<ClInclude Include="..\public\AccioActivity_BumperB.h" />
+	<ClInclude Include="..\public\AccioActivity_RampLarge.h" />
+	<ClInclude Include="..\public\AccioActivity_LampSmall.h" />
+    <ClInclude Include="..\public\PropBarrel.h" />
+    <ClInclude Include="..\public\PropBarrelDebris.h" />
     <ClInclude Include="..\public\SkillTarget.h" />
     <ClInclude Include="..\Public\SkyCloudyCube.h" />
     <ClInclude Include="..\public\BossMace.h" />
@@ -265,6 +278,7 @@
     <ClInclude Include="..\Public\BTTurnDirect.h" />
     <ClInclude Include="..\Public\BTTurnSlow.h" />
     <ClInclude Include="..\Public\Button.h" />
+    <ClInclude Include="..\Public\GeneralButton.h" />
     <ClInclude Include="..\Public\ClientEvents.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
@@ -327,6 +341,7 @@
     <ClInclude Include="..\Public\Player_AccioSkill_State.h" />
     <ClInclude Include="..\Public\Player_AvadaKedavraSkill_State.h" />
     <ClInclude Include="..\Public\Player_BombardaSkill_State.h" />
+    <ClInclude Include="..\Public\Player_TransformationSkill_State.h" />
     <ClInclude Include="..\Public\Player_ConfringoSkill_State.h" />
     <ClInclude Include="..\Public\Player_AcientAttack_State.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
@@ -346,14 +361,16 @@
     <ClInclude Include="..\Public\Player_StateMachine.h" />
     <ClInclude Include="..\Public\SpellMeter.h" />
     <ClInclude Include="..\Public\SpellMiniGame.h" />
+	<ClInclude Include="..\Public\BoostTrailInstancedUI.h" />
     <ClInclude Include="..\Public\StarBurst.h" />
     <ClInclude Include="..\Public\TextBox.h" />
     <ClInclude Include="..\Public\TextureUI.h" />
     <ClInclude Include="..\Public\TombBossBullet.h" />
     <ClInclude Include="..\public\TriggerCRW_SpawnMonster1.h" />
     <ClInclude Include="..\Public\UIController.h" />
-    <ClInclude Include="..\Public\UIManager.h" />
-    <ClInclude Include="..\Public\UI_Enums.h" />
+	<ClInclude Include="..\Public\UIManager.h" />
+	<ClInclude Include="..\Public\UITextureResourceLoader.h" />
+	<ClInclude Include="..\Public\UI_Enums.h" />
     <ClInclude Include="..\Public\Player_Weapon.h" />
     <ClInclude Include="..\Public\Player_Broom.h" />
     <ClInclude Include="..\public\ResTerrainVIBuffer.h" />
@@ -375,6 +392,8 @@
     <ClInclude Include="..\Public\Mon_Weapon.h" />
     <ClInclude Include="..\Public\UI_Structs.h" />
     <ClInclude Include="..\Public\VideoObject.h" />
+    <ClInclude Include="..\public\WorldNpc.h" />
+    <ClInclude Include="BTAnimNpc.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
@@ -383,6 +402,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\BTNaviMove.cpp" />
+    <ClCompile Include="..\private\Coin.cpp" />
     <ClCompile Include="..\private\Edg_Godae.cpp" />
     <ClCompile Include="..\Private\FlightRing.cpp" />
     <ClCompile Include="..\Private\FlyminiGameController.cpp" />
@@ -410,7 +431,18 @@
     <ClCompile Include="..\private\EnderDragon_State.cpp" />
     <ClCompile Include="..\private\Mon_Godae.cpp" />
     <ClCompile Include="..\private\Mon_Spawner.cpp" />
+    <ClCompile Include="..\private\NpcMom.cpp" />
     <ClCompile Include="..\Private\Player_Fly_State.cpp" />
+	<ClCompile Include="..\private\AccioBall.cpp" />
+	<ClCompile Include="..\private\AccioActivityPartBase.cpp" />
+	<ClCompile Include="..\private\AccioActivity_Base.cpp" />
+	<ClCompile Include="..\private\AccioActivity_Platform.cpp" />
+	<ClCompile Include="..\private\AccioActivity_BumperA.cpp" />
+	<ClCompile Include="..\private\AccioActivity_BumperB.cpp" />
+	<ClCompile Include="..\private\AccioActivity_RampLarge.cpp" />
+	<ClCompile Include="..\private\AccioActivity_LampSmall.cpp" />
+    <ClCompile Include="..\private\PropBarrel.cpp" />
+    <ClCompile Include="..\private\PropBarrelDebris.cpp" />
     <ClCompile Include="..\private\SkillTarget.cpp" />
     <ClCompile Include="..\Private\SkyCloudyCube.cpp" />
     <ClCompile Include="..\private\BossMace.cpp" />
@@ -443,6 +475,7 @@
     <ClCompile Include="..\Private\BridgeCRW.cpp" />
     <ClCompile Include="..\Private\CinematicEditor.cpp" />
     <ClCompile Include="..\Private\Button.cpp" />
+    <ClCompile Include="..\Private\GeneralButton.cpp" />
     <ClCompile Include="..\Private\Cursor.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
@@ -498,6 +531,7 @@
     <ClCompile Include="..\Private\Player_AccioSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_AvadaKedavraSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_BombardaSkill_State.cpp" />
+    <ClCompile Include="..\Private\Player_TransformationSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_ConfringoSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_AcientAttack_State.cpp" />
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />
@@ -517,6 +551,7 @@
     <ClCompile Include="..\Private\Player_StateMachine.cpp" />
     <ClCompile Include="..\Private\SpellMeter.cpp" />
     <ClCompile Include="..\Private\SpellMiniGame.cpp" />
+	<ClCompile Include="..\Private\BoostTrailInstancedUI.cpp" />
     <ClCompile Include="..\Private\StarBurst.cpp" />
     <ClCompile Include="..\Private\TextBox.cpp" />
     <ClCompile Include="..\Private\TextureUI.cpp" />
@@ -544,6 +579,8 @@
     <ClCompile Include="..\private\TriggerCRW_ToBoss.cpp" />
     <ClCompile Include="..\Private\Mon_Weapon.cpp" />
     <ClCompile Include="..\Private\VideoObject.cpp" />
+    <ClCompile Include="..\private\WorldNpc.cpp" />
+    <ClCompile Include="BTAnimNpc.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

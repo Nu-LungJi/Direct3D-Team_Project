@@ -80,6 +80,7 @@ private:
 	_float m_fSignedMoveAngle{};
 	MOVE_DIRECTION m_eMoveDirection{ MOVE_DIRECTION::FRONT };
 	int32_t m_iIdleAnimation{ -1 };
+	int32_t m_iWalkForwardAnimation{ -1 };
 	int32_t m_iJogStartForwardAnimation{ -1 };
 	int32_t m_iJogForwardAnimation{ -1 };
 	int32_t m_iJogStopForwardAnimation{ -1 };
@@ -94,6 +95,8 @@ private:
 	_float m_fSprintTurnSpeed{ 240.f };
 	_float m_fSprintMoveDirectionBlend{ 0.3f };
 	_float m_fFallStateVerticalSpeed{ -3.f };
+	_float m_fAirborneTime{};
+	_float m_fFallStateGraceTime{ 0.25f };
 };
 
 NS_END

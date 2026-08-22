@@ -17,7 +17,7 @@ public:
 	static SPtr<CPlayer_StupefySkill_State> Create();
 private:
 	void CacheAnimationIndices(const CPlayer& player);
-	_bool PlayParryReaction(CPlayer& player);
+	_bool PlayParryReaction(CPlayer& player, _bool bHeavyReaction);
 	_bool PlayCounterAnimation(CPlayer& player, const _float3& vParryPosition);
 	enum class PHASE : uint8_t
 	{
@@ -26,7 +26,8 @@ private:
 	};
 
 	std::array<int32_t, 5> m_Animations{};
-	int32_t m_iParryReactionAnimation{ -1 };
+	int32_t m_iLightParryReactionAnimation{ -1 };
+	int32_t m_iHeavyParryReactionAnimation{ -1 };
 	_bool m_bAnimationsCached{};
 	_bool m_bSpeedRestored{};
 	_bool m_bProjectileReleased{};

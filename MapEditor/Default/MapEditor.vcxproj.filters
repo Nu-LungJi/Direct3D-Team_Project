@@ -186,14 +186,17 @@
     <ClInclude Include="..\Public\TerrainBrushController.h">
       <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
     </ClInclude>
-	<ClInclude Include="..\Public\TerrainEditCommand.h">
-		<Filter>Command\CreateDeleteCommand</Filter>
-	</ClInclude>
-	<ClInclude Include="..\Public\ScatterObjectsCommand.h">
-		<Filter>Command\CreateDeleteCommand</Filter>
-	</ClInclude>
+    <ClInclude Include="..\Public\TerrainEditCommand.h">
+      <Filter>Command\CreateDeleteCommand</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\ScatterObjectsCommand.h">
+      <Filter>Command\CreateDeleteCommand</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\TerrainGUI.h">
       <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MapNaviPosPick.h">
+      <Filter>GUIWindow\MapEditorGUI\NavMesh</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -285,14 +288,17 @@
     <ClCompile Include="..\Private\TerrainBrushController.cpp">
       <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
     </ClCompile>
-	<ClCompile Include="..\Private\TerrainEditCommand.cpp">
-		<Filter>Command\CreateDeleteCommand</Filter>
-	</ClCompile>
-	<ClCompile Include="..\Private\ScatterObjectsCommand.cpp">
-		<Filter>Command\CreateDeleteCommand</Filter>
-	</ClCompile>
+    <ClCompile Include="..\Private\TerrainEditCommand.cpp">
+      <Filter>Command\CreateDeleteCommand</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ScatterObjectsCommand.cpp">
+      <Filter>Command\CreateDeleteCommand</Filter>
+    </ClCompile>
     <ClCompile Include="..\Private\TerrainGUI.cpp">
       <Filter>GUIWindow\MapEditorGUI\TerrainGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MapNaviPosPick.cpp">
+      <Filter>GUIWindow\MapEditorGUI\NavMesh</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -300,6 +306,9 @@
       <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\TerrainPicking.hlsl">
+      <Filter>ShaderFiles</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\MapNaviPosPick.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>

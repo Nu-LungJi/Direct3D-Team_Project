@@ -73,25 +73,21 @@ void CPlayer_Jump_State::Enter(CStateMachine* pStateMachine)
 			},
 			SOUND_SLOT_PLAY_MODE::OVERLAP);
 	}
-	if (m_StartAnimations[(size_t)JUMP_STATE::IDLE] >= 0)
-	{
 
-		const _float Move = player->GetCurrentMoveSpeed();
+	const _float fMoveSpeed = player->GetCurrentMoveSpeed();
+	JUMP_STATE eJumpState = JUMP_STATE::IDLE;
+	if (fMoveSpeed > 10.f)
+		eJumpState = JUMP_STATE::SPRINT;
+	else if (fMoveSpeed > std::numeric_limits<_float>::epsilon())
+		eJumpState = JUMP_STATE::JOG;
 
-		if (Move >= 7.5f && Move <= 10.f) {
+	int32_t iStartAnimation =
+		m_StartAnimations[static_cast<size_t>(eJumpState)];
+	if (iStartAnimation < 0)
+		iStartAnimation = m_StartAnimations[static_cast<size_t>(JUMP_STATE::IDLE)];
 
-			animator->Play_Anim(m_StartAnimations[(size_t)JUMP_STATE::JOG], false, 0.08f);
-		}
-		else if (Move > 10.f) {
-
-			animator->Play_Anim(m_StartAnimations[(size_t)JUMP_STATE::SPRINT], false, 0.08f);
-		}
-		else {
-			animator->Play_Anim(m_StartAnimations[(size_t)JUMP_STATE::IDLE], false, 0.08f);
-
-		}
-	}
-	
+	if (iStartAnimation >= 0)
+		animator->Play_Anim(iStartAnimation, false, 0.08f);
 	else
 		PlayFall(*player);
 }
@@ -176,7 +172,9 @@ void CPlayer_Jump_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 			}
 		}
 
-		if (animator->GetFinish())
+		// 이동 입력이 있으면 착지의 체중 이동이 끝난 뒤 Locomotion으로 자연스럽게 잇는다.
+		if ((player->HasRawMoveInput() && Ratio >= m_fMovingLandExitRatio) ||
+			animator->GetFinish())
 			playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		break;
 	}
@@ -204,7 +202,7 @@ void CPlayer_Jump_State::PlayFall(CPlayer& player)
 
 	auto* animator = player.GetAnimator();
 	if (animator && m_iFallAnimation >= 0)
-		animator->Play_Anim(m_iFallAnimation, true, 0.6f);
+		animator->Play_Anim(m_iFallAnimation, true, 0.12f);
 }
 
 void CPlayer_Jump_State::PlayLand(CPlayer& player)
@@ -240,23 +238,20 @@ void CPlayer_Jump_State::PlayLand(CPlayer& player)
 
 	if (animator)
 	{
-		//Jog 목표 속도 : 7.5f
-		//Sprint 목표 속도 : 15.f
-		
-		const _float Move = player.GetCurrentMoveSpeed();
+		const _float fMoveSpeed = player.GetCurrentMoveSpeed();
+		JUMP_STATE eJumpState = JUMP_STATE::IDLE;
+		if (fMoveSpeed > 10.f)
+			eJumpState = JUMP_STATE::SPRINT;
+		else if (fMoveSpeed > std::numeric_limits<_float>::epsilon())
+			eJumpState = JUMP_STATE::JOG;
 
-		if (Move > std::numeric_limits<_float>::epsilon() &&  Move<=10.f) {
-			animator->Play_Anim(m_LandAnimations[(size_t)JUMP_STATE::JOG], false, 0.08f);
+		int32_t iLandAnimation =
+			m_LandAnimations[static_cast<size_t>(eJumpState)];
+		if (iLandAnimation < 0)
+			iLandAnimation = m_LandAnimations[static_cast<size_t>(JUMP_STATE::IDLE)];
 
-		}
-		else if (Move > 10.f) {
-
-			animator->Play_Anim(m_LandAnimations[(size_t)JUMP_STATE::SPRINT], false, 0.08f);
-		}
-		else if(Move <= std::numeric_limits<_float>::epsilon()) {
-			animator->Play_Anim(m_LandAnimations[(size_t)JUMP_STATE::IDLE], false, 0.08f);
-
-		}
+		if (iLandAnimation >= 0)
+			animator->Play_Anim(iLandAnimation, false, 0.08f);
 	}
 }
 

@@ -48,7 +48,11 @@ public:
 public:
 	std::vector<SPtr<CResStaticModelMesh>>& GetMeshes() { return m_Meshes; }
 	std::vector<SPtr<CResModelMaterial>>& GetMaterials() { return m_Materials; }
-
+	
+	/*----------- 광윤 추가 -----------*/
+	const MATERIAL_DESC& GetMaterialDesc() const		{ return m_pMaterialDesc; }
+	void SetMaterialDesc(const MATERIAL_DESC& matDesc)	{ m_pMaterialDesc = matDesc; }
+	/*---------------------------------*/
 
 protected:
 	ComPtr<ID3D11Device> m_pDevice{};
@@ -68,6 +72,9 @@ private:
 	BoundingBox				m_LocalBounds = {};
 	bool					m_bHasLocalBounds = false;
 
+	/*----------- 광윤 추가 -----------*/
+	MATERIAL_DESC			m_pMaterialDesc = {};
+	/*---------------------------------*/
 
 public:
 	static SPtr<CResStaticModel> Create(const _string& sPath);

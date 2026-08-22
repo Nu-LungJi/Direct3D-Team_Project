@@ -19,6 +19,7 @@
 #include "EventManager.h"
 #include "PhysXManager.h"
 #include "NvClothManager.h"
+#include "TimeManager.h"
 
 NS_BEGIN(physx)
 class PxScene;
@@ -57,6 +58,7 @@ class CComPxDistanceJoint;
 class CComPxRevoluteJoint;
 class CComPxD6Joint;
 class CPathPlaybackEditor;
+class CResModelAnim;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -86,6 +88,22 @@ public:
 	_float UpdateTimeProvider();
 #pragma endregion
 
+#pragma region TIME_MANAGER
+public:
+	void BeginFrameTime(_float fUnscaledDelta);
+	_float GetUnscaledDelta() const;
+	_float GetScaledDelta() const;
+	_float GetTimeScale() const;
+	_bool BeginTimeScale(
+		const TIME_SCALE_REQUEST_DESC& Desc);
+	_bool EndTimeScale(
+		const StringID& sTag,
+		_float fBlendOut);
+	_bool CancelTimeScale(const StringID& sTag);
+	_bool IsTimeScaleActive(const StringID& sTag) const;
+	void ClearTimeScaleRequests();
+#pragma endregion
+
 #pragma region IMGUI_MANAGER
 public:
 	void ImguiNewFrame();
@@ -110,6 +128,10 @@ public:
 	template<typename T, typename CreateFunc>
 	SPtr<T> GetOrCreateResourceByPath(const _string& sPath, CreateFunc&& createFunc)
 	{ return m_pResourceManager->GetOrCreateResourceByPath<T>(sPath, std::forward<CreateFunc>(createFunc)); }
+	SPtr<CResModelAnim> GetOrLoadModelAnimation(const _string& sPath);
+	void MoveResourcePathLookup(
+		const _string& sOldPath, const _string& sNewPath,
+		const SPtr<CResource>& pResource);
 	template<typename T>
 	SPtr<T> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const
 	{ return m_pResourceManager->GetResourceFirst<T>(sGroupTag, sResTag); }
@@ -452,6 +474,10 @@ public:
 	const _float3& GetMapChunkSize() const;
 	void SetMapChunkStreaming(_bool enable);
 	_bool IsMapChunkStreaming() const;
+
+	/*----------- 광윤 추가 -----------*/
+	const MATERIAL_DESC FindMaterial(const std::string& ModelName);
+	/*---------------------------------*/
 #ifdef _DEBUG
 	void SetDebugDrawMapChunk(_bool draw);
 #endif
@@ -672,6 +698,7 @@ private:
 	UPtr<CWorkerManager> m_pWorkerManager{};
 	UPtr<CRenderWorkerManager> m_pRenderWorkerManager{};
 	UPtr<CTimeProvider> m_pTimeProvider{};
+	UPtr<CTimeManager> m_pTimeManager{};
 	UPtr<CPrototypeManager> m_pPrototypeManager{};
 	UPtr<CGameObjectManager> m_pGameObjectManager{};
 	UPtr<CGameObjectPoolManager> m_pGameObjectPoolManager{};

@@ -43,8 +43,10 @@ private:
 	_float m_fStableFlameTime = 0.f;
 	_float m_fSmoothedFlameDelta = 1.f / 60.f;
 	_bool m_bWasFlameActive = false;
+	_bool m_bAdditiveBlend = false;
 
 public:
+	void SetAdditiveBlend(_bool enabled) { m_bAdditiveBlend = enabled; }
 	static E::UPtr<CEffectUI> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 };

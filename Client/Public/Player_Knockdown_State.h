@@ -42,9 +42,9 @@ private:
 	static constexpr _float BLEND_DURATION = 0.1f;
 	static constexpr _float LANDING_BLEND_DURATION = 0.18f;
 	static constexpr _float DOWN_HOLD_DURATION = 0.75f;
-	static constexpr _float AIRBORNE_ANIMATION_SPEED = 1.3f;
-	static constexpr _float LAUNCH_VERTICAL_SPEED = 6.5f;
-	static constexpr _float LAUNCH_HORIZONTAL_SPEED = 15.5f;
+	static constexpr _float AIRBORNE_ANIMATION_SPEED = 1.0f;
+	static constexpr _float LAUNCH_VERTICAL_SPEED = 13.5f;
+	static constexpr _float LAUNCH_HORIZONTAL_SPEED = 13.5f;
 	static constexpr _float KNOCKDOWN_GRAVITY = -20.f;
 	static constexpr _float LANDING_SLIDE_DURATION = 0.45f;
 	static constexpr _float LANDING_SLIDE_MIN_SPEED = 7.f;

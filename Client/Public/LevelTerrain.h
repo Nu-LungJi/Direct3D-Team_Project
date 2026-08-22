@@ -35,6 +35,14 @@ private:
 	HRESULT InitializeTombBossBulletTest(CHandle hPlayer);
 	HRESULT SpawnConfringoBulletTest();
 	HRESULT InitializeOilBarrelPool();
+	HRESULT InitializeAccioActivityTest();
+	HRESULT SpawnAccioBalls();
+	HRESULT SpawnAccioActivityObjects();
+	void UpdateAccioActivityTestGUI();
+	void ResetAccioBalls();
+	void DrawSelectedAccioBallDebug();
+	_bool PushSelectedAccioBallTowardPlayer();
+	void ApplyAccioBallMotionTuning();
 
 	HRESULT SpawnMonster(const std::optional<CHandle>& hPlayer);
 public:
@@ -53,6 +61,14 @@ private:
 private:
 	_bool m_bCreatePlayScreenUI{ false };
 	CHandle m_hPlayer{};
+	CHandle m_hPropBarrel{};
+	std::array<CHandle, 6> m_hAccioBalls{};
+	int32_t m_iSelectedAccioBall{};
+	_float m_fAccioBallPushTorque{ 20.f };
+	_float m_fAccioBallSelectedMass{ 3.f };
+	_float m_fAccioBallIdleMass{ 1.f };
+	_float m_fAccioBallLinearDamping{ 0.4f };
+	_float m_fAccioBallAngularDamping{ 0.8f };
 	_float m_fTombBossBulletSpawnYawDegrees{};
 	_float m_fConfringoBulletSpeed{ 35.f };
 	_float m_fConfringoBulletLifeTime{ 5.f };
