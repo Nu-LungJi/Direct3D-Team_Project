@@ -466,6 +466,18 @@
     <Filter Include="GameObject\AccioActivity\AccioBall">
       <UniqueIdentifier>{f312d994-35e8-4db6-a6d7-b50989c874c4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Animal">
+      <UniqueIdentifier>{9bc5a1a5-0b8b-4612-b43d-83787a43ca32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Animal\00.Parents">
+      <UniqueIdentifier>{d9c9eba3-d6ba-4fd5-9369-f70b1f9fc8c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Animal\Bird">
+      <UniqueIdentifier>{7f733bde-44f1-4380-b65f-b9869d469e36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Animal\Bird\Child">
+      <UniqueIdentifier>{42356f40-caa5-4093-87d3-10d9db4ce8f4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -1095,6 +1107,15 @@
     <ClInclude Include="..\public\AccioActivityPartBase.h">
       <Filter>GameObject\AccioActivity</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Animal.h">
+      <Filter>GameObject\Animal\00.Parents</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Griff.h">
+      <Filter>GameObject\Animal\Bird</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\GriffChild.h">
+      <Filter>GameObject\Animal\Bird\Child</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1666,6 +1687,15 @@
     </ClCompile>
     <ClCompile Include="..\private\AccioActivityPartBase.cpp">
       <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Animal.cpp">
+      <Filter>GameObject\Animal\00.Parents</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Griff.cpp">
+      <Filter>GameObject\Animal\Bird</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\GriffChild.cpp">
+      <Filter>GameObject\Animal\Bird\Child</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

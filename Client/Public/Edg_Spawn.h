@@ -1,7 +1,7 @@
 #pragma once
 #include "Client_Defines.h"
 #include "StateMachine.h"
-
+#include "EnderDragon.h"
 NS_BEGIN(Client)
 
 class CEdg_Spawn : public CState

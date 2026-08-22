@@ -97,7 +97,10 @@ void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 	}
 	else if (m_eType == DRAGON_SKILL::LONGBREATH)
 	{
+		_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
+		_matrix matOffset = XMLoadFloat4x4(&matOffB);
 
+		XMStoreFloat3(&m_vDir, XMVector3Normalize(matOffset.r[3] - matBone.r[3]));
 	}
 	
 	GetTransform().SetPosition(matBone.r[3]);
@@ -180,6 +183,8 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	_vector vForward{};
 	_float t = std::min(m_fBreathTick / 3.f, 1.f);
 	_float tBreath = std::min(m_fBreathTick / 1.f, 1.f);
+
+	_float tLBreath = std::min(m_fBreathTick / 3.f, 1.f);
 	if (m_eType == DRAGON_SKILL::BREATH)
 	{
 		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), t));
@@ -207,11 +212,10 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 		_float4x4 matOffB = Get_BoneMatrix(m_iOffsetBoneIdex);
 		_matrix matOffset = XMLoadFloat4x4(&matOffB);
 		
-		XMStoreFloat3(&m_vDir, XMVector3Normalize(matOffset.r[3] - matBone.r[3]));
 		XMStoreFloat3(&m_vTargetDir, XMVector3Normalize(XMLoadFloat3(&pTarget->GetTransform().GetPosition()) - matOffset.r[3]));
 
-		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), 0.2f));
-		vForward -= XMVectorSet(0, 0.18f, 0, 0);
+		vForward = XMVector3Normalize(XMVectorLerp(XMLoadFloat3(&m_vDir), XMLoadFloat3(&m_vTargetDir), tLBreath));
+	
 	}
 
 	_vector vUp = XMVector3Normalize(matBone.r[1]);

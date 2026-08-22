@@ -12,6 +12,7 @@
 #include "UIManager.h"
 #include "Mon_Spawner.h"
 #include "WorldNpc.h"
+#include "Griff.h"
 // Client에도 같은 이름의 Terrain.h가 있으므로 Engine SDK 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
@@ -65,6 +66,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnMonster(*hPlayer)))
 		return E_FAIL;
 	if (FAILED(SpanwNpc(*hPlayer)))
+		return E_FAIL;
+	if (FAILED(SpanwAnimal()))
 		return E_FAIL;
 	gameInstance.Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
@@ -415,6 +418,30 @@ HRESULT CLevelHogwartWorld::SpanwNpc(CHandle hPlayer)
 	{
 		MSG_BOX("Create Failed to Npc in Hogwart");
 		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorld::SpanwAnimal()
+{
+	CGriff::ANIMAL_DESC Griff{};
+	Griff.sObjectTag = "Griff";
+	Griff.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+	Griff.ReSourceTag = "Model_Resource_Griff";
+	Griff.vPos = _float3(226.097f, 48.242f, 122.760f);
+
+	auto Handle = CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Griff, "02_Griff", &Griff);
+	if (!Handle)
+	{
+		MSG_BOX("Create Failed to Griff in Hogwart");
+		return E_FAIL;
+	}
+	else
+	{
+		auto pGiff = CGameInstance::Get().GetGameObjectByHandleT<CGriff>(Handle.value());
+		if (nullptr == pGiff)
+			return E_FAIL;
+		pGiff->Set_Child();
 	}
 	return S_OK;
 }

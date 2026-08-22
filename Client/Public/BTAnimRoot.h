@@ -3,6 +3,7 @@
 #include "BTActionNode.h"
 #include "Monster.h"
 NS_BEGIN(Client)
+enum class BT_USER { MON, NPC };
 typedef struct animflag
 {
 	_bool bFlag{ false };
@@ -64,11 +65,13 @@ protected:
 	std::vector<FLAG_EVENT>		m_StartFlags{};
 	std::vector<FLAG_EVENT>		m_EndFlags{};
 	_string						m_strAnimName{};
-	
+
+	BT_USER				m_eUser{ BT_USER::MON };
 	std::vector<MONSOUND>		m_Sounds{};
 private:
 	uint32_t					m_iStartFlagCheck{};
 	FLAG_EVENT					m_AddFlag{};
+
 public:
 	static UPtr<CBTAnimRoot> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;
