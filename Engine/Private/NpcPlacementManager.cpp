@@ -471,9 +471,8 @@ void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t 
 			Desc.sBehaviorMinorTag = Iter->sBehaviorMinorTag;
 		}
 	}
-	ImGui::Text("Behavior Resource: %s / %s",
-		Desc.sBehaviorMajorTag.empty() ? "-" : Desc.sBehaviorMajorTag.c_str(),
-		Desc.sBehaviorMinorTag.empty() ? "-" : Desc.sBehaviorMinorTag.c_str());
+	DrawStringInput("Behavior Group", Desc.sBehaviorMajorTag);
+	DrawStringInput("Behavior Name", Desc.sBehaviorMinorTag);
 
 	int32_t iRuntimeType = static_cast<int32_t>(Desc.eRuntimeType);
 	if (ImGui::Combo(
