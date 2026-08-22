@@ -232,6 +232,12 @@ void CGameObject::SyncActivePhysXData(const PX_SYNC_DATA& syncData)
     m_bPhysXSynced = true;
 }
 
+void CGameObject::InvalidatePhysXSyncData()
+{
+	m_PhysXSyncData = {};
+	m_bPhysXSynced = false;
+}
+
 void CGameObject::UpdatePhysicData()
 {
 	if (m_bPhysXSynced)
