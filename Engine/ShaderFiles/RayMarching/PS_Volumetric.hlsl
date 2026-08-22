@@ -20,6 +20,11 @@ cbuffer CB_FroxelConfig : register(b10)
 	float	FarZ;
 	float	AnalyticBlendStart;
 	float	AnalyticBlendEnd;
+	
+	float3	JitterOffset;
+	float	CB_FROXELPADDING;
+	
+	matrix	PreviousViewProj;
 };
 cbuffer CB_VLFOG : register(b11)
 {

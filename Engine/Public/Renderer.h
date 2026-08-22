@@ -45,7 +45,6 @@ public:			// Update
 
 private:		// GUI Update
 	VOID		PostProcessGUI();
-	VOID		VolumetricFogGUI();
 
 public:			// Render
 	HRESULT		Draw();
@@ -84,6 +83,7 @@ private:		// Volumetric Effect Pass Render
 	HRESULT		Update_VolumetricConstantBuffer();
 	HRESULT		Render_LightIntegration();
 	HRESULT		Render_FroxelZAccumulation();
+	HRESULT		Render_TemporalBlend();
 	HRESULT		Render_VolumetricComposite();
 
 private:		// PostProcess Pass Render
@@ -135,6 +135,8 @@ public:			// Extra Function
 
 	const CB_VLFOG	Get_VolumetricFogOption() { return m_pFogInfo; }
 	VOID			Set_VolumetricFogOption(const CB_VLFOG& _FogOption);
+
+	_float			Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base);
 
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
@@ -245,10 +247,13 @@ private:		// ChromaticRing
 private:		// Volumetric Fog
 	SPtr<CResComputeShader>		m_pLightIntegrationCS{};
 	SPtr<CResComputeShader>		m_pFroxelAccumulationCS{};
+	SPtr<CResComputeShader>		m_pTemporalBlendedCS{};
 	SPtr<CResPixelShader>		m_pVolumetricCompositePS{};
 
 	TEXTURE3D					m_pVoxelLighting{};
 	TEXTURE3D					m_pVoxelAccumulated{};
+	TEXTURE3D					m_pBlendedVolumeTex{};
+	TEXTURE3D					m_pPreviousVolumeTex{};
 
 	CB_VLFOG					m_pFogInfo{};
 	CB_ENVLIGHT					m_pEnvLight{};
@@ -258,6 +263,7 @@ private:		// Volumetric Fog
 	ComPtr<ID3D11ShaderResourceView>	m_pVolumeTexture		= { nullptr };
 
 	XMMATRIX					m_mShadowLightViewProj{};
+	XMMATRIX					m_mPreviousCamViewProj{};
 
 private:		// PostProcess
 	std::optional<CHandle>				m_pOutlineTargetHandle{};

@@ -6,6 +6,9 @@ Texture3D<float4>		VolumeTexture			: register(t2);
 Texture3D<float4>		VoxelLightingColor		: register(t3);
 Texture2DArray<float>	ShadowMapArray			: register(t4);
 
+Texture3D<float4>		CurrentVolumeTexture	: register(t5);
+Texture3D<float4>		PreviousVolumeTexture	: register(t6);
+
 Texture2DArray<float>	DynamicShadowMaps		: register(t10);
 TextureCubeArray<float> DynamicShadowCubeMaps	: register(t12);
 
@@ -26,6 +29,8 @@ static const float3		DetailWindDirection			= float3(-0.4f, 0.25f, 1.f);
 static const float		BaseFlowSpeed				= { 0.10f };
 static const float		DetailFlowSpeed				= { 0.22f };
 
+static const float		TemporalBlendWeight			= { 0.9f };
+
 static const float		LocalScatteringStrength		= { 2.f };
 static const float		FroxelDepthExponent			= { 1.5f };
 static const float2		PCFOffsets[4] =
@@ -34,6 +39,13 @@ static const float2		PCFOffsets[4] =
     float2(+0.5f, -0.5f),
     float2(-0.5f, +0.5f),
     float2(+0.5f, +0.5f)
+};
+
+int3 TAAOffsets[6] =
+{
+	int3(1, 0, 0), int3(-1, 0, 0),
+	int3(0, 1, 0), int3(0, -1, 0),
+	int3(0, 0, 1), int3(0, 0, -1)
 };
 
 cbuffer CB_FroxelConfig : register(b10)
@@ -48,6 +60,11 @@ cbuffer CB_FroxelConfig : register(b10)
 	float	FarZ;
 	float	AnalyticBlendStart;
 	float	AnalyticBlendEnd;
+	
+	float3	JitterOffset;
+	float	CB_FROXELPADDING;
+	
+	matrix	PreviousViewProj;
 };
 
 cbuffer CB_VLFOG : register(b11)
@@ -121,14 +138,26 @@ float Henyey_Greenstein_DualPhase(float3 _RayDirection, float3 _FogLightDirectio
 	return lerp(PhaseValueB, PhaseValueA, k);
 }
 
-float Compute_FogFlow(float3 _WorldPos)
+float Compute_FogFlow(float3 _WorldPos, float3 _FlowDirection)
 {
-	float3	NoiseCoord  = (_WorldPos - float3(0.f, 0.f, 0.f)) * FogNoiseScale;
-	float3	BaseCoord	= (NoiseCoord + BaseWindDirection) * (FogTime * BaseFlowSpeed);
-	float3	DetailCoord = (NoiseCoord * 2.7f + DetailWindDirection) * (FogTime * DetailFlowSpeed);
+	float3	Direction = normalize(_FlowDirection);
 	
-	float	BaseNoise	= VolumeTexture.SampleLevel(LinearWrap, BaseCoord, 0.f).r;
-	float	DetailNoise	= VolumeTexture.SampleLevel(LinearWrap, DetailCoord, 0.f).g;
+	float3	BaseOffset = Direction * (FogTime * BaseFlowSpeed);
+	float3	DetailOffset = Direction * (FogTime * DetailFlowSpeed);
+	float3	NoiseCoord = _WorldPos * FogNoiseScale;
+	
+	float3	BaseCoord = NoiseCoord + BaseOffset;
+	float3	DetailCoord = (NoiseCoord * 2.7f) + DetailOffset + DetailWindDirection;
+	
+	float	BaseNoise = VolumeTexture.SampleLevel(LinearWrap, BaseCoord, 0.f).r;
+	float	DetailNoise = VolumeTexture.SampleLevel(LinearWrap, DetailCoord, 0.f).g;
+	
+	//float3	NoiseCoord  = (_WorldPos - float3(0.f, 0.f, 0.f)) * FogNoiseScale;
+	//float3	BaseCoord	= (NoiseCoord + BaseWindDirection) * (FogTime * BaseFlowSpeed);
+	//float3	DetailCoord = (NoiseCoord * 2.7f + DetailWindDirection) * (FogTime * DetailFlowSpeed);
+	//
+	//float	BaseNoise	= VolumeTexture.SampleLevel(LinearWrap, BaseCoord, 0.f).r;
+	//float	DetailNoise	= VolumeTexture.SampleLevel(LinearWrap, DetailCoord, 0.f).g;
 	
 	return smoothstep(0.25f, 0.75f, BaseNoise * 0.7f + DetailNoise * 0.3f);
 }
@@ -143,7 +172,7 @@ float GetVolumeFogDensity(float3 _WorldPos)
 	
 	float	HeightLimit = 1.f - smoothstep(FogMaxHeight * 0.8f, FogMaxHeight, FogMaxHeight);
 	
-	float	FinalFlowNoise = Compute_FogFlow(_WorldPos);	
+	float	FinalFlowNoise = Compute_FogFlow(_WorldPos, float3(1.f, 1.f, 1.f));
 
 	return HeightFactor * FogDensity * HeightLimit * FinalFlowNoise;
 }
@@ -323,13 +352,13 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 {
 	if (ID.x >= (uint) FroxelGridSize.x || ID.y >= (uint) FroxelGridSize.y || ID.z >= (uint) FroxelGridSize.z)	return;
 	
-	float3	TexCoord = (float3(ID.xyz) + 0.5f) / FroxelGridSize;
+	float3	TexCoord = (float3(ID.xyz) + 0.5f + JitterOffset) / FroxelGridSize;
 	
-	float3	VoxelWorldPos = FroxelZToWorldPos(TexCoord);
-	float	FogDensity	  = GetVolumeFogDensity(VoxelWorldPos);
+	float3	VoxelWorldPos	= FroxelZToWorldPos(TexCoord);
+	float	FogDensity		= GetVolumeFogDensity(VoxelWorldPos);
 	
-	float	FogDistance		  = abs(mul(float4(VoxelWorldPos, 1.f), g_matView).z);
-	float	FogDistanceFactor = smoothstep(FogStartDistance, max(FogEndDistance, FogStartDistance + 0.0001f), FogDistance);
+	float	FogDistance			= abs(mul(float4(VoxelWorldPos, 1.f), g_matView).z);
+	float	FogDistanceFactor	= smoothstep(FogStartDistance, max(FogEndDistance, FogStartDistance + 0.0001f), FogDistance);
 	
 	FogDensity *= FogDistanceFactor;
 	
@@ -477,5 +506,54 @@ void CSMain_RayMarching(uint3 ID : SV_DispatchThreadID)
 	}
 
 	OUTPUT[ID.xy] = float4(AccumulatedScattering, AccumulatedTransmittance);
+	return;
+}
+
+[numthreads(8, 8, 8)]
+void CSMain_TemporalBlend(uint3 ID : SV_DispatchThreadID)
+{
+	if (ID.x >= (uint) FroxelGridSize.x || ID.y >= (uint) FroxelGridSize.y || ID.z >= (uint) FroxelGridSize.z)
+		return;
+
+	float4 CurrentColor = CurrentVolumeTexture.Load(int4(ID, 0));
+	
+	float4 ColorMin = CurrentColor;
+	float4 ColorMax = CurrentColor;
+	[unroll]
+	for (int i = 0; i < 6; ++i)
+	{
+		int3 NeighborCoord = max(0, min((int3) FroxelGridSize - 1, (int3) ID + TAAOffsets[i]));
+		float4 Neighbor = CurrentVolumeTexture.Load(int4(NeighborCoord, 0));
+		
+		ColorMin = min(ColorMin, Neighbor);
+		ColorMax = max(ColorMax, Neighbor);
+	}
+	
+	float3 TexCoord = (float3(ID) + 0.5f) / FroxelGridSize;
+	float3 WorldPos = FroxelZToWorldPos(TexCoord);
+	
+	float4	PrevClipPos = mul(float4(WorldPos, 1.f), PreviousViewProj);
+	float	PrevLinearDepth = saturate((PrevClipPos.w - NearZ) / max(FarZ - NearZ, 0.0001f));
+	PrevClipPos.xyz /= PrevClipPos.w;
+	
+	float3 PrevTexCoord3D;
+	PrevTexCoord3D.x = PrevClipPos.x * 0.5f + 0.5f;
+	PrevTexCoord3D.y = PrevClipPos.y * -0.5f + 0.5f;
+	PrevTexCoord3D.z = pow(PrevLinearDepth, 1.f / FroxelDepthExponent);
+
+	float4 FinalColor = CurrentColor;
+
+	if (PrevTexCoord3D.x < 0.f || PrevTexCoord3D.x > 1.f ||
+		PrevTexCoord3D.y < 0.f || PrevTexCoord3D.y > 1.f ||
+		PrevTexCoord3D.z < 0.f || PrevTexCoord3D.z > 1.f)
+	{
+		OUTPUT3D[ID] = FinalColor;
+		return;
+	}
+
+	float4 HistoryColor = PreviousVolumeTexture.SampleLevel(LinearClamp, PrevTexCoord3D, 0);
+	//HistoryColor = clamp(HistoryColor, ColorMin, ColorMax);
+		
+	OUTPUT3D[ID] = lerp(CurrentColor, HistoryColor, TemporalBlendWeight);
 	return;
 }

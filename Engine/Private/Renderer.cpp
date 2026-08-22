@@ -155,6 +155,10 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_FroxelZAccumulation", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_TemporalBlend", "./ShaderFiles/RayMarching/CS_Volumetric.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_TemporalBlend", .sTarget = "cs_5_0" })))    return E_FAIL;
+	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_RayMarching", "./ShaderFiles/RayMarching/CS_Volumetric.hlsl"))
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_RayMarching", .sTarget = "cs_5_0" })))    return E_FAIL;
@@ -449,13 +453,16 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 	
 	m_pLightIntegrationCS	 = CGameInstance::Get().GetResourceFirst<CResComputeShader>	(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_LightIntegration");
 	m_pFroxelAccumulationCS  = CGameInstance::Get().GetResourceFirst<CResComputeShader> (TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_FroxelZAccumulation");
+	m_pTemporalBlendedCS	 = CGameInstance::Get().GetResourceFirst<CResComputeShader> (TAG_RES_GRP_PERMANENT_SHADER, "CS_TemporalBlend");
 	m_pVolumetricCompositePS = CGameInstance::Get().GetResourceFirst<CResPixelShader>	(TAG_RES_GRP_PERMANENT_SHADER, "PS_Volumetric_Composite");
 
 	if (!m_pLightIntegrationCS || !m_pFroxelAccumulationCS || !m_pVolumetricCompositePS) return E_FAIL;
 
 	m_pVoxelLighting		= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
 	m_pVoxelAccumulated		= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ + 1);
-	
+	m_pBlendedVolumeTex		= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
+	m_pPreviousVolumeTex	= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
+
 	{
 		m_pFogInfo.g_fFogColor = _float3(0.8f, 0.85f, 0.9f);
 		m_pFogInfo.g_fFogIntensity = 1.f;
@@ -1375,6 +1382,8 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 
 	if (FAILED(Render_LightIntegration()))			{ Unbind_Resources(); return S_OK; }
 
+	if (FAILED(Render_TemporalBlend()))				{ Unbind_Resources(); return S_OK; }
+	
 	if (FAILED(Render_FroxelZAccumulation()))		{ Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_VolumetricComposite()))		{ Unbind_Resources(); return S_OK; }
@@ -1396,6 +1405,13 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 
 		const _float VolumeFarZ  = std::min(FarZ, MaxDistance);
 
+		static uint32_t FrameIndex = 1;
+		FrameIndex = (FrameIndex % 16) + 1;
+
+		_float JitterX = Get_HaltonSequence(FrameIndex, 2) - 0.5f;
+		_float JitterY = Get_HaltonSequence(FrameIndex, 3) - 0.5f;
+		_float JitterZ = Get_HaltonSequence(FrameIndex, 5) - 0.5f;
+
 		D3D11_MAPPED_SUBRESOURCE MRES{};
 		if (SUCCEEDED(m_pContext->Map(m_pVolumetricFroxelCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 		{
@@ -1411,6 +1427,9 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 			cbFroxel.g_fFarZ				= VolumeFarZ;
 			cbFroxel.g_fAnalyticBlendStart	= std::max(NearZ, VolumeFarZ - 40.f);
 			cbFroxel.g_fAnalyticBlendEnd	= VolumeFarZ;
+
+			cbFroxel.g_fJitterOffset		= _float3(JitterX, JitterY, JitterZ);
+			XMStoreFloat4x4(&cbFroxel.g_mPreviousViewProj, m_mPreviousCamViewProj);
 
 			memcpy(MRES.pData, &cbFroxel, sizeof(CB_FROXEL));
 			m_pContext->Unmap(m_pVolumetricFroxelCBuffer->GetCBuffer().Get(), 0);
@@ -1442,7 +1461,7 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 		CB_CSM cbCSM{};
 
 		const CSM_DATA& CascadeShadowLightData = CGameInstance::Get().Get_MainDirectionalLightData();
-		if (m_bApplyShadow && CascadeShadowLightData.m_pLightHandle && CascadeShadowLightData.m_pShadowSRV) {
+		if (m_bApplyShadow && CascadeShadowLightData.m_pLightHandle && CascadeShadowLightData.m_pShadowSRV) { 
 			m_pCSMShadowMapTexture = CascadeShadowLightData.m_pShadowSRV.Get();
 			for (int i = 0; i < 4; ++i)
 			{
@@ -1500,12 +1519,38 @@ HRESULT CRenderer::Render_LightIntegration() {
 	return S_OK;
 }
 
+HRESULT CRenderer::Render_TemporalBlend() {
+	{
+		m_pContext->CSSetShader(m_pTemporalBlendedCS->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11ShaderResourceView* pSRVs[2] = { m_pVoxelLighting.pSRV.Get(), m_pPreviousVolumeTex.pSRV.Get()};
+		m_pContext->CSSetShaderResources(5, 2, pSRVs);
+
+		ID3D11UnorderedAccessView* pUAVs[1] = { m_pBlendedVolumeTex.pUAV.Get() };
+		m_pContext->CSSetUnorderedAccessViews(1, 1, pUAVs, nullptr);
+	}
+	{
+		uint32_t FroxelX = (FROXELX + 7) / 8;
+		uint32_t FroxelY = (FROXELY + 7) / 8;
+		uint32_t FroxelZ = (FROXELZ + 7) / 8;
+
+		m_pContext->Dispatch(FroxelX, FroxelY, FroxelZ);
+
+		ID3D11ShaderResourceView* pNullSRVs[2] = { nullptr, nullptr };
+		m_pContext->CSSetShaderResources(5, 2, pNullSRVs);
+
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(1, 1, pNullUAVs, nullptr);
+	}
+	return S_OK;
+}
+
 HRESULT CRenderer::Render_FroxelZAccumulation()
 {
 	{
 		m_pContext->CSSetShader(m_pFroxelAccumulationCS->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11ShaderResourceView* pSRVs[1] = { m_pVoxelLighting.pSRV.Get() };
+		ID3D11ShaderResourceView* pSRVs[1] = { m_pBlendedVolumeTex.pSRV.Get() };
 		m_pContext->CSSetShaderResources(3, 1, pSRVs);
 
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVoxelAccumulated.pUAV.Get() };
@@ -1564,11 +1609,32 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetVolumetric;
 	
+	{
+		// 이전 프레임 정보 갱신
+		std::swap(m_pPreviousVolumeTex, m_pBlendedVolumeTex);
+
+		auto ActiveCam = CGameInstance::Get().GetActiveCamera();
+		m_mPreviousCamViewProj = ActiveCam->GetView() * ActiveCam->GetProj();
+	}
+	
 	return S_OK;
 }
 
 VOID CRenderer::Set_VolumetricFogOption(const CB_VLFOG& _FogOption) {
 	m_pFogInfo = _FogOption;
+}
+
+_float CRenderer::Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base){
+	_float result = 0.f;
+	_float fraction = 1.f / static_cast<_float>(_Base);
+	uint32_t i = _FrameIndex;
+
+	while (i > 0) {
+		result += fraction * (i % _FrameIndex);
+		i /= _Base;
+		fraction /= static_cast<_float>(_Base);
+	}
+	return result;
 }
 
 HRESULT CRenderer::Render_OffScreen() {
@@ -2260,7 +2326,7 @@ VOID	CRenderer::PostProcessGUI() {
 	ImGui::TextDisabled("Shader Effect Controller");
 	ImGui::BeginChild("##Inspector", ImVec2(0.f, 130.f), true);
 	{
-		if (m_bApplyEnvLight ? ImGui::Button("EnvLight OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("EnvLight ON", ImVec2(-FLT_MIN, 20))) {
+		if (m_bApplyEnvLight ? ImGui::Button("EnviromentLight OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("EnviromentLight ON", ImVec2(-FLT_MIN, 20))) {
 			m_bApplyEnvLight = !m_bApplyEnvLight;
 		}
 		if (m_bApplyFilter ? ImGui::Button("PostProcess OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("PostProcess ON", ImVec2(-FLT_MIN, 20))) {

@@ -229,6 +229,11 @@ namespace Engine
 		_float	g_fFarZ;
 		_float  g_fAnalyticBlendStart;
 		_float  g_fAnalyticBlendEnd;
+
+		_float3	g_fJitterOffset;
+		_float	CB_FROXELPADDING;
+
+		_float4x4 g_mPreviousViewProj{};
 	};
 	static_assert(sizeof(CB_FROXEL) % 16 == 0);
 
