@@ -30,17 +30,15 @@ public:
 		_float4 vInitialQuaternion{ 0.f, 0.f, 0.f, 1.f };
 		_float3 vInitialScale{ 1.f, 1.f, 1.f };
 		_float3 vConvexScale{ 1.f, 1.f, 1.f };
+		_float3 vInitialLinearVelocity{};
+		_float3 vInitialAngularVelocityRadians{};
 		_float fMass{ 0.15f };
 		_float fDissolveDelay{ 3.f };
 		_float fDissolveDuration{ 1.5f };
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::DEBRIS),
 			.iSimulationMask =
-				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
-				ETOUI(COLLISION_LAYER::DEBRIS),
-			//|
-			//	ETOUI(COLLISION_LAYER::ENEMY_BODY) |
-			//	ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
+				ETOUI(COLLISION_LAYER::WORLD_STATIC),
 			.iQueryMask = PX_ALL_LAYERS
 		};
 	};

@@ -175,6 +175,10 @@ _bool CPropBarrel::DestroyBarrel()
 				XMLoadFloat4(&vRotation))));
 	std::vector<CHandle> spawnedDebrisHandles{};
 	spawnedDebrisHandles.reserve(12);
+	const _float3 vInheritedLinearVelocity = m_pComPxRigidBody ?
+		m_pComPxRigidBody->GetLinearVelocity() : _float3{};
+	const _float3 vInheritedAngularVelocity = m_pComPxRigidBody ?
+		m_pComPxRigidBody->GetAngularVelocity() : _float3{};
 
 	for (uint32_t i = 1; i <= 12; ++i)
 	{
@@ -199,6 +203,23 @@ _bool CPropBarrel::DestroyBarrel()
 		// 파편 리소스의 X축 -90도 보정을 먼저 적용한 뒤,
 		// 원본 배럴의 현재 월드 회전을 이어서 적용한다.
 		desc.vInitialQuaternion = vDebrisRotation;
+
+		const _float fAngle = XM_2PI *
+			(static_cast<_float>(i - 1) / 12.f);
+		const _float fOutwardSpeed = 4.f +
+			0.35f * static_cast<_float>(i % 4);
+		const _float fUpwardSpeed = 4.5f +
+			0.25f * static_cast<_float>(i % 3);
+		desc.vInitialLinearVelocity = {
+			vInheritedLinearVelocity.x + std::cos(fAngle) * fOutwardSpeed,
+			vInheritedLinearVelocity.y + fUpwardSpeed,
+			vInheritedLinearVelocity.z + std::sin(fAngle) * fOutwardSpeed };
+
+		const _float fSpinSign = (i % 2 == 0) ? -1.f : 1.f;
+		desc.vInitialAngularVelocityRadians = {
+			vInheritedAngularVelocity.x + std::cos(fAngle) * 5.f,
+			vInheritedAngularVelocity.y + fSpinSign * 6.f,
+			vInheritedAngularVelocity.z + std::sin(fAngle) * 5.f };
 
 		const auto hDebris = CGameInstance::Get().AddGameObjectToLayer(
 			m_sResourceGroup,

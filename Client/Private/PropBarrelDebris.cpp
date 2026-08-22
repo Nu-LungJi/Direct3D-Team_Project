@@ -129,6 +129,9 @@ HRESULT CPropBarrelDebris::Initialize(void* pArg)
 		!m_pComPxRigidBody->SetLinearDamping(0.1f) ||
 		!m_pComPxRigidBody->SetAngularDamping(0.2f) ||
 		!m_pComPxRigidBody->SetMaxDepenetrationVelocity(5.f) ||
+		!m_pComPxRigidBody->SetLinearVelocity(pDesc->vInitialLinearVelocity) ||
+		!m_pComPxRigidBody->SetAngularVelocity(
+			pDesc->vInitialAngularVelocityRadians) ||
 		!m_pComPxRigidBody->WakeUp())
 	{
 		return E_FAIL;
@@ -144,27 +147,7 @@ void CPropBarrelDebris::Update(_float fTimeDelta)
 
 	m_fLifeElapsed += std::max(fTimeDelta, 0.f);
 	if (!m_bDissolving && m_fLifeElapsed >= m_fDissolveDelay)
-	{
 		m_bDissolving = true;
-
-		_bool bColliderDisabled = m_pComPxConvexCollider != nullptr;
-		if (m_pComPxConvexCollider)
-		{
-			bColliderDisabled &= m_pComPxConvexCollider->SetSimulationEnabled(false);
-			bColliderDisabled &= m_pComPxConvexCollider->SetQueryEnabled(false);
-		}
-
-		_bool bRigidBodyStopped = m_pComPxRigidBody != nullptr;
-		if (m_pComPxRigidBody)
-		{
-			bRigidBodyStopped &= m_pComPxRigidBody->SetLinearVelocity({});
-			bRigidBodyStopped &= m_pComPxRigidBody->SetAngularVelocity({});
-			bRigidBodyStopped &= m_pComPxRigidBody->SetGravityEnabled(false);
-			bRigidBodyStopped &= m_pComPxRigidBody->PutToSleep();
-		}
-		if (!bColliderDisabled || !bRigidBodyStopped)
-			DEBUG_LOG("[PropBarrelDebris] Failed to disable physics for dissolve.\n");
-	}
 
 	if (!m_bDissolving)
 		return;
