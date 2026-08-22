@@ -26,6 +26,8 @@ namespace Engine
 
 		_float3		vShadowLightDir{};
 		_float		fTimeAccumulation{};
+
+		_float4x4	matPrevViewProj{};		// 직전 렌더 프레임의 활성 카메라 ViewProj
 	} CB_PER_PASS;
 	static_assert(sizeof(CB_PER_PASS) % 16 == 0);
 
