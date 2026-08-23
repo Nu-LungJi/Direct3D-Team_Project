@@ -1325,9 +1325,12 @@ VOID	CGameInstance::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Durati
 }
 VOID	CGameInstance::Set_ChromaticRingOpacity(_float _Opacity) { m_pRenderer->Set_ChromaticRingOpacity(_Opacity); }
 VOID	CGameInstance::Apply_OutlineEffect(std::optional<CHandle> targetHandle) { m_pRenderer->Apply_OutlineEffect(targetHandle); }
-VOID	CGameInstance::Initialize_VolumetricFogOption(XMFLOAT3 _CenterPos, XMFLOAT3 _FogColor, XMFLOAT3 _LightColor, _float _Intensity, _float _Density, _float _MaxHeight, _float _BaseHeight, _float _HeightFallOff,
-	_float _StartDistance, _float _EndDistance, _float _NoiseScale, _float _ScatteringWeight, _float _GA, _float _GB) {
-	m_pRenderer->Initialize_VolumetricFogOption(_CenterPos, _FogColor, _LightColor, _Intensity, _Density, _MaxHeight, _BaseHeight, _HeightFallOff, _StartDistance, _EndDistance, _NoiseScale, _ScatteringWeight, _GA, _GB);
+
+const CB_VLFOG	CGameInstance::Get_VolumetricFogOption() {
+	return m_pRenderer->Get_VolumetricFogOption();
+}
+VOID			CGameInstance::Set_VolumetricFogOption(const CB_VLFOG& _FogOption) {
+	m_pRenderer->Set_VolumetricFogOption(_FogOption);
 }
 
 #pragma endregion
@@ -1409,7 +1412,7 @@ _bool CGameInstance::IsMapChunkStreaming() const
 }
 
 /*----------- 광윤 추가 -----------*/
-const MATERIAL_DESC& CGameInstance::FindMaterial(const std::string& ModelName) {
+const MATERIAL_DESC CGameInstance::FindMaterial(const std::string& ModelName) {
 	return m_pMapManager->FindMaterial(ModelName);
 }
 /*---------------------------------*/
@@ -1487,10 +1490,17 @@ XMMATRIX CGameInstance::Get_CascadeShadowViewProj(uint32_t _Index) {
 	return m_pLightManager->Get_CascadeShadowViewProj(_Index);
 }
 XMFLOAT4 CGameInstance::Get_CascadeShadowSplits() {
-	return m_pLightManager->Get_CascadeShadowSplits();
+	return m_pLightManager->Get_CascadeShadowSplits(); 
+
 }
 CSM_DATA& CGameInstance::Get_MainDirectionalLightData() {
 	return m_pLightManager->Get_MainDirectionalLightData();
+}
+VOID	CGameInstance::Set_EnviromentLight(CONST CB_ENVLIGHT _EnvLight) {
+	m_pLightManager->Set_EnviromentLight(_EnvLight);
+}
+CONST CB_ENVLIGHT CGameInstance::Get_EnviromentLight() {
+	return m_pLightManager->Get_EnviromentLight();
 }
 #pragma endregion
 #pragma endregion

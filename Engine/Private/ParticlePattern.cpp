@@ -164,6 +164,49 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircleToCenter(const SCirc
 	return spawnList;
 }
 
+std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCenterToCircle(const SCenterToCircleParam& param)
+{
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(param.iCount);
+	if (param.iCount == 0)
+		return spawnList;
+
+	const _float moveDuration = std::max(param.fLife, 0.0001f);
+	const _float spawnDuration = std::max(param.fSpawnDuration, 0.f);
+	const _float spawnInterval = param.iCount > 1 ? spawnDuration / static_cast<_float>(param.iCount - 1) : 0.f;
+	const _float radiusJitter = std::max(param.fRadiusJitter, 0.f);
+	const _float3 startCenter = param.bStand ? param.vCenter : _float3(param.vCenter.x, param.vCenter.y + param.fYOffset, param.vCenter.z);
+
+	for (uint32_t i = 0; i < param.iCount; ++i)
+	{
+		PARTICLE_SPAWN_DATA& spawn = spawnList[i];
+		const _float angle = Randf(0.f, XM_2PI);
+		const _float radius = std::max(0.f, param.fRadius + Randf(-radiusJitter, radiusJitter));
+		const _float3 targetPosition = param.bStand
+			? _float3(param.vCenter.x + cosf(angle) * radius, param.vCenter.y + sinf(angle) * radius, param.vCenter.z)
+			: _float3(param.vCenter.x + cosf(angle) * radius, param.vCenter.y + param.fYOffset, param.vCenter.z + sinf(angle) * radius);
+
+		spawn.position = startCenter;
+		XMStoreFloat3(&spawn.velocity, (XMLoadFloat3(&targetPosition) - XMLoadFloat3(&startCenter)) / moveDuration);
+
+		spawn.life = moveDuration;
+		spawn.fSize = param.bRandomSize ? _float3(Randf(param.fSizeMin.x, param.fSizeMax.x), Randf(param.fSizeMin.y, param.fSizeMax.y), Randf(param.fSizeMin.z, param.fSizeMax.z)) : param.fSize;
+		spawn.fEndSize = param.fEndSize;
+		spawn.color = param.color;
+		spawn.emissive = _float4(param.emissive.x, param.emissive.y, param.emissive.z, param.startIntensity);
+		spawn.endEmissive = _float4(param.endEmissive.x, param.endEmissive.y, param.endEmissive.z, param.endIntensity);
+		spawn.originalEmissive = spawn.emissive;
+		spawn.iBehaviorType = param.iBehaviorType;
+		spawn.spawnDelay = param.fSpawnDelay + static_cast<_float>(i) * spawnInterval;
+		spawn.originalPosition = spawn.position;
+		spawn.originalVelocity = spawn.velocity;
+		spawn.rotationAxis = param.rotationAxis;
+		spawn.fRotationSpeed = param.rotationSpeed;
+		spawn.rotation = param.bRandomRot ? _float4(XMConvertToRadians(Randf(param.vMinRot.x, param.vMaxRot.x)), XMConvertToRadians(Randf(param.vMinRot.y, param.vMaxRot.y)), XMConvertToRadians(Randf(param.vMinRot.z, param.vMaxRot.z)), 0.f) : _float4(XMConvertToRadians(param.vRotation.x), XMConvertToRadians(param.vRotation.y), XMConvertToRadians(param.vRotation.z), 0.f);
+	}
+
+	return spawnList;
+}
+
 std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeIrregularRing(const SIrregularRingParam& param)
 {
 	std::vector<PARTICLE_SPAWN_DATA> spawnList(param.iCount);

@@ -19,6 +19,7 @@
 #include "EnderDragon.h"
 #include "LightPlacementObject.h"
 #include "ClientEvents.h"
+#include "SkyCloudyCube.h"
 
 NS_USING(Client)
 
@@ -78,6 +79,12 @@ HRESULT CLevelLastBossRanrok::Initialize()
 		return E_FAIL;
 
 	if (FAILED(PlayBGM()))
+		return E_FAIL;
+
+	if (FAILED(Initialize_VolumetricFog()))
+		return E_FAIL;
+
+	if (FAILED(Initialize_EnviromentLight()))
 		return E_FAIL;
 
 	SubscribePlayerDeath(*hPlayer);
@@ -347,8 +354,9 @@ HRESULT CLevelLastBossRanrok::SpawnLightPlacement()
 
 HRESULT CLevelLastBossRanrok::SpawnSkyBox()
 {
-	CGameObject::GAMEOBJECT_DESC skyDesc{};
+	CSkyCloudyCube::SKY_DESC skyDesc{};
 	skyDesc.sObjectTag = "SkyCloudyCube";
+	skyDesc.sTextureTag = "TEX_SkyRanrokCube";
 	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
 	{
 		return E_FAIL;
@@ -416,6 +424,45 @@ void CLevelLastBossRanrok::SubscribePlayerDeath(const CHandle& hPlayer)
 
 			StopBGM(Event.fLevelBgmFadeDuration);
 		});
+}
+
+HRESULT CLevelLastBossRanrok::Initialize_VolumetricFog() {
+
+	CB_VLFOG FogOption{};
+
+	FogOption.g_fFogColor			= { 255.f / 255.f, 0.f / 255.f, 0.f / 255.f };
+	FogOption.g_fFogIntensity		= 0.5f;
+	FogOption.g_fFogDensity			= 0.02f;
+	FogOption.g_fFogNoiseScale		= 0.05f;
+	FogOption.g_fFogScattering		= 0.5f;
+	FogOption.g_fFogBaseBrightness	= 0.01f;
+
+	FogOption.g_fFogLightColor		= { 255.f / 255.f, 230.f / 255.f, 180.f / 255.f };
+	FogOption.g_fFogLightDirection	= { 0.577f, -0.577f, 0.577f };
+
+	FogOption.g_fFogBaseHeight		= 480.f;
+	FogOption.g_fFogMaxHeight		= 0.8f;
+	FogOption.g_fFogHeightFallOff	= 0.05f;
+
+	FogOption.g_fFogStartDistance	= 0.f;
+	FogOption.g_fFogEndDistance		= 1000.f;
+
+	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
+
+	return S_OK;
+}
+
+HRESULT CLevelLastBossRanrok::Initialize_EnviromentLight() {
+
+	CB_ENVLIGHT EnviromentLightOption{};
+
+	EnviromentLightOption.m_fEnviromentIntensity = 0.75f;
+	EnviromentLightOption.m_fFillLightBrightness = 0.0f;
+	EnviromentLightOption.m_fDirectLightBrightness = 0.25f;
+
+	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
+
+	return S_OK;
 }
 
 void CLevelLastBossRanrok::Free()

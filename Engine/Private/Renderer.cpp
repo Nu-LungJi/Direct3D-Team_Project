@@ -14,13 +14,11 @@ CRenderer::~CRenderer() {}
 
 VOID	CRenderer::UpdateGUI()
 {
-	ImGui::Begin("Renderer");
-
-	ImGui::End();
+	//ImGui::Begin("Renderer");
+	//
+	//ImGui::End();
 
 	PostProcessGUI();
-
-	VolumetricFogGUI();
 }
 
 VOID	CRenderer::Update(_float fTimeDelta) {
@@ -156,6 +154,10 @@ HRESULT CRenderer::InitializeShaderResource()
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_FroxelZAccumulation", "./ShaderFiles/RayMarching/CS_Volumetric.hlsl"))
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_FroxelZAccumulation", .sTarget = "cs_5_0" })))    return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_TemporalBlend", "./ShaderFiles/RayMarching/CS_Volumetric.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_TemporalBlend", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_RayMarching", "./ShaderFiles/RayMarching/CS_Volumetric.hlsl"))
 	{
@@ -451,34 +453,37 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 	
 	m_pLightIntegrationCS	 = CGameInstance::Get().GetResourceFirst<CResComputeShader>	(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_LightIntegration");
 	m_pFroxelAccumulationCS  = CGameInstance::Get().GetResourceFirst<CResComputeShader> (TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_FroxelZAccumulation");
+	m_pTemporalBlendedCS	 = CGameInstance::Get().GetResourceFirst<CResComputeShader> (TAG_RES_GRP_PERMANENT_SHADER, "CS_TemporalBlend");
 	m_pVolumetricCompositePS = CGameInstance::Get().GetResourceFirst<CResPixelShader>	(TAG_RES_GRP_PERMANENT_SHADER, "PS_Volumetric_Composite");
 
 	if (!m_pLightIntegrationCS || !m_pFroxelAccumulationCS || !m_pVolumetricCompositePS) return E_FAIL;
 
 	m_pVoxelLighting		= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
 	m_pVoxelAccumulated		= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ + 1);
+	m_pBlendedVolumeTex		= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
+	m_pPreviousVolumeTex	= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
+
+	{
+		m_pFogInfo.g_fFogColor = _float3(0.8f, 0.85f, 0.9f);
+		m_pFogInfo.g_fFogIntensity = 1.f;
+		m_pFogInfo.g_fFogDensity = 0.02f;
+		m_pFogInfo.g_fFogNoiseScale = 0.05f;
+		m_pFogInfo.g_fFogScattering = 0.5f;
+		m_pFogInfo.g_fFogBaseBrightness = 0.1f;
+
+		m_pFogInfo.g_fFogLightColor = _float3(1.f, 0.9f, 0.7f);
+		m_pFogInfo.g_fFogLightDirection = _float3(0.577f, -0.577f, 0.577f);
+
+		m_pFogInfo.g_fFogBaseHeight = 0.f;
+		m_pFogInfo.g_fFogMaxHeight = 20.f;
+		m_pFogInfo.g_fFogHeightFallOff = 0.05f;
+
+		m_pFogInfo.g_fFogStartDistance = 0.f;
+		m_pFogInfo.g_fFogEndDistance = 200.f;
+
+		m_pFogInfo.g_fFogTime = 0.f;
+	}
 	
-	m_pFogInfo.g_fFogColor = _float3(0.8f, 0.85f, 0.9f);
-	m_pFogInfo.g_fFogIntensity = 1.f;
-
-	m_pFogInfo.g_fFogCenterPos = _float3(0.f, 0.f, 0.f);
-	m_pFogInfo.g_fFogHeight = 20.f;
-
-	m_pFogInfo.g_fFogStartPos = 0.f;
-	m_pFogInfo.g_fFogEndPos = 200.f;
-	m_pFogInfo.g_fFogDensity = 0.02f;
-	m_pFogInfo.g_fFogNoiseScale = 0.05f;
-
-	m_pFogInfo.g_fFogLightDirection = _float3(0.577f, -0.577f, 0.577f);
-	m_pFogInfo.g_fFogAnisotropyGA = 0.7f;
-
-	m_pFogInfo.g_fFogLightColor = _float3(1.f, 0.9f, 0.7f);
-	m_pFogInfo.g_fFogAnisotropyGB = -0.3f;
-
-	m_pFogInfo.g_fFogScatteringWeight = 0.5f;
-	m_pFogInfo.g_fFogBaseHeight = 0.f;
-	m_pFogInfo.g_fFogHeightFallOff = 0.05f;
-
 	return S_OK;
 }
 
@@ -954,12 +959,13 @@ HRESULT CRenderer::Draw() {
 	// Trensparent + PBR
 	if (FAILED(Render_Alpha()))          return E_FAIL;
 
-	// Effect
-	if (FAILED(Render_Effect()))		 return E_FAIL;
+
 
 	// Volumetric
 	if (FAILED(Render_VolumetricEffect())) return E_FAIL;
 
+	// Effect
+	if (FAILED(Render_Effect()))		 return E_FAIL;
 	// Combined
 	if (FAILED(Render_OffScreen()))      return E_FAIL;
 
@@ -1264,7 +1270,7 @@ HRESULT CRenderer::Render_Lighting() {
 		m_pContext->CSSetShaderResources(0, 9, SRVList->GetAddressOf());
 
 		if (m_bApplyShadow) {
-			if (FAILED(CGameInstance::Get().Render_ObjectShadow()))		{ Unbind_Resources(); return S_OK; }
+				if (FAILED(CGameInstance::Get().Render_ObjectShadow()))		{ Unbind_Resources(); return S_OK; }
 		}
 		else {
 			if (FAILED(CGameInstance::Get().Render_ObjectNonShadow()))	{ Unbind_Resources(); return S_OK; }
@@ -1377,6 +1383,8 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 
 	if (FAILED(Render_LightIntegration()))			{ Unbind_Resources(); return S_OK; }
 
+	if (FAILED(Render_TemporalBlend()))				{ Unbind_Resources(); return S_OK; }
+	
 	if (FAILED(Render_FroxelZAccumulation()))		{ Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_VolumetricComposite()))		{ Unbind_Resources(); return S_OK; }
@@ -1398,6 +1406,13 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 
 		const _float VolumeFarZ  = std::min(FarZ, MaxDistance);
 
+		static uint32_t FrameIndex = 1;
+		FrameIndex = (FrameIndex % 16) + 1;
+
+		_float JitterX = Get_HaltonSequence(FrameIndex, 2) - 0.5f;
+		_float JitterY = Get_HaltonSequence(FrameIndex, 3) - 0.5f;
+		_float JitterZ = Get_HaltonSequence(FrameIndex, 5) - 0.5f;
+
 		D3D11_MAPPED_SUBRESOURCE MRES{};
 		if (SUCCEEDED(m_pContext->Map(m_pVolumetricFroxelCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 		{
@@ -1414,6 +1429,9 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 			cbFroxel.g_fAnalyticBlendStart	= std::max(NearZ, VolumeFarZ - 40.f);
 			cbFroxel.g_fAnalyticBlendEnd	= VolumeFarZ;
 
+			cbFroxel.g_fJitterOffset		= _float3(JitterX, JitterY, JitterZ);
+			XMStoreFloat4x4(&cbFroxel.g_mPreviousViewProj, m_mPreviousCamViewProj);
+
 			memcpy(MRES.pData, &cbFroxel, sizeof(CB_FROXEL));
 			m_pContext->Unmap(m_pVolumetricFroxelCBuffer->GetCBuffer().Get(), 0);
 		}
@@ -1424,20 +1442,7 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 		D3D11_MAPPED_SUBRESOURCE MRES{};
 		if (SUCCEEDED(m_pContext->Map(m_pVolumetricVFogCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 		{
-			CB_VLFOG cbVLFog{};
-
-			cbVLFog.g_fFogIntensity = m_pFogInfo.g_fFogIntensity;
-			cbVLFog.g_fFogColor		= m_pFogInfo.g_fFogColor;
-
-			cbVLFog.g_fFogCenterPos = m_pFogInfo.g_fFogCenterPos;
-			cbVLFog.g_fFogHeight	= m_pFogInfo.g_fFogHeight;
-
-			cbVLFog.g_fFogStartPos	= m_pFogInfo.g_fFogStartPos;
-			cbVLFog.g_fFogEndPos	= m_pFogInfo.g_fFogEndPos;
-			cbVLFog.g_fFogDensity	= m_pFogInfo.g_fFogDensity;
-			cbVLFog.g_fFogNoiseScale = m_pFogInfo.g_fFogNoiseScale;
-
-			cbVLFog.g_fFogLightColor = m_pFogInfo.g_fFogLightColor;
+			CB_VLFOG cbVLFog = m_pFogInfo;
 
 			if (auto LightHandle = CGameInstance::Get().Get_MainDirectionalLightData().m_pLightHandle) {
 				if (auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value()))
@@ -1446,12 +1451,6 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 					cbVLFog.g_fFogLightDirection = _float3(0.f, 0.f, 0.f);
 			}
 
-			cbVLFog.g_fFogAnisotropyGA = m_pFogInfo.g_fFogAnisotropyGA;
-			cbVLFog.g_fFogAnisotropyGB = m_pFogInfo.g_fFogAnisotropyGB;
-			cbVLFog.g_fFogScatteringWeight = m_pFogInfo.g_fFogScatteringWeight;
-
-			cbVLFog.g_fFogBaseHeight = m_pFogInfo.g_fFogBaseHeight;
-			cbVLFog.g_fFogHeightFallOff = m_pFogInfo.g_fFogHeightFallOff;
 			cbVLFog.g_fFogTime = std::fmod(m_fTimeAccumulation, 4096.f);
 			memcpy(MRES.pData, &cbVLFog, sizeof(CB_VLFOG));
 			m_pContext->Unmap(m_pVolumetricVFogCBuffer->GetCBuffer().Get(), 0);
@@ -1463,7 +1462,7 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 		CB_CSM cbCSM{};
 
 		const CSM_DATA& CascadeShadowLightData = CGameInstance::Get().Get_MainDirectionalLightData();
-		if (m_bApplyShadow && CascadeShadowLightData.m_pLightHandle && CascadeShadowLightData.m_pShadowSRV) {
+		if (m_bApplyShadow && CascadeShadowLightData.m_pLightHandle && CascadeShadowLightData.m_pShadowSRV) { 
 			m_pCSMShadowMapTexture = CascadeShadowLightData.m_pShadowSRV.Get();
 			for (int i = 0; i < 4; ++i)
 			{
@@ -1521,12 +1520,38 @@ HRESULT CRenderer::Render_LightIntegration() {
 	return S_OK;
 }
 
+HRESULT CRenderer::Render_TemporalBlend() {
+	{
+		m_pContext->CSSetShader(m_pTemporalBlendedCS->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11ShaderResourceView* pSRVs[2] = { m_pVoxelLighting.pSRV.Get(), m_pPreviousVolumeTex.pSRV.Get()};
+		m_pContext->CSSetShaderResources(5, 2, pSRVs);
+
+		ID3D11UnorderedAccessView* pUAVs[1] = { m_pBlendedVolumeTex.pUAV.Get() };
+		m_pContext->CSSetUnorderedAccessViews(1, 1, pUAVs, nullptr);
+	}
+	{
+		uint32_t FroxelX = (FROXELX + 7) / 8;
+		uint32_t FroxelY = (FROXELY + 7) / 8;
+		uint32_t FroxelZ = (FROXELZ + 7) / 8;
+
+		m_pContext->Dispatch(FroxelX, FroxelY, FroxelZ);
+
+		ID3D11ShaderResourceView* pNullSRVs[2] = { nullptr, nullptr };
+		m_pContext->CSSetShaderResources(5, 2, pNullSRVs);
+
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(1, 1, pNullUAVs, nullptr);
+	}
+	return S_OK;
+}
+
 HRESULT CRenderer::Render_FroxelZAccumulation()
 {
 	{
 		m_pContext->CSSetShader(m_pFroxelAccumulationCS->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11ShaderResourceView* pSRVs[1] = { m_pVoxelLighting.pSRV.Get() };
+		ID3D11ShaderResourceView* pSRVs[1] = { m_pBlendedVolumeTex.pSRV.Get() };
 		m_pContext->CSSetShaderResources(3, 1, pSRVs);
 
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVoxelAccumulated.pUAV.Get() };
@@ -1585,25 +1610,32 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 
 	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetVolumetric;
 	
+	{
+		// 이전 프레임 정보 갱신
+		std::swap(m_pPreviousVolumeTex, m_pBlendedVolumeTex);
+
+		auto ActiveCam = CGameInstance::Get().GetActiveCamera();
+		m_mPreviousCamViewProj = ActiveCam->GetView() * ActiveCam->GetProj();
+	}
+	
 	return S_OK;
 }
 
-VOID CRenderer::Initialize_VolumetricFogOption(XMFLOAT3 _CenterPos, XMFLOAT3 _FogColor, XMFLOAT3 _LightColor, _float _Intensity, _float _Density, _float _MaxHeight, _float _BaseHeight, _float _HeightFallOff,
-	_float _StartDistance, _float _EndDistance, _float _NoiseScale, _float _ScatteringWeight, _float _GA, _float _GB) {
-	m_pFogInfo.g_fFogCenterPos = _CenterPos,
-	m_pFogInfo.g_fFogColor = _FogColor;
-	m_pFogInfo.g_fFogLightColor = _LightColor;
-	m_pFogInfo.g_fFogIntensity = _Intensity;
-	m_pFogInfo.g_fFogDensity = _Density;
-	m_pFogInfo.g_fFogHeight = _MaxHeight;
-	m_pFogInfo.g_fFogBaseHeight = _BaseHeight;
-	m_pFogInfo.g_fFogHeightFallOff = _HeightFallOff;
-	m_pFogInfo.g_fFogStartPos = _StartDistance;
-	m_pFogInfo.g_fFogEndPos = _EndDistance;
-	m_pFogInfo.g_fFogNoiseScale = _NoiseScale;
-	m_pFogInfo.g_fFogScatteringWeight = _ScatteringWeight;
-	m_pFogInfo.g_fFogAnisotropyGA = _GA;
-	m_pFogInfo.g_fFogAnisotropyGB = _GB;
+VOID CRenderer::Set_VolumetricFogOption(const CB_VLFOG& _FogOption) {
+	m_pFogInfo = _FogOption;
+}
+
+_float CRenderer::Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base){
+	_float result = 0.f;
+	_float fraction = 1.f / static_cast<_float>(_Base);
+	uint32_t i = _FrameIndex;
+
+	while (i > 0) {
+		result += fraction * (i % _FrameIndex);
+		i /= _Base;
+		fraction /= static_cast<_float>(_Base);
+	}
+	return result;
 }
 
 HRESULT CRenderer::Render_OffScreen() {
@@ -2292,66 +2324,140 @@ HRESULT CRenderer::RenderUI()
 VOID	CRenderer::PostProcessGUI() {
 	ImGui::Begin("PostProcess");
 
-	if (m_bApplyFilter ? ImGui::Button("PostProcess OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("PostProcess ON", ImVec2(-FLT_MIN, 20))) {
-		m_bApplyFilter = !m_bApplyFilter;
+	ImGui::TextDisabled("Shader Effect Controller");
+	ImGui::BeginChild("##Inspector", ImVec2(0.f, 130.f), true);
+	{
+		if (m_bApplyEnvLight ? ImGui::Button("EnviromentLight OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("EnviromentLight ON", ImVec2(-FLT_MIN, 20))) {
+			m_bApplyEnvLight = !m_bApplyEnvLight;
+		}
+		if (m_bApplyFilter ? ImGui::Button("PostProcess OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("PostProcess ON", ImVec2(-FLT_MIN, 20))) {
+			m_bApplyFilter = !m_bApplyFilter;
+		}
+		if (m_bApplyVolumetric ? ImGui::Button("Volumetric OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Volumetric ON", ImVec2(-FLT_MIN, 20))) {
+			m_bApplyVolumetric = !m_bApplyVolumetric;
+		}
+		if (m_bApplyShadow ? ImGui::Button("Shadow OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Shadow ON", ImVec2(-FLT_MIN, 20))) {
+			m_bApplyShadow = !m_bApplyShadow;
+		}
 	}
-	if (m_bApplyVolumetric ? ImGui::Button("Volumetric OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Volumetric ON", ImVec2(-FLT_MIN, 20))) {
-		m_bApplyVolumetric = !m_bApplyVolumetric;
-	}
-	if (m_bApplyShadow ? ImGui::Button("Shadow OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Shadow ON", ImVec2(-FLT_MIN, 20))) {
-		m_bApplyShadow = !m_bApplyShadow;
-	}
+	ImGui::EndChild();
 
-	ImGui::End();
-}
+	if (m_bApplyEnvLight) {
+		_float TextToSlotDistance = 100.f;
+		if (ImGui::CollapsingHeader("Enviroment Option")) {
+			_bool DirtyFlag = false;
+			m_pEnvLight = CGameInstance::Get().Get_EnviromentLight();
 
-VOID	CRenderer::VolumetricFogGUI() {
-	ImGui::Begin("VolumetricFog");
+			ImGui::TextUnformatted("EnvLightIntensity");
+			ImGui::SameLine(TextToSlotDistance);
+			DirtyFlag |= ImGui::DragFloat("Intensity", &m_pEnvLight.m_fEnviromentIntensity, 0.001f, 0.f, 1.f, "%.3f");
+			
+			ImGui::TextUnformatted("FillLightIntensity");
+			ImGui::SameLine(TextToSlotDistance);
+			DirtyFlag |= ImGui::DragFloat("FillLight", &m_pEnvLight.m_fFillLightBrightness, 0.001f, 0.f, 1.f, "%.3f");
+			
+			ImGui::TextUnformatted("DirectLightIntensity");
+			ImGui::SameLine(TextToSlotDistance);
+			DirtyFlag |= ImGui::DragFloat("DirectLight", &m_pEnvLight.m_fDirectLightBrightness, 0.001f, 0.f, 1.f, "%.3f");
 
-	_float CenterPos[3] = { m_pFogInfo.g_fFogCenterPos.x, m_pFogInfo.g_fFogCenterPos.y, m_pFogInfo.g_fFogCenterPos.z };
-	ImGui::DragFloat3("CenterPos", (float*)&m_pFogInfo.g_fFogCenterPos, 0.5f);
-
-	ImGui::ColorEdit3("FogColor", (float*)&m_pFogInfo.g_fFogColor);
-
-	ImGui::Separator();
-
-	_float LightDirection[3] = { m_pFogInfo.g_fFogLightDirection.x, m_pFogInfo.g_fFogLightDirection.y, m_pFogInfo.g_fFogLightDirection.z };
-	if (ImGui::DragFloat3("LightDirection", LightDirection, 0.01f, -1.f, 1.f)) {
-		XMVECTOR vDir = XMVectorSet(LightDirection[0], LightDirection[1], LightDirection[2], 0.f);
-		if (XMVector3LengthSq(vDir).m128_f32[0] > 0.0001f) {
-			vDir = XMVector3Normalize(vDir);
-			XMStoreFloat3((XMFLOAT3*)&m_pFogInfo.g_fFogLightDirection, vDir);
-
-			LightDirection[0] = m_pFogInfo.g_fFogLightDirection.x;
-			LightDirection[1] = m_pFogInfo.g_fFogLightDirection.y;
-			LightDirection[2] = m_pFogInfo.g_fFogLightDirection.z;
+			if (DirtyFlag) 	CGameInstance::Get().Set_EnviromentLight(m_pEnvLight);
 		}
 	}
 
-	ImGui::ColorEdit3("LightColor", (float*)&m_pFogInfo.g_fFogLightColor);
+	if (m_bApplyFilter) {
+		ImGui::Separator();
+	}
+	if (m_bApplyVolumetric) {
+		_float TextToSlotDistance = 140.f;
+		ImGui::Separator();
+		if (ImGui::CollapsingHeader("Volumetric Fog CoreOption")) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
+			ImGui::PopStyleColor();
 
-	ImGui::Separator();
+			ImGui::TextUnformatted("FogColor");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::ColorEdit3("##FogColor", (float*)&m_pFogInfo.g_fFogColor);
 
-	ImGui::DragFloat("Intensity", &m_pFogInfo.g_fFogIntensity, 0.01f, 0.f, 10.f, "%.2f");
-	ImGui::DragFloat("Density"	, &m_pFogInfo.g_fFogDensity	 , 0.001f, 0.f, 5.f, "%.5f");
-	ImGui::DragFloat("Height"	, &m_pFogInfo.g_fFogHeight	 , 0.25f, -500.f, 500.f, "%.1f");
+			ImGui::TextUnformatted("FogIntensity");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##FogIntensity", &m_pFogInfo.g_fFogIntensity, 0.01f, 0.f, 10.f, "%.2f");
 
-	ImGui::DragFloat("BaseHeight", &m_pFogInfo.g_fFogBaseHeight, 0.25f, -500.f, 500.f, "%.1f");
-	ImGui::DragFloat("HeightFallOff", &m_pFogInfo.g_fFogHeightFallOff, 0.25f, 0.f, 10.f, "%.2f");
-	ImGui::Separator();
+			ImGui::TextUnformatted("FogDensity");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##FogDensity", &m_pFogInfo.g_fFogDensity, 0.001f, 0.f, 5.f, "%.5f");
 
-	ImGui::DragFloat("Start Distance", &m_pFogInfo.g_fFogStartPos, 0.5f, 0.f, 100.f, "%.1f");
-	ImGui::DragFloat("End Distance", &m_pFogInfo.g_fFogEndPos, 1.f, m_pFogInfo.g_fFogStartPos + 0.1f, 1000.f, "%.1f");
+			ImGui::TextUnformatted("FogNoiseScale");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##FogNoiseScale", &m_pFogInfo.g_fFogNoiseScale, 0.001f, 0.001f, 0.5f, "%.3f");
 
-	ImGui::Separator();
+			ImGui::TextUnformatted("FogScattering");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##FogScattering", &m_pFogInfo.g_fFogScattering, 0.01f, 0.f, 1.f, "%.2f");
 
-	ImGui::DragFloat("NoiseScale", &m_pFogInfo.g_fFogNoiseScale, 0.001f, 0.001f, 0.5f, "%.3f");
-	ImGui::DragFloat("ScatteringWeight", &m_pFogInfo.g_fFogScatteringWeight, 0.01f, 0.f, 1.f, "%.2f");
-	ImGui::DragFloat("FogAnisotropyGA(Forward)", &m_pFogInfo.g_fFogAnisotropyGA, 0.01f, -0.99f, +0.99f, "%.2f");
-	ImGui::DragFloat("FogAnisotropyGB(Backward)", &m_pFogInfo.g_fFogAnisotropyGB, 0.01f, -0.99f, +0.99f, "%.2f");
+			ImGui::TextUnformatted("FogBrightness");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##FogBrightness", &m_pFogInfo.g_fFogBaseBrightness, 0.001f, 0.f, 1.f, "%.3f");
+		}
+		if (ImGui::CollapsingHeader("Volumetric Fog LightOption")) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
+			ImGui::PopStyleColor();
 
+			ImGui::TextUnformatted("FogLightColor");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::ColorEdit3("##FogLightColor", (float*)&m_pFogInfo.g_fFogLightColor);
+
+			ImGui::TextUnformatted("FogLightDirection");
+			ImGui::SameLine(TextToSlotDistance);
+
+			_float LightDirection[3] = { m_pFogInfo.g_fFogLightDirection.x, m_pFogInfo.g_fFogLightDirection.y, m_pFogInfo.g_fFogLightDirection.z };
+			if (ImGui::DragFloat3("##LightDirection", LightDirection, 0.01f, -1.f, 1.f)) {
+				XMVECTOR vDir = XMVectorSet(LightDirection[0], LightDirection[1], LightDirection[2], 0.f);
+				if (XMVector3LengthSq(vDir).m128_f32[0] > 0.0001f) {
+					vDir = XMVector3Normalize(vDir);
+					XMStoreFloat3((XMFLOAT3*)&m_pFogInfo.g_fFogLightDirection, vDir);
+
+					LightDirection[0] = m_pFogInfo.g_fFogLightDirection.x;
+					LightDirection[1] = m_pFogInfo.g_fFogLightDirection.y;
+					LightDirection[2] = m_pFogInfo.g_fFogLightDirection.z;
+				}
+			}
+		}
+		if (ImGui::CollapsingHeader("Volumetric Fog Height")) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
+			ImGui::PopStyleColor();
+
+			ImGui::TextUnformatted("FogBaseHeight");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##FogBaseHeight", &m_pFogInfo.g_fFogBaseHeight, 0.25f, -500.f, 500.f, "%.1f");
+
+			ImGui::TextUnformatted("FogMaxHeight");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##FogMaxHeight", &m_pFogInfo.g_fFogMaxHeight, 0.25f, -500.f, 500.f, "%.1f");
+
+			ImGui::TextUnformatted("FogHeightFallOff");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##FogHeightFallOff", &m_pFogInfo.g_fFogHeightFallOff, 0.25f, 0.f, 10.f, "%.2f");
+		}
+		if (ImGui::CollapsingHeader("Volumetric Fog Distance")) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
+			ImGui::TextDisabled("Volumetric Fog Distance");
+			ImGui::PopStyleColor();
+
+			ImGui::TextUnformatted("FogStartDistance");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##FogStartDistance", &m_pFogInfo.g_fFogStartDistance, 0.5f, 0.f, 100.f, "%.1f");
+
+			ImGui::TextUnformatted("FogEndDistance");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##FogEndDistance", &m_pFogInfo.g_fFogEndDistance, 1.f, m_pFogInfo.g_fFogStartDistance + 0.1f, 1000.f, "%.1f");
+		}
+	}
+	if (m_bApplyShadow) {
+		ImGui::Separator();
+	}
 	ImGui::End();
 }
+
 #ifdef _DEBUG
 HRESULT CRenderer::Initialize_Debugging()
 {

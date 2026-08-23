@@ -428,6 +428,7 @@ struct StructName \
 	struct SCircleParam { CIRCLE_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SCircleSpreadParam { CIRCLE_SPREAD_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SCircleToCenterParam { CIRCLE_TO_CENTER_FIELDS(DECLARE_PARAM_FIELD) };
+	struct SCenterToCircleParam { CIRCLE_TO_CENTER_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SSpiralParam { SPIRAL_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SStraightGroundParam { STRAIGHT_GROUND_FIELDS(DECLARE_PARAM_FIELD) };
 	struct SMOKE { SMOKE_FIELDS(DECLARE_PARAM_FIELD) };
@@ -441,12 +442,12 @@ struct StructName \
 
 
 	//3. STRUCT 추가
-	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning, SConeParam, SEnergySphere, SSpikeParam, SIrregularRingParam, SCircleToCenterParam>;
+	using PatternParamVariant = std::variant<SStairsParam, SCircleParam, SSpiralParam, SStraightGroundParam, SCircleSpreadParam, SMOKE, SLightning, SConeParam, SEnergySphere, SSpikeParam, SIrregularRingParam, SCircleToCenterParam, SCenterToCircleParam>;
 
 	// 4. 콤보박스 등에서 쓸 이름 목록 (variant 인덱스와 순서 반드시 일치)
 	inline constexpr const char* PATTERN_KIND_NAMES[] =
 	{
-		"Stairs", "Circle",  "Spiral", "StraightGround", "CircleToWave", "SMOKE", "SLightning", "Cone", "EnergySphere","Spike", "IrregularRing", "CircleToCenter"
+		"Stairs", "Circle",  "Spiral", "StraightGround", "CircleToWave", "SMOKE", "SLightning", "Cone", "EnergySphere","Spike", "IrregularRing", "CircleToCenter", "CenterToCircle"
 	};
 
 	//5. 여기에 CASE 추가
@@ -467,6 +468,7 @@ struct StructName \
 		case 9: return SSpikeParam{};
 		case 10: return SIrregularRingParam{};
 		case 11: return SCircleToCenterParam{};
+		case 12: return SCenterToCircleParam{};
 			  
 		default: return SStairsParam{};
 		}

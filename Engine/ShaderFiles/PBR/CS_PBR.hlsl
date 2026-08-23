@@ -26,16 +26,12 @@ Texture2DArray<float>	DynamicShadowMaps		: register(t10);	// Directional Dynamic
 TextureCubeArray<float> StaticShadowCubeMaps	: register(t11);	// Point Static
 TextureCubeArray<float> DynamicShadowCubeMaps	: register(t12);	// Point Dynamic
 
-Texture2DArray<float>	CSMShadowMaps			: register(t13); // Directional Light
+Texture2DArray<float>	CSMShadowMaps			: register(t13);	// Directional Light
 
 static const float		ShadowSmoothness		= 1.5f;
 static const float		ShadowBrightness		= 0.f;
 static const float		PointShadowDepthBias	= 0.002f;
 static const float		SpotShadowDepthBias		= 0.00001f;
-
-static const float		EnviromentIntensity		= 0.75f;			// 환경광 밝기
-static const float		FillLightBrightness		= 0.05f;			// 등지는 영역의 밝기
-static const float		DirectLightBrightness	= 0.60f;			// 빛받는 영역의 밝기
 
 static const float2		PoissonDisk_EightTab[8] =		
 {
@@ -484,7 +480,7 @@ void CSMain_NonBlend(uint3 ID : SV_DispatchThreadID)
 	
 	float3	FillLighting	= Albedo * (1.f - Metallic) * FillLightBrightness;		// Shadow Face
 	float3	DirectLighting	= LightAccumulation * DirectLightBrightness;			// Light Face
-	float3	EffectLighting = EffectAccumulation * DirectLightBrightness; // Light Face
+	float3	EffectLighting = EffectAccumulation * DirectLightBrightness;			// Light Face
 	
 	float3 FinalColor = EnviromentLight + FillLighting + DirectLighting + EffectLighting + BaseEmissive;
 	

@@ -45,7 +45,6 @@ public:			// Update
 
 private:		// GUI Update
 	VOID		PostProcessGUI();
-	VOID		VolumetricFogGUI();
 
 public:			// Render
 	HRESULT		Draw();
@@ -84,6 +83,7 @@ private:		// Volumetric Effect Pass Render
 	HRESULT		Update_VolumetricConstantBuffer();
 	HRESULT		Render_LightIntegration();
 	HRESULT		Render_FroxelZAccumulation();
+	HRESULT		Render_TemporalBlend();
 	HRESULT		Render_VolumetricComposite();
 
 private:		// PostProcess Pass Render
@@ -133,8 +133,10 @@ public:			// Append Render Queue
 public:			// Extra Function
 	HRESULT		Reset_DefaultShader(RENDERGROUP _Group);
 
-	VOID		Initialize_VolumetricFogOption(XMFLOAT3 _CenterPos, XMFLOAT3 _FogColor, XMFLOAT3 _LightColor, _float _Intensity, _float _Density, _float _MaxHeight,
-		_float _BaseHeight, _float _HeightFallOff, _float _StartDistance, _float _EndDistance, _float _NoiseScale = 0.05f, _float _ScatteringWeight = 0.5f, _float _GA = 0.7f, _float _GB = -0.3f);
+	const CB_VLFOG	Get_VolumetricFogOption() { return m_pFogInfo; }
+	VOID			Set_VolumetricFogOption(const CB_VLFOG& _FogOption);
+
+	_float			Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base);
 
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
@@ -228,6 +230,7 @@ private:		// FSR
 	UPtr<CMyFSR2_2> m_pFSR2_2{};
 
 private:
+	_bool			m_bApplyEnvLight	= { true };		// 환경광 ON-OFF
 	_bool			m_bApplyFilter		= { true };		// 필터 적용 ON-OFF
 	_bool			m_bApplyVolumetric	= { false };	// 볼류메트릭 효과 ON-OFF
 	_bool			m_bApplyShadow		= { false };	// 그림자 ON-OFF
@@ -244,18 +247,23 @@ private:		// ChromaticRing
 private:		// Volumetric Fog
 	SPtr<CResComputeShader>		m_pLightIntegrationCS{};
 	SPtr<CResComputeShader>		m_pFroxelAccumulationCS{};
+	SPtr<CResComputeShader>		m_pTemporalBlendedCS{};
 	SPtr<CResPixelShader>		m_pVolumetricCompositePS{};
 
 	TEXTURE3D					m_pVoxelLighting{};
 	TEXTURE3D					m_pVoxelAccumulated{};
+	TEXTURE3D					m_pBlendedVolumeTex{};
+	TEXTURE3D					m_pPreviousVolumeTex{};
 
 	CB_VLFOG					m_pFogInfo{};
+	CB_ENVLIGHT					m_pEnvLight{};
 
 	ComPtr<ID3D11ShaderResourceView>	m_pCSMShadowMapTexture	= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pBlueNoiseTexture		= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pVolumeTexture		= { nullptr };
 
 	XMMATRIX					m_mShadowLightViewProj{};
+	XMMATRIX					m_mPreviousCamViewProj{};
 
 private:		// PostProcess
 	std::optional<CHandle>				m_pOutlineTargetHandle{};
