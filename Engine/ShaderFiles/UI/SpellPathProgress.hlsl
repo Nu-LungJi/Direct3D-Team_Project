@@ -167,6 +167,33 @@ float CalculateFlipendoPathProgress(float2 uv)
 
 float4 PSMain(PS_IN input) : SV_Target
 {
+	// Type 2 reveals the supplied rectangular highlight texture clockwise,
+	// beginning at twelve o'clock.
+	if (g_ui_texCoord.y > 1.5f)
+	{
+		const float progress = saturate(g_ui_texCoord.x);
+		if (progress <= 0.0001f)
+			discard;
+
+		const float4 gaugeColor =
+			g_PathTexture.Sample(LinearClamp, input.uv);
+		if (gaugeColor.a <= 0.001f)
+			discard;
+
+		const float2 centeredUV = input.uv - float2(0.5f, 0.5f);
+		float angle = atan2(centeredUV.x, -centeredUV.y);
+		if (angle < 0.f)
+			angle += 6.28318530718f;
+
+		const float endAngle = progress * 6.28318530718f;
+		const float angleMask = progress >= 0.9999f ? 1.f :
+			1.f - smoothstep(endAngle, endAngle + 0.035f, angle);
+		const float alpha = gaugeColor.a * angleMask * g_ui_color.a;
+		if (alpha <= 0.001f)
+			discard;
+		return float4(gaugeColor.rgb * g_ui_color.rgb, alpha);
+	}
+
 	const float4 pathColor =
 		g_PathTexture.Sample(LinearClamp, input.uv);
 	if (pathColor.a < 0.01f)

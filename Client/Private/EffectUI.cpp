@@ -179,6 +179,7 @@ HRESULT CEffectUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ct
 		perUI.texCoord = m_texcoord;
 		perUI.uvSize = m_uvSize;
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
+		perUI.uvFlip = { m_UIINFO.FlipX ? 1.f : 0.f, m_UIINFO.FlipY ? 1.f : 0.f };
 		if (m_UIINFO.Restag == "TEX_UI_T_PointFlame")
 			perUI.margins.x = m_fStableFlameTime;
 

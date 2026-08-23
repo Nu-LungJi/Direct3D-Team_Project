@@ -289,7 +289,8 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellType",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
-				"./Resources/SampleClient/Textures/UI/UITexture/Cursor"
+				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
+				"./Resources/SampleClient/Textures/UI/UITexture/WandShop"
 			};
 
 			for (const auto& targetDir : targetDirectories)

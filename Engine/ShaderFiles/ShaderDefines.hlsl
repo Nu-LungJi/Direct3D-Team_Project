@@ -188,6 +188,8 @@ cbuffer CB_PER_UI : register(b7)
 	float2 g_ui_texSize;
 	float2 g_ui_quadSize;
 	float4 g_ui_margins;
+	float2 g_ui_uvFlip;
+	float2 g_ui_uvFlipPadding;
 };
 
 cbuffer CB_GPU_PART_ATTACHMENT : register(b9)

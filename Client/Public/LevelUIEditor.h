@@ -77,6 +77,9 @@ private:
 	_float m_fWorldScaleFactor = 0.01f;
 	_float3 m_WorldPos{0.f, 0.f, 0.f};
 	RTTCanvasSettings m_RTTCanvas{};
+	std::optional<nlohmann::ordered_json> m_UndoSnapshot{};
+	_bool m_bRestoringUndo{};
+	_bool m_bPropertyUndoCaptured{};
 private:
 	uint32_t count{};
 	_float2 m_vDragOffset{};
@@ -107,6 +110,10 @@ private:
 
 	void PrefabSave();
 	void PrefabLoad();
+	void DuplicateSelectedUI();
+	void FlipSelectedUI(_bool horizontal);
+	void CaptureUndoSnapshot();
+	void UndoLastAction();
 	void FlipBookMake();
 	void RefreshTextureResources();
 	void RefreshFlipbookResources();
