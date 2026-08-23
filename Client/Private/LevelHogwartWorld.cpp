@@ -98,7 +98,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnStaticCollision()))
 		return E_FAIL;
 
-	if (FAILED(SpawnTerrain(std::nullopt)))
+	if (FAILED(SpawnTerrain(hPlayer)))
 		return E_FAIL;
 
 	if (FAILED(SpawnFlyCamera()) ||
@@ -111,8 +111,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnSkyBox()))
 		return E_FAIL;
 
-	if (FAILED(SpawnWater()))
-		return E_FAIL;
+	//if (FAILED(SpawnWater()))
+	//	return E_FAIL;
 
 	if (FAILED(SpawnMonster(*hPlayer)))
 		return E_FAIL;
