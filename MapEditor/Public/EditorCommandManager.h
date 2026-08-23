@@ -11,6 +11,7 @@ public:
 
 public:
 	void Submit(std::unique_ptr<IEditorCommand> command);
+	void SubmitBatch(std::vector<std::unique_ptr<IEditorCommand>> commands);
 	void RecordExecuted(std::unique_ptr<IEditorCommand> command);
 	void RequestUndo();
 	void RequestRedo();
@@ -26,6 +27,7 @@ private:
 	enum class REQUEST_TYPE : uint8_t
 	{
 		EXECUTE,
+		EXECUTE_BATCH,
 		UNDO,
 		REDO
 	};
@@ -34,6 +36,9 @@ private:
 	{
 		REQUEST_TYPE type = REQUEST_TYPE::EXECUTE;
 		std::unique_ptr<IEditorCommand> command{};
+		std::vector<std::unique_ptr<IEditorCommand>> batchCommands{};
+		size_t nextBatchCommand{};
+		_bool batchChanged{};
 	};
 
 	_bool ExecuteNow(std::unique_ptr<IEditorCommand> command);
@@ -42,6 +47,7 @@ private:
 
 private:
 	static constexpr size_t MAX_HISTORY = 100;
+	static constexpr size_t MAX_BATCH_COMMANDS_PER_FRAME = 1000;
 	std::deque<COMMAND_REQUEST> m_RequestQueue{};
 	std::vector<std::unique_ptr<IEditorCommand>> m_UndoStack{};
 	std::vector<std::unique_ptr<IEditorCommand>> m_RedoStack{};
