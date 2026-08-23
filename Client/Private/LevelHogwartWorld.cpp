@@ -98,7 +98,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnStaticCollision()))
 		return E_FAIL;
 
-	if (FAILED(SpawnTerrain(*hPlayer)))
+	if (FAILED(SpawnTerrain(std::nullopt)))
 		return E_FAIL;
 
 	if (FAILED(SpawnFlyCamera()) ||
@@ -232,7 +232,7 @@ HRESULT CLevelHogwartWorld::SpawnPlayerCape(CHandle hPlayer)
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorld::SpawnTerrain(CHandle hPlayer)
+HRESULT CLevelHogwartWorld::SpawnTerrain(std::optional<CHandle> hPlayer)
 {
 	E::CTerrain::DESC desc{};
 	desc.sObjectTag = "HogwartWorldTerrain";
