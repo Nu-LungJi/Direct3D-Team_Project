@@ -316,7 +316,7 @@ void CSMain_Combined(uint3 ID : SV_DispatchThreadID)
 	float3 FinalColor = OriginalColor + BloomBlurColor * BloomIntensity;
 	
 	// Radial Blur
-	FinalColor = Apply_RadialBlur(FinalColor, TexCoord);
+	//FinalColor = Apply_RadialBlur(FinalColor, TexCoord);
 	
 	OUTPUT[ID.xy] = float4(FinalColor, 1.f);
 	return;

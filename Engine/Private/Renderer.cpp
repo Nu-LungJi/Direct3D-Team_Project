@@ -435,6 +435,11 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 		return E_FAIL;
 	}
 
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/cumulus.dds", nullptr, m_pWeatherMapTexture.GetAddressOf()))) {
+		MSG_BOX("Cannot Create WeatherMap Texture File.");
+		return E_FAIL;
+	}
+
 	if (m_pVolumetricFroxelCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FROXEL", E::CResCBuffer::Create())) {
 		if (FAILED(m_pVolumetricFroxelCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_FROXEL) })))    return E_FAIL;
 	}
@@ -1626,13 +1631,14 @@ HRESULT CRenderer::Render_VolumetricCloud() {
 	{
 		m_pContext->CSSetShader(m_pVolumetricCloudCS->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11ShaderResourceView* pSRVs[4] = {
+		ID3D11ShaderResourceView* pSRVs[5] = {
 			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
 			nullptr,
 			m_pVolumeTexture.Get(),
-			m_pResDynTexTargetDepth->GetSRV().Get()
+			m_pResDynTexTargetDepth->GetSRV().Get(),
+			m_pWeatherMapTexture.Get()
 		};
-		m_pContext->CSSetShaderResources(0, 4, pSRVs);
+		m_pContext->CSSetShaderResources(0, 5, pSRVs);
 
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVolumetricCloudTex->GetUAV().Get() };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
@@ -1662,8 +1668,8 @@ HRESULT CRenderer::Render_VolumetricCloud() {
 	{
 		m_pContext->Dispatch((ScreenSize.x + ThreadCount - 1) / ThreadCount, (ScreenSize.y + ThreadCount - 1) / ThreadCount, 1);
 
-		ID3D11ShaderResourceView* pNullSRVs[4] = { nullptr };
-		m_pContext->CSSetShaderResources(0, 4, pNullSRVs);
+		ID3D11ShaderResourceView* pNullSRVs[5] = { nullptr };
+		m_pContext->CSSetShaderResources(0, 5, pNullSRVs);
 
 		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
@@ -2535,7 +2541,7 @@ VOID	CRenderer::RendererGUI() {
 		if (m_bApplyVolumetricFog ? ImGui::Button("Volumetric Fog OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Volumetric Fog ON", ImVec2(-FLT_MIN, 20))) {
 			m_bApplyVolumetricFog = !m_bApplyVolumetricFog;
 		}
-		if (m_bApplyVolumetricFog && m_bApplyVolumetricCloud ? ImGui::Button("Volumetric Cloud OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Volumetric Cloud ON", ImVec2(-FLT_MIN, 20))) {
+		if (m_bApplyVolumetricCloud ? ImGui::Button("Volumetric Cloud OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Volumetric Cloud ON", ImVec2(-FLT_MIN, 20))) {
 			m_bApplyVolumetricCloud = !m_bApplyVolumetricCloud;
 		}
 		if (m_bApplyShadow ? ImGui::Button("Shadow OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Shadow ON", ImVec2(-FLT_MIN, 20))) {
@@ -2708,7 +2714,7 @@ VOID	CRenderer::RendererGUI() {
 
 			ImGui::TextUnformatted("CloudCoverage");
 			ImGui::SameLine(TextToSlotDistance);
-			ImGui::DragFloat("##CloudCoverage", &m_pCloudInfo.g_fCloudCoverage, 0.005f, 0.f, 1.f, "%.3f");
+			ImGui::DragFloat("##CloudCoverage", &m_pCloudInfo.g_fCloudCoverage, 0.005f, 0.f, 3.f, "%.3f");
 
 			ImGui::TextUnformatted("CloudDensity");
 			ImGui::SameLine(TextToSlotDistance);
@@ -2716,7 +2722,7 @@ VOID	CRenderer::RendererGUI() {
 
 			ImGui::TextUnformatted("CloudScattering");
 			ImGui::SameLine(TextToSlotDistance);
-			ImGui::DragFloat("##CloudScattering", &m_pCloudInfo.g_fCloudScattering, 0.01f, 0.f, 1.f, "%.2f");
+			ImGui::DragFloat("##CloudScattering", &m_pCloudInfo.g_fCloudScattering, 0.01f, -3.f, 3.f, "%.2f");
 
 			ImGui::TextUnformatted("LightAbsorption");
 			ImGui::SameLine(TextToSlotDistance);

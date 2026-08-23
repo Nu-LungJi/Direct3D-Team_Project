@@ -291,6 +291,7 @@ private:		// Volumetric Fog
 	ComPtr<ID3D11ShaderResourceView>	m_pCSMShadowMapTexture	= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pBlueNoiseTexture		= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pVolumeTexture		= { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	m_pWeatherMapTexture	= { nullptr };
 
 	XMMATRIX					m_mShadowLightViewProj{};
 	XMMATRIX					m_mPreviousCamViewProj{};

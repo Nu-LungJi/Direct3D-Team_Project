@@ -18,16 +18,18 @@ static const float3 RANDOM_FACTOR		= { float3(0.06711056f, 0.00583715f, 52.98291
 static const uint	LIGHT_STEP_COUNT	= { 4 };
 static const float	LIGHT_STEP_SIZE		= { 40.f };
 
-static const float3 GLOBAL_SUN_COLOR	= { float3(1.f, 1.f, 1.f) };
+static const float3 GLOBAL_SUN_COLOR = { float3(0.6f, 0.6f, 0.8f) };
 
 static const int2 Offsets[4] = { int2(0, -1), int2(0, 1), int2(-1, 0), int2(1, 0) };
 	
-Texture2D<float4>	OriginalTexture : register(t0);
-Texture2D<float4>	HistoryTexture	: register(t1);
-Texture3D<float>	VolumeTexture	: register(t2);
-Texture2D<float>	DepthTexture	: register(t3);
+Texture2D<float4>	OriginalTexture		: register(t0);
+Texture2D<float4>	HistoryTexture		: register(t1);
+Texture3D<float>	VolumeTexture		: register(t2);
+Texture2D<float>	DepthTexture		: register(t3);
+Texture2D<float4>	WeatherMapTexture	: register(t4);
 
-RWTexture2D<float4> OUTPUT			: register(u0);
+
+RWTexture2D<float4> OUTPUT				: register(u0);
 
 cbuffer CB_CLOUDTAA : register(b9)
 {
@@ -68,7 +70,10 @@ float Compute_GradientNoise(float2 PixelPos)
 {
 	return frac(RANDOM_FACTOR.z * frac(dot(PixelPos, RANDOM_FACTOR.xy)));
 }
-
+float Remap(float originalValue, float originalMin, float originalMax, float newMin, float newMax)
+{
+	return newMin + (((originalValue - originalMin) / (originalMax - originalMin)) * (newMax - newMin));
+}
 float3 Compute_MultipleScattering(float3 _RayDirection, float3 _LightDirection, float _OpticalDepth, float _BaseScattering)
 {
 	float3 MultipleScatteringTotal = float3(0.f, 0.f, 0.f);
@@ -102,22 +107,40 @@ float Get_CloudDensity(float3 WorldPos, float BaseDensity)
 	float3	WindOffset = WindDirection * WindTimeAccumulation;
 	float3	MovedPos = WorldPos + WindOffset;
 	
+	float2	WeatherOffset = float2(100000.f, 0.f);
+	float2	WeatherMapUV = (MovedPos.xz + WeatherOffset) * 0.0000095f;
+	float3	WeatherMapTex = WeatherMapTexture.SampleLevel(LinearWrap, WeatherMapUV, 0).rgb;
+	
+	float	WeatherCoverage = smoothstep(0.05f, 0.55f, WeatherMapTex.r);
+	float	WeatherType		= smoothstep(0.0f, 0.6f, WeatherMapTex.g) * 0.8f;
+	float	WeatherDensity	= WeatherMapTex.b; 
+	
 	float	BaseNoise	= VolumeTexture.SampleLevel(LinearWrap, MovedPos * BaseCloudNoiseScale, 0).r;
 	float	DetailNoise = VolumeTexture.SampleLevel(LinearWrap, MovedPos * DetailCloudNoiseScale, 0).r;
 	float	RawDensity = BaseNoise * 0.8f + DetailNoise * 0.2f;
 	
+	float	ErodedNoise = saturate(Remap(BaseNoise, DetailNoise * 0.2f, 1.f, 0.f, 1.f));
+	
 	float3	PlanetCenter = float3(g_vCamPos.x, -SPHERE_RADIUS, g_vCamPos.z);
 	float	CurrentHeight = distance(WorldPos, PlanetCenter) - SPHERE_RADIUS;
 	
-	float	HeightRange = max(1.0f, CloudMaxHeight - CloudMinHeight);
+	float	DynamicMaxHeight = lerp(CloudMinHeight + 0.f, CloudMaxHeight, WeatherType);
+	
+	float	HeightRange = max(1.f, DynamicMaxHeight - CloudMinHeight);
 	float	HeightFraction = saturate((CurrentHeight - CloudMinHeight) / HeightRange);
+	
 	float	HeightGradient = 4.f * HeightFraction * (1.f - HeightFraction);
 	
-	float	CutOffValue = 1.f - CloudCoverage;
-	float	CloudShape = saturate((RawDensity - CutOffValue) / max(0.001f, (1.f - CutOffValue)));
-	CloudShape = pow(CloudShape, 2.0f);
+	float	FinalCoverage = CloudCoverage * WeatherCoverage;
+	float	CutOffValue = 1.f - FinalCoverage;
+	
+	float CloudShape = saturate((ErodedNoise - CutOffValue) / max(0.001f, WeatherCoverage));
+	CloudShape = smoothstep(0.15f, 1.0f, CloudShape);
+	CloudShape *= WeatherCoverage;
+	CloudShape *= HeightGradient;
+	CloudShape = pow(CloudShape, 1.5f);
 		
-	return CloudShape * BaseDensity * HeightGradient * 100.f;
+	return	CloudShape * BaseDensity * 150.f;
 }
 
 float2 Get_SphereIntersection(float3 _RayOrigin, float3 _RayDirection, float3 _Center, float _Radius)
@@ -170,19 +193,19 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	uint2	DepthPixelPos = uint2(TexCoord * float2(DepthWidth, DepthHeight));
 	float	Depth = DepthTexture[DepthPixelPos].r; 
 	
-	bool bIsSky = (Depth == 1.0f || Depth == 0.0f);
+	bool bIsSky = (Depth == 1.f || Depth == 0.f);
 	
 	float4	ClipSpace	= float4(ScreenSpaceNDC, Depth, 1.f);
 	float4	ViewSpace = mul(ClipSpace, CloudJitterInvProj);
 	float4	WorldSpace	= mul(ViewSpace / ViewSpace.w, g_matInvView);
 	float2 EarthHit = Get_SphereIntersection(g_vCamPos, RayDirection, PlanetCenter, SPHERE_RADIUS);
-	if (EarthHit.y > 0.0f && bIsSky)
+	if (EarthHit.y > 0.f && bIsSky)
 	{
 		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
 		return;
 	}
 	
-	float DistanceToGeometry = bIsSky ? 9999999.0f : distance(WorldSpace.xyz, g_vCamPos);
+	float DistanceToGeometry = bIsSky ? 9999999.f : distance(WorldSpace.xyz, g_vCamPos);
 	
 	if (DistanceToGeometry < CloudStartHeight || CloudStartHeight > CloudLODDistance)
 	{
@@ -191,8 +214,8 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	}
 
 	float EndDistance = min(CloudEndHeight, min(DistanceToGeometry, CloudLODDistance));
-	float MaxTravelDistance = max(0.0f, EndDistance - CloudStartHeight);
-	if (MaxTravelDistance <= 0.0f)
+	float MaxTravelDistance = max(0.f, EndDistance - CloudStartHeight);
+	if (MaxTravelDistance <= 0.f)
 	{
 		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
 		return;
@@ -203,7 +226,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	float	DynamicStepSize = MaxTravelDistance / float(DynamicStepCount);
 	float3	CurrentPosition = g_vCamPos + (RayDirection * CloudStartHeight);
 	
-	float	TemporalSeed = CloudJitterOffset.x * 1000.0f;
+	float	TemporalSeed = CloudJitterOffset.x * 1000.f;
 	float2	DynamicJitter = float2(PixelPos.x + TemporalSeed, PixelPos.y + TemporalSeed);
 	float	JitterValue = Compute_GradientNoise(DynamicJitter);
 	CurrentPosition += RayDirection * (DynamicStepSize * JitterValue);
@@ -212,7 +235,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	float3	FinalColor = float3(0.f, 0.f, 0.f);
 	
 	float	HorizonFade = saturate(RayDirection.y * 2.f);
-	
+
 	for (uint Step = 0; Step < DynamicStepCount; ++Step)
 	{
 		float Density = Get_CloudDensity(CurrentPosition, CloudDensity);
