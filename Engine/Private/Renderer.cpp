@@ -37,6 +37,8 @@ HRESULT CRenderer::Initialize()
 
 	if (FAILED(InitializeFSR2_2()))				return E_FAIL;
 
+    if (FAILED(InitializeOffscreen()))          return E_FAIL;
+
 	if (FAILED(InitializeFullscreen()))         return E_FAIL;
 
 	if (FAILED(InitializeBaseTarget()))         return E_FAIL;
@@ -964,8 +966,7 @@ HRESULT CRenderer::Draw() {
 
 	// Effect
 	if (FAILED(Render_Effect()))		 return E_FAIL;
-	// Combined
-	if (FAILED(Render_OffScreen()))      return E_FAIL;
+
 
 	// PostProcess
 	if (FAILED(Render_PostProcess()))    return E_FAIL;

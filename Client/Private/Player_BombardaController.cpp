@@ -75,8 +75,8 @@ void CPlayer_BombardaController::StartCastEffect()
 		"Bombarda_Cast_Energy_Trail",
 		"Bombarda_Cast_Energy_Trail"))
 	{
-		pTrail->SetColor({ 0.52f, 0.72f, 1.f, 1.f });
-		pTrail->SetEmissive({ 0.32f, 0.58f, 1.f, 6.f });
+		pTrail->SetColor({ 1.f,0.55f,0.05f,1.f });
+		pTrail->SetEmissive({ 0.03f,0.32f,1.f,30.f });
 	}
 
 	const _float3 wandPosition{
@@ -156,6 +156,7 @@ _bool CPlayer_BombardaController::FireProjectile()
 		&Desc);
 	if (!hProjectile)
 		return false;
+
 
 	// [LSY] 머즐과 발사체가 같은 시작 행렬을 사용해 지팡이 끝에서 자연스럽게 이어지게 한다.
 	CGameInstance::Get().PlayEffect(
@@ -257,33 +258,33 @@ void CPlayer_BombardaController::EmitCastParticleCurve() const
 		1u,
 		MAX_TRAIL_SPAWN_PER_FRAME);
 
-	for (uint32_t i = 1; i <= iSpawnCount; ++i)
-	{
-		const _float fRatio = static_cast<_float>(i) /
-			static_cast<_float>(iSpawnCount);
-		_float3 spawnPosition{};
-		XMStoreFloat3(
-			&spawnPosition,
-			XMVectorCatmullRom(
-				vPoint0,
-				vPoint1,
-				vPoint2,
-				vPoint3,
-				fRatio));
+	//for (uint32_t i = 1; i <= iSpawnCount; ++i)
+	//{
+	//	const _float fRatio = static_cast<_float>(i) /
+	//		static_cast<_float>(iSpawnCount);
+	//	_float3 spawnPosition{};
+	//	XMStoreFloat3(
+	//		&spawnPosition,
+	//		XMVectorCatmullRom(
+	//			vPoint0,
+	//			vPoint1,
+	//			vPoint2,
+	//			vPoint3,
+	//			fRatio));
 
-		_float4x4 spawnWorld{};
-		XMStoreFloat4x4(&spawnWorld, XMMatrixIdentity());
-		spawnWorld._41 = spawnPosition.x;
-		spawnWorld._42 = spawnPosition.y;
-		spawnWorld._43 = spawnPosition.z;
-		CGameInstance::Get().Spawn(m_CastParticleCommands, spawnWorld);
-	}
+	//	_float4x4 spawnWorld{};
+	//	XMStoreFloat4x4(&spawnWorld, XMMatrixIdentity());
+	//	spawnWorld._41 = spawnPosition.x;
+	//	spawnWorld._42 = spawnPosition.y;
+	//	spawnWorld._43 = spawnPosition.z;
+	//	CGameInstance::Get().Spawn(m_CastParticleCommands, spawnWorld);
+	//}
 }
 
 void CPlayer_BombardaController::EmitCastEnergyTrail(
 	const _float3& vWandPosition)
 {
-	constexpr _float TRAIL_HALF_WIDTH = 0.2f;
+	constexpr _float TRAIL_HALF_WIDTH = 0.18f;
 	_float3 vTrailStart = vWandPosition;
 	_float3 vTrailEnd = vWandPosition;
 	vTrailStart.y += TRAIL_HALF_WIDTH;

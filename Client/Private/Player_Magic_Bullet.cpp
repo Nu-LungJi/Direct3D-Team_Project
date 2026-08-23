@@ -208,6 +208,9 @@ void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 		vstart = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y + 0.4f, m_pComTransform->GetPosition().z);
 		vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y - 0.4f, m_pComTransform->GetPosition().z);
 		CGameInstance::Get().AddTrailPoint("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU", GetHandle(), vstart, vend);
+		_float4x4 mat;
+		XMStoreFloat4x4(&mat, m_pComTransform->GetLoadedWorldMatrix());
+		CGameInstance::Get().Spawn("PlayerAttackSpread1.json", mat);
 	}
 }
 

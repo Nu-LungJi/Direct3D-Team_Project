@@ -2,6 +2,7 @@
 #include "Player_BombardaSkill_State.h"
 
 #include "Player.h"
+#include "Player_Weapon.h"
 #include "ComAnimator.h"
 #include "PlayerAnimationRatioGuard.h"
 
@@ -89,6 +90,18 @@ void CPlayer_BombardaSkill_State::Update(CStateMachine* pStateMachine, _float)
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
+	{
+		auto* pWeapon = CGameInstance::Get().
+			GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+		if (!pWeapon)
+			return;
+
+		_float4x4 mat;
+		XMStoreFloat4x4(&mat,
+		XMMatrixTranslation(pWeapon->GetSpawnWorldMatrix()._41, pWeapon->GetSpawnWorldMatrix()._42, pWeapon->GetSpawnWorldMatrix()._43));
+		
+		CGameInstance::Get().Spawn("Bombarda_CastEnd_Particle_Queue.json", mat);
+	}
 		break;
 
 	case PHASE::RELEASE:

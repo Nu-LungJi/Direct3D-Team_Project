@@ -114,7 +114,7 @@ PS_OUT PSMain(VS_OUT In)
 		discard;
 	float4 noise = NoiseMap.Sample(LinearWrap, In.vTexcoord);
     
-	float ratio = 1.0f - (In.life / In.maxLife);
+	float ratio = saturate(1.0f - In.life / max(In.maxLife, 0.0001f));
 
 	if (noise.r < ratio) 
 		discard;
@@ -184,7 +184,9 @@ PS_OUT PSMain_Stone(VS_OUT In)
 	PS_OUT Out = (PS_OUT) 0;
 
 	float4 AlbedoTex = AlbedoMap.Sample(LinearWrap, In.vTexcoord);
-	AlbedoTex *= In.vColor;
+	// Stone debris keeps the material albedo. The current particle queue stores
+	// an almost-black RGB color, which previously erased the entire mesh here.
+	AlbedoTex.a *= In.vColor.a;
 
 	float remainingRatio = saturate(In.life / max(In.maxLife, 0.0001f));
 	float ageRatio = 1.f - remainingRatio;
@@ -195,7 +197,8 @@ PS_OUT PSMain_Stone(VS_OUT In)
 	dissolveUV += float2(g_fTime * 0.03f, -g_fTime * 0.02f);
 
 	float dissolveNoise = NoiseMap.Sample(LinearWrap, dissolveUV).r;
-	float dissolveValue = dissolveNoise - ageRatio;
+	float dissolveProgress = smoothstep(0.1f, 1.f, ageRatio);
+	float dissolveValue = dissolveNoise - dissolveProgress;
 	float dissolveEdgeWidth = 0.08f;
 	float dissolveEdge = 1.f - smoothstep(0.f, dissolveEdgeWidth, dissolveValue);
 
@@ -217,7 +220,7 @@ PS_OUT PSMain_Stone(VS_OUT In)
 	float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
 	float3 LightAccumulation = float3(0.f, 0.f, 0.f);
 
-	[unroll(MAX_LIGHT_COUNT)]
+    [unroll(MAX_LIGHT_COUNT)]
 	for (int i = 0; i < LightCount; ++i)
 	{
 		float3 L;
@@ -233,9 +236,11 @@ PS_OUT PSMain_Stone(VS_OUT In)
 
 		float NDL = saturate(RawNDL);
 		float3 H = normalize(V + L);
+
 		float D = DistributionGGX(WorldNormal, H, fRoughness);
 		float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
 		float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
+
 		float3 Specular = D * F * V_Spec * SpecularIntensity;
 		float3 kS = F;
 		float3 kD = (1.f - kS) * (1.f - fMetallic);
@@ -246,15 +251,16 @@ PS_OUT PSMain_Stone(VS_OUT In)
 
 	float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb;
 	texEmissive = pow(max(texEmissive, 0.f), 2.2f);
-
+		
 	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ageRatio);
 	float3 instanceEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
 	float3 dissolveEdgeColor = lerpedEmissive.rgb * lerpedEmissive.a * dissolveEdge * 2.f;
 
-	float3 constantAmbient = Albedo * fAmbient; 
+	float3 constantAmbient = Albedo * fAmbient;
 	float3 finalColor = constantAmbient + LightAccumulation + texEmissive + instanceEmissive + dissolveEdgeColor;
 
 	Out.vDiffuse = float4(finalColor, AlbedoTex.a);
+
 	return Out;
 }
 
@@ -301,6 +307,7 @@ PS_OUT PSMaceSphere(VS_OUT In)
 	float emissiveMask = darkMask * fade;
 	float3 finalColor = baseColor * In.vColor.rgb + instEmissive * emissiveMask;
 
+	Out.vDiffuse = float4(finalColor, 1.0f);
 	Out.vDiffuse = float4(finalColor, 1.0f);
 	return Out;
 }
