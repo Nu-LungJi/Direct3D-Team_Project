@@ -36,6 +36,7 @@ HRESULT CTestPhysXBall::Initialize(void* pArg)
 		CComPxRigidBody::DESC Desc{};
 		Desc.eType = CComPxRigidBody::TYPE::DYNAMIC;
 		Desc.vPosition = pDesc->vInitialPos;
+		Desc.bSendSleepNotifies = true;
 		if (FAILED(AddComponentFromProto("PHYSX", "Prototype_Component_ComPxRigidBody", "ComPxRigidBody", &Desc, &m_pComPxRigidBody)))
 		{
 			return E_FAIL;
