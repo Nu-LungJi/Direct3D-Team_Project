@@ -397,6 +397,14 @@ void CBTAttackAnimation::UpdateAttackIndicator(
 			fImpactRatio = std::min(fImpactRatio, std::clamp(Skill.fRatio, 0.f, 1.f));
 			bHasImpactRatio = true;
 		}
+
+		// KMS 추가: 보스의 기존 BT 데이터는 NewSkillTable 대신
+		// BTAnimRoot의 SkillType/SkillRatio만 사용하는 공격이 많다.
+		if (!bHasImpactRatio && m_eSkillType != ATTMON::END)
+		{
+			fImpactRatio = std::clamp(m_fSkillRatio.x, 0.f, 1.f);
+			bHasImpactRatio = true;
+		}
 	}
 
 	if (!bHasImpactRatio)
@@ -404,7 +412,9 @@ void CBTAttackAnimation::UpdateAttackIndicator(
 
 	const _float fWarningRatio = std::max(0.f,
 		fImpactRatio - ATTACK_INDICATOR_LEAD_RATIO);
-	if (fAnimRatio < fWarningRatio || fAnimRatio >= fImpactRatio)
+	const _bool bImmediateAttack = fImpactRatio <= FLT_EPSILON;
+	if (fAnimRatio < fWarningRatio ||
+		(!bImmediateAttack && fAnimRatio >= fImpactRatio))
 		return;
 
 	pPlayer->RequestAttackIndicator(

@@ -240,6 +240,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 			m_pComModelInstance->GetModel()->Get_BoneIndex("LeftFoot");
 		m_iRightFootBoneIndex =
 			m_pComModelInstance->GetModel()->Get_BoneIndex("RightFoot");
+		m_iAttackIndicatorHeadBoneIndex =
+			m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_FX_Head_Centre");
 	}
 
 	{
@@ -680,8 +682,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_fAttackIndicatorRemainTime = std::max(
 			0.f, m_fAttackIndicatorRemainTime - fTimeDelta);
 
-		_float3 vHeadPosition = GetTransform().GetPosition();
-		vHeadPosition.y += ATTACK_INDICATOR_HEAD_OFFSET;
+		const _float3 vHeadPosition = GetAttackIndicatorPosition();
 		const _float3 vDelta{
 			vHeadPosition.x - m_vAttackIndicatorPosition.x,
 			vHeadPosition.y - m_vAttackIndicatorPosition.y,
@@ -2513,8 +2514,7 @@ void CPlayer::RequestAttackIndicator(_bool bDodgeOnly)
 		m_iAttackIndicatorParticleOwner = INVALID_PARTICLE_OWNER_ID;
 	}
 
-	m_vAttackIndicatorPosition = GetTransform().GetPosition();
-	m_vAttackIndicatorPosition.y += ATTACK_INDICATOR_HEAD_OFFSET;
+	m_vAttackIndicatorPosition = GetAttackIndicatorPosition();
 
 	_float4x4 IndicatorWorld{};
 	XMStoreFloat4x4(&IndicatorWorld, XMMatrixTranslation(
@@ -2530,6 +2530,29 @@ void CPlayer::RequestAttackIndicator(_bool bDodgeOnly)
 
 	m_bAttackIndicatorDodgeOnly = bDodgeOnly;
 	m_fAttackIndicatorRemainTime = ATTACK_INDICATOR_DURATION;
+}
+
+_float3 CPlayer::GetAttackIndicatorPosition() const
+{
+	if (m_pComModelInstance && m_iAttackIndicatorHeadBoneIndex >= 0)
+	{
+		const auto& CombinedBones =
+			m_pComModelInstance->Get_CombinedBoneMatrices();
+		if (static_cast<size_t>(m_iAttackIndicatorHeadBoneIndex) <
+			CombinedBones.size())
+		{
+			const _matrix HeadWorld = XMLoadFloat4x4(
+				&CombinedBones[static_cast<size_t>(
+					m_iAttackIndicatorHeadBoneIndex)]) *
+				GetTransform().GetLoadedCombinedWorldMatrix();
+			_float3 vHeadPosition{};
+			XMStoreFloat3(&vHeadPosition, HeadWorld.r[3]);
+			return vHeadPosition;
+		}
+	}
+
+	// 모델 또는 본 데이터가 아직 준비되지 않은 프레임만 루트 위치를 사용한다.
+	return GetTransform().GetPosition();
 }
 
 _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,int32_t iDamage,const _float3& vHitPosition)

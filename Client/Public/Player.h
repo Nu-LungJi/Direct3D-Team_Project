@@ -108,6 +108,7 @@ public:
 	const _float3& GetKnockdownAttackPosition() const { return m_vKnockdownAttackPosition; }
 private:
 	void HandleDeath();
+	_float3 GetAttackIndicatorPosition() const;
 	void TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage = 0,
 		const _float3* pAttackPosition = nullptr);
 public:
@@ -296,8 +297,8 @@ private:
 	_float3 m_vAttackIndicatorPosition{};
 	_float m_fAttackIndicatorRemainTime{};
 	_bool m_bAttackIndicatorDodgeOnly{};
+	int32_t m_iAttackIndicatorHeadBoneIndex{ -1 };
 	static constexpr _float ATTACK_INDICATOR_DURATION = 1.f;
-	static constexpr _float ATTACK_INDICATOR_HEAD_OFFSET = 2.5f;
 	_float m_fGroundFollowProbeStartHeight{ 0.15f };
 	_float m_fGroundFollowMaxStepDown{ 2.f };
 	_float m_fGroundFollowProbeRadius{ 0.3f };
