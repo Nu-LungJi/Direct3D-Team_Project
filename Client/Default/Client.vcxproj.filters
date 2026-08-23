@@ -367,15 +367,6 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State">
       <UniqueIdentifier>{e8c271b5-81f6-4fe9-9552-77c3802e87d2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Player\Player_ConfringoController">
-      <UniqueIdentifier>{6edd5ca2-a286-4ac1-b657-df90b1703e18}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\Player\Player_BombardaController">
-      <UniqueIdentifier>{a21cbdd5-7eb1-4c65-8cba-a14935998a12}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\Player\Player_AvadaKedavraController">
-      <UniqueIdentifier>{cf6d4ace-6a71-49ce-b7a3-0aa8e78a1cee}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\Monster\EnderDragon\Skill\Gasi">
       <UniqueIdentifier>{a9ff708e-a308-4d48-99c3-2ed09296a5f9}</UniqueIdentifier>
     </Filter>
@@ -941,15 +932,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_StupefySkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\Player_ConfringoController.h">
-      <Filter>GameObject\Player\Player_ConfringoController</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\Player_BombardaController.h">
-      <Filter>GameObject\Player\Player_BombardaController</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\Player_AvadaKedavraController.h">
-      <Filter>GameObject\Player\Player_AvadaKedavraController</Filter>
     </ClInclude>
     <ClInclude Include="..\public\SkillTarget.h">
       <Filter>GameObject\Monster\00.Parents</Filter>
@@ -1522,15 +1504,6 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_StupefySkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\Player_ConfringoController.cpp">
-      <Filter>GameObject\Player\Player_ConfringoController</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\Player_BombardaController.cpp">
-      <Filter>GameObject\Player\Player_BombardaController</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\Player_AvadaKedavraController.cpp">
-      <Filter>GameObject\Player\Player_AvadaKedavraController</Filter>
     </ClCompile>
     <ClCompile Include="..\private\SkillTarget.cpp">
       <Filter>GameObject\Monster\00.Parents</Filter>

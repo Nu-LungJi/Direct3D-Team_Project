@@ -37,6 +37,9 @@ public:
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(_float fTimeDelta) override;
 	void UpdateFollow(_float fTimeDelta);
+	// 일시적인 연출 FOV를 설정한다. 카메라의 unscaled Update에서 부드럽게 보간된다.
+	_bool BeginFovOverride(_float fTargetFovY, _float fResponse);
+	void EndFovOverride(_float fRestoreResponse);
 private:
 	// 타겟 -> 카메라 방향으로 SphereSweep
 	_bool PlayerToCameraSphereSweep(const _float3& PlayerPosition, const _float3& CameraPosition, _float fCollisionRadius, _float3& OutCameraPosition) const;
@@ -107,6 +110,10 @@ private:
 	_float m_fSpeedEffectResponse{ 3.5f };
 	// 최고 속도에서 FOV를 넓혀 주변부가 빠르게 벌어지는 부스트 원근감을 만든다.
 	_float m_fSpeedFovExpansion{ 8.f };
+	_bool m_bFovOverrideActive{};
+	_bool m_bFovTransitionActive{};
+	_float m_fFovOverrideTarget{ 75.f };
+	_float m_fFovTransitionResponse{ 10.f };
 	// FOV 확장으로 캐릭터가 작아지는 만큼 고속에서 카메라를 가까이 당긴다.
 	// 최고 속도에서는 약 5.2까지 가까워져 캐릭터 크기를 보정한다.
 	_float m_fSpeedDistanceExtension{ -0.4f };

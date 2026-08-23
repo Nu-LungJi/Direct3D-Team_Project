@@ -26,6 +26,7 @@
 #include "SkyCloudyCube.h"
 #include "PropBarrel.h"
 #include "PropBarrelDebris.h"
+#include "ResPhysXConvexGeometry.h"
 
 NS_USING(Client)
 
@@ -181,18 +182,20 @@ HRESULT CMainAppLoader::Load_Transformation_Resources()
 
 	for (uint32_t i = 1; i <= 12; ++i)
 	{
-		std::string path =
-			"./Resources/SampleClient/Models/Static/Prop_Barrel_Breakable_A_Fragment2/";
+		std::string fragmentName{};
 		if (i < 10)
-			path += "SM_Prop_Barrel_Breakable_A_Fragment2_0" + std::to_string(i);
+			fragmentName = "SM_Prop_Barrel_Breakable_A_Fragment2_0" + std::to_string(i);
 		else
-			path += "SM_Prop_Barrel_Breakable_A_Fragment2_" + std::to_string(i);
-		path += ".bin";
+			fragmentName = "SM_Prop_Barrel_Breakable_A_Fragment2_" + std::to_string(i);
+
+		const std::string modelPath =
+			"./Resources/SampleClient/Models/Static/Prop_Barrel_Breakable_A_Fragment2/" +
+			fragmentName + ".bin";
 
 		if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
 			RESOURCE_GROUP,
 			"Static_Prop_Barrel_Debris_Resource_" + std::to_string(i),
-			CResStaticModel::Create(path)))
+			CResStaticModel::Create(modelPath)))
 		{
 			CResStaticModel::DESC desc{};
 			desc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
@@ -200,6 +203,18 @@ HRESULT CMainAppLoader::Load_Transformation_Resources()
 				return E_FAIL;
 		}
 		else
+		{
+			return E_FAIL;
+		}
+
+		const std::string convexPath =
+			"./Resources/PhysX/Cooked/" + fragmentName + ".pxconvex";
+		auto convexResource = CResPhysXConvexGeometry::CreateAndLoad(convexPath);
+		if (!convexResource ||
+			!CGameInstance::Get().AddResourceT<CResPhysXConvexGeometry>(
+				RESOURCE_GROUP,
+				"PhysX_Prop_Barrel_Debris_Convex_" + std::to_string(i),
+				std::move(convexResource)))
 		{
 			return E_FAIL;
 		}

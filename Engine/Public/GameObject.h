@@ -229,6 +229,7 @@ public:
 	// IPhysicsSync
 public:
 	void SyncActivePhysXData(const PX_SYNC_DATA& syncData) override;
+	void InvalidatePhysXSyncData();
 	virtual void UpdatePhysicData();
 private:
 	PX_SYNC_DATA m_PhysXSyncData{};
