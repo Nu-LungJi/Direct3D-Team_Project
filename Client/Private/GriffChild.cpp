@@ -281,6 +281,7 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 	_float fRadius{ 30.f };
 	_float fMinDis{ 25.f };
 	_float fMinNeighbor{FLT_MAX};
+	_vector vDirAverage = XMVectorZero();
 	if (fFarCheck < 25.f)
 	{
 		for (auto& iter : m_Neighbors)
@@ -297,6 +298,7 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 				fMinNeighbor = fDist;
 			//내 이웃이랑 가까우면 밀어내기
 			//너무 딱 붙으면 아에 다른 방향으로
+			vDirAverage += XMVector3Normalize(vAway);
 			if (fDist <= 0.01f)
 			{
 				vAwaySum += XMLoadFloat3(&m_vSpreadDir);
@@ -311,6 +313,7 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 			}
 		}
 	}
+	vDirAverage = vDirAverage / _float((m_Neighbors.size() - 1));
 	if(iCnt > 0)
 	vAwaySum = vAwaySum / _float(iCnt);
 	
@@ -340,8 +343,11 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 
 		XMStoreFloat3(&m_vCurDir, vLastDir);
 	}
-
-	m_pMoveIntent->SetFacingIntent(m_vCurDir, 60.f);
+	
+	vDirAverage += XMLoadFloat3(&m_vCurDir);
+	_float3 vLastDir{};
+	XMStoreFloat3(&vLastDir, XMVector3Normalize(vDirAverage * 0.5f));
+	m_pMoveIntent->SetFacingIntent(vLastDir, 60.f);
 	m_pMoveIntent->SetMoveIntent(m_vCurDir, fSpeed);
 }
 

@@ -66,7 +66,7 @@ protected:
 	std::vector<FLAG_EVENT>		m_EndFlags{};
 	_string						m_strAnimName{};
 
-	BT_USER				m_eUser{ BT_USER::MON };
+	BT_USER						m_eUser{ BT_USER::MON };
 	std::vector<MONSOUND>		m_Sounds{};
 private:
 	uint32_t					m_iStartFlagCheck{};
