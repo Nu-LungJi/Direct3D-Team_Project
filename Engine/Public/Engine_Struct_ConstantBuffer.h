@@ -89,6 +89,13 @@ namespace Engine
 	} CB_SHADOW;
 	static_assert(sizeof(CB_SHADOW) % 16 == 0);
 
+	typedef struct tagConstantBufferVolumetricCloud
+	{
+		_float		g_fCloudDensity;
+		_float3		g_fLightDirection;
+	} CB_VOLUMECLOUD;
+	static_assert(sizeof(CB_VOLUMECLOUD) % 16 == 0);
+
 	typedef struct tagConstantBufferPerUI
 	{
 		_float2  texCoord{};

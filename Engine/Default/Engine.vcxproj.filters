@@ -2048,12 +2048,12 @@
     <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
-	<FxCompile Include="..\ShaderFiles\UI\BoostTrailInstancedUI.hlsl">
-	  <Filter>ShaderFiles\UIShader</Filter>
-	</FxCompile>
-	<FxCompile Include="..\ShaderFiles\UI\ChaserTrailInstancedUI.hlsl">
-	  <Filter>ShaderFiles\UIShader</Filter>
-	</FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\BoostTrailInstancedUI.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\ChaserTrailInstancedUI.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
@@ -2128,6 +2128,9 @@
     </None>
     <FxCompile Include="..\ShaderFiles\Water\Shader_Water.hlsl">
       <Filter>ShaderFiles\Water</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\RayMarching\CS_VolumetricCloud.hlsl">
+      <Filter>ShaderFiles\RayMarching</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

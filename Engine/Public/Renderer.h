@@ -44,7 +44,7 @@ public:			// Update
 	VOID		UpdateGUI();
 
 private:		// GUI Update
-	VOID		PostProcessGUI();
+	VOID		RendererGUI();
 
 public:			// Render
 	HRESULT		Draw();
@@ -60,7 +60,6 @@ private:		// Render Setting
 	HRESULT		Render_Alpha();
 	HRESULT		Render_Effect();
 	HRESULT		Render_VolumetricEffect();
-	HRESULT		Render_OffScreen();
 	HRESULT		Render_PostProcess();
 	HRESULT		Render_UI3D();
 	HRESULT		Render_UserInterface();
@@ -81,6 +80,7 @@ private:		// Render Object
 
 private:		// Volumetric Effect Pass Render
 	HRESULT		Update_VolumetricConstantBuffer();
+	HRESULT		Render_VolumetricCloud();
 	HRESULT		Render_LightIntegration();
 	HRESULT		Render_FroxelZAccumulation();
 	HRESULT		Render_TemporalBlend();
@@ -206,6 +206,7 @@ private:
 	SPtr<CResCBuffer>			m_pVolumetricFroxelCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricVFogCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricCSMCBuffer{};
+	SPtr<CResCBuffer>			m_pVolumetricCloudCBuffer{};
 	SPtr<CResCBuffer>			m_pLensFlareCBuffer{};
 
 	SPtr<CResComputeShader>		m_pLensFlareComputeShader{};
@@ -254,10 +255,14 @@ private:		// Volumetric Fog
 	SPtr<CResComputeShader>		m_pTemporalBlendedCS{};
 	SPtr<CResPixelShader>		m_pVolumetricCompositePS{};
 
+	SPtr<CResComputeShader>		m_pVolumetricCloudCS{};
+
 	TEXTURE3D					m_pVoxelLighting{};
 	TEXTURE3D					m_pVoxelAccumulated{};
 	TEXTURE3D					m_pBlendedVolumeTex{};
 	TEXTURE3D					m_pPreviousVolumeTex{};
+
+	SPtr<CResDynamicTexture2D>	m_pVolumetricCloudTex{};
 
 	CB_VLFOG					m_pFogInfo{};
 	CB_ENVLIGHT					m_pEnvLight{};
