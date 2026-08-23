@@ -172,6 +172,8 @@ CPlayer::CPlayer(const CPlayer& Prototype)
 
 CPlayer::~CPlayer()
 {
+	if (m_iAttackIndicatorParticleOwner != INVALID_PARTICLE_OWNER_ID)
+		CGameInstance::Get().ClearParticleOwner(m_iAttackIndicatorParticleOwner);
 }
 
 
@@ -673,6 +675,30 @@ _bool CPlayer::IsRagdollTransitioning() const
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_iAttackIndicatorParticleOwner != INVALID_PARTICLE_OWNER_ID)
+	{
+		m_fAttackIndicatorRemainTime = std::max(
+			0.f, m_fAttackIndicatorRemainTime - fTimeDelta);
+
+		_float3 vHeadPosition = GetTransform().GetPosition();
+		vHeadPosition.y += ATTACK_INDICATOR_HEAD_OFFSET;
+		const _float3 vDelta{
+			vHeadPosition.x - m_vAttackIndicatorPosition.x,
+			vHeadPosition.y - m_vAttackIndicatorPosition.y,
+			vHeadPosition.z - m_vAttackIndicatorPosition.z };
+		CGameInstance::Get().TranslateOwner(
+			m_iAttackIndicatorParticleOwner, vDelta);
+		m_vAttackIndicatorPosition = vHeadPosition;
+
+		if (m_fAttackIndicatorRemainTime <= 0.f || m_iHp <= 0)
+		{
+			CGameInstance::Get().ClearParticleOwner(
+				m_iAttackIndicatorParticleOwner);
+			m_iAttackIndicatorParticleOwner = INVALID_PARTICLE_OWNER_ID;
+			m_bAttackIndicatorDodgeOnly = false;
+		}
+	}
+
 	if (m_bProtegoActive)
 	{
 		m_fProtegoRemainTime = std::max(0.f, m_fProtegoRemainTime - fTimeDelta);
@@ -2468,6 +2494,42 @@ HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISIO
 	default:
 		return S_FALSE;
 	}
+}
+
+void CPlayer::RequestAttackIndicator(_bool bDodgeOnly)
+{
+	if (m_iHp <= 0 || GetPendingDestroy())
+		return;
+
+	if (m_iAttackIndicatorParticleOwner != INVALID_PARTICLE_OWNER_ID)
+	{
+		// 이미 빨간 경고가 떠 있거나 같은 노란 경고가 재요청되면 중복 생성하지 않는다.
+		if (m_bAttackIndicatorDodgeOnly || !bDodgeOnly)
+			return;
+
+		// 노란 경고 도중 더 위험한 공격이 들어오면 빨간 경고 하나로 교체한다.
+		CGameInstance::Get().ClearParticleOwner(
+			m_iAttackIndicatorParticleOwner);
+		m_iAttackIndicatorParticleOwner = INVALID_PARTICLE_OWNER_ID;
+	}
+
+	m_vAttackIndicatorPosition = GetTransform().GetPosition();
+	m_vAttackIndicatorPosition.y += ATTACK_INDICATOR_HEAD_OFFSET;
+
+	_float4x4 IndicatorWorld{};
+	XMStoreFloat4x4(&IndicatorWorld, XMMatrixTranslation(
+		m_vAttackIndicatorPosition.x,
+		m_vAttackIndicatorPosition.y,
+		m_vAttackIndicatorPosition.z));
+
+	m_iAttackIndicatorParticleOwner = CGameInstance::Get().Spawn(
+		bDodgeOnly ? "IndicatorRed.json" : "IndicatorYellow.json",
+		IndicatorWorld);
+	if (m_iAttackIndicatorParticleOwner == INVALID_PARTICLE_OWNER_ID)
+		return;
+
+	m_bAttackIndicatorDodgeOnly = bDodgeOnly;
+	m_fAttackIndicatorRemainTime = ATTACK_INDICATOR_DURATION;
 }
 
 _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,int32_t iDamage,const _float3& vHitPosition)

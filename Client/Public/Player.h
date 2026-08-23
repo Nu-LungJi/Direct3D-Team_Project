@@ -101,6 +101,7 @@ public:
 	_bool OnQueryHit(int32_t iDamage,const _float3& vHitPosition);
 	_bool OnQueryHit(int32_t iDamage);
 	_bool RequestKnockdown(const _float3& vAttackPosition);
+	void RequestAttackIndicator(_bool bDodgeOnly);
 	int32_t GetCurrentHp() const { return m_iHp; }
 	int32_t GetMaxHp() const { return m_iMaxHp; }
 	const _float3& GetLastHitPosition() const { return m_vLastHitPosition; }
@@ -291,6 +292,12 @@ private:
 	_bool m_bDeathEventPublished{};
 	_float3 m_vLastHitPosition{};
 	_float3 m_vKnockdownAttackPosition{};
+	uint32_t m_iAttackIndicatorParticleOwner{ INVALID_PARTICLE_OWNER_ID };
+	_float3 m_vAttackIndicatorPosition{};
+	_float m_fAttackIndicatorRemainTime{};
+	_bool m_bAttackIndicatorDodgeOnly{};
+	static constexpr _float ATTACK_INDICATOR_DURATION = 1.f;
+	static constexpr _float ATTACK_INDICATOR_HEAD_OFFSET = 2.5f;
 	_float m_fGroundFollowProbeStartHeight{ 0.15f };
 	_float m_fGroundFollowMaxStepDown{ 2.f };
 	_float m_fGroundFollowProbeRadius{ 0.3f };
