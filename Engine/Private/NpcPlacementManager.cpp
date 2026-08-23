@@ -380,6 +380,9 @@ HRESULT CNpcPlacementManager::Load(const _string& sFilePath)
 
 void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t iIndex)
 {
+	auto* pCam = CGameInstance::Get().GetActiveCamera();
+	if (nullptr == pCam) return;
+	_float3 vCamPos = pCam->GetTransform().GetPosition();
 	ImGui::PushID(static_cast<int32_t>(Desc.iPlacementId));
 	ImGui::PushItemWidth(420.f);
 	ImGui::Text("Placement ID: %llu", static_cast<unsigned long long>(Desc.iPlacementId));
@@ -481,11 +484,22 @@ void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t 
 		RUNTIME_TYPE_NAMES.data(),
 		static_cast<int32_t>(RUNTIME_TYPE_NAMES.size())))
 		Desc.eRuntimeType = static_cast<NPC_RUNTIME_TYPE>(iRuntimeType);
-	ImGui::DragFloat3("Position", &Desc.vPosition.x, 0.1f);
+	ImGui::DragFloat3("Position", &Desc.vPosition.x, 0.1f); ImGui::SameLine();
+	if (ImGui::Button("CamPosTo Pos"))
+		Desc.vPosition = vCamPos;
+
 	ImGui::DragFloat3("Rotation", &Desc.vRotation.x, 0.5f);
 	ImGui::DragFloat3("Scale", &Desc.vScale.x, 0.01f, 0.001f, 100.f);
-	ImGui::DragFloat3("Patrol Start", &Desc.vPatrolStartPosition.x, 0.1f);
-	ImGui::DragFloat3("Patrol End", &Desc.vPatrolEndPosition.x, 0.1f);
+
+	ImGui::DragFloat3("Patrol Start", &Desc.vPatrolStartPosition.x, 0.1f); ImGui::SameLine();
+	if (ImGui::Button("CamPosTo Patrol Start"))
+		Desc.vPatrolStartPosition = vCamPos;
+
+	ImGui::DragFloat3("Patrol End", &Desc.vPatrolEndPosition.x, 0.1f); ImGui::SameLine();
+	if (ImGui::Button("CamPosTo Patrol End")) 
+		Desc.vPatrolEndPosition = vCamPos;
+	ImGui::DragFloat("Speed", &Desc.fSpeed, 0.1f); ImGui::SameLine();
+
 	ImGui::Checkbox("Cast Shadow", &Desc.bCastShadow);
 	ImGui::DragFloat("Visible Distance", &Desc.fVisibleDistance, 1.f, 0.f, 100000.f);
 	ImGui::DragFloat("Animation Update Distance", &Desc.fAnimationUpdateDistance, 1.f, 0.f, 100000.f);

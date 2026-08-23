@@ -90,8 +90,9 @@ void CBTAnimRoot::Update_Gui()
 					}
 				}
 			}
-			ImGui::TreePop();
 		}
+
+		ImGui::TreePop();
 	}
 
 	if (ImGui::Button("Add To Start Flag"))

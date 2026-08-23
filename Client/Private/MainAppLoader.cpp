@@ -716,7 +716,14 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			return E_FAIL;
 		}
 	}
-	
+	if (auto res = CGameInstance::Get().AddResource("BTJSON", "NPC_WALK", CResJson::Create("./Resources/json/BeHavior/Npc_Walk.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED NPC_WALK JSON");
+			return E_FAIL;
+		}
+	}
 	////서브트리
 	if (auto res = CGameInstance::Get().AddResource("BTSUBJSON", "FIREBALL", CResJson::Create("./Resources/json/BeHavior/SubTree/SubTreeTest.json")))
 	{

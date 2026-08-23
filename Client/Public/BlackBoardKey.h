@@ -19,5 +19,7 @@ namespace NPC_KEY
 {
 	inline const StringID STARTPOS{ "PatrollStat" };
 	inline const StringID ENDPOS{ "PatrollEnd" };
+	inline const StringID ANIMINDEX{ "AnimIndex" };
+	inline const StringID SPEED{ "Speed" };
 }
 NS_END

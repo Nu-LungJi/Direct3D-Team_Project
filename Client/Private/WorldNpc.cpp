@@ -238,6 +238,8 @@ void CWorldNpc::Ready_BBKeyValue(NPC_DESC* pDesc)
 
 	pBB->Set_Value<_float3>(NPC_KEY::STARTPOS, pDesc->vStartPos);
 	pBB->Set_Value<_float3>(NPC_KEY::ENDPOS, pDesc->vEndPos);
+	pBB->Set_Value<_float>(NPC_KEY::SPEED, pDesc->fSpeed);
+
 }
 void CWorldNpc::PriorityUpdate(E::_float fTimeDelta)
 {
@@ -248,7 +250,22 @@ void CWorldNpc::PriorityUpdate(E::_float fTimeDelta)
 	}
 	__super::PriorityUpdate(fTimeDelta);
 }
+int32_t CWorldNpc::Find_AnimIndex(const _string& AnimName)
+{
+	auto pModel = m_pComModelInstance->GetModel();
+	if (nullptr == pModel) return -1;
 
+	auto pAnims = pModel->GetAnimations();
+	if (pAnims.empty()) return -1;
+
+	for (size_t i = 0; i < pAnims.size(); ++i)
+	{
+		if (pAnims[i]->GetAnimName() == AnimName)
+			return i;
+	}
+
+	return -1;
+}
 void CWorldNpc::Update(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;

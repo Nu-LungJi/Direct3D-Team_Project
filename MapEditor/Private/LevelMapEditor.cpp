@@ -119,7 +119,14 @@ HRESULT CLevelMapEditor::Initialize()
 	if (E::CGameInstance::Get().AddPrototype("LIGHT", "Prototype_GameObject_Light", CLight::Create()))	return E_FAIL;		// 월드에 전역조명 추가
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 	//CGameInstance::Get().Add_PointLight({ 1.f, -1.f, 1.f }, { 1.f, 0.f, 0.f }, 30.f, 10.f);
+	CB_ENVLIGHT EnviromentLightOption{};
 
+	EnviromentLightOption.m_fEnviromentIntensity = 0.75f;
+	EnviromentLightOption.m_fFillLightBrightness = 0.25f;
+	EnviromentLightOption.m_fDirectLightBrightness = 0.60f;
+
+	CGameInstance::Get().Set_EnviromentLight(
+		EnviromentLightOption);
 	return S_OK;
 }
 

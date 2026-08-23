@@ -30,6 +30,7 @@ private:
 private:
 	_float3						m_vSpreadDir{};
 	_float3						m_vCurDir{};
+	_float3						m_vOffsetPos{};
 	std::vector<CHandle>		m_Neighbors;
 public:
 	static E::UPtr<CGriffChild> Create();

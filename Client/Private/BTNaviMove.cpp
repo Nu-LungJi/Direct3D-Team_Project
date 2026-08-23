@@ -140,7 +140,7 @@ EVALUATE CBTNaviMove::Evaluate(_float fTimeDelta)
 		XMVector3Normalize(pOwner->GetTransform().GetState(STATE::LOOK)), vCurrentPos,
 		std::max(1.f, m_Value.fSpeed * 0.4f));
 
-	if (false)
+	if (bSweep)
 	{
 		//뭐 부딪히면 45도 돌리고
 		_vector vAvoidDir = XMVector3Normalize(XMVector3TransformNormal(vMoveDirection, XMMatrixRotationY(
@@ -237,6 +237,7 @@ void CBTNaviMove::OnEnter()
 
 	pNavMesh->FindPathCenter(vCurrentPosition, vDestination, m_NaviPath);
 	XMStoreFloat3(&m_vLastDir, pOwner->GetTransform().GetState(STATE::LOOK));
+	BBValue(pBB);
 }
 void CBTNaviMove::OnExit(EVALUATE eResult)
 {
@@ -244,6 +245,15 @@ void CBTNaviMove::OnExit(EVALUATE eResult)
 
 	m_NaviPath.clear();
 	m_iNaviPathIndex = 0;
+}
+void CBTNaviMove::BBValue(CBTBlackBoard* pBB)
+{
+	if (!m_bBBValue)
+		return;
+
+	auto* pSpeed = pBB->Get_Value<_float>(NPC_KEY::SPEED);
+	if (nullptr == pSpeed) return;
+	m_Value.fSpeed = *pSpeed;
 }
 _bool CBTNaviMove::Sweep(_vector vNextDir, _vector vCurDir, _float3 vCurPos, _float fDist)
 {

@@ -203,11 +203,13 @@ HRESULT CGriff::Initialize(void* pArg)
 	m_pModelAnimator->Play_Anim(0, true);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
 
-	m_WayPoint.push_back(_float3(226.097f, 78.242f, 170.f));
-	m_WayPoint.push_back(_float3(280.097f, 78.242f, 300.f));
-	m_WayPoint.push_back(_float3(360.097f, 78.242f, 400.f));
-	m_WayPoint.push_back(_float3(400.097f, 78.242f, 600.f));
-	m_WayPoint.push_back(_float3(226.097f, 78.242f, 170.f));
+	m_WayPoint.push_back(_float3(30.f, 75.f, -346.f));
+	m_WayPoint.push_back(_float3(-8.f, 135.f, -61.f));
+	m_WayPoint.push_back(_float3(213.f, 122.f, -82.f));
+	m_WayPoint.push_back(_float3(360.f, 169.f, 19.f));
+	m_WayPoint.push_back(_float3(292.f, 186.f, 215.f));
+	m_WayPoint.push_back(_float3(-196.f, 139.f, 23.f));
+	m_WayPoint.push_back(_float3(30.f, 75.f, -346.f));
 	return S_OK;
 }
 
@@ -260,8 +262,8 @@ void CGriff::FixedUpdate(E::_float fTimeDelta)
 	
 	_float3 vLastDir{};
 	XMStoreFloat3(&vLastDir, vNextDir);
-	m_pMoveIntent->SetFacingIntentImmediate(vLastDir);
-	m_pMoveIntent->SetMoveIntent(vLastDir, 15.f);
+	m_pMoveIntent->SetFacingIntent(vLastDir,60.f);
+	m_pMoveIntent->SetMoveIntent(vLastDir, 30.f);
 
 	
 }

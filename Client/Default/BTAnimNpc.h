@@ -31,6 +31,7 @@ private:
 	_float3				m_vLastPos{}, m_vLastDir{};
 	_float2				m_vRatio{}, m_vRotRatio{};
 	_float				m_fDis{}, m_fTime{};
+	_bool				m_bBBAnim{ true };
 public:
 	static UPtr<CBTAnimNpc> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

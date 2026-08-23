@@ -92,6 +92,7 @@ void CNpcMom::Stuck()
 {
 
 }
+
 void CNpcMom::PriorityUpdate(E::_float fTimeDelta)
 {
 	m_pMoveIntent->ClearMoveIntent();

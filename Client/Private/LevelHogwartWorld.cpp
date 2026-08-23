@@ -494,6 +494,7 @@ HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer)
 		Desc.vEndPos = Placement.vPatrolEndPosition;
 		Desc.vRot = Placement.vRotation;
 		Desc.vScale = Placement.vScale;
+		Desc.fSpeed = Placement.fSpeed;
 		Desc.bDonMove = Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
 
 		if (!E::CGameInstance::Get().AddGameObjectToLayer(
