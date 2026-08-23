@@ -34,6 +34,8 @@
 #include "Mon_Spawner.h"
 #include "Mon_State.h"
 #include "WorldNpc.h"
+#include "Griff.h"
+#include "GriffChild.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
@@ -86,6 +88,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			if(FAILED(MonsterLoad_InWorker()))
 				return false;
 			if (FAILED(NpcLoad_InWorker()))
+				return false;
+			if (FAILED(AnimalLoad_InWorker()))
 				return false;
 
 			return SUCCEEDED(LoadPlayerResources());
@@ -285,7 +289,8 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellType",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
-				"./Resources/SampleClient/Textures/UI/UITexture/Cursor"
+				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
+				"./Resources/SampleClient/Textures/UI/UITexture/WandShop"
 			};
 
 			for (const auto& targetDir : targetDirectories)
@@ -384,9 +389,50 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 
 HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 {
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(
+		LEVEL::HOGWART_WORLD,
+		"Model_Resource_NPC_VictorRookwood",
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/NPC_VictorRookwood/SK_NPC_VictorRookwood.bin")))
+	{
+		E::CResModel::DESC Desc{};
+		Desc.PreTransformMatrix = XMMatrixRotationY(XMConvertToRadians(180.f));
+		if (FAILED(res->Load(Desc)))
+		{
+			MSG_BOX("HOGWART Failed Model_Resource_NPC_VictorRookwood");
+			return E_FAIL;
+		}
+	}
+
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc, CWorldNpc::Create())))
 	{
 		MSG_BOX("TERRAIN Failed Prototype_GameObject_Npc");
+		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorldLoader::AnimalLoad_InWorker()
+{
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Griff",
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Griff/SK_Griff.bin"))) {
+
+		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(6.f,6.f,6.f)*XMMatrixRotationY(XMConvertToRadians(180.f));
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			MSG_BOX("TERRAIN Failed Model_Resource_Griff");
+			return E_FAIL;
+		}
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Griff, CGriff::Create())))
+	{
+		MSG_BOX("TERRAIN Failed Prototype_GameObject_Griff");
+		return E_FAIL;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_GriffChild, CGriffChild::Create())))
+	{
+		MSG_BOX("TERRAIN Failed Prototype_GameObject_GriffChild");
 		return E_FAIL;
 	}
 }

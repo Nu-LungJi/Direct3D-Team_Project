@@ -7,7 +7,6 @@
 #include "PxPhysicsAPI.h"
 #include <cooking/PxCooking.h>
 #include <extensions/PxExtensionsAPI.h>
-#include <mutex>
 
 #pragma pop_macro("new")
 
@@ -70,10 +69,13 @@ private:
 	void PushCollisionEvent(EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB, const PX_ON_COLLISION_DATA& tData);
 	void PushTriggerEvent(EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB, const PX_ON_TRIGGER_DATA& tData);
 	void PushJointBreakEvent(const PX_ON_JOINT_BREAK_DATA& tData);
+	void AssertOwnerThread() const;
 
 private:
-	std::mutex m_PendingEventMutex{};
 	std::vector<PENDING_EVENT> m_PendingEvents{};
+#ifdef _DEBUG
+	DWORD m_iOwnerThreadId{};
+#endif
 
 public:
 	static UPtr<CPhysxManagerListener> Create();

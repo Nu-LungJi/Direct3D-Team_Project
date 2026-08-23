@@ -51,10 +51,13 @@ static const float VignetteSmoothness	= { 0.f }; // 비네팅
 
 RWTexture2D<float4> OUTPUT : register(u0);
 
+#define	BLUR_SAMPLING_COUNT 10
+
 cbuffer CB_POSTPROCESS : register(b10)
 {
-	float2 TexelSize;
-	float2 _pad;
+	float2	TexelSize;
+	float	BlurIntensity;
+	float	_pad;
 };
 
 cbuffer CB_LENSFLARE : register(b11)
@@ -236,6 +239,22 @@ float SoftKneeCurve(float _Luminance, float _Threshold, float _Knee)
 	return Soft;
 }
 
+float3 Apply_RadialBlur(float3 _FinalColor, float2 _TexCoord)
+{
+	float2 CenterToPixelDir = float2(0.5f, 0.5f) - _TexCoord;
+	
+	CenterToPixelDir *= BlurIntensity / (float) BLUR_SAMPLING_COUNT;
+	float4 PixelColor = 0.f;
+	float2 CurrentTexCoord = _TexCoord;
+	
+	for (int i = 0; i < BLUR_SAMPLING_COUNT; i++)
+	{
+		PixelColor += OriginalTexture.SampleLevel(LinearWrap, CurrentTexCoord, 0);
+		CurrentTexCoord += CenterToPixelDir;
+	}
+	return PixelColor / (float) BLUR_SAMPLING_COUNT;
+}
+
 [numthreads(8, 8, 1)]
 void CSMain_BrightPass(uint3 ID : SV_DispatchThreadID)
 {
@@ -290,7 +309,12 @@ void CSMain_Combined(uint3 ID : SV_DispatchThreadID)
 	float3 OriginalColor	= OriginalTexture.SampleLevel(LinearClamp, TexCoord, 0).rgb;
 	float3 BloomBlurColor	= BlurPassTexture.SampleLevel(LinearClamp, TexCoord, 0).rgb;
 	
-	OUTPUT[ID.xy] = float4(OriginalColor + BloomBlurColor * BloomIntensity, 1.f);
+	float3 FinalColor = OriginalColor + BloomBlurColor * BloomIntensity;
+	
+	// Radial Blur
+	FinalColor = Apply_RadialBlur(FinalColor, TexCoord);
+	
+	OUTPUT[ID.xy] = float4(FinalColor, 1.f);
 	return;
 }
 
@@ -477,7 +501,7 @@ void CSMain_PostProcess(uint3 ID : SV_DispatchThreadID)
     
     // Chromatic Aberration
 	float3 FinalColor = ChromaticAberration(DistortedCoord);
-    
+	
     // ToneMapping
 	FinalColor = ToneMap_ACESFilm(FinalColor);
     //FinalColor = ToneMap_Reinhard(FinalColor);

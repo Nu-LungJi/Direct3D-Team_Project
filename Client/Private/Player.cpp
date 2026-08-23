@@ -19,9 +19,6 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "PlayerRagdollController.h"
-#include "Player_BombardaController.h"
-#include "Player_ConfringoController.h"
-#include "Player_AvadaKedavraController.h"
 #include "Player_Stupefy_Bullet.h"
 #include "PlayerThirdPersonCamera.h"
 #include "DbgLineRender.h"
@@ -63,6 +60,29 @@
 #include "UIController.h"
 #include "UIManager.h"
 NS_USING(Client)
+
+namespace
+{
+	_bool IsAncientThrowTargetInCameraView(
+		const _float3& worldPosition,
+		const _matrix& view,
+		const _matrix& projection)
+	{
+		const _vector clip = XMVector4Transform(
+			XMVectorSet(worldPosition.x, worldPosition.y, worldPosition.z, 1.f),
+			view * projection);
+		const _float w = XMVectorGetW(clip);
+		if (w <= FLT_EPSILON)
+			return false;
+
+		const _float inverseW = 1.f / w;
+		const _float ndcX = XMVectorGetX(clip) * inverseW;
+		const _float ndcY = XMVectorGetY(clip) * inverseW;
+		const _float ndcZ = XMVectorGetZ(clip) * inverseW;
+		return std::abs(ndcX) <= 1.f && std::abs(ndcY) <= 1.f &&
+			ndcZ >= 0.f && ndcZ <= 1.f;
+	}
+}
 
 
 
@@ -125,9 +145,6 @@ void CPlayer::UpdateGUI()
 		CGameInstance::Get().SetAnimationEditorTarget(GetHandle());
 	ImGui::SameLine();
 	ImGui::TextDisabled("SampleClient-compatible");
-
-	if (m_pConfringoController)
-		m_pConfringoController->UpdateGUI();
 
 	UpdateStupefyDebugGUI();
 	if (m_pRagdollController)
@@ -310,6 +327,9 @@ HRESULT CPlayer::Initialize(void* pArg)
 		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX);
 		Desc.tFilter.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
 		Desc.tFilter.iSimulationMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
+		Desc.tFilter.iNotifyFlags =
+			PX_NOTIFY_TOUCH_FOUND |
+			PX_NOTIFY_CONTACT_POINTS;
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxBoxCollider, "ComPxBoxCollider", &Desc, &m_pComPxBoxCollider)))
 		{
 			return E_FAIL;
@@ -598,13 +618,6 @@ HRESULT CPlayer::Initialize(void* pArg)
 	}
 
 	m_hAutoTarget = CHandle{};
-	if (FAILED(InitializeBombarda()))
-		return E_FAIL;
-	if (FAILED(InitializeConfringo()))
-		return E_FAIL;
-	if (FAILED(InitializeAvadaKedavra()))
-		return E_FAIL;
-
 	return S_OK;
 }
 
@@ -657,95 +670,6 @@ _bool CPlayer::IsRagdollTransitioning() const
 	return m_pRagdollController->IsTransitioning();
 }
 #pragma endregion
-
-#pragma region AVADA_KEDAVRA
-HRESULT CPlayer::InitializeAvadaKedavra()
-{
-	// [LSY] 플레이어별 아바다 케다브라 런타임 연출 상태를 Clone 초기화에서 생성한다.
-	m_pAvadaKedavraController =
-		CPlayer_AvadaKedavraController::Create(*this);
-	return m_pAvadaKedavraController ? S_OK : E_FAIL;
-}
-
-void CPlayer::StartAvadaKedavraCastEffect()
-{
-	if (m_pAvadaKedavraController)
-		m_pAvadaKedavraController->StartCastEffect();
-}
-
-void CPlayer::StopAvadaKedavraCastEffect()
-{
-	if (m_pAvadaKedavraController)
-		m_pAvadaKedavraController->StopCastEffect();
-}
-
-_bool CPlayer::ReleaseAvadaKedavraSpell()
-{
-	if (!m_pAvadaKedavraController)
-		return false;
-
-	return m_pAvadaKedavraController->ReleaseSpell();
-}
-#pragma endregion
-
-#pragma region BOMBARDA
-HRESULT CPlayer::InitializeBombarda()
-{
-	// [LSY] 플레이어별 봄바르다 런타임 상태를 Clone 초기화에서 생성한다.
-	m_pBombardaController = CPlayer_BombardaController::Create(*this);
-	return m_pBombardaController ? S_OK : E_FAIL;
-}
-
-void CPlayer::StartBombardaCastEffect()
-{
-	if (m_pBombardaController)
-		m_pBombardaController->StartCastEffect();
-}
-
-void CPlayer::StopBombardaCastEffect()
-{
-	if (m_pBombardaController)
-		m_pBombardaController->StopCastEffect();
-}
-
-_bool CPlayer::FireBombardaProjectile()
-{
-	if (!m_pBombardaController)
-		return false;
-
-	return m_pBombardaController->FireProjectile();
-}
-#pragma endregion
-
-#pragma region CONFRINGO
-HRESULT CPlayer::InitializeConfringo()
-{
-	// [LSY] 플레이어별 콘프링고 런타임 상태를 Clone 초기화에서 생성한다.
-	m_pConfringoController = CPlayer_ConfringoController::Create(*this);
-	return m_pConfringoController ? S_OK : E_FAIL;
-}
-
-void CPlayer::StartConfringoCastEffect()
-{
-	if (m_pConfringoController)
-		m_pConfringoController->StartCastEffect();
-}
-
-void CPlayer::StopConfringoCastEffect()
-{
-	if (m_pConfringoController)
-		m_pConfringoController->StopCastEffect();
-}
-
-_bool CPlayer::FireConfringoProjectile()
-{
-	if (!m_pConfringoController)
-		return false;
-
-	return m_pConfringoController->FireProjectile();
-}
-#pragma endregion
-
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
@@ -1203,6 +1127,20 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			pUIController->AddFinisher(-100.f / 3.f);
 		}
 		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
+	}
+
+	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_E))
+	{
+		auto* pEnemyTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+		if (pEnemyTarget && !pEnemyTarget->GetPendingDestroy())
+		{
+			m_hPendingAncientThrowTarget = FindAncientThrowTarget();
+			if (m_hPendingAncientThrowTarget &&
+				!m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL))
+			{
+				m_hPendingAncientThrowTarget.reset();
+			}
+		}
 	}
 
 	 // 임시
@@ -1954,7 +1892,6 @@ void CPlayer::PrepareLocomotionResume()
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
-	UpdateAncientThrowTargetDebugGUI();
 	{
 
 
@@ -2086,7 +2023,7 @@ _bool CPlayer::StartWiggenweldPotionUse()
 	desc.sResourceGroup = m_LevelTag;
 	desc.vInitialPosition = GetTransform().GetPosition();
 	desc.vInitialScale = { 1.f, 1.f, 1.f };
-	desc.vConvexScale = desc.vInitialScale;
+	desc.vConvexScale = { 2.f, 2.f, 2.f };
 	const auto handle = CGameInstance::Get().AddGameObjectToLayer(
 		m_LevelTag,
 		PROTO_GAMEOBJECT::Prototype_GameObject_WiggenweldPotion,
@@ -2140,12 +2077,26 @@ void CPlayer::UpdateWiggenweldPotion()
 
 	_float3 vLook{};
 	XMStoreFloat3(&vLook, XMVector3Normalize(GetTransform().GetState(STATE::LOOK)));
-	const _float3 vImpulse{
-		vLook.x * 0.35f,
-		0.12f,
-		vLook.z * 0.35f
+	_float3 vRight{};
+	XMStoreFloat3(&vRight, XMVector3Normalize(GetTransform().GetState(STATE::RIGHT)));
+
+	_float3 vPlayerVelocity{};
+	if (m_pComCharacterMotor)
+		vPlayerVelocity = m_pComCharacterMotor->GetVelocity();
+
+	// Inherit the player's horizontal motion and let the bottle leave the hand
+	// with a small forward/downward velocity instead of applying a sudden impulse.
+	const _float3 vReleaseVelocity{
+		vPlayerVelocity.x + vLook.x * 0.65f,
+		std::min(vPlayerVelocity.y, 0.f) - 0.75f,
+		vPlayerVelocity.z + vLook.z * 0.65f
 	};
-	if (pPotion->Drop(vImpulse, { 0.08f, 0.14f, -0.1f }))
+	const _float3 vReleaseAngularVelocity{
+		vRight.x * 5.f,
+		0.f,
+		vRight.z * 5.f
+	};
+	if (pPotion->Drop(vReleaseVelocity, vReleaseAngularVelocity))
 		m_bWiggenweldPotionDropped = true;
 }
 
@@ -2188,14 +2139,6 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 	}
 
-	if (m_pBombardaController)
-		m_pBombardaController->Update();
-
-	if (m_pConfringoController)
-		m_pConfringoController->Update(fTimeDelta);
-
-	if (m_pAvadaKedavraController)
-		m_pAvadaKedavraController->Update(fTimeDelta);
 	UpdateAttachedEffects();
 
 	const auto& pModel = m_pComModelInstance->GetModel();
@@ -3083,11 +3026,15 @@ void CPlayer::UpdateAncientThrowTargetDebugGUI()
 
 	_vector vCameraPosition{};
 	_vector vCameraLook{};
+	_matrix cameraView{};
+	_matrix cameraProjection{};
 	_bool bCameraValid{};
 	if (pCamera)
 	{
 		vCameraPosition = pCamera->GetTransform().GetState(STATE::POSITION);
 		vCameraLook = pCamera->GetTransform().GetState(STATE::LOOK);
+		cameraView = pCamera->GetView();
+		cameraProjection = pCamera->GetProj();
 		if (XMVectorGetX(XMVector3LengthSq(vCameraLook)) > FLT_EPSILON)
 		{
 			vCameraLook = XMVector3Normalize(vCameraLook);
@@ -3113,9 +3060,10 @@ void CPlayer::UpdateAncientThrowTargetDebugGUI()
 			if (!bCameraValid)
 				continue;
 
-			const _float3 position = pBarrel->GetTransform().GetPosition();
-			const BoundingBox bounds{ position, { 0.9f, 0.9f, 0.9f } };
-			if (!pCamera->IntersectsViewVolume(bounds))
+			_float3 position = pBarrel->GetTransform().GetPosition();
+			position.y += 0.75f;
+			if (!IsAncientThrowTargetInCameraView(
+				position, cameraView, cameraProjection))
 				continue;
 
 			++iVisibleBarrels;
@@ -3141,6 +3089,9 @@ void CPlayer::UpdateAncientThrowTargetDebugGUI()
 	ImGui::TextColored(
 		pBestBarrel ? ImVec4(0.25f, 1.f, 0.35f, 1.f) : ImVec4(1.f, 0.25f, 0.2f, 1.f),
 		"Throw Target: %s", pBestBarrel ? "FOUND" : "NONE");
+	const auto hLiveTarget = FindAncientThrowTarget();
+	ImGui::Text("Live Finder: %s", hLiveTarget ? "FOUND" : "NONE");
+	ImGui::Text("Pending Handle: %s", m_hPendingAncientThrowTarget ? "SET" : "EMPTY");
 
 	if (pBestBarrel)
 	{
@@ -3158,6 +3109,60 @@ void CPlayer::UpdateAncientThrowTargetDebugGUI()
 
 	ImGui::TextDisabled("Read-only diagnostics: this panel does not change targeting.");
 	ImGui::End();
+}
+
+std::optional<CHandle> CPlayer::FindAncientThrowTarget() const
+{
+	auto& gameInstance = CGameInstance::Get();
+	auto* pCamera = gameInstance.GetActiveCamera();
+	if (!pCamera)
+		return std::nullopt;
+
+	const _vector vCameraPosition = pCamera->GetTransform().GetState(STATE::POSITION);
+	_vector vCameraLook = pCamera->GetTransform().GetState(STATE::LOOK);
+	const _matrix cameraView = pCamera->GetView();
+	const _matrix cameraProjection = pCamera->GetProj();
+	if (XMVectorGetX(XMVector3LengthSq(vCameraLook)) <= FLT_EPSILON)
+		return std::nullopt;
+	vCameraLook = XMVector3Normalize(vCameraLook);
+
+	std::optional<CHandle> hBestTarget{};
+	_float fBestAlignment = -FLT_MAX;
+	for (const auto& [_, handles] : gameInstance.GetGameObjectLayers())
+	{
+		for (const CHandle& handle : handles)
+		{
+			auto* pBarrel = gameInstance.GetGameObjectByHandleT<CPropBarrel>(handle);
+			if (!pBarrel || pBarrel->GetPendingDestroy() ||
+				pBarrel->GetBarrelState() != CPropBarrel::BARREL_STATE::CREATED)
+				continue;
+
+			_float3 position = pBarrel->GetTransform().GetPosition();
+			position.y += 0.75f;
+			if (!IsAncientThrowTargetInCameraView(
+				position, cameraView, cameraProjection))
+				continue;
+
+			_vector vToBarrel = XMLoadFloat3(&position) - vCameraPosition;
+			if (XMVectorGetX(XMVector3LengthSq(vToBarrel)) <= FLT_EPSILON)
+				continue;
+			vToBarrel = XMVector3Normalize(vToBarrel);
+			const _float alignment = XMVectorGetX(XMVector3Dot(vCameraLook, vToBarrel));
+			if (alignment > fBestAlignment)
+			{
+				fBestAlignment = alignment;
+				hBestTarget = handle;
+			}
+		}
+	}
+	return hBestTarget;
+}
+
+std::optional<CHandle> CPlayer::ConsumeAncientThrowTarget()
+{
+	auto target = m_hPendingAncientThrowTarget;
+	m_hPendingAncientThrowTarget.reset();
+	return target;
 }
 
 void CPlayer::OnWake()
@@ -3358,9 +3363,5 @@ E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 void CPlayer::Free()
 {
 	SetLumosActive(false);
-	// [LSY] 컨트롤러가 플레이어 참조를 사용하므로 기반 오브젝트 해제 전에 정리한다.
-	m_pBombardaController.reset();
-	m_pConfringoController.reset();
-	m_pAvadaKedavraController.reset();
 	CAnimationObject::Free();
 }

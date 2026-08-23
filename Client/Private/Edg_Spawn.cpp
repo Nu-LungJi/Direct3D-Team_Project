@@ -46,9 +46,9 @@ void CEdg_Spawn::Enter(CStateMachine* pStateMachine)
 	//m_Anims[ETOUI(EDG_SPAWN_NUMBER::SECOND)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
 	//	pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Flap_anm.bin"),.fBlend = 0.5f});
 	m_Anims[ETOUI(EDG_SPAWN_NUMBER::THIRD)].push_back(EDG_ANIM_FSM{.iAnimIndex =
-		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Fly_To_Hover_anm.bin"),.fBlend = 0.6f});
+		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Fly_To_Hover_anm.bin"),.fBlend = 1.f});
 	m_Anims[ETOUI(EDG_SPAWN_NUMBER::THIRD)].push_back(EDG_ANIM_FSM{.iAnimIndex =
-		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Taunt_Loop_anm.bin"),.fBlend = 0.6f });
+		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Taunt_Loop_anm.bin"),.fBlend = 1.f });
 
 	
 	pDragon->Get_Animator()->Play_Anim(0);
@@ -327,10 +327,18 @@ void CEdg_Spawn::Play_Anim(CEnderDragon* pDragon, _float fTimeDelta)
 	_float3 vSrcPos = pDragon->GetTransform().GetPosition();
 	_float3 vDis{};
 	XMStoreFloat3(&vDis, XMVector3Normalize(XMLoadFloat3(&vTargetPos) - XMLoadFloat3(&vSrcPos)));
-	pMove->SetFacingIntentImmediate(vDis);
+	_float3 vLerp{};
+
 	pDragon->Set_HideOnBush(false);
 	if (!m_Anims[ETOUI(m_eSpawn)].empty())
 	{
+		if (m_Anims[ETOUI(m_eSpawn)].size() == 2)
+		{
+			XMStoreFloat3(&vLerp, XMVectorLerp(pDragon->GetTransform().GetState(STATE::LOOK), XMLoadFloat3(&vDis), 0.8f));
+			pMove->SetFacingIntent(vLerp, 45.f);
+		}
+		
+
 		if (m_Anims[ETOUI(m_eSpawn)].size() == 1)
 		{
 			if (!m_bSoundH && pAnimator->GetPlayAnimRatio() >= 0.4f)

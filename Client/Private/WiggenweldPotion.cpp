@@ -27,9 +27,9 @@ CWiggenweldPotion::CWiggenweldPotion(const CWiggenweldPotion& prototype)
 HRESULT CWiggenweldPotion::InitializePrototype(void*)
 {
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
+		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
+		TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
 	if (!m_pResVertexShader || !m_pResPixelShader ||
 		FAILED(m_pResVertexShader->Load()) || FAILED(m_pResPixelShader->Load()))
 		return E_FAIL;
@@ -42,7 +42,11 @@ HRESULT CWiggenweldPotion::InitializePrototype(void*)
 				return CResPhysXConvexGeometry::CreateAndLoad(
 					"./Resources/PhysX/Cooked/SM_Potion_Wiggenweld.pxconvex");
 			});
-	m_pResPhysXMaterial = CResPhysXMaterial::CreateAndLoad({});
+	CResPhysXMaterial::DESC materialDesc{};
+	materialDesc.fStaticFriction = 0.4f;
+	materialDesc.fDynamicFriction = 0.35f;
+	materialDesc.fRestitution = 0.f;
+	m_pResPhysXMaterial = CResPhysXMaterial::CreateAndLoad(materialDesc);
 	return m_pResConvexGeometry && m_pResPhysXMaterial ? S_OK : E_FAIL;
 }
 
@@ -119,11 +123,19 @@ void CWiggenweldPotion::LateUpdate(_float fTimeDelta)
 	if (m_eState == STATE::DROPPED)
 	{
 		UpdatePhysicData();
-		m_fDroppedLifeTime += std::max(fTimeDelta, 0.f);
-		if (m_fDroppedLifeTime >= 5.f)
+		m_fDroppedElapsed += std::max(fTimeDelta, 0.f);
+		if (m_fDroppedElapsed >= POTION_DISSOLVE_DELAY)
 		{
-			SetPendingDestroyCascade();
-			return;
+			m_bDissolving = true;
+			m_fDissolveIntensity = std::clamp(
+				(m_fDroppedElapsed - POTION_DISSOLVE_DELAY) /
+				POTION_DISSOLVE_DURATION,
+				0.f, 1.f);
+			if (m_fDissolveIntensity >= 1.f)
+			{
+				SetPendingDestroyCascade();
+				return;
+			}
 		}
 	}
 
@@ -131,7 +143,7 @@ void CWiggenweldPotion::LateUpdate(_float fTimeDelta)
 	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
 		return;
 
-	if (!CGameInstance::Get().IsInstancingEnabled())
+	if (m_bDissolving || !CGameInstance::Get().IsInstancingEnabled())
 	{
 		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 		return;
@@ -209,7 +221,7 @@ HRESULT CWiggenweldPotion::Render(ID3D11DeviceContext* pContext, const RENDER_CT
 		m_pComModelInstance->Bind_Textures(pContext, meshIndex);
 		m_pComModelInstance->Bind_Materials(
 			pContext, { 1.f, 1.f, 1.f }, 0.f,
-			{ 1.f, 1.f, 1.f }, 0.f, 1.f);
+			{ 1.f, 0.25f, 0.05f }, m_fDissolveIntensity, 1.f);
 		pContext->DrawIndexed(mesh->GetNumIndices(), 0, 0);
 	}
 
@@ -239,7 +251,9 @@ _bool CWiggenweldPotion::SetHeldPose(_fmatrix worldMatrix)
 	return m_pComPxRigidBody->SetPose(vPosition, vRotation);
 }
 
-_bool CWiggenweldPotion::Drop(const _float3& vImpulse, const _float3& vTorque)
+_bool CWiggenweldPotion::Drop(
+	const _float3& vLinearVelocity,
+	const _float3& vAngularVelocity)
 {
 	if (m_eState != STATE::HELD || !m_pComPxRigidBody || !m_pComPxConvexCollider)
 		return false;
@@ -247,23 +261,25 @@ _bool CWiggenweldPotion::Drop(const _float3& vImpulse, const _float3& vTorque)
 	const _float3 vPosition = GetTransform().GetPosition();
 	const _float4 vRotation = GetTransform().GetQuaternion();
 	if (!m_pComPxRigidBody->SetPose(vPosition, vRotation) ||
-		!m_pComPxRigidBody->SetKinematic(false) ||
 		!m_pComPxConvexCollider->SetSimulationEnabled(true) ||
 		!m_pComPxConvexCollider->SetQueryEnabled(true) ||
+		!m_pComPxRigidBody->SetKinematic(false) ||
 		!m_pComPxRigidBody->SetGravityEnabled(true))
 		return false;
 
-	m_pComPxRigidBody->SetLinearDamping(0.15f);
-	m_pComPxRigidBody->SetAngularDamping(0.2f);
+	if (!m_pComPxRigidBody->SetLinearDamping(0.08f) ||
+		!m_pComPxRigidBody->SetAngularDamping(0.8f) ||
+		!m_pComPxRigidBody->SetMaxDepenetrationVelocity(1.5f) ||
+		!m_pComPxRigidBody->SetLinearVelocity(vLinearVelocity) ||
+		!m_pComPxRigidBody->SetAngularVelocity(vAngularVelocity))
+		return false;
+
 	m_pComPxRigidBody->WakeUp();
 	m_eState = STATE::DROPPED;
-	m_fDroppedLifeTime = 0.f;
-
-	const _bool bImpulseApplied = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&vImpulse))) <= FLT_EPSILON ||
-		m_pComPxRigidBody->AddImpulse(vImpulse);
-	const _bool bTorqueApplied = XMVectorGetX(XMVector3LengthSq(XMLoadFloat3(&vTorque))) <= FLT_EPSILON ||
-		m_pComPxRigidBody->AddTorque(vTorque);
-	return bImpulseApplied && bTorqueApplied;
+	m_fDroppedElapsed = 0.f;
+	m_fDissolveIntensity = 0.f;
+	m_bDissolving = false;
+	return true;
 }
 
 UPtr<CWiggenweldPotion> CWiggenweldPotion::Create()

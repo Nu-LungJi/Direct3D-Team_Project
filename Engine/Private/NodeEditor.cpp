@@ -274,10 +274,15 @@ void CNodeEditor::NodeList_Panel(int32_t* piNode_hoverd_List, _bool* pbContext_M
 	ImGui::Text("Nodes");
 	ImGui::Separator();
 
+	if (ImGui::Button("TmpDelete"))
+		m_BTNodesTmp.clear();
+
 	if (!m_bSaveLoad && ImGui::Button("Save"))
 	{
 		m_bSaveLoad = true;
 	}
+
+	
 	ImGui::Text("LoadFile list");
 	for (auto& iter : m_LoadDataList)
 	{

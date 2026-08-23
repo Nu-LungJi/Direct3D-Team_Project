@@ -1468,7 +1468,10 @@ HRESULT CMapManager::SaveMaterial(const std::string& path)
 
 HRESULT CMapManager::LoadMaterial(const std::string& path)
 {
-	m_MaterialDescs.clear();
+	{
+		std::unique_lock<std::shared_mutex> lock(m_MaterialDescsMutex);
+		m_MaterialDescs.clear();
+	}
 	const std::filesystem::path matFilePath = std::filesystem::path(path) / "Material.json";
 	if (!std::filesystem::exists(matFilePath))	 return S_OK;
 
@@ -1490,11 +1493,16 @@ HRESULT CMapManager::LoadMaterial(const std::string& path)
 
 	const auto& MaterialsJson = rootJson["Materials"];
 
-	m_MaterialDescs.clear();
+	std::unordered_map<std::string, MATERIAL_DESC> materialDescs;
 
 	for (const auto& [matName, matJson] : MaterialsJson.items())
 	{
-		m_MaterialDescs[matName] = ReadMaterialJson(matJson);
+		materialDescs[matName] = ReadMaterialJson(matJson);
+	}
+
+	{
+		std::unique_lock<std::shared_mutex> lock(m_MaterialDescsMutex);
+		m_MaterialDescs = materialDescs;
 	}
 
 	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
@@ -1507,8 +1515,8 @@ HRESULT CMapManager::LoadMaterial(const std::string& path)
 			CMapMeshObject* pMeshObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
 			if (pMeshObj == nullptr)	continue;
 
-			auto iter = m_MaterialDescs.find(pMeshObj->GetModelResourceTag());
-			if (iter != m_MaterialDescs.end())
+			auto iter = materialDescs.find(pMeshObj->GetModelResourceTag());
+			if (iter != materialDescs.end())
 			{
 				pMeshObj->GetStaticModelInstance()->GetModel()->SetMaterialDesc(iter->second);
 			}
@@ -1518,9 +1526,8 @@ HRESULT CMapManager::LoadMaterial(const std::string& path)
 	return S_OK;
 }
 const MATERIAL_DESC CMapManager::FindMaterial(const std::string& ModelName) {
-	auto iter = std::find_if(m_MaterialDescs.begin(), m_MaterialDescs.end(), [ModelName](const std::pair<std::string, MATERIAL_DESC> Desc) {
-			return Desc.first == ModelName;
-		});
+	std::shared_lock<std::shared_mutex> lock(m_MaterialDescsMutex);
+	auto iter = m_MaterialDescs.find(ModelName);
 	return iter != m_MaterialDescs.end() ? iter->second : MATERIAL_DESC{};
 }
 /*---------------------------------*/

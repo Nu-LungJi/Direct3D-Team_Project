@@ -59,6 +59,7 @@ class CComPxRevoluteJoint;
 class CComPxD6Joint;
 class CPathPlaybackEditor;
 class CResModelAnim;
+class CNpcPlacementManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -137,6 +138,7 @@ public:
 	{ return m_pResourceManager->GetResourceFirst<T>(sGroupTag, sResTag); }
 	std::vector<SPtr<CResource>> GetResource(const StringID& sGroupTag, const StringID& sResTag) const;
 	std::unordered_map<StringID, std::vector<SPtr<CResource>>> GetResource(const StringID& sGroupTag) const;
+	std::vector<StringID> GetResourceGroupTags() const;
 	std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>> GetResources() const;
 
 	void DelResource(const StringID& sGroupTag);
@@ -226,7 +228,13 @@ public:
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg = nullptr);
 	void DelPrototype(const StringID& sGroupTag);
 	void DelPrototype(const StringID& sGroupTag, const StringID& sPrototypeTag);
+	std::vector<StringID> GetPrototypeGroupTags() const;
 	std::vector<StringID> GetPrototypeTags(const StringID& svGroupTag) const;
+#pragma endregion
+
+#pragma region NPC_PLACEMENT_MANAGER
+public:
+	CNpcPlacementManager* GetNpcPlacementManager() const { return m_pNpcPlacementManager.get(); }
 #pragma endregion
 
 #pragma region GAMEOBJECT_MANAGER
@@ -733,6 +741,7 @@ private:
 	UPtr<CEventManager> m_pEventManager{};
 	UPtr<CEffectManager> m_pEffectManager{};
 	UPtr<CPathPlaybackEditor> m_pPathPlaybackEditor{};
+	UPtr<CNpcPlacementManager> m_pNpcPlacementManager{};
 };
 
 template<typename TLayer>

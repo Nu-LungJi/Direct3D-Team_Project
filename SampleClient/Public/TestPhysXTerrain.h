@@ -27,7 +27,8 @@ public:
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::WORLD_STATIC),
 			.iSimulationMask = PX_ALL_LAYERS,
-			.iQueryMask = PX_ALL_LAYERS
+			.iQueryMask = PX_ALL_LAYERS,
+			.iNotifyFlags = PX_NOTIFY_ALL
 		};
 	}DESC;
 

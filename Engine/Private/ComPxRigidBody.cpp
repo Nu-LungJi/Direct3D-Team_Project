@@ -126,7 +126,22 @@ _bool CComPxRigidBody::SetKinematic(_bool bKinematic)
 	if (!pDynamic)
 		return false;
 
+	const _bool bWasKinematic =
+		pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC);
+	if (bWasKinematic == bKinematic)
+	{
+		m_eType = bKinematic ? TYPE::KINEMATIC : TYPE::DYNAMIC;
+		return true;
+	}
+
 	pDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, bKinematic);
+	if (!bKinematic &&
+		!PxRigidBodyExt::setMassAndUpdateInertia(*pDynamic, m_fMass))
+	{
+		pDynamic->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
+		return false;
+	}
+
 	m_eType = bKinematic ? TYPE::KINEMATIC : TYPE::DYNAMIC;
 	return true;
 }
@@ -294,6 +309,21 @@ _bool CComPxRigidBody::IsSleeping() const
 	return pDynamic && !pDynamic->getRigidBodyFlags().isSet(PxRigidBodyFlag::eKINEMATIC) && pDynamic->isSleeping();
 }
 
+_bool CComPxRigidBody::SetSleepNotificationsEnabled(_bool bEnabled)
+{
+	if (!m_pActor || !m_bIsDynamic)
+		return false;
+
+	m_pActor->setActorFlag(PxActorFlag::eSEND_SLEEP_NOTIFIES, bEnabled);
+	return true;
+}
+
+_bool CComPxRigidBody::IsSleepNotificationsEnabled() const
+{
+	return m_pActor && m_bIsDynamic &&
+		m_pActor->getActorFlags().isSet(PxActorFlag::eSEND_SLEEP_NOTIFIES);
+}
+
 void CComPxRigidBody::UpdateGUI()
 {
     CComponent::UpdateGUI();
@@ -335,9 +365,13 @@ void CComPxRigidBody::UpdateGUI()
 		if (ImGui::Checkbox("Is Kinematic", &bIsKinematic))
 			SetKinematic(bIsKinematic);
 
-        bool bGravity = !(pDynamic->getActorFlags() & PxActorFlag::eDISABLE_GRAVITY);
-        if (ImGui::Checkbox("Use Gravity", &bGravity))
-            pDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !bGravity);
+		bool bGravity = !(pDynamic->getActorFlags() & PxActorFlag::eDISABLE_GRAVITY);
+		if (ImGui::Checkbox("Use Gravity", &bGravity))
+			pDynamic->setActorFlag(PxActorFlag::eDISABLE_GRAVITY, !bGravity);
+
+		bool bSendSleepNotifies = IsSleepNotificationsEnabled();
+		if (ImGui::Checkbox("Send Wake/Sleep Notifications", &bSendSleepNotifies))
+			SetSleepNotificationsEnabled(bSendSleepNotifies);
 
 		_float3 vLinearVelocity = GetLinearVelocity();
 		float fLinearVelocity[3] = { vLinearVelocity.x, vLinearVelocity.y, vLinearVelocity.z };
@@ -469,6 +503,10 @@ HRESULT CComPxRigidBody::Initialize(void* pArg)
     if (m_pActor == nullptr)
         return E_FAIL;
 
+	if (m_bIsDynamic)
+		m_pActor->setActorFlag(
+			PxActorFlag::eSEND_SLEEP_NOTIFIES,
+			pDesc->bSendSleepNotifies);
 
 	auto* pScene = CGameInstance::Get().PxGetScene();
 	if (!pScene)

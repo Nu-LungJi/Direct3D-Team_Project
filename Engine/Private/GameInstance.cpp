@@ -59,6 +59,7 @@
 
 #include "EventManager.h"
 #include "EffectManager.h"
+#include "NpcPlacementManager.h"
 
 NS_USING(Engine)
 
@@ -293,6 +294,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 	LOG_MEMORY("End m_pSerializeManager");
 
+	m_pNpcPlacementManager = CNpcPlacementManager::Create();
+	if (m_pNpcPlacementManager == nullptr)
+	{
+		return E_FAIL;
+	}
+
 	m_pPathPlaybackEditor = CPathPlaybackEditor::Create();
 	if (m_pPathPlaybackEditor == nullptr)
 		return E_FAIL;
@@ -343,7 +350,8 @@ void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
 	if (fScaledFixedDelta <= 0.f)
 		return;
 	
-	m_pPhysXManager->StepSimulation(fScaledFixedDelta);
+	if (!m_pPhysXManager->StepSimulation(fScaledFixedDelta))
+		return;
 
 
 	{
@@ -399,6 +407,8 @@ void CGameInstance::UpdateGUI()
 
 
 	m_pRenderer->UpdateGUI();
+	if (m_pModel_Instance_Manager)
+		m_pModel_Instance_Manager->UpdateGUI();
 
 	 m_pSoundManager->UpdateGUI();
 
@@ -408,6 +418,8 @@ void CGameInstance::UpdateGUI()
 		m_pNvClothManager->UpdateGUI();
 
 	m_pSerializeManager->UpdateGUI();
+	if (m_pNpcPlacementManager)
+		m_pNpcPlacementManager->UpdateGUI();
 	if (m_pPathPlaybackEditor)
 		m_pPathPlaybackEditor->UpdateGUI();
 
@@ -596,6 +608,7 @@ HRESULT CGameInstance::Draw()
 
 void CGameInstance::Release_Engine()
 {
+	m_pNpcPlacementManager.reset();
 	m_pPathPlaybackEditor.reset();
 	m_pMapMeshInstancingRenderer.reset();
 	m_pNodeEditor.reset();
@@ -962,6 +975,11 @@ std::unordered_map<StringID, std::vector<SPtr<CResource>>> CGameInstance::GetRes
 	return m_pResourceManager->GetResource(sGroupTag);
 }
 
+std::vector<StringID> CGameInstance::GetResourceGroupTags() const
+{
+	return m_pResourceManager->GetResourceGroupTags();
+}
+
 std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>> CGameInstance::GetResources() const
 {
 	return m_pResourceManager->GetResources();
@@ -980,6 +998,7 @@ std::vector<SPtr<CResource>> CGameInstance::GetResourcesByPath(const _string& sP
 	if (!m_pResourceManager) return {};
 	return m_pResourceManager->GetResourcesByPath(sPath);
 }
+
 void CGameInstance::RemoveResourcePathLookup(const _string& sPath, SPtr<CResource> pRes)
 {
 	if (!m_pResourceManager) return;
@@ -1136,6 +1155,11 @@ void CGameInstance::DelPrototype(
 std::vector<StringID> CGameInstance::GetPrototypeTags(const StringID& svGroupTag) const
 {
 	return m_pPrototypeManager->GetPrototypeTags(svGroupTag);
+}
+
+std::vector<StringID> CGameInstance::GetPrototypeGroupTags() const
+{
+	return m_pPrototypeManager->GetPrototypeGroupTags();
 }
 #pragma endregion
 

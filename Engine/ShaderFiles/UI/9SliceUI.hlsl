@@ -50,7 +50,7 @@ PS_IN VSMain(VS_IN vin)
     PS_IN output;
 
     output.posH = mul(float4(vin.posL, 1.f), g_matWVP);
-    output.uv = vin.uv;
+    output.uv = lerp(vin.uv, 1.f - vin.uv, g_ui_uvFlip);
 
     return output;
 }

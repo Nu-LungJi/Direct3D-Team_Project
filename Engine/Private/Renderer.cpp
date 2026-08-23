@@ -14,11 +14,7 @@ CRenderer::~CRenderer() {}
 
 VOID	CRenderer::UpdateGUI()
 {
-	//ImGui::Begin("Renderer");
-	//
-	//ImGui::End();
-
-	PostProcessGUI();
+	RendererGUI();
 }
 
 VOID	CRenderer::Update(_float fTimeDelta) {
@@ -97,6 +93,10 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_PostProcess", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_MotionBlur", "./ShaderFiles/PostProcess/PS_PostProcess_MotionBlur.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PS_Main", .sTarget = "ps_5_0" })))    return E_FAIL;
+	}
 
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_FullScreenQuad", "./ShaderFiles/FullscreenQuad/FullscreenQuad.hlsl"))
 	{
@@ -164,6 +164,11 @@ HRESULT CRenderer::InitializeShaderResource()
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_RayMarching", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_Volumetric_Composite", "./ShaderFiles/RayMarching/PS_Volumetric.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_VolumetricCloud", "./ShaderFiles/RayMarching/CS_VolumetricCloud.hlsl"))
 	{
 		if (FAILED(res->Load()))    return E_FAIL;
 	}
@@ -340,6 +345,12 @@ HRESULT CRenderer::InitializePostProcess() {
 	}
 
 	{
+		m_pMotionBlurPixelShader = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_MotionBlur");
+		if (nullptr == m_pMotionBlurPixelShader)		return E_FAIL;
+
+		m_pResDynTexTargetMotionBlur = Generate_RenderTarget("DynTex2D_PostProcess_MotionBlur", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+		if (nullptr == m_pResDynTexTargetMotionBlur)	return E_FAIL;
+
 		m_pLensFlareComputeShader = E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_LensFlare");
 		if (nullptr == m_pLensFlareComputeShader)		return E_FAIL;
 
@@ -428,8 +439,10 @@ HRESULT CRenderer::InitializeBloom() {
 }
 
 HRESULT CRenderer::InitializeVolumetricEffect() {
+	_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
 
 	m_pResDynTexTargetVolumetric = Generate_RenderTarget("DynTex2D_Volumetric", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+	m_pVolumetricCloudTex = Generate_UnorderedAccessView("UAV_VolumetricCloud", DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, ScreenSize.x, ScreenSize.y);
 
 	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/BlueNoiseTexture.dds", nullptr, m_pBlueNoiseTexture.GetAddressOf()))) {
 		MSG_BOX("Cannot Create BlueNoise Texture File.");
@@ -450,19 +463,25 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 	if (m_pVolumetricCSMCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_CSM", E::CResCBuffer::Create())) {
 		if (FAILED(m_pVolumetricCSMCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_CSM) })))    return E_FAIL;
 	}
+	if (m_pVolumetricCloudCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_VOLUMECLOUD", E::CResCBuffer::Create())) {
+		if (FAILED(m_pVolumetricCloudCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_VOLUMECLOUD) })))    return E_FAIL;
+	}
+	
 	
 	m_pLightIntegrationCS	 = CGameInstance::Get().GetResourceFirst<CResComputeShader>	(TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_LightIntegration");
 	m_pFroxelAccumulationCS  = CGameInstance::Get().GetResourceFirst<CResComputeShader> (TAG_RES_GRP_PERMANENT_SHADER, "CS_Volumetric_FroxelZAccumulation");
 	m_pTemporalBlendedCS	 = CGameInstance::Get().GetResourceFirst<CResComputeShader> (TAG_RES_GRP_PERMANENT_SHADER, "CS_TemporalBlend");
 	m_pVolumetricCompositePS = CGameInstance::Get().GetResourceFirst<CResPixelShader>	(TAG_RES_GRP_PERMANENT_SHADER, "PS_Volumetric_Composite");
 
-	if (!m_pLightIntegrationCS || !m_pFroxelAccumulationCS || !m_pVolumetricCompositePS) return E_FAIL;
+	m_pVolumetricCloudCS	 = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_VolumetricCloud");
+
+	if (!m_pLightIntegrationCS || !m_pFroxelAccumulationCS || !m_pTemporalBlendedCS || !m_pVolumetricCompositePS || !m_pVolumetricCloudCS) return E_FAIL;
 
 	m_pVoxelLighting		= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
 	m_pVoxelAccumulated		= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ + 1);
 	m_pBlendedVolumeTex		= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
 	m_pPreviousVolumeTex	= Generate_Texture3D(DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS, FROXELX, FROXELY, FROXELZ);
-
+	
 	{
 		m_pFogInfo.g_fFogColor = _float3(0.8f, 0.85f, 0.9f);
 		m_pFogInfo.g_fFogIntensity = 1.f;
@@ -881,8 +900,10 @@ VOID	CRenderer::Unbind_Resources() {
 HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 	auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
 	D3D11_MAPPED_SUBRESOURCE mappedSubResource;
+	const XMMATRIX currentViewProj = _ActiveCam->GetView() * _ActiveCam->GetProj();
+
 	if (m_pRenderContext.pass == RENDERPASS::SHADOW) {
-		m_mShadowLightViewProj = _ActiveCam->GetView() * _ActiveCam->GetProj();
+		m_mShadowLightViewProj = currentViewProj;
 	}
 	if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
 	{
@@ -890,7 +911,21 @@ HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 		XMStoreFloat4x4(&cbPerPass.matView, _ActiveCam->GetView());
 		XMStoreFloat4x4(&cbPerPass.matProj, _ActiveCam->GetProj());
 
-		XMStoreFloat4x4(&cbPerPass.matViewProj, _ActiveCam->GetView() * _ActiveCam->GetProj());
+		XMStoreFloat4x4(&cbPerPass.matViewProj, currentViewProj);
+		cbPerPass.matPrevViewProj = cbPerPass.matViewProj;
+
+		// Bind_CameraAttribute는 그림자/UI 카메라에도 호출된다.
+		// 모션 블러 히스토리는 실제 게임 화면을 렌더한 활성 카메라만 추적한다.
+		if (_ActiveCam == CGameInstance::Get().GetActiveCamera())
+		{
+			m_pCurrentCamera = _ActiveCam;
+			m_matCurrentViewProj = cbPerPass.matViewProj;
+
+			if (!m_bHasPreviousViewProj || m_pPreviousCamera != _ActiveCam)
+				m_matPrevViewProj = m_matCurrentViewProj;
+
+			cbPerPass.matPrevViewProj = m_matPrevViewProj;
+		}
 
 		XMStoreFloat4x4(&cbPerPass.matInvView, XMMatrixInverse(nullptr, _ActiveCam->GetView()));
 		XMStoreFloat4x4(&cbPerPass.matInvProj, XMMatrixInverse(nullptr, _ActiveCam->GetProj()));
@@ -934,7 +969,6 @@ HRESULT CRenderer::Draw() {
 
 	// m_pRasterizer Setting - BackCull
 	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
-
 
 	if (FAILED(Render_Shadow()))		 return E_FAIL;
 
@@ -990,6 +1024,20 @@ HRESULT CRenderer::Draw() {
 
 VOID CRenderer::FrameEnd()
 {
+	// 이번 프레임에 실제 렌더한 활성 카메라의 VP를 다음 프레임 히스토리로 확정한다.
+	if (m_pCurrentCamera != nullptr)
+	{
+		m_matPrevViewProj = m_matCurrentViewProj;
+		m_pPreviousCamera = m_pCurrentCamera;
+		m_bHasPreviousViewProj = true;
+	}
+	else
+	{
+		m_pPreviousCamera = nullptr;
+		m_bHasPreviousViewProj = false;
+	}
+	m_pCurrentCamera = nullptr;
+
 	// HizBuffer 교체
 	std::swap(m_pCurrentHizBuffer, m_pPrevHizBuffer);
 	m_bHasPrevHizBuffer = true;
@@ -1180,7 +1228,7 @@ HRESULT CRenderer::Render_Decal()
 }
 
 HRESULT CRenderer::Render_HBAO() {
-
+	ZoneScopedN("Render_HBAO");
 	ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };
 	m_pContext->OMSetRenderTargets(4, pRTVs, nullptr);
 
@@ -1246,7 +1294,7 @@ HRESULT CRenderer::Render_HBAO() {
 }
 
 HRESULT CRenderer::Render_Lighting() {
-
+	ZoneScopedN("Render_Lighting");
 	{
 		// Default Texture - Dissolve HBAO
 		SPtr<CResTexture2D> WhiteResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE");
@@ -1380,12 +1428,14 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 
 	if (FAILED(Update_VolumetricConstantBuffer()))	{ Unbind_Resources(); return S_OK; }
 
-	if (FAILED(Render_LightIntegration()))			{ Unbind_Resources(); return S_OK; }
+	if (FAILED(Render_VolumetricCloud()))			{ Unbind_Resources(); return S_OK; }
 
+	if (FAILED(Render_LightIntegration()))			{ Unbind_Resources(); return S_OK; }
+	
 	if (FAILED(Render_TemporalBlend()))				{ Unbind_Resources(); return S_OK; }
 	
 	if (FAILED(Render_FroxelZAccumulation()))		{ Unbind_Resources(); return S_OK; }
-
+	
 	if (FAILED(Render_VolumetricComposite()))		{ Unbind_Resources(); return S_OK; }
 
 	return S_OK;
@@ -1480,6 +1530,54 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer(){
 		}
 		m_pContext->CSSetConstantBuffers(12, 1, m_pVolumetricCSMCBuffer->GetCBuffer().GetAddressOf());
 	}
+	{
+		CB_VOLUMECLOUD cbVolumeCloud{};
+		cbVolumeCloud.g_fCloudDensity = 0.01f;
+		if (auto LightHandle = CGameInstance::Get().Get_MainDirectionalLightData().m_pLightHandle) {
+			if (auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value()))
+				cbVolumeCloud.g_fLightDirection = LightOBJ->Get_LightDirection();
+			else
+				cbVolumeCloud.g_fLightDirection = _float3(0.f, -1.f, 0.f);
+		}
+
+		D3D11_MAPPED_SUBRESOURCE MRES{};
+		if (SUCCEEDED(m_pContext->Map(m_pVolumetricCloudCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES))) {
+			memcpy(MRES.pData, &cbVolumeCloud, sizeof(CB_VOLUMECLOUD));
+			m_pContext->Unmap(m_pVolumetricCloudCBuffer->GetCBuffer().Get(), 0);
+		}
+		m_pContext->CSSetConstantBuffers(13, 1, m_pVolumetricCloudCBuffer->GetCBuffer().GetAddressOf());
+	}
+
+	return S_OK;
+}
+
+HRESULT CRenderer::Render_VolumetricCloud(){
+	{
+		m_pContext->CSSetShader(m_pVolumetricCloudCS->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11ShaderResourceView* pSRVs[3] = { 
+			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(), 
+			m_pVolumeTexture.Get(),
+			m_pResDynTexTargetDepth->GetSRV().Get()
+		};
+		m_pContext->CSSetShaderResources(0, 3, pSRVs);
+
+		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVolumetricCloudTex->GetUAV().Get()};
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
+	}
+	{
+		_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
+		_float	ThreadCount = 16;
+		m_pContext->Dispatch((ScreenSize.x + ThreadCount - 1) / ThreadCount, (ScreenSize.y + ThreadCount - 1) / ThreadCount, 1);
+		   
+		ID3D11ShaderResourceView* pNullSRVs[6] = { nullptr };
+		m_pContext->CSSetShaderResources(0, 6, pNullSRVs);
+
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
+	}
+
+	m_pResDynTexTargetPreviousRenderView = m_pVolumetricCloudTex;
 
 	return S_OK;
 }
@@ -1620,27 +1718,11 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 	return S_OK;
 }
 
-VOID CRenderer::Set_VolumetricFogOption(const CB_VLFOG& _FogOption) {
-	m_pFogInfo = _FogOption;
-}
-
-_float CRenderer::Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base){
-	_float result = 0.f;
-	_float fraction = 1.f / static_cast<_float>(_Base);
-	uint32_t i = _FrameIndex;
-
-	while (i > 0) {
-		result += fraction * (i % _FrameIndex);
-		i /= _Base;
-		fraction /= static_cast<_float>(_Base);
-	}
-	return result;
-}
-
-
-
 HRESULT CRenderer::Render_PostProcess() {
 	if (m_bApplyFilter == false) return S_OK;
+
+	// 잠시 봉인
+	//if (FAILED(Render_PostProcess_MotionBlur())){ Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_PostProcess_Focusing()))  { Unbind_Resources(); return S_OK; }
 
@@ -1649,6 +1731,40 @@ HRESULT CRenderer::Render_PostProcess() {
 	if (FAILED(Render_PostProcess_Bloom()))		{ Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_PostProcess_Filter()))	{ Unbind_Resources(); return S_OK; }
+
+	return S_OK;
+}
+
+HRESULT CRenderer::Render_PostProcess_MotionBlur()
+{
+	ZoneScopedN("Render_PostProcess_MotionBlur");
+	{
+		ID3D11RenderTargetView* pRTV = m_pResDynTexTargetMotionBlur->GetRTV().Get();
+		m_pContext->OMSetRenderTargets(1, &pRTV, nullptr);
+		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+
+		m_pContext->IASetInputLayout(m_pFullscreenVS->GetInputLayout().Get());
+		m_pContext->VSSetShader(m_pFullscreenVS->GetVertexShader().Get(), nullptr, 0);
+		m_pContext->PSSetShader(m_pMotionBlurPixelShader->GetPixelShader().Get(), nullptr, 0);
+
+		ID3D11Buffer* pVertexBuffer = m_pFullscreenVIBuffer->GetVertexBuffer().Get();
+		uint32_t iStride = m_pFullscreenVIBuffer->GetVertexStride();
+		uint32_t iOffset = 0;
+		m_pContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &iStride, &iOffset);
+		m_pContext->IASetIndexBuffer(m_pFullscreenVIBuffer->GetIndexBuffer().Get(), m_pFullscreenVIBuffer->GetIndexFormat(), 0);
+		m_pContext->IASetPrimitiveTopology(m_pFullscreenVIBuffer->GetPrimitiveType());
+
+		ID3D11ShaderResourceView* pSRVs[2] = {
+			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
+			m_pResDynTexTargetDepth->GetSRV().Get()
+		};
+		m_pContext->PSSetShaderResources(0, 2, pSRVs);
+
+		m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
+
+		Unbind_Resources();
+		m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetMotionBlur;
+	}
 
 	return S_OK;
 }
@@ -1758,6 +1874,7 @@ HRESULT CRenderer::Render_PostProcess_LensFlare(){
 }
 
 HRESULT CRenderer::Render_PostProcess_Bloom() {
+	ZoneScopedN("Render_PostProcess_Bloom");
 	_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
 
 	uint32_t ScreenX = static_cast<uint32_t>(ScreenSize.x);
@@ -1770,7 +1887,7 @@ HRESULT CRenderer::Render_PostProcess_Bloom() {
 	uint32_t QuarterScreenY = ScreenY / 4;
 
 	{	// FullScale -> HalfScale
-		if (FAILED(Update_TexelSize(1.f / ScreenSize.x, 1.f / ScreenSize.y)))																 return E_FAIL;
+		if (FAILED(Update_TexelSize(1.f / ScreenSize.x, 1.f / ScreenSize.y)))																				 return E_FAIL;
 		if (FAILED(Render_BrightPass(m_pResDynTexTargetBloom_HalfScaleA, m_pResDynTexTargetPreviousRenderView, HalfScreenX, HalfScreenY)))					 return E_FAIL;
 	}
 	
@@ -2273,13 +2390,27 @@ HRESULT CRenderer::RenderUI()
 	return S_OK;
 
 }
+
+_float CRenderer::Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base) {
+	_float result = 0.f;
+	_float fraction = 1.f / static_cast<_float>(_Base);
+	uint32_t i = _FrameIndex;
+
+	while (i > 0) {
+		result += fraction * (i % _FrameIndex);
+		i /= _Base;
+		fraction /= static_cast<_float>(_Base);
+	}
+	return result;
+}
+
 #pragma endregion
 
-VOID	CRenderer::PostProcessGUI() {
-	ImGui::Begin("PostProcess");
+VOID	CRenderer::RendererGUI() {
+	ImGui::Begin("Renderer Controller");
 
 	ImGui::TextDisabled("Shader Effect Controller");
-	ImGui::BeginChild("##Inspector", ImVec2(0.f, 130.f), true);
+	ImGui::BeginChild("##Inspector", ImVec2(0.f, 110.f), true);
 	{
 		if (m_bApplyEnvLight ? ImGui::Button("EnviromentLight OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("EnviromentLight ON", ImVec2(-FLT_MIN, 20))) {
 			m_bApplyEnvLight = !m_bApplyEnvLight;
@@ -2297,22 +2428,22 @@ VOID	CRenderer::PostProcessGUI() {
 	ImGui::EndChild();
 
 	if (m_bApplyEnvLight) {
-		_float TextToSlotDistance = 100.f;
+		_float TextToSlotDistance = 130.f;
 		if (ImGui::CollapsingHeader("Enviroment Option")) {
 			_bool DirtyFlag = false;
 			m_pEnvLight = CGameInstance::Get().Get_EnviromentLight();
 
-			ImGui::TextUnformatted("EnvLightIntensity");
+			ImGui::TextUnformatted("EnvLight Intensity");
 			ImGui::SameLine(TextToSlotDistance);
-			DirtyFlag |= ImGui::DragFloat("Intensity", &m_pEnvLight.m_fEnviromentIntensity, 0.001f, 0.f, 1.f, "%.3f");
+			DirtyFlag |= ImGui::DragFloat("##Intensity", &m_pEnvLight.m_fEnviromentIntensity, 0.001f, 0.f, 1.f, "%.3f");
 			
-			ImGui::TextUnformatted("FillLightIntensity");
+			ImGui::TextUnformatted("FillLight Intensity");
 			ImGui::SameLine(TextToSlotDistance);
-			DirtyFlag |= ImGui::DragFloat("FillLight", &m_pEnvLight.m_fFillLightBrightness, 0.001f, 0.f, 1.f, "%.3f");
+			DirtyFlag |= ImGui::DragFloat("##FillLight", &m_pEnvLight.m_fFillLightBrightness, 0.001f, 0.f, 1.f, "%.3f");
 			
-			ImGui::TextUnformatted("DirectLightIntensity");
+			ImGui::TextUnformatted("DirectLight Intensity");
 			ImGui::SameLine(TextToSlotDistance);
-			DirtyFlag |= ImGui::DragFloat("DirectLight", &m_pEnvLight.m_fDirectLightBrightness, 0.001f, 0.f, 1.f, "%.3f");
+			DirtyFlag |= ImGui::DragFloat("##DirectLight", &m_pEnvLight.m_fDirectLightBrightness, 0.001f, 0.f, 1.f, "%.3f");
 
 			if (DirtyFlag) 	CGameInstance::Get().Set_EnviromentLight(m_pEnvLight);
 		}
@@ -2320,9 +2451,14 @@ VOID	CRenderer::PostProcessGUI() {
 
 	if (m_bApplyFilter) {
 		ImGui::Separator();
+		if (ImGui::CollapsingHeader("PostProcess")) {
+			ImGui::TextUnformatted("Blur Intensity");
+			ImGui::SameLine(120.f);
+			ImGui::DragFloat("##BlurIntensity", &m_fBlurIntensity, 0.01f, 0.f, 10.f, "%.2f");
+		}
 	}
 	if (m_bApplyVolumetric) {
-		_float TextToSlotDistance = 140.f;
+		_float TextToSlotDistance = 110.f;
 		ImGui::Separator();
 		if (ImGui::CollapsingHeader("Volumetric Fog CoreOption")) {
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
@@ -2554,7 +2690,8 @@ VOID CRenderer::Clear_OutlineEffect() {
 HRESULT	CRenderer::Update_TexelSize(_float _Width, _float _Height){
 	CB_BLOOM	BloomBuffer{};
 
-	BloomBuffer.g_TexelSize = { _Width, _Height };
+	BloomBuffer.g_fTexelSize = { _Width, _Height };
+	BloomBuffer.g_fBlurIntensity = m_fBlurIntensity / 100.f;	// 0.01같은 작은 값에도 Blur가 너무 많이 먹어서 조정
 
 	D3D11_MAPPED_SUBRESOURCE BLURMRES{};
 	if (FAILED(m_pContext->Map(m_pBloomCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &BLURMRES)))	return E_FAIL;
@@ -2755,6 +2892,7 @@ HRESULT CRenderer::InitializeHizBuffer()
 
 HRESULT CRenderer::BuildCurrentHizBuffer()
 {
+	ZoneScopedN("BuildCurrentHizBuffer");
 	if (m_pCurrentHizBuffer == nullptr || m_pResDynTexTargetDepth == nullptr)
 		return E_FAIL;
 

@@ -80,8 +80,28 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
+	// Object-preserving static map conversion. Unlike --whole-map this keeps one
+	// placement record per FBX mesh node and only deduplicates shared resources.
+	// Model_Binarization.exe --object-map <input.fbx> <output-dir>
+	if (argc > 1 && std::string(argv[1]) == "--object-map")
+	{
+		if (argc != 4)
+		{
+			cerr << "Usage: Model_Binarization.exe --object-map <input.fbx> <output-dir>\n";
+			return 1;
+		}
+
+		if (FAILED(import->ImportObjectMapFBX(argv[2], argv[3])))
+		{
+			cerr << "Object-map conversion failed.\n";
+			return 1;
+		}
+
+		return 0;
+	}
+
 	//import->ImportFBXFolder("","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/Skeleton/");
 	//import->ImportFBXFolder_ForMapJson("","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/Skeleton","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/StaticModelJson/");
-	import->ImportFBXFolder_ForMapJson("","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/Static/ParticleMeshes","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/ParticleModelJson");
+	//import->ImportFBXFolder_ForMapJson("","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/OriginData/Static/ParticleMeshes","../../JUSIN_160_FINAL_TEAM_RESOURCE/SampleClient/Models/ParticleModelJson");
 	return 0;
 }

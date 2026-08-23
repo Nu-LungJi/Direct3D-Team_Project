@@ -8,6 +8,7 @@
 
 #include "Monster.h"
 #include "BossTMB.h"
+#include "PropBarrel.h"
 
 #include "ComSound.h"
 NS_USING(Client)
@@ -279,6 +280,31 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 			std::string{ tHit.pGameObject->GetObjectTag() } :
 			"null") + "\n");
 	_float4x4 tImpactWorld{};
+	{
+		const XMVECTOR vHitPosition = XMLoadFloat3(&tHit.vHitpos);
+		XMVECTOR vLook = XMLoadFloat3(&tHit.vHitNormal);
+		if (XMVectorGetX(XMVector3LengthSq(vLook)) <= FLT_EPSILON)
+			vLook = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+		else
+			vLook = XMVector3Normalize(vLook);
+
+		XMVECTOR vUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+		XMVECTOR vRight = XMVector3Cross(vUp, vLook);
+		if (XMVectorGetX(XMVector3LengthSq(vRight)) <= FLT_EPSILON)
+		{
+			vUp = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+			vRight = XMVector3Cross(vUp, vLook);
+		}
+		vRight = XMVector3Normalize(vRight);
+		vUp = XMVector3Normalize(XMVector3Cross(vLook, vRight));
+
+		XMMATRIX matImpactWorld = XMMatrixIdentity();
+		matImpactWorld.r[0] = XMVectorSetW(vRight, 0.f);
+		matImpactWorld.r[1] = XMVectorSetW(vUp, 0.f);
+		matImpactWorld.r[2] = XMVectorSetW(vLook, 0.f);
+		matImpactWorld.r[3] = XMVectorSetW(vHitPosition, 1.f);
+		XMStoreFloat4x4(&tImpactWorld, matImpactWorld);
+	}
 	auto camera = CGameInstance::Get().GetActiveCamera();
 	if (camera)
 	{
@@ -333,6 +359,14 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 		//}
 
 		pTmbGurdian->Check_Table(PLAYER_SKILL_TYPE::ATTACK);
+	}
+	if (auto* pPropBarrel = Cast<CPropBarrel>(tHit.pGameObject))
+	{
+		CGameInstance::Get().Spawn(
+			"LSY_AncientThrow_ImpactDust_Queue.json",
+			tImpactWorld);
+		if (!pPropBarrel->DestroyBarrel())
+			DEBUG_LOG("[MagicBullet] Failed to destroy PropBarrel.\n");
 	}
 
 	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{

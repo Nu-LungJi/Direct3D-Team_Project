@@ -2,6 +2,7 @@
 #include "Client_Defines.h"
 #include "UIObject.h"
 #include "UI_Structs.h"
+#include "WandShop.h"
 
 NS_BEGIN(Client)
 
@@ -62,6 +63,11 @@ public:
 	void RemoveNPCSpeechBubble(CHandle npcHandle, _bool fadeOut = true);
 	void ClearNPCSpeechBubbles(_bool immediate = false);
 
+	/********지팡이 상점***********/
+	void OpenWandShop();
+	void OpenWandShopPage(uint32_t pageIndex);
+	void CloseWandShop();
+
 public:
 	std::optional<CHandle> RootUIPicking();
 
@@ -83,6 +89,7 @@ private:
 	std::vector<DIALOGUE_POPUP_INFO> m_DialoguePopups{};
 	std::vector<NPC_SPEECH_BUBBLE_INFO> m_NPCSpeechBubbles{};
 	_float m_fDialogueTargetWidth{};
+	CWandShop m_WandShop{};
 
 	void UpdateActiveButtons();
 	void UpdateDialoguePopups(_float fTimeDelta);
@@ -98,6 +105,10 @@ public:
 	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 
 private:
+	friend class CWandShop;
+	std::vector<CHandle> LoadPrefabFiltered(const std::string& name,
+		const std::string& basePath,
+		const std::function<_bool(const nlohmann::ordered_json&)>& predicate);
 	/*************페이드인아웃****************/
 	CUIObject* SafeGetOBJ(CHandle pHandle)
 	{

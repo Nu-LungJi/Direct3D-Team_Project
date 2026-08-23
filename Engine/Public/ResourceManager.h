@@ -35,7 +35,7 @@ public:
 	SPtr<T> AddResourceT(const StringID& sGroupTag, const StringID& sResTag, SPtr<T> pAsset);
 	template<typename T, typename CreateFunc>
 	SPtr<T> GetOrCreateResourceByPath(const _string& sPath, CreateFunc&& createFunc);
-	// [LSY] Clip 원본은 모델/Skeleton과 무관하게 정규화된 파일 경로당 한 번만 로드한다.
+	// Clip 원본은 애니메이션 파일명을 전역 고유 ID로 사용해 한 번만 로드한다.
 	SPtr<CResModelAnim> GetOrLoadModelAnimation(const _string& sPath);
 	void MoveResourcePathLookup(
 		const _string& sOldPath, const _string& sNewPath,
@@ -45,6 +45,7 @@ public:
 	SPtr<T> GetResourceFirst(const StringID& sGroupTag, const StringID& sResTag) const;
 	std::vector<SPtr<CResource>> GetResource(const StringID& sGroupTag, const StringID& sResTag) const;
 	std::unordered_map<StringID, std::vector<SPtr<CResource>>> GetResource(const StringID& sGroupTag) const;
+	std::vector<StringID> GetResourceGroupTags() const;
 	std::unordered_map<StringID, RESOURCES> GetResources() const;
 
 	void DelResource(const StringID& sGroupTag);
@@ -65,6 +66,7 @@ public:
 private:
 	void _RemovePathLookup(const _string& sPath, SPtr<CResource> pRes);
 	std::unordered_map<_string, std::vector<WPtr<CResource>>> m_PathLookup{};
+	std::unordered_map<_string, WPtr<CResModelAnim>> m_ModelAnimationsByName{};
 
 private:
 	ComPtr<ID3D11Device> m_pDevice{};

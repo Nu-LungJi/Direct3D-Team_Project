@@ -55,6 +55,7 @@ HRESULT CPlayerThirdPersonCamera::Initialize(void* pArg)
 	m_fMaxPitch = pDesc->fMaxPitch;
 	m_fMouseSensitivity = pDesc->fMouseSensitivity;
 	m_fBaseFovY = pDesc->fFovY;
+	m_fFovOverrideTarget = m_fBaseFovY;
 	m_fShoulderOffset = pDesc->fShoulderOffset;
 	m_fCurrentShoulderOffset = m_fShoulderOffset;
 	m_fHorizontalDeadZoneRadius = pDesc->fHorizontalDeadZoneRadius;
@@ -76,6 +77,32 @@ HRESULT CPlayerThirdPersonCamera::Initialize(void* pArg)
 	);
 
 	return S_OK;
+}
+
+_bool CPlayerThirdPersonCamera::BeginFovOverride(
+	_float fTargetFovY,
+	_float fResponse)
+{
+	if (!std::isfinite(fTargetFovY) || fTargetFovY <= 0.f ||
+		fTargetFovY >= 180.f || !std::isfinite(fResponse) || fResponse <= 0.f)
+	{
+		return false;
+	}
+
+	m_fFovOverrideTarget = fTargetFovY;
+	m_fFovTransitionResponse = fResponse;
+	m_bFovOverrideActive = true;
+	m_bFovTransitionActive = true;
+	return true;
+}
+
+void CPlayerThirdPersonCamera::EndFovOverride(_float fRestoreResponse)
+{
+	m_bFovOverrideActive = false;
+	m_bFovTransitionActive = true;
+	m_fFovTransitionResponse =
+		std::isfinite(fRestoreResponse) && fRestoreResponse > 0.f ?
+		fRestoreResponse : 10.f;
 }
 
 void CPlayerThirdPersonCamera::PriorityUpdate(_float fTimeDelta)
@@ -207,12 +234,30 @@ void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 		fTargetSpeedEffectRatio,
 		fSpeedEffectBlendRatio);
 
-	const _float fDesiredFovY =
+	const _float fBaseDesiredFovY =
 		m_fBaseFovY + m_fSpeedFovExpansion * m_fCurrentSpeedEffectRatio;
-	if (std::abs(m_cameraDesc.fFovY - fDesiredFovY) > 0.01f)
+	if (m_bFovOverrideActive || m_bFovTransitionActive)
 	{
-		m_cameraDesc.fFovY = fDesiredFovY;
-		UpdateProjMatrix();
+		const _float fTargetFovY = m_bFovOverrideActive ?
+			m_fFovOverrideTarget : fBaseDesiredFovY;
+		const _float fFovBlendRatio = 1.f - std::exp(
+			-m_fFovTransitionResponse * std::max(fTimeDelta, 0.f));
+		const _float fBlendedFovY = std::lerp(
+			GetFovY(), fTargetFovY, fFovBlendRatio);
+		if (std::abs(fBlendedFovY - fTargetFovY) <= 0.01f)
+		{
+			SetFovY(fTargetFovY);
+			if (!m_bFovOverrideActive)
+				m_bFovTransitionActive = false;
+		}
+		else
+		{
+			SetFovY(fBlendedFovY);
+		}
+	}
+	else if (std::abs(GetFovY() - fBaseDesiredFovY) > 0.01f)
+	{
+		SetFovY(fBaseDesiredFovY);
 	}
 	const _float fVerticalFollowRatio = 1.f - std::exp(-fVerticalFollowSpeed * std::max(fTimeDelta, 0.f));
 	m_vFollowPivot.y = std::lerp(m_vFollowPivot.y, fDesiredPivotY, fVerticalFollowRatio);

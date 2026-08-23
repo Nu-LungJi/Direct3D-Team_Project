@@ -88,7 +88,7 @@ float4 PSMain(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_T
 {
 	float4	SceneColor	= SceneColorTexture.Sample(PointClamp, TexCoord);
 	float	DepthTex	= DepthTexture.Sample(PointClamp, TexCoord).r;
-	
+
 	float4  RayMarchedFog = Compute_AccumulatedFog(DepthTex, TexCoord);
 	
 	float3	WorldPos	= Convert_WorldPosByDepth(DepthTex, TexCoord).xyz;
@@ -99,7 +99,6 @@ float4 PSMain(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_T
 		float3 FinalColor = SceneColor.rgb * RayMarchedFog.a + RayMarchedFog.rgb;
 		return float4(FinalColor, SceneColor.a);
 	}
-
 	float4	AnalyticFog		= Compute_AnalyticFog(ViewDepth, WorldPos);
 	float	AnalyticWeight	= smoothstep(AnalyticBlendStart, AnalyticBlendEnd, ViewDepth);
 	
