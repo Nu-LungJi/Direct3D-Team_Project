@@ -91,10 +91,40 @@ namespace Engine
 	} CB_SHADOW;
 	static_assert(sizeof(CB_SHADOW) % 16 == 0);
 
+	typedef struct tagConstantBufferCloudTAA
+	{
+		_matrix g_mCloudJitterInvProj;
+		_matrix g_mCloudPrevViewProj;
+
+		_float2 g_fScreenResolution;
+		_float2 g_fInvScreenResolution;
+	} CB_CLOUDTAA;
+	static_assert(sizeof(CB_CLOUDTAA) % 16 == 0);
+
 	typedef struct tagConstantBufferVolumetricCloud
 	{
-		_float		g_fCloudDensity;
-		_float3		g_fLightDirection;
+		_float3	g_fWindDirection{};
+		_float	g_fWindTimeAccumulation{};
+
+		_float3	g_fCloudColor{};
+		_float	g_fCloudBrightness{};
+
+		_float	g_fCloudCoverage{};
+		_float	g_fCloudDensity{};
+		_float	g_fCloudScattering{};
+
+		_float	g_fBaseCloudNoiseScale{};
+		_float	g_fDetailCloudNoiseScale{};
+
+		_float	g_fCloudMinHeight{};
+		_float	g_fCloudMaxHeight{};
+		_float	g_fCloudLODDistance{};
+
+		_float3	g_fCloudLightDirection{};
+		_float	g_fLightAbsorption{};
+
+		_float3	g_fCloudJitterOffset{};
+		_float	CB_VOLUMECLOUD_PADDING{};
 	} CB_VOLUMECLOUD;
 	static_assert(sizeof(CB_VOLUMECLOUD) % 16 == 0);
 

@@ -356,6 +356,9 @@ public:
 	const CB_VLFOG	Get_VolumetricFogOption();
 	VOID			Set_VolumetricFogOption(const CB_VLFOG& _FogOption);
 
+	const CB_VOLUMECLOUD	Get_VolumetricCloudOption();
+	VOID			Set_VolumetricCloudOption(const CB_VOLUMECLOUD& _CloudOption);
+
 	VOID			Set_RadialBlurIntensity(const _float _Intensity);
 	VOID			Set_DistortionIntensity(const _float _Intensity);
 	VOID			Set_ChromaticIntensity(const _float _Intensity);

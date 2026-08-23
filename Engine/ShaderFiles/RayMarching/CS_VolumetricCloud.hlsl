@@ -4,68 +4,120 @@
 #define MIN_STEP			16
 #define STEP_SIZE			15.f
 
-static const float	CLOUD_HEIGHT_MIN	= { 200.f };
-static const float	CLOUD_HEIGHT_MAX	= { 300.f };
-static const float	CLOUD_HEIGHT_INV	= { 1.f / (CLOUD_HEIGHT_MAX - CLOUD_HEIGHT_MIN) };
-									   
+static const float	MS_SCATTERING_MULTIPLIER = 0.5f;
+static const float	MS_EXTINCTION_MULTIPLIER = 0.5f;
+static const float	MS_PHASE_MULTIPLIER		 = 0.5f;
+
 static const float	SPHERE_RADIUS		= { 600000.f };
 static const float3 SPHERE_CENTER		= { float3(0.f, -SPHERE_RADIUS, 0.f) };
 									   
-static const float	CLOUD_CUTOFF		= { 0.55f	 };
-static const float	EXTINCTION_COEF		= { 0.015f	 };
-static const float	FOG_DENSITY			= { 0.00003f };
+static const float	FOG_DENSITY			= { 0.0001f };
 
-static const float	LOD_DISTANCE		= { 50000.f };
 static const float3 RANDOM_FACTOR		= { float3(0.06711056f, 0.00583715f, 52.9829189f) };
 
 static const uint	LIGHT_STEP_COUNT	= { 4 };
 static const float	LIGHT_STEP_SIZE		= { 40.f };
 
+static const float3 GLOBAL_SUN_COLOR	= { float3(1.f, 1.f, 1.f) };
+
+static const int2 Offsets[4] = { int2(0, -1), int2(0, 1), int2(-1, 0), int2(1, 0) };
+	
 Texture2D<float4>	OriginalTexture : register(t0);
-Texture3D<float>	VolumeTexture	: register(t1);
-Texture2D<float>	DepthTexture	: register(t2);
+Texture2D<float4>	HistoryTexture	: register(t1);
+Texture3D<float>	VolumeTexture	: register(t2);
+Texture2D<float>	DepthTexture	: register(t3);
 
 RWTexture2D<float4> OUTPUT			: register(u0);
 
-cbuffer CB_FroxelConfig : register(b10)
+cbuffer CB_CLOUDTAA : register(b9)
 {
-	float3 FroxelGridSize;
-	float SliceDepthRatio;
+	matrix CloudJitterInvProj;
+	matrix CloudPrevViewProj;
 	
-	float2 FullScreenResolution;
-	float2 HalfScreenResolution;
-	
-	float NearZ;
-	float FarZ;
-	float AnalyticBlendStart;
-	float AnalyticBlendEnd;
-	
-	float3 JitterOffset;
-	float CB_FROXELPADDING;
-	
-	matrix PreviousViewProj;
-};
+	float2 ScreenResolution;
+	float2 InvScreenResolution;
+}
 
 cbuffer CB_VOLUMECLOUD : register(b13)
 {
+	float3	WindDirection;
+	float	WindTimeAccumulation;
+	
+	float3	CloudColor;
+	float	CloudBrightness;
+	
+	float	CloudCoverage;
 	float	CloudDensity;
-	float3	LightDirection;
-}
+	float	CloudScattering;
 
+	float	BaseCloudNoiseScale;
+	float	DetailCloudNoiseScale;
+	
+	float	CloudMinHeight;
+	float	CloudMaxHeight;
+	float	CloudLODDistance;
+	
+	float3	CloudLightDirection;
+	float	LightAbsorption;
+	
+	float3	CloudJitterOffset;
+	float	CB_VOLUMECLOUD_PADDING;
+}
+  
 float Compute_GradientNoise(float2 PixelPos)
 {
 	return frac(RANDOM_FACTOR.z * frac(dot(PixelPos, RANDOM_FACTOR.xy)));
 }
 
+float3 Compute_MultipleScattering(float3 _RayDirection, float3 _LightDirection, float _OpticalDepth, float _BaseScattering)
+{
+	float3 MultipleScatteringTotal = float3(0.f, 0.f, 0.f);
+    
+	float CurrentWeight = 1.f;
+	float CurrentOpticalDepth = _OpticalDepth;
+    
+	float G1 = 0.8f;
+	float G2 = -0.2f;
+	
+    [unroll]
+	for (int i = 0; i < 3; ++i)
+	{
+		float Transmittance = exp(-CurrentOpticalDepth);
+        
+		float Phase = Henyey_Greenstein_DualPhase(_RayDirection, _LightDirection, G1, G2, _BaseScattering);
+        
+		MultipleScatteringTotal += CurrentWeight * Transmittance * Phase;
+        
+		CurrentWeight *= MS_SCATTERING_MULTIPLIER;
+		CurrentOpticalDepth *= MS_EXTINCTION_MULTIPLIER;
+		G1 *= MS_PHASE_MULTIPLIER;
+		G2 *= MS_PHASE_MULTIPLIER;
+	}
+    
+	return MultipleScatteringTotal;
+}
+
 float Get_CloudDensity(float3 WorldPos, float BaseDensity)
 {
-	float RawDensity = VolumeTexture.SampleLevel(LinearWrap, WorldPos * 0.002f, 0).r;
+	float3	WindOffset = WindDirection * WindTimeAccumulation;
+	float3	MovedPos = WorldPos + WindOffset;
 	
-	float CurrentHeight = distance(WorldPos, SPHERE_CENTER) - SPHERE_RADIUS;
-	float HeightFraction = saturate((CurrentHeight - CLOUD_HEIGHT_MIN) * CLOUD_HEIGHT_INV);
-	float HeightGradient = 4.0f * HeightFraction * (1.0f - HeightFraction);
+	float	BaseNoise	= VolumeTexture.SampleLevel(LinearWrap, MovedPos * BaseCloudNoiseScale, 0).r;
+	float	DetailNoise = VolumeTexture.SampleLevel(LinearWrap, MovedPos * DetailCloudNoiseScale, 0).r;
+	float	RawDensity = BaseNoise * 0.8f + DetailNoise * 0.2f;
 	
-	return max(0.0f, RawDensity - CLOUD_CUTOFF) * BaseDensity * HeightGradient * 100.f;
+	float3	PlanetCenter = float3(g_vCamPos.x, -SPHERE_RADIUS, g_vCamPos.z);
+	float	CurrentHeight = distance(WorldPos, PlanetCenter) - SPHERE_RADIUS;
+	
+	float	HeightRange = max(1.0f, CloudMaxHeight - CloudMinHeight);
+	float	HeightFraction = saturate((CurrentHeight - CloudMinHeight) / HeightRange);
+	float	HeightGradient = 4.f * HeightFraction * (1.f - HeightFraction);
+	
+	float	CutOffValue = 1.f - CloudCoverage;
+	float	CloudShape = saturate((RawDensity - CutOffValue) / max(0.001f, (1.f - CutOffValue)));
+	CloudShape = pow(CloudShape, 2.0f);
+		
+	return CloudShape * BaseDensity * HeightGradient * 100.f;
 }
 
 float2 Get_SphereIntersection(float3 _RayOrigin, float3 _RayDirection, float3 _Center, float _Radius)
@@ -93,17 +145,19 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	uint2	PixelPos = ID.xy;
 	float2	ScreenSpaceNDC = (float2(PixelPos) / float2(Width, Height)) * float2(2.f, -2.f) + float2(-1.f, 1.f);
 
-	float4	ViewPos = mul(float4(ScreenSpaceNDC, 1.f, 1.f), g_matInvProj);
+	float4	ViewPos = mul(float4(ScreenSpaceNDC, 1.f, 1.f), CloudJitterInvProj);
 	float3	ViewDir = normalize(ViewPos.xyz / ViewPos.w);
 	float3	RayDirection = normalize(mul(float4(ViewDir, 0.f), g_matInvView).xyz);
 
 	float3	PlanetCenter = float3(g_vCamPos.x, -SPHERE_RADIUS, g_vCamPos.z);
 	
-	float2	CloudMin = Get_SphereIntersection(g_vCamPos, RayDirection, PlanetCenter, SPHERE_RADIUS + CLOUD_HEIGHT_MIN);
-	float2  CloudMax = Get_SphereIntersection(g_vCamPos, RayDirection, PlanetCenter, SPHERE_RADIUS + CLOUD_HEIGHT_MAX);
+	float2	CloudMin = Get_SphereIntersection(g_vCamPos, RayDirection, PlanetCenter, SPHERE_RADIUS + CloudMinHeight);
+	float2	CloudMax = Get_SphereIntersection(g_vCamPos, RayDirection, PlanetCenter, SPHERE_RADIUS + CloudMaxHeight);
 	
-	float CloudStartHeight = max(0.0f, CloudMin.y), CloudEndHeight = CloudMax.y;
-	if (CloudEndHeight < 0.f || CloudStartHeight < 0.f || CloudEndHeight <= CloudStartHeight)
+	float	CloudStartHeight = CloudMin.y;
+	float	CloudEndHeight = CloudMax.y;
+	
+	if (CloudEndHeight < 0.f || CloudStartHeight < 0.f || CloudStartHeight > CloudLODDistance)
 	{
 		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
 		return;
@@ -114,27 +168,42 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	float2	TexCoord = float2(PixelPos) / float2(Width, Height);
 	
 	uint2	DepthPixelPos = uint2(TexCoord * float2(DepthWidth, DepthHeight));
-	float	Depth = DepthTexture[DepthPixelPos].r;
+	float	Depth = DepthTexture[DepthPixelPos].r; 
+	
+	bool bIsSky = (Depth == 1.0f || Depth == 0.0f);
 	
 	float4	ClipSpace	= float4(ScreenSpaceNDC, Depth, 1.f);
-	float4	ViewSpace	= mul(ClipSpace, g_matInvProj);
+	float4	ViewSpace = mul(ClipSpace, CloudJitterInvProj);
 	float4	WorldSpace	= mul(ViewSpace / ViewSpace.w, g_matInvView);
-
-	float	DistanceToGeometry = (Depth >= 0.9999f) ? 9999999.0f : distance(WorldSpace.xyz, g_vCamPos);
-	if (DistanceToGeometry < CloudStartHeight)
+	float2 EarthHit = Get_SphereIntersection(g_vCamPos, RayDirection, PlanetCenter, SPHERE_RADIUS);
+	if (EarthHit.y > 0.0f && bIsSky)
+	{
+		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
+		return;
+	}
+	
+	float DistanceToGeometry = bIsSky ? 9999999.0f : distance(WorldSpace.xyz, g_vCamPos);
+	
+	if (DistanceToGeometry < CloudStartHeight || CloudStartHeight > CloudLODDistance)
 	{
 		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
 		return;
 	}
 
-	float	MaxTravelDistance = min(CloudEndHeight, DistanceToGeometry) - CloudStartHeight;
-	float	DistanceRatio = saturate(CloudStartHeight / LOD_DISTANCE);
+	float EndDistance = min(CloudEndHeight, min(DistanceToGeometry, CloudLODDistance));
+	float MaxTravelDistance = max(0.0f, EndDistance - CloudStartHeight);
+	if (MaxTravelDistance <= 0.0f)
+	{
+		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
+		return;
+	}
+	float DistanceRatio = saturate(CloudStartHeight / CloudLODDistance);
 	uint	DynamicStepCount = (uint) lerp((float) MAX_STEP, (float) MIN_STEP, DistanceRatio);
 	
 	float	DynamicStepSize = MaxTravelDistance / float(DynamicStepCount);
 	float3	CurrentPosition = g_vCamPos + (RayDirection * CloudStartHeight);
 	
-	float	TemporalSeed = JitterOffset.x * 1000.0f;
+	float	TemporalSeed = CloudJitterOffset.x * 1000.0f;
 	float2	DynamicJitter = float2(PixelPos.x + TemporalSeed, PixelPos.y + TemporalSeed);
 	float	JitterValue = Compute_GradientNoise(DynamicJitter);
 	CurrentPosition += RayDirection * (DynamicStepSize * JitterValue);
@@ -142,16 +211,14 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	float	AccumulatedTransmittance = 1.f;
 	float3	FinalColor = float3(0.f, 0.f, 0.f);
 	
-	float	PhaseValue = Henyey_Greenstein_DualPhase(RayDirection, LightDirection, 0.8f, -0.2f, 0.5f);
-	
-	float	HorizonFade = saturate(RayDirection.y * 5.f);
+	float	HorizonFade = saturate(RayDirection.y * 2.f);
 	
 	for (uint Step = 0; Step < DynamicStepCount; ++Step)
 	{
 		float Density = Get_CloudDensity(CurrentPosition, CloudDensity);
 		
 		float DistanceFromCam = distance(CurrentPosition, g_vCamPos);
-		float DistanceFade = 1.f - saturate(DistanceFromCam / LOD_DISTANCE);
+		float DistanceFade = 1.f - saturate(DistanceFromCam / CloudLODDistance);
 		
 		Density *= pow(DistanceFade, 3.f) * HorizonFade;
 		
@@ -162,21 +229,22 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 			
 			for (uint lStep = 0; lStep < LIGHT_STEP_COUNT; ++lStep)
 			{
-				LightRayPos += LightDirection * LIGHT_STEP_SIZE;
+				LightRayPos += -CloudLightDirection * LIGHT_STEP_SIZE;
 				LightAccumulatedDensity += Get_CloudDensity(LightRayPos, CloudDensity);
 			}
-			float	LightTransmittance = exp(-LightAccumulatedDensity * LIGHT_STEP_SIZE * EXTINCTION_COEF * 10.f);
+			float	LightTransmittance = exp(-LightAccumulatedDensity * LIGHT_STEP_SIZE * LightAbsorption * 10.f);
+			float	LightOpticalDepth = LightAccumulatedDensity * LIGHT_STEP_SIZE * LightAbsorption * 10.f;
+			float3	MultipleScattering = Compute_MultipleScattering(RayDirection, CloudLightDirection, LightOpticalDepth, CloudScattering);
 			
 			float	OpticalDepth = Density * DynamicStepSize;
 			float	PowderEffect = 1.f - exp(-OpticalDepth * 2.f);
 			
-			float3	BaseColor = float3(0.05f, 0.05f, 0.08f);
-			float3	SunColor = float3(1.f, 1.f, 1.f);
-			float3	CloudColor = BaseColor + SunColor * LightTransmittance * PhaseValue;
+			float3	BaseColor = CloudColor * CloudBrightness;
+			float3	ShadedColor = BaseColor + GLOBAL_SUN_COLOR * MultipleScattering;
 			
-			float CurrentTransmittance = exp(-OpticalDepth * EXTINCTION_COEF);
+			float	CurrentTransmittance = exp(-OpticalDepth * LightAbsorption);
 			
-			float3 LightContribution = CloudColor * (1.f + PowderEffect);
+			float3	LightContribution = ShadedColor * (1.f + PowderEffect);
 			
 			FinalColor += LightContribution * (1.f - CurrentTransmittance) * AccumulatedTransmittance;
 			AccumulatedTransmittance *= CurrentTransmittance;
@@ -197,5 +265,51 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	AccumulatedTransmittance = lerp(1.f, AccumulatedTransmittance, FogFactor);
 	
 	OUTPUT[PixelPos] = float4(FinalColor + OriginalTexture[PixelPos].rgb * AccumulatedTransmittance, 1.f);
+	return;
+}
+
+[numthreads(16, 16, 1)]
+void CSMain_CloudTAA(uint3 ID : SV_DispatchThreadID)
+{
+	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y) return;
+
+	uint2	PixelPos = ID.xy;
+	float2	TexCoord = (float2(PixelPos) + 0.5f) * InvScreenResolution;
+	float2	ScreenSpaceNDC = TexCoord * float2(2.f, -2.f) + float2(-1.f, 1.f);
+
+	float	Depth = DepthTexture[PixelPos].r;
+    
+	float4	ClipSpace  = float4(ScreenSpaceNDC, Depth, 1.f);
+	float4	ViewSpace  = mul(ClipSpace, CloudJitterInvProj);
+	float4	WorldSpace = mul(ViewSpace / ViewSpace.w, g_matInvView);
+    
+	float4	PrevClipSpace = mul(WorldSpace, CloudPrevViewProj);
+	PrevClipSpace /= PrevClipSpace.w;
+	float2	PrevTexCoord = PrevClipSpace.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
+	
+	float3	CurrentColor = OriginalTexture[PixelPos].rgb;
+	
+	if (any(PrevTexCoord < 0.f) || any(PrevTexCoord > 1.f)) {
+		OUTPUT[PixelPos] = float4(CurrentColor, 1.f);
+		return;
+	}
+	
+	float3	MinColor = CurrentColor;
+	float3	MaxColor = CurrentColor;
+    
+	[unroll]
+	for (int i = 0; i < 4; ++i)
+	{
+		uint2	NeighborPos = clamp(PixelPos + Offsets[i], 0, (uint2) ScreenResolution - 1);
+		float3	NeighborColor = OriginalTexture[NeighborPos].rgb;
+		
+		MinColor = min(MinColor, NeighborColor);
+		MaxColor = max(MaxColor, NeighborColor);
+	}
+
+	float3 HistoryColor = HistoryTexture.SampleLevel(LinearClamp, PrevTexCoord, 0).rgb;
+	HistoryColor = clamp(HistoryColor, MinColor, MaxColor);
+    
+	OUTPUT[PixelPos] = float4(lerp(HistoryColor, CurrentColor, 0.05f), 1.f);
 	return;
 }
