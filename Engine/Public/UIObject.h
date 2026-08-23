@@ -20,6 +20,7 @@ typedef struct tagUIInfo
 	_float WidthRatioX{ 1.f }, WidthRatioY{ 1.f }, AlphaRatio{ 1.f };
 	_float LocalRot{ 0.f };
 	int WeightOffset{ 0 };
+	_bool FlipX{ false }, FlipY{ false };
 
 	std::string		Name = "";						// 이름
 	std::string		Restag = "";					// 리소스 태그

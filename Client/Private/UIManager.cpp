@@ -96,6 +96,7 @@ void UIManager::Update(_float fTimeDelta)
 	UpdateActiveButtons();
 	UpdateDialoguePopups(fTimeDelta);
 	UpdateNPCSpeechBubbles(fTimeDelta);
+	m_WandShop.Update(*this, fTimeDelta);
 }
 
 void UIManager::Initialize(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
@@ -2178,6 +2179,17 @@ _bool UIManager::PtInRect(const UI_INFO& selectInfo, _float scaleRatio)
 
 std::vector<CHandle> UIManager::LoadPrefab(std::string name, std::string g_BasePath)
 {
+	const std::vector<CHandle> roots = LoadPrefabFiltered(name, g_BasePath, {});
+	if (CWandShop::IsPagePrefab(name))
+		m_WandShop.RegisterLoadedPage(name, roots);
+	return roots;
+}
+
+std::vector<CHandle> UIManager::LoadPrefabFiltered(
+	const std::string& name,
+	const std::string& basePath,
+	const std::function<_bool(const nlohmann::ordered_json&)>& predicate)
+{
 	m_vLoadPrefabRoot.clear();
 	uint32_t num = E::CGameInstance::Get().GetCurrentLevelID();
 	if (num > 100)
@@ -2186,7 +2198,7 @@ std::vector<CHandle> UIManager::LoadPrefab(std::string name, std::string g_BaseP
 		m_CurrentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 
 	char path[256] = "";
-	strcpy_s(path, sizeof(path), g_BasePath.c_str());
+	strcpy_s(path, sizeof(path), basePath.c_str());
 	strcat_s(path, sizeof(path), name.c_str());
 	strcat_s(path, sizeof(path), ".json");
 
@@ -2195,7 +2207,7 @@ std::vector<CHandle> UIManager::LoadPrefab(std::string name, std::string g_BaseP
 	if (!file.is_open())
 	{
 		/* ---- 광윤 수정 ---- */
-		std::string MSGBoxText = "Cannot Open json" + g_BasePath + name + ".json";
+		std::string MSGBoxText = "Cannot Open json" + basePath + name + ".json";
 		MessageBoxA(NULL, MSGBoxText.c_str(), "System Message", MB_OK);
 		/* ------------------- */
 		return m_vLoadPrefabRoot;
@@ -2207,22 +2219,54 @@ std::vector<CHandle> UIManager::LoadPrefab(std::string name, std::string g_BaseP
 
 	for (const auto& obj : root["UI"])
 	{
+		if (predicate && !predicate(obj))
+			continue;
 		LoadUIRecursive(obj, nullptr);
 	}
 
 	return m_vLoadPrefabRoot;
 }
 
+void UIManager::OpenWandShopPage(uint32_t pageIndex)
+{
+	m_WandShop.OpenPage(*this, pageIndex);
+}
+
+void UIManager::OpenWandShop()
+{
+	// The first full load owns the common frame and navigation controls.
+	// Page changes afterwards are handled by CWandShop without recreating them.
+	if (m_WandShop.IsOpen())
+		return;
+
+	CGeneralButton::ResetWandShopSelection();
+	LoadPrefab("ShopWand1", "./Resources/SampleClient/UIData/RTT/");
+	m_WandShop.CreatePurchasePrompt();
+}
+
+void UIManager::CloseWandShop()
+{
+	m_WandShop.Close(*this);
+}
+
 E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent)
 {
 	int uiType = obj["UiType"];
+	const std::string objectName = obj.value("Name", std::string{});
+	const _bool legacyWandCoreCard =
+		uiType == ETOUI(UI_TYPE::TEXUI) &&
+		(objectName == "DragonWandCore" ||
+			objectName == "UniCornWandCore" ||
+			objectName == "PheonixWandCore");
+	if (legacyWandCoreCard)
+		uiType = ETOUI(UI_TYPE::GENERAL_BUTTON);
 
 	E::CUIObject* pUI = nullptr;
 
 	E::CUIObject::UIOBJECT_DESC Desc{};
 	std::optional<CHandle> uiHandle = std::nullopt;
 
-	Desc.sObjectTag = obj["Name"];
+	Desc.sObjectTag = objectName;
 
 	int EffectType = obj["UI_EFFECT_TYPE"];
 
@@ -2395,6 +2439,8 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 
 	uiInfo.WidthRatioX = obj["WidthRatioX"];
 	uiInfo.WidthRatioY = obj["WidthRatioY"];
+	uiInfo.FlipX = obj.value("FlipX", false);
+	uiInfo.FlipY = obj.value("FlipY", false);
 
 	uiInfo.Restag = obj["ResTag"];
 
@@ -2408,7 +2454,9 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 	{
 		button->RefreshBaseScale();
 		button->SetButtonType(static_cast<GENERAL_BUTTON_TYPE>(
-			obj.value("ButtonType", static_cast<uint32_t>(GENERAL_BUTTON_TYPE::DEFAULT))));
+			obj.value("ButtonType", static_cast<uint32_t>(
+				legacyWandCoreCard ? GENERAL_BUTTON_TYPE::WAND_CORE_CARD :
+					GENERAL_BUTTON_TYPE::DEFAULT))));
 		button->SetCommandParameter(obj.value("CommandParameter", std::string{}));
 	}
 	if (uiType == ETOUI(UI_TYPE::NINE_SLICE))

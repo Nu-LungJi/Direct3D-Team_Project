@@ -756,6 +756,9 @@
     <ClInclude Include="..\Public\GeneralButton.h">
       <Filter>GameObject\UI\Button</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\WandShop.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\EffectUI.h">
       <Filter>GameObject\UI\Flipbook</Filter>
     </ClInclude>
@@ -1719,6 +1722,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\GeneralButton.cpp">
       <Filter>GameObject\UI\Button</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\WandShop.cpp">
+      <Filter>GameObject\UI</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\EffectUI.cpp">
       <Filter>GameObject\UI\Flipbook</Filter>

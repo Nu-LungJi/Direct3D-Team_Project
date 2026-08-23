@@ -83,6 +83,8 @@ namespace Engine
 		_float2 texSize{};  // 원본 텍스처의 픽셀 크기 (Width, Height)
 		_float2 quadSize{}; // 텍스처의 현제 사이즈
 		_float4 margins{};
+		_float2 uvFlip{}; // x/y UV flip (0: normal, 1: flipped)
+		_float2 uvFlipPadding{};
 	} CB_PER_UI;
 	static_assert(sizeof(CB_PER_UI) % 16 == 0);
 

@@ -73,6 +73,10 @@ void CUIController::Update(E::_float fTimeDelta)
 	BindMiniMap();
 	ApplyPendingQuestUIGroups();
 
+	// Temporary wand-shop entry for UI debugging.
+	if (E::CGameInstance::Get().KeyDown(DIK_F3))
+		GET_SINGLE(UIManager)->OpenWandShop();
+
 	if (m_hSpellMiniGame && !E::CGameInstance::Get().
 		GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
 	{
