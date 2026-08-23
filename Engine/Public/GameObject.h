@@ -16,6 +16,28 @@ struct MODEL_INSTANCE_BATCH;
 class CGameObjectManager;
 class CGameObjectPoolManager;
 
+// GameObjectManager가 제공하는 네 개의 Managed Update 단계 중 참여할 단계를 나타낸다.
+// 비트 마스크이므로 여러 단계를 OR로 조합할 수 있다. ALL은 기존 네 단계 참여를 유지하는 기본값이고,
+// NONE은 Manager에 등록된 채 모든 Managed Update만 제외하여 별도 전용 매니저가 직접 구동할 객체에 사용한다.
+enum class GAMEOBJECT_UPDATE_LOOP : uint8_t
+{
+	NONE = 0,
+	PRIORITY = 1u << 0,
+	FIXED = 1u << 1,
+	UPDATE = 1u << 2,
+	LATE = 1u << 3,
+	ALL = (1u << 4) - 1u
+};
+
+constexpr GAMEOBJECT_UPDATE_LOOP operator|(
+	GAMEOBJECT_UPDATE_LOOP eLeft,
+	GAMEOBJECT_UPDATE_LOOP eRight) noexcept
+{
+	return static_cast<GAMEOBJECT_UPDATE_LOOP>(
+		static_cast<uint8_t>(eLeft) |
+		static_cast<uint8_t>(eRight));
+}
+
 class ENGINE_DLL CGameObject : public CPrototype,
 								public IRenderable,
 								public IPhysicsListener,
@@ -55,7 +77,7 @@ public:
 
 protected:
 	// [LSY] GameObjectManager의 슬롯과 레이어에 등록이 모두 끝난 직후 한 번 호출된다.
-	// Initialize 중에는 아직 자기 Handle 조회가 불가능하므로 Manager 등록이 필요한 후처리는 여기서 수행한다.
+	// Initialize 중에는 아직 Manager를 통한 자기 Handle/레이어 조회가 불가능하므로 등록 후처리는 여기서 수행한다.
 	virtual void OnRegisteredToManager() {}
 
 public:
@@ -172,18 +194,31 @@ protected:
 	void Free() override;
 
 public:
+	// true는 파괴 요청만 큐에 등록하며 실제 해제는 안전한 FrameEnd에서 수행한다.
+	// false는 FrameEnd가 삭제 배치를 수집하기 전까지만 요청 취소로 인정된다.
+	// 단, DelLayer처럼 Manager가 논리 컨테이너에서 먼저 분리한 확정 파괴 요청은 취소할 수 없다.
 	void SetPendingDestroy(_bool b = true);
 	void SetPendingDestroyCascade(_bool b = true);
 	_bool GetPendingDestroy() const { return m_bPendingDestroy; }
 private:
+	void CommitPendingDestroy();
 	_bool m_bPendingDestroy{ false };
+	_bool m_bPendingDestroyCommitted{ false };
 
 public:
-	// [LSY] GameObjectManager가 호출하는 Fixed/Priority/Update/LateUpdate 참여 여부만 제어한다.
+	// 전체 Managed Update 참여 여부를 제어하는 런타임 master switch다.
+	// 각 dispatch 직전에 검사하므로 단계별 배열을 재구축하지 않아도 즉시 반영되며 Pool 활성/비활성에도 사용한다.
 	void SetManagedUpdateEnabled(_bool bEnabled);
 	void SetManagedUpdateEnabledCascade(_bool bEnabled);
 	_bool IsManagedUpdateEnabled() const { return m_bManagedUpdateEnabled; }
+
+	// Managed Update가 켜진 상태에서 참여할 세부 루프를 반환한다.
+	// 마스크는 프로토타입 생성자에서 고정하고 복제 객체가 그대로 물려받는 정적 분류값이다.
+	// 등록 후 변경해도 Manager의 단계별 배열은 즉시 재구성되지 않으므로 런타임 상태 제어에는 사용하지 않는다.
+	GAMEOBJECT_UPDATE_LOOP GetUpdateLoopMask() const { return m_eUpdateLoopMask; }
 protected:
+	// 파생 프로토타입 생성자에서만 설정하는 용도다. 정의되지 않은 상위 비트는 구현에서 제거한다.
+	void SetUpdateLoopMask(GAMEOBJECT_UPDATE_LOOP eMask);
 	virtual void OnManagedUpdateEnabled() {}
 	virtual void OnManagedUpdateDisabled() {}
 	virtual _bool OnAcquireFromPool(void* pArg) { return true; }
@@ -193,6 +228,7 @@ private:
 	_bool AcquireFromPool(void* pArg = nullptr);
 	void ReleaseToPool();
 	_bool m_bManagedUpdateEnabled{ true };
+	GAMEOBJECT_UPDATE_LOOP m_eUpdateLoopMask{ GAMEOBJECT_UPDATE_LOOP::ALL };
 	friend class CGameObjectManager;
 	friend class CGameObjectPoolManager;
 
