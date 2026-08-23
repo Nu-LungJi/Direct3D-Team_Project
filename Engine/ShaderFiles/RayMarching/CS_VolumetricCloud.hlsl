@@ -97,17 +97,24 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	float3	ViewDir = normalize(ViewPos.xyz / ViewPos.w);
 	float3	RayDirection = normalize(mul(float4(ViewDir, 0.f), g_matInvView).xyz);
 
-	float2	CloudMin = Get_SphereIntersection(g_vCamPos, RayDirection, SPHERE_CENTER, SPHERE_RADIUS + CLOUD_HEIGHT_MIN);
-	float2	CloudMax = Get_SphereIntersection(g_vCamPos, RayDirection, SPHERE_CENTER, SPHERE_RADIUS + CLOUD_HEIGHT_MAX);
+	float3	PlanetCenter = float3(g_vCamPos.x, -SPHERE_RADIUS, g_vCamPos.z);
 	
-	float	CloudStartHeight = CloudMin.y, CloudEndHeight = CloudMax.y;
+	float2	CloudMin = Get_SphereIntersection(g_vCamPos, RayDirection, PlanetCenter, SPHERE_RADIUS + CLOUD_HEIGHT_MIN);
+	float2  CloudMax = Get_SphereIntersection(g_vCamPos, RayDirection, PlanetCenter, SPHERE_RADIUS + CLOUD_HEIGHT_MAX);
+	
+	float CloudStartHeight = max(0.0f, CloudMin.y), CloudEndHeight = CloudMax.y;
 	if (CloudEndHeight < 0.f || CloudStartHeight < 0.f || CloudEndHeight <= CloudStartHeight)
 	{
 		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
 		return;
 	}
 
-	float	Depth = DepthTexture[PixelPos].r;
+	uint DepthWidth, DepthHeight;
+	DepthTexture.GetDimensions(DepthWidth, DepthHeight);
+	float2	TexCoord = float2(PixelPos) / float2(Width, Height);
+	
+	uint2	DepthPixelPos = uint2(TexCoord * float2(DepthWidth, DepthHeight));
+	float	Depth = DepthTexture[DepthPixelPos].r;
 	
 	float4	ClipSpace	= float4(ScreenSpaceNDC, Depth, 1.f);
 	float4	ViewSpace	= mul(ClipSpace, g_matInvProj);
@@ -135,16 +142,23 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	float	AccumulatedTransmittance = 1.f;
 	float3	FinalColor = float3(0.f, 0.f, 0.f);
 	
-	float PhaseValue = Henyey_Greenstein_DualPhase(RayDirection, LightDirection, 0.8f, -0.2f, 0.5f);
+	float	PhaseValue = Henyey_Greenstein_DualPhase(RayDirection, LightDirection, 0.8f, -0.2f, 0.5f);
+	
+	float	HorizonFade = saturate(RayDirection.y * 5.f);
 	
 	for (uint Step = 0; Step < DynamicStepCount; ++Step)
 	{
-		float Density = Get_CloudDensity(CurrentPosition, CloudDensity) ;
+		float Density = Get_CloudDensity(CurrentPosition, CloudDensity);
+		
+		float DistanceFromCam = distance(CurrentPosition, g_vCamPos);
+		float DistanceFade = 1.f - saturate(DistanceFromCam / LOD_DISTANCE);
+		
+		Density *= pow(DistanceFade, 3.f) * HorizonFade;
 		
 		if (Density > 0.f)
 		{
-			float LightAccumulatedDensity = 0.0f;
-			float3 LightRayPos = CurrentPosition;
+			float	LightAccumulatedDensity = 0.f;
+			float3	LightRayPos = CurrentPosition;
 			
 			for (uint lStep = 0; lStep < LIGHT_STEP_COUNT; ++lStep)
 			{

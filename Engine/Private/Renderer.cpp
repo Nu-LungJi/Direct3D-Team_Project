@@ -329,11 +329,6 @@ HRESULT CRenderer::InitializeBlendTarget()
 
 HRESULT CRenderer::InitializePostProcess() {
 
-	if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PostProcess", E::CResCBuffer::Create()))
-	{
-		if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(POSTPROCESS) })))    return E_FAIL;
-	}
-
 	// LUT Texture Create
 	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/PostProcess/LUT_Fuji.dds", nullptr, m_pLookUpTableTexture.GetAddressOf()))) {
 		MSG_BOX("Cannot Create LUT Texture File.");
@@ -355,6 +350,9 @@ HRESULT CRenderer::InitializePostProcess() {
 
 		m_pLensFlareCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_LENSFLARE", E::CResCBuffer::Create());
 		if (nullptr == m_pLensFlareCBuffer || FAILED(m_pLensFlareCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LENSFLARE) })))    return E_FAIL;
+
+		m_pPostProcessCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_POSTPROCESS", E::CResCBuffer::Create());
+		if (nullptr == m_pPostProcessCBuffer || FAILED(m_pPostProcessCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_POSTPROCESS) })))    return E_FAIL;
 
 		m_fScreenPosition		= { 0.5f, 0.5f };
 		m_fExpandDuration		= 10.f;
@@ -421,9 +419,7 @@ HRESULT CRenderer::InitializeBloom() {
 	if (!m_pBrightPassComputeShader || !m_pVerticalBlurComputeShader || !m_pHorizontalBlurComputeShader || !m_pBloomPassComputeShader || !m_pUpSampleComputeShader || !m_pDownSampleComputeShader)	return E_FAIL;
 
 	m_pBloomCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Bloom", E::CResCBuffer::Create());
-	if (nullptr == m_pBloomCBuffer) return E_FAIL;
-	
-	if (FAILED(m_pBloomCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_BLOOM) })))    return E_FAIL;
+	if (nullptr == m_pBloomCBuffer || FAILED(m_pBloomCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_BLOOM) })))    return E_FAIL;
 
 	return S_OK;
 }
@@ -1678,6 +1674,8 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 HRESULT CRenderer::Render_PostProcess() {
 	if (m_bApplyFilter == false) return S_OK;
 
+	if (FAILED(Update_PostProcessConstantBuffer())) { Unbind_Resources(); return S_OK; }
+
 	if (FAILED(Render_PostProcess_Focusing()))  { Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_PostProcess_LensFlare())) { Unbind_Resources(); return S_OK; }
@@ -1685,6 +1683,23 @@ HRESULT CRenderer::Render_PostProcess() {
 	if (FAILED(Render_PostProcess_Bloom()))		{ Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_PostProcess_Filter()))	{ Unbind_Resources(); return S_OK; }
+
+	return S_OK;
+}
+
+HRESULT	CRenderer::Update_PostProcessConstantBuffer() {
+
+	D3D11_MAPPED_SUBRESOURCE MRES{};
+	if (SUCCEEDED(m_pContext->Map(m_pPostProcessCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
+	{
+		CB_POSTPROCESS cbPPBuffer = m_pPostProcessBuffer;	
+		cbPPBuffer.g_fBlurIntensity = m_pPostProcessBuffer.g_fBlurIntensity / 100.f;	// 0.01같은 작은 값에도 Blur가 너무 많이 먹어서 조정
+
+		memcpy(MRES.pData, &cbPPBuffer, sizeof(CB_POSTPROCESS));
+		m_pContext->Unmap(m_pPostProcessCBuffer->GetCBuffer().Get(), 0);
+	}
+	ID3D11Buffer* PostProcessBuffer = m_pPostProcessCBuffer->GetCBuffer().Get();
+	m_pContext->CSSetConstantBuffers(11, 1, &PostProcessBuffer);
 
 	return S_OK;
 }
@@ -1706,7 +1721,6 @@ HRESULT CRenderer::Render_PostProcess_Focusing(){
 		if (nullptr == DepthWriteState) return S_OK;
 
 		m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
-
 	}
 	{
 		ID3D11DepthStencilView* pFocusingDSV = m_pResDynTexTargetFocusingDepthMap->GetDSV().Get();
@@ -1781,7 +1795,7 @@ HRESULT CRenderer::Render_PostProcess_LensFlare(){
 			m_pContext->Unmap(m_pLensFlareCBuffer->GetCBuffer().Get(), 0);
 		}
 		ID3D11Buffer* LensFlareBuffer = m_pLensFlareCBuffer->GetCBuffer().Get();
-		m_pContext->CSSetConstantBuffers(11, 1, &LensFlareBuffer);
+		m_pContext->CSSetConstantBuffers(12, 1, &LensFlareBuffer);
 
 		m_pContext->Dispatch((ScreenSize.x + 15) / 16, (ScreenSize.y + 15) / 16, 1);
 	}
@@ -2374,7 +2388,19 @@ VOID	CRenderer::RendererGUI() {
 		if (ImGui::CollapsingHeader("PostProcess")) {
 			ImGui::TextUnformatted("Blur Intensity");
 			ImGui::SameLine(120.f);
-			ImGui::DragFloat("##BlurIntensity", &m_fBlurIntensity, 0.01f, 0.f, 10.f, "%.2f");
+			ImGui::DragFloat("##BlurIntensity", &m_pPostProcessBuffer.g_fBlurIntensity, 0.01f, 0.f, 10.f, "%.2f");
+
+			ImGui::TextUnformatted("Distortion Intensity");
+			ImGui::SameLine(120.f);
+			ImGui::DragFloat("##DistortionIntensity", &m_pPostProcessBuffer.g_fDistortionIntensity, 0.01f, 0.f, 10.f, "%.2f");
+
+			ImGui::TextUnformatted("Chromatic Intensity");
+			ImGui::SameLine(120.f);
+			ImGui::DragFloat("##ChromaticIntensity", &m_pPostProcessBuffer.g_fChromaticIntensity, 0.01f, 0.f, 10.f, "%.2f");
+
+			ImGui::TextUnformatted("Vignette Intensity");
+			ImGui::SameLine(120.f);
+			ImGui::DragFloat("##VignetteIntensity", &m_pPostProcessBuffer.g_fVignetteIntensity, 0.01f, 0.f, 10.f, "%.2f");
 		}
 	}
 	if (m_bApplyVolumetric) {
@@ -2608,15 +2634,14 @@ VOID CRenderer::Clear_OutlineEffect() {
 
 #pragma region BLOOMHELPER
 HRESULT	CRenderer::Update_TexelSize(_float _Width, _float _Height){
-	CB_BLOOM	BloomBuffer{};
+	CB_BLOOM	cbBloomBuffer{};
 
-	BloomBuffer.g_fTexelSize = { _Width, _Height };
-	BloomBuffer.g_fBlurIntensity = m_fBlurIntensity / 100.f;	// 0.01같은 작은 값에도 Blur가 너무 많이 먹어서 조정
+	cbBloomBuffer.g_fTexelSize = { _Width, _Height };
 
 	D3D11_MAPPED_SUBRESOURCE BLURMRES{};
 	if (FAILED(m_pContext->Map(m_pBloomCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &BLURMRES)))	return E_FAIL;
 	{
-		memcpy(BLURMRES.pData, &BloomBuffer, sizeof(CB_BLOOM));
+		memcpy(BLURMRES.pData, &cbBloomBuffer, sizeof(CB_BLOOM));
 		m_pContext->Unmap(m_pBloomCBuffer->GetCBuffer().Get(), 0);
 	}
 

@@ -220,10 +220,18 @@ namespace Engine
 	struct CB_BLOOM
 	{
 		_float2	g_fTexelSize;
-		_float	g_fBlurIntensity;
-		_float	CB_BLOOMPADDING;
+		_float2	CB_BLOOM_PADDING;
 	};
 	static_assert(sizeof(CB_BLOOM) % 16 == 0);
+
+	struct CB_POSTPROCESS
+	{
+		_float	g_fBlurIntensity{};
+		_float	g_fDistortionIntensity{};
+		_float	g_fChromaticIntensity{};
+		_float	g_fVignetteIntensity{};
+	};
+	static_assert(sizeof(CB_POSTPROCESS) % 16 == 0);
 
 	struct CB_FROXEL
 	{

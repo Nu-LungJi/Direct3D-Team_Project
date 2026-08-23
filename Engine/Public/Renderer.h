@@ -87,6 +87,7 @@ private:		// Volumetric Effect Pass Render
 	HRESULT		Render_VolumetricComposite();
 
 private:		// PostProcess Pass Render
+	HRESULT		Update_PostProcessConstantBuffer();
 	HRESULT		Render_PostProcess_Focusing();
 	HRESULT		Render_PostProcess_LensFlare();
 	HRESULT		Render_PostProcess_Bloom();
@@ -140,7 +141,7 @@ public:			// Volumetric Fog
 	_float			Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base);
 
 public:
-	VOID			Apply_RadialBlur(_float _Intensity) { m_fBlurIntensity = _Intensity; }
+	VOID			Apply_RadialBlur(_float _Intensity) { m_pPostProcessBuffer.g_fBlurIntensity = _Intensity; }
 	
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
@@ -203,6 +204,7 @@ private:
 	SPtr<CResComputeShader>		m_pDownSampleComputeShader{};
 
 	SPtr<CResCBuffer>			m_pBloomCBuffer{};
+	SPtr<CResCBuffer>			m_pPostProcessCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricFroxelCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricVFogCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricCSMCBuffer{};
@@ -282,7 +284,7 @@ private:		// PostProcess
 	ComPtr<ID3D11ShaderResourceView>	m_pSRVPreFilteredMap{};
 	ComPtr<ID3D11ShaderResourceView>	m_pSRVBRDFLookUpMap{};
 
-	_float	m_fBlurIntensity{};
+	CB_POSTPROCESS	m_pPostProcessBuffer{};
 
 public:			// Hi-Z Fuction
 	const CHizBuffer* GetPrevHizBuffer() const { return m_bHasPrevHizBuffer ? m_pPrevHizBuffer.get() : nullptr; }
