@@ -218,6 +218,12 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 	_bool bF2 = CGameInstance::Get().KeyDown(DIK_F2);
 	_bool bLShift = CGameInstance::Get().KeyPressing(DIK_LSHIFT);
 	_bool bDelete = CGameInstance::Get().KeyDown(DIK_DELETE);
+	const _bool bControl = CGameInstance::Get().KeyPressing(DIK_LCONTROL) ||
+		CGameInstance::Get().KeyPressing(DIK_RCONTROL);
+	if (bControl && CGameInstance::Get().KeyDown(DIK_Z))
+		UndoLastAction();
+	if (bControl && CGameInstance::Get().KeyDown(DIK_D))
+		DuplicateSelectedUI();
 
 	_bool bCreate = false;
 	if (std::nullopt != m_oSelectHandle)
@@ -335,6 +341,7 @@ void CLevelUIEditor::Update(E::_float fTimeDelta)
 
 		if (std::nullopt != Target_UI)
 		{
+			CaptureUndoSnapshot();
 			DeleteUIRecursive(Target_UI);
 
 			Target_UI = std::nullopt;
@@ -414,6 +421,7 @@ void CLevelUIEditor::CreateMode()
 	{
 		if (MouseLB)
 		{
+			CaptureUndoSnapshot();
 			CTextureUI* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<CTextureUI>(*m_oSelectHandle);
 			const UI_INFO& selectInfo = selectUI->GetUIInfo();
 			_float2 mousePos = E::CGameInstance::Get().GetMousePos();
@@ -479,6 +487,11 @@ void CLevelUIEditor::SelectMode()
 
 	if (MouseLBPressing && std::nullopt != Target_UI)
 	{
+		if (!m_bPropertyUndoCaptured)
+		{
+			CaptureUndoSnapshot();
+			m_bPropertyUndoCaptured = true;
+		}
 		Engine::CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
 		UI_INFO& selectInfo = selectUI->GetUIInfo();
 
@@ -630,11 +643,36 @@ void CLevelUIEditor::PrefabMode()
 	
 		if (ImGui::Button(m_iEditorMode == ETOUI(UiEditorMode::RTT) ? "Load RTT" : "Load Prefab", ImVec2(120, 0)))
 		{
+			CaptureUndoSnapshot();
 			if (m_iEditorMode == ETOUI(UiEditorMode::RTT))
 				PrefabLoad();
 			else
 				GET_SINGLE(UIManager)->LoadPrefab(m_cPrefabName, g_PrefabPath);
 		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Duplicate Selected", ImVec2(145, 0)))
+			DuplicateSelectedUI();
+		ImGui::SameLine();
+		const _bool canUndo = m_UndoSnapshot.has_value();
+		if (!canUndo)
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.45f);
+		if (ImGui::Button("Undo", ImVec2(75, 0)) && canUndo)
+			UndoLastAction();
+		if (!canUndo)
+			ImGui::PopStyleVar();
+
+		const _bool canFlip = Target_UI.has_value();
+		if (!canFlip)
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.45f);
+		if (ImGui::Button("Flip Horizontal", ImVec2(120, 0)) && canFlip)
+			FlipSelectedUI(true);
+		ImGui::SameLine();
+		if (ImGui::Button("Flip Vertical", ImVec2(120, 0)) && canFlip)
+			FlipSelectedUI(false);
+		if (!canFlip)
+			ImGui::PopStyleVar();
+		ImGui::TextDisabled("Selected prefab: layout + image UV | Shortcuts: Ctrl+D / Ctrl+Z");
 	
 		ImGui::Spacing();
 		ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "[ Editor Mode ]");
@@ -787,6 +825,7 @@ void CLevelUIEditor::PrefabMode()
 				{
 					if (ImGui::Selectable("None", selectedParent == -1))
 					{
+						CaptureUndoSnapshot();
 						selectedParent = -1;
 						targetUI->SetParent(std::nullopt);
 					}
@@ -796,6 +835,7 @@ void CLevelUIEditor::PrefabMode()
 						bool isSelected = (selectedParent == i);
 						if (ImGui::Selectable(uiList[i]->GetName(), isSelected))
 						{
+							CaptureUndoSnapshot();
 							selectedParent = i;
 							targetUI->SetParent(uiList[i]->GetHandle());
 	
@@ -1561,6 +1601,152 @@ void CLevelUIEditor::PrefabSave()
 	file.close();
 }
 
+void CLevelUIEditor::CaptureUndoSnapshot()
+{
+	if (m_bRestoringUndo)
+		return;
+
+	nlohmann::ordered_json snapshot;
+	snapshot["UI"] = nlohmann::ordered_json::array();
+	const auto* uiHandles = CGameInstance::Get().GetGameObjectLayer("Layer_UI");
+	if (uiHandles)
+	{
+		for (const CHandle handle : *uiHandles)
+		{
+			auto* ui = E::CGameInstance::Get().
+				GetGameObjectByHandleT<E::CUIObject>(handle);
+			if (!ui || ui->GetParent())
+				continue;
+
+			nlohmann::ordered_json objectSnapshot;
+			SaveUIRecursive(ui, objectSnapshot);
+			snapshot["UI"].push_back(std::move(objectSnapshot));
+		}
+	}
+	m_UndoSnapshot = std::move(snapshot);
+}
+
+void CLevelUIEditor::DuplicateSelectedUI()
+{
+	if (!Target_UI)
+		return;
+
+	auto* source = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(*Target_UI);
+	if (!source)
+		return;
+
+	CaptureUndoSnapshot();
+	nlohmann::ordered_json objectSnapshot;
+	SaveUIRecursive(source, objectSnapshot);
+	objectSnapshot["Name"] = objectSnapshot.value(
+		"Name", std::string("UI")) + "_Copy";
+
+	E::CUIObject* parent = nullptr;
+	if (source->GetParent())
+	{
+		parent = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(*source->GetParent());
+		objectSnapshot["LocalX"] =
+			objectSnapshot.value("LocalX", 0.f) + 20.f;
+		objectSnapshot["LocalY"] =
+			objectSnapshot.value("LocalY", 0.f) + 20.f;
+	}
+	else
+	{
+		objectSnapshot["X"] = objectSnapshot.value("X", 0.f) + 20.f;
+		objectSnapshot["Y"] = objectSnapshot.value("Y", 0.f) + 20.f;
+	}
+
+	if (auto* duplicate = LoadUIRecursive(objectSnapshot, parent))
+	{
+		duplicate->CalcUICoord();
+		ResetProperty(duplicate->GetHandle());
+		GET_SINGLE(UIManager)->UpdateRootUIHandles();
+	}
+}
+
+void CLevelUIEditor::FlipSelectedUI(_bool horizontal)
+{
+	if (!Target_UI)
+		return;
+
+	const CHandle selectedHandle = *Target_UI;
+	auto* root = E::CGameInstance::Get().
+		GetGameObjectByHandleT<E::CUIObject>(selectedHandle);
+	if (!root)
+		return;
+	while (root->GetParent())
+	{
+		auto* parent = E::CGameInstance::Get().
+			GetGameObjectByHandleT<E::CUIObject>(*root->GetParent());
+		if (!parent)
+			break;
+		root = parent;
+	}
+
+	CaptureUndoSnapshot();
+
+	std::function<void(E::CUIObject*, _bool)> flipRecursive;
+	flipRecursive = [&](E::CUIObject* ui, _bool isRoot)
+	{
+		if (!ui)
+			return;
+
+		UI_INFO& info = ui->GetUIInfo();
+		if (horizontal)
+		{
+			if (!isRoot)
+				info.LocalX = -info.LocalX;
+			info.FlipX = !info.FlipX;
+		}
+		else
+		{
+			if (!isRoot)
+				info.LocalY = -info.LocalY;
+			info.FlipY = !info.FlipY;
+		}
+		if (isRoot)
+			info.Rot = -info.Rot;
+		else
+			info.LocalRot = -info.LocalRot;
+
+		// Update the parent before its children so nested local offsets are
+		// recalculated against the already mirrored parent coordinate.
+		ui->CalcUICoord();
+
+		for (const CHandle childHandle : ui->GetChildren())
+		{
+			auto* child = E::CGameInstance::Get().
+				GetGameObjectByHandleT<E::CUIObject>(childHandle);
+			flipRecursive(child, false);
+		}
+	};
+
+	flipRecursive(root, true);
+	ResetProperty(selectedHandle);
+}
+
+void CLevelUIEditor::UndoLastAction()
+{
+	if (!m_UndoSnapshot)
+		return;
+
+	nlohmann::ordered_json snapshot = std::move(*m_UndoSnapshot);
+	m_UndoSnapshot.reset();
+	m_bRestoringUndo = true;
+	ClearUI();
+	if (snapshot.contains("UI") && snapshot["UI"].is_array())
+	{
+		for (const auto& objectSnapshot : snapshot["UI"])
+			LoadUIRecursive(objectSnapshot, nullptr);
+	}
+	m_bRestoringUndo = false;
+	m_bPropertyUndoCaptured = false;
+	ResetProperty(std::nullopt);
+	GET_SINGLE(UIManager)->UpdateRootUIHandles();
+}
+
 void CLevelUIEditor::PrefabLoad()
 {
 	switch (m_iEditorMode)
@@ -1797,6 +1983,8 @@ void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& 
 
 	obj["WidthRatioX"] = uiInfo.WidthRatioX;
 	obj["WidthRatioY"] = uiInfo.WidthRatioY;
+	obj["FlipX"] = uiInfo.FlipX;
+	obj["FlipY"] = uiInfo.FlipY;
 	
 	obj["Rot"] = uiInfo.Rot;
 	obj["LocalRot"] = uiInfo.LocalRot;
@@ -1891,13 +2079,21 @@ void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& 
 E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent)
 {
 	int uiType = obj["UiType"];
+	const std::string objectName = obj.value("Name", std::string{});
+	const _bool legacyWandCoreCard =
+		uiType == ETOUI(UI_TYPE::TEXUI) &&
+		(objectName == "DragonWandCore" ||
+			objectName == "UniCornWandCore" ||
+			objectName == "PheonixWandCore");
+	if (legacyWandCoreCard)
+		uiType = ETOUI(UI_TYPE::GENERAL_BUTTON);
 	count++;
 	E::CUIObject* pUI = nullptr;
 
 	E::CUIObject::UIOBJECT_DESC Desc{};
 	std::optional<CHandle> uiHandle = std::nullopt;
 
-	Desc.sObjectTag = obj["Name"];
+	Desc.sObjectTag = objectName;
 
 	switch (uiType)
 	{
@@ -1977,6 +2173,8 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 	
 	uiInfo.WidthRatioX = obj["WidthRatioX"];
 	uiInfo.WidthRatioY = obj["WidthRatioY"];
+	uiInfo.FlipX = obj.value("FlipX", false);
+	uiInfo.FlipY = obj.value("FlipY", false);
 	
 	uiInfo.Restag = obj["ResTag"];
 	
@@ -1988,8 +2186,11 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 
 	if (auto* button = E::CGameInstance::Get().GetGameObjectByHandleT<CGeneralButton>(pUI->GetHandle()))
 	{
+		button->RefreshBaseScale();
 		button->SetButtonType(static_cast<GENERAL_BUTTON_TYPE>(
-			obj.value("ButtonType", static_cast<uint32_t>(GENERAL_BUTTON_TYPE::DEFAULT))));
+			obj.value("ButtonType", static_cast<uint32_t>(
+				legacyWandCoreCard ? GENERAL_BUTTON_TYPE::WAND_CORE_CARD :
+					GENERAL_BUTTON_TYPE::DEFAULT))));
 		button->SetCommandParameter(obj.value("CommandParameter", std::string{}));
 	}
 	if (uiType == ETOUI(UI_TYPE::NINE_SLICE))
@@ -2412,7 +2613,15 @@ void CLevelUIEditor::DrawGeneralButtonSettings()
 		return;
 
 	static const char* buttonTypeNames[] = {
-		"DEFAULT", "WAND_CATEGORY", "WAND_MATERIAL", "WAND_ITEM", "CONFIRM", "CANCEL"
+		"DEFAULT",
+		"WAND_CATEGORY",
+		"WAND_MATERIAL",
+		"WAND_ITEM",
+		"CONFIRM",
+		"CANCEL",
+		"WAND_SLIDER_ARROW",
+		"WAND_SLIDER_CURSOR",
+		"WAND_CORE_CARD"
 	};
 
 	int buttonType = static_cast<int>(m_iGeneralButtonType);
@@ -2596,6 +2805,7 @@ void CLevelUIEditor::DrawJsonFileLoader(uint32_t EditorMode)
 					Load();
 					break;
 				case ETOUI(UiEditorMode::PREFAB):
+					CaptureUndoSnapshot();
 					strcpy_s(m_cPrefabName, sizeof(m_cPrefabName), file.fileName.substr(0, file.fileName.length() - 5).c_str());
 					GET_SINGLE(UIManager)->LoadPrefab(m_cPrefabName, g_PrefabPath);
 					break;
@@ -2604,6 +2814,7 @@ void CLevelUIEditor::DrawJsonFileLoader(uint32_t EditorMode)
 					GET_SINGLE(UIManager)->LoadPrefab(m_cPrefabName, g_FlipbookPath);
 					break;
 				case ETOUI(UiEditorMode::RTT):
+					CaptureUndoSnapshot();
 					strcpy_s(m_cPrefabName, sizeof(m_cPrefabName), file.fileName.substr(0, file.fileName.length() - 5).c_str());
 					PrefabLoad();
 					break;
@@ -2625,6 +2836,30 @@ void CLevelUIEditor::UpdateTargetState()
 	{
 		Engine::CUIObject* selectUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
 		UI_INFO& selectInfo = selectUI->GetUIInfo();
+		const auto changed = [](const _float lhs, const _float rhs)
+		{
+			return std::abs(lhs - rhs) > 0.0001f;
+		};
+		const _bool hasBufferedPropertyChange =
+			changed(selectInfo.fX, m_UIINFO.fX) ||
+			changed(selectInfo.fY, m_UIINFO.fY) ||
+			changed(selectInfo.SizeX, m_UIINFO.SizeX) ||
+			changed(selectInfo.SizeY, m_UIINFO.SizeY) ||
+			changed(selectInfo.Alpha, m_UIINFO.Alpha) ||
+			selectInfo.Weight != m_UIINFO.Weight ||
+			selectInfo.Name != m_cName ||
+			changed(selectUI->GetScaleRatio(), m_ScaleRatio) ||
+			changed(selectUI->GetLocalScaleRatio(), m_LocalScaleRatio);
+		if (hasBufferedPropertyChange && !m_bPropertyUndoCaptured)
+		{
+			CaptureUndoSnapshot();
+			m_bPropertyUndoCaptured = true;
+		}
+		if (!ImGui::IsAnyItemActive() &&
+			!CGameInstance::Get().MousePressing(MOUSEKEYSTATE::LB))
+		{
+			m_bPropertyUndoCaptured = false;
+		}
 
 		selectInfo.fX = m_UIINFO.fX;
 		selectInfo.fY = m_UIINFO.fY;
@@ -2773,6 +3008,8 @@ void CLevelUIEditor::ResetProperty(std::optional<Engine::CHandle> newTargetHandl
 
 void CLevelUIEditor::ClearUI()
 {
+	if (!m_bRestoringUndo)
+		CaptureUndoSnapshot();
 	std::vector<CHandle> uiHandles = GET_SINGLE(UIManager)->GetRootUIHandles();
 	for (auto handle : uiHandles)
 	{

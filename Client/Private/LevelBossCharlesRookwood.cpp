@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "LevelBossCharlesRookwood.h"
+#include "SkyCloudyCube.h"
 #include "GameInstance.h"
 #include "Level_Defines.h"
 #include "FlyCamera.h"
@@ -375,7 +376,7 @@ void CLevelBossCharlesRookwood::SubscribePlayerDeath(const CHandle& hPlayer)
 
 HRESULT CLevelBossCharlesRookwood::SpawnSkyBox()
 {
-	CGameObject::GAMEOBJECT_DESC skyDesc{};
+	CSkyCloudyCube::SKY_DESC skyDesc{};
 	skyDesc.sObjectTag = "SkyCloudyCube";
 	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
 	{

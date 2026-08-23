@@ -88,6 +88,7 @@ private:		// Volumetric Effect Pass Render
 
 private:		// PostProcess Pass Render
 	HRESULT		Update_PostProcessConstantBuffer();
+	HRESULT		Render_PostProcess_MotionBlur();
 	HRESULT		Render_PostProcess_Focusing();
 	HRESULT		Render_PostProcess_LensFlare();
 	HRESULT		Render_PostProcess_Bloom();
@@ -141,8 +142,16 @@ public:			// Volumetric Fog
 	_float			Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base);
 
 public:
-	VOID			Apply_RadialBlur(_float _Intensity) { m_pPostProcessBuffer.g_fBlurIntensity = _Intensity; }
-	
+	VOID			Set_RadialBlurIntensity(const _float _Intensity)	{ m_pPostProcessBuffer.g_fBlurIntensity			= _Intensity; }
+	VOID			Set_DistortionIntensity(const _float _Intensity)	{ m_pPostProcessBuffer.g_fDistortionIntensity	= _Intensity; }
+	VOID			Set_ChromaticIntensity(const _float _Intensity)		{ m_pPostProcessBuffer.g_fChromaticIntensity	= _Intensity; }
+	VOID			Set_VignetteIntensity(const _float _Intensity)		{ m_pPostProcessBuffer.g_fVignetteIntensity		= _Intensity; }
+
+	const _float&	Get_RadialBlurIntensity()	{ return m_pPostProcessBuffer.g_fBlurIntensity;			}
+	const _float&	Get_DistortionIntensity()	{ return m_pPostProcessBuffer.g_fDistortionIntensity;	}
+	const _float&	Get_ChromaticIntensity()	{ return m_pPostProcessBuffer.g_fChromaticIntensity;	}
+	const _float&	Get_VignetteIntensity()		{ return m_pPostProcessBuffer.g_fVignetteIntensity;		}
+
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
@@ -161,6 +170,7 @@ private:
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPBR{};			// PBR
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetEffect{};			// Effect
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetMotionBlur{};		// MotionBlur
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetUI{};				// UI
 	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
@@ -195,6 +205,7 @@ private:
 
 	SPtr<CResVertexShader>		m_pUI3DVertexShader{};
 	SPtr<CResPixelShader>		m_pUI3DPixelShader{};
+	SPtr<CResPixelShader>		m_pMotionBlurPixelShader{};
 
 	SPtr<CResComputeShader>		m_pBrightPassComputeShader{};
 	SPtr<CResComputeShader>		m_pVerticalBlurComputeShader{};
@@ -298,6 +309,14 @@ private:		// Hi-Z Variable
 	UPtr<CHizBuffer> m_pCurrentHizBuffer = {}; // 이번 프레임에서 새로 만든 자료
 	UPtr<CHizBuffer> m_pPrevHizBuffer	 = {}; // 컬링에 사용할 자료
 	_bool			 m_bHasPrevHizBuffer = false;
+
+private:
+	XMFLOAT4X4 m_matPrevViewProj{};
+	XMFLOAT4X4 m_matCurrentViewProj{};
+
+	CCameraObject* m_pPreviousCamera = nullptr;
+	CCameraObject* m_pCurrentCamera = nullptr;
+	bool m_bHasPreviousViewProj = false;
 
 #ifdef _DEBUG
 private:		// Debugging

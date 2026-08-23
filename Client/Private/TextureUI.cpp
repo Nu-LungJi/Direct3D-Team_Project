@@ -162,10 +162,24 @@ void CTextureUI::LateUpdate(E::_float fTimeDelta)
 HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
 	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
+	CTextureUI* alphaMaskSource = nullptr;
+	if (m_AlphaMaskSource)
+	{
+		alphaMaskSource = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CTextureUI>(*m_AlphaMaskSource);
+	}
+	const _bool hasAlphaMask = alphaMaskSource != nullptr &&
+		!alphaMaskSource->GetUIInfo().Restag.empty();
 
 	const auto& viBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResQuadTexBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
 	auto vs = E::CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_QuadTexUI");
 	auto ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_QuadTexUI");
+	if (hasAlphaMask)
+	{
+		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"PS_QuadTexUIFrameMasked");
+	}
 	const _bool isNineSlice = m_UIINFO.UIType == ETOUI(UI_TYPE::NINE_SLICE);
 	if (isNineSlice)
 	{
@@ -221,7 +235,34 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 			static_cast<_float>(m_iPathProgressType)
 		};
 		perUI.uvSize = { 0.f, 0.f };
+		perUI.quadSize = { m_fTextureBrightness, 0.f };
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
+		perUI.uvFlip = { m_UIINFO.FlipX ? 1.f : 0.f, m_UIINFO.FlipY ? 1.f : 0.f };
+		if (hasAlphaMask)
+		{
+			const UI_INFO& maskInfo = alphaMaskSource->GetUIInfo();
+			const _float sourceWidth = std::max(1.f,
+				m_UIINFO.SizeX * GetScaleRatio() * GetLocalScaleRatio());
+			const _float sourceHeight = std::max(1.f,
+				m_UIINFO.SizeY * GetScaleRatio() * GetLocalScaleRatio());
+			const _float maskWidth = std::max(1.f,
+				maskInfo.SizeX * alphaMaskSource->GetScaleRatio() *
+				alphaMaskSource->GetLocalScaleRatio());
+			const _float maskHeight = std::max(1.f,
+				maskInfo.SizeY * alphaMaskSource->GetScaleRatio() *
+				alphaMaskSource->GetLocalScaleRatio());
+			const _float sourceLeft = m_UIINFO.fX - sourceWidth * 0.5f;
+			const _float sourceTop = m_UIINFO.fY - sourceHeight * 0.5f;
+			const _float maskLeft = maskInfo.fX - maskWidth * 0.5f;
+			const _float maskTop = maskInfo.fY - maskHeight * 0.5f;
+
+			perUI.margins = {
+				sourceWidth / maskWidth,
+				sourceHeight / maskHeight,
+				(sourceLeft - maskLeft) / maskWidth,
+				(sourceTop - maskTop) / maskHeight
+			};
+		}
 		if (isNineSlice)
 		{
 			perUI.uvSize = { 1.f, 1.f };
@@ -322,6 +363,17 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 				0,
 				1,
 				srv->GetSRV().GetAddressOf());
+			if (hasAlphaMask)
+			{
+				const auto& maskTexture = E::CGameInstance::GetConst().
+					GetResourceFirst<E::CResTexture2D>(
+						currentLevel,
+						alphaMaskSource->GetUIInfo().Restag);
+				pContext->PSSetShaderResources(
+					1,
+					1,
+					maskTexture->GetSRV().GetAddressOf());
+			}
 		}
 	}
 

@@ -361,6 +361,8 @@
     <ClInclude Include="..\Public\GraphicDevice.h" />
     <ClInclude Include="..\Public\Handle.h" />
     <ClInclude Include="..\Public\ImguiManager.h" />
+    <ClInclude Include="..\Public\NpcPlacementManager.h" />
+    <ClInclude Include="..\Public\NpcPlacementData.h" />
     <ClInclude Include="..\Public\IPhysicsListener.h" />
     <ClInclude Include="..\Public\IRenderable.h" />
     <ClInclude Include="..\Public\HizOcclusionCuller.h" />
@@ -704,6 +706,7 @@
     <ClCompile Include="..\Private\GameObjectPoolManager.cpp" />
     <ClCompile Include="..\Private\GraphicDevice.cpp" />
     <ClCompile Include="..\Private\ImguiManager.cpp" />
+    <ClCompile Include="..\Private\NpcPlacementManager.cpp" />
     <ClCompile Include="..\Private\Level.cpp" />
     <ClCompile Include="..\Private\LevelManager.cpp" />
     <ClCompile Include="..\Private\Light.cpp" />
@@ -818,6 +821,7 @@
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Particle\CS_ChangeColorByOwner.hlsl" />
     <FxCompile Include="..\ShaderFiles\Particle\CS_TransformOwner.hlsl" />
+    <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_MotionBlur.hlsl" />
     <FxCompile Include="..\ShaderFiles\RayMarching\CS_VolumetricCloud.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>

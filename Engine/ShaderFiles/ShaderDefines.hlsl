@@ -5,7 +5,7 @@ const static float3 AlbedoColor = { 1.f, 1.f, 1.f };
 
 const static float	SpecularIntensity	= 1.f;
 
-#define GAME_QUALITY_LEVEL2
+#define GAME_QUALITY_LEVEL1
 
 #ifdef GAME_QUALITY_LEVEL1				// 영상 및 최종 리허설 용
 #define MAX_LIGHT_COUNT			32
@@ -138,6 +138,8 @@ cbuffer CB_PER_PASS : register(b1)
 	float  g_fDeltaTime;
     float3 g_vShadowLightDir;
 	float  g_fTimeAccumulation;
+
+    matrix g_matPrevViewProj;
 };
 
 cbuffer CB_BONES : register(b2)
@@ -186,6 +188,8 @@ cbuffer CB_PER_UI : register(b7)
 	float2 g_ui_texSize;
 	float2 g_ui_quadSize;
 	float4 g_ui_margins;
+	float2 g_ui_uvFlip;
+	float2 g_ui_uvFlipPadding;
 };
 
 cbuffer CB_GPU_PART_ATTACHMENT : register(b9)

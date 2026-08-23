@@ -19,6 +19,7 @@
 #include "EnderDragon.h"
 #include "LightPlacementObject.h"
 #include "ClientEvents.h"
+#include "SkyCloudyCube.h"
 
 NS_USING(Client)
 
@@ -87,6 +88,7 @@ HRESULT CLevelLastBossRanrok::Initialize()
 		return E_FAIL;
 
 	SubscribePlayerDeath(*hPlayer);
+
 
 	return S_OK;
 }
@@ -352,8 +354,9 @@ HRESULT CLevelLastBossRanrok::SpawnLightPlacement()
 
 HRESULT CLevelLastBossRanrok::SpawnSkyBox()
 {
-	CGameObject::GAMEOBJECT_DESC skyDesc{};
+	CSkyCloudyCube::SKY_DESC skyDesc{};
 	skyDesc.sObjectTag = "SkyCloudyCube";
+	skyDesc.sTextureTag = "TEX_SkyRanrokCube";
 	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
 	{
 		return E_FAIL;
@@ -427,8 +430,8 @@ HRESULT CLevelLastBossRanrok::Initialize_VolumetricFog() {
 
 	CB_VLFOG FogOption{};
 
-	FogOption.g_fFogColor			= { 63.f / 255.f, 88.f / 255.f, 88.f / 255.f };
-	FogOption.g_fFogIntensity		= 1.f;
+	FogOption.g_fFogColor			= { 255.f / 255.f, 0.f / 255.f, 0.f / 255.f };
+	FogOption.g_fFogIntensity		= 0.5f;
 	FogOption.g_fFogDensity			= 0.02f;
 	FogOption.g_fFogNoiseScale		= 0.05f;
 	FogOption.g_fFogScattering		= 0.5f;
@@ -437,12 +440,12 @@ HRESULT CLevelLastBossRanrok::Initialize_VolumetricFog() {
 	FogOption.g_fFogLightColor		= { 255.f / 255.f, 230.f / 255.f, 180.f / 255.f };
 	FogOption.g_fFogLightDirection	= { 0.577f, -0.577f, 0.577f };
 
-	FogOption.g_fFogBaseHeight		= 300.f;
-	FogOption.g_fFogMaxHeight		= 500.f;
+	FogOption.g_fFogBaseHeight		= 480.f;
+	FogOption.g_fFogMaxHeight		= 0.8f;
 	FogOption.g_fFogHeightFallOff	= 0.05f;
 
-	FogOption.g_fFogStartDistance	= 100.f;
-	FogOption.g_fFogEndDistance		= 250.f;
+	FogOption.g_fFogStartDistance	= 0.f;
+	FogOption.g_fFogEndDistance		= 1000.f;
 
 	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
 
@@ -454,8 +457,8 @@ HRESULT CLevelLastBossRanrok::Initialize_EnviromentLight() {
 	CB_ENVLIGHT EnviromentLightOption{};
 
 	EnviromentLightOption.m_fEnviromentIntensity = 0.75f;
-	EnviromentLightOption.m_fFillLightBrightness = 0.05f;
-	EnviromentLightOption.m_fDirectLightBrightness = 0.60f;
+	EnviromentLightOption.m_fFillLightBrightness = 0.0f;
+	EnviromentLightOption.m_fDirectLightBrightness = 0.25f;
 
 	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
 

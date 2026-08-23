@@ -33,13 +33,14 @@ public:
 		_float3 vInitialPosition{};
 		_float3 vInitialRotation{};
 		_float3 vInitialScale{ 1.f, 1.f, 1.f };
-		_float3 vConvexScale{ 1.f, 1.f, 1.f };
+		_float3 vConvexScale{ 2.f, 2.f, 2.f };
 		_float fMass{ 0.15f };
 		PX_FILTER_DESC tFilter{
-			.iLayer = ETOUI(COLLISION_LAYER::DEBRIS),
+			.iLayer = ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
 			.iSimulationMask =
 				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
-				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
+				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+				ETOUI(COLLISION_LAYER::MOVING_PLATFORM),
 			.iQueryMask = PX_ALL_LAYERS
 		};
 	};
@@ -56,7 +57,7 @@ public:
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
 
 	_bool SetHeldPose(_fmatrix worldMatrix);
-	_bool Drop(const _float3& vImpulse = {}, const _float3& vTorque = {});
+	_bool Drop(const _float3& vLinearVelocity = {}, const _float3& vAngularVelocity = {});
 	STATE GetState() const { return m_eState; }
 
 public:
@@ -64,6 +65,9 @@ public:
 	UPtr<CPrototype> Clone(void* pArg) override;
 
 private:
+	static constexpr _float POTION_DISSOLVE_DELAY = 10.f;
+	static constexpr _float POTION_DISSOLVE_DURATION = 1.5f;
+
 	SPtr<CResPhysXConvexGeometry> m_pResConvexGeometry{};
 	SPtr<CResPhysXMaterial> m_pResPhysXMaterial{};
 	CComStaticModelInstance* m_pComModelInstance{};
@@ -73,8 +77,10 @@ private:
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	STATE m_eState{ STATE::HELD };
-	_float m_fDroppedLifeTime{};
 	_float3 m_vModelScale{ 1.f, 1.f, 1.f };
+	_float m_fDroppedElapsed{};
+	_float m_fDissolveIntensity{};
+	_bool m_bDissolving{};
 	_bool m_bRenderConfirmed{};
 };
 

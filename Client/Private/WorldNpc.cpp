@@ -175,7 +175,6 @@ HRESULT CWorldNpc::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-
 	{
 		CComAnimator::DESC DescAnim{};
 		DescAnim.sComTag = "ComCModelIntance";

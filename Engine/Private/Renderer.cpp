@@ -93,6 +93,10 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_PostProcess", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_MotionBlur", "./ShaderFiles/PostProcess/PS_PostProcess_MotionBlur.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PS_Main", .sTarget = "ps_5_0" })))    return E_FAIL;
+	}
 
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_FullScreenQuad", "./ShaderFiles/FullscreenQuad/FullscreenQuad.hlsl"))
 	{
@@ -336,6 +340,12 @@ HRESULT CRenderer::InitializePostProcess() {
 	}
 
 	{
+		m_pMotionBlurPixelShader = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_MotionBlur");
+		if (nullptr == m_pMotionBlurPixelShader)		return E_FAIL;
+
+		m_pResDynTexTargetMotionBlur = Generate_RenderTarget("DynTex2D_PostProcess_MotionBlur", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+		if (nullptr == m_pResDynTexTargetMotionBlur)	return E_FAIL;
+
 		m_pLensFlareComputeShader = E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_LensFlare");
 		if (nullptr == m_pLensFlareComputeShader)		return E_FAIL;
 
@@ -886,8 +896,10 @@ VOID	CRenderer::Unbind_Resources() {
 HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 	auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
 	D3D11_MAPPED_SUBRESOURCE mappedSubResource;
+	const XMMATRIX currentViewProj = _ActiveCam->GetView() * _ActiveCam->GetProj();
+
 	if (m_pRenderContext.pass == RENDERPASS::SHADOW) {
-		m_mShadowLightViewProj = _ActiveCam->GetView() * _ActiveCam->GetProj();
+		m_mShadowLightViewProj = currentViewProj;
 	}
 	if (SUCCEEDED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource)))
 	{
@@ -895,7 +907,21 @@ HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 		XMStoreFloat4x4(&cbPerPass.matView, _ActiveCam->GetView());
 		XMStoreFloat4x4(&cbPerPass.matProj, _ActiveCam->GetProj());
 
-		XMStoreFloat4x4(&cbPerPass.matViewProj, _ActiveCam->GetView() * _ActiveCam->GetProj());
+		XMStoreFloat4x4(&cbPerPass.matViewProj, currentViewProj);
+		cbPerPass.matPrevViewProj = cbPerPass.matViewProj;
+
+		// Bind_CameraAttribute는 그림자/UI 카메라에도 호출된다.
+		// 모션 블러 히스토리는 실제 게임 화면을 렌더한 활성 카메라만 추적한다.
+		if (_ActiveCam == CGameInstance::Get().GetActiveCamera())
+		{
+			m_pCurrentCamera = _ActiveCam;
+			m_matCurrentViewProj = cbPerPass.matViewProj;
+
+			if (!m_bHasPreviousViewProj || m_pPreviousCamera != _ActiveCam)
+				m_matPrevViewProj = m_matCurrentViewProj;
+
+			cbPerPass.matPrevViewProj = m_matPrevViewProj;
+		}
 
 		XMStoreFloat4x4(&cbPerPass.matInvView, XMMatrixInverse(nullptr, _ActiveCam->GetView()));
 		XMStoreFloat4x4(&cbPerPass.matInvProj, XMMatrixInverse(nullptr, _ActiveCam->GetProj()));
@@ -963,11 +989,13 @@ HRESULT CRenderer::Draw() {
 	// Trensparent + PBR
 	if (FAILED(Render_Alpha()))          return E_FAIL;
 
-	// Effect
-	if (FAILED(Render_Effect()))		 return E_FAIL;
+
 
 	// Volumetric
 	if (FAILED(Render_VolumetricEffect())) return E_FAIL;
+
+	// Effect
+	if (FAILED(Render_Effect()))		 return E_FAIL;
 
 	// PostProcess
 	if (FAILED(Render_PostProcess()))    return E_FAIL;
@@ -991,6 +1019,20 @@ HRESULT CRenderer::Draw() {
 
 VOID CRenderer::FrameEnd()
 {
+	// 이번 프레임에 실제 렌더한 활성 카메라의 VP를 다음 프레임 히스토리로 확정한다.
+	if (m_pCurrentCamera != nullptr)
+	{
+		m_matPrevViewProj = m_matCurrentViewProj;
+		m_pPreviousCamera = m_pCurrentCamera;
+		m_bHasPreviousViewProj = true;
+	}
+	else
+	{
+		m_pPreviousCamera = nullptr;
+		m_bHasPreviousViewProj = false;
+	}
+	m_pCurrentCamera = nullptr;
+
 	// HizBuffer 교체
 	std::swap(m_pCurrentHizBuffer, m_pPrevHizBuffer);
 	m_bHasPrevHizBuffer = true;
@@ -1676,6 +1718,9 @@ HRESULT CRenderer::Render_PostProcess() {
 
 	if (FAILED(Update_PostProcessConstantBuffer())) { Unbind_Resources(); return S_OK; }
 
+	// 잠시 봉인
+	//if (FAILED(Render_PostProcess_MotionBlur())){ Unbind_Resources(); return S_OK; }
+
 	if (FAILED(Render_PostProcess_Focusing()))  { Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_PostProcess_LensFlare())) { Unbind_Resources(); return S_OK; }
@@ -1687,13 +1732,50 @@ HRESULT CRenderer::Render_PostProcess() {
 	return S_OK;
 }
 
+HRESULT CRenderer::Render_PostProcess_MotionBlur()
+{
+	ZoneScopedN("Render_PostProcess_MotionBlur");
+	{
+		ID3D11RenderTargetView* pRTV = m_pResDynTexTargetMotionBlur->GetRTV().Get();
+		m_pContext->OMSetRenderTargets(1, &pRTV, nullptr);
+		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+
+		m_pContext->IASetInputLayout(m_pFullscreenVS->GetInputLayout().Get());
+		m_pContext->VSSetShader(m_pFullscreenVS->GetVertexShader().Get(), nullptr, 0);
+		m_pContext->PSSetShader(m_pMotionBlurPixelShader->GetPixelShader().Get(), nullptr, 0);
+
+		ID3D11Buffer* pVertexBuffer = m_pFullscreenVIBuffer->GetVertexBuffer().Get();
+		uint32_t iStride = m_pFullscreenVIBuffer->GetVertexStride();
+		uint32_t iOffset = 0;
+		m_pContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &iStride, &iOffset);
+		m_pContext->IASetIndexBuffer(m_pFullscreenVIBuffer->GetIndexBuffer().Get(), m_pFullscreenVIBuffer->GetIndexFormat(), 0);
+		m_pContext->IASetPrimitiveTopology(m_pFullscreenVIBuffer->GetPrimitiveType());
+
+		ID3D11ShaderResourceView* pSRVs[2] = {
+			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
+			m_pResDynTexTargetDepth->GetSRV().Get()
+		};
+		m_pContext->PSSetShaderResources(0, 2, pSRVs);
+
+		m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
+
+		Unbind_Resources();
+		m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetMotionBlur;
+	}
+
+	return S_OK;
+}
+
 HRESULT	CRenderer::Update_PostProcessConstantBuffer() {
 
 	D3D11_MAPPED_SUBRESOURCE MRES{};
 	if (SUCCEEDED(m_pContext->Map(m_pPostProcessCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 	{
-		CB_POSTPROCESS cbPPBuffer = m_pPostProcessBuffer;	
-		cbPPBuffer.g_fBlurIntensity = m_pPostProcessBuffer.g_fBlurIntensity / 100.f;	// 0.01같은 작은 값에도 Blur가 너무 많이 먹어서 조정
+		CB_POSTPROCESS cbPPBuffer = m_pPostProcessBuffer;	// 0.01같은 작은 값에도 Intensity가 너무 많이 먹어서 조정
+		cbPPBuffer.g_fBlurIntensity = m_pPostProcessBuffer.g_fBlurIntensity / 100.f;	
+		cbPPBuffer.g_fChromaticIntensity = m_pPostProcessBuffer.g_fChromaticIntensity / 100.f;
+		cbPPBuffer.g_fDistortionIntensity = m_pPostProcessBuffer.g_fDistortionIntensity / 100.f;
+		cbPPBuffer.g_fVignetteIntensity = m_pPostProcessBuffer.g_fVignetteIntensity;
 
 		memcpy(MRES.pData, &cbPPBuffer, sizeof(CB_POSTPROCESS));
 		m_pContext->Unmap(m_pPostProcessCBuffer->GetCBuffer().Get(), 0);
@@ -2385,21 +2467,22 @@ VOID	CRenderer::RendererGUI() {
 
 	if (m_bApplyFilter) {
 		ImGui::Separator();
+		_float TextToSlotDistance = 120.f;
 		if (ImGui::CollapsingHeader("PostProcess")) {
 			ImGui::TextUnformatted("Blur Intensity");
-			ImGui::SameLine(120.f);
-			ImGui::DragFloat("##BlurIntensity", &m_pPostProcessBuffer.g_fBlurIntensity, 0.01f, 0.f, 10.f, "%.2f");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##BlurIntensity", &m_pPostProcessBuffer.g_fBlurIntensity, 0.01f, -10.f, 10.f, "%.2f");
 
 			ImGui::TextUnformatted("Distortion Intensity");
-			ImGui::SameLine(120.f);
-			ImGui::DragFloat("##DistortionIntensity", &m_pPostProcessBuffer.g_fDistortionIntensity, 0.01f, 0.f, 10.f, "%.2f");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##DistortionIntensity", &m_pPostProcessBuffer.g_fDistortionIntensity, 0.01f, -10.f, 10.f, "%.2f");
 
 			ImGui::TextUnformatted("Chromatic Intensity");
-			ImGui::SameLine(120.f);
-			ImGui::DragFloat("##ChromaticIntensity", &m_pPostProcessBuffer.g_fChromaticIntensity, 0.01f, 0.f, 10.f, "%.2f");
+			ImGui::SameLine(TextToSlotDistance);
+			ImGui::DragFloat("##ChromaticIntensity", &m_pPostProcessBuffer.g_fChromaticIntensity, 0.01f, -10.f, 10.f, "%.2f");
 
 			ImGui::TextUnformatted("Vignette Intensity");
-			ImGui::SameLine(120.f);
+			ImGui::SameLine(TextToSlotDistance);
 			ImGui::DragFloat("##VignetteIntensity", &m_pPostProcessBuffer.g_fVignetteIntensity, 0.01f, 0.f, 10.f, "%.2f");
 		}
 	}

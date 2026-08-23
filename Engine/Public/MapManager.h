@@ -8,6 +8,7 @@
 #include <functional>
 #include <chrono>
 #include <deque>
+#include <shared_mutex>
 #include "Engine_Base.h"
 
 NS_BEGIN(Engine)
@@ -189,6 +190,7 @@ private:
 
 	/*----------- 광윤 추가 -----------*/ // CResStaticModel 원본에 넣을 Material 정보 저장소
 	std::unordered_map<std::string, MATERIAL_DESC>	m_MaterialDescs;
+	mutable std::shared_mutex							m_MaterialDescsMutex;
 	/*---------------------------------*/
 
 // ---------------------------------MapChunk-----------------------------------

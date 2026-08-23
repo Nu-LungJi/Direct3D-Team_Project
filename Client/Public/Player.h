@@ -31,9 +31,6 @@ NS_END
 NS_BEGIN(Client)
 class CPlayer_StateMachine;
 class CPlayerRagdollController;
-class CPlayer_BombardaController;
-class CPlayer_ConfringoController;
-class CPlayer_AvadaKedavraController;
 
 class CPlayer final : public CAnimationObject
 {
@@ -155,6 +152,7 @@ public:
 		uint32_t iBlendDepth, _bool bLoop = false, _float fFadeDuration = 0.1f);
 	CComModelInstance* GetModelInstance() const { return m_pComModelInstance; }
 	CHandle GetTargetHandle() const { return m_hAutoTarget; }
+	const StringID& GetLevelTag() const { return m_LevelTag; }
 	CHandle GetUIControllerHandle() const { return m_UIHandle; }
 	PLAYER_SKILL_TYPE GetPlayerCurSkill() const { return m_eSkill_Type; }
 
@@ -170,6 +168,7 @@ public:
 	_bool StartWiggenweldPotionUse();
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
+	std::optional<CHandle> ConsumeAncientThrowTarget();
 	void SetLumosActive(_bool bActive);
 	void SetLumosHoldAnimationIndex(int32_t iAnimation) { m_iLumosHoldAnimation = iAnimation; }
 	void ToggleLumos() { SetLumosActive(!m_bLumosActive); }
@@ -190,6 +189,7 @@ public:
 	void SetBodyEffectID(uint32_t effectID) { m_iDashBodyEffectID = effectID; }
 	void UpdateAttachedEffects();
 	CHandle& GetWeaponHandle() { return m_Partes[ETOUI(PARTES::WEAPON)]; }
+	const CHandle& GetWeaponHandle() const { return m_Partes[ETOUI(PARTES::WEAPON)]; }
 	void SetBroomVisible(_bool bVisible);
 	void SetBroomMovementRatio(_float fRatio);
 	void SetBroomBoostEffectRatio(_float fRatio);
@@ -333,6 +333,7 @@ private:
 	CHandle m_hAutoTarget;
 	CHandle m_hPrevAutoTarget;
 	CHandle m_hMonsterHPUITarget{};
+	std::optional<CHandle> m_hPendingAncientThrowTarget{};
 	StringID m_LevelTag;
 private:
 	CHandle m_UIHandle;
@@ -347,6 +348,7 @@ private:
 	int32_t m_iLumosHoldAnimation{ -1 };
 	void UpdateLumosHoldAnimation();
 	void UpdateLumosLight();
+	std::optional<CHandle> FindAncientThrowTarget() const;
 	_bool TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const;
 	void UpdateWiggenweldPotion();
 	CHandle m_hWiggenweldPotion{};
@@ -367,45 +369,6 @@ private:
 	_bool IsRagdollTransitioning() const;
 private:
 	UPtr<CPlayerRagdollController> m_pRagdollController{};
-#pragma endregion
-
-#pragma region BOMBARDA
-	// [LSY] 봄바르다 연출과 투사체 생성 구현은 전용 컨트롤러가 담당한다.
-	friend class CPlayer_BombardaController;
-public:
-	// [LSY] 상태 클래스에서는 아래 전달 API만 사용한다.
-	void StartBombardaCastEffect();
-	void StopBombardaCastEffect();
-	_bool FireBombardaProjectile();
-private:
-	HRESULT InitializeBombarda();
-	UPtr<CPlayer_BombardaController> m_pBombardaController{};
-#pragma endregion
-
-#pragma region CONFRINGO
-	// [LSY] 컨프링고 연출과 투사체 생성 구현은 전용 컨트롤러가 담당한다.
-	friend class CPlayer_ConfringoController;
-public:
-	// [LSY] 상태 클래스에서는 아래 전달 API만 사용한다.
-	void StartConfringoCastEffect();
-	void StopConfringoCastEffect();
-	_bool FireConfringoProjectile();
-private:
-	HRESULT InitializeConfringo();
-	UPtr<CPlayer_ConfringoController> m_pConfringoController{};
-#pragma endregion
-
-#pragma region AVADA_KEDAVRA
-	// [LSY] 아바다 케다브라의 완드 부착, 빔 및 피격 연출은 전용 컨트롤러가 담당한다.
-	friend class CPlayer_AvadaKedavraController;
-public:
-	// [LSY] 상태 클래스에서는 애니메이션 Cue에 맞춰 아래 전달 API만 호출한다.
-	void StartAvadaKedavraCastEffect();
-	void StopAvadaKedavraCastEffect();
-	_bool ReleaseAvadaKedavraSpell();
-private:
-	HRESULT InitializeAvadaKedavra();
-	UPtr<CPlayer_AvadaKedavraController> m_pAvadaKedavraController{};
 #pragma endregion
 
 #pragma region CAPE

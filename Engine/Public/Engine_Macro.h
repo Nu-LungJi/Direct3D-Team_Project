@@ -132,7 +132,7 @@ X(GROGY,   0x0004000)\
 
 /////// -- Light / LightManager -- ///////
 
-#define GAME_QUALITY_LEVEL2
+#define GAME_QUALITY_LEVEL1
 
 #ifdef GAME_QUALITY_LEVEL1
 #define MAX_NORMAL_LIGHT_RENDER_COUNT	32

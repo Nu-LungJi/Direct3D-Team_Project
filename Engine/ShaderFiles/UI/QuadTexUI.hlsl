@@ -21,7 +21,7 @@ PS_IN VSMain(VS_IN vin)
     PS_IN output;
 
     output.posH = mul(float4(vin.posL, 1.f), g_matWVP);
-    output.uv = vin.uv;
+    output.uv = lerp(vin.uv, 1.f - vin.uv, g_ui_uvFlip);
 
     return output;
 }
@@ -43,6 +43,12 @@ float4 PSMain(PS_IN input) : SV_Target
     {
         texColor.rgb = g_ui_color.rgb * brightness;
     }
+
+    // g_ui_quadSize.x is unused by ordinary quad UI.  Use it as a
+    // non-destructive brightness multiplier so hover effects preserve the
+    // texture's original hue.  Older callers leave it at zero.
+    float textureBrightness = g_ui_quadSize.x > 0.0f ? g_ui_quadSize.x : 1.0f;
+    texColor.rgb *= textureBrightness;
 
     return float4(texColor.rgb, texColor.a * g_ui_color.a);
 }

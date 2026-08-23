@@ -62,33 +62,36 @@ void CBTAnimRoot::Update_Gui()
 		ImGui::Text("RotRatio");
 		ImGui::DragFloat2("##RotRatio", reinterpret_cast<_float*>(&m_vRotRatio), 0.1f, 0.f, 1.f);
 
-		ImGui::Text("AttMon Type");
-		if (auto pBT = Get_ComBT())
+		if (m_eUser == BT_USER::MON)
 		{
-			if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
+			ImGui::Text("AttMon Type");
+			if (auto pBT = Get_ComBT())
 			{
-				if (ImGui::BeginCombo("##AttMon Typer", pSrc->Get_SkillName(m_eSkillType).c_str()))
+				if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
 				{
-					for (uint32_t i = 0; i < ETOUI(ATTMON::END) + 1; ++i)
+					if (ImGui::BeginCombo("##AttMon Typer", pSrc->Get_SkillName(m_eSkillType).c_str()))
 					{
-						_string SkillName = pSrc->Get_SkillName(static_cast<ATTMON>(i));
-						if (SkillName == "")
-							continue;
+						for (uint32_t i = 0; i < ETOUI(ATTMON::END) + 1; ++i)
+						{
+							_string SkillName = pSrc->Get_SkillName(static_cast<ATTMON>(i));
+							if (SkillName == "")
+								continue;
 
-						_bool bSelect = static_cast<int32_t>(m_eSkillType) == i;
+							_bool bSelect = static_cast<int32_t>(m_eSkillType) == i;
 
-						if (ImGui::Selectable(SkillName.data()))
-							m_eSkillType = static_cast<ATTMON>(i);
+							if (ImGui::Selectable(SkillName.data()))
+								m_eSkillType = static_cast<ATTMON>(i);
 
-						if (bSelect)
-							ImGui::SetItemDefaultFocus();
-					
+							if (bSelect)
+								ImGui::SetItemDefaultFocus();
+
+						}
+						ImGui::EndCombo();
 					}
-					ImGui::EndCombo();
 				}
 			}
+			ImGui::TreePop();
 		}
-		ImGui::TreePop();
 	}
 
 	if (ImGui::Button("Add To Start Flag"))

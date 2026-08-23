@@ -7,6 +7,7 @@
 #include "ComAnimator.h"
 #include "ComBeHavior.h"
 #include "ClientEvents.h"
+#include "ComModelInstance.h"
 NS_USING(Client)
 CEdg_Phase::CEdg_Phase()
 {
@@ -47,11 +48,18 @@ void CEdg_Phase::Enter(CStateMachine* pStateMachine)
 	auto pPhase = pBB->Get_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE);
 	if (nullptr == pPhase) return;
 
+	auto pModel = pDragon->GetComponent<CComModelInstance>("ComCModelIntance");
+	if (nullptr == pModel) return;
 	m_ePhase = *pPhase;
 	pDragon->Set_WingParticlesEnabled(m_ePhase == DRAGON_PHASE::PHASE3);
 	m_eNum = EDG_SPAWN_NUMBER::FIRST;
 	m_eNextPhase = DRAGON_PHASE::END;
 	m_bNext = false;
+	if(m_iDefaultAnimIndex == -1)
+		m_iDefaultAnimIndex = pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Hover_Loop_anm.bin");
+	if(m_iBoneIndex == -1 )
+		m_iBoneIndex = pModel->GetModel()->Get_BoneIndex("chest_targetSocket");
+
 	switch (m_ePhase)
 	{
 	case DRAGON_PHASE::PHASE2:
@@ -60,16 +68,20 @@ void CEdg_Phase::Enter(CStateMachine* pStateMachine)
 		break;
 	case DRAGON_PHASE::PHASE3:
 		m_Anims[ETOUI(DRAGON_PHASE::PHASE3)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
-		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Hover_Loop_anm.bin"),.fBlend = 0.1f });
+		m_iDefaultAnimIndex,.fBlend = 0.1f });
 		break;
 	case DRAGON_PHASE::PHASE4:
-		pDragon->Set_HideOnBush(true);
+		m_Anims[ETOUI(DRAGON_PHASE::PHASE4)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
+		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_FireBurst_Reel_anm.bin"),.fBlend = 0.1f });
+
 		break;
 	case DRAGON_PHASE::PHASE5:
+		m_Anims[ETOUI(DRAGON_PHASE::PHASE5)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
+		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_FireBurst_Reel_anm.bin"),.fBlend = 0.1f });
 
 		m_Anims[ETOUI(DRAGON_PHASE::PHASE5)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
 		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cmbt_Hover_Land_anm.bin"),.fBlend = 0.1f });
-		pDragon->Set_HideOnBush(true);
+	
 		break;
 	}
 	m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
@@ -248,6 +260,17 @@ void CEdg_Phase::Befor_Action2(CEnderDragon* pDragon, _float fTimeDelta)
 	auto pAnimator = pDragon->Get_Animator();
 	if (nullptr == pAnimator) return;
 
+	auto pMoveIntent = pDragon->Get_MoveIntent();
+	if (nullptr == pMoveIntent)return;
+
+	auto pTarget = pDragon->Get_Target();
+	if (nullptr == pTarget) return;
+
+	_vector vCurPos = XMLoadFloat3(&pDragon->GetTransform().GetPosition());
+	_vector vTargetPos = XMLoadFloat3(&pTarget->GetTransform().GetPosition());
+	_float3 vTargetDir{};
+	XMStoreFloat3(&vTargetDir, XMVector3Normalize(vTargetPos - vCurPos));
+	pAnimator->Play_Anim(m_iDefaultAnimIndex, true, 0.1f);
 	_float t = std::min(m_fTick / 3.f, 1.f);
 	m_fTick += fTimeDelta;
 
@@ -263,6 +286,8 @@ void CEdg_Phase::Befor_Action2(CEnderDragon* pDragon, _float fTimeDelta)
 
 	if (m_iEffectID == INVALID_EFFECT_INSTANCE_ID)
 		Effect_Single(pDragon, "RanrokStaySmoke");
+
+	pMoveIntent->SetFacingIntentImmediate(vTargetDir);
 	
 }
 void CEdg_Phase::Before_Action5(CEnderDragon* pDragon, _float fTimeDelta)
@@ -277,6 +302,7 @@ void CEdg_Phase::Before_Action5(CEnderDragon* pDragon, _float fTimeDelta)
 	_float3 vDis{};
 	XMStoreFloat3(&vDis, XMVector3Normalize(XMLoadFloat3(&vTargetPos) - XMLoadFloat3(&vSrcPos)));
 	pMove->SetFacingIntentImmediate(vDis);
+	pDragon->Set_Dissolve(0);
 
 	auto pAnimator = pDragon->Get_Animator();
 	if (nullptr == pAnimator) return;
@@ -342,6 +368,7 @@ void CEdg_Phase::After_Action2(CEnderDragon* pDragon, _float fTimeDelta)
 	if (t >=1.f)
 	{
 		pDragon->Set_HideOnBush(true);
+		m_Anims[ETOUI(m_ePhase)].pop_front();
 		m_fTick = 0.f;
 		m_eNum = EDG_SPAWN_NUMBER::SECOND;
 		return;
@@ -369,7 +396,7 @@ void CEdg_Phase::Phase_Before_Action(CEnderDragon* pDragon, _float fTimeDelta)
 		m_eNum = EDG_SPAWN_NUMBER::FOUR;
 		break;
 	case DRAGON_PHASE::PHASE4:
-		m_eNum = EDG_SPAWN_NUMBER::FOUR;
+		Befor_Action2(pDragon, fTimeDelta);
 		break;
 	case DRAGON_PHASE::PHASE5:
 		Before_Action5(pDragon, fTimeDelta);
@@ -394,7 +421,7 @@ void CEdg_Phase::Phase_Change_Action(CEnderDragon* pDragon, _float fTimeDelta)
 
 	_float4x4 mat{};
 	XMStoreFloat4x4(&mat, pDragon->GetTransform().GetLoadedWorldMatrix());
-	if (m_ePhase != DRAGON_PHASE::PHASE3 && m_ePhase != DRAGON_PHASE::PHASE5)
+	if (m_ePhase != DRAGON_PHASE::PHASE3)
 		CGameInstance::Get().Spawn("SpawnSmoke.json", mat);
 
 	if (m_ePhase == DRAGON_PHASE::PHASE5)
@@ -422,10 +449,10 @@ void CEdg_Phase::Phase_After_Action(CEnderDragon* pDragon, _float fTimeDelta)
 		m_eNum = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	case DRAGON_PHASE::PHASE4:
-		m_eNum = EDG_SPAWN_NUMBER::SECOND;
+		After_Action2(pDragon, fTimeDelta);
 		break;
 	case DRAGON_PHASE::PHASE5:
-		m_eNum = EDG_SPAWN_NUMBER::SECOND;
+		After_Action2(pDragon, fTimeDelta);
 		break;
 	}
 	
@@ -484,7 +511,11 @@ void CEdg_Phase::Effect_All(CEnderDragon* pDragon, _float fTimeDelta)
 }
 void CEdg_Phase::Effect_Single(CEnderDragon* pDragon, const _string& strName)
 {
-	m_iEffectID = CGameInstance::Get().PlayEffect(strName, *pDragon->GetTransform().GetWorldMatrix(), _vector{},
+	const _float4x4* pCombine = pDragon->Get_CombineBoneMatrix(m_iBoneIndex);
+	_matrix MatBone = XMLoadFloat4x4(pDragon->GetTransform().GetWorldMatrix()) * XMLoadFloat4x4(pCombine);
+	_float4x4 LastBone = {};
+	XMStoreFloat4x4(&LastBone, MatBone);
+	m_iEffectID = CGameInstance::Get().PlayEffect(strName, LastBone, _vector{},
 		[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
 		{
 			if (effectId != m_iEffectID)

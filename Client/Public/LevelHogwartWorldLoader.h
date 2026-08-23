@@ -7,8 +7,8 @@ NS_BEGIN(Client)
 class CLevelHogwartWorldLoader
 {
 public:
-	static constexpr const char* MAP_PATH = "./Resources/json/MapSaved/HogwartWorld";
-	static constexpr const char* TERRAIN_PATH = "./Resources/json/MapSaved/HogwartWorld/terrain/terrain.json";
+	static constexpr const char* MAP_PATH = "./Resources/json/MapSaved/LastHogwartWorld";
+	static constexpr const char* TERRAIN_PATH = "./Resources/json/MapSaved/LastHogwartWorld/terrain/terrain.json";
 
 public:
 	static std::future<bool> Load();
@@ -22,6 +22,7 @@ private:
 	static HRESULT MonsterLoad_InWorker();
 
 	static HRESULT NpcLoad_InWorker();
+	static HRESULT AnimalLoad_InWorker();
 private:
 	constexpr static LEVEL CURR_LEVEL = LEVEL::HOGWART_WORLD;
 };

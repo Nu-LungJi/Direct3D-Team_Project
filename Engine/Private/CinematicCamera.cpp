@@ -45,10 +45,7 @@ HRESULT CCinematicCamera::ApplyPose(const _float3& vPosition, const _float4& vRo
 		!std::isfinite(vRotation.x) ||
 		!std::isfinite(vRotation.y) ||
 		!std::isfinite(vRotation.z) ||
-		!std::isfinite(vRotation.w) ||
-		!std::isfinite(fFovY) ||
-		fFovY <= 0.f ||
-		fFovY >= 180.f)
+		!std::isfinite(vRotation.w))
 	{
 		return E_INVALIDARG;
 	}
@@ -59,17 +56,12 @@ HRESULT CCinematicCamera::ApplyPose(const _float3& vPosition, const _float4& vRo
 	{
 		return E_INVALIDARG;
 	}
+	if (FAILED(SetFovY(fFovY)))
+		return E_INVALIDARG;
 
 	auto& Transform = GetTransform();
 	Transform.SetPosition(vPosition);
 	Transform.SetQuaternion(vRotation);
-
-	if (std::abs(m_cameraDesc.fFovY - fFovY) > FLT_EPSILON)
-	{
-		m_cameraDesc.fFovY = fFovY;
-		return UpdateProjMatrix();
-	}
-
 	return S_OK;
 }
 

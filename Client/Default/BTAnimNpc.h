@@ -3,7 +3,6 @@
 #include "BTAnimRoot.h"
 
 NS_BEGIN(Client)
-
 class CBTAnimNpc final : public CBTAnimRoot
 {
 public:

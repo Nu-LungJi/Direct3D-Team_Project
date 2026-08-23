@@ -779,16 +779,15 @@ _float CEffectManager::DispatchCommand(EFFECT_INSTANCE& instance,const EFFECT_CO
 	case EFFECT_COMMAND_TYPE::SOUND:
 	{
 		const auto& soundCommand = std::get<EFFECT_SOUND_COMMAND>(command.data);
-
-		DispatchSound(instance,soundCommand);
-
-		break;
+		DispatchSound(instance, soundCommand);
+		return 0.f;
 	}
 
 	default:
-		break;
+		return 0.f;
+
 	}
-	
+	return 0.f;
 }
 
 _float CEffectManager::DispatchParticle(EFFECT_INSTANCE& instance, const EFFECT_PARTICLE_COMMAND& command)

@@ -26,12 +26,13 @@ HRESULT CBTAnimNpc::InitializePrototype(void* pArg)
 {
 	__super::InitializePrototype(pArg);
 	m_MasterName = "BTAnimNpc";
+	
 	return S_OK;
 }
 HRESULT CBTAnimNpc::Initalize(void* pArg)
 {
 	__super::Initalize(pArg);
-
+	m_eUser = BT_USER::NPC;
 	return S_OK;
 }
 

@@ -700,6 +700,7 @@ void CEnderDragon::LateUpdate(E::_float fTimeDelta)
 /*----------- 광윤 추가 -----------*/
 HRESULT	CEnderDragon::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch) {
 	{
+		if (m_bHide) return S_OK;
 		if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResDragonBodyPixelShader)	return E_FAIL;
 
 		SPtr<CResModel> pModel{};
@@ -852,6 +853,7 @@ HRESULT CEnderDragon::Render_WingFXForward(ID3D11DeviceContext* pContext, const 
 	};
 
 	pContext->PSSetShaderResources(5, 4, FXSRV);
+	m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
 
 	pContext->PSSetShaderResources(4, 1, m_pEtherealWingsTexture->GetSRV().GetAddressOf());
 	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex) {
@@ -1197,32 +1199,7 @@ void CEnderDragon::Phase_Debug()
 	}
 	auto pBB = Get_BlackBoard();
 	if (nullptr == pBB) return;
-	//if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_Q))
-	//{
-	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
-	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE1);
-	//
-	//}
-	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_W))
-	//{
-	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
-	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE2);
-	//}
-	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_E))
-	//{
-	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
-	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE3);
-	//}
-	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_R))
-	//{
-	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
-	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
-	//}
-	//else if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_T))
-	//{
-	//	m_pFsm->Request_State(MON_STATE::PHASE_CHANGE);
-	//	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, DRAGON_PHASE::PHASE4);
-	//}
+	
 }
 void CEnderDragon::Picking(_float3& vPos, uint32_t iID)
 {

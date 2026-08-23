@@ -26,6 +26,8 @@ namespace Engine
 
 		_float3		vShadowLightDir{};
 		_float		fTimeAccumulation{};
+
+		_float4x4	matPrevViewProj{};		// 직전 렌더 프레임의 활성 카메라 ViewProj
 	} CB_PER_PASS;
 	static_assert(sizeof(CB_PER_PASS) % 16 == 0);
 
@@ -104,6 +106,8 @@ namespace Engine
 		_float2 texSize{};  // 원본 텍스처의 픽셀 크기 (Width, Height)
 		_float2 quadSize{}; // 텍스처의 현제 사이즈
 		_float4 margins{};
+		_float2 uvFlip{}; // x/y UV flip (0: normal, 1: flipped)
+		_float2 uvFlipPadding{};
 	} CB_PER_UI;
 	static_assert(sizeof(CB_PER_UI) % 16 == 0);
 

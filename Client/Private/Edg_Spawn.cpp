@@ -46,9 +46,9 @@ void CEdg_Spawn::Enter(CStateMachine* pStateMachine)
 	//m_Anims[ETOUI(EDG_SPAWN_NUMBER::SECOND)].push_back(EDG_ANIM_FSM{ .iAnimIndex =
 	//	pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Flap_anm.bin"),.fBlend = 0.5f});
 	m_Anims[ETOUI(EDG_SPAWN_NUMBER::THIRD)].push_back(EDG_ANIM_FSM{.iAnimIndex =
-		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Fly_To_Hover_anm.bin"),.fBlend = 0.6f});
+		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Fly_To_Hover_anm.bin"),.fBlend = 1.f});
 	m_Anims[ETOUI(EDG_SPAWN_NUMBER::THIRD)].push_back(EDG_ANIM_FSM{.iAnimIndex =
-		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Taunt_Loop_anm.bin"),.fBlend = 0.6f });
+		pDragon->Find_AnimIndex("AN_SK_ConjuredDragon_LOD0_Skeleton_Drgn_Cnjrd_Taunt_Loop_anm.bin"),.fBlend = 1.f });
 
 	
 	pDragon->Get_Animator()->Play_Anim(0);
@@ -327,10 +327,18 @@ void CEdg_Spawn::Play_Anim(CEnderDragon* pDragon, _float fTimeDelta)
 	_float3 vSrcPos = pDragon->GetTransform().GetPosition();
 	_float3 vDis{};
 	XMStoreFloat3(&vDis, XMVector3Normalize(XMLoadFloat3(&vTargetPos) - XMLoadFloat3(&vSrcPos)));
-	pMove->SetFacingIntentImmediate(vDis);
+	_float3 vLerp{};
+
 	pDragon->Set_HideOnBush(false);
 	if (!m_Anims[ETOUI(m_eSpawn)].empty())
 	{
+		if (m_Anims[ETOUI(m_eSpawn)].size() == 2)
+		{
+			XMStoreFloat3(&vLerp, XMVectorLerp(pDragon->GetTransform().GetState(STATE::LOOK), XMLoadFloat3(&vDis), 0.8f));
+			pMove->SetFacingIntent(vLerp, 45.f);
+		}
+		
+
 		if (m_Anims[ETOUI(m_eSpawn)].size() == 1)
 		{
 			if (!m_bSoundH && pAnimator->GetPlayAnimRatio() >= 0.4f)
@@ -345,12 +353,45 @@ void CEdg_Spawn::Play_Anim(CEnderDragon* pDragon, _float fTimeDelta)
 					Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f,.eRolloff = SOUND_3D_ROLLOFF::LINEAR };
 					m_bSoundH = true;
 					pDragon->Play_Sound(Sound_Desc);
-					CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
+					auto* pModelInstance = pDragon->GetComponent<CComModelInstance>("ComCModelIntance");
+					if (nullptr != pModelInstance)
+					{
+						const int32_t iMouthBoneIndex = pModelInstance->GetModel()->Get_BoneIndex("SKT_Mouth");
+						const _float4x4* pMouthBoneMatrix = pDragon->Get_CombineBoneMatrix(iMouthBoneIndex);
+
+						if (nullptr != pMouthBoneMatrix)
 						{
-						   3, // 강도 0 ~ 1
-						   1, // 지속시간
-						   15, // 초당 진동횟수
-						});
+							_matrix dragonWorld = pDragon->GetTransform().GetLoadedWorldMatrix();
+							_matrix mouthWorld = XMLoadFloat4x4(pMouthBoneMatrix) * dragonWorld;
+
+							_vector vLook = XMVector3Normalize(pDragon->GetTransform().GetState(STATE::LOOK));
+							_vector vWorldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+
+							if (fabsf(XMVectorGetX(XMVector3Dot(vLook, vWorldUp))) > 0.999f)
+								vWorldUp = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+
+							_vector vRight = XMVector3Normalize(XMVector3Cross(vWorldUp, vLook));
+							_vector vUp = XMVector3Normalize(XMVector3Cross(vLook, vRight));
+
+							_matrix roarWorld = XMMatrixIdentity();
+							roarWorld.r[0] = XMVectorSetW(vRight, 0.f);
+							roarWorld.r[1] = XMVectorSetW(vUp, 0.f);
+							roarWorld.r[2] = XMVectorSetW(vLook, 0.f);
+							roarWorld.r[3] = XMVectorSetW(mouthWorld.r[3], 1.f);
+
+							_float4x4 roarWorldData{};
+							XMStoreFloat4x4(&roarWorldData, roarWorld);
+
+							CGameInstance::Get().Spawn("DragonRoar1.json", roarWorldData);
+
+							CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
+								.fIntensity = 1.f,
+								.fDuration = 2.5f,
+								.fFrequency = 25.f
+								});
+						}
+					}
+		 
 				}
 			}
 		}

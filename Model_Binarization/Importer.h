@@ -30,6 +30,12 @@ public:
 		const std::string& fbxFileName,
 		const std::string& outputDirectory,
 		float chunkSize);
+	// Preserves static FBX nodes as independently placeable map objects. Mesh
+	// resources are emitted once per shared mesh combination and referenced by a
+	// JSON placement manifest.
+	HRESULT ImportObjectMapFBX(
+		const std::string& fbxFileName,
+		const std::string& outputDirectory);
 	
 	
 	HRESULT	ExportFBX(const std::string& outpath);

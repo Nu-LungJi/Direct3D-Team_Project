@@ -62,6 +62,8 @@ private:
 	_float m_fHeightBlendResponse{ 7.f };
 	_float m_fBoostEffectRatio{};
 	EFFECT_INSTANCE_ID m_iSpeedLineEffectID{ INVALID_EFFECT_INSTANCE_ID };
+	_float m_fSpawnTime{ 0.f };
+	int32_t m_iBroomEndBoneIndex{0};
 };
 
 NS_END
