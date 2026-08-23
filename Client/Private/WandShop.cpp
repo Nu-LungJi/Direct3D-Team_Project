@@ -3,7 +3,6 @@
 
 #include "GeneralButton.h"
 #include "GameInstance.h"
-#include "TextBox.h"
 #include "TextureUI.h"
 #include "TweenComponent.h"
 #include "UIManager.h"
@@ -18,12 +17,8 @@ namespace
 	constexpr _float PAGE_FADE_IN_DURATION = 0.18f;
 	constexpr int WAND_SHOP_MIN_ROOT_WEIGHT = 800;
 	constexpr _float PURCHASE_HOLD_DURATION = 1.2f;
-	constexpr _float PURCHASE_ICON_SIZE = 38.f;
-	constexpr _float PURCHASE_GAUGE_SIZE = 46.f;
-	constexpr _float PURCHASE_TEXT_SCALE = 0.8f;
-	constexpr int PURCHASE_ICON_WEIGHT = 980;
-	constexpr int PURCHASE_TEXT_WEIGHT = 981;
-	constexpr int PURCHASE_GAUGE_WEIGHT = 982;
+	constexpr int PURCHASE_BUTTON_WEIGHT = 900;
+	constexpr int PURCHASE_CHILD_WEIGHT = PURCHASE_BUTTON_WEIGHT + 1;
 }
 
 _bool CWandShop::IsPagePrefab(std::string_view prefabName)
@@ -115,95 +110,64 @@ void CWandShop::CreatePurchasePrompt()
 	m_PurchaseGauge.reset();
 	m_fPurchaseHoldProgress = 0.f;
 
-	const uint32_t levelID = E::CGameInstance::Get().GetCurrentLevelID();
-	const std::string currentLevel = levelID > 100u ?
-		"LEVEL_LOADING" :
-		_string("LEVEL_") + MagicEnumToStringView(
-			static_cast<LEVEL>(levelID)).data();
-	const _float2 clientSize =
-		E::CGameInstance::Get().GetClientScreenSize();
-	const _float iconX = clientSize.x - 132.f;
-	const _float promptY = clientSize.y - 54.f;
-
-	CTextureUI::UIOBJECT_DESC iconDesc{};
-	iconDesc.sObjectTag = "WandShopPurchaseKey";
-	iconDesc.Name = "WandShopPurchaseKey";
-	iconDesc.fX = iconX;
-	iconDesc.fY = promptY;
-	iconDesc.fSizeX = PURCHASE_ICON_SIZE;
-	iconDesc.fSizeY = PURCHASE_ICON_SIZE;
-	iconDesc.fAlpha = 1.f;
-	iconDesc.ResTag = "TEX_UI_T_cbi_Keyboard_E";
-	iconDesc.ResWeight = PURCHASE_ICON_WEIGHT;
-	iconDesc.UIType = ETOUI(UI_TYPE::TEXUI);
-	const auto iconHandle = E::CGameInstance::Get().AddGameObjectToLayer(
-		currentLevel,
-		"Prototype_GameObject_TextureUI",
-		"Layer_UI",
-		&iconDesc);
-	if (!iconHandle)
+	auto promptRoots = GET_SINGLE(UIManager)->LoadPrefab(
+		"FillButton",
+		"./Resources/SampleClient/UIData/RTT/");
+	if (promptRoots.empty())
 		return;
-	m_PurchasePromptRoots.push_back(*iconHandle);
-	if (auto* icon = GetSafeUI(*iconHandle))
-		icon->SetInputLcok(true);
 
-	CTextUI::TEXT_DESC textDesc{};
-	textDesc.sObjectTag = "WandShopPurchaseText";
-	textDesc.Name = "WandShopPurchaseText";
-	textDesc.fX = iconX + 62.f;
-	textDesc.fY = promptY - 7.f;
-	textDesc.fSizeX = PURCHASE_TEXT_SCALE;
-	textDesc.fSizeY = PURCHASE_TEXT_SCALE;
-	textDesc.fAlpha = 1.f;
-	textDesc.ResWeight = PURCHASE_TEXT_WEIGHT;
-	textDesc.UIType = ETOUI(UI_TYPE::TEXT);
-	textDesc.Alignment = TEXT_ALIGN::CENTER;
-	const auto textHandle = E::CGameInstance::Get().AddGameObjectToLayer(
-		currentLevel,
-		"Prototype_GameObject_TextBox",
-		"Layer_UI",
-		&textDesc);
-	if (textHandle)
+	CUIObject* button = nullptr;
+	CTextureUI* gauge = nullptr;
+	for (const CHandle rootHandle : promptRoots)
 	{
-		m_PurchasePromptRoots.push_back(*textHandle);
-		if (auto* text = E::CGameInstance::Get().
-			GetGameObjectByHandleT<CTextBox>(*textHandle))
+		auto* root = GetSafeUI(rootHandle);
+		if (!root)
+			continue;
+		root->SetInputLcok(true);
+		root->GetUIInfo().Weight = PURCHASE_BUTTON_WEIGHT;
+		if (std::string_view(root->GetName()) == "Button")
+			button = root;
+
+		for (const CHandle childHandle : root->GetChildren())
 		{
-			text->SetwText(L"구매하기");
-			text->SetTextAlignment(TEXT_ALIGN::CENTER);
-			text->SetColor({ 1.f, 1.f, 1.f });
-			text->SetInputLcok(true);
-			text->CalcUICoord();
+			auto* child = GetSafeUI(childHandle);
+			if (!child)
+				continue;
+			child->SetInputLcok(true);
+			if (std::string_view(child->GetName()) == "Text")
+			{
+				child->GetUIInfo().Weight = PURCHASE_CHILD_WEIGHT;
+				continue;
+			}
+			if (std::string_view(child->GetName()) != "BTFrame")
+				continue;
+			gauge = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CTextureUI>(childHandle);
+			if (gauge)
+			{
+				m_PurchaseGauge = childHandle;
+				gauge->GetUIInfo().Weight = PURCHASE_CHILD_WEIGHT;
+				gauge->SetPathProgressMode(true);
+				gauge->SetPathProgressType(2u);
+				gauge->SetPathProgress(0.f);
+				gauge->SetColor({ 1.f, 1.f, 1.f });
+				gauge->SetInputLcok(true);
+				gauge->CalcUICoord();
+			}
 		}
 	}
 
-	CTextureUI::UIOBJECT_DESC gaugeDesc = iconDesc;
-	gaugeDesc.sObjectTag = "WandShopPurchaseGauge";
-	gaugeDesc.Name = "WandShopPurchaseGauge";
-	gaugeDesc.fSizeX = PURCHASE_GAUGE_SIZE;
-	gaugeDesc.fSizeY = PURCHASE_GAUGE_SIZE;
-	gaugeDesc.ResTag = "TEX_UI_T_TutorialButtonHighlight";
-	gaugeDesc.ResWeight = PURCHASE_GAUGE_WEIGHT;
-	const auto gaugeHandle = E::CGameInstance::Get().AddGameObjectToLayer(
-		currentLevel,
-		"Prototype_GameObject_TextureUI",
-		"Layer_UI",
-		&gaugeDesc);
-	if (gaugeHandle)
+	if (!button || !gauge)
 	{
-		m_PurchasePromptRoots.push_back(*gaugeHandle);
-		m_PurchaseGauge = *gaugeHandle;
-		if (auto* gauge = E::CGameInstance::Get().
-			GetGameObjectByHandleT<CTextureUI>(*gaugeHandle))
+		for (const CHandle rootHandle : promptRoots)
 		{
-			gauge->SetPathProgressMode(true);
-			gauge->SetPathProgressType(2u);
-			gauge->SetPathProgress(0.f);
-			gauge->SetColor({ 1.f, 1.f, 1.f });
-			gauge->SetInputLcok(true);
-			gauge->CalcUICoord();
+			if (GetSafeUI(rootHandle))
+				GET_SINGLE(UIManager)->DeleteUIRecursive(rootHandle);
 		}
+		m_PurchaseGauge.reset();
+		return;
 	}
+	m_PurchasePromptRoots = std::move(promptRoots);
 }
 
 void CWandShop::Update(UIManager& manager, _float fTimeDelta)
