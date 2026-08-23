@@ -341,27 +341,27 @@ void CPlayer_BombardaSkill_State::EmitCastParticleCurve() const
 
 	const _float fSpacing = std::max(m_fCastParticleSpacing, 0.01f);
 	constexpr uint32_t MAX_TRAIL_SPAWN_PER_FRAME = 12;
-	const uint32_t iSpawnCount = std::clamp(
-		static_cast<uint32_t>(std::ceil(fCurveLength / fSpacing)),
-		1u,
-		MAX_TRAIL_SPAWN_PER_FRAME);
+	//const uint32_t iSpawnCount = std::clamp(
+	//	static_cast<uint32_t>(std::ceil(fCurveLength / fSpacing)),
+	//	1u,
+	//	MAX_TRAIL_SPAWN_PER_FRAME);
 
-	for (uint32_t i = 1; i <= iSpawnCount; ++i)
-	{
-		const _float fRatio = static_cast<_float>(i) /
-			static_cast<_float>(iSpawnCount);
-		_float3 spawnPosition{};
-		XMStoreFloat3(
-			&spawnPosition,
-			XMVectorCatmullRom(vPoint0, vPoint1, vPoint2, vPoint3, fRatio));
+	//for (uint32_t i = 1; i <= iSpawnCount; ++i)
+	//{
+	//	const _float fRatio = static_cast<_float>(i) /
+	//		static_cast<_float>(iSpawnCount);
+	//	_float3 spawnPosition{};
+	//	XMStoreFloat3(
+	//		&spawnPosition,
+	//		XMVectorCatmullRom(vPoint0, vPoint1, vPoint2, vPoint3, fRatio));
 
-		_float4x4 spawnWorld{};
-		XMStoreFloat4x4(&spawnWorld, XMMatrixIdentity());
-		spawnWorld._41 = spawnPosition.x;
-		spawnWorld._42 = spawnPosition.y;
-		spawnWorld._43 = spawnPosition.z;
-		CGameInstance::Get().Spawn(m_CastParticleCommands, spawnWorld);
-	}
+	//	_float4x4 spawnWorld{};
+	//	XMStoreFloat4x4(&spawnWorld, XMMatrixIdentity());
+	//	spawnWorld._41 = spawnPosition.x;
+	//	spawnWorld._42 = spawnPosition.y;
+	//	spawnWorld._43 = spawnPosition.z;
+	//	CGameInstance::Get().Spawn(m_CastParticleCommands, spawnWorld);
+	//}
 }
 
 void CPlayer_BombardaSkill_State::EmitCastEnergyTrail(
