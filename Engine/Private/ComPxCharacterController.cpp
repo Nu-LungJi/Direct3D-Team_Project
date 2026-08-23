@@ -394,6 +394,7 @@ HRESULT CComPxCharacterController::Initialize(void* pArg)
 	PxFilterData simulationFilter{};
 	simulationFilter.word0 = pDesc->tFilter.iLayer;
 	simulationFilter.word1 = pDesc->tFilter.iSimulationMask;
+	simulationFilter.word2 = pDesc->tFilter.iNotifyFlags;
 	pShape->setSimulationFilterData(simulationFilter);
 
 	PxFilterData queryFilter{};
@@ -617,6 +618,7 @@ _bool CComPxCharacterController::SetFilter(const PX_FILTER_DESC& tFilter)
 	PxFilterData tSimulationFilter{};
 	tSimulationFilter.word0 = tFilter.iLayer;
 	tSimulationFilter.word1 = tFilter.iSimulationMask;
+	tSimulationFilter.word2 = tFilter.iNotifyFlags;
 	pShape->setSimulationFilterData(tSimulationFilter);
 
 	PxFilterData tQueryFilter{};
