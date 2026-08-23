@@ -124,6 +124,8 @@ cbuffer CB_PER_PASS : register(b1)
 	float  g_fDeltaTime;
     float3 g_vShadowLightDir;
 	float  g_fTimeAccumulation;
+
+    matrix g_matPrevViewProj;
 };
 
 cbuffer CB_BONES : register(b2)

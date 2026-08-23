@@ -87,6 +87,7 @@ private:		// Volumetric Effect Pass Render
 	HRESULT		Render_VolumetricComposite();
 
 private:		// PostProcess Pass Render
+	HRESULT		Render_PostProcess_MotionBlur();
 	HRESULT		Render_PostProcess_Focusing();
 	HRESULT		Render_PostProcess_LensFlare();
 	HRESULT		Render_PostProcess_Bloom();
@@ -154,6 +155,7 @@ private:
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPBR{};			// PBR
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetEffect{};			// Effect
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetMotionBlur{};		// MotionBlur
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetUI{};				// UI
 	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
@@ -188,6 +190,7 @@ private:
 
 	SPtr<CResVertexShader>		m_pUI3DVertexShader{};
 	SPtr<CResPixelShader>		m_pUI3DPixelShader{};
+	SPtr<CResPixelShader>		m_pMotionBlurPixelShader{};
 
 	SPtr<CResComputeShader>		m_pBrightPassComputeShader{};
 	SPtr<CResComputeShader>		m_pVerticalBlurComputeShader{};
@@ -277,6 +280,14 @@ private:		// Hi-Z Variable
 	UPtr<CHizBuffer> m_pCurrentHizBuffer = {}; // 이번 프레임에서 새로 만든 자료
 	UPtr<CHizBuffer> m_pPrevHizBuffer	 = {}; // 컬링에 사용할 자료
 	_bool			 m_bHasPrevHizBuffer = false;
+
+private:
+	XMFLOAT4X4 m_matPrevViewProj{};
+	XMFLOAT4X4 m_matCurrentViewProj{};
+
+	CCameraObject* m_pPreviousCamera = nullptr;
+	CCameraObject* m_pCurrentCamera = nullptr;
+	bool m_bHasPreviousViewProj = false;
 
 #ifdef _DEBUG
 private:		// Debugging

@@ -270,6 +270,14 @@ HRESULT CLevelHogwartWorld::SpawnNaviMesh(E::CTerrain* pTerrain)
 	if (FAILED(pNavMesh->Load(strPath, &StaticNaviDesc)))
 		return E_FAIL;
 
+	// 내비메시가 저장되지 않은 맵도 레벨 진입은 허용한다.
+	// 이전 레벨의 내비메시가 남지 않도록 런타임 데이터는 비운다.
+	if (pNavMesh->GetManualTriangles().empty())
+	{
+		pNavMesh->Clear();
+		return S_OK;
+	}
+
 	if (!pNavMesh->BuildManual(StaticNaviDesc))
 		return E_FAIL;
 	return S_OK;
