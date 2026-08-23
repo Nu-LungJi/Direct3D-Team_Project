@@ -13,10 +13,11 @@ inline std::string MakeMapEditorStaticModelTag(
 }
 
 inline bool LoadMapEditorStaticModelFile(const std::filesystem::path& binPath,
-	const std::filesystem::path& staticRoot, std::string* outTag = nullptr)
+	const std::filesystem::path& staticRoot, std::string* outTag = nullptr,
+	const std::string& requestedTag = {})
 {
 	return E::LoadMapStaticModelFile(binPath, staticRoot,
-		E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, outTag);
+		E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, outTag, requestedTag);
 }
 
 inline MAPEDITOR_MODEL_LOAD_RESULT LoadMapEditorStaticModelFolder(

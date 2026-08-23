@@ -242,14 +242,6 @@ HRESULT CLevelLastBossRanrokLoader::LoadPlayerCape_InWorker()
 		MSG_BOX("CHARLES_ROOKWOOD Failed Prototype_GameObject_NvClothCape");
 		return E_FAIL;
 	}
-	{
-		_float4x4 mat;
-		XMStoreFloat4x4(&mat, XMMatrixIdentity());
-		mat._41 = -250.f;
-		mat._42 = -250.f;
-		mat._43 = -600.f;
-		CGameInstance::Get().PlayEffect("Portal", mat);
-	}
 
 	return S_OK;
 }
@@ -287,7 +279,8 @@ _bool CLevelLastBossRanrokLoader::UILoad_InWorker()
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
 				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
-				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame"
+				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame",
+				"./Resources/SampleClient/Textures/UI/UITexture/WandShop"
 			};
 
 			for (const auto& targetDir : targetDirectories)

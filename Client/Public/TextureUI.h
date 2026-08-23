@@ -37,6 +37,10 @@ public:
 	void SetPathProgressType(uint32_t type) { m_iPathProgressType = type; }
 	void SetSpellAlarmFlame(uint32_t flameIndex);
 	void SetAdditiveBlend(_bool enabled) { m_bAdditiveBlend = enabled; }
+	void SetTextureBrightness(_float brightness) { m_fTextureBrightness = std::max(0.f, brightness); }
+	_float GetTextureBrightness() const { return m_fTextureBrightness; }
+	void SetAlphaMaskSource(CHandle sourceHandle) { m_AlphaMaskSource = sourceHandle; }
+	void ClearAlphaMaskSource() { m_AlphaMaskSource.reset(); }
 	void SetNineSliceMargins(const _float4& margins) { m_vNineSliceMargins = margins; }
 	const _float4& GetNineSliceMargins() const { return m_vNineSliceMargins; }
 private:
@@ -45,6 +49,8 @@ private:
 	uint32_t m_iPathProgressType{};
 	_bool m_bSpellAlarmFlame{};
 	_bool m_bAdditiveBlend{};
+	_float m_fTextureBrightness{ 1.f };
+	std::optional<CHandle> m_AlphaMaskSource{};
 	_float m_fSpellAlarmFlameTime{};
 	_float m_fSpellAlarmFlamePhase{};
 	_float m_fSpellAlarmFlameSwayScale{ 1.f };

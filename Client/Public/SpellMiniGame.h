@@ -256,7 +256,7 @@ private:
 	CHandle m_hStartPad{};
 	SUCCESS_EFFECT m_StartPadSuccessEffect{};
 
-	static constexpr _float MAX_MOVE_SPEED = 130.f;
+	static constexpr _float MAX_MOVE_SPEED = 110.f;
 	static constexpr _float MAX_MOVEMENT_DELTA = 1.f / 60.f;
 	static constexpr _float INTRO_FADE_DURATION = 2.f;
 	static constexpr _float INTRO_SPELL_METER_DURATION = 0.3f;
@@ -370,7 +370,7 @@ private:
 	static constexpr _float MAGIC_BURST_CORE_RETURN_TIME = 0.65f;
 	static constexpr _float BOOST_PAD_TRIGGER_RANGE = 36.f;
 	static constexpr _float BOOST_DURATION = 1.5f;
-	static constexpr _float BOOST_MAX_MULTIPLIER = 2.3f;
+	static constexpr _float BOOST_MAX_MULTIPLIER = 2.5f;
 	static constexpr _float BOOST_SUCCESS_SMOKE_DURATION = 1.5f;
 	static constexpr _float INTRO_SMOKE_DURATION =
 		BOOST_SUCCESS_SMOKE_DURATION * (2.f / 3.f);

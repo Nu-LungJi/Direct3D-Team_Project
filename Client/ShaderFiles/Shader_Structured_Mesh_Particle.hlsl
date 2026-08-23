@@ -188,8 +188,19 @@ PS_OUT PSMain_Stone(VS_OUT In)
 
 	float remainingRatio = saturate(In.life / max(In.maxLife, 0.0001f));
 	float ageRatio = 1.f - remainingRatio;
-	AlbedoTex.a *= remainingRatio;
+
 	clip(AlbedoTex.a - 0.01f);
+
+	float2 dissolveUV = In.vTexcoord * 1.5f;
+	dissolveUV += float2(g_fTime * 0.03f, -g_fTime * 0.02f);
+
+	float dissolveNoise = NoiseMap.Sample(LinearWrap, dissolveUV).r;
+	float dissolveValue = dissolveNoise - ageRatio;
+	float dissolveEdgeWidth = 0.08f;
+	float dissolveEdge = 1.f - smoothstep(0.f, dissolveEdgeWidth, dissolveValue);
+
+	clip(dissolveValue);
+
 	float3 Albedo = pow(max(AlbedoTex.rgb, 0.f), 2.2f);
 
 	float3 WorldNormal = Compute_WorldNormal(NormalMap, In.vTexcoord, In.vNormal, In.vTangent);
@@ -199,14 +210,14 @@ PS_OUT PSMain_Stone(VS_OUT In)
 	float NDV = max(dot(WorldNormal, V), 0.f);
 
 	float3 SMRO = SMROMap.Sample(LinearWrap, In.vTexcoord).rgb;
-	float fMetallic = SMRO.r * MetallicIntensity;
-	float fRoughness = SMRO.g * RoughnessIntensity;
-	float fAmbient = SMRO.b * AmbientIntensity;
+	float fMetallic = saturate(SMRO.r * MetallicIntensity);
+	float fRoughness = clamp(SMRO.g * RoughnessIntensity, 0.04f, 1.f);
+	float fAmbient = saturate(SMRO.b * AmbientIntensity);
 
 	float3 MBR = lerp(float3(0.04f, 0.04f, 0.04f), Albedo, fMetallic);
 	float3 LightAccumulation = float3(0.f, 0.f, 0.f);
 
-    [unroll(MAX_LIGHT_COUNT)]
+	[unroll(MAX_LIGHT_COUNT)]
 	for (int i = 0; i < LightCount; ++i)
 	{
 		float3 L;
@@ -222,11 +233,9 @@ PS_OUT PSMain_Stone(VS_OUT In)
 
 		float NDL = saturate(RawNDL);
 		float3 H = normalize(V + L);
-
 		float D = DistributionGGX(WorldNormal, H, fRoughness);
 		float3 F = FresnelSchlick(max(dot(H, V), 0.f), MBR);
 		float V_Spec = VisibilitySmithJointGGX(NDV, NDL, fRoughness);
-
 		float3 Specular = D * F * V_Spec * SpecularIntensity;
 		float3 kS = F;
 		float3 kD = (1.f - kS) * (1.f - fMetallic);
@@ -237,15 +246,15 @@ PS_OUT PSMain_Stone(VS_OUT In)
 
 	float3 texEmissive = EmissiveMap.Sample(LinearWrap, In.vTexcoord).rgb;
 	texEmissive = pow(max(texEmissive, 0.f), 2.2f);
-		
+
 	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ageRatio);
 	float3 instanceEmissive = lerpedEmissive.rgb * lerpedEmissive.a;
+	float3 dissolveEdgeColor = lerpedEmissive.rgb * lerpedEmissive.a * dissolveEdge * 2.f;
 
-	float3 constantAmbient = Albedo * 1.f * fAmbient;
-	float3 finalColor	 = constantAmbient + LightAccumulation + texEmissive + instanceEmissive;
+	float3 constantAmbient = Albedo * fAmbient; 
+	float3 finalColor = constantAmbient + LightAccumulation + texEmissive + instanceEmissive + dissolveEdgeColor;
 
 	Out.vDiffuse = float4(finalColor, AlbedoTex.a);
-
 	return Out;
 }
 

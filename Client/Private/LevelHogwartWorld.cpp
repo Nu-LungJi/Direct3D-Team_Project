@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "LevelHogwartWorld.h"
+#include "SkyCloudyCube.h"
 
 #include "GameInstance.h"
 #include "LevelHogwartWorldLoader.h"
@@ -13,6 +14,8 @@
 #include "Mon_Spawner.h"
 #include "WorldNpc.h"
 #include "Griff.h"
+#include "NpcPlacementData.h"
+#include "NpcPlacementManager.h"
 // Client에도 같은 이름의 Terrain.h가 있으므로 Engine SDK 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
@@ -37,6 +40,54 @@ HRESULT CLevelHogwartWorld::Initialize()
 	const auto hPlayer = SpawnPlayer();
 	if (!hPlayer)
 		return E_FAIL;
+	if (auto* pNpcManager = gameInstance.GetNpcPlacementManager())
+	{
+		pNpcManager->ClearNpcOptions();
+		pNpcManager->SetPickingQueryMask(ETOUI(COLLISION_LAYER::WORLD_STATIC));
+		E::NPC_PLACEMENT_DESC NpcOption{};
+		NpcOption.sPrototypeGroupTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+		NpcOption.sPrototypeTag = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc);
+		NpcOption.sLayerTag = "02_Npc";
+		NpcOption.sModelGroupTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+		NpcOption.sModelResourceTag = "Model_Resource_Spider";
+		NpcOption.sBehaviorMajorTag = "BTJSON";
+		NpcOption.sBehaviorMinorTag = "NPC1";
+		pNpcManager->RegisterNpcOption("World NPC", NpcOption);
+		pNpcManager->RegisterNpcSkeletonOption(
+			NpcOption.sPrototypeTag, "Spider Skeleton",
+			NpcOption.sModelGroupTag, NpcOption.sModelResourceTag);
+		pNpcManager->RegisterNpcSkeletonOption(
+			NpcOption.sPrototypeTag, "Victor Rookwood",
+			NpcOption.sModelGroupTag, "Model_Resource_NPC_VictorRookwood");
+		pNpcManager->RegisterBehaviorOption("World NPC", "BTJSON", "NPC1");
+		pNpcManager->SetSpawnCallback([hTarget = *hPlayer](const E::NPC_PLACEMENT_DESC& Placement)
+		{
+			if (Placement.sPrototypeTag != MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc))
+				return E::NPC_PLACEMENT_RESULT{ Placement.iPlacementId, false, {}, "Unsupported Hogwarts NPC." };
+
+			CWorldNpc::NPC_DESC Desc{};
+			Desc.sObjectTag = "NpcPlacement_" + std::to_string(Placement.iPlacementId);
+			Desc.TargetHandle = hTarget;
+			Desc.LevelTag = Placement.sModelGroupTag;
+			Desc.ReSourceTag = Placement.sModelResourceTag;
+			Desc.BeHaviorTag = Placement.sBehaviorMinorTag;
+			Desc.resBeHaviorMajor = Placement.sBehaviorMajorTag;
+			Desc.resBeHaviorMinor = Placement.sBehaviorMinorTag;
+			Desc.vPos = Placement.vPosition;
+			Desc.vStartPos = Placement.vPatrolStartPosition;
+			Desc.vEndPos = Placement.vPatrolEndPosition;
+			Desc.vRot = Placement.vRotation;
+			Desc.vScale = Placement.vScale;
+			Desc.bDonMove = Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
+
+			const auto hNpc = E::CGameInstance::Get().AddGameObjectToLayer(
+				Placement.sPrototypeGroupTag, Placement.sPrototypeTag, Placement.sLayerTag, &Desc);
+			if (!hNpc)
+				return E::NPC_PLACEMENT_RESULT{ Placement.iPlacementId, false, {}, "Spawn failed." };
+
+			return E::NPC_PLACEMENT_RESULT{ Placement.iPlacementId, true, *hNpc, "Spawn succeeded." };
+		});
+	}
 
 	if (FAILED(SpawnPlayerCape(*hPlayer)))
 		return E_FAIL;
@@ -65,12 +116,17 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	if (FAILED(SpawnMonster(*hPlayer)))
 		return E_FAIL;
-	if (FAILED(SpanwNpc(*hPlayer)))
-		return E_FAIL;
+	//if (FAILED(SpawnNpcPlacements(*hPlayer)))
+	//	return E_FAIL;
 	if (FAILED(SpanwAnimal()))
 		return E_FAIL;
-	gameInstance.Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
+	//gameInstance.Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
+	if (FAILED(Initialize_VolumetricFog()))
+		return E_FAIL;
+
+	if (FAILED(Initialize_EnviromentLight()))
+		return E_FAIL;
 
 	return S_OK;
 }
@@ -270,6 +326,14 @@ HRESULT CLevelHogwartWorld::SpawnNaviMesh(E::CTerrain* pTerrain)
 	if (FAILED(pNavMesh->Load(strPath, &StaticNaviDesc)))
 		return E_FAIL;
 
+	// 내비메시가 저장되지 않은 맵도 레벨 진입은 허용한다.
+	// 이전 레벨의 내비메시가 남지 않도록 런타임 데이터는 비운다.
+	if (pNavMesh->GetManualTriangles().empty())
+	{
+		pNavMesh->Clear();
+		return S_OK;
+	}
+
 	if (!pNavMesh->BuildManual(StaticNaviDesc))
 		return E_FAIL;
 	return S_OK;
@@ -339,7 +403,7 @@ HRESULT CLevelHogwartWorld::SpawnPlayerCamera(CHandle hPlayer)
 
 HRESULT CLevelHogwartWorld::SpawnSkyBox()
 {
-	CGameObject::GAMEOBJECT_DESC skyDesc{};
+	CSkyCloudyCube::SKY_DESC skyDesc{};
 	skyDesc.sObjectTag = "SkyCloudyCube";
 	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
 	{
@@ -398,26 +462,46 @@ HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorld::SpanwNpc(CHandle hPlayer)
+HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer)
 {
-	//일단 거미 모ㅓ델로
-	CWorldNpc::NPC_DESC Npc{};
-	Npc.sObjectTag = "Npc";
-	Npc.TargetHandle = hPlayer;
-	Npc.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-	Npc.ReSourceTag = "Model_Resource_Spider";
-	Npc.resBeHaviorMajor = "BTJSON";
-	Npc.resBeHaviorMinor = "NPC1";
-	//////////NPC Navi 타는 시작,끝점/////////
-	Npc.vPos = _float3(226.097f, 48.242f, 122.760f);
-	Npc.vStartPos = Npc.vPos;
-	Npc.vEndPos = _float3(296.751f, 63.623f, 307.855f);
-
-	auto Npce = CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc, "02_Npc", &Npc);
-	if (!Npce)
-	{
-		MSG_BOX("Create Failed to Npc in Hogwart");
+	E::NPC_PLACEMENT_FILE File{};
+	if (FAILED(E::CGameInstance::Get().JsonDeSerialize(
+		"./Resources/json/NPC/Level_HogwartWorld.json",
+		File,
+		"NpcPlacements")))
 		return E_FAIL;
+
+	if (File.iVersion != 1)
+		return E_FAIL;
+
+	for (const auto& Placement : File.Placements)
+	{
+		if (Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::GPU_CROWD_AMBIENT)
+			return E_NOTIMPL;
+
+		CWorldNpc::NPC_DESC Desc{};
+		Desc.sObjectTag = Placement.sPrototypeTag;
+		Desc.TargetHandle = hPlayer;
+		Desc.LevelTag = Placement.sModelGroupTag.empty()
+			? Placement.sPrototypeGroupTag
+			: Placement.sModelGroupTag;
+		Desc.ReSourceTag = Placement.sModelResourceTag;
+		Desc.BeHaviorTag = Placement.sBehaviorMinorTag;
+		Desc.resBeHaviorMajor = Placement.sBehaviorMajorTag;
+		Desc.resBeHaviorMinor = Placement.sBehaviorMinorTag;
+		Desc.vPos = Placement.vPosition;
+		Desc.vStartPos = Placement.vPatrolStartPosition;
+		Desc.vEndPos = Placement.vPatrolEndPosition;
+		Desc.vRot = Placement.vRotation;
+		Desc.vScale = Placement.vScale;
+		Desc.bDonMove = Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
+
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(
+			Placement.sPrototypeGroupTag,
+			Placement.sPrototypeTag,
+			Placement.sLayerTag,
+			&Desc))
+			return E_FAIL;
 	}
 	return S_OK;
 }
@@ -446,6 +530,46 @@ HRESULT CLevelHogwartWorld::SpanwAnimal()
 	return S_OK;
 }
 
+HRESULT CLevelHogwartWorld::Initialize_VolumetricFog() {
+
+	CB_VLFOG FogOption{};
+
+	FogOption.g_fFogColor			= { 63.f / 255.f, 88.f / 255.f, 88.f / 255.f };
+	FogOption.g_fFogIntensity		= 1.f;
+	FogOption.g_fFogDensity			= 0.02f;
+	FogOption.g_fFogNoiseScale		= 0.05f;
+	FogOption.g_fFogScattering		= 0.5f;
+	FogOption.g_fFogBaseBrightness	= 0.01f;
+
+	FogOption.g_fFogLightColor		= { 255.f / 255.f, 230.f / 255.f, 180.f / 255.f };
+	FogOption.g_fFogLightDirection	= { 0.577f, -0.577f, 0.577f };
+
+	FogOption.g_fFogBaseHeight		= 300.f;
+	FogOption.g_fFogMaxHeight		= 500.f;
+	FogOption.g_fFogHeightFallOff	= 0.05f;
+
+	FogOption.g_fFogStartDistance	= 100.f;
+	FogOption.g_fFogEndDistance		= 250.f;
+
+	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
+
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorld::Initialize_EnviromentLight() {
+
+	CB_ENVLIGHT EnviromentLightOption{};
+
+	EnviromentLightOption.m_fEnviromentIntensity = 0.75f;
+	EnviromentLightOption.m_fFillLightBrightness = 0.25f;
+	EnviromentLightOption.m_fDirectLightBrightness = 0.60f;
+
+	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
+
+
+	return S_OK;
+}
+
 UPtr<CLevelHogwartWorld> CLevelHogwartWorld::Create()
 {
 	auto instance = UPtr<CLevelHogwartWorld>(new CLevelHogwartWorld{});
@@ -459,5 +583,7 @@ UPtr<CLevelHogwartWorld> CLevelHogwartWorld::Create()
 
 void CLevelHogwartWorld::Free()
 {
+	if (auto* pNpcManager = E::CGameInstance::Get().GetNpcPlacementManager())
+		pNpcManager->ClearNpcOptions();
 	CLevel::Free();
 }

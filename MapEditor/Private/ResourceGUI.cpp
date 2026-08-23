@@ -481,6 +481,11 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 		SelectAndImportWholeMapManifest();
 	}
 	ImGui::SameLine();
+	if (ImGui::Button("Import Object Map Manifest"))
+	{
+		SelectAndImportObjectMapManifest();
+	}
+	ImGui::SameLine();
 	ImGui::SetNextItemWidth(80.f);
 	if (ImGui::DragFloat("Whole Map Scale", &m_fWholeMapScale, 0.01f, 0.01f, 100.f, "%.2f"))
 		m_fWholeMapScale = std::clamp(m_fWholeMapScale, 0.01f, 100.f);
@@ -733,6 +738,147 @@ void CResourceGUI::SelectAndImportWholeMapManifest()
 	ImportWholeMapManifest(selectedPath);
 }
 
+void CResourceGUI::SelectAndImportObjectMapManifest()
+{
+	char selectedPath[MAX_PATH]{};
+	OPENFILENAMEA dialog{};
+	dialog.lStructSize = sizeof(dialog);
+	dialog.hwndOwner = g_hWnd;
+	dialog.lpstrFilter = "Object Map Manifest (*_ObjectMap.json)\0*_ObjectMap.json\0JSON Files (*.json)\0*.json\0All Files (*.*)\0*.*\0";
+	dialog.lpstrFile = selectedPath;
+	dialog.nMaxFile = MAX_PATH;
+	dialog.lpstrInitialDir = E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
+	dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+
+	if (!GetOpenFileNameA(&dialog))
+		return;
+
+	ImportObjectMapManifest(selectedPath);
+}
+
+_bool CResourceGUI::ImportObjectMapManifest(const std::filesystem::path& manifestPath)
+{
+	if (m_pCommandManager == nullptr)
+	{
+		m_WholeMapImportStatus = "Object-map import failed: command manager is unavailable.";
+		return false;
+	}
+
+	std::ifstream file(manifestPath);
+	if (!file.is_open())
+	{
+		m_WholeMapImportStatus = "Object-map import failed: cannot open manifest.";
+		return false;
+	}
+
+	nlohmann::json manifest;
+	try
+	{
+		file >> manifest;
+	}
+	catch (const std::exception& exception)
+	{
+		m_WholeMapImportStatus = std::string("Object-map import failed: ") + exception.what();
+		return false;
+	}
+
+	if (manifest.value("format", std::string{}) != "object_map_v1" ||
+		!manifest.contains("objects") || !manifest["objects"].is_array())
+	{
+		m_WholeMapImportStatus = "Object-map import failed: unsupported or incomplete manifest.";
+		return false;
+	}
+
+	const std::filesystem::path resourceRoot = E::PATH_MAPEDITOR_STATIC_MODEL_DIR;
+	const std::string modelName = manifest.value("modelName", manifestPath.stem().string());
+	static uint32_t objectMapImportIndex = 1;
+	const std::string importPrefix = "ObjectMap_" + modelName + "_Import" +
+		std::to_string(objectMapImportIndex++);
+	const float importScale = std::clamp(m_fWholeMapScale, 0.01f, 100.f);
+
+	uint32_t createdCount = 0;
+	uint32_t skippedCount = 0;
+	std::unordered_map<std::string, std::string> loadedResourceTags;
+
+	for (const auto& entry : manifest["objects"])
+	{
+		if (!entry.contains("file") || !entry["file"].is_string() ||
+			!entry.contains("position") || !entry["position"].is_array() || entry["position"].size() != 3 ||
+			!entry.contains("rotation") || !entry["rotation"].is_array() || entry["rotation"].size() != 4 ||
+			!entry.contains("scale") || !entry["scale"].is_array() || entry["scale"].size() != 3)
+		{
+			++skippedCount;
+			continue;
+		}
+
+		const std::string fileName = entry["file"].get<std::string>();
+		const std::filesystem::path binPath = manifestPath.parent_path() / fileName;
+		auto tagIt = loadedResourceTags.find(fileName);
+		if (tagIt == loadedResourceTags.end())
+		{
+			const std::string resourceTag = MakeStaticModelResourceTag(resourceRoot, binPath);
+			auto modelResource = E::CGameInstance::Get().GetResourceFirst<E::CResStaticModel>(
+				E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, resourceTag);
+			if (modelResource == nullptr &&
+				LoadMapEditorStaticModelFile(binPath, resourceRoot, nullptr, resourceTag))
+			{
+				modelResource = E::CGameInstance::Get().GetResourceFirst<E::CResStaticModel>(
+					E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, resourceTag);
+			}
+			if (modelResource == nullptr)
+			{
+				++skippedCount;
+				continue;
+			}
+			tagIt = loadedResourceTags.emplace(fileName, resourceTag).first;
+		}
+
+		try
+		{
+			const auto& position = entry["position"];
+			const auto& rotation = entry["rotation"];
+			const auto& scale = entry["scale"];
+
+			MAPMESH_OBJECT_SNAPSHOT snapshot{};
+			snapshot.objectTag = importPrefix + "_" + std::to_string(createdCount) + "_" +
+				entry.value("name", std::string{ "Object" });
+			snapshot.modelGroupTag = E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL;
+			snapshot.modelResTag = tagIt->second;
+			snapshot.layerTag = E::MAPMESHOBJECTLAYER;
+			snapshot.position = {
+				m_vWholeMapOrigin.x + position[0].get<float>() * importScale,
+				m_vWholeMapOrigin.y + position[1].get<float>() * importScale,
+				m_vWholeMapOrigin.z + position[2].get<float>() * importScale
+			};
+			snapshot.rotation = {
+				rotation[0].get<float>(), rotation[1].get<float>(),
+				rotation[2].get<float>(), rotation[3].get<float>()
+			};
+			snapshot.scale = {
+				scale[0].get<float>() * importScale,
+				scale[1].get<float>() * importScale,
+				scale[2].get<float>() * importScale
+			};
+
+			m_pCommandManager->Submit(
+				std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), GetSelectedHandle()));
+			++createdCount;
+		}
+		catch (const std::exception&)
+		{
+			++skippedCount;
+		}
+	}
+
+	m_WholeMapImportStatus = "Object-map import: " + std::to_string(createdCount) +
+		" objects created, " + std::to_string(loadedResourceTags.size()) + " resources loaded";
+	if (skippedCount > 0)
+		m_WholeMapImportStatus += ", " + std::to_string(skippedCount) + " skipped";
+	m_WholeMapImportStatus += ".";
+	CachingAllResource();
+	return createdCount > 0;
+}
+
 _bool CResourceGUI::ImportWholeMapManifest(const std::filesystem::path& manifestPath)
 {
 	if (m_pCommandManager == nullptr)
@@ -789,7 +935,7 @@ _bool CResourceGUI::ImportWholeMapManifest(const std::filesystem::path& manifest
 		auto modelResource = E::CGameInstance::Get().GetResourceFirst<E::CResStaticModel>(
 			E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, resourceTag);
 		if (modelResource == nullptr &&
-			LoadMapEditorStaticModelFile(binPath, resourceRoot))
+			LoadMapEditorStaticModelFile(binPath, resourceRoot, nullptr, resourceTag))
 		{
 			modelResource = E::CGameInstance::Get().GetResourceFirst<E::CResStaticModel>(
 				E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL, resourceTag);

@@ -19,6 +19,9 @@
     <Filter Include="Level">
       <UniqueIdentifier>{cfa7b3e2-abe9-4952-b88b-0d6f2be2116b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="NPC">
+      <UniqueIdentifier>{d18c04dc-78c1-4ced-a919-6a7427a2cb54}</UniqueIdentifier>
+    </Filter>
     <Filter Include="ImGui">
       <UniqueIdentifier>{c67290ad-a882-4268-91f0-81d6ad87472e}</UniqueIdentifier>
     </Filter>
@@ -623,6 +626,12 @@
     </ClInclude>
     <ClInclude Include="..\Public\ImguiManager.h">
       <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\NpcPlacementManager.h">
+      <Filter>NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\NpcPlacementData.h">
+      <Filter>NPC</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\DInputManager.h">
       <Filter>Device\Input</Filter>
@@ -1319,6 +1328,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\ImguiManager.cpp">
       <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\NpcPlacementManager.cpp">
+      <Filter>NPC</Filter>
     </ClCompile>
     <ClCompile Include="..\..\ThirdParty\ImGuizmo-1.83\GraphEditor.cpp">
       <Filter>ImGui\imguizmo</Filter>
@@ -2048,12 +2060,12 @@
     <FxCompile Include="..\ShaderFiles\UI\QuadTexFlipBook.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
-	<FxCompile Include="..\ShaderFiles\UI\BoostTrailInstancedUI.hlsl">
-	  <Filter>ShaderFiles\UIShader</Filter>
-	</FxCompile>
-	<FxCompile Include="..\ShaderFiles\UI\ChaserTrailInstancedUI.hlsl">
-	  <Filter>ShaderFiles\UIShader</Filter>
-	</FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\BoostTrailInstancedUI.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\ChaserTrailInstancedUI.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
     </FxCompile>
@@ -2128,6 +2140,12 @@
     </None>
     <FxCompile Include="..\ShaderFiles\Water\Shader_Water.hlsl">
       <Filter>ShaderFiles\Water</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_MotionBlur.hlsl">
+      <Filter>ShaderFiles\PostProcess</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\RayMarching\CS_VolumetricCloud.hlsl">
+      <Filter>ShaderFiles\RayMarching</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

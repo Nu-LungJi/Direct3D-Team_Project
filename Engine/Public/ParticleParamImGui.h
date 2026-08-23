@@ -151,6 +151,12 @@ inline void DrawImGui(SCircleParam& p) {
 inline void DrawImGui(SCircleSpreadParam& p) {
 	CIRCLE_SPREAD_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
 }
+inline void DrawImGui(SCircleToCenterParam& p) {
+	CIRCLE_TO_CENTER_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
+}
+inline void DrawImGui(SCenterToCircleParam& p) {
+	CIRCLE_TO_CENTER_FIELDS(DRAW_PARAM_FIELD) DrawBehaviorTypeFlags(p.iBehaviorType);
+}
 inline void DrawImGui(SSpiralParam& p) {
 	SPIRAL_FIELDS(DRAW_PARAM_FIELD)  DrawBehaviorTypeFlags(p.iBehaviorType);
 }
@@ -181,6 +187,8 @@ inline void DrawImGui(SIrregularRingParam& p) {
 inline void SaveParam(const SStairsParam& p, nlohmann::json& out) { STAIRS_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SCircleParam& p, nlohmann::json& out) { CIRCLE_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SCircleSpreadParam& p, nlohmann::json& out) { CIRCLE_SPREAD_FIELDS(SAVE_PARAM_FIELD) }
+inline void SaveParam(const SCircleToCenterParam& p, nlohmann::json& out) { CIRCLE_TO_CENTER_FIELDS(SAVE_PARAM_FIELD) }
+inline void SaveParam(const SCenterToCircleParam& p, nlohmann::json& out) { CIRCLE_TO_CENTER_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SSpiralParam& p, nlohmann::json& out) { SPIRAL_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SStraightGroundParam& p, nlohmann::json& out) { STRAIGHT_GROUND_FIELDS(SAVE_PARAM_FIELD) }
 inline void SaveParam(const SMOKE& p, nlohmann::json& out) { SMOKE_FIELDS(SAVE_PARAM_FIELD) }
@@ -194,6 +202,8 @@ inline void SaveParam(const SSpikeParam& p, nlohmann::json& out) { SPIKE_FIELDS(
 inline void LoadParam(SStairsParam& p, const nlohmann::json& in) { STAIRS_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SCircleParam& p, const nlohmann::json& in) { CIRCLE_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SCircleSpreadParam& p, const nlohmann::json& in) { CIRCLE_SPREAD_FIELDS(LOAD_PARAM_FIELD) }
+inline void LoadParam(SCircleToCenterParam& p, const nlohmann::json& in) { CIRCLE_TO_CENTER_FIELDS(LOAD_PARAM_FIELD) }
+inline void LoadParam(SCenterToCircleParam& p, const nlohmann::json& in) { CIRCLE_TO_CENTER_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SSpiralParam& p, const nlohmann::json& in) { SPIRAL_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SStraightGroundParam& p, const nlohmann::json& in) { STRAIGHT_GROUND_FIELDS(LOAD_PARAM_FIELD) }
 inline void LoadParam(SMOKE& p, const nlohmann::json& in) { SMOKE_FIELDS(LOAD_PARAM_FIELD) }

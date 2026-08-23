@@ -43,6 +43,7 @@ private:
 	void DrawSelectedAccioBallDebug();
 	_bool PushSelectedAccioBallTowardPlayer();
 	void ApplyAccioBallMotionTuning();
+	_float3 MakePropBarrelSpawnPosition() const;
 
 	HRESULT SpawnMonster(const std::optional<CHandle>& hPlayer);
 public:
@@ -62,6 +63,7 @@ private:
 	_bool m_bCreatePlayScreenUI{ false };
 	CHandle m_hPlayer{};
 	CHandle m_hPropBarrel{};
+	_float3 m_vPropBarrelSpawnPosition{ 20.f, 5.f, 20.f };
 	std::array<CHandle, 6> m_hAccioBalls{};
 	int32_t m_iSelectedAccioBall{};
 	_float m_fAccioBallPushTorque{ 20.f };

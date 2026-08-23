@@ -26,6 +26,8 @@ namespace Engine
 
 		_float3		vShadowLightDir{};
 		_float		fTimeAccumulation{};
+
+		_float4x4	matPrevViewProj{};		// 직전 렌더 프레임의 활성 카메라 ViewProj
 	} CB_PER_PASS;
 	static_assert(sizeof(CB_PER_PASS) % 16 == 0);
 
@@ -57,6 +59,20 @@ namespace Engine
 	} CB_LIGHT;
 	static_assert(sizeof(CB_LIGHT) % 16 == 0);
 
+	struct CB_ENVLIGHT
+	{
+		_float m_fEnviromentIntensity{};
+		_float m_fFillLightBrightness{};
+		_float m_fDirectLightBrightness{};
+		_float ENVLIGHT_PADDING{};
+
+		CB_ENVLIGHT() = default;
+		CB_ENVLIGHT(_float _EnvLight, _float _FillLight, _float _Brightness) 
+			:m_fEnviromentIntensity(_EnvLight), m_fFillLightBrightness(_FillLight), m_fDirectLightBrightness(_Brightness) {}
+
+	};
+	static_assert(sizeof(CB_ENVLIGHT) % 16 == 0);
+
 	typedef struct tagConstantBufferEffectLight
 	{
 		EFFECT_LIGHT	EffectLight[MAX_EFFECT_LIGHT_RENDER_COUNT];
@@ -75,6 +91,13 @@ namespace Engine
 	} CB_SHADOW;
 	static_assert(sizeof(CB_SHADOW) % 16 == 0);
 
+	typedef struct tagConstantBufferVolumetricCloud
+	{
+		_float		g_fCloudDensity;
+		_float3		g_fLightDirection;
+	} CB_VOLUMECLOUD;
+	static_assert(sizeof(CB_VOLUMECLOUD) % 16 == 0);
+
 	typedef struct tagConstantBufferPerUI
 	{
 		_float2  texCoord{};
@@ -83,6 +106,8 @@ namespace Engine
 		_float2 texSize{};  // 원본 텍스처의 픽셀 크기 (Width, Height)
 		_float2 quadSize{}; // 텍스처의 현제 사이즈
 		_float4 margins{};
+		_float2 uvFlip{}; // x/y UV flip (0: normal, 1: flipped)
+		_float2 uvFlipPadding{};
 	} CB_PER_UI;
 	static_assert(sizeof(CB_PER_UI) % 16 == 0);
 
@@ -198,8 +223,9 @@ namespace Engine
 
 	struct CB_BLOOM
 	{
-		_float2	g_TexelSize;
-		_float2	g_padding;
+		_float2	g_fTexelSize;
+		_float	g_fBlurIntensity;
+		_float	CB_BLOOMPADDING;
 	};
 	static_assert(sizeof(CB_BLOOM) % 16 == 0);
 
@@ -215,32 +241,36 @@ namespace Engine
 		_float	g_fFarZ;
 		_float  g_fAnalyticBlendStart;
 		_float  g_fAnalyticBlendEnd;
+
+		_float3	g_fJitterOffset;
+		_float	CB_FROXELPADDING;
+
+		_float4x4 g_mPreviousViewProj{};
 	};
 	static_assert(sizeof(CB_FROXEL) % 16 == 0);
 
 	struct CB_VLFOG
 	{
-		_float3 g_fFogColor;
+		_float3	g_fFogColor;
 		_float	g_fFogIntensity;
-
-		_float3 g_fFogCenterPos;
-		_float  g_fFogHeight;
-
-		_float	g_fFogStartPos;
-		_float	g_fFogEndPos;
 		_float	g_fFogDensity;
 		_float	g_fFogNoiseScale;
-
-		_float3	g_fFogLightDirection;
-		_float	g_fFogAnisotropyGA;
+		_float	g_fFogScattering;
+		_float	g_fFogBaseBrightness;
 
 		_float3	g_fFogLightColor;
-		_float	g_fFogAnisotropyGB;
+		_float	CB_VLFOGPADDING01;
+		_float3	g_fFogLightDirection;
 
-		_float	g_fFogScatteringWeight;
 		_float	g_fFogBaseHeight;
+		_float	g_fFogMaxHeight;
 		_float	g_fFogHeightFallOff;
+
+		_float	g_fFogStartDistance;
+		_float	g_fFogEndDistance;
+
 		_float	g_fFogTime;
+		_float3	CB_VLFOGPADDING02;
 	};
 	static_assert(sizeof(CB_VLFOG) % 16 == 0);
 

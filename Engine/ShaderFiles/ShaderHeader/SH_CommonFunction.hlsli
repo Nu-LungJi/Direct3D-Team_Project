@@ -161,3 +161,20 @@ float3 Apply_DissolveEffect(Texture2D _NoiseTex, float3 _BaseEmissive, float2 _T
     
 	return _BaseEmissive + DissolveEmissive;
 }
+
+float Henyey_Greenstein_Phase(float _CosTheta, float _Anistropy)
+{
+	float Anistropy2 = _Anistropy * _Anistropy;
+	float Denum = 1.f + Anistropy2 - 2.f * _Anistropy * _CosTheta;
+	
+	return (1.f - Anistropy2) / (4.f * PI * pow(max(Denum, 0.0001f), 1.5f));
+}
+float Henyey_Greenstein_DualPhase(float3 _RayDirection, float3 _FogLightDirection, float _FrontAnistropy, float _BackAnistropy, float k)
+{
+	float CosTheta = dot(_RayDirection, -_FogLightDirection);
+	
+	float PhaseValueA = Henyey_Greenstein_Phase(CosTheta, _FrontAnistropy);
+	float PhaseValueB = Henyey_Greenstein_Phase(CosTheta, _BackAnistropy);
+    
+	return lerp(PhaseValueB, PhaseValueA, k);
+}

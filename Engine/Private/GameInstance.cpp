@@ -59,6 +59,7 @@
 
 #include "EventManager.h"
 #include "EffectManager.h"
+#include "NpcPlacementManager.h"
 
 NS_USING(Engine)
 
@@ -293,6 +294,12 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 	LOG_MEMORY("End m_pSerializeManager");
 
+	m_pNpcPlacementManager = CNpcPlacementManager::Create();
+	if (m_pNpcPlacementManager == nullptr)
+	{
+		return E_FAIL;
+	}
+
 	m_pPathPlaybackEditor = CPathPlaybackEditor::Create();
 	if (m_pPathPlaybackEditor == nullptr)
 		return E_FAIL;
@@ -399,6 +406,8 @@ void CGameInstance::UpdateGUI()
 
 
 	m_pRenderer->UpdateGUI();
+	if (m_pModel_Instance_Manager)
+		m_pModel_Instance_Manager->UpdateGUI();
 
 	 m_pSoundManager->UpdateGUI();
 
@@ -408,6 +417,8 @@ void CGameInstance::UpdateGUI()
 		m_pNvClothManager->UpdateGUI();
 
 	m_pSerializeManager->UpdateGUI();
+	if (m_pNpcPlacementManager)
+		m_pNpcPlacementManager->UpdateGUI();
 	if (m_pPathPlaybackEditor)
 		m_pPathPlaybackEditor->UpdateGUI();
 
@@ -596,6 +607,7 @@ HRESULT CGameInstance::Draw()
 
 void CGameInstance::Release_Engine()
 {
+	m_pNpcPlacementManager.reset();
 	m_pPathPlaybackEditor.reset();
 	m_pMapMeshInstancingRenderer.reset();
 	m_pNodeEditor.reset();
@@ -962,6 +974,11 @@ std::unordered_map<StringID, std::vector<SPtr<CResource>>> CGameInstance::GetRes
 	return m_pResourceManager->GetResource(sGroupTag);
 }
 
+std::vector<StringID> CGameInstance::GetResourceGroupTags() const
+{
+	return m_pResourceManager->GetResourceGroupTags();
+}
+
 std::unordered_map<StringID, std::unordered_map<StringID, std::vector<SPtr<CResource>>>> CGameInstance::GetResources() const
 {
 	return m_pResourceManager->GetResources();
@@ -980,6 +997,7 @@ std::vector<SPtr<CResource>> CGameInstance::GetResourcesByPath(const _string& sP
 	if (!m_pResourceManager) return {};
 	return m_pResourceManager->GetResourcesByPath(sPath);
 }
+
 void CGameInstance::RemoveResourcePathLookup(const _string& sPath, SPtr<CResource> pRes)
 {
 	if (!m_pResourceManager) return;
@@ -1136,6 +1154,11 @@ void CGameInstance::DelPrototype(
 std::vector<StringID> CGameInstance::GetPrototypeTags(const StringID& svGroupTag) const
 {
 	return m_pPrototypeManager->GetPrototypeTags(svGroupTag);
+}
+
+std::vector<StringID> CGameInstance::GetPrototypeGroupTags() const
+{
+	return m_pPrototypeManager->GetPrototypeGroupTags();
 }
 #pragma endregion
 
@@ -1325,9 +1348,12 @@ VOID	CGameInstance::Render_ChromaticRing(XMVECTOR _WorldPosition, _float _Durati
 }
 VOID	CGameInstance::Set_ChromaticRingOpacity(_float _Opacity) { m_pRenderer->Set_ChromaticRingOpacity(_Opacity); }
 VOID	CGameInstance::Apply_OutlineEffect(std::optional<CHandle> targetHandle) { m_pRenderer->Apply_OutlineEffect(targetHandle); }
-VOID	CGameInstance::Initialize_VolumetricFogOption(XMFLOAT3 _CenterPos, XMFLOAT3 _FogColor, XMFLOAT3 _LightColor, _float _Intensity, _float _Density, _float _MaxHeight, _float _BaseHeight, _float _HeightFallOff,
-	_float _StartDistance, _float _EndDistance, _float _NoiseScale, _float _ScatteringWeight, _float _GA, _float _GB) {
-	m_pRenderer->Initialize_VolumetricFogOption(_CenterPos, _FogColor, _LightColor, _Intensity, _Density, _MaxHeight, _BaseHeight, _HeightFallOff, _StartDistance, _EndDistance, _NoiseScale, _ScatteringWeight, _GA, _GB);
+
+const CB_VLFOG	CGameInstance::Get_VolumetricFogOption() {
+	return m_pRenderer->Get_VolumetricFogOption();
+}
+VOID			CGameInstance::Set_VolumetricFogOption(const CB_VLFOG& _FogOption) {
+	m_pRenderer->Set_VolumetricFogOption(_FogOption);
 }
 
 #pragma endregion
@@ -1487,10 +1513,17 @@ XMMATRIX CGameInstance::Get_CascadeShadowViewProj(uint32_t _Index) {
 	return m_pLightManager->Get_CascadeShadowViewProj(_Index);
 }
 XMFLOAT4 CGameInstance::Get_CascadeShadowSplits() {
-	return m_pLightManager->Get_CascadeShadowSplits();
+	return m_pLightManager->Get_CascadeShadowSplits(); 
+
 }
 CSM_DATA& CGameInstance::Get_MainDirectionalLightData() {
 	return m_pLightManager->Get_MainDirectionalLightData();
+}
+VOID	CGameInstance::Set_EnviromentLight(CONST CB_ENVLIGHT _EnvLight) {
+	m_pLightManager->Set_EnviromentLight(_EnvLight);
+}
+CONST CB_ENVLIGHT CGameInstance::Get_EnviromentLight() {
+	return m_pLightManager->Get_EnviromentLight();
 }
 #pragma endregion
 #pragma endregion

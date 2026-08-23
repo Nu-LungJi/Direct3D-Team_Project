@@ -619,6 +619,207 @@ HRESULT CImporter::ImportWholeMapFBX(
 	return S_OK;
 }
 
+HRESULT CImporter::ImportObjectMapFBX(
+	const std::string& fbxFileName,
+	const std::string& outputDirectory)
+{
+	if (fbxFileName.empty() || outputDirectory.empty())
+		return E_INVALIDARG;
+
+	const std::filesystem::path inputPath(fbxFileName);
+	if (!std::filesystem::is_regular_file(inputPath))
+		return E_FAIL;
+
+	Clear();
+	m_index = 0;
+	m_FBXSourceDir = inputPath.parent_path();
+
+	uint32_t flags = 0;
+	flags |= aiProcess_ConvertToLeftHanded;
+	flags |= aiProcess_GlobalScale;
+	flags |= aiProcess_ImproveCacheLocality;
+	flags |= aiProcessPreset_TargetRealtime_Fast;
+
+	Assimp::Importer importer;
+	const aiScene* scene = importer.ReadFile(inputPath.string(), flags);
+	if (scene == nullptr || scene->mRootNode == nullptr || !scene->HasMeshes() ||
+		!scene->HasMaterials())
+	{
+		std::cerr << "Assimp object-map import failed: " << importer.GetErrorString() << '\n';
+		Clear();
+		return E_FAIL;
+	}
+
+	for (uint32_t i = 0; i < scene->mNumMeshes; ++i)
+	{
+		if (scene->mMeshes[i] == nullptr || scene->mMeshes[i]->HasBones())
+		{
+			std::cerr << "Object-map input contains a missing or skeletal mesh at index "
+				<< i << ".\n";
+			Clear();
+			return E_FAIL;
+		}
+	}
+
+	if (FAILED(Ready_Material(scene)))
+	{
+		Clear();
+		return E_FAIL;
+	}
+
+	// Convert each Assimp mesh exactly once. Ready_Mesh walks node instances and
+	// would duplicate shared geometry, which is intentionally avoided here.
+	Meshes.reserve(scene->mNumMeshes);
+	for (uint32_t i = 0; i < scene->mNumMeshes; ++i)
+		ProcessNonAnimMesh(scene->mMeshes[i], scene);
+	if (Meshes.size() != scene->mNumMeshes)
+	{
+		Clear();
+		return E_FAIL;
+	}
+
+	const std::filesystem::path outputDir(outputDirectory);
+	std::error_code directoryError;
+	std::filesystem::create_directories(outputDir, directoryError);
+	if (directoryError)
+	{
+		Clear();
+		return E_FAIL;
+	}
+
+	const auto SanitizeName = [](std::string value)
+	{
+		for (char& ch : value)
+		{
+			const unsigned char byte = static_cast<unsigned char>(ch);
+			if (!std::isalnum(byte) && ch != '_' && ch != '-') ch = '_';
+		}
+		while (!value.empty() && value.back() == '_') value.pop_back();
+		if (value.empty()) value = "Object";
+		if (value.size() > 80) value.resize(80);
+		return value;
+	};
+
+	const auto IsFiniteTransform = [](const aiVector3D& scale,
+		const aiQuaternion& rotation, const aiVector3D& position)
+	{
+		const float values[] = {
+			scale.x, scale.y, scale.z,
+			rotation.x, rotation.y, rotation.z, rotation.w,
+			position.x, position.y, position.z
+		};
+		for (const float value : values)
+			if (!std::isfinite(value) || std::abs(value) > 1.0e7f) return false;
+		return true;
+	};
+
+	nlohmann::json manifest;
+	manifest["format"] = "object_map_v1";
+	manifest["source"] = inputPath.filename().string();
+	manifest["modelName"] = inputPath.stem().string();
+	manifest["coordinateSpace"] = "assimp_left_handed_fbx_root_local";
+	manifest["objects"] = nlohmann::json::array();
+
+	std::unordered_map<std::string, std::string> resourceFiles;
+	uint32_t resourceCount = 0;
+	uint32_t objectCount = 0;
+	uint32_t skippedCount = 0;
+
+	std::function<HRESULT(const aiNode*, const aiMatrix4x4&)> VisitNode;
+	VisitNode = [&](const aiNode* node, const aiMatrix4x4& parentTransform) -> HRESULT
+	{
+		if (node == nullptr) return E_INVALIDARG;
+		const aiMatrix4x4 worldTransform = parentTransform * node->mTransformation;
+
+		if (node->mNumMeshes > 0)
+		{
+			std::vector<uint32_t> meshIndices;
+			meshIndices.reserve(node->mNumMeshes);
+			std::string signature;
+			std::vector<std::shared_ptr<CMesh>> nodeMeshes;
+			nodeMeshes.reserve(node->mNumMeshes);
+			for (uint32_t i = 0; i < node->mNumMeshes; ++i)
+			{
+				const uint32_t meshIndex = node->mMeshes[i];
+				if (meshIndex >= Meshes.size()) return E_FAIL;
+				meshIndices.push_back(meshIndex);
+				nodeMeshes.push_back(Meshes[meshIndex]);
+				signature += std::to_string(meshIndex) + ";";
+			}
+
+			aiVector3D scale{};
+			aiVector3D position{};
+			aiQuaternion rotation{};
+			worldTransform.Decompose(scale, rotation, position);
+			if (!IsFiniteTransform(scale, rotation, position))
+			{
+				++skippedCount;
+			}
+			else
+			{
+				auto resourceIt = resourceFiles.find(signature);
+				if (resourceIt == resourceFiles.end())
+				{
+					const std::string baseName = SanitizeName(node->mName.C_Str());
+					const std::string fileName = "SM_" + baseName + "_" +
+						std::to_string(resourceCount++) + ".bin";
+					if (FAILED(ExportStaticMeshSubset(outputDir / fileName, nodeMeshes)))
+						return E_FAIL;
+					resourceIt = resourceFiles.emplace(signature, fileName).first;
+				}
+
+				manifest["objects"].push_back({
+					{ "name", node->mName.C_Str() },
+					{ "file", resourceIt->second },
+					{ "position", { position.x, position.y, position.z } },
+					{ "rotation", { rotation.x, rotation.y, rotation.z, rotation.w } },
+					{ "scale", { scale.x, scale.y, scale.z } }
+				});
+				++objectCount;
+			}
+		}
+
+		for (uint32_t i = 0; i < node->mNumChildren; ++i)
+		{
+			if (FAILED(VisitNode(node->mChildren[i], worldTransform)))
+				return E_FAIL;
+		}
+		return S_OK;
+	};
+
+	if (FAILED(VisitNode(scene->mRootNode, aiMatrix4x4{})))
+	{
+		Clear();
+		return E_FAIL;
+	}
+
+	manifest["sourceMeshCount"] = scene->mNumMeshes;
+	manifest["resourceCount"] = resourceCount;
+	manifest["objectCount"] = objectCount;
+	manifest["skippedInvalidTransforms"] = skippedCount;
+
+	const std::filesystem::path manifestPath =
+		outputDir / (inputPath.stem().string() + "_ObjectMap.json");
+	std::ofstream manifestFile(manifestPath);
+	if (!manifestFile.is_open())
+	{
+		Clear();
+		return E_FAIL;
+	}
+	manifestFile << manifest.dump(2);
+	if (!manifestFile.good())
+	{
+		Clear();
+		return E_FAIL;
+	}
+
+	std::cout << "Object-map conversion complete: " << objectCount
+		<< " objects, " << resourceCount << " shared resources, "
+		<< skippedCount << " invalid transforms skipped.\n";
+	Clear();
+	return S_OK;
+}
+
 HRESULT CImporter::ExportStaticMeshSubset(
 	const std::filesystem::path& outpath,
 	const std::vector<std::shared_ptr<CMesh>>& meshes) const

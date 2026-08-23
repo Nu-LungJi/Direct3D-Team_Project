@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "LevelBossCharlesRookwood.h"
+#include "SkyCloudyCube.h"
 #include "GameInstance.h"
 #include "Level_Defines.h"
 #include "FlyCamera.h"
@@ -83,10 +84,13 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 	if (FAILED(PlayBGM()))
 		return E_FAIL;
 
-	SubscribePlayerDeath(*hPlayer);
+	if (FAILED(Initialize_VolumetricFog()))
+		return E_FAIL;
 
-	CGameInstance::Get().Initialize_VolumetricFogOption({ -28.f, 15.f, 7.f }, { 63.f / 255.f, 88.f / 255.f, 88.f / 255.f }, { 255.f / 255.f, 230.f / 255.f, 179.f / 255.f },
-		1.f, 0.02f, 500.f, 300.f, 0.05f, 100.f, 250.f);
+	if (FAILED(Initialize_EnviromentLight()))
+		return E_FAIL;
+
+	SubscribePlayerDeath(*hPlayer);
 
 	return S_OK;
 }
@@ -372,12 +376,51 @@ void CLevelBossCharlesRookwood::SubscribePlayerDeath(const CHandle& hPlayer)
 
 HRESULT CLevelBossCharlesRookwood::SpawnSkyBox()
 {
-	CGameObject::GAMEOBJECT_DESC skyDesc{};
+	CSkyCloudyCube::SKY_DESC skyDesc{};
 	skyDesc.sObjectTag = "SkyCloudyCube";
 	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
 	{
 		return E_FAIL;
 	}
+
+	return S_OK;
+}
+
+HRESULT CLevelBossCharlesRookwood::Initialize_VolumetricFog(){
+
+	CB_VLFOG FogOption{};
+
+	FogOption.g_fFogColor			= { 63.f  / 255.f, 88.f  / 255.f, 88.f  / 255.f };
+	FogOption.g_fFogIntensity		= 1.f;
+	FogOption.g_fFogDensity			= 0.02f;
+	FogOption.g_fFogNoiseScale		= 0.05f;
+	FogOption.g_fFogScattering		= 0.5f;
+	FogOption.g_fFogBaseBrightness	= 0.01f;
+
+	FogOption.g_fFogLightColor		= { 255.f / 255.f, 230.f / 255.f, 180.f / 255.f };
+	FogOption.g_fFogLightDirection	= { 0.577f, -0.577f, 0.577f };
+
+	FogOption.g_fFogBaseHeight		= 300.f;
+	FogOption.g_fFogMaxHeight		= 500.f;
+	FogOption.g_fFogHeightFallOff	= 0.05f;
+
+	FogOption.g_fFogStartDistance	= 100.f;
+	FogOption.g_fFogEndDistance		= 250.f;
+
+	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
+
+	return S_OK;
+}
+
+HRESULT CLevelBossCharlesRookwood::Initialize_EnviromentLight(){
+
+	CB_ENVLIGHT EnviromentLightOption{};
+
+	EnviromentLightOption.m_fEnviromentIntensity	= 0.75f;
+	EnviromentLightOption.m_fFillLightBrightness	= 0.25f;
+	EnviromentLightOption.m_fDirectLightBrightness	= 0.60f;
+
+	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
 
 	return S_OK;
 }
