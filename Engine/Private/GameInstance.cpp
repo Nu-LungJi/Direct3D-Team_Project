@@ -350,7 +350,8 @@ void CGameInstance::FixedUpdateEngine(_float fFixedTimeDelta)
 	if (fScaledFixedDelta <= 0.f)
 		return;
 	
-	m_pPhysXManager->StepSimulation(fScaledFixedDelta);
+	if (!m_pPhysXManager->StepSimulation(fScaledFixedDelta))
+		return;
 
 
 	{

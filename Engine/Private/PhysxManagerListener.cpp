@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "PhysxManagerListener.h"
 #include "PhysXManager.h"
+#include <cassert>
 
 NS_USING(Engine)
 
@@ -16,13 +17,24 @@ CPhysxManagerListener::~CPhysxManagerListener()
 
 HRESULT CPhysxManagerListener::Initialize()
 {
+#ifdef _DEBUG
+	m_iOwnerThreadId = GetCurrentThreadId();
+#endif
 	m_PendingEvents.reserve(128);
     return S_OK;
 }
 
+void CPhysxManagerListener::AssertOwnerThread() const
+{
+#ifdef _DEBUG
+	assert(m_iOwnerThreadId == GetCurrentThreadId() &&
+		"PhysX pending events must only be accessed from the owner thread.");
+#endif
+}
+
 void CPhysxManagerListener::PushEvent(EVENT_TYPE eType, const CHandle& hObjectA, const CHandle& hObjectB)
 {
-	std::lock_guard lock{ m_PendingEventMutex };
+	AssertOwnerThread();
 	m_PendingEvents.push_back({ eType, hObjectA, hObjectB });
 }
 
@@ -35,7 +47,7 @@ void CPhysxManagerListener::PushCollisionEvent(
 	tEvent.hObjectB = hObjectB;
 	tEvent.tCollision = tData;
 
-	std::lock_guard lock{ m_PendingEventMutex };
+	AssertOwnerThread();
 	m_PendingEvents.push_back(tEvent);
 }
 
@@ -48,7 +60,7 @@ void CPhysxManagerListener::PushTriggerEvent(
 	tEvent.hObjectB = hObjectB;
 	tEvent.tTrigger = tData;
 
-	std::lock_guard lock{ m_PendingEventMutex };
+	AssertOwnerThread();
 	m_PendingEvents.push_back(tEvent);
 }
 
@@ -60,7 +72,7 @@ void CPhysxManagerListener::PushJointBreakEvent(
 	tEvent.hObjectA = tData.hJointOwner;
 	tEvent.tJointBreak = tData;
 
-	std::lock_guard lock{ m_PendingEventMutex };
+	AssertOwnerThread();
 	m_PendingEvents.push_back(tEvent);
 }
 
@@ -74,7 +86,7 @@ void CPhysxManagerListener::QueueCCTShapeHit(
 	tEvent.tCCTHit = tHit;
 	tEvent.tCCTHit.pGameObject = nullptr;
 
-	std::lock_guard lock{ m_PendingEventMutex };
+	AssertOwnerThread();
 	m_PendingEvents.push_back(tEvent);
 }
 
@@ -88,7 +100,7 @@ void CPhysxManagerListener::QueueCCTControllerHit(
 	tEvent.tCCTHit = tHit;
 	tEvent.tCCTHit.pGameObject = nullptr;
 
-	std::lock_guard lock{ m_PendingEventMutex };
+	AssertOwnerThread();
 	m_PendingEvents.push_back(tEvent);
 }
 
@@ -100,17 +112,15 @@ void CPhysxManagerListener::QueueCCTObstacleHit(
 	tEvent.hObjectA = hOwner;
 	tEvent.tCCTObstacleHit = tHit;
 
-	std::lock_guard lock{ m_PendingEventMutex };
+	AssertOwnerThread();
 	m_PendingEvents.push_back(tEvent);
 }
 
 void CPhysxManagerListener::DispatchPendingEvents()
 {
+	AssertOwnerThread();
 	std::vector<PENDING_EVENT> pendingEvents{};
-	{
-		std::lock_guard lock{ m_PendingEventMutex };
-		pendingEvents.swap(m_PendingEvents);
-	}
+	pendingEvents.swap(m_PendingEvents);
 
 	for (const PENDING_EVENT& tEvent : pendingEvents)
 	{
@@ -224,11 +234,8 @@ void CPhysxManagerListener::DispatchPendingEvents()
 	}
 
 	pendingEvents.clear();
-	{
-		std::lock_guard lock{ m_PendingEventMutex };
-		if (m_PendingEvents.empty())
-			m_PendingEvents.swap(pendingEvents);
-	}
+	if (m_PendingEvents.empty())
+		m_PendingEvents.swap(pendingEvents);
 }
 
 void CPhysxManagerListener::onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count)
@@ -340,17 +347,23 @@ void CPhysxManagerListener::onContact(const physx::PxContactPairHeader& pairHead
 
 		if (cp.events & physx::PxPairFlag::eNOTIFY_TOUCH_FOUND)
 		{
-			physx::PxContactPairPoint contactPoints[PX_MAX_CONTACT_POINTS]{};
-			const physx::PxU32 iContactCount = cp.extractContacts(contactPoints, PX_MAX_CONTACT_POINTS);
-			tData.iContactCount = iContactCount;
-			for (physx::PxU32 contactIndex = 0; contactIndex < iContactCount; ++contactIndex)
+			if (cp.contactCount > 0)
 			{
-				const auto& source = contactPoints[contactIndex];
-				auto& destination = tData.Contacts[contactIndex];
-				destination.vWorldPosition = { source.position.x, source.position.y, source.position.z };
-				destination.vWorldNormal = { source.normal.x, source.normal.y, source.normal.z };
-				destination.vImpulse = { source.impulse.x, source.impulse.y, source.impulse.z };
-				destination.fSeparation = source.separation;
+				physx::PxContactPairPoint contactPoints[PX_MAX_CONTACT_POINTS]{};
+				const physx::PxU32 iContactCount =
+					cp.extractContacts(contactPoints, PX_MAX_CONTACT_POINTS);
+				tData.iContactCount = iContactCount;
+				for (physx::PxU32 contactIndex = 0;
+					contactIndex < iContactCount;
+					++contactIndex)
+				{
+					const auto& source = contactPoints[contactIndex];
+					auto& destination = tData.Contacts[contactIndex];
+					destination.vWorldPosition = { source.position.x, source.position.y, source.position.z };
+					destination.vWorldNormal = { source.normal.x, source.normal.y, source.normal.z };
+					destination.vImpulse = { source.impulse.x, source.impulse.y, source.impulse.z };
+					destination.fSeparation = source.separation;
+				}
 			}
 			PushCollisionEvent(EVENT_TYPE::COLLISION_ENTER, userDataA->hGameObject, userDataB->hGameObject, tData);
 		}
@@ -403,7 +416,8 @@ void CPhysxManagerListener::onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 
 
 void CPhysxManagerListener::onAdvance(const physx::PxRigidBody* const* bodyBuffer, const physx::PxTransform* poseBuffer, const physx::PxU32 count)
 {
-    MSG_BOX("onAdvance 미구현");
+	// onAdvance는 PhysX 시뮬레이션 작업 스레드에서 호출될 수 있다.
+	// 메인 스레드 전용 이벤트 큐와 게임 객체에는 여기서 접근하지 않는다.
 }
 
 UPtr<CPhysxManagerListener> CPhysxManagerListener::Create()
