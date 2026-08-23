@@ -107,7 +107,7 @@ float Get_CloudDensity(float3 WorldPos, float BaseDensity)
 	float3	WindOffset = WindDirection * WindTimeAccumulation;
 	float3	MovedPos = WorldPos + WindOffset;
 	
-	float2	WeatherOffset = float2(100000.f, 0.f);
+	float2	WeatherOffset = float2(90000.f, -2000.f);
 	float2	WeatherMapUV = (MovedPos.xz + WeatherOffset) * 0.0000095f;
 	float3	WeatherMapTex = WeatherMapTexture.SampleLevel(LinearWrap, WeatherMapUV, 0).rgb;
 	
@@ -321,18 +321,47 @@ void CSMain_CloudTAA(uint3 ID : SV_DispatchThreadID)
 	float3	MaxColor = CurrentColor;
     
 	[unroll]
-	for (int i = 0; i < 4; ++i)
+	for (int x = -1; x <= 1; ++x)
 	{
-		uint2	NeighborPos = clamp(PixelPos + Offsets[i], 0, (uint2) ScreenResolution - 1);
-		float3	NeighborColor = OriginalTexture[NeighborPos].rgb;
-		
-		MinColor = min(MinColor, NeighborColor);
-		MaxColor = max(MaxColor, NeighborColor);
+    [unroll]
+		for (int y = -1; y <= 1; ++y)
+		{
+			if (x == 0 && y == 0) continue;
+        
+			uint2 NeighborPos = clamp(PixelPos + int2(x, y), 0, (uint2) ScreenResolution - 1);
+			float3 NeighborColor = OriginalTexture[NeighborPos].rgb;
+        
+			MinColor = min(MinColor, NeighborColor);
+			MaxColor = max(MaxColor, NeighborColor);
+		}
 	}
 
 	float3 HistoryColor = HistoryTexture.SampleLevel(LinearClamp, PrevTexCoord, 0).rgb;
 	HistoryColor = clamp(HistoryColor, MinColor, MaxColor);
     
-	OUTPUT[PixelPos] = float4(lerp(HistoryColor, CurrentColor, 0.05f), 1.f);
+	float CurrentLuma = dot(CurrentColor, float3(0.299f, 0.587f, 0.114f));
+	float HistoryLuma = dot(HistoryColor, float3(0.299f, 0.587f, 0.114f));
+	float LumaDiff = abs(CurrentLuma - HistoryLuma);
+	
+	float BlendWeight = lerp(0.05f, 0.2f, saturate(LumaDiff * 5.f));
+	
+	//OUTPUT[PixelPos] = float4(lerp(HistoryColor, CurrentColor, BlendWeight), 1.f);
+	
+	float3 FinalColor = lerp(HistoryColor, CurrentColor, BlendWeight);
+	
+	float3 NeighborSum = 0.f;
+	NeighborSum += OriginalTexture[clamp(PixelPos + int2(0, -1), 0, ScreenResolution - 1)].rgb;
+	NeighborSum += OriginalTexture[clamp(PixelPos + int2(0, 1), 0, ScreenResolution - 1)].rgb;
+	NeighborSum += OriginalTexture[clamp(PixelPos + int2(-1, 0), 0, ScreenResolution - 1)].rgb;
+	NeighborSum += OriginalTexture[clamp(PixelPos + int2(1, 0), 0, ScreenResolution - 1)].rgb;
+
+	float3 BlurColor = NeighborSum * 0.25f;
+	
+	float SharpenAmount = 0.15f;
+	FinalColor = FinalColor + (FinalColor - BlurColor) * SharpenAmount;
+	
+	FinalColor = max(0.f, FinalColor);
+
+	OUTPUT[PixelPos] = float4(FinalColor, 1.f);
 	return;
 }

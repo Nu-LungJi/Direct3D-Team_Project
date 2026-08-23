@@ -254,6 +254,7 @@ private:
 	_bool			m_bApplyFilter		= { true };		// 필터 적용 ON-OFF
 	_bool			m_bApplyVolumetricFog	= { false };	// 볼류메트릭 효과 ON-OFF
 	_bool			m_bApplyVolumetricCloud		= { false };	// 볼류메트릭 클라우드 ON-OFF
+	_bool			m_bApplyVolumetricCloudTAA = { false };	// 볼류메트릭 클라우드 ON-OFF
 	_bool			m_bApplyShadow		= { false };	// 그림자 ON-OFF
 
 private:		// ChromaticRing
