@@ -128,19 +128,29 @@ HRESULT CCameraObject::Initialize(void* pArg)
 		return E_FAIL;
 	}
 
+	return S_OK;
+}
 
-	// build frustum far corner
+HRESULT CCameraObject::SetFovY(_float fFovY)
+{
+	if (m_cameraDesc.eProj != PROJ::PERSPECTIVE ||
+		!std::isfinite(fFovY) || fFovY <= 0.f || fFovY >= 180.f)
 	{
-		float halfHegith = cameraDesc->fFar * tanf(0.5f * XMConvertToRadians(m_cameraDesc.fFovY));
-		float halfWidth = cameraDesc->fAspect * halfHegith;
-
-		m_FrustumFarCorner[0] = _float4{ -halfWidth, -halfHegith, cameraDesc->fFar, 0.f };
-		m_FrustumFarCorner[1] = _float4{ -halfWidth, +halfHegith, cameraDesc->fFar, 0.f };
-		m_FrustumFarCorner[2] = _float4{ +halfWidth, +halfHegith, cameraDesc->fFar, 0.f };
-		m_FrustumFarCorner[3] = _float4{ +halfWidth, -halfHegith, cameraDesc->fFar, 0.f };
+		return E_INVALIDARG;
 	}
 
-	return S_OK;
+	if (std::abs(m_cameraDesc.fFovY - fFovY) <= FLT_EPSILON)
+		return S_OK;
+
+	const _float fPreviousFovY = m_cameraDesc.fFovY;
+	m_cameraDesc.fFovY = fFovY;
+	const HRESULT hr = UpdateProjMatrix();
+	if (FAILED(hr))
+	{
+		m_cameraDesc.fFovY = fPreviousFovY;
+		UpdateProjMatrix();
+	}
+	return hr;
 }
 
 HRESULT CCameraObject::UpdateViewMatrix()
@@ -177,6 +187,19 @@ HRESULT CCameraObject::UpdateProjMatrix()
 				m_cameraDesc.fNear,
 				m_cameraDesc.fFar)
 		);
+
+		// FOV가 런타임에 바뀌어도 절두체 원거리 코너가 투영행렬과 일치해야 한다.
+		const _float fHalfHeight = m_cameraDesc.fFar *
+			tanf(0.5f * XMConvertToRadians(m_cameraDesc.fFovY));
+		const _float fHalfWidth = m_cameraDesc.fAspect * fHalfHeight;
+		m_FrustumFarCorner[0] = {
+			-fHalfWidth, -fHalfHeight, m_cameraDesc.fFar, 0.f };
+		m_FrustumFarCorner[1] = {
+			-fHalfWidth, +fHalfHeight, m_cameraDesc.fFar, 0.f };
+		m_FrustumFarCorner[2] = {
+			+fHalfWidth, +fHalfHeight, m_cameraDesc.fFar, 0.f };
+		m_FrustumFarCorner[3] = {
+			+fHalfWidth, -fHalfHeight, m_cameraDesc.fFar, 0.f };
 	}
 	else
 	{
