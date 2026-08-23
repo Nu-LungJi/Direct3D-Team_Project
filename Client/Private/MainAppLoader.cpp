@@ -73,6 +73,12 @@ HRESULT CMainAppLoader::Load()
 	}
 	else return E_FAIL;
 
+	if (auto res = E::CGameInstance::Get().AddResource("SKYBOX", "TEX_SkyRanrokCube", E::CResTextureCubeMap::Create("./Resources/SampleClient/Textures/Skybox/RanRok_SkyD.dds")))
+	{
+		if (FAILED(res->Load())) return E_FAIL;
+	}
+	else return E_FAIL;
+
 	if (E::CGameInstance::Get().AddPrototype("PERMANENT", "Prototype_GameObject_SkyCloudyCube", CSkyCloudyCube::Create()))
 	{
 		return E_FAIL;

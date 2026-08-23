@@ -73,6 +73,8 @@ HRESULT CPlayer_Broom::Initialize(void* pArg)
 	// 원본 빗자루의 길이 축(Y)을 플레이어 진행 축(Z)에 맞춘다.
 	GetTransform().SetRotationEuler({ 12.f, 0.f, 0.f });
 	GetTransform().SetPosition(_float3{ 0.f, m_fCurrentHeightOffset, -0.5f });
+
+	m_iBroomEndBoneIndex = m_pModelInstance->GetModel()->Get_BoneIndex("thistleSocket");
 	return S_OK;
 }
 
@@ -87,6 +89,8 @@ void CPlayer_Broom::Update(_float fTimeDelta)
 	m_fCurrentHeightOffset = std::lerp(
 		m_fCurrentHeightOffset, m_fTargetHeightOffset, fBlendRatio);
 	GetTransform().SetPosition(_float3{ 0.f, m_fCurrentHeightOffset, -0.5f });
+
+
 }
 
 void CPlayer_Broom::SetMovementRatio(_float fRatio)
@@ -150,7 +154,30 @@ void CPlayer_Broom::LateUpdate(_float fTimeDelta)
 
 	if (!m_bVisible)
 		return;
+	//이펙트
+	{
+		if (m_iBroomEndBoneIndex >= 0)
+		{
+			const auto& broomBoneMatrices = m_pModelInstance->Get_CombinedBoneMatrices();
 
+			if (static_cast<size_t>(m_iBroomEndBoneIndex) < broomBoneMatrices.size())
+			{
+				m_fSpawnTime += fTimeDelta;
+
+				if (m_fSpawnTime >= 0.08f)
+				{
+					m_fSpawnTime -= 0.08f;
+
+					_matrix matBroomEndWorld = XMLoadFloat4x4(&broomBoneMatrices[m_iBroomEndBoneIndex]) * GetTransform().GetLoadedCombinedWorldMatrix();
+
+					_float4x4 effectWorld{};
+					XMStoreFloat4x4(&effectWorld, matBroomEndWorld);
+
+					CGameInstance::Get().Spawn("BroomParticle.json", effectWorld);
+				}
+			}
+		}
+	}
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
 }

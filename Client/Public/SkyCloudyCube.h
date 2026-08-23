@@ -16,7 +16,7 @@ public:
 public:
 	typedef struct tagSkyDesc : CGameObject::GAMEOBJECT_DESC
 	{
-
+		std::string sTextureTag{ "TEX_SkyCloudyCube" };
 	} SKY_DESC;
 
 private:

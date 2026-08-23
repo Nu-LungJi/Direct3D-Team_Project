@@ -220,6 +220,7 @@ HRESULT CLightPlacementObject::SpawnLights(
 		light->Set_LightPosition(entry.vPosition);
 		light->Set_LightDirection(entry.vDirection);
 		light->Set_LightActivateState(entry.bActive);
+		light->Set_LightShadowCast(entry.bCastShadow);
 		m_SpawnedLightHandles.push_back(*handle);
 	}
 

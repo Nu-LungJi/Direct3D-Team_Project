@@ -3757,6 +3757,10 @@ std::vector<PARTICLE_SPAWN_DATA> CParticleManager::BuildSpawnData(const PatternP
 				return ParticlePattern::MakeSpikePattern(param);
 			else if constexpr (std::is_same_v<T, SIrregularRingParam>)
 				return ParticlePattern::MakeIrregularRing(param);
+			else if constexpr (std::is_same_v<T, SCircleToCenterParam>)
+				return ParticlePattern::MakeCircleToCenter(param);
+			else if constexpr (std::is_same_v<T, SCenterToCircleParam>)
+				return ParticlePattern::MakeCenterToCircle(param);
 			else
 			{
 				static_assert(!sizeof(T*), "BuildSpawnData: unhandled PatternParamVariant type");
@@ -3788,6 +3792,14 @@ void CParticleManager::ApplyStartEndToPattern(PatternParamVariant& pv, _fvector 
 				XMStoreFloat3(&p.vStartPos, startPos);
 			}
 			else if constexpr (std::is_same_v<T, SSpikeParam>)
+			{
+				XMStoreFloat3(&p.vCenter, startPos);
+			}
+			else if constexpr (std::is_same_v<T, SCircleToCenterParam>)
+			{
+				XMStoreFloat3(&p.vCenter, startPos);
+			}
+			else if constexpr (std::is_same_v<T, SCenterToCircleParam>)
 			{
 				XMStoreFloat3(&p.vCenter, startPos);
 			}
@@ -3845,6 +3857,14 @@ void CParticleManager::ApplyWorldMatToPattern(PatternParamVariant& pv, FXMMATRIX
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}
 			else if constexpr (std::is_same_v<T, SIrregularRingParam>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SCircleToCenterParam>)
+			{
+				XMStoreFloat3(&p.vCenter, vWorldOrigin);
+			}
+			else if constexpr (std::is_same_v<T, SCenterToCircleParam>)
 			{
 				XMStoreFloat3(&p.vCenter, vWorldOrigin);
 			}

@@ -993,11 +993,13 @@ HRESULT CRenderer::Draw() {
 	// Trensparent + PBR
 	if (FAILED(Render_Alpha()))          return E_FAIL;
 
-	// Effect
-	if (FAILED(Render_Effect()))		 return E_FAIL;
+
 
 	// Volumetric
 	if (FAILED(Render_VolumetricEffect())) return E_FAIL;
+
+	// Effect
+	if (FAILED(Render_Effect()))		 return E_FAIL;
 
 	// PostProcess
 	if (FAILED(Render_PostProcess()))    return E_FAIL;

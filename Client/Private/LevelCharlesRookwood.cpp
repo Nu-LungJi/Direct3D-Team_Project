@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "LevelCharlesRookwood.h"
+#include "SkyCloudyCube.h"
 #include "GameInstance.h"
 #include "Level_Defines.h"
 #include "FlyCamera.h"
@@ -517,7 +518,7 @@ HRESULT CLevelCharlesRookwood::SpawnMyMagicStepController()
 
 HRESULT CLevelCharlesRookwood::SpawnSkyBox()
 {
-	CGameObject::GAMEOBJECT_DESC skyDesc{};
+	CSkyCloudyCube::SKY_DESC skyDesc{};
 	skyDesc.sObjectTag = "SkyCloudyCube";
 	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
 	{

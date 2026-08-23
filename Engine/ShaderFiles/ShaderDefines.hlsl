@@ -5,7 +5,7 @@ const static float3 AlbedoColor = { 1.f, 1.f, 1.f };
 
 const static float	SpecularIntensity	= 1.f;
 
-#define GAME_QUALITY_LEVEL2
+#define GAME_QUALITY_LEVEL1
 
 #ifdef GAME_QUALITY_LEVEL1				// 영상 및 최종 리허설 용
 #define MAX_LIGHT_COUNT			32

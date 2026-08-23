@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "LevelHogwartWorld.h"
+#include "SkyCloudyCube.h"
 
 #include "GameInstance.h"
 #include "LevelHogwartWorldLoader.h"
@@ -402,7 +403,7 @@ HRESULT CLevelHogwartWorld::SpawnPlayerCamera(CHandle hPlayer)
 
 HRESULT CLevelHogwartWorld::SpawnSkyBox()
 {
-	CGameObject::GAMEOBJECT_DESC skyDesc{};
+	CSkyCloudyCube::SKY_DESC skyDesc{};
 	skyDesc.sObjectTag = "SkyCloudyCube";
 	if (!CGameInstance::Get().AddGameObjectToLayer("PERMANENT", "Prototype_GameObject_SkyCloudyCube", "00_SKYBOX", &skyDesc))
 	{

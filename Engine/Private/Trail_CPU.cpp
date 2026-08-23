@@ -394,9 +394,13 @@ HRESULT CTrail_CPU::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 	auto Rasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
 	pContext->RSSetState(Rasterizer->GetRasterizerState().Get());
 	pContext->OMSetBlendState(m_pBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+	const char* pDepthStateTag = m_Desc.blendState == 2 ? "DS_DEPTHWRITE" : "DS_NO_DEPTHWRITE";
 
-	auto depthState =
-		CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE,"DS_NO_DEPTHWRITE");
+	auto depthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(
+		TAG_RES_GRP_PERMANENT_STATE, pDepthStateTag);
+
+	/*auto depthState =
+		CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE,"DS_NO_DEPTHWRITE");*/
 	if (!depthState)
 		return E_FAIL;
 

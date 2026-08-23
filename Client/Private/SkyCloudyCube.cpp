@@ -25,8 +25,15 @@ HRESULT CSkyCloudyCube::Initialize(void* pArg)
 	if (FAILED(__super::Initialize(pArg)))
 		return E_FAIL;
 
+	const auto* pDesc = static_cast<SKY_DESC*>(pArg);
+	const std::string sTextureTag = nullptr != pDesc && !pDesc->sTextureTag.empty()
+		? pDesc->sTextureTag
+		: "TEX_SkyCloudyCube";
+
 	m_pCubeBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCubeColBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_SkyCube");
-	m_pCubeTexture = E::CGameInstance::Get().GetResourceFirst<E::CResTextureCubeMap>("SKYBOX", "TEX_SkyCloudyCube");
+	m_pCubeTexture = E::CGameInstance::Get().GetResourceFirst<E::CResTextureCubeMap>("SKYBOX", sTextureTag);
+	if (!m_pCubeTexture && sTextureTag != "TEX_SkyCloudyCube")
+		m_pCubeTexture = E::CGameInstance::Get().GetResourceFirst<E::CResTextureCubeMap>("SKYBOX", "TEX_SkyCloudyCube");
 	if (!m_pCubeBuffer || !m_pCubeTexture)
 		return E_FAIL;
 
