@@ -73,6 +73,9 @@ HRESULT CLightManager::Initialize_PBRResources() {
 		if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CS_PBR_CSM", E::CResCBuffer::Create())) {
 			if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_CSM) })))    return E_FAIL;
 		}
+		if (auto res = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CS_EnvLight", E::CResCBuffer::Create())) {
+			if (FAILED(res->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_ENVLIGHT) })))    return E_FAIL;
+		}
 
 		m_pNormalLightConstantBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_NormalLight");
 		if (nullptr == m_pNormalLightConstantBuffer)	return E_FAIL;
@@ -88,6 +91,9 @@ HRESULT CLightManager::Initialize_PBRResources() {
 
 		m_pPBRCSMConstantBuffer		 = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CS_PBR_CSM");
 		if (nullptr == m_pPBRCSMConstantBuffer)	return E_FAIL;
+
+		m_pEnvLightConstantBuffer	 = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CS_EnvLight");
+		if (nullptr == m_pEnvLightConstantBuffer)	return E_FAIL;
 	}
 
 	return S_OK;
@@ -200,6 +206,17 @@ std::optional<CHandle> CLightManager::FindPlacementLightHandleByAlias(std::strin
 	}
 
 	return std::nullopt;
+}
+
+VOID CLightManager::Set_EnviromentLight(const CB_ENVLIGHT _EnvLight) {
+	m_pEnviromentLight = _EnvLight;
+
+	D3D11_MAPPED_SUBRESOURCE MRES = {};
+	if (SUCCEEDED(m_pContext->Map(m_pEnvLightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES))) {
+		memcpy(MRES.pData, &m_pEnviromentLight, sizeof(CB_ENVLIGHT));
+		m_pContext->Unmap(m_pEnvLightConstantBuffer->GetCBuffer().Get(), 0);
+	}
+	m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::ENVLIGHT), 1, m_pEnvLightConstantBuffer->GetCBuffer().GetAddressOf());
 }
 
 VOID CLightManager::Update(_float fTimeDelta) {

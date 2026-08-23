@@ -819,6 +819,10 @@
     <FxCompile Include="..\ShaderFiles\Particle\CS_ChangeColorByOwner.hlsl" />
     <FxCompile Include="..\ShaderFiles\Particle\CS_TransformOwner.hlsl" />
     <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_MotionBlur.hlsl" />
+    <FxCompile Include="..\ShaderFiles\RayMarching\CS_VolumetricCloud.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\RayMarching\PS_Volumetric.hlsl" />
     <FxCompile Include="..\ShaderFiles\Terrain\Shader_Terrain.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

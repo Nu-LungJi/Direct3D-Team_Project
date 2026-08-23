@@ -35,6 +35,11 @@ private:
 	HRESULT SpawnMonster(std::optional<CHandle> hPlayer);
 	HRESULT SpawnStaticCollision();
 	HRESULT SpanwNpc(CHandle hPlayer);
+
+	/*----------- 광윤 추가 -----------*/
+	HRESULT Initialize_VolumetricFog();
+	HRESULT Initialize_EnviromentLight();
+	/*---------------------------------*/
 	HRESULT SpanwAnimal();
 public:
 	static UPtr<CLevelHogwartWorld> Create();

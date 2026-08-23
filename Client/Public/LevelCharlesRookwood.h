@@ -44,6 +44,11 @@ private:
 	HRESULT PlayBGM();
 	HRESULT StopBGM(_float fDuration = 1.f);
 	void SubscribePlayerDeath(const CHandle& hPlayer);
+
+	/*----------- 광윤 추가 -----------*/
+	HRESULT Initialize_VolumetricFog();
+	HRESULT Initialize_EnviromentLight();
+	/*---------------------------------*/
 private:
 	SOUND_ID m_bmgID{ INVALID_SOUND_ID };
 	CHandle m_hPlayer{};

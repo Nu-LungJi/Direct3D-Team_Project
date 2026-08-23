@@ -44,8 +44,7 @@ public:			// Update
 	VOID		UpdateGUI();
 
 private:		// GUI Update
-	VOID		PostProcessGUI();
-	VOID		VolumetricFogGUI();
+	VOID		RendererGUI();
 
 public:			// Render
 	HRESULT		Draw();
@@ -61,7 +60,6 @@ private:		// Render Setting
 	HRESULT		Render_Alpha();
 	HRESULT		Render_Effect();
 	HRESULT		Render_VolumetricEffect();
-	HRESULT		Render_OffScreen();
 	HRESULT		Render_PostProcess();
 	HRESULT		Render_UI3D();
 	HRESULT		Render_UserInterface();
@@ -82,8 +80,10 @@ private:		// Render Object
 
 private:		// Volumetric Effect Pass Render
 	HRESULT		Update_VolumetricConstantBuffer();
+	HRESULT		Render_VolumetricCloud();
 	HRESULT		Render_LightIntegration();
 	HRESULT		Render_FroxelZAccumulation();
+	HRESULT		Render_TemporalBlend();
 	HRESULT		Render_VolumetricComposite();
 
 private:		// PostProcess Pass Render
@@ -134,9 +134,15 @@ public:			// Append Render Queue
 public:			// Extra Function
 	HRESULT		Reset_DefaultShader(RENDERGROUP _Group);
 
-	VOID		Initialize_VolumetricFogOption(XMFLOAT3 _CenterPos, XMFLOAT3 _FogColor, XMFLOAT3 _LightColor, _float _Intensity, _float _Density, _float _MaxHeight,
-		_float _BaseHeight, _float _HeightFallOff, _float _StartDistance, _float _EndDistance, _float _NoiseScale = 0.05f, _float _ScatteringWeight = 0.5f, _float _GA = 0.7f, _float _GB = -0.3f);
+public:			// Volumetric Fog
+	const CB_VLFOG	Get_VolumetricFogOption()							{ return m_pFogInfo; }
+	VOID			Set_VolumetricFogOption(const CB_VLFOG& _FogOption) { m_pFogInfo = _FogOption; }
 
+	_float			Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base);
+
+public:
+	VOID			Apply_RadialBlur(_float _Intensity) { m_fBlurIntensity = _Intensity; }
+	
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
@@ -203,6 +209,7 @@ private:
 	SPtr<CResCBuffer>			m_pVolumetricFroxelCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricVFogCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricCSMCBuffer{};
+	SPtr<CResCBuffer>			m_pVolumetricCloudCBuffer{};
 	SPtr<CResCBuffer>			m_pLensFlareCBuffer{};
 
 	SPtr<CResComputeShader>		m_pLensFlareComputeShader{};
@@ -231,6 +238,7 @@ private:		// FSR
 	UPtr<CMyFSR2_2> m_pFSR2_2{};
 
 private:
+	_bool			m_bApplyEnvLight	= { true };		// 환경광 ON-OFF
 	_bool			m_bApplyFilter		= { true };		// 필터 적용 ON-OFF
 	_bool			m_bApplyVolumetric	= { false };	// 볼류메트릭 효과 ON-OFF
 	_bool			m_bApplyShadow		= { false };	// 그림자 ON-OFF
@@ -247,18 +255,27 @@ private:		// ChromaticRing
 private:		// Volumetric Fog
 	SPtr<CResComputeShader>		m_pLightIntegrationCS{};
 	SPtr<CResComputeShader>		m_pFroxelAccumulationCS{};
+	SPtr<CResComputeShader>		m_pTemporalBlendedCS{};
 	SPtr<CResPixelShader>		m_pVolumetricCompositePS{};
+
+	SPtr<CResComputeShader>		m_pVolumetricCloudCS{};
 
 	TEXTURE3D					m_pVoxelLighting{};
 	TEXTURE3D					m_pVoxelAccumulated{};
+	TEXTURE3D					m_pBlendedVolumeTex{};
+	TEXTURE3D					m_pPreviousVolumeTex{};
+
+	SPtr<CResDynamicTexture2D>	m_pVolumetricCloudTex{};
 
 	CB_VLFOG					m_pFogInfo{};
+	CB_ENVLIGHT					m_pEnvLight{};
 
 	ComPtr<ID3D11ShaderResourceView>	m_pCSMShadowMapTexture	= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pBlueNoiseTexture		= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pVolumeTexture		= { nullptr };
 
 	XMMATRIX					m_mShadowLightViewProj{};
+	XMMATRIX					m_mPreviousCamViewProj{};
 
 private:		// PostProcess
 	std::optional<CHandle>				m_pOutlineTargetHandle{};
@@ -267,6 +284,8 @@ private:		// PostProcess
 	ComPtr<ID3D11ShaderResourceView>	m_pSRVIrradianceMap{};
 	ComPtr<ID3D11ShaderResourceView>	m_pSRVPreFilteredMap{};
 	ComPtr<ID3D11ShaderResourceView>	m_pSRVBRDFLookUpMap{};
+
+	_float	m_fBlurIntensity{};
 
 public:			// Hi-Z Fuction
 	const CHizBuffer* GetPrevHizBuffer() const { return m_bHasPrevHizBuffer ? m_pPrevHizBuffer.get() : nullptr; }
