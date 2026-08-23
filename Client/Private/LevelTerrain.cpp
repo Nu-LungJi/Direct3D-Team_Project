@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "LevelTerrain.h"
 #include "GameInstance.h"
+#include "NpcPlacementManager.h"
 #include "LevelLoading.h"
 #include "FlyCamera.h"
 #include "ResCBuffer.h"
@@ -29,6 +30,7 @@
 #include "EnderDragon.h"
 #include "BossTMB.h"
 #include "Spider.h"
+#include "WorldNpc.h"
 #include "TmbGurdian.h"
 #include "LightPlacementObject.h"
 #include "StarBurst.h"
@@ -172,6 +174,93 @@ HRESULT CLevelTerrain::Initialize()
 	if (!hPlayer)
 		return E_FAIL;
 	m_hPlayer = *hPlayer;
+	if (auto* pNpcManager = CGameInstance::Get().GetNpcPlacementManager())
+	{
+		pNpcManager->ClearNpcOptions();
+		pNpcManager->SetPickingQueryMask(ETOUI(COLLISION_LAYER::WORLD_STATIC));
+		E::NPC_PLACEMENT_DESC NpcOption{};
+		NpcOption.sPrototypeGroupTag = MagicEnumToStringView(LEVEL::TERRAIN);
+		NpcOption.sPrototypeTag = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Spider);
+		NpcOption.sLayerTag = "02_Npc";
+		NpcOption.sModelGroupTag = MagicEnumToStringView(LEVEL::TERRAIN);
+		NpcOption.sModelResourceTag = "Model_Resource_Spider";
+		NpcOption.sBehaviorMajorTag = "BTJSON";
+		NpcOption.sBehaviorMinorTag = "SPIDER";
+		NpcOption.eRuntimeType = E::NPC_RUNTIME_TYPE::CPU_ACTOR_COMBAT;
+		pNpcManager->RegisterNpcOption("Spider", NpcOption);
+		pNpcManager->RegisterNpcSkeletonOption(
+			NpcOption.sPrototypeTag, "Spider Skeleton",
+			NpcOption.sModelGroupTag, NpcOption.sModelResourceTag);
+
+		E::NPC_PLACEMENT_DESC WorldNpcOption{};
+		WorldNpcOption.sPrototypeGroupTag = MagicEnumToStringView(LEVEL::TERRAIN);
+		WorldNpcOption.sPrototypeTag = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc);
+		WorldNpcOption.sLayerTag = "02_Npc";
+		WorldNpcOption.sModelGroupTag = MagicEnumToStringView(LEVEL::TERRAIN);
+		WorldNpcOption.sModelResourceTag = "Model_Resource_Spider";
+		WorldNpcOption.sBehaviorMajorTag = "BTJSON";
+		WorldNpcOption.sBehaviorMinorTag = "NPC1";
+		WorldNpcOption.eRuntimeType = E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
+		pNpcManager->RegisterNpcOption("World NPC", WorldNpcOption);
+		pNpcManager->RegisterNpcSkeletonOption(
+			WorldNpcOption.sPrototypeTag, "Spider Skeleton",
+			WorldNpcOption.sModelGroupTag, WorldNpcOption.sModelResourceTag);
+		pNpcManager->RegisterNpcSkeletonOption(
+			WorldNpcOption.sPrototypeTag, "Victor Rookwood",
+			WorldNpcOption.sModelGroupTag, "Model_Resource_NPC_VictorRookwood");
+		pNpcManager->RegisterBehaviorOption("Spider", "BTJSON", "SPIDER");
+		pNpcManager->RegisterBehaviorOption("Run Spider", "BTJSON", "RUNSPIDER");
+		pNpcManager->RegisterBehaviorOption("World NPC", "BTJSON", "NPC1");
+
+		pNpcManager->SetSpawnCallback([hTarget = *hPlayer](const E::NPC_PLACEMENT_DESC& Placement)
+		{
+			std::optional<E::CHandle> hNpc{};
+			if (Placement.sPrototypeTag == MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Spider))
+			{
+				CSpider::SPIDER_DESC Desc{};
+				Desc.sObjectTag = "NpcPlacement_" + std::to_string(Placement.iPlacementId);
+				Desc.TargetHandle = hTarget;
+				Desc.LevelTag = Placement.sModelGroupTag;
+				Desc.ReSourceTag = Placement.sModelResourceTag;
+				Desc.resBeHaviorMajor = Placement.sBehaviorMajorTag;
+				Desc.resBeHaviorMinor = Placement.sBehaviorMinorTag;
+				Desc.vPos = Placement.vPosition;
+				Desc.vRot = Placement.vRotation;
+				Desc.vScale = Placement.vScale;
+				Desc.vPatrollStart = Placement.vPatrolStartPosition;
+				Desc.vPatrollEnd = Placement.vPatrolEndPosition;
+				Desc.bSpawn = true;
+				hNpc = E::CGameInstance::Get().AddGameObjectToLayer(
+					Placement.sPrototypeGroupTag, Placement.sPrototypeTag, Placement.sLayerTag, &Desc);
+			}
+			else if (Placement.sPrototypeTag == MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc))
+			{
+				CWorldNpc::NPC_DESC Desc{};
+				Desc.sObjectTag = "NpcPlacement_" + std::to_string(Placement.iPlacementId);
+				Desc.TargetHandle = hTarget;
+				Desc.LevelTag = Placement.sModelGroupTag;
+				Desc.ReSourceTag = Placement.sModelResourceTag;
+				Desc.BeHaviorTag = Placement.sBehaviorMinorTag;
+				Desc.resBeHaviorMajor = Placement.sBehaviorMajorTag;
+				Desc.resBeHaviorMinor = Placement.sBehaviorMinorTag;
+				Desc.vPos = Placement.vPosition;
+				Desc.vStartPos = Placement.vPatrolStartPosition;
+				Desc.vEndPos = Placement.vPatrolEndPosition;
+				Desc.vRot = Placement.vRotation;
+				Desc.vScale = Placement.vScale;
+				Desc.bDonMove = Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
+				hNpc = E::CGameInstance::Get().AddGameObjectToLayer(
+					Placement.sPrototypeGroupTag, Placement.sPrototypeTag, Placement.sLayerTag, &Desc);
+			}
+			else
+				return E::NPC_PLACEMENT_RESULT{ Placement.iPlacementId, false, {}, "Unsupported Terrain NPC." };
+
+			if (!hNpc)
+				return E::NPC_PLACEMENT_RESULT{ Placement.iPlacementId, false, {}, "Spawn failed." };
+
+			return E::NPC_PLACEMENT_RESULT{ Placement.iPlacementId, true, *hNpc, "Spawn succeeded." };
+		});
+	}
 
 	{
 		CNvClothCape::DESC Desc{};
@@ -1720,6 +1809,8 @@ Engine::UPtr<CLevelTerrain> CLevelTerrain::Create()
 
 void CLevelTerrain::Free()
 {
+	if (auto* pNpcManager = CGameInstance::Get().GetNpcPlacementManager())
+		pNpcManager->ClearNpcOptions();
 	if (auto* pPoolManager =
 		CGameInstance::Get().GetGameObjectPoolManager())
 	{

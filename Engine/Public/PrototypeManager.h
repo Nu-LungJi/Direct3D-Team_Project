@@ -22,6 +22,7 @@ public:
 	UPtr<CPrototype> ClonePrototype(const StringID& svGroupTag, const StringID& svPrototypeTag, void* pArg);
 	void DelPrototype(const StringID& sGroupTag);
 	void DelPrototype(const StringID& sGroupTag, const StringID& sPrototypeTag);
+	std::vector<StringID> GetPrototypeGroupTags() const;
 	std::vector<StringID> GetPrototypeTags(const StringID& svGroupTag) const;
 private:
 	std::unordered_map<StringID, PROTOTYPES> m_pPrototypes{};

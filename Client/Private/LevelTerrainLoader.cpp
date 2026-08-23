@@ -36,6 +36,7 @@
 #include "EdgGasi.h"
 #include "Mon_State.h"
 #include "Spider.h"
+#include "WorldNpc.h"
 // UI
 #include "UIController.h"
 #include "EffectUI.h"
@@ -691,9 +692,30 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 				return E_FAIL;
 			}
 		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(
+			LEVEL::TERRAIN,
+			"Model_Resource_NPC_VictorRookwood",
+			CResModel::Create("./Resources/SampleClient/Models/Skeleton/NPC_VictorRookwood/SK_NPC_VictorRookwood.bin")))
+		{
+			E::CResModel::DESC Desc{};
+			Desc.PreTransformMatrix = XMMatrixRotationY(XMConvertToRadians(180.f));
+			if (FAILED(res->Load(Desc)))
+			{
+				MSG_BOX("TERRAIN Failed Model_Resource_NPC_VictorRookwood");
+				return E_FAIL;
+			}
+		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");
+			return E_FAIL;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(
+			LEVEL::TERRAIN,
+			PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc,
+			CWorldNpc::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_WorldNpc");
 			return E_FAIL;
 		}
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
