@@ -140,6 +140,7 @@ void CTestCharacter::PriorityUpdate(E::_float fTimeDelta)
 			ETOUI(COLLISION_LAYER::NPC_BODY) |
 			ETOUI(COLLISION_LAYER::DEBRIS);
 		tProjectileFilter.iQueryMask = PX_ALL_LAYERS;
+		tProjectileFilter.iNotifyFlags = PX_NOTIFY_ALL;
 
 		std::optional<CHandle> hProjectile{};
 		switch (RandInt(0, 2))

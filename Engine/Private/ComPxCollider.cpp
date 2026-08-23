@@ -157,6 +157,7 @@ _bool CComPxCollider::SetFilter(const PX_FILTER_DESC& tFilter)
 	PxFilterData tSimulationFilter{};
 	tSimulationFilter.word0 = tFilter.iLayer;
 	tSimulationFilter.word1 = tFilter.iSimulationMask;
+	tSimulationFilter.word2 = tFilter.iNotifyFlags;
 	m_pShape->setSimulationFilterData(tSimulationFilter);
 
 	PxFilterData tQueryFilter{};
@@ -242,6 +243,23 @@ void CComPxCollider::UpdateGUI()
 		bFilterChanged |= pPhysXManager->EditCollisionLayerMaskGUI(
 			"Query Mask", tFilter.iQueryMask);
 	}
+
+	auto EditNotifyFlag = [&](const char* pLabel, uint32_t iFlag)
+	{
+		bool bEnabled = (tFilter.iNotifyFlags & iFlag) != 0;
+		if (!ImGui::Checkbox(pLabel, &bEnabled))
+			return;
+
+		if (bEnabled)
+			tFilter.iNotifyFlags |= iFlag;
+		else
+			tFilter.iNotifyFlags &= ~iFlag;
+		bFilterChanged = true;
+	};
+	EditNotifyFlag("Notify Touch Found", PX_NOTIFY_TOUCH_FOUND);
+	EditNotifyFlag("Notify Touch Lost", PX_NOTIFY_TOUCH_LOST);
+	EditNotifyFlag("Notify Contact Points", PX_NOTIFY_CONTACT_POINTS);
+
 	if (bFilterChanged)
 		SetFilter(tFilter);
 
@@ -293,6 +311,7 @@ _bool CComPxCollider::RegisterShape(PX_SHAPE_TYPE eType)
 	PxFilterData simulationFilter{};
 	simulationFilter.word0 = m_tFilter.iLayer;
 	simulationFilter.word1 = m_tFilter.iSimulationMask;
+	simulationFilter.word2 = m_tFilter.iNotifyFlags;
 	m_pShape->setSimulationFilterData(simulationFilter);
 
 	PxFilterData queryFilter{};

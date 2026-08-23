@@ -2,8 +2,6 @@
 #include "Engine_Defines.h"
 #include "Handle.h"
 #include "PhysXCollisionProxyData.h"
-#include <mutex>
-#include <shared_mutex>
 namespace physx {
 	class PxActor;
 	class PxFoundation;
@@ -71,7 +69,7 @@ public:
 	void PrepareCCTInteractions(_float fFixedTimeDelta);
 	void SetCCTInteractionsEnabled(_bool bEnabled) { m_bCCTInteractionsEnabled = bEnabled; }
 	_bool IsCCTInteractionsEnabled() const { return m_bCCTInteractionsEnabled; }
-	void StepSimulation(float fixedDeltaTime);
+	_bool StepSimulation(_float fFixedDeltaTime);
 
 public:
 	physx::PxScene* GetScene() const { return m_pScene; }
@@ -94,6 +92,8 @@ public:
 
 private:
 	void SyncPhysicsToComponents();
+	void SetDebugVisualizationEnabled(_bool bEnabled);
+	void AssertOwnerThread() const;
 	
 
 private:
@@ -112,15 +112,18 @@ private:
 	UPtr<CRagdollEditorGUI> m_pRagdollEditor{};
 
 private:
-	mutable std::shared_mutex m_UserDataRegistryMutex{};
 	std::unordered_map<const physx::PxActor*, PX_ACTOR_USER_DATA> m_ActorUserDataRegistry{};
 	std::unordered_map<const physx::PxShape*, PX_SHAPE_USER_DATA> m_ShapeUserDataRegistry{};
 	std::vector<std::pair<uint32_t, std::string>> m_CollisionLayerNames{};
+#ifdef _DEBUG
+	DWORD m_iOwnerThreadId{};
+#endif
 
 private:
 	_bool m_bDbgRender{ false };
 	_bool m_bGpuSimulationEnabled{ false };
 	_bool m_bCCTInteractionsEnabled{ true };
+	_bool m_bSimulationFaulted{ false };
 public:
 	static UPtr<CPhysXManager> Create();
 

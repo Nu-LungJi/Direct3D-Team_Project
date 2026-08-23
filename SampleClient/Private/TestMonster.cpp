@@ -133,6 +133,7 @@ void CTestMonster::TryFireAtTarget(_float fTimeDelta)
 		ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
 		ETOUI(COLLISION_LAYER::PLAYER_BODY);
 	Desc.tFilter.iQueryMask = PX_ALL_LAYERS;
+	Desc.tFilter.iNotifyFlags = PX_NOTIFY_ALL;
 
 	if (CGameInstance::Get().AddGameObjectToLayer(
 		"SAMPLE_CLIENT_PX", "Prototype_GameObject_TestPhysXBall", "02_PROJECTILES", &Desc))
