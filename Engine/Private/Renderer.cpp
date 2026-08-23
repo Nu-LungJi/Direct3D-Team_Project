@@ -1720,7 +1720,8 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 HRESULT CRenderer::Render_PostProcess() {
 	if (m_bApplyFilter == false) return S_OK;
 
-	if (FAILED(Render_PostProcess_MotionBlur())){ Unbind_Resources(); return S_OK; }
+	// 잠시 봉인
+	//if (FAILED(Render_PostProcess_MotionBlur())){ Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_PostProcess_Focusing()))  { Unbind_Resources(); return S_OK; }
 

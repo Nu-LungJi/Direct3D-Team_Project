@@ -116,8 +116,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	if (FAILED(SpawnMonster(*hPlayer)))
 		return E_FAIL;
-	if (FAILED(SpawnNpcPlacements(*hPlayer)))
-		return E_FAIL;
+	//if (FAILED(SpawnNpcPlacements(*hPlayer)))
+	//	return E_FAIL;
 	if (FAILED(SpanwAnimal()))
 		return E_FAIL;
 	//gameInstance.Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
