@@ -107,7 +107,7 @@ HRESULT CLevelTerrain::Initialize()
 
 		CPropBarrel::DESC Desc{};
 		Desc.sResourceGroup = "PERMANENT";
-		Desc.vInitialPosition = { 5.f, 5.f, 5.f };
+		Desc.vInitialPosition = MakePropBarrelSpawnPosition();
 		const auto hPropBarrel = CGameInstance::Get().AddGameObjectToLayer(
 			"PERMANENT",
 			PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
@@ -1277,6 +1277,17 @@ HRESULT CLevelTerrain::Render()
 	return S_OK;
 }
 
+_float3 CLevelTerrain::MakePropBarrelSpawnPosition() const
+{
+	constexpr _float fRandomOffsetRange = 5.f;
+	return {
+		m_vPropBarrelSpawnPosition.x +
+			Randf(-fRandomOffsetRange, fRandomOffsetRange),
+		m_vPropBarrelSpawnPosition.y,
+		m_vPropBarrelSpawnPosition.z +
+			Randf(-fRandomOffsetRange, fRandomOffsetRange) };
+}
+
 void CLevelTerrain::UpdateGUI()
 {
 	ImGui::Begin("Terrain");
@@ -1302,7 +1313,7 @@ void CLevelTerrain::UpdateGUI()
 			CPropBarrel::DESC desc{};
 			desc.sObjectTag = "Terrain_Test_PropBarrel";
 			desc.sResourceGroup = "PERMANENT";
-			desc.vInitialPosition = m_vPropBarrelSpawnPosition;
+			desc.vInitialPosition = MakePropBarrelSpawnPosition();
 			const auto hPropBarrel = CGameInstance::Get().AddGameObjectToLayer(
 				"PERMANENT",
 				PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
@@ -1313,7 +1324,8 @@ void CLevelTerrain::UpdateGUI()
 			else
 				DEBUG_LOG("[PropBarrel] Spawn button failed.\n");
 		}
-		ImGui::TextDisabled("Each click spawns a new CPropBarrel.");
+		ImGui::TextDisabled(
+			"Each click adds a random XZ offset in the range [-5, 5].");
 
 		ImGui::Separator();
 	}
