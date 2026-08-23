@@ -327,6 +327,9 @@ HRESULT CPlayer::Initialize(void* pArg)
 		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX);
 		Desc.tFilter.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
 		Desc.tFilter.iSimulationMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
+		Desc.tFilter.iNotifyFlags =
+			PX_NOTIFY_TOUCH_FOUND |
+			PX_NOTIFY_CONTACT_POINTS;
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxBoxCollider, "ComPxBoxCollider", &Desc, &m_pComPxBoxCollider)))
 		{
 			return E_FAIL;
@@ -1075,7 +1078,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	// 타겟 봐야 하는 곳 -----------------------------------------------------------------------------------------------------------
 	if (auto* pOutlineTarget =
 		CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
-		pOutlineTarget && !pOutlineTarget->GetPendingDestroy())
+		pOutlineTarget && !pOutlineTarget->GetPendingDestroy() &&
+		pOutlineTarget->Get_CurrentHp() > 0)
 	{
 		CGameInstance::Get().Apply_OutlineEffect(
 			std::optional<CHandle>{ m_hAutoTarget });
@@ -1977,6 +1981,22 @@ void CPlayer::Update(E::_float fTimeDelta)
 		m_pComMoveIntent &&
 		!IsRagdollTransitioning())
 	{
+		// 프로테고 반동 중 반격 애니메이션의 루트 모션이 공격자 쪽으로
+		// 플레이어를 끌고 가지 않도록, 반동 반대 방향 성분만 제거한다.
+		if (m_fProtegoRecoilRemainTime > 0.f)
+		{
+			_vector vRootMotion = XMLoadFloat3(&vRootMotionWorldDisplacement);
+			const _vector vRecoilDirection =
+				XMLoadFloat3(&m_vProtegoRecoilDirection);
+			const _float fTowardAttacker = XMVectorGetX(
+				XMVector3Dot(vRootMotion, vRecoilDirection));
+			if (fTowardAttacker < 0.f)
+			{
+				vRootMotion -= vRecoilDirection * fTowardAttacker;
+				XMStoreFloat3(
+					&vRootMotionWorldDisplacement, vRootMotion);
+			}
+		}
 		m_pComMoveIntent->AddExternalDisplacement(
 			vRootMotionWorldDisplacement);
 	}
@@ -2596,10 +2616,11 @@ void CPlayer::TriggerProtegoHit(
 {
 	const _bool bHeavyReaction =
 		iDamage >= PROTEGO_HEAVY_DAMAGE_THRESHOLD;
+
 	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
-		.fIntensity = bHeavyReaction ? 0.55f : 0.3f,
-		.fDuration = bHeavyReaction ? 0.3f : 0.18f,
-		.fFrequency = bHeavyReaction ? 34.f : 28.f });
+		.fIntensity = bHeavyReaction ? 0.95f : 0.7f,
+		.fDuration = bHeavyReaction ? 0.18f : 0.12f,
+		.fFrequency = bHeavyReaction ? 46.f : 40.f });
 
 	_float3 vShieldCenter = GetTransform().GetPosition();
 	vShieldCenter.y += 1.f;
@@ -2632,9 +2653,9 @@ void CPlayer::TriggerProtegoHit(
 			},
 			SOUND_PLAY_DESC{
 				.sBusID = SOUND_BUS::SFX,
-				.fVolume = 1.5f,
-				.fPitch = 1.f,
-				.iPriority = 86,
+				.fVolume = bHeavyReaction ? 2.8f : 2.3f,
+				.fPitch = bHeavyReaction ? 0.88f : 1.05f,
+				.iPriority = 100,
 				.bLoop = false
 			});
 	}
@@ -2756,10 +2777,10 @@ _bool CPlayer::ConsumeProtegoReaction(
 	return true;
 }
 
-void CPlayer::StartProtegoRecoil(const _float3& vHitPosition)
+void CPlayer::StartProtegoRecoil(const _float3& vAttackPosition)
 {
 	_vector vPushDirection = GetTransform().GetState(STATE::POSITION) -
-		XMLoadFloat3(&vHitPosition);
+		XMLoadFloat3(&vAttackPosition);
 	vPushDirection = XMVectorSetY(vPushDirection, 0.f);
 	if (XMVectorGetX(XMVector3LengthSq(vPushDirection)) <= FLT_EPSILON)
 		vPushDirection = -XMVectorSetY(GetTransform().GetState(STATE::LOOK), 0.f);

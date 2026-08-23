@@ -263,7 +263,8 @@ void CPlayer_Stupefy_Bullet::Finish(const _float3& position, const _float3& norm
 		.fIntensity = 0.7f,
 		.fDuration = 1.f,
 		.fFrequency = 40.f });
-	if (auto* monster = Cast<CMonster>(hitObject)) monster->Check_Table(m_eSkillType);
+	if (auto* monster = Cast<CMonster>(hitObject))
+		monster->Check_Table(m_eSkillType);
 	SetPendingDestroy();
 }
 

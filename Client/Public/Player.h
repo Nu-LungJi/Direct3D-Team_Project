@@ -206,7 +206,7 @@ public:
 	void ActivateProtego(_float fDuration);
 	_bool ConsumeParryCounter(_float3& outAttackPosition);
 	_bool ConsumeProtegoReaction(_float3& outAttackPosition, _bool& outHeavyReaction);
-	void StartProtegoRecoil(const _float3& vHitPosition);
+	void StartProtegoRecoil(const _float3& vAttackPosition);
 	uint32_t GetProtegoParrySequence() const { return m_iProtegoParrySequence; }
 	const _float3& GetLastProtegoHitPosition() const { return m_vLastProtegoHitPosition; }
 private:
