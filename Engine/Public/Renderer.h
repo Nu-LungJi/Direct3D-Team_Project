@@ -60,7 +60,6 @@ private:		// Render Setting
 	HRESULT		Render_Alpha();
 	HRESULT		Render_Effect();
 	HRESULT		Render_VolumetricEffect();
-	HRESULT		Render_OffScreen();
 	HRESULT		Render_PostProcess();
 	HRESULT		Render_UI3D();
 	HRESULT		Render_UserInterface();

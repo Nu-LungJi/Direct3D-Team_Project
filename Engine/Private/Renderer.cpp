@@ -37,8 +37,6 @@ HRESULT CRenderer::Initialize()
 
 	if (FAILED(InitializeFSR2_2()))				return E_FAIL;
 
-    if (FAILED(InitializeOffscreen()))          return E_FAIL;
-
 	if (FAILED(InitializeFullscreen()))         return E_FAIL;
 
 	if (FAILED(InitializeBaseTarget()))         return E_FAIL;
@@ -1638,52 +1636,7 @@ _float CRenderer::Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base){
 	return result;
 }
 
-HRESULT CRenderer::Render_OffScreen() {
-	ZoneScopedN("Render_OffScreen");
-	{
-		ID3D11RenderTargetView* pRTVs[1] = { m_pOffScreenTex2D->GetRTV().Get() };
-		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
-		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-		_float4 ClearColor = { 0.f, 0.f, 1.f, 1.f };
-		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const _float*>(&ClearColor));
-		m_pContext->ClearDepthStencilView(m_pBackBufferDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-
-		m_pContext->VSSetShader(m_pOffScreenVertexShader->GetVertexShader().Get(), nullptr, 0);
-		m_pContext->PSSetShader(m_pOffScreenPixelShader->GetPixelShader().Get(), nullptr, 0);
-
-		m_pContext->IASetInputLayout(m_pOffScreenVertexShader->GetInputLayout().Get());
-
-		ID3D11Buffer* vertexBuffers[] = {
-			m_pFullscreenVIBuffer->GetVertexBuffer().Get()
-		};
-		uint32_t strides[] = {
-			m_pFullscreenVIBuffer->GetVertexStride()
-		};
-		uint32_t offsets[] = {
-			0
-		};
-
-		m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-		m_pContext->IASetIndexBuffer(m_pFullscreenVIBuffer->GetIndexBuffer().Get(), m_pFullscreenVIBuffer->GetIndexFormat(), 0);
-		m_pContext->IASetPrimitiveTopology(m_pFullscreenVIBuffer->GetPrimitiveType());
-		
-		// Bind Shader Resource
-		{
-			ComPtr<ID3D11ShaderResourceView> pSRVs = { m_pResDynTexTargetPreviousRenderView->GetSRV() };
-			m_pContext->PSSetShaderResources(0, 1, pSRVs.GetAddressOf());
-		}
-
-		// Draw On OffScreen
-		m_pContext->DrawIndexed(m_pFullscreenVIBuffer->GetNumIndices(), 0, 0);
-
-		Unbind_Resources();
-		
-		m_pResDynTexTargetPreviousRenderView = m_pOffScreenTex2D;
-	}
-	
-	return S_OK;
-}
 
 HRESULT CRenderer::Render_PostProcess() {
 	if (m_bApplyFilter == false) return S_OK;
