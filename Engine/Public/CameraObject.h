@@ -39,6 +39,8 @@ public:
 	_matrix GetView() const { return XMLoadFloat4x4(&m_matView); }
 	_matrix GetProj() const { return XMLoadFloat4x4(&m_matProj); }
 	_float GetFovY() const { return m_cameraDesc.fFovY; }
+	// 원근 카메라의 수직 FOV를 degree 단위로 변경하고 투영/절두체를 갱신한다.
+	HRESULT SetFovY(_float fFovY);
 	/*----------- 광윤 추가 -----------*/
 	_float GetAspect()	const { return m_cameraDesc.fAspect; }
 	_float GetNear()	const { return m_cameraDesc.fNear;	 }

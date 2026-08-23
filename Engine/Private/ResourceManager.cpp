@@ -305,24 +305,36 @@ SPtr<CResModelAnim> CResourceManager::GetOrLoadModelAnimation(
 	if (sPath.empty())
 		return nullptr;
 
-	auto pAnimation = GetOrCreateResourceByPath<CResModelAnim>(
-		sPath,
-		[&sPath]() -> SPtr<CResModelAnim>
-		{
-			auto pCreated = CResModelAnim::Create(sPath);
-			if (!pCreated)
-				return nullptr;
+	const _string normalizedPath = std::filesystem::path{ sPath }
+		.lexically_normal().generic_string();
+	const _string animationName = std::filesystem::path{ sPath }
+		.filename().string();
 
-			CResModelAnim::DESC Desc{};
-			Desc.path = sPath;
-			if (FAILED(pCreated->Load(Desc)))
-				return nullptr;
+	std::unique_lock<std::shared_mutex> lock{ m_Mutex };
+	if (m_bIsShutdown)
+		return nullptr;
 
-			pCreated->SetAnimName(
-				std::filesystem::path{ sPath }.filename().string());
-			return pCreated;
-		});
+	if (auto iter = m_ModelAnimationsByName.find(animationName);
+		iter != m_ModelAnimationsByName.end())
+	{
+		if (auto pAnimation = iter->second.lock())
+			return pAnimation;
 
+		m_ModelAnimationsByName.erase(iter);
+	}
+
+	auto pAnimation = CResModelAnim::Create(normalizedPath);
+	if (!pAnimation)
+		return nullptr;
+
+	CResModelAnim::DESC Desc{};
+	Desc.path = normalizedPath;
+	if (FAILED(pAnimation->Load(Desc)))
+		return nullptr;
+
+	pAnimation->SetAnimName(animationName);
+	m_ModelAnimationsByName.emplace(animationName, pAnimation);
+	m_PathLookup[normalizedPath].emplace_back(pAnimation);
 	return pAnimation;
 }
 
@@ -490,6 +502,16 @@ std::unordered_map<StringID, std::vector<SPtr<CResource>>> CResourceManager::Get
 	if (auto p = FindGroup(sGroupTag))
 		return *p;
 	return {};
+}
+
+std::vector<StringID> CResourceManager::GetResourceGroupTags() const
+{
+	std::vector<StringID> tags{};
+	std::shared_lock lock{ m_Mutex };
+	tags.reserve(m_Resources.size());
+	for (const auto& [groupTag, resources] : m_Resources)
+		tags.emplace_back(groupTag);
+	return tags;
 }
 
 std::unordered_map<StringID, CResourceManager::RESOURCES> CResourceManager::GetResources() const
@@ -835,6 +857,7 @@ void CResourceManager::Release()
 {
 	decltype(m_Resources) resourcesToRelease;
 	decltype(m_PathLookup) pathsToRelease;
+	decltype(m_ModelAnimationsByName) animationsToRelease;
 	std::unique_lock<std::shared_mutex> lock(m_Mutex);
 
 	// 루아매니저 와처 타이밍이슈
@@ -842,4 +865,5 @@ void CResourceManager::Release()
 
 	resourcesToRelease.swap(m_Resources);
 	pathsToRelease.swap(m_PathLookup);
+	animationsToRelease.swap(m_ModelAnimationsByName);
 }

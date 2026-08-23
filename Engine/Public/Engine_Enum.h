@@ -46,7 +46,7 @@ namespace Engine
 	enum class UI_EFFECT_TYPE { NONE, HOVER, CLICK, END};
 	enum class EUITweenTarget { SCALE, EFFECT_ALPHA, POSITION_X, POSITION_Y }; // 제어할 UI 속성 타입
 
-	enum class B_SLOTNUMBER { PER_OBJECT, PER_PASS, BONES, MATERIAL, LIGHT, UI = 7, GPUPART = 9 };
+	enum class B_SLOTNUMBER { PER_OBJECT, PER_PASS, BONES, MATERIAL, LIGHT, ENVLIGHT = 6, UI = 7, GPUPART = 9};
 
 	enum class EMapMeshRenderFeature : uint32_t { Static, Foliage };
 

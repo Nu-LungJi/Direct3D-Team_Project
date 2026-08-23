@@ -37,6 +37,11 @@ private:
 
 	HRESULT SpawnSkyBox();
 
+	/*----------- 광윤 추가 -----------*/
+	HRESULT Initialize_VolumetricFog();
+	HRESULT Initialize_EnviromentLight();
+	/*---------------------------------*/
+
 private:
 	HRESULT PlayBGM();
 	HRESULT StopBGM(_float fDuration = 1.f);

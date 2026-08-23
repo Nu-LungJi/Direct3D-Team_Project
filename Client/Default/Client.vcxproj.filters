@@ -367,15 +367,6 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State">
       <UniqueIdentifier>{e8c271b5-81f6-4fe9-9552-77c3802e87d2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Player\Player_ConfringoController">
-      <UniqueIdentifier>{6edd5ca2-a286-4ac1-b657-df90b1703e18}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\Player\Player_BombardaController">
-      <UniqueIdentifier>{a21cbdd5-7eb1-4c65-8cba-a14935998a12}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\Player\Player_AvadaKedavraController">
-      <UniqueIdentifier>{cf6d4ace-6a71-49ce-b7a3-0aa8e78a1cee}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\Monster\EnderDragon\Skill\Gasi">
       <UniqueIdentifier>{a9ff708e-a308-4d48-99c3-2ed09296a5f9}</UniqueIdentifier>
     </Filter>
@@ -426,21 +417,6 @@
     </Filter>
     <Filter Include="GameObject\NPC\00.Parents">
       <UniqueIdentifier>{a9cd9686-5757-4795-ac3a-d99fef7f97e7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\ShaderFiles">
-      <UniqueIdentifier>{6bd28087-0add-401b-9153-94d4f64a07f1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\ShaderFiles\Decal">
-      <UniqueIdentifier>{c7198a28-a5af-4ed1-914d-b1609cf80b2b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\ShaderFiles\Particle">
-      <UniqueIdentifier>{c8302cb1-ec93-46b9-9ae9-21747c2503fe}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\ShaderFiles\SkyBox">
-      <UniqueIdentifier>{aa5df208-f22d-4fb8-9138-caea9933ba4c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\ShaderFiles\GameObject">
-      <UniqueIdentifier>{9a45fcfc-7add-40b1-8b4a-34c6753d1cfa}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameObject\AI\AnimRoot\Anim\NPC">
       <UniqueIdentifier>{9b97b4ce-61a1-42cd-8013-51f0f9c91840}</UniqueIdentifier>
@@ -768,6 +744,9 @@
     <ClInclude Include="..\Public\GeneralButton.h">
       <Filter>GameObject\UI\Button</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\WandShop.h">
+      <Filter>GameObject\UI</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\EffectUI.h">
       <Filter>GameObject\UI\Flipbook</Filter>
     </ClInclude>
@@ -956,15 +935,6 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_StupefySkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\Player_ConfringoController.h">
-      <Filter>GameObject\Player\Player_ConfringoController</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\Player_BombardaController.h">
-      <Filter>GameObject\Player\Player_BombardaController</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Public\Player_AvadaKedavraController.h">
-      <Filter>GameObject\Player\Player_AvadaKedavraController</Filter>
     </ClInclude>
     <ClInclude Include="..\public\SkillTarget.h">
       <Filter>GameObject\Monster\00.Parents</Filter>
@@ -1538,15 +1508,6 @@
     <ClCompile Include="..\Private\Player_StupefySkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_StupefySkill_State</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Player_ConfringoController.cpp">
-      <Filter>GameObject\Player\Player_ConfringoController</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\Player_BombardaController.cpp">
-      <Filter>GameObject\Player\Player_BombardaController</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Private\Player_AvadaKedavraController.cpp">
-      <Filter>GameObject\Player\Player_AvadaKedavraController</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\SkillTarget.cpp">
       <Filter>GameObject\Monster\00.Parents</Filter>
     </ClCompile>
@@ -1749,6 +1710,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\GeneralButton.cpp">
       <Filter>GameObject\UI\Button</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\WandShop.cpp">
+      <Filter>GameObject\UI</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\EffectUI.cpp">
       <Filter>GameObject\UI\Flipbook</Filter>

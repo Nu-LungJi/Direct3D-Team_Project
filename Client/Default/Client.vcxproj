@@ -282,6 +282,7 @@
     <ClInclude Include="..\Public\BTTurnSlow.h" />
     <ClInclude Include="..\Public\Button.h" />
     <ClInclude Include="..\Public\GeneralButton.h" />
+    <ClInclude Include="..\Public\WandShop.h" />
     <ClInclude Include="..\Public\ClientEvents.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
     <ClInclude Include="..\Public\Client_Function.h" />
@@ -335,9 +336,6 @@
     <ClInclude Include="..\public\LuaTestObject.h" />
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
-    <ClInclude Include="..\Public\Player_AvadaKedavraController.h" />
-    <ClInclude Include="..\Public\Player_BombardaController.h" />
-    <ClInclude Include="..\Public\Player_ConfringoController.h" />
     <ClInclude Include="..\Public\PlayerRagdollController.h" />
     <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
@@ -482,6 +480,7 @@
     <ClCompile Include="..\Private\CinematicEditor.cpp" />
     <ClCompile Include="..\Private\Button.cpp" />
     <ClCompile Include="..\Private\GeneralButton.cpp" />
+    <ClCompile Include="..\Private\WandShop.cpp" />
     <ClCompile Include="..\Private\Cursor.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />
     <ClCompile Include="..\private\DebugPlayerThirdPersonCamera.cpp" />
@@ -529,9 +528,6 @@
     <ClCompile Include="..\private\TestPathPlaybackObject.cpp" />
     <ClCompile Include="..\private\LuaTestObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
-    <ClCompile Include="..\Private\Player_AvadaKedavraController.cpp" />
-    <ClCompile Include="..\Private\Player_BombardaController.cpp" />
-    <ClCompile Include="..\Private\Player_ConfringoController.cpp" />
     <ClCompile Include="..\Private\PlayerRagdollController.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\Player_AccioSkill_State.cpp" />

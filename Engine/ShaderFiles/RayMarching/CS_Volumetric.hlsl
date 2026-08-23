@@ -6,6 +6,9 @@ Texture3D<float4>		VolumeTexture			: register(t2);
 Texture3D<float4>		VoxelLightingColor		: register(t3);
 Texture2DArray<float>	ShadowMapArray			: register(t4);
 
+Texture3D<float4>		CurrentVolumeTexture	: register(t5);
+Texture3D<float4>		PreviousVolumeTexture	: register(t6);
+
 Texture2DArray<float>	DynamicShadowMaps		: register(t10);
 TextureCubeArray<float> DynamicShadowCubeMaps	: register(t12);
 
@@ -13,6 +16,9 @@ RWTexture2D<float4>		OUTPUT					: register(u0);
 RWTexture3D<float4>		OUTPUT3D				: register(u1);
 
 static const float		GodRayStrength				= { 3.5f };
+
+static const float		FogAnisotropyGA				= { +0.7f }; // 전방 산란도
+static const float		FogAnisotropyGB				= { -0.3f }; // 후방 산란도
 
 static const float		SpotVolumetricShadowBias	= { 0.0001f };
 static const float		PointVolumetricShadowBias	= { 0.002f };
@@ -23,6 +29,8 @@ static const float3		DetailWindDirection			= float3(-0.4f, 0.25f, 1.f);
 static const float		BaseFlowSpeed				= { 0.10f };
 static const float		DetailFlowSpeed				= { 0.22f };
 
+static const float		TemporalBlendWeight			= { 0.9f };
+
 static const float		LocalScatteringStrength		= { 2.f };
 static const float		FroxelDepthExponent			= { 1.5f };
 static const float2		PCFOffsets[4] =
@@ -31,6 +39,13 @@ static const float2		PCFOffsets[4] =
     float2(+0.5f, -0.5f),
     float2(-0.5f, +0.5f),
     float2(+0.5f, +0.5f)
+};
+
+int3 TAAOffsets[6] =
+{
+	int3(1, 0, 0), int3(-1, 0, 0),
+	int3(0, 1, 0), int3(0, -1, 0),
+	int3(0, 0, 1), int3(0, 0, -1)
 };
 
 cbuffer CB_FroxelConfig : register(b10)
@@ -45,32 +60,35 @@ cbuffer CB_FroxelConfig : register(b10)
 	float	FarZ;
 	float	AnalyticBlendStart;
 	float	AnalyticBlendEnd;
+	
+	float3	JitterOffset;
+	float	CB_FROXELPADDING;
+	
+	matrix	PreviousViewProj;
 };
 
 cbuffer CB_VLFOG : register(b11)
 {
 	float3	FogColor;
 	float	FogIntensity;
-	   
-	float3	FogCenterPos;
-	float	FogHeight;
-	
-	float	FogStartPos;
-	float	FogEndPos;
 	float	FogDensity;
 	float	FogNoiseScale;
-	
-	float3	FogLightDirection;
-	float	FogAnisotropyGA;		// 전방 산란도
+	float	FogScattering; // 전방/후방 가중치
+	float	FogBaseBrightness;
 	
 	float3	FogLightColor;
-	float	FogAnisotropyGB;		// 후방 산란도
-	
-	float	FogScatteringWeight;	// 전방/후방 가중치
+	float	CB_VLFOGPADDING01;
+	float3	FogLightDirection;
 	
 	float	FogBaseHeight;
+	float	FogMaxHeight;
 	float	FogHeightFallOff;
+	
+	float	FogStartDistance;
+	float	FogEndDistance;
+	
 	float	FogTime;
+	float3	CB_VLFOGPADDING02;
 };
 
 cbuffer CB_CSM : register(b12)
@@ -103,48 +121,39 @@ float3 FroxelZToWorldPos(float3 _TexCoord)
 	return mul(float4(ViewSpacePos, 1.f), g_matInvView).xyz;
 }
 
-float Henyey_Greenstein_Phase(float _CosTheta, float _Anistropy)
+float Compute_FogFlow(float3 _WorldPos, float3 _FlowDirection)
 {
-	float Anistropy2 = _Anistropy * _Anistropy;
-	float Denum = 1.f + Anistropy2 - 2.f * _Anistropy * _CosTheta;
-	
-	return (1.f - Anistropy2) / (4.f * PI * pow(max(Denum, 0.0001f), 1.5f)); 
-}
-float Henyey_Greenstein_DualPhase(float3 _RayDirection, float3 _FogLightDirection, float _FrontAnistropy, float _BackAnistropy, float k)
-{
-	float CosTheta = dot(_RayDirection, -_FogLightDirection);
-	
-	float PhaseValueA = Henyey_Greenstein_Phase(CosTheta, _FrontAnistropy);
-	float PhaseValueB = Henyey_Greenstein_Phase(CosTheta, _BackAnistropy);
-    
-	return lerp(PhaseValueB, PhaseValueA, k);
-}
+	float3	BaseDirection = normalize(_FlowDirection);
 
-float Compute_FogFlow(float3 _WorldPos)
-{
-	float3	NoiseCoord	= (_WorldPos - FogCenterPos) * FogNoiseScale;
-	float3	BaseCoord	= (NoiseCoord + BaseWindDirection) * (FogTime * BaseFlowSpeed);
-	float3	DetailCoord = (NoiseCoord * 2.7f + DetailWindDirection) * (FogTime * DetailFlowSpeed);
+	float3	NoiseCoord = _WorldPos * FogNoiseScale;
 	
-	float	BaseNoise	= VolumeTexture.SampleLevel(LinearWrap, BaseCoord, 0.f).r;
-	float	DetailNoise	= VolumeTexture.SampleLevel(LinearWrap, DetailCoord, 0.f).g;
+	float3	BaseOffset = BaseDirection * (FogTime * BaseFlowSpeed);
+	float3	BaseCoord = NoiseCoord + BaseOffset;
+	float	BaseNoise = VolumeTexture.SampleLevel(LinearWrap, BaseCoord, 0.f).r;
+	
+	float3	Wobble = float3(BaseNoise, -BaseNoise, BaseNoise * 0.5f) * 0.1f;
+	float3	DetailedDirection = normalize(BaseDirection + Wobble);
+	
+	float3	DetailOffset = DetailedDirection * (FogTime * DetailFlowSpeed);
+	float3	DetailCoord = (NoiseCoord * 2.7f) + DetailOffset;
+	float	DetailNoise = VolumeTexture.SampleLevel(LinearWrap, DetailCoord, 0.f).g;
 	
 	return smoothstep(0.25f, 0.75f, BaseNoise * 0.7f + DetailNoise * 0.3f);
 }
 
 float GetVolumeFogDensity(float3 _WorldPos)    
 {
-	if (FogHeight <= 0.0001f)	return 0.f;
+	if (FogMaxHeight <= 0.0001f)	return 0.f;
 	
 	float	FogMaxHeight = max(0.f, _WorldPos.y - FogBaseHeight);
 
 	float	HeightFactor = exp(-FogMaxHeight * FogHeightFallOff);
 	
-	float	HeightLimit = 1.f - smoothstep(FogHeight * 0.8f, FogHeight, FogMaxHeight);
+	float	HeightLimit = 1.f - smoothstep(FogMaxHeight * 0.8f, FogMaxHeight, FogMaxHeight);
 	
-	float	FinalFlowNoise = Compute_FogFlow(_WorldPos);
+	float	FinalFlowNoise = Compute_FogFlow(_WorldPos, float3(1.f, 1.f, 1.f));
 
-	return HeightFactor * FogDensity * HeightLimit;// * FinalFlowNoise;
+	return HeightFactor * FogDensity * HeightLimit * FinalFlowNoise;
 }
 
 float Sample_CascadeShadow(float3 _WorldPos, uint _CascadeIndex)
@@ -214,7 +223,7 @@ float Compute_PointVolumetricShadow(float3 _WorldPos, uint _LightIndex)
 	if (ShadowSlotNumb < 0 || ShadowSlotNumb >= MAX_SHADOW_LIGHT_COUNT) return 1.f;
 
 	float3	LightToVoxel = _WorldPos - AffectedLight[_LightIndex].Position;
-	float DistanceSQ = max(dot(LightToVoxel, LightToVoxel), 1.f);
+	float DistanceSQ = dot(LightToVoxel, LightToVoxel);
 
 	if (DistanceSQ <= 0.0001f) return 1.f;
 	
@@ -322,13 +331,13 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 {
 	if (ID.x >= (uint) FroxelGridSize.x || ID.y >= (uint) FroxelGridSize.y || ID.z >= (uint) FroxelGridSize.z)	return;
 	
-	float3	TexCoord = (float3(ID.xyz) + 0.5f) / FroxelGridSize;
+	float3	TexCoord = (float3(ID.xyz) + 0.5f + JitterOffset) / FroxelGridSize;
 	
-	float3	VoxelWorldPos = FroxelZToWorldPos(TexCoord);
-	float	FogDensity	  = GetVolumeFogDensity(VoxelWorldPos);
+	float3	VoxelWorldPos	= FroxelZToWorldPos(TexCoord);
+	float	FogDensity		= GetVolumeFogDensity(VoxelWorldPos);
 	
-	float	FogDistance		  = abs(mul(float4(VoxelWorldPos, 1.f), g_matView).z);
-	float	FogDistanceFactor = smoothstep(FogStartPos, max(FogEndPos, FogStartPos + 0.0001f), FogDistance);
+	float	FogDistance			= abs(mul(float4(VoxelWorldPos, 1.f), g_matView).z);
+	float	FogDistanceFactor	= smoothstep(FogStartDistance, max(FogEndDistance, FogStartDistance + 0.0001f), FogDistance);
 	
 	FogDensity *= FogDistanceFactor;
 	
@@ -340,19 +349,19 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 	
 	float3	RayDirection  = normalize(VoxelWorldPos - g_vCamPos);
 	
-	float	PhaseValue = Henyey_Greenstein_DualPhase(RayDirection, FogLightDirection, FogAnisotropyGA, FogAnisotropyGB, FogScatteringWeight);
+	float	PhaseValue = Henyey_Greenstein_DualPhase(RayDirection, FogLightDirection, FogAnisotropyGA, FogAnisotropyGB, FogScattering);
 	
-	float ShadowBrightness = Compute_CascadeShadow(VoxelWorldPos);
-	
+	float	ShadowBrightness = Compute_CascadeShadow(VoxelWorldPos);
+
 	float3	DirectScattering	= FogColor * FogLightColor * FogIntensity * FogDensity * ShadowBrightness * PhaseValue * GodRayStrength;
-	float3	AmbientScattering	= FogColor * FogDensity * 0.002f;
+	float3	AmbientScattering	= FogColor * FogDensity * FogBaseBrightness;
 	float3	LocalScattering		= Compute_LocalScattering(VoxelWorldPos, RayDirection, FogDensity);
-	
+
 	float3	Scattering = DirectScattering + AmbientScattering + LocalScattering;
 	float	Extinction = FogDensity;
-		
-	float MaxScattering = max(Scattering.r, max(Scattering.g, Scattering.b));
-	Extinction = max(FogDensity, MaxScattering * 0.05f);
+	
+	//float MaxScattering = max(Scattering.r, max(Scattering.g, Scattering.b));
+	//Extinction = max(FogDensity, MaxScattering * 0.05f);
 	
 	OUTPUT3D[ID] = float4(Scattering, Extinction);
 	return;
@@ -476,5 +485,54 @@ void CSMain_RayMarching(uint3 ID : SV_DispatchThreadID)
 	}
 
 	OUTPUT[ID.xy] = float4(AccumulatedScattering, AccumulatedTransmittance);
+	return;
+}
+
+[numthreads(8, 8, 8)]
+void CSMain_TemporalBlend(uint3 ID : SV_DispatchThreadID)
+{
+	if (ID.x >= (uint) FroxelGridSize.x || ID.y >= (uint) FroxelGridSize.y || ID.z >= (uint) FroxelGridSize.z)
+		return;
+
+	float4 CurrentColor = CurrentVolumeTexture.Load(int4(ID, 0));
+	
+	float4 ColorMin = CurrentColor;
+	float4 ColorMax = CurrentColor;
+	[unroll]
+	for (int i = 0; i < 6; ++i)
+	{
+		int3 NeighborCoord = max(0, min((int3) FroxelGridSize - 1, (int3) ID + TAAOffsets[i]));
+		float4 Neighbor = CurrentVolumeTexture.Load(int4(NeighborCoord, 0));
+		
+		ColorMin = min(ColorMin, Neighbor);
+		ColorMax = max(ColorMax, Neighbor);
+	}
+	
+	float3 TexCoord = (float3(ID) + 0.5f) / FroxelGridSize;
+	float3 WorldPos = FroxelZToWorldPos(TexCoord);
+	
+	float4	PrevClipPos = mul(float4(WorldPos, 1.f), PreviousViewProj);
+	float	PrevLinearDepth = saturate((PrevClipPos.w - NearZ) / max(FarZ - NearZ, 0.0001f));
+	PrevClipPos.xyz /= PrevClipPos.w;
+	
+	float3 PrevTexCoord3D;
+	PrevTexCoord3D.x = PrevClipPos.x * 0.5f + 0.5f;
+	PrevTexCoord3D.y = PrevClipPos.y * -0.5f + 0.5f;
+	PrevTexCoord3D.z = pow(PrevLinearDepth, 1.f / FroxelDepthExponent);
+
+	float4 FinalColor = CurrentColor;
+
+	if (PrevTexCoord3D.x < 0.f || PrevTexCoord3D.x > 1.f ||
+		PrevTexCoord3D.y < 0.f || PrevTexCoord3D.y > 1.f ||
+		PrevTexCoord3D.z < 0.f || PrevTexCoord3D.z > 1.f)
+	{
+		OUTPUT3D[ID] = FinalColor;
+		return;
+	}
+
+	float4 HistoryColor = PreviousVolumeTexture.SampleLevel(LinearClamp, PrevTexCoord3D, 0);
+	//HistoryColor = clamp(HistoryColor, ColorMin, ColorMax);
+		
+	OUTPUT3D[ID] = lerp(CurrentColor, HistoryColor, TemporalBlendWeight);
 	return;
 }

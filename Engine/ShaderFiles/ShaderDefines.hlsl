@@ -1,12 +1,26 @@
 
-const static float PI = 3.14159265359f;
+const static float	PI = 3.14159265359f;
 
 const static float3 AlbedoColor = { 1.f, 1.f, 1.f };
 
-const static float SpecularIntensity	= 1.f;
+const static float	SpecularIntensity	= 1.f;
 
-#define MAX_LIGHT_COUNT				16
-#define MAX_SHADOW_LIGHT_COUNT      8
+#define GAME_QUALITY_LEVEL1
+
+#ifdef GAME_QUALITY_LEVEL1				// 영상 및 최종 리허설 용
+#define MAX_LIGHT_COUNT			32
+#define MAX_SHADOW_LIGHT_COUNT	8
+#endif
+
+#ifdef GAME_QUALITY_LEVEL2				// 편집용
+#define MAX_LIGHT_COUNT			16
+#define MAX_SHADOW_LIGHT_COUNT	8
+#endif
+
+#ifdef GAME_QUALITY_LEVEL3				// 저사양
+#define MAX_LIGHT_COUNT			16
+#define MAX_SHADOW_LIGHT_COUNT	4
+#endif
 
 #define MAX_LIGHT_MAPCOUNT  6
 
@@ -124,6 +138,8 @@ cbuffer CB_PER_PASS : register(b1)
 	float  g_fDeltaTime;
     float3 g_vShadowLightDir;
 	float  g_fTimeAccumulation;
+
+    matrix g_matPrevViewProj;
 };
 
 cbuffer CB_BONES : register(b2)
@@ -156,7 +172,13 @@ cbuffer CB_LIGHT_BUFFER : register(b4)
     float3			LightPadding;
 }
 
-
+cbuffer CB_ENVLIGHT : register(b6)
+{
+	float EnviromentIntensity;
+	float FillLightBrightness;
+	float DirectLightBrightness;
+	float EnvLightPadding;
+}
 
 cbuffer CB_PER_UI : register(b7)
 {
@@ -166,6 +188,8 @@ cbuffer CB_PER_UI : register(b7)
 	float2 g_ui_texSize;
 	float2 g_ui_quadSize;
 	float4 g_ui_margins;
+	float2 g_ui_uvFlip;
+	float2 g_ui_uvFlipPadding;
 };
 
 cbuffer CB_GPU_PART_ATTACHMENT : register(b9)

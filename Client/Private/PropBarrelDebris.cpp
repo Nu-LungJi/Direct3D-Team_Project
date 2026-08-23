@@ -27,9 +27,9 @@ CPropBarrelDebris::CPropBarrelDebris(const CPropBarrelDebris& prototype)
 HRESULT CPropBarrelDebris::InitializePrototype(void*)
 {
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim");
+		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
+		TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
 	if (!m_pResVertexShader || !m_pResPixelShader ||
 		FAILED(m_pResVertexShader->Load()) || FAILED(m_pResPixelShader->Load()))
 		return E_FAIL;
@@ -57,6 +57,11 @@ HRESULT CPropBarrelDebris::Initialize(void* pArg)
 	GetTransform().SetPosition(pDesc->vInitialPosition);
 	GetTransform().SetQuaternion(pDesc->vInitialQuaternion);
 	m_vModelScale = pDesc->vInitialScale;
+	m_fDissolveDelay = std::max(pDesc->fDissolveDelay, 0.f);
+	m_fDissolveDuration = std::max(pDesc->fDissolveDuration, 0.f);
+	m_fLifeElapsed = 0.f;
+	m_fDissolveIntensity = 0.f;
+	m_bDissolving = false;
 	GetTransform().SetScale(m_vModelScale);
 	GetTransform().Update();
 
@@ -124,12 +129,41 @@ HRESULT CPropBarrelDebris::Initialize(void* pArg)
 		!m_pComPxRigidBody->SetLinearDamping(0.1f) ||
 		!m_pComPxRigidBody->SetAngularDamping(0.2f) ||
 		!m_pComPxRigidBody->SetMaxDepenetrationVelocity(5.f) ||
+		!m_pComPxRigidBody->SetLinearVelocity(pDesc->vInitialLinearVelocity) ||
+		!m_pComPxRigidBody->SetAngularVelocity(
+			pDesc->vInitialAngularVelocityRadians) ||
 		!m_pComPxRigidBody->WakeUp())
 	{
 		return E_FAIL;
 	}
 
 	return S_OK;
+}
+
+void CPropBarrelDebris::Update(_float fTimeDelta)
+{
+	if (GetPendingDestroy())
+		return;
+
+	m_fLifeElapsed += std::max(fTimeDelta, 0.f);
+	if (!m_bDissolving && m_fLifeElapsed >= m_fDissolveDelay)
+		m_bDissolving = true;
+
+	if (!m_bDissolving)
+		return;
+
+	if (m_fDissolveDuration <= 0.f)
+	{
+		m_fDissolveIntensity = 1.f;
+		SetPendingDestroy();
+		return;
+	}
+
+	m_fDissolveIntensity = std::clamp(
+		(m_fLifeElapsed - m_fDissolveDelay) / m_fDissolveDuration,
+		0.f, 1.f);
+	if (m_fDissolveIntensity >= 1.f)
+		SetPendingDestroy();
 }
 
 void CPropBarrelDebris::LateUpdate(_float fTimeDelta)
@@ -139,7 +173,7 @@ void CPropBarrelDebris::LateUpdate(_float fTimeDelta)
 	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
 		return;
 
-	if (!CGameInstance::Get().IsInstancingEnabled())
+	if (m_bDissolving || !CGameInstance::Get().IsInstancingEnabled())
 	{
 		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 		return;
@@ -169,8 +203,11 @@ void CPropBarrelDebris::LateUpdate(_float fTimeDelta)
 
 HRESULT CPropBarrelDebris::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
-	/*if (!pContext || !m_pComModelInstance || !m_pComCBufferPerObject ||
+	if (!pContext || !m_pComModelInstance || !m_pComCBufferPerObject ||
 		!m_pResVertexShader || !m_pResPixelShader)
+		return E_FAIL;
+	const auto& pModel = m_pComModelInstance->GetModel();
+	if (!pModel)
 		return E_FAIL;
 
 	CB_PER_OBJECT cbPerObject{};
@@ -181,8 +218,12 @@ HRESULT CPropBarrelDebris::Render(ID3D11DeviceContext* pContext, const RENDER_CT
 	if (FAILED(m_pComCBufferPerObject->MapDiscard(
 		pContext, &cbPerObject, sizeof(cbPerObject))))
 		return E_FAIL;
-	pContext->VSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-	pContext->PSSetConstantBuffers(0, 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+	pContext->VSSetConstantBuffers(
+		ETOUI(B_SLOTNUMBER::PER_OBJECT), 1,
+		m_pComCBufferPerObject->GetAdressOfBuffer());
+	pContext->PSSetConstantBuffers(
+		ETOUI(B_SLOTNUMBER::PER_OBJECT), 1,
+		m_pComCBufferPerObject->GetAdressOfBuffer());
 
 	pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
 	pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
@@ -195,16 +236,6 @@ HRESULT CPropBarrelDebris::Render(ID3D11DeviceContext* pContext, const RENDER_CT
 	if (noCullRasterizer)
 		pContext->RSSetState(noCullRasterizer->GetRasterizerState().Get());
 
-	const auto& pModel = m_pComModelInstance->GetModel();
-	if (!m_bRenderConfirmed)
-	{
-		const auto renderLog = std::format(
-			"[PlayerPotion] Render reached. meshes={}, scale=({}, {}, {}).\n",
-			pModel->Get_NumMeshes(), m_vModelScale.x, m_vModelScale.y,
-			m_vModelScale.z);
-		DEBUG_LOG(renderLog.c_str());
-		m_bRenderConfirmed = true;
-	}
 	for (uint32_t meshIndex = 0; meshIndex < pModel->Get_NumMeshes(); ++meshIndex)
 	{
 		const auto& mesh = pModel->GetMeshes()[meshIndex];
@@ -217,11 +248,11 @@ HRESULT CPropBarrelDebris::Render(ID3D11DeviceContext* pContext, const RENDER_CT
 		m_pComModelInstance->Bind_Textures(pContext, meshIndex);
 		m_pComModelInstance->Bind_Materials(
 			pContext, { 1.f, 1.f, 1.f }, 0.f,
-			{ 1.f, 1.f, 1.f }, 0.f, 1.f);
+			{ 1.f, 0.25f, 0.05f }, m_fDissolveIntensity, 1.f);
 		pContext->DrawIndexed(mesh->GetNumIndices(), 0, 0);
 	}
 
-	pContext->RSSetState(previousRasterizer.Get());*/
+	pContext->RSSetState(previousRasterizer.Get());
 
 	return S_OK;
 }

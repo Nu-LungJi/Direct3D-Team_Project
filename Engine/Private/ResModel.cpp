@@ -220,25 +220,24 @@ HRESULT CResModel::Ready_Animation()
 HRESULT CResModel::LoadAndAppendSharedAnimation(
 	const _string& sAnimationPath)
 {
-	const auto normalizedPath = std::filesystem::path{ sAnimationPath }
-		.lexically_normal().generic_string();
+	const auto animationName = std::filesystem::path{ sAnimationPath }
+		.filename().string();
 
 	const auto duplicate = std::ranges::find_if(
 		m_Animations,
-		[&normalizedPath](const SPtr<CResModelAnim>& pAnimation)
+		[&animationName](const SPtr<CResModelAnim>& pAnimation)
 		{
 			if (!pAnimation)
 				return false;
 
-			return std::filesystem::path{ pAnimation->GetAnimPath() }
-				.lexically_normal().generic_string() == normalizedPath;
+			return pAnimation->GetAnimName() == animationName;
 		});
 
 	if (duplicate != m_Animations.end())
 		return S_FALSE;
 
 	auto pAnimation = CGameInstance::Get().GetOrLoadModelAnimation(
-		normalizedPath);
+		sAnimationPath);
 	if (!pAnimation)
 		return E_FAIL;
 

@@ -30,15 +30,16 @@ public:
 		_float4 vInitialQuaternion{ 0.f, 0.f, 0.f, 1.f };
 		_float3 vInitialScale{ 1.f, 1.f, 1.f };
 		_float3 vConvexScale{ 1.f, 1.f, 1.f };
+		_float3 vInitialLinearVelocity{};
+		_float3 vInitialAngularVelocityRadians{};
 		_float fMass{ 0.15f };
+		_float fDissolveDelay{ 3.f };
+		_float fDissolveDuration{ 1.5f };
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::DEBRIS),
 			.iSimulationMask =
 				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
-				ETOUI(COLLISION_LAYER::DEBRIS),
-			//|
-			//	ETOUI(COLLISION_LAYER::ENEMY_BODY) |
-			//	ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
+				ETOUI(COLLISION_LAYER::MOVING_PLATFORM),
 			.iQueryMask = PX_ALL_LAYERS
 		};
 	};
@@ -51,6 +52,7 @@ private:
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
+	void Update(_float fTimeDelta) override;
 	void LateUpdate(_float fTimeDelta) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
 
@@ -69,6 +71,11 @@ private:
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResPixelShader> m_pResPixelShader{};
 	_float3 m_vModelScale{ 1.f, 1.f, 1.f };
+	_float m_fDissolveDelay{ 3.f };
+	_float m_fDissolveDuration{ 1.5f };
+	_float m_fLifeElapsed{};
+	_float m_fDissolveIntensity{};
+	_bool m_bDissolving{};
 };
 
 NS_END

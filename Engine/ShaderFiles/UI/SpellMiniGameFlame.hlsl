@@ -23,7 +23,7 @@ PS_IN VSMain(VS_IN input)
 {
 	PS_IN output;
 	output.Position = mul(float4(input.Position, 1.f), g_matWVP);
-	output.UV = input.UV;
+	output.UV = lerp(input.UV, 1.f - input.UV, g_ui_uvFlip);
 	return output;
 }
 
