@@ -64,6 +64,7 @@ class CNpcPlacementManager;
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
 	friend Singleton<CGameInstance>;
+	friend class CGameObject;
 private:
 	CGameInstance();
 	~CGameInstance();
@@ -238,6 +239,10 @@ public:
 #pragma endregion
 
 #pragma region GAMEOBJECT_MANAGER
+private:
+	// CGameObject::SetPendingDestroy가 외부에 Manager를 노출하지 않고 삭제 큐에 진입하기 위한 내부 통로다.
+	void QueuePendingGameObjectDestroy(const CHandle& hObject);
+
 public:
 	void GameObjectAllReset();
 	size_t GameObjectResetLayers(std::span<const std::string_view> layerNames);
@@ -271,12 +276,7 @@ public:
 		return m_pGameObjectManager->DelLayer(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
 	}
 
-	//std::optional<CHandle> GetFreeHandle() const;
-
 	inline CGameObject* GetGameObjectByHandle(const CHandle& handle);
-	_bool SetGameObjectParent(
-		const CHandle& hChild,
-		const std::optional<CHandle>& hParent = std::nullopt);
 	template<typename T>
 	T* GetGameObjectByHandleT(const CHandle& handle)
 	{
