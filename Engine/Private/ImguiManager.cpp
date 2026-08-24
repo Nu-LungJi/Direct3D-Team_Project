@@ -94,10 +94,18 @@ void CImguiManager::Render_Imgui()
 	{
 		ImGuiIO& io = ImGui::GetIO();
 
-		m_pNodeEditor->RenderGUI(); //imgui node 랜더
-		ImGui::EndFrame();
-		ImGui::Render();
-		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+		{
+			ZoneScopedN("ImGui_FinalizeFrame");
+			m_pNodeEditor->RenderGUI(); //imgui node 랜더
+			ImGui::EndFrame();
+			ImGui::Render();
+		}
+
+		{
+			// [LSY] GUI 정점/인덱스 업로드와 메인 뷰포트 Draw 비용을 따로 계측한다.
+			ZoneScopedN("ImGui_MainViewport_RenderDrawData");
+			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+		}
 
 		if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) && m_bViewportsEnabled)
 		{
@@ -105,8 +113,44 @@ void CImguiManager::Render_Imgui()
 			ID3D11DepthStencilView* pBackupDSV = nullptr;
 			m_pContext->OMGetRenderTargets(1, &pBackupRTV, &pBackupDSV);
 
-			ImGui::UpdatePlatformWindows();
-			ImGui::RenderPlatformWindowsDefault();
+			{
+				ZoneScopedN("ImGui_PlatformWindows_Update");
+				ImGui::UpdatePlatformWindows();
+			}
+
+			{
+				// [LSY] RenderPlatformWindowsDefault와 동일한 순서를 나눠 외부 창 Draw와 Present 대기를 구분한다.
+				ImGuiPlatformIO& platformIO = ImGui::GetPlatformIO();
+				{
+					ZoneScopedN("ImGui_PlatformWindows_Render");
+					for (int i = 1; i < platformIO.Viewports.Size; ++i)
+					{
+						ImGuiViewport* pViewport = platformIO.Viewports[i];
+						if (pViewport->Flags & ImGuiViewportFlags_Minimized)
+							continue;
+
+						if (platformIO.Platform_RenderWindow)
+							platformIO.Platform_RenderWindow(pViewport, nullptr);
+						if (platformIO.Renderer_RenderWindow)
+							platformIO.Renderer_RenderWindow(pViewport, nullptr);
+					}
+				}
+
+				{
+					ZoneScopedN("ImGui_PlatformWindows_Present");
+					for (int i = 1; i < platformIO.Viewports.Size; ++i)
+					{
+						ImGuiViewport* pViewport = platformIO.Viewports[i];
+						if (pViewport->Flags & ImGuiViewportFlags_Minimized)
+							continue;
+
+						if (platformIO.Platform_SwapBuffers)
+							platformIO.Platform_SwapBuffers(pViewport, nullptr);
+						if (platformIO.Renderer_SwapBuffers)
+							platformIO.Renderer_SwapBuffers(pViewport, nullptr);
+					}
+				}
+			}
 
 			m_pContext->OMSetRenderTargets(1, &pBackupRTV, pBackupDSV);
 			if (pBackupRTV != nullptr)
