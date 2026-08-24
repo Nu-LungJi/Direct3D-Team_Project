@@ -43,6 +43,7 @@ struct VS_IN
     float2 vUV : TEXCOORD0;
     float4 vColor : COLOR0; // a에 나이 기반 페이드(fLifeRatio)가 실려 있음
     float4 vEmissive : COLOR1;
+	float fAgeRatio : TEXCOORD1;
 };
 
 struct VS_OUT
@@ -52,6 +53,7 @@ struct VS_OUT
     float4 vColor : COLOR0;
     float4 vEmissive : COLOR1;
     float4 vScreenPos : TEXCOORD1;
+	float fAgeRatio : TEXCOORD2;
 };
 
 VS_OUT VSMain(VS_IN In)
@@ -63,6 +65,7 @@ VS_OUT VSMain(VS_IN In)
     Out.vColor = In.vColor;
     Out.vEmissive = In.vEmissive;
     Out.vScreenPos = Out.vPosition;
+	Out.fAgeRatio = In.fAgeRatio;
     return Out;
 }
 
@@ -166,20 +169,62 @@ PS_OUT PSMain(VS_OUT In) : SV_TARGET
 // [LSY] Bombarda 캐스팅 궤적은 단일 번개 마스크를 강하게 잘라 선명한 지그재그 실루엣을 만든다.
 PS_OUT PSBombardaEnergyTrail(VS_OUT In) : SV_TARGET
 {
-	PS_OUT Out = (PS_OUT)0;
+	PS_OUT Out = (PS_OUT) 0;
 
 	float2 uv = In.vUV;
+	uv.x = frac(uv.x - g_fAccumulationTime * 0.18f);
+
+	// 원본 번개가 이미 꺾여 있으므로 아주 작은 파형만 더해 자연스럽게 떨리게 한다.
+	float wave1 = sin(In.vUV.x * 5.f + g_fAccumulationTime * 4.f);
+	float wave2 = sin(In.vUV.x * 11.f - g_fAccumulationTime * 5.5f);
+	uv.y = saturate(uv.y + wave1 * 0.007f + wave2 * 0.0035f);
+
 	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, uv);
 	float mask = max(texColor.r, max(texColor.g, texColor.b));
 
-	clip(mask - 0.14f);
+	clip(mask - 0.08f);
 
-	float coreMask = smoothstep(0.35f, 0.82f, mask);
-	float3 baseColor = texColor.rgb * In.vColor.rgb * 1.8f;
-	float3 emissive = In.vEmissive.rgb * In.vEmissive.a * coreMask;
-	float3 finalColor = baseColor + emissive;
-	// [LSY] PSRemoveBlack과 동일하게 텍스처 마스크와 CPU 정점 알파를 조합한다.
-	float finalAlpha = mask * texColor.a * saturate(In.vColor.a);
+	float bodyMask = smoothstep(0.08f, 0.32f, mask);
+	float coreMask = smoothstep(0.55f, 0.9f, mask);
+	float widthMask = pow(saturate(1.f - abs(In.vUV.y * 2.f - 1.f)), 0.65f);
+
+	// CPU에서 계산한 각 포인트의 실제 나이를 직접 사용한다.
+	// 색은 초반에 빠르게 노랑 -> 파랑으로 바뀌고,
+	// 알파는 CPU가 넘겨준 포인트별 페이드를 그대로 유지한다.
+	float pointAgeRatio = saturate(In.fAgeRatio);
+	// 수명의 35% 까지는 노란색을 유지하고,
+	// 82% 지점까지 천천히 파란색으로 변한다.
+	float colorAgeRatio = smoothstep(0.12f, 0.52f, pointAgeRatio);
+	float remainingRatio = saturate(In.vColor.a);
+
+	float3 startYellow = In.vColor.rgb;
+	float3 endBlue = In.vEmissive.rgb;
+	float3 energyColor = lerp(startYellow, endBlue, colorAgeRatio);
+
+	float emissiveIntensity = clamp(In.vEmissive.a, 0.f, 30.f);
+	float3 hotCoreColor = lerp(energyColor, float3(1.f, 0.94f, 0.78f), 0.28f);
+	float3 baseColor = energyColor * bodyMask * 0.65f;
+
+	// BS_ADDITIVE/BS_ALPHA_EFFECT는 SrcAlpha를 RGB에 고배하므로
+	// 수명 알파가 줄어들면 이미시브도 함께 약해진다.
+	// 수명 감쇠만 보정하고 마지막 10%에서는 안전하게 페이드한다.
+	float emissiveEndFade = 1.f - smoothstep(0.9f, 1.f, pointAgeRatio);
+	float emissiveLifeCompensation = rcp(max(remainingRatio, 0.1f));
+	float blueLuminanceCompensation = lerp(1.f, 1.35f, colorAgeRatio);
+	float3 emissiveColor =
+		hotCoreColor *
+		coreMask *
+		emissiveIntensity *
+		emissiveLifeCompensation *
+		emissiveEndFade *
+		blueLuminanceCompensation;
+	float3 finalColor = baseColor + emissiveColor;
+
+	float finalAlpha =
+		bodyMask *
+		widthMask *
+		texColor.a *
+		remainingRatio;
 
 	Out.vDiffuse = float4(finalColor, finalAlpha);
 	return Out;

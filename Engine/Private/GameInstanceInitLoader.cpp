@@ -44,6 +44,7 @@
 #include "ComPxCharacterController.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
+#include "ComFootIK.h"
 #include "ComSound.h"
 #include "ComPathPlayback.h"
 #include "StateMachine.h"
@@ -433,6 +434,14 @@ HRESULT CGameInstanceInitLoader::LoadPrototypeComponent()
 		ES_EngineProtoMajorType::PERMANENT,
 		ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
 		CComCharacterMotor::Create()))
+	{
+		return E_FAIL;
+	}
+
+	if (CGameInstance::Get().AddPrototype(
+		ES_EngineProtoMajorType::PERMANENT,
+		ES_EngineProtoComponent::Prototype_Component_ComFootIK,
+		CComFootIK::Create()))
 	{
 		return E_FAIL;
 	}

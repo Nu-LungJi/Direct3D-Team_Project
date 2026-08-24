@@ -1119,6 +1119,9 @@
     <ClInclude Include="..\Public\ComCharacterMoveIntent.h">
       <Filter>Component\LocoAndMotor</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\ComFootIK.h">
+      <Filter>Component\LocoAndMotor</Filter>
+    </ClInclude>
     <ClInclude Include="..\Public\ComCharacterMotor.h">
       <Filter>Component\LocoAndMotor</Filter>
     </ClInclude>
@@ -1819,6 +1822,9 @@
       <Filter>Component\Tween</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\ComCharacterMoveIntent.cpp">
+      <Filter>Component\LocoAndMotor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\ComFootIK.cpp">
       <Filter>Component\LocoAndMotor</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\ComCharacterMotor.cpp">

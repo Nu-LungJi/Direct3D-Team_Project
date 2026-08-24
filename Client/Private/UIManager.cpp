@@ -2402,6 +2402,33 @@ std::optional<CHandle> UIManager::RootUIPicking()
 	return targetHandle;
 }
 
+_bool UIManager::IsPointerOverInteractiveUI()
+{
+	const auto IsInteractiveHit = [this](const auto& Self, CHandle hUI) -> _bool
+	{
+		auto* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(hUI);
+		if (!pUI || !pUI->GetActive() || !pUI->GetVisible() || pUI->GetWorldSpace())
+			return false;
+
+		// 버튼인 자식 UI까지 검사해야 전체 화면 HUD 루트가 입력을 가로채지 않는다.
+		for (const CHandle hChild : pUI->GetChildren())
+		{
+			if (Self(Self, hChild))
+				return true;
+		}
+
+		return pUI->HasInteractiveButton() &&
+			PtInRect(pUI->GetUIInfo(), pUI->GetScaleRatio());
+	};
+
+	for (const CHandle hRoot : rootUIHandles)
+	{
+		if (IsInteractiveHit(IsInteractiveHit, hRoot))
+			return true;
+	}
+	return false;
+}
+
 _bool UIManager::PtInRect(const UI_INFO& selectInfo, _float scaleRatio)
 {
 	_float2 mousePos = GetUIInteractionMousePosition();

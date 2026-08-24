@@ -11,6 +11,7 @@
 #include "PlayerAnimationRatioGuard.h"
 #include "ResModel.h"
 #include "ResModelAnim.h"
+#include "UIManager.h"
 
 NS_USING(Client)
 
@@ -146,7 +147,13 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 			COMBO_INPUT_START_RATIO,
 			COMBO_INPUT_END_RATIO);
 
-	if (bInComboInputWindow && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	const _bool bPointerCapturedByUI =
+		ImGui::GetIO().WantCaptureMouse ||
+		GET_SINGLE(UIManager)->IsPointerOverInteractiveUI();
+
+	if (bInComboInputWindow &&
+		!bPointerCapturedByUI &&
+		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		m_bAttackQueued = true;
 	}

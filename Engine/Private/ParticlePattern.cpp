@@ -33,7 +33,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircle(const SCircleParam&
 	for (uint32_t i = 0; i < param.iCount; ++i)
 	{
 		PARTICLE_SPAWN_DATA& s = spawnList[i];
-		_float fAngle = fAngleStep * (_float)i;
+		const _float fAngle = fAngleStep * (_float)i;
 		if (param.bStand) {
 			s.position = _float3(
 				param.vCenter.x + cosf(fAngle) * param.fRadius,
@@ -92,15 +92,18 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircleAndSpread(const SCir
 	if (param.iCount == 0)
 		return spawnList;
 
-	const _float fAngleStep = XM_2PI / (_float)param.iCount;
+	const _float spawnDuration = std::max(param.fSpawnDuration, 0.f);
+	const _float moveDuration = std::max(param.fLife, 0.0001f);
+	const _float radiusJitter = std::max(param.fRadiusJitter, 0.f);
 	for (uint32_t i = 0; i < param.iCount; ++i)
 	{
 		PARTICLE_SPAWN_DATA& s = spawnList[i];
-		_float fAngle = fAngleStep * (_float)i;
+		const _float fAngle = Randf(0.f, XM_2PI);
+		const _float radius = std::max(0.f, param.fRadius + Randf(-radiusJitter, radiusJitter));
 		s.position = param.vCenter;
 		s.velocity = _float3(
-			cosf(fAngle) * param.fRadius,
-			sinf(fAngle) * param.fRadius,
+			cosf(fAngle) * radius / moveDuration,
+			sinf(fAngle) * radius / moveDuration,
 			0
 		);
 		s.life = param.fLife;
@@ -112,8 +115,8 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCircleAndSpread(const SCir
 		s.iBehaviorType = param.iBehaviorType;
 		s.originalEmissive = param.emissive;
 		s.originalPosition = param.vCenter;
-		s.spawnDelay = param.fSpawnDelay;
-		uint32_t degree = 360 / param.iCount;
+		s.originalVelocity = s.velocity;
+		s.spawnDelay = param.fSpawnDelay + Randf(0.f, spawnDuration);
 	}
 	return spawnList;
 }
@@ -172,7 +175,6 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCenterToCircle(const SCent
 
 	const _float moveDuration = std::max(param.fLife, 0.0001f);
 	const _float spawnDuration = std::max(param.fSpawnDuration, 0.f);
-	const _float spawnInterval = param.iCount > 1 ? spawnDuration / static_cast<_float>(param.iCount - 1) : 0.f;
 	const _float radiusJitter = std::max(param.fRadiusJitter, 0.f);
 	const _float3 startCenter = param.bStand ? param.vCenter : _float3(param.vCenter.x, param.vCenter.y + param.fYOffset, param.vCenter.z);
 
@@ -196,7 +198,7 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeCenterToCircle(const SCent
 		spawn.endEmissive = _float4(param.endEmissive.x, param.endEmissive.y, param.endEmissive.z, param.endIntensity);
 		spawn.originalEmissive = spawn.emissive;
 		spawn.iBehaviorType = param.iBehaviorType;
-		spawn.spawnDelay = param.fSpawnDelay + static_cast<_float>(i) * spawnInterval;
+		spawn.spawnDelay = param.fSpawnDelay + Randf(0.f, spawnDuration);
 		spawn.originalPosition = spawn.position;
 		spawn.originalVelocity = spawn.velocity;
 		spawn.rotationAxis = param.rotationAxis;

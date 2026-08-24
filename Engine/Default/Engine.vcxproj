@@ -251,6 +251,7 @@
     <ClInclude Include="..\Public\CinematicTypes.h" />
     <ClInclude Include="..\public\ComPxCharacterController.h" />
     <ClInclude Include="..\Public\ComCharacterMoveIntent.h" />
+    <ClInclude Include="..\Public\ComFootIK.h" />
     <ClInclude Include="..\Public\ComCharacterMotor.h" />
     <ClInclude Include="..\Public\ComSound.h" />
     <ClInclude Include="..\Public\ComSocket.h" />
@@ -602,6 +603,7 @@
     <ClCompile Include="..\Private\CinematicSystem.cpp" />
     <ClCompile Include="..\private\ComPxCharacterController.cpp" />
     <ClCompile Include="..\Private\ComCharacterMoveIntent.cpp" />
+    <ClCompile Include="..\Private\ComFootIK.cpp" />
     <ClCompile Include="..\Private\ComCharacterMotor.cpp" />
     <ClCompile Include="..\Private\ComSound.cpp" />
     <ClCompile Include="..\Private\ComSocket.cpp" />

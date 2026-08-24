@@ -163,6 +163,11 @@ public:
 
 	_bool GetActive() { return m_isActive; }
 	_bool GetVisible() { return m_isVisible; }
+	_bool HasInteractiveButton() const
+	{
+		return m_pComCButton != nullptr && !m_bInputLocked &&
+			m_isActive && m_isVisible && m_UIINFO.Alpha > 0.f;
+	}
 	_float GetAlphaRatio() { return m_UIINFO.AlphaRatio; }
 	_float GetScaleRatio() { return m_ScaleRatio; }
 	_float GetLocalRot() { return m_UIINFO.LocalRot; }
