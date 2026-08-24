@@ -25,6 +25,7 @@ void CSpider_Spawn::Enter(CStateMachine* pStateMachine)
 	if (nullptr == pSpider)
 		return;
 
+	
 	pSpider->Set_StateFinished(false);
 
 	m_Anims.push_back(MON_ANIM_FSM{ .iAnimIndex = 
@@ -33,6 +34,17 @@ void CSpider_Spawn::Enter(CStateMachine* pStateMachine)
 }
 _bool CSpider_Spawn::Play_Anim(CSpider* pSpider, _float fTimeDelta)
 {
+	auto pTarget = pSpider->Get_Target();
+	if (nullptr == pTarget) return true;
+
+	auto pMove = pSpider->Get_MoveIntent();
+	if (nullptr == pMove) return true;
+	_float3 vDir{};
+	XMStoreFloat3(&vDir, XMVector3Normalize(XMLoadFloat3(&pTarget->GetTransform().GetPosition()) -
+		XMLoadFloat3(&pSpider->GetTransform().GetPosition())));
+
+	pMove->SetFacingIntentImmediate(vDir);
+
 	auto pAnimator = pSpider->Get_Animator();
 	if (nullptr == pAnimator) return true;
 

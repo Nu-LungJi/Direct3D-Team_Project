@@ -372,6 +372,14 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 				return E_FAIL;
 			}
 		}
+		if (auto res = CGameInstance::Get().AddResource("SPAWNER", "EVENTSPIDER", CResJson::Create("./Resources/json/Spawn/EVENTSPIDER.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT EVENTSPAWN JSON");
+				return E_FAIL;
+			}
+		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");
@@ -395,7 +403,10 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		CResModel::Create("./Resources/SampleClient/Models/Skeleton/NPC_VictorRookwood/SK_NPC_VictorRookwood.bin")))
 	{
 		E::CResModel::DESC Desc{};
-		Desc.PreTransformMatrix = XMMatrixRotationY(XMConvertToRadians(180.f));
+		Desc.PreTransformMatrix =
+			XMMatrixScaling(3.f, 3.f, 3.f) *
+			XMMatrixRotationY(XMConvertToRadians(180.f)) *
+			XMMatrixTranslation(0.f, 0.f, 0.f);
 		if (FAILED(res->Load(Desc)))
 		{
 			MSG_BOX("HOGWART Failed Model_Resource_NPC_VictorRookwood");
@@ -422,6 +433,18 @@ HRESULT CLevelHogwartWorldLoader::AnimalLoad_InWorker()
 		if (FAILED(res->Load(pDesc)))
 		{
 			MSG_BOX("TERRAIN Failed Model_Resource_Griff");
+			return E_FAIL;
+		}
+	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Cat",
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Cat/SK_Cat.bin"))) {
+
+		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			MSG_BOX("TERRAIN Failed Model_Resource_Cat");
 			return E_FAIL;
 		}
 	}

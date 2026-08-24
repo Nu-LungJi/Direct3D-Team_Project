@@ -324,7 +324,9 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 		XMStoreFloat4x4(&impactWorldData, impactWorld);
 		CGameInstance::Get().PlayEffect("PlayerAttackSpread", impactWorldData);
 	}
-	if (auto pTmbGurdian= Cast<CMonster>(tHit.pGameObject))
+	auto* pHitMonster = Cast<CMonster>(tHit.pGameObject);
+	const _bool bHitMonster = nullptr != pHitMonster;
+	if (pHitMonster)
 	{
 	/*	static constexpr const char* HIT_SOUND_PATHS[] =
 		{
@@ -355,7 +357,7 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 		//	MSG_BOX("INVALID_SOUND_ID");
 		//}
 
-		pTmbGurdian->Check_Table(PLAYER_SKILL_TYPE::ATTACK);
+		pHitMonster->Check_Table(PLAYER_SKILL_TYPE::ATTACK);
 	}
 	if (auto* pPropBarrel = Cast<CPropBarrel>(tHit.pGameObject))
 	{
@@ -367,9 +369,9 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 	}
 
 	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
-		.fIntensity = 0.065f,
-		.fDuration = 0.085f,
-		.fFrequency = 28.f });
+		.fIntensity = bHitMonster ? 0.45f : 0.25f,
+		.fDuration = bHitMonster ? 0.12f : 0.08f,
+		.fFrequency = bHitMonster ? 40.f : 34.f });
 	SetPendingDestroy();
 }
 

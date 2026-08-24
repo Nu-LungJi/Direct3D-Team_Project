@@ -96,7 +96,7 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 	m_fAnimRatio = 0.f;
 	m_fAcientElapsed = 0.f;
 	m_bThrowReleased = false;
-	m_fThrowSequenceElapsed = 0.f;
+	m_fThrowSlowHoldUnscaledElapsed = 0.f;
 	m_fThrowPostLaunchUnscaledElapsed = 0.f;
 	if (bThrowBranch)
 	{
@@ -219,9 +219,22 @@ _bool CPlayer_AcientAttack_State::UpdateThrowPull(
 	const _vector qSpin = XMQuaternionRotationAxis(
 		vSpinAxis,
 		XM_2PI * ACIENT_THROW_PULL_SPIN_TURNS * fSmoothedRatio);
-	const _vector qRotation = XMQuaternionNormalize(XMQuaternionMultiply(
-		qSpin,
-		XMLoadFloat4(&m_vThrowPullStartRotation)));
+	_vector qRotation = XMQuaternionMultiply(
+		qSpin, XMLoadFloat4(&m_vThrowPullStartRotation));
+	if (fRawRatio >= 1.f && m_bThrowSlowMotionActive)
+	{
+		const _vector vHoldSpinAxis = XMVector3Normalize(
+			vRight * 0.55f +
+			XMVectorSet(0.f, 1.f, 0.f, 0.f) * 0.75f +
+			vLook * 0.25f);
+		const _float fHoldSpinAngle = XM_2PI *
+			ACIENT_THROW_HOLD_SPIN_TURNS_PER_SECOND *
+			m_fThrowSlowHoldUnscaledElapsed;
+		const _vector qHoldSpin = XMQuaternionRotationAxis(
+			vHoldSpinAxis, fHoldSpinAngle);
+		qRotation = XMQuaternionMultiply(qHoldSpin, qRotation);
+	}
+	qRotation = XMQuaternionNormalize(qRotation);
 
 	_float3 pullPosition{};
 	_float4 pullRotation{};
@@ -416,13 +429,12 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 		const _float throwAnimRatio = PlayerAnimationRatioGuard::Sanitize(
 			pAnimator->GetPlayAnimRatio());
 		EmitThrowWandTrail(*pPlayer);
-		m_fThrowSequenceElapsed += std::max(0.f, fTimeDelta);
 		const _float throwPullRatio = std::clamp(
-			m_fThrowSequenceElapsed / ACIENT_THROW_PULL_DURATION,
+			throwAnimRatio / ACIENT_THROW_PULL_END_ANIM_RATIO,
 			0.f,
 			1.f);
 		const _bool bThrowPullReady =
-			m_fThrowSequenceElapsed >= ACIENT_THROW_PULL_DURATION;
+			throwAnimRatio >= ACIENT_THROW_PULL_END_ANIM_RATIO;
 
 		if (!m_bThrowReleased &&
 			!UpdateThrowPull(*pPlayer, throwPullRatio))
@@ -433,20 +445,20 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 			return;
 		}
 
-		// 접근 동작이 보이도록 플레이어에게 가까워지는 후반부터 슬로우를 건다.
-		if (!m_bThrowReleased &&
-			throwPullRatio >= ACIENT_THROW_SLOW_START_PULL_RATIO)
-			BeginThrowSlowMotion();
-
-		if (!m_bThrowReleased && !bThrowPullReady &&
-			throwAnimRatio >= ACIENT_THROW_LAUNCH_RATIO)
+		// 10% 포즈에서 오브젝트가 옆 공중 위치에 도착한 뒤
+		// 슬로모션과 줌인을 함께 시작하고 실시간 기준으로 잠시 유지한다.
+		if (!m_bThrowReleased && bThrowPullReady)
 		{
-			// 발사 포즈는 유지하되 완전히 정지하지 않고 천천히 진행한다.
+			BeginThrowSlowMotion();
 			pAnimator->GetCurAnimState().fSpeed =
 				ACIENT_THROW_WAIT_ANIM_SPEED;
+			m_fThrowSlowHoldUnscaledElapsed +=
+				CGameInstance::Get().GetUnscaledDelta();
 		}
 
-		if (!m_bThrowReleased && bThrowPullReady)
+		if (!m_bThrowReleased && bThrowPullReady &&
+			m_fThrowSlowHoldUnscaledElapsed >=
+			ACIENT_THROW_SLOW_HOLD_DURATION)
 		{
 			pAnimator->GetCurAnimState().fSpeed = 1.f;
 			if (!LaunchThrow(*pPlayer))
@@ -646,7 +658,7 @@ void CPlayer_AcientAttack_State::Exit(CStateMachine* pStateMachine)
 	m_bThrowReleased = false;
 	m_bThrowSlowMotionActive = false;
 	m_hThrowFovCamera.reset();
-	m_fThrowSequenceElapsed = 0.f;
+	m_fThrowSlowHoldUnscaledElapsed = 0.f;
 	m_fThrowPostLaunchUnscaledElapsed = 0.f;
 }
 

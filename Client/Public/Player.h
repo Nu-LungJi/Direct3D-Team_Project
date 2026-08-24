@@ -68,6 +68,7 @@ public:
 				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
 				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
 				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+				ETOUI(COLLISION_LAYER::NPC_BODY) |
 				ETOUI(COLLISION_LAYER::ENEMY_BODY)
 		};
 		StringID LevelTag;
@@ -206,7 +207,7 @@ public:
 	void ActivateProtego(_float fDuration);
 	_bool ConsumeParryCounter(_float3& outAttackPosition);
 	_bool ConsumeProtegoReaction(_float3& outAttackPosition, _bool& outHeavyReaction);
-	void StartProtegoRecoil(const _float3& vHitPosition);
+	void StartProtegoRecoil(const _float3& vAttackPosition);
 	uint32_t GetProtegoParrySequence() const { return m_iProtegoParrySequence; }
 	const _float3& GetLastProtegoHitPosition() const { return m_vLastProtegoHitPosition; }
 private:

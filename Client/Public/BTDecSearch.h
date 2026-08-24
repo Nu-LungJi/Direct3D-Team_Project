@@ -23,6 +23,7 @@ public:
 private:
 	_float				m_fDis{10.f};
 	_bool				m_bTrue{ false };
+	BT_USER				m_eUser{BT_USER::MON};
 public:
 	static UPtr<CBTDecSearch> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

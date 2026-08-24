@@ -23,14 +23,15 @@ public:
 
 private:
 	void						Abort()override;
-	void						OnEnter()override;
+	void						OnEnter()override;				
 	void						OnExit(EVALUATE eResult)override;
+	void						BBValue(CBTBlackBoard* pBB);
 	_bool						Sweep(_vector vNextDir, _vector vCurDir,_float3 vCurPos,_float fDist);
 private:
 	MOVE						m_eMove{};
 	int32_t						m_iNaviPathIndex;
 	_float3						m_vLastDir{}, m_vSlideDir{};
-	_bool						m_bMoveToEnd{ true }, m_bSweep{ false};
+	_bool						m_bMoveToEnd{ true }, m_bSweep{ false }, m_bBBValue{ false }, m_bLoop{true};
 	std::vector<_float3>		m_NaviPath;
 	std::vector<_float3>		m_Separations;
 public:
