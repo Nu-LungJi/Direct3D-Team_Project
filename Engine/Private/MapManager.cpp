@@ -5,6 +5,7 @@
 #include "ResTexture2D.h"
 #include <fstream>
 #include <filesystem>
+#include <set>
 
 #include "CameraObject.h"
 #include "CollFrustum.h"
@@ -959,10 +960,10 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 	}
 
 	nlohmann::ordered_json rootJson = {};
-	rootJson["version"] = 1;
+	rootJson["version"] = 2;
 	rootJson["chunkSize"] = { m_vChunkSize.x, m_vChunkSize.y, m_vChunkSize.z };
 	rootJson["chunks"] = nlohmann::ordered_json::array();
-	rootJson["objects"] = nlohmann::ordered_json::array();
+	rootJson["requiredModels"] = nlohmann::ordered_json::array();
 	rootJson["decals"] = nlohmann::ordered_json::array();
 
 	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
@@ -1003,6 +1004,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 		});
 	}
 
+	std::set<std::pair<std::string, std::string>> requiredModels;
 	for (const auto& pair : layers)
 	{
 		const auto& objects = pair.second;
@@ -1020,12 +1022,17 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 			if (pMeshObj == nullptr)
 				continue;
 
-			const auto& layerName = pair.first;
-
-			const auto& pos = pMeshObj->GetTransform().GetPosition();
-			const MAPCHUNK_COORD coord = WorldToChunkCoord(pos);
-			rootJson["objects"].push_back(MakeObjectJson(pMeshObj, layerName, coord));
+			requiredModels.emplace(pMeshObj->GetModelResourceGroup(), pMeshObj->GetModelResourceTag());
 		}
+	}
+
+	for (const auto& [modelGroup, model] : requiredModels)
+	{
+		rootJson["requiredModels"].push_back(nlohmann::ordered_json
+		{
+			{ "modelGroup", modelGroup },
+			{ "model", model }
+		});
 	}
 
 	for (const auto& coord : originallyUnloadedChunks)
