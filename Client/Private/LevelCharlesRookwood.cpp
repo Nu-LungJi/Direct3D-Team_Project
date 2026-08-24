@@ -122,10 +122,14 @@ void CLevelCharlesRookwood::Update(E::_float fTimeDelta)
 
 			if (uiControllerHandle)
 			{
+				GET_SINGLE(UIManager)->CreateOrChangeQuest(
+					"퍼시벌 랙햄의 시험을 완료하기");
 				E::CGameInstance::Get().EventPublish(
 					FQuestUIGroupChanged{
 						.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_01,
-						.Active = true
+						.Active = true,
+						.QuestText = "퍼시벌 랙햄의 시험을 완료하기",
+						.UpdateQuestWidget = false
 					});
 			}
 		}

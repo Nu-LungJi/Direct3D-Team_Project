@@ -40,6 +40,9 @@ public:
 	// 일시적인 연출 FOV를 설정한다. 카메라의 unscaled Update에서 부드럽게 보간된다.
 	_bool BeginFovOverride(_float fTargetFovY, _float fResponse);
 	void EndFovOverride(_float fRestoreResponse);
+	// 기본 추적 거리를 유지하면서 연출용 거리 오프셋만 임시 적용한다.
+	_bool BeginDistanceOverride(_float fDistanceOffset, _float fResponse);
+	void EndDistanceOverride(_float fRestoreResponse);
 private:
 	// 타겟 -> 카메라 방향으로 SphereSweep
 	_bool PlayerToCameraSphereSweep(const _float3& PlayerPosition, const _float3& CameraPosition, _float fCollisionRadius, _float3& OutCameraPosition) const;
@@ -66,6 +69,9 @@ private:
 	_float m_fPitch{ 15.f };
 	_float m_fDistance{ 7.f };
 	_float m_fCurrentDistance{ 7.f };
+	_float m_fDistanceOverrideOffset{};
+	_float m_fDistanceOverrideResponse{ 8.f };
+	_bool m_bDistanceOverrideActive{};
 	_float m_fMinPitch{ -20.f };
 	_float m_fMaxPitch{ 65.f };
 	_float m_fMouseSensitivity{ 10.f };

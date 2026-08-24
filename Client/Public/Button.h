@@ -35,9 +35,12 @@ public:
 	void SetEffectClicked(std::optional<CHandle> effectUIHandle) { m_Effect_Clicked_Handle = effectUIHandle; }
 
 	void SetClickTargetName(std::string targetName) { ClickTargetName = targetName; }
+	void SetSpellUnlocked(_bool unlocked) { m_bSpellUnlocked = unlocked; }
+	_bool IsSpellUnlocked() const { return m_bSpellUnlocked; }
 	std::function<void(CUIObject* pCaller)> ClickFunc;
 private:
 	_bool m_bMouseTracking{ false };
+	_bool m_bSpellUnlocked{ true };
 
 private:
 	bool m_bOutline{};

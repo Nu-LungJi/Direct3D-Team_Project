@@ -40,6 +40,7 @@
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
 
+#include "Coin.h"
 NS_USING(Client)
 
 std::future<bool> CLevelHogwartWorldLoader::Load()
@@ -90,6 +91,9 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			if (FAILED(NpcLoad_InWorker()))
 				return false;
 			if (FAILED(AnimalLoad_InWorker()))
+				return false;
+
+			if (FAILED(LoadCollsion_InWorker()))
 				return false;
 
 			return SUCCEEDED(LoadPlayerResources());
@@ -372,6 +376,14 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 				return E_FAIL;
 			}
 		}
+		if (auto res = CGameInstance::Get().AddResource("SPAWNER", "EVENTSPIDER", CResJson::Create("./Resources/json/Spawn/EVENTSPIDER.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED EDGWAYPT EVENTSPAWN JSON");
+				return E_FAIL;
+			}
+		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");
@@ -395,7 +407,10 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		CResModel::Create("./Resources/SampleClient/Models/Skeleton/NPC_VictorRookwood/SK_NPC_VictorRookwood.bin")))
 	{
 		E::CResModel::DESC Desc{};
-		Desc.PreTransformMatrix = XMMatrixRotationY(XMConvertToRadians(180.f));
+		Desc.PreTransformMatrix =
+			XMMatrixScaling(3.f, 3.f, 3.f) *
+			XMMatrixRotationY(XMConvertToRadians(180.f)) *
+			XMMatrixTranslation(0.f, 0.f, 0.f);
 		if (FAILED(res->Load(Desc)))
 		{
 			MSG_BOX("HOGWART Failed Model_Resource_NPC_VictorRookwood");
@@ -425,6 +440,18 @@ HRESULT CLevelHogwartWorldLoader::AnimalLoad_InWorker()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Cat",
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Cat/SK_Cat.bin"))) {
+
+		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			MSG_BOX("TERRAIN Failed Model_Resource_Cat");
+			return E_FAIL;
+		}
+	}
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Griff, CGriff::Create())))
 	{
 		MSG_BOX("TERRAIN Failed Prototype_GameObject_Griff");
@@ -435,4 +462,13 @@ HRESULT CLevelHogwartWorldLoader::AnimalLoad_InWorker()
 		MSG_BOX("TERRAIN Failed Prototype_GameObject_GriffChild");
 		return E_FAIL;
 	}
+}
+HRESULT CLevelHogwartWorldLoader::LoadCollsion_InWorker()
+{	
+	if (FAILED(E::CGameInstance::Get().AddPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_Coin, CCoin::Create())))
+	{
+		MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
+		return E_FAIL;
+	}
+	return S_OK;
 }

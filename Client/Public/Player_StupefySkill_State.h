@@ -36,9 +36,9 @@ private:
 	_float3 m_vParryPosition{};
 	PHASE m_ePhase{ PHASE::PARRY_REACTION };
 	static constexpr _float BLEND_DURATION = 0.12f;
-	static constexpr _float REACTION_BLEND_DURATION = 0.08f;
-	static constexpr _float REACTION_SPEED = 1.5f;
-	static constexpr _float REACTION_EXIT_RATIO = 0.38f;
+	static constexpr _float REACTION_BLEND_DURATION = 0.05f;
+	static constexpr _float REACTION_SPEED = 1.8f;
+	static constexpr _float REACTION_EXIT_RATIO = 0.25f;
 	static constexpr _float TURN_SPEED = 0.65f;
 	static constexpr _float TURN_END_RATIO = 0.10f;
 	static constexpr _float ATTACK_SPEED = 1.9f;

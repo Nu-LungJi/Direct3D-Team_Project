@@ -25,6 +25,7 @@ class CResPhysXBoxGeometry;
 class CComPxCharacterController;
 class CComCharacterMoveIntent;
 class CComCharacterMotor;
+class CComFootIK;
 class CComSound;
 NS_END
 
@@ -59,7 +60,7 @@ public:
 		_float fCCTHeight{ 3.6f };
 		_float fCCTRadius{ 0.6f };
 		_float fCCTStepOffset{ 0.1f };
-		_float3 vCCTCenterOffset{ 0.f, 0.9f, 0.f };
+		_float3 vCCTCenterOffset{ 0.f, 1.f, 0.f };
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
@@ -68,6 +69,7 @@ public:
 				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
 				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
 				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+				ETOUI(COLLISION_LAYER::NPC_BODY) |
 				ETOUI(COLLISION_LAYER::ENEMY_BODY)
 		};
 		StringID LevelTag;
@@ -101,12 +103,14 @@ public:
 	_bool OnQueryHit(int32_t iDamage,const _float3& vHitPosition);
 	_bool OnQueryHit(int32_t iDamage);
 	_bool RequestKnockdown(const _float3& vAttackPosition);
+	void RequestAttackIndicator(_bool bDodgeOnly);
 	int32_t GetCurrentHp() const { return m_iHp; }
 	int32_t GetMaxHp() const { return m_iMaxHp; }
 	const _float3& GetLastHitPosition() const { return m_vLastHitPosition; }
 	const _float3& GetKnockdownAttackPosition() const { return m_vKnockdownAttackPosition; }
 private:
 	void HandleDeath();
+	_float3 GetAttackIndicatorPosition() const;
 	void TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage = 0,
 		const _float3* pAttackPosition = nullptr);
 public:
@@ -206,7 +210,7 @@ public:
 	void ActivateProtego(_float fDuration);
 	_bool ConsumeParryCounter(_float3& outAttackPosition);
 	_bool ConsumeProtegoReaction(_float3& outAttackPosition, _bool& outHeavyReaction);
-	void StartProtegoRecoil(const _float3& vHitPosition);
+	void StartProtegoRecoil(const _float3& vAttackPosition);
 	uint32_t GetProtegoParrySequence() const { return m_iProtegoParrySequence; }
 	const _float3& GetLastProtegoHitPosition() const { return m_vLastProtegoHitPosition; }
 private:
@@ -265,6 +269,7 @@ private:
 	CComPxCharacterController* m_pComCharacterController{};
 	CComCharacterMoveIntent* m_pComMoveIntent{};
 	CComCharacterMotor* m_pComCharacterMotor{};
+	CComFootIK* m_pComFootIK{};
 	CPlayer_StateMachine* m_pStateMachine{};
 	_bool m_bMovementLocked{};
 	_bool m_bRootMotionRotationActive{};
@@ -291,6 +296,12 @@ private:
 	_bool m_bDeathEventPublished{};
 	_float3 m_vLastHitPosition{};
 	_float3 m_vKnockdownAttackPosition{};
+	uint32_t m_iAttackIndicatorParticleOwner{ INVALID_PARTICLE_OWNER_ID };
+	_float3 m_vAttackIndicatorPosition{};
+	_float m_fAttackIndicatorRemainTime{};
+	_bool m_bAttackIndicatorDodgeOnly{};
+	int32_t m_iAttackIndicatorHeadBoneIndex{ -1 };
+	static constexpr _float ATTACK_INDICATOR_DURATION = 1.f;
 	_float m_fGroundFollowProbeStartHeight{ 0.15f };
 	_float m_fGroundFollowMaxStepDown{ 2.f };
 	_float m_fGroundFollowProbeRadius{ 0.3f };

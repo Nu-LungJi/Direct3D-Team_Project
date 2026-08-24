@@ -23,7 +23,10 @@ public:
 	static UPtr<CLevelMapEditor> Create();
 
 private:
+	HRESULT Initialize_EnviromentLight();
+private:
 	void Free() override;
+
 
 private:
 	Engine::CHandle m_SelectedObject{};

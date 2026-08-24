@@ -22,6 +22,30 @@ PS_IN VSMain(VS_IN input)
 	return output;
 }
 
+float Map9SliceGaugeUV(
+	float uv,
+	float quadSize,
+	float texSize,
+	float firstMargin,
+	float secondMargin)
+{
+	const float pixelPos = uv * quadSize;
+	if (pixelPos < firstMargin)
+		return pixelPos / texSize;
+	if (pixelPos > quadSize - secondMargin)
+		return 1.f - (quadSize - pixelPos) / texSize;
+
+	const float centerQuadSize = max(
+		quadSize - firstMargin - secondMargin,
+		0.001f);
+	const float centerTexSize = max(
+		texSize - firstMargin - secondMargin,
+		0.f);
+	const float ratio = saturate(
+		(pixelPos - firstMargin) / centerQuadSize);
+	return (firstMargin + ratio * centerTexSize) / texSize;
+}
+
 void TestSegment(
 	float2 uv,
 	float2 start,
@@ -172,11 +196,21 @@ float4 PSMain(PS_IN input) : SV_Target
 	if (g_ui_texCoord.y > 1.5f)
 	{
 		const float progress = saturate(g_ui_texCoord.x);
-		if (progress <= 0.0001f)
-			discard;
-
+		float2 gaugeUV;
+		gaugeUV.x = Map9SliceGaugeUV(
+			input.uv.x,
+			g_ui_quadSize.x,
+			g_ui_texSize.x,
+			g_ui_margins.x,
+			g_ui_margins.z);
+		gaugeUV.y = Map9SliceGaugeUV(
+			input.uv.y,
+			g_ui_quadSize.y,
+			g_ui_texSize.y,
+			g_ui_margins.y,
+			g_ui_margins.w);
 		const float4 gaugeColor =
-			g_PathTexture.Sample(LinearClamp, input.uv);
+			g_PathTexture.Sample(LinearWrap, gaugeUV);
 		if (gaugeColor.a <= 0.001f)
 			discard;
 
@@ -186,12 +220,16 @@ float4 PSMain(PS_IN input) : SV_Target
 			angle += 6.28318530718f;
 
 		const float endAngle = progress * 6.28318530718f;
-		const float angleMask = progress >= 0.9999f ? 1.f :
-			1.f - smoothstep(endAngle, endAngle + 0.035f, angle);
-		const float alpha = gaugeColor.a * angleMask * g_ui_color.a;
+		const float filledMask = progress <= 0.0001f ? 0.f :
+			(progress >= 0.9999f ? 1.f :
+				1.f - smoothstep(endAngle, endAngle + 0.035f, angle));
+		const float alpha = gaugeColor.a * g_ui_color.a;
 		if (alpha <= 0.001f)
 			discard;
-		return float4(gaugeColor.rgb * g_ui_color.rgb, alpha);
+
+		const float3 emptyColor = float3(0.28f, 0.28f, 0.28f);
+		const float3 filledColor = gaugeColor.rgb * g_ui_color.rgb;
+		return float4(lerp(emptyColor, filledColor, filledMask), alpha);
 	}
 
 	const float4 pathColor =

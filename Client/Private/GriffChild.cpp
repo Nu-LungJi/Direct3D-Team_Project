@@ -206,6 +206,7 @@ HRESULT CGriffChild::Initialize(void* pArg)
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
 
 	m_vSpreadDir = _float3(Randf(-1.f, 1.f), Randf(-0.3f, 0.3f), Randf(-1.f, 1.f));
+	m_vOffsetPos = _float3(Randf(-20.f, 20.f), Randf(-8.f, 8.f), Randf(0.f, 15.f));
 	return S_OK;
 }
 
@@ -254,8 +255,14 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 	if (nullptr == pTarget) return;
 	//부모보다 조금 뒤에 쫓아오게
 	_vector vTargetPos = XMLoadFloat3(&pTarget->GetTransform().GetPosition());
-	_vector vTargetLook = pTarget->GetTransform().GetState(STATE::LOOK);
-	vTargetPos = vTargetPos - vTargetLook * 15.f;
+	_vector vTargetRight = XMVector3Normalize(pTarget->GetTransform().GetState(STATE::RIGHT));
+	_vector vTargetUp    = XMVector3Normalize(pTarget->GetTransform().GetState(STATE::UP));
+	_vector vTargetLook  = XMVector3Normalize(pTarget->GetTransform().GetState(STATE::LOOK));
+
+	//뒤로 퍼지게
+	vTargetPos = vTargetPos + vTargetRight * m_vOffsetPos.x
+		+ vTargetUp * m_vOffsetPos.y
+		- vTargetLook * (30.f + m_vOffsetPos.z);
 
 	_vector vSrcPos = XMLoadFloat3(&GetTransform().GetPosition());
 	_vector vSrcToTargetDir = XMVector3Normalize(vTargetPos - vSrcPos);
@@ -263,61 +270,93 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 	_vector vAwaySum = XMVectorZero();
 	
 	_float fFarCheck = XMVectorGetX(XMVector3Length(vTargetPos - vSrcPos));
-
-	_vector vFollowDir = XMVectorZero();
-	_float fSpeed = 12.f;
-
-	if (fFarCheck > 5.f)
-	{//리더와 일정거리 떨어진 경우에만 따라오게
-		_float fPower = (fFarCheck - 5.f) / 10.f;
-		
-		fPower = std::clamp(fPower, 0.f, 1.f);
-
-		vFollowDir = vSrcToTargetDir * fPower;
-		fSpeed = std::lerp(10.f, 15.f, fPower);
-	}
-
-	int32_t iCnt{};
-	_float fRadius{ 30.f };
-	_float fMinDis{ 25.f };
-	_float fMinNeighbor{FLT_MAX};
-	if (fFarCheck < 25.f)
+	
+	if (fFarCheck <= 5.f)
 	{
-		for (auto& iter : m_Neighbors)
+		m_pMoveIntent->SetMoveIntent({}, 0.f);
+		return;
+	}
+	_vector vFollowDir = XMVectorZero();
+	//리더와 일정거리 떨어진 경우에만 따라오게
+	_float fPower = (fFarCheck - 5.f) / 25.f;
+	
+	fPower = std::clamp(fPower, 0.f, 1.f);
+
+	vFollowDir = vSrcToTargetDir * fPower;
+	_float fSpeed = std::lerp(30.f, 33.f, fPower);
+	
+
+	int32_t iCnt{}, iAligCnt{}, iCohesionCnt{};
+	_float fRadius{ 30.f };
+	_float fMinNeighbor{FLT_MAX};
+	_vector vDirAverage = XMVectorZero();
+	_vector vCenterSum = XMVectorZero();
+	_vector vCohesionDir = XMVectorZero();
+	
+	for (auto& iter : m_Neighbors)
+	{
+		auto* pNeighbor = CGameInstance::Get().GetGameObjectByHandle(iter);
+		if (nullptr == pNeighbor)continue;
+
+		_vector vNeighborPos = XMLoadFloat3(&pNeighbor->GetTransform().GetPosition());
+		_vector vAway = vSrcPos - vNeighborPos ;
+		
+		_float fDist = XMVectorGetX(XMVector3Length(vAway));
+
+		if (fDist < fMinNeighbor)
+			fMinNeighbor = fDist;
+
+		if (fDist < 80.f)
 		{
-			auto* pNeighbor = CGameInstance::Get().GetGameObjectByHandle(iter);
-			if (nullptr == pNeighbor)continue;
+			vCenterSum += vNeighborPos;
+			++iCohesionCnt;
+		}
 
-			_vector vNeighborPos = XMLoadFloat3(&pNeighbor->GetTransform().GetPosition());
-			_vector vAway = vSrcPos - vNeighborPos ;
-			
-			_float fDist = XMVectorGetX(XMVector3Length(vAway));
-
-			if (fDist < fMinNeighbor)
-				fMinNeighbor = fDist;
-			//내 이웃이랑 가까우면 밀어내기
-			//너무 딱 붙으면 아에 다른 방향으로
-			if (fDist <= 0.01f)
-			{
-				vAwaySum += XMLoadFloat3(&m_vSpreadDir);
-				++iCnt;
-				continue;
-			}
-			//밀어내 이웃이랑 근처면 이웃들 순회해서 누적한만큼
-			if (fDist < fRadius)
-			{
-				vAwaySum += XMVector3Normalize(vAway) * (1.f - fDist / fRadius);
-				++iCnt;
-			}
+		if (fDist < 20.f)
+		{ //방향 평균
+			_vector vNeighborDir = pNeighbor->GetTransform().GetState(STATE::LOOK);
+			vDirAverage += XMVector3Normalize(vNeighborDir);
+			++iAligCnt;
+		}
+		//내 이웃이랑 가까우면 밀어내기
+		//너무 딱 붙으면 아에 다른 방향으로
+		
+		if (fDist <= 0.01f)
+		{
+			vAwaySum += XMLoadFloat3(&m_vSpreadDir);
+			++iCnt;
+			continue;
+		}
+		//밀어내 이웃이랑 근처면 이웃들 순회해서 누적한만큼
+		if (fDist < fRadius)
+		{
+			vAwaySum += XMVector3Normalize(vAway) * (1.f - fDist / fRadius);
+			++iCnt;
 		}
 	}
-	if(iCnt > 0)
-	vAwaySum = vAwaySum / _float(iCnt);
 	
-	//if (fMinNeighbor < fMinDis)
-	//	vMoveDir = vAwaySum;
-	//else
-		vMoveDir = vFollowDir * 1.5f + vAwaySum * 4.f;
+	if(iCnt > 0)
+		vAwaySum = vAwaySum / _float(iCnt);
+	if (iAligCnt > 0)
+		vDirAverage = vDirAverage / _float(iAligCnt);
+	if (iCohesionCnt > 0)
+	{
+		_vector vCenter = vCenterSum / _float(iCohesionCnt);
+		_vector vToCenter = vCenter - vSrcPos;
+		_float fCenterDist = XMVectorGetX(XMVector3Length(vToCenter));
+
+		if (fCenterDist > 35.f)
+		{
+			_float fCohesionPower = (fCenterDist - 35.f) / 30.f;
+			fCohesionPower = std::clamp(fCohesionPower, 0.f, 1.f);
+			vCohesionDir = XMVector3Normalize(vToCenter) * fCohesionPower;
+			//무리에서 이탈할경우 많이 벗어나면 돌아오게하기 위함
+		}
+	}
+
+
+	vMoveDir = vTargetLook * 1.f + vFollowDir * 1.5f 
+		+ vAwaySum * 2.f + vDirAverage * 0.6f + vCohesionDir * 0.3f;
 
 	_vector vTargetDir = XMVector3Normalize(vMoveDir);
 	_float fMoveLength = XMVectorGetX(XMVector3Length(vMoveDir));
@@ -338,7 +377,7 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 		_vector vLastDir = XMVectorLerp(
 			XMVector3Normalize(XMLoadFloat3(&m_vCurDir)),vTargetDir,fRatio);
 
-		XMStoreFloat3(&m_vCurDir, vLastDir);
+		XMStoreFloat3(&m_vCurDir, XMVector3Normalize(vLastDir));
 	}
 
 	m_pMoveIntent->SetFacingIntent(m_vCurDir, 60.f);

@@ -33,6 +33,7 @@ HRESULT CBTAnimRoot::Initalize(void* pArg)
 void CBTAnimRoot::Update_Gui()
 {
 	BoolButton("ShowAnim: ", m_bShow);
+	BoolButton("ResetTime :", m_bResetAnimTime);
 	if (m_bShow)
 	{
 		const _string& Name = CGameInstance::Get().GetAnimName(m_Value.iAnimIndex, Get_Handle());
@@ -90,8 +91,9 @@ void CBTAnimRoot::Update_Gui()
 					}
 				}
 			}
-			ImGui::TreePop();
 		}
+
+		ImGui::TreePop();
 	}
 
 	if (ImGui::Button("Add To Start Flag"))
@@ -213,6 +215,7 @@ nlohmann::json CBTAnimRoot::Save_Node()
 
 	SaveJsonValue(j, "Early", m_bEarly);
 	SaveJsonValue(j, "EarlyRatio", m_fEarlyRatio);
+	SaveJsonValue(j, "ResetAnimTime", m_bResetAnimTime);
 	SaveJsonEnum(j, "SkillType", m_eSkillType);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "SkillRatio", m_fSkillRatio);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
@@ -282,6 +285,7 @@ HRESULT CBTAnimRoot::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "Loop", m_bLoop);
 	LoadJsonEnum(j, "SkillType", m_eSkillType);
 	LoadJsonValue(j, "Blend", m_fBlend);
+	LoadJsonValue(j, "ResetAnimTime", m_bResetAnimTime);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "SkillRatio", m_fSkillRatio);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	
@@ -447,6 +451,13 @@ void CBTAnimRoot::OnEnter()
 	if (nullptr == pAnim) return;
 
 	auto& pA = pAnim->GetCurAnimState();
+	if (m_bResetAnimTime)
+	{
+		pA.bFinished = false;
+		pA.bLoop = m_bLoop;
+		pAnim->SetTrackPosition(0.f);
+	}
+		
 	if (!m_bLoop && m_Value.iAnimIndex == pA.iAnimIndex)
 	{
 		pA.bFinished = false;

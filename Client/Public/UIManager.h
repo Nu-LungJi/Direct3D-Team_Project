@@ -3,6 +3,7 @@
 #include "UIObject.h"
 #include "UI_Structs.h"
 #include "WandShop.h"
+#include <array>
 
 NS_BEGIN(Client)
 
@@ -44,6 +45,15 @@ public:
 	void CreateFadeIn(float delay = 0.f, float playtime = 0.5f);
 	void CreateFadeOut(float delay = 0.f, float playtime = 0.5f);
 	void CreateFadeInSceneChange(float delay = 0.f, float playtime = 1.f, LEVEL level = LEVEL::LOGO);
+	void PlayFadeInAll2DUI(float delay = 0.f, float playtime = 0.5f);
+	void PlayFadeOutAll2DUI(float delay = 0.f, float playtime = 0.5f);
+
+	/********스펠 잠금 및 슬롯 영속 상태********/
+	_bool IsSpellUnlocked(SPELL_TYPE spellType) const;
+	void SetSpellUnlocked(SPELL_TYPE spellType, _bool unlocked);
+	uint32_t GetSavedSpellSlot(uint32_t slotNumber) const;
+	void SaveSpellSlot(uint32_t slotNumber, uint32_t spellType);
+	_bool HasInitializedSpellSlots() const { return m_bSpellSlotsInitialized; }
 
 	/********데미지 폰트***********/
 	void CreateDamageFont(uint32_t damage, CHandle targetMonster,_bool isCritical = false);
@@ -63,19 +73,61 @@ public:
 	void RemoveNPCSpeechBubble(CHandle npcHandle, _bool fadeOut = true);
 	void ClearNPCSpeechBubbles(_bool immediate = false);
 
+	/********퀘스트 안내***********/
+	// Quest UI가 없으면 생성하고, 이미 표시 중이면 텍스트 전환 모션으로 교체한다.
+	void CreateOrChangeQuest(const std::string& questText);
+	void DeleteQuest();
+
 	/********지팡이 상점***********/
 	void OpenWandShop();
+
+	void OpenWandShopWorld(
+		CHandle targetHandle,
+		const _float3& positionOffset,
+		const _float3& rotationOffsetDegrees); // 3D월드 상점
+
 	void OpenWandShopPage(uint32_t pageIndex);
 	void CloseWandShop();
-
+	_float2 GetUIInteractionMousePosition() const;
+	_bool IsWandShopWorldMode() const { return m_bWandShopWorldMode; }
 public:
 	std::optional<CHandle> RootUIPicking();
+	_bool IsPointerOverInteractiveUI();
 
 private:
 	std::map<std::string, std::function<void(class CUIObject*)>> m_EventMap;
 	std::map<std::string, std::function<void(std::string name)>> m_FuncMap;
 	std::unordered_map<std::string, std::wstring> m_StringTable;
 	std::vector<CHandle> rootUIHandles;
+	struct UI_HANDLE_HASH
+	{
+		size_t operator()(const CHandle& handle) const noexcept
+		{
+			const size_t indexHash = std::hash<size_t>{}(handle.GetIndex());
+			const size_t generationHash = std::hash<uint32_t>{}(handle.GetGeneration());
+			return indexHash ^ (generationHash + 0x9e3779b9u + (indexHash << 6u) + (indexHash >> 2u));
+		}
+	};
+	std::unordered_map<CHandle, _float, UI_HANDLE_HASH> m_2DUIRestoreAlpha{};
+	std::unordered_map<CHandle, _bool, UI_HANDLE_HASH> m_2DUIRestoreInputLock{};
+	std::unordered_map<CHandle, _float, UI_HANDLE_HASH> m_SpellMeterRestoreScale{};
+	std::array<_bool, static_cast<size_t>(SPELL_TYPE::B_NONE)> m_SpellUnlockStates = []
+	{
+		std::array<_bool, static_cast<size_t>(SPELL_TYPE::B_NONE)> states{};
+		states.fill(true);
+		states[static_cast<size_t>(SPELL_TYPE::FLIPENDO)] = false;
+		states[static_cast<size_t>(SPELL_TYPE::TRANSFORMATION)] = false;
+		states[static_cast<size_t>(SPELL_TYPE::EXPELLIARMUS)] = false;
+		states[static_cast<size_t>(SPELL_TYPE::BOMBARDA)] = false;
+		states[static_cast<size_t>(SPELL_TYPE::INCENDIO)] = false;
+		states[static_cast<size_t>(SPELL_TYPE::DISILLUSIONMENT)] = false;
+		states[static_cast<size_t>(SPELL_TYPE::AVADAKEDAVRA)] = false;
+		states[static_cast<size_t>(SPELL_TYPE::CRUCIO)] = false;
+		states[static_cast<size_t>(SPELL_TYPE::IMPERIO)] = false;
+		return states;
+	}();
+	std::array<uint32_t, 4> m_SavedSpellSlots{};
+	_bool m_bSpellSlotsInitialized{ false };
 
 	// 애니메이션 함수, 실행 함수들 이름
 	std::vector<std::string> m_vEventNames;
@@ -88,13 +140,22 @@ private:
 	std::vector<ACTIVE_BUTTON_INFO> m_ActiveButtons{};
 	std::vector<DIALOGUE_POPUP_INFO> m_DialoguePopups{};
 	std::vector<NPC_SPEECH_BUBBLE_INFO> m_NPCSpeechBubbles{};
+	std::optional<CHandle> m_hQuestRoot{};
+	std::optional<CHandle> m_hQuestText{};
+	std::string m_CurrentQuestText{};
+	_float2 m_QuestTextBaseLocalPos{};
 	_float m_fDialogueTargetWidth{};
 	CWandShop m_WandShop{};
+	_bool m_bWandShopWorldMode{ false };
+	_float4x4 m_WandShopPanelWorld{};
+	_float2 m_WandShopPanelMousePosition{ -FLT_MAX, -FLT_MAX };
+	_bool m_bWandShopPanelMouseHit{ false };
 
 	void UpdateActiveButtons();
 	void UpdateDialoguePopups(_float fTimeDelta);
 	void RefreshDialoguePopupLayout();
 	void UpdateNPCSpeechBubbles(_float fTimeDelta);
+	void UpdateWandShopWorldMousePosition();
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
 public:

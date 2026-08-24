@@ -34,6 +34,7 @@ public:
 		_float2 vUV;
 		_float4 vColor;
 		_float4 vEmissive;
+		_float  fAgeRatio;
 	};
 
 

@@ -337,10 +337,13 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 			float t = std::clamp((value - edge0) / std::max(edge1 - edge0, 0.0001f), 0.f, 1.f);
 			return t * t * (3.f - 2.f * t);
 			};
-		const float ringHoldRatio = 0.45f;
-		const float chaosStartRatio = 0.40f;
-		const float chaosEndRatio = 0.8f;
-		const float chaosT = SmoothStep(chaosStartRatio, chaosEndRatio, ageRatio);
+		const XMVECTOR patternVelocity = XMLoadFloat3(&p.originalVelocity);
+		const bool hasPatternVelocity = XMVectorGetX(XMVector3LengthSq(patternVelocity)) > FLT_EPSILON;
+		const float arrivalRatio = hasPatternVelocity ? std::lerp(0.22f, 0.55f, random3) : 0.f;
+		const float waveAgeRatio = arrivalRatio > 0.f
+			? std::clamp((ageRatio - arrivalRatio) / std::max(1.f - arrivalRatio, 0.0001f), 0.f, 1.f)
+			: ageRatio;
+		const float chaosT = SmoothStep(0.f, 0.45f, waveAgeRatio);
 		XMVECTOR planeRight = XMVectorSet(1.f, 0.f, 0.f, 0.f);
 		XMVECTOR planeUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
 		XMVECTOR planeNormal = XMVectorSet(0.f, 0.f, 1.f, 0.f);
@@ -356,7 +359,7 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 		const XMVECTOR radialDirection = XMVector3Normalize(planeRight * radialX + planeUp * radialY);
 		const XMVECTOR tangentDirection = XMVector3Normalize(planeRight * -radialY + planeUp * radialX);
 		const float ringSpeed = m_waveCb.g_fBurstSpeed;
-		const float ringFade = 1.f - SmoothStep(ringHoldRatio, 0.75f, ageRatio);
+		const float ringFade = 1.f - SmoothStep(0.f, 0.55f, waveAgeRatio);
 		const float radialSpeed = ringSpeed * std::lerp(1.f, 0.25f, chaosT);
 		const float phase = random1 * XM_2PI + p.life * m_waveCb.g_fWaveSpeed;
 		const XMVECTOR position = XMLoadFloat3(&p.vPosition);
@@ -403,7 +406,11 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 			break;
 		}
 		}
-		const XMVECTOR finalVelocity = ringVelocity + chaosVelocity * chaosT + planeNormal * (depthVelocity * chaosT);
+		XMVECTOR finalVelocity{};
+		if (hasPatternVelocity && ageRatio < arrivalRatio)
+			finalVelocity = patternVelocity / std::max(arrivalRatio, 0.0001f);
+		else
+			finalVelocity = patternVelocity + ringVelocity + chaosVelocity * chaosT + planeNormal * (depthVelocity * chaosT);
 		XMStoreFloat3(&p.vVelocity, finalVelocity);
 	}
 	if (hasGravity && !hasOrbit)
@@ -649,12 +656,12 @@ HRESULT CParticle_CPU::Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnDa
 		return E_FAIL;
 	uint32_t iSpawned = 0;
 	const uint32_t spawnSeed = m_iSpawnSeed++;
-	const uint32_t spawnPattern = spawnSeed % 4;
 	for (uint32_t i = 0; i < m_Particles.size() && iSpawned < count; ++i)
 	{
 		if (m_Particles[i].bAlive)
 			continue;
 		const auto& src = pSpawnData[iSpawned];
+		const uint32_t spawnPattern = src.ownerID % 4u;
 		m_Particles[i].vPosition = src.position;
 		m_Particles[i].vVelocity = src.velocity;
 		m_Particles[i].originalPosition = src.originalPosition;

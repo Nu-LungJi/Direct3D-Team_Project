@@ -698,7 +698,10 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			CResModel::Create("./Resources/SampleClient/Models/Skeleton/NPC_VictorRookwood/SK_NPC_VictorRookwood.bin")))
 		{
 			E::CResModel::DESC Desc{};
-			Desc.PreTransformMatrix = XMMatrixRotationY(XMConvertToRadians(180.f));
+			Desc.PreTransformMatrix =
+				XMMatrixScaling(3.f, 3.f, 3.f) *
+				XMMatrixRotationY(XMConvertToRadians(180.f)) *
+				XMMatrixTranslation(0.f, -1.8f, 0.f);
 			if (FAILED(res->Load(Desc)))
 			{
 				MSG_BOX("TERRAIN Failed Model_Resource_NPC_VictorRookwood");
@@ -730,6 +733,15 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 	//Coin
 	{
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Coin, CCoin::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
+			return E_FAIL;
+		}
+	}
+
+	//PX_COLLISION_PROXY_PROTOTYPE_GROUP
+	{
+		if (FAILED(E::CGameInstance::Get().AddPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_Coin, CCoin::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
 			return E_FAIL;

@@ -595,7 +595,11 @@ HRESULT CEffectManager::LoadEffectPreset(const std::string& strPath)
 				if (commandJson.contains("intensity"))
 					light.fIntensity = commandJson["intensity"].get<_float>();
 
-				if (commandJson.contains("InnerAtt"))
+				// 저장기가 사용하는 "innerAtt"를 우선으로 읽는다.
+				// 기존에 대문자 키로 작성된 프리셋도 계속 불러올 수 있게 호환한다.
+				if (commandJson.contains("innerAtt"))
+					light.fInnerAtt = commandJson["innerAtt"].get<_float>();
+				else if (commandJson.contains("InnerAtt"))
 					light.fInnerAtt = commandJson["InnerAtt"].get<_float>();
 
 				if (commandJson.contains("OuterAtt"))

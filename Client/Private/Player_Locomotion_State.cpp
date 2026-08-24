@@ -51,6 +51,9 @@ void CPlayer_Locomotion_State::CacheAnimationIndices(const CPlayer& player)
 		return;
 
 	m_iIdleAnimation = FindAnimationIndex(player, "AN_ProfessorSharp_MasterRig_Hu_BM_LF_Idle_anm.bin");
+	m_iRightFootIdleAnimation = FindAnimationIndex(
+		player,
+		"AN_ProfessorSharp_MasterRig_Hu_BM_RF_Idle_anm.bin");
 	m_iWalkForwardAnimation = FindAnimationIndex(
 		player,
 		"AN_ProfessorSharp_MasterRig_Hu_BM_Walk_Loop_Fwd_anm.bin");
@@ -168,9 +171,11 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 			player->SetMovementLocked(false);
 			player->SetCurrentMoveSpeed(0.f);
 			pMoveIntent->ClearMoveIntent();
-			if (m_iIdleAnimation >= 0)
+			const int32_t iIdleAnimation =
+				SelectIdleAnimationForCurrentFeet(*player);
+			if (iIdleAnimation >= 0)
 				pAnimator->Play_Anim(
-					m_iIdleAnimation,
+					iIdleAnimation,
 					true,
 					0.1f);
 		}
@@ -198,12 +203,18 @@ void CPlayer_Locomotion_State::Update(CStateMachine* pStateMachine, _float fTime
 		player->SetMovementLocked(false);
 		pMoveIntent->ClearMoveIntent();
 		pMoveIntent->ClearFacingIntent();
-		if (m_iIdleAnimation >= 0 &&
-			pAnimator->GetPlayAnimIndex() !=
-				static_cast<uint32_t>(m_iIdleAnimation))
+		const uint32_t iCurrentAnimation = pAnimator->GetPlayAnimIndex();
+		const _bool bAlreadyIdle =
+			(m_iIdleAnimation >= 0 &&
+				iCurrentAnimation == static_cast<uint32_t>(m_iIdleAnimation)) ||
+			(m_iRightFootIdleAnimation >= 0 &&
+				iCurrentAnimation == static_cast<uint32_t>(m_iRightFootIdleAnimation));
+		const int32_t iIdleAnimation =
+			bAlreadyIdle ? -1 : SelectIdleAnimationForCurrentFeet(*player);
+		if (iIdleAnimation >= 0)
 		{
 			pAnimator->Play_Anim(
-				m_iIdleAnimation,
+				iIdleAnimation,
 				true,
 				0.15f);
 		}
@@ -381,6 +392,45 @@ int32_t CPlayer_Locomotion_State::FindAnimationIndex(const CPlayer& player,const
 	return -1;
 }
 
+int32_t CPlayer_Locomotion_State::SelectIdleAnimationForCurrentFeet(
+	const CPlayer& player) const
+{
+	// 한쪽 Idle만 로드된 모델도 기존처럼 정상 동작하도록 먼저 처리한다.
+	if (m_iRightFootIdleAnimation < 0)
+		return m_iIdleAnimation;
+	if (m_iIdleAnimation < 0)
+		return m_iRightFootIdleAnimation;
+
+	const auto* pModelInstance = player.GetModelInstance();
+	const auto pModel = pModelInstance ? pModelInstance->GetModel() : nullptr;
+	if (!pModel)
+		return m_iIdleAnimation;
+
+	const int32_t iLeftFoot = pModel->Get_BoneIndex("LeftFoot");
+	const int32_t iRightFoot = pModel->Get_BoneIndex("RightFoot");
+	const auto& CombinedBones = pModelInstance->Get_CombinedBoneMatrices();
+	if (iLeftFoot < 0 || iRightFoot < 0 ||
+		static_cast<size_t>(iLeftFoot) >= CombinedBones.size() ||
+		static_cast<size_t>(iRightFoot) >= CombinedBones.size())
+	{
+		return m_iIdleAnimation;
+	}
+
+	const _matrix matWorld =
+		player.GetTransform().GetLoadedCombinedWorldMatrix();
+	const _vector vLeftFootWorld = XMVector3TransformCoord(
+		XMVectorZero(),
+		XMLoadFloat4x4(&CombinedBones[iLeftFoot]) * matWorld);
+	const _vector vRightFootWorld = XMVector3TransformCoord(
+		XMVectorZero(),
+		XMLoadFloat4x4(&CombinedBones[iRightFoot]) * matWorld);
+
+	// 더 낮은 발을 현재 지지발로 보고 그 발 표기의 Idle을 선택한다.
+	return XMVectorGetY(vRightFootWorld) < XMVectorGetY(vLeftFootWorld)
+		? m_iRightFootIdleAnimation
+		: m_iIdleAnimation;
+}
+
 void CPlayer_Locomotion_State::BeginJogStart(CPlayer& player)
 {
 	auto* pAnimator = player.GetAnimator();
@@ -440,9 +490,11 @@ void CPlayer_Locomotion_State::BeginJogStop(CPlayer& player)
 		player.SetRootMotionTranslationActive(false);
 		player.SetMovementLocked(false);
 		player.SetCurrentMoveSpeed(0.f);
-		if (m_iIdleAnimation >= 0)
+		const int32_t iIdleAnimation =
+			SelectIdleAnimationForCurrentFeet(player);
+		if (iIdleAnimation >= 0)
 			pAnimator->Play_Anim(
-				m_iIdleAnimation,
+				iIdleAnimation,
 				true,
 				0.1f);
 	}

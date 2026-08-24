@@ -3,7 +3,6 @@
 #include "BTActionNode.h"
 #include "Monster.h"
 NS_BEGIN(Client)
-enum class BT_USER { MON, NPC };
 typedef struct animflag
 {
 	_bool bFlag{ false };
@@ -57,7 +56,7 @@ protected:
 	void				Play_Sound(_float fTimeDelta);
 protected:
 	_bool						m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bEarly{ false }, m_bGravity{ false }, m_bShow{ false };
-
+	_bool						m_bResetAnimTime{ false };
 	ATTMON						m_eSkillType{ ATTMON::END };
 	_float2						m_fSkillRatio{}, m_fRatio{}, m_vRotRatio{};
 	_float					    m_fBlend{ 0.1f }, m_fEarlyRatio{ 1.f }, m_fGravity{ -9.8f };
@@ -66,7 +65,7 @@ protected:
 	std::vector<FLAG_EVENT>		m_EndFlags{};
 	_string						m_strAnimName{};
 
-	BT_USER				m_eUser{ BT_USER::MON };
+	BT_USER						m_eUser{ BT_USER::MON };
 	std::vector<MONSOUND>		m_Sounds{};
 private:
 	uint32_t					m_iStartFlagCheck{};

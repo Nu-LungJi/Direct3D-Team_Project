@@ -182,6 +182,7 @@ namespace Engine
 #define CIRCLE_SPREAD_FIELDS(X) \
     X(_float3, vCenter, _float3(0,0,0)) \
     X(_float, fRadius, 3.f) \
+    X(_float, fRadiusJitter, 0.f) \
     X(uint32_t, iCount, 12) \
     X(_float3, fSize, _float3(1,1,1)) \
     X(_float3, fEndSize, _float3(1,1,1)) \
@@ -193,6 +194,7 @@ namespace Engine
     X(_float4, endEmissive, _float4(0,0,0,0)) \
     X(_float, endIntensity, 0.f) \
     X(_float, fSpawnDelay, 0.f)\
+    X(_float, fSpawnDuration, 0.5f)\
    COMMON_PATTERN_FIELDS(X)
 
 #define CIRCLE_TO_CENTER_FIELDS(X) \

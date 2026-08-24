@@ -105,6 +105,29 @@ void CPlayerThirdPersonCamera::EndFovOverride(_float fRestoreResponse)
 		fRestoreResponse : 10.f;
 }
 
+_bool CPlayerThirdPersonCamera::BeginDistanceOverride(
+	_float fDistanceOffset, _float fResponse)
+{
+	if (!std::isfinite(fDistanceOffset) || fDistanceOffset < 0.f ||
+		!std::isfinite(fResponse) || fResponse <= 0.f)
+	{
+		return false;
+	}
+
+	m_fDistanceOverrideOffset = fDistanceOffset;
+	m_fDistanceOverrideResponse = fResponse;
+	m_bDistanceOverrideActive = true;
+	return true;
+}
+
+void CPlayerThirdPersonCamera::EndDistanceOverride(_float fRestoreResponse)
+{
+	m_bDistanceOverrideActive = false;
+	m_fDistanceOverrideResponse =
+		std::isfinite(fRestoreResponse) && fRestoreResponse > 0.f ?
+		fRestoreResponse : 8.f;
+}
+
 void CPlayerThirdPersonCamera::PriorityUpdate(_float fTimeDelta)
 {
 	if (CGameInstance::Get().GetActiveCamera() != this ||
@@ -282,9 +305,12 @@ void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 	// 탑승/하차 시에는 거리 변화가 튀지 않도록 지수 보간한다.
 	const _float fTargetDistance = bFlightCamera
 		? m_fFlightDistance + m_fSpeedDistanceExtension * m_fCurrentSpeedEffectRatio
-		: m_fDistance;
+		: m_fDistance + (m_bDistanceOverrideActive ?
+			m_fDistanceOverrideOffset : 0.f);
+	const _float fDistanceResponse = bFlightCamera ?
+		m_fFlightDistanceResponse : m_fDistanceOverrideResponse;
 	const _float fDistanceRatio = 1.f - std::exp(
-		-m_fFlightDistanceResponse * std::max(fTimeDelta, 0.f));
+		-fDistanceResponse * std::max(fTimeDelta, 0.f));
 	m_fCurrentDistance = std::lerp(
 		m_fCurrentDistance, fTargetDistance, fDistanceRatio);
 	const _float fTargetShoulderOffset = bFlightCamera

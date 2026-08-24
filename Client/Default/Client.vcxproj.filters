@@ -454,6 +454,9 @@
     <Filter Include="GameObject\Animal\Bird\Child">
       <UniqueIdentifier>{42356f40-caa5-4093-87d3-10d9db4ce8f4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\AI\Decorator\NPC">
+      <UniqueIdentifier>{7b304845-9a6a-49c7-a431-ff56919fa54f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -1086,6 +1089,15 @@
     <ClInclude Include="..\public\GriffChild.h">
       <Filter>GameObject\Animal\Bird\Child</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTDecHitPlayer.h">
+      <Filter>GameObject\AI\Decorator\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecNpcState.h">
+      <Filter>GameObject\AI\Decorator\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTChangeState.h">
+      <Filter>GameObject\AI\Action\NPC</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1657,6 +1669,15 @@
     </ClCompile>
     <ClCompile Include="..\private\GriffChild.cpp">
       <Filter>GameObject\Animal\Bird\Child</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecHitPlayer.cpp">
+      <Filter>GameObject\AI\Decorator\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecNpcState.cpp">
+      <Filter>GameObject\AI\Decorator\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTChangeState.cpp">
+      <Filter>GameObject\AI\Action\NPC</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
