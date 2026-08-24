@@ -398,7 +398,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		Desc.PreTransformMatrix =
 			XMMatrixScaling(3.f, 3.f, 3.f) *
 			XMMatrixRotationY(XMConvertToRadians(180.f)) *
-			XMMatrixTranslation(0.f, -1.4f, 0.f);
+			XMMatrixTranslation(0.f, 0.f, 0.f);
 		if (FAILED(res->Load(Desc)))
 		{
 			MSG_BOX("HOGWART Failed Model_Resource_NPC_VictorRookwood");

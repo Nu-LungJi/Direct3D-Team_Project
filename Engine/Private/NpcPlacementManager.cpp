@@ -475,8 +475,21 @@ void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t 
 		}
 	}
 	DrawStringInput("Behavior Group", Desc.sBehaviorMajorTag);
-	DrawStringInput("Behavior Name", Desc.sBehaviorMinorTag);
+	if (ImGui::BeginCombo("Behavior Name", Desc.sBehaviorMinorTag.c_str()))
+	{
+		for (auto& iter : m_ResMinorNames)
+		{
+			_bool bSelect = iter == Desc.sBehaviorMinorTag;
+			if (ImGui::Selectable(iter.c_str(), &bSelect))
+			{
+				Desc.sBehaviorMinorTag = iter;
+			}
+			if (bSelect)
+				ImGui::SetItemDefaultFocus();
 
+		}
+		ImGui::EndPopup();
+	}
 	int32_t iRuntimeType = static_cast<int32_t>(Desc.eRuntimeType);
 	if (ImGui::Combo(
 		"Runtime Type",

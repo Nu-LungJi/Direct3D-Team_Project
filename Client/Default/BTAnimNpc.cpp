@@ -54,12 +54,12 @@ EVALUATE CBTAnimNpc::Evaluate(_float fTimeDelta)
 	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
 	
 	if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr ||
-		-1 == m_Value.iAnimIndex)
+		-1 == m_iAnimIndex)
 		return m_eDebug = EVALUATE::FAILED;
 	
 	_vector vSrcPos = pTransform->GetState(STATE::POSITION);
 	pAnimator->SetPlay(true);
-	pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
+	pAnimator->Play_Anim(m_iAnimIndex, m_bLoop, m_fBlend);
 	if (m_bStart)
 	{
 		m_fDis = XMVectorGetX(XMVector3Length(vDestPos - vSrcPos));
@@ -120,7 +120,6 @@ void CBTAnimNpc::Update_Gui()
 	__super::Update_Gui();
 	if (ImGui::TreeNode("Anim"))
 	{
-		BoolButton("AnimToBB", m_bBBAnim);
 		DragFloat("Move Speed", m_Value.fSpeed);
 		DragFloat("RotTime", m_Value.fTime);
 		if (ImGui::Button("Animation"))
@@ -135,7 +134,8 @@ void CBTAnimNpc::Update_Gui()
 			if (-1 != iIndex)
 			{
 				m_bPopup = false;
-				m_Value.iAnimIndex = iIndex;
+				m_AnimName = CGameInstance::Get().GetAnimName(iIndex, Get_Handle());
+
 			}
 			ImGui::PopStyleColor();
 		}
@@ -172,7 +172,7 @@ nlohmann::json CBTAnimNpc::Save_Node()
 	nlohmann::json j = __super::Save_Node();
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
-
+	JsonSaveLoadManager::SaveJsonTypeString(j, "AnimName", m_AnimName);
 	
 	return j;
 }
@@ -181,6 +181,9 @@ HRESULT CBTAnimNpc::Load_json(const nlohmann::json& j)
 	__super::Load_json(j);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
+	JsonSaveLoadManager::LoadJsonTypeString(j, "AnimName", m_AnimName);
+	
+
 	return S_OK;
 }
 
@@ -190,7 +193,17 @@ void CBTAnimNpc::OnEnter()
 	__super::OnEnter();
 	m_fTime = 0.f;
 
+	
+	if (m_iAnimIndex == -1)
+	{
+		auto* pBT = Get_ComBT();
+		if (nullptr == pBT) return;
 
+		auto* pSrc = static_cast<CNpcMom*>(pBT->GetGameObject());
+		if (nullptr == pSrc) return;
+
+		m_iAnimIndex = pSrc->Find_AnimIndex(m_AnimName);
+	}
 
 
 }

@@ -31,7 +31,7 @@ private:
 	MOVE						m_eMove{};
 	int32_t						m_iNaviPathIndex;
 	_float3						m_vLastDir{}, m_vSlideDir{};
-	_bool						m_bMoveToEnd{ true }, m_bSweep{ false }, m_bBBValue{ false };
+	_bool						m_bMoveToEnd{ true }, m_bSweep{ false }, m_bBBValue{ false }, m_bLoop{true};
 	std::vector<_float3>		m_NaviPath;
 	std::vector<_float3>		m_Separations;
 public:

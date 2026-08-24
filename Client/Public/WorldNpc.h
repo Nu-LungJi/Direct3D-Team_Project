@@ -4,7 +4,6 @@
 
 
 NS_BEGIN(Client)
-
 class CWorldNpc final : public CNpcMom
 {
 public:

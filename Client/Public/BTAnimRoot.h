@@ -3,7 +3,6 @@
 #include "BTActionNode.h"
 #include "Monster.h"
 NS_BEGIN(Client)
-enum class BT_USER { MON, NPC };
 typedef struct animflag
 {
 	_bool bFlag{ false };

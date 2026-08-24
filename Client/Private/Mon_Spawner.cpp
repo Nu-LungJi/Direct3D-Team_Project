@@ -106,7 +106,7 @@ HRESULT CMon_Spawner::Initialize(void* pArg)
 			{
 				Spider.vPos = iter;
 				Spider.vPatrollStart = iter;
-				Spider.vPatrollEnd = _float3(48.357f, 8.653, -11.853f);
+				Spider.vPatrollEnd = _float3(72.475, -0.696, -108.795);
 				Spider.bSpawn = true;
 				E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider);
 

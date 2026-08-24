@@ -25,7 +25,7 @@ NS_END
 
 
 NS_BEGIN(Client)
-
+enum class NPC_STATE { IDLE, HIT, TALK ,END};
 class CNpcMom : public CAnimationObject, public CSkillTarget
 {
 public:
@@ -52,6 +52,8 @@ public:
 			.iSimulationMask = PX_ALL_LAYERS,
 			// [LSY] 캐릭터 CCT끼리는 충돌하되 전투용 HurtBox는 이동 Query에서 제외한다.
 			.iQueryMask =
+
+				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
 				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
 				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 				ETOUI(COLLISION_LAYER::PLAYER_BODY) |

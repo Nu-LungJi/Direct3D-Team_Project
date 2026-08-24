@@ -259,7 +259,9 @@ HRESULT CSpider::Ready_Skill(const _string& LevelTag)
 }
 void CSpider::Ready_BBKeyValue()
 {
+	auto pBB = Get_BlackBoard();
 
+	pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
 }
 void CSpider::PriorityUpdate(E::_float fTimeDelta)
 {
@@ -272,7 +274,7 @@ void CSpider::PriorityUpdate(E::_float fTimeDelta)
 		SetPendingDestroy();
 		return;
 	}
-
+	m_fTick += fTimeDelta;
 	m_pFsm->PriorityUpdate(fTimeDelta);
 	Update_BBToFsm();
 	__super::PriorityUpdate(fTimeDelta);
@@ -284,7 +286,11 @@ void CSpider::Update(E::_float fTimeDelta)
 	if (!m_bSpawn) return;
 	if (m_bEndGame) return;
 	__super::Update(fTimeDelta);
-
+	if (m_fTick > 3.f)
+	{
+		Find_Target();
+		m_fTick = 0.f;
+	}
 }
 
 void CSpider::FixedUpdate(E::_float fTimeDelta)

@@ -202,7 +202,19 @@ HRESULT CWorldNpc::Initialize(void* pArg)
 	}
 
 	Ready_BBKeyValue(NpcDesc);
+	_vector vRight = XMVector3Normalize(GetTransform().GetState(STATE::RIGHT));
+	_vector vUp    = XMVector3Normalize(GetTransform().GetState(STATE::UP));
+	_vector vLook  = XMVector3Normalize(GetTransform().GetState(STATE::LOOK));
+	_matrix matRot = {};
+	matRot.r[0] = vRight;
+	matRot.r[1] = vUp;
+	matRot.r[2] = vLook;
+	_float3 vRot = NpcDesc->vRot;
+	_matrix vRotOffset = XMMatrixRotationX(XMConvertToRadians(vRot.x)) 
+		* XMMatrixRotationY(XMConvertToRadians(vRot.y)) * XMMatrixRotationZ(XMConvertToRadians(vRot.z));
+	_vector vFinalRot = XMQuaternionRotationMatrix(vRotOffset * matRot);
 
+	GetTransform().SetQuaternion(vFinalRot);
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
@@ -210,7 +222,6 @@ HRESULT CWorldNpc::Initialize(void* pArg)
 	GetTransform().SetPosition(XMLoadFloat3(&NpcDesc->vPos));
 
 	m_pComSphereCol->SetQueryEnabled(true);
-	m_pModelAnimator->Play_Anim(0, false);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	return S_OK;
 }
@@ -239,6 +250,7 @@ void CWorldNpc::Ready_BBKeyValue(NPC_DESC* pDesc)
 	pBB->Set_Value<_float3>(NPC_KEY::STARTPOS, pDesc->vStartPos);
 	pBB->Set_Value<_float3>(NPC_KEY::ENDPOS, pDesc->vEndPos);
 	pBB->Set_Value<_float>(NPC_KEY::SPEED, pDesc->fSpeed);
+	pBB->Set_Value<NPC_STATE>(NPC_KEY::STATE, NPC_STATE::IDLE);
 
 }
 void CWorldNpc::PriorityUpdate(E::_float fTimeDelta)
