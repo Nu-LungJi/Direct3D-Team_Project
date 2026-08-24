@@ -846,7 +846,7 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 			m_pGameObject->GetComponent<CComFootIK>("ComFootIK"))
 		{
 			pFootIK->ApplyToLocalPose(
-				*m_pModelInstance, m_FinalLocalBoneMatrices);
+				*m_pModelInstance, m_FinalLocalBoneMatrices, fTimeDelta);
 		}
 	}
 
@@ -869,6 +869,14 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 
 		XMStoreFloat4x4(&m_CombinedBoneMatrices[i], XMLoadFloat4x4(&m_FinalLocalBoneMatrices[i]) * XMLoadFloat4x4(&m_CombinedBoneMatrices[iParentIndex]));
 
+	}
+	if (m_pGameObject)
+	{
+		if (auto* pFootIK =
+			m_pGameObject->GetComponent<CComFootIK>("ComFootIK"))
+		{
+			pFootIK->FinalizeDebugPose(*m_pModelInstance);
+		}
 	}
 
 	if (m_bRootMotion && m_bRawRootLocalValid && m_iRootBoneIndex >= 0)

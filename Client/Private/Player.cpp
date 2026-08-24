@@ -279,21 +279,24 @@ HRESULT CPlayer::Initialize(void* pArg)
 		Desc.tLeftLeg = {
 			.sUpperLeg = "LeftUpLeg",
 			.sLowerLeg = "LeftLeg",
-			.sFoot = "LeftFoot",
+			.sFoot = "SKT_FX_LeftFootSocket",
 			.sToe = "LeftToeBase" };
 		Desc.tRightLeg = {
 			.sUpperLeg = "RightUpLeg",
 			.sLowerLeg = "RightLeg",
-			.sFoot = "RightFoot",
+			.sFoot = "SKT_FX_RightFootSocket",
 			.sToe = "RightToeBase" };
 		Desc.sPelvisBone = "Hips";
 		Desc.fTraceStartHeight = 0.35f;
 		Desc.fTraceDistance = 0.8f;
-		Desc.fFootHeight = 0.04f;
-		Desc.fBlendSpeed = 12.f;
-		Desc.fMaxStepHeight = 0.45f;
-		Desc.fMaxExtensionRatio = 0.995f;
+		Desc.fFootHeight = 0.03f;
+		Desc.fBlendSpeed = 6.6f;
+		Desc.fMaxStepHeight = 0.56f;
+		Desc.fMaxExtensionRatio = 0.9812f;
 		Desc.fMaxFootSlopeDegrees = 45.f;
+		Desc.fMaxPelvisDrop = 0.4f;
+		Desc.fPelvisBlendSpeed = 8.f;
+		Desc.fLiftReleaseSpeed = 0.15f;
 
 		if (FAILED(AddComponentFromProto(
 			ES_EngineProtoMajorType::PERMANENT,
@@ -999,7 +1002,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	const _bool bPointerCapturedByUI =
 		ImGui::GetIO().WantCaptureMouse ||
-		GET_SINGLE(UIManager)->RootUIPicking().has_value();
+		GET_SINGLE(UIManager)->IsPointerOverInteractiveUI();
 
 	if (m_pStateMachine &&
 		!bPointerCapturedByUI &&
@@ -2193,7 +2196,6 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 
 	//m_pComPhysX->UpdateSyncedDataToTransform(m_pComTransform);
 	GetTransform().Update();
-	UpdateFootIKGroundSamples(fTimeDelta);
 
 	// 플레이어 Transform을 먼저 확정한 뒤 같은 프레임의 카메라 View를 갱신한다.
 
@@ -2240,43 +2242,6 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	if (m_pComSound)
 		m_pComSound->Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
-}
-
-void CPlayer::UpdateFootIKGroundSamples(_float fTimeDelta)
-{
-	if (!m_pComFootIK || !m_pComModelInstance ||
-		m_iLeftFootBoneIndex < 0 || m_iRightFootBoneIndex < 0)
-	{
-		return;
-	}
-
-	const auto& BoneMatrices =
-		m_pComModelInstance->Get_CombinedBoneMatrices();
-	const size_t iLeftFootIndex =
-		static_cast<size_t>(m_iLeftFootBoneIndex);
-	const size_t iRightFootIndex =
-		static_cast<size_t>(m_iRightFootBoneIndex);
-	if (iLeftFootIndex >= BoneMatrices.size() ||
-		iRightFootIndex >= BoneMatrices.size())
-	{
-		m_pComFootIK->ClearGroundSamples(fTimeDelta);
-		return;
-	}
-
-	const _matrix matWorld = GetTransform().GetLoadedCombinedWorldMatrix();
-	const _matrix matLeftFootWorld =
-		XMLoadFloat4x4(&BoneMatrices[iLeftFootIndex]) * matWorld;
-	const _matrix matRightFootWorld =
-		XMLoadFloat4x4(&BoneMatrices[iRightFootIndex]) * matWorld;
-	_float3 vLeftFootWorldPosition{};
-	_float3 vRightFootWorldPosition{};
-	XMStoreFloat3(&vLeftFootWorldPosition, matLeftFootWorld.r[3]);
-	XMStoreFloat3(&vRightFootWorldPosition, matRightFootWorld.r[3]);
-
-	m_pComFootIK->UpdateGroundSamples(
-		fTimeDelta,
-		vLeftFootWorldPosition,
-		vRightFootWorldPosition);
 }
 
 void CPlayer::UpdateAttachedEffects()

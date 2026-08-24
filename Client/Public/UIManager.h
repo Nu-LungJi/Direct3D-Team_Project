@@ -70,6 +70,7 @@ public:
 
 public:
 	std::optional<CHandle> RootUIPicking();
+	_bool IsPointerOverInteractiveUI();
 
 private:
 	std::map<std::string, std::function<void(class CUIObject*)>> m_EventMap;

@@ -149,7 +149,7 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 	const _bool bPointerCapturedByUI =
 		ImGui::GetIO().WantCaptureMouse ||
-		GET_SINGLE(UIManager)->RootUIPicking().has_value();
+		GET_SINGLE(UIManager)->IsPointerOverInteractiveUI();
 
 	if (bInComboInputWindow &&
 		!bPointerCapturedByUI &&

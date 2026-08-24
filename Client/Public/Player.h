@@ -60,7 +60,7 @@ public:
 		_float fCCTHeight{ 3.6f };
 		_float fCCTRadius{ 0.6f };
 		_float fCCTStepOffset{ 0.1f };
-		_float3 vCCTCenterOffset{ 0.f, 0.9f, 0.f };
+		_float3 vCCTCenterOffset{ 0.f, 1.f, 0.f };
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
@@ -191,7 +191,6 @@ public:
 
 	void SetBodyEffectID(uint32_t effectID) { m_iDashBodyEffectID = effectID; }
 	void UpdateAttachedEffects();
-	void UpdateFootIKGroundSamples(_float fTimeDelta);
 	CHandle& GetWeaponHandle() { return m_Partes[ETOUI(PARTES::WEAPON)]; }
 	const CHandle& GetWeaponHandle() const { return m_Partes[ETOUI(PARTES::WEAPON)]; }
 	void SetBroomVisible(_bool bVisible);

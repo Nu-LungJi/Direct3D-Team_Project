@@ -32,6 +32,9 @@ public:
 		_float fMaxStepHeight{ 0.45f };
 		_float fMaxExtensionRatio{ 0.995f };
 		_float fMaxFootSlopeDegrees{ 45.f };
+		_float fMaxPelvisDrop{ 0.4f };
+		_float fPelvisBlendSpeed{ 8.f };
+		_float fLiftReleaseSpeed{ 0.15f };
 		uint32_t iGroundQueryMask{ PX_ALL_LAYERS };
 		_bool bEnabled{ true };
 	};
@@ -52,12 +55,28 @@ public:
 	struct FOOT_GROUND_STATE
 	{
 		_bool bHit{};
+		_bool bHasTarget{};
+		_bool bAnimationLifting{};
+		_bool bPreviousPositionValid{};
 		_float3 vAnimatedWorldPosition{};
+		_float3 vPreviousAnimatedWorldPosition{};
 		_float3 vTargetWorldPosition{};
 		_float3 vGroundNormal{ 0.f, 1.f, 0.f };
 		_float fDistance{};
 		_float fWeight{};
+		_float fAnimatedVerticalSpeed{};
 		CHandle hGroundObject{};
+	};
+
+	struct DEBUG_LEG_STATE
+	{
+		_bool bValid{};
+		_float3 vHipWorld{};
+		_float3 vKneeWorld{};
+		_float3 vFootWorld{};
+		_float3 vSolveTargetWorld{};
+		_float fSolveError{};
+		_bool bHasSolveTarget{};
 	};
 
 private:
@@ -77,7 +96,9 @@ public:
 	void ClearGroundSamples(_float fTimeDelta = 0.f);
 	_bool ApplyToLocalPose(
 		const CComModelInstance& ModelInstance,
-		std::vector<_float4x4>& LocalBoneMatrices);
+		std::vector<_float4x4>& LocalBoneMatrices,
+		_float fTimeDelta);
+	void FinalizeDebugPose(const CComModelInstance& ModelInstance);
 
 	void SetEnabled(_bool bEnabled) { m_bEnabled = bEnabled; }
 	_bool IsEnabled() const { return m_bEnabled; }
@@ -109,7 +130,22 @@ private:
 		const LEG_BONE_INDICES& Leg,
 		const FOOT_GROUND_STATE& GroundState,
 		std::vector<_float4x4>& LocalBoneMatrices);
+	void UpdateDebugLegState(
+		const CComModelInstance& ModelInstance,
+		const LEG_BONE_INDICES& Leg,
+		const std::vector<_float4x4>& CombinedBoneMatrices,
+		DEBUG_LEG_STATE& OutState);
+	void ApplyPelvisOffset(
+		const CComModelInstance& ModelInstance,
+		std::vector<_float4x4>& LocalBoneMatrices,
+		_float fTimeDelta);
+	_float CalculateLegReachExcess(
+		const CComModelInstance& ModelInstance,
+		const LEG_BONE_INDICES& Leg,
+		const FOOT_GROUND_STATE& GroundState,
+		const std::vector<_float4x4>& CombinedPose) const;
 	void UpdateStateWeight(FOOT_GROUND_STATE& State, _float fTimeDelta) const;
+	void DrawDebugVisualization() const;
 	static LEG_BONE_INDICES ResolveLegIndices(
 		const CComModelInstance& ModelInstance,
 		const LEG_BONE_NAMES& Names);
@@ -131,8 +167,21 @@ private:
 	_float m_fMaxStepHeight{ 0.45f };
 	_float m_fMaxExtensionRatio{ 0.995f };
 	_float m_fMaxFootSlopeDegrees{ 45.f };
+	_float m_fMaxPelvisDrop{ 0.4f };
+	_float m_fPelvisBlendSpeed{ 8.f };
+	_float m_fLiftReleaseSpeed{ 0.15f };
+	_float m_fCurrentPelvisOffsetY{};
+	int32_t m_iLeftFootUpAxis{ -1 };
+	int32_t m_iRightFootUpAxis{ -1 };
+	_float m_fLeftFootUpSign{ 1.f };
+	_float m_fRightFootUpSign{ 1.f };
 	uint32_t m_iGroundQueryMask{ PX_ALL_LAYERS };
 	_bool m_bEnabled{ true };
+	_bool m_bDebugDraw{ true };
+	_bool m_bDebugDrawSkeleton{ true };
+	_bool m_bDebugDepthTest{ false };
+	mutable DEBUG_LEG_STATE m_tLeftDebugState{};
+	mutable DEBUG_LEG_STATE m_tRightDebugState{};
 	// Reused by the per-frame IK solve. Keeping this storage on the component
 	// avoids allocating a full bone-matrix array for each foot every frame.
 	std::vector<_float4x4> m_CombinedPoseScratch{};

@@ -74,12 +74,14 @@ private:
 	MOVE_DIRECTION ResolveDirection(_float fSignedAngle) const;
 	void CacheAnimationIndices(const CPlayer& player);
 	int32_t FindAnimationIndex(const CPlayer& player, const _string_view& sAnimationName) const;
+	int32_t SelectIdleAnimationForCurrentFeet(const CPlayer& player) const;
 	void BeginJogStart(CPlayer& player);
 	void BeginJogStop(CPlayer& player);
 
 	_float m_fSignedMoveAngle{};
 	MOVE_DIRECTION m_eMoveDirection{ MOVE_DIRECTION::FRONT };
 	int32_t m_iIdleAnimation{ -1 };
+	int32_t m_iRightFootIdleAnimation{ -1 };
 	int32_t m_iWalkForwardAnimation{ -1 };
 	int32_t m_iJogStartForwardAnimation{ -1 };
 	int32_t m_iJogForwardAnimation{ -1 };
