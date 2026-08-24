@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ResModelMaterial.h"
 #include "ResTexture2D.h"
+#include <array>
 #include <fstream>
 #include <mutex>
 #include <unordered_map>
@@ -9,6 +10,13 @@ NS_USING(Engine)
 
 namespace
 {
+	std::mutex& GetTextureLoadMutex(const std::string& texturePath)
+	{
+		constexpr size_t TEXTURE_LOAD_LOCK_COUNT = 64;
+		static std::array<std::mutex, TEXTURE_LOAD_LOCK_COUNT> textureLoadLocks{};
+		return textureLoadLocks[std::hash<std::string>{}(texturePath) % TEXTURE_LOAD_LOCK_COUNT];
+	}
+
 	std::string LowerPathString(const std::filesystem::path& path)
 	{
 		std::string value = path.string();
@@ -177,6 +185,7 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 				}
 
 				const _string texturePath = texPath.string();
+				std::lock_guard<std::mutex> textureLoadLock(GetTextureLoadMutex(texturePath));
 				_bool isCreated = false;
 				auto resTex = CGameInstance::Get().GetOrCreateResourceByPath<CResTexture2D>(
 					texturePath,
@@ -279,6 +288,7 @@ HRESULT CResModelMaterial::LoadAssimp(aiMaterial* material, uint32_t materialNum
 
 
 			const _string resolvedTexturePath = texPath.string();
+			std::lock_guard<std::mutex> textureLoadLock(GetTextureLoadMutex(resolvedTexturePath));
 			_bool isCreated = false;
 			auto resTex = CGameInstance::Get().GetOrCreateResourceByPath<CResTexture2D>(
 				resolvedTexturePath,

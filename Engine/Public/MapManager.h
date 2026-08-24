@@ -139,7 +139,7 @@ private:
 	BoundingBox MakeChunkBoundingBox(const MAPCHUNK_COORD& coord);
 	MAPCHUNK_COORD WorldToChunkCoord(const _float3& pos) const;
 	std::vector<MAPCHUNK_COORD> GetChunksAroundCamera(
-		const CCameraObject* pCamera, int64_t radius) const;
+		const CCameraObject* pCamera, int64_t diameter) const;
 	void UnloadChunksOutsideRange(const std::vector<MAPCHUNK_COORD>& neededChunks);
 	void RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& neededChunks);
 	void CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum);
@@ -152,13 +152,14 @@ private:
 
 	// 청크가 런타임에 로드될 때 m_MapModelPaths에서 파일 경로를 찾고 해당 모델만 로드
 	HRESULT EnsureModelResourceLoaded(const MAP_MODEL_RESOURCE_KEY& key);
+	SPtr<std::mutex> GetModelResourceMutex(const MAP_MODEL_RESOURCE_KEY& key);
 
 	void QueueChunkModelRelease(MAPCHUNK& chunk);
 	void QueueAllChunkModelReleases();
 	void ProcessDeferredModelReleases();
 private:
-	static constexpr int64_t STREAM_LOAD_RADIUS = 2;   // 5 x 5 x 5
-	static constexpr int64_t STREAM_UNLOAD_RADIUS = 3; // 7 x 7 x 7
+	static constexpr int64_t STREAM_LOAD_DIAMETER = 6;   // 6 x 6 x 6
+	static constexpr int64_t STREAM_UNLOAD_DIAMETER = 7; // 7 x 7 x 7
 	static constexpr uint32_t MAX_CONCURRENT_CHUNK_LOADS = 4;
 	_float3 m_vChunkSize = DEFAULT_MAP_CHUNK_SIZE;
 	std::string m_sMapRootPath;
@@ -176,7 +177,8 @@ private:
 	std::unordered_map<std::string, std::filesystem::path> m_MapModelPaths;
 
 	std::mutex m_MapModelResourceIndexMutex;
-	std::mutex m_ModelResourceLoadMutex;
+	std::mutex m_ModelResourceMutexMapMutex;
+	std::unordered_map<MAP_MODEL_RESOURCE_KEY, SPtr<std::mutex>, MAP_MODEL_RESOURCE_KEY_HASH> m_ModelResourceMutexes;
 	std::mutex m_PendingModelRefMutex;
 
 	// 완전히 생성된 청크들이 모델을 사용 중

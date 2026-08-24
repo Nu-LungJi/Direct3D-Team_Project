@@ -11,6 +11,17 @@ void CEditorCommandManager::Submit(std::unique_ptr<IEditorCommand> command)
 		m_RequestQueue.push_back({ REQUEST_TYPE::EXECUTE, std::move(command) });
 }
 
+void CEditorCommandManager::SubmitBatch(std::vector<std::unique_ptr<IEditorCommand>> commands)
+{
+	if (commands.empty())
+		return;
+
+	COMMAND_REQUEST request{};
+	request.type = REQUEST_TYPE::EXECUTE_BATCH;
+	request.batchCommands = std::move(commands);
+	m_RequestQueue.push_back(std::move(request));
+}
+
 void CEditorCommandManager::RecordExecuted(std::unique_ptr<IEditorCommand> command)
 {
 	if (!command) return;
@@ -42,6 +53,29 @@ void CEditorCommandManager::ProcessOne()
 	if (m_RequestQueue.empty())
 		return;
 
+	auto& pending = m_RequestQueue.front();
+	if (pending.type == REQUEST_TYPE::EXECUTE_BATCH)
+	{
+		size_t processedCount = 0;
+		while (pending.nextBatchCommand < pending.batchCommands.size() &&
+			processedCount < MAX_BATCH_COMMANDS_PER_FRAME)
+		{
+			auto command = std::move(pending.batchCommands[pending.nextBatchCommand++]);
+			if (ExecuteNow(std::move(command)))
+				pending.batchChanged = true;
+			++processedCount;
+		}
+
+		if (pending.nextBatchCommand == pending.batchCommands.size())
+		{
+			const _bool batchChanged = pending.batchChanged;
+			m_RequestQueue.pop_front();
+			if (batchChanged)
+				m_bRebuildChunksNextFrame = true;
+		}
+		return;
+	}
+
 	auto request = std::move(m_RequestQueue.front());
 	m_RequestQueue.pop_front();
 
@@ -50,6 +84,8 @@ void CEditorCommandManager::ProcessOne()
 	{
 	case REQUEST_TYPE::EXECUTE:
 		succeeded = ExecuteNow(std::move(request.command));
+		break;
+	case REQUEST_TYPE::EXECUTE_BATCH:
 		break;
 	case REQUEST_TYPE::UNDO:
 		succeeded = UndoNow();
