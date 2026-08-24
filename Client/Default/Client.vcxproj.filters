@@ -82,6 +82,9 @@
     <Filter Include="GameObject\Terrain\NvClothCape">
       <UniqueIdentifier>{458c9c2b-bf7b-41e0-9b51-876506f76f81}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Terrain\PhysicsDoor">
+      <UniqueIdentifier>{5d98af71-f748-4978-b0f0-8abce61a15b4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\Camera">
       <UniqueIdentifier>{55124923-21d1-43da-b832-baff07fdefc6}</UniqueIdentifier>
     </Filter>
@@ -683,6 +686,9 @@
     </ClInclude>
     <ClInclude Include="..\public\OilBarrel.h">
       <Filter>GameObject\Terrain\OilBarrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PhysicsDoor.h">
+      <Filter>GameObject\Terrain\PhysicsDoor</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Player_AcientAttack_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AcientAttack_State</Filter>
@@ -1307,6 +1313,9 @@
     </ClCompile>
     <ClCompile Include="..\private\OilBarrel.cpp">
       <Filter>GameObject\Terrain\OilBarrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PhysicsDoor.cpp">
+      <Filter>GameObject\Terrain\PhysicsDoor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\RagdollTest.cpp">
       <Filter>GameObject\Terrain\RagdollTest</Filter>

@@ -321,6 +321,7 @@
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\public\NvClothCape.h" />
     <ClInclude Include="..\public\OilBarrel.h" />
+    <ClInclude Include="..\public\PhysicsDoor.h" />
     <ClInclude Include="..\public\Spider_Dead.h" />
     <ClInclude Include="..\Public\WiggenweldPotion.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
@@ -517,6 +518,7 @@
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\private\NvClothCape.cpp" />
     <ClCompile Include="..\private\OilBarrel.cpp" />
+    <ClCompile Include="..\private\PhysicsDoor.cpp" />
     <ClCompile Include="..\private\Spider_Dead.cpp" />
     <ClCompile Include="..\Private\WiggenweldPotion.cpp" />
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />

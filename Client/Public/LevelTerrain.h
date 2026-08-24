@@ -32,6 +32,7 @@ private:
 	HRESULT InitializeCamerasAndLighting(
 		const std::optional<CHandle>& hPlayer);
 	HRESULT InitializePathPlaybackTests();
+	HRESULT InitializePhysicsDoorTest();
 	HRESULT InitializeTombBossBulletTest(CHandle hPlayer);
 	HRESULT SpawnConfringoBulletTest();
 	HRESULT InitializeOilBarrelPool();
@@ -65,6 +66,8 @@ private:
 	_bool m_bCreatePlayScreenUI{ false };
 	CHandle m_hPlayer{};
 	CHandle m_hPropBarrel{};
+	CHandle m_hPhysicsDoor{};
+	_float m_fPhysicsDoorTestTorque{ 800.f };
 	_float3 m_vPropBarrelSpawnPosition{ 20.f, 5.f, 20.f };
 	std::array<CHandle, 6> m_hAccioBalls{};
 	int32_t m_iSelectedAccioBall{};

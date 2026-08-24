@@ -21,6 +21,7 @@
 #include "ComPxRigidBody.h"
 #include "DbgLineRender.h"
 #include "OilBarrel.h"
+#include "PhysicsDoor.h"
 #include "TestPathPlaybackObject.h"
 #include "LuaTestObject.h"
 #include "TombBossBullet.h"
@@ -92,6 +93,9 @@ HRESULT CLevelTerrain::Initialize()
 	}
 
 	if (FAILED(SpawnStaticCollision()))
+		return E_FAIL;
+
+	if (FAILED(InitializePhysicsDoorTest()))
 		return E_FAIL;
 
 	{
@@ -518,6 +522,35 @@ HRESULT CLevelTerrain::SpawnConfringoBulletTest()
 		PROTO_GAMEOBJECT::Prototype_GameObject_PlayerConfringoBullet,
 		"03_ConfringoTest",
 		&Desc)
+		? S_OK
+		: E_FAIL;
+}
+
+HRESULT CLevelTerrain::InitializePhysicsDoorTest()
+{
+	CPhysicsDoor::DESC desc{};
+	desc.sObjectTag = "D6_PhysicsDoor";
+	// Terrain 플레이어 시작점 근처에서 문 하단이 지면 높이 100에 닿는다.
+	desc.vInitialPosition = { 10.f, 102.5f, 10.f };
+	desc.vHalfExtents = { 1.5f, 2.5f, 0.15f };
+	desc.fMass = 25.f;
+	desc.fAngularDamping = 3.f;
+	desc.fLowerLimitDegrees = -110.f;
+	desc.fUpperLimitDegrees = 110.f;
+	desc.eHingeSide = CPhysicsDoor::HINGE_SIDE::LEFT;
+
+	const auto hDoor = CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::TERRAIN,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PhysicsDoor,
+		"03_PhysXDoorTest",
+		&desc);
+	if (!hDoor)
+		return E_FAIL;
+
+	m_hPhysicsDoor = *hDoor;
+	const auto* pDoor = CGameInstance::Get()
+		.GetGameObjectByHandleT<CPhysicsDoor>(m_hPhysicsDoor);
+	return pDoor && pDoor->IsHingeReady()
 		? S_OK
 		: E_FAIL;
 }
@@ -1399,6 +1432,40 @@ void CLevelTerrain::UpdateGUI()
 {
 	ImGui::Begin("Terrain");
 	UpdateAccioActivityTestGUI();
+	if (ImGui::CollapsingHeader("D6 Physics Door Test"))
+	{
+		auto* pDoor = CGameInstance::Get()
+			.GetGameObjectByHandleT<CPhysicsDoor>(m_hPhysicsDoor);
+		if (!pDoor || pDoor->GetPendingDestroy())
+		{
+			ImGui::TextDisabled("Door is not available.");
+		}
+		else
+		{
+			ImGui::Text(
+				"Hinge: %s | Angle: %.2f deg",
+				pDoor->IsHingeReady() ? "Ready" : "Failed",
+				pDoor->GetOpeningAngleDegrees());
+			ImGui::DragFloat(
+				"Door Test Torque",
+				&m_fPhysicsDoorTestTorque,
+				10.f,
+				0.f,
+				10000.f,
+				"%.0f");
+
+			if (ImGui::Button("Door Push +"))
+				pDoor->ApplyOpeningTorque(m_fPhysicsDoorTestTorque);
+			ImGui::SameLine();
+			if (ImGui::Button("Door Push -"))
+				pDoor->ApplyOpeningTorque(-m_fPhysicsDoorTestTorque);
+			ImGui::SameLine();
+			if (ImGui::Button("Door Reset"))
+				pDoor->ResetDoor();
+		}
+
+		ImGui::Separator();
+	}
 	if (ImGui::CollapsingHeader("Prop Barrel Test"))
 	{
 		auto* pPropBarrel = CGameInstance::Get()

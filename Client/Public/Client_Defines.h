@@ -109,6 +109,7 @@ namespace Client
 		Prototype_GameObject_AccioActivity_BumperB,
 		Prototype_GameObject_AccioActivity_RampLarge,
 		Prototype_GameObject_AccioActivity_LampSmall,
+		Prototype_GameObject_PhysicsDoor,
 	};
 
 	enum class PROTO_COMPONENT

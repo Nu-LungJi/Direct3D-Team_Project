@@ -5,6 +5,7 @@
 #include "Terrain.h"
 #include "Client_Resources.h"
 #include "OilBarrel.h"
+#include "PhysicsDoor.h"
 #include "WiggenweldPotion.h"
 #include "TestPathPlaybackObject.h"
 #include "LuaTestObject.h"
@@ -188,6 +189,15 @@ std::future<bool> CLevelTerrainLoader::Load()
 					MSG_BOX("TERRAIN Failed Prototype_GameObject_OilBarrel");
 					return false;
 				}
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_PhysicsDoor,
+				CPhysicsDoor::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_PhysicsDoor");
+				return false;
 			}
 
 
