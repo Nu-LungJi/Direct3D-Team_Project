@@ -6,6 +6,12 @@ NS_USING(Engine)
 
 CUIObject::CUIObject()
 {
+	// UI는 프레임 기반 좌표/상태 갱신과 렌더 등록만 사용한다.
+	// 일부 UI(HPBar, MiniMap)는 PriorityUpdate를 사용하므로 Fixed 단계만 공통 제외한다.
+	SetUpdateLoopMask(
+		GAMEOBJECT_UPDATE_LOOP::PRIORITY |
+		GAMEOBJECT_UPDATE_LOOP::UPDATE |
+		GAMEOBJECT_UPDATE_LOOP::LATE);
 }
 
 CUIObject::~CUIObject()

@@ -380,7 +380,6 @@
     <ClInclude Include="..\Public\LightPlacementData.h" />
     <ClInclude Include="..\Public\LightPlacementEditor.h" />
     <ClInclude Include="..\Public\LightPlacementObject.h" />
-    <ClInclude Include="..\Public\MyTreeNode.h" />
     <ClInclude Include="..\public\NodeEditor.h" />
     <ClInclude Include="..\Public\OctreeNode.h" />
     <ClInclude Include="..\Public\Particle.h" />

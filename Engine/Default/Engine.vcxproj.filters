@@ -780,9 +780,6 @@
     <ClInclude Include="..\Public\GameObject.h">
       <Filter>GameObject</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\MyTreeNode.h">
-      <Filter>GameObject</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\Slot.h">
       <Filter>GameObject</Filter>
     </ClInclude>

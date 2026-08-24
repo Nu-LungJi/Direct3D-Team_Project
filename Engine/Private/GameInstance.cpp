@@ -1165,6 +1165,16 @@ std::vector<StringID> CGameInstance::GetPrototypeGroupTags() const
 
 
 #pragma region GAMEOBJECT_MANAGER
+void CGameInstance::QueuePendingGameObjectDestroy(const CHandle& hObject)
+{
+	// GameObject가 Manager 구현을 직접 노출받지 않도록 두 클래스 사이의 private bridge만 제공한다.
+	// 엔진 종료 중 Manager가 이미 해제된 경우에는 요청을 무시한다.
+	if (m_pGameObjectManager)
+	{
+		m_pGameObjectManager->QueuePendingDestroy(hObject);
+	}
+}
+
 void CGameInstance::GameObjectAllReset()
 {
 	m_pGameObjectManager->AllReset();
@@ -1185,13 +1195,6 @@ size_t CGameInstance::GameObjectAllResetExceptLayers(
 inline CGameObject* CGameInstance::GetGameObjectByHandle(const CHandle& handle)
 {
 	return m_pGameObjectManager->GetGameObjectByHandle(handle);
-}
-
-_bool CGameInstance::SetGameObjectParent(
-	const CHandle& hChild,
-	const std::optional<CHandle>& hParent)
-{
-	return m_pGameObjectManager->SetGameObjectParent(hChild, hParent);
 }
 
 const std::vector<std::pair<std::string, std::vector<CHandle>>>& CGameInstance::GetGameObjectLayers() const
