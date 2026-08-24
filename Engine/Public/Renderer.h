@@ -103,6 +103,8 @@ private:		// Bloom Helper Function
 	HRESULT		Render_DownSamplePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _SrcTex, uint32_t _ScreenX, uint32_t _ScreenY);
 	HRESULT		Render_CombinedPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, const SPtr<CResDynamicTexture2D>& _BlurPassTexture, uint32_t _ScreenX, uint32_t _ScreenY);
 
+	HRESULT		Render_RadialBlur(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, uint32_t _ScreenX, uint32_t _ScreenY);
+
 private:		// Camera Setting / Render Constext Setting
 	HRESULT		Bind_CameraAttribute(CCameraObject* _ActiveCam);
 	HRESULT		Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveCam);
@@ -187,7 +189,9 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloom_HalfScaleB{};
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloom_QuarterScaleA{};
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloom_QuarterScaleB{};
-	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloomResult{};
+	
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloomResult{};	// Only Bloom
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetFinalResult{};	// Bloom + Radial Blur
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetVolumetric{};		// Volumetric
 
@@ -212,6 +216,7 @@ private:
 	SPtr<CResComputeShader>		m_pBloomPassComputeShader{};
 	SPtr<CResComputeShader>		m_pUpSampleComputeShader{};
 	SPtr<CResComputeShader>		m_pDownSampleComputeShader{};
+	SPtr<CResComputeShader>		m_pRadialBlurComputeShader{};
 
 	SPtr<CResCBuffer>			m_pBloomCBuffer{};
 	SPtr<CResCBuffer>			m_pPostProcessCBuffer{};
@@ -293,6 +298,8 @@ private:		// Volumetric Fog
 	ComPtr<ID3D11ShaderResourceView>	m_pBlueNoiseTexture		= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pVolumeTexture		= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pWeatherMapTexture	= { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	m_pCloudCurlNoiseTexture = { nullptr };
+
 
 	XMMATRIX					m_mShadowLightViewProj{};
 	XMMATRIX					m_mPreviousCamViewProj{};

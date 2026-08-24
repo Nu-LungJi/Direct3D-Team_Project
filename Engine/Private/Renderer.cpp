@@ -88,6 +88,10 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_Combined", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_RadialBlur", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_RadialBlur", .sTarget = "cs_5_0" })))    return E_FAIL;
+	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Filter", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_PostProcess", .sTarget = "cs_5_0" })))    return E_FAIL;
@@ -320,36 +324,38 @@ HRESULT CRenderer::InitializePostProcess() {
 		MSG_BOX("Cannot Create LUT Texture File.");
 		return E_FAIL;
 	}
-
 	{
-		m_pMotionBlurPixelShader = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_MotionBlur");
+		m_pMotionBlurPixelShader	= E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_PostProcess_MotionBlur");
 		if (nullptr == m_pMotionBlurPixelShader)		return E_FAIL;
 
-		m_pResDynTexTargetMotionBlur = Generate_RenderTarget("DynTex2D_PostProcess_MotionBlur", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
-		if (nullptr == m_pResDynTexTargetMotionBlur)	return E_FAIL;
-
-		m_pLensFlareComputeShader = E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_LensFlare");
+		m_pLensFlareComputeShader	= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_LensFlare");
 		if (nullptr == m_pLensFlareComputeShader)		return E_FAIL;
 
 		m_pPostProcessComputeShader = E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Filter");
 		if (nullptr == m_pPostProcessComputeShader)		return E_FAIL;
+	}
+	{
+		m_pLensFlareCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_LENSFLARE", E::CResCBuffer::Create());
+		if (nullptr == m_pLensFlareCBuffer || FAILED(m_pLensFlareCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LENSFLARE) })))    return E_FAIL;
+
+		m_pPostProcessCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_POSTPROCESS", E::CResCBuffer::Create());
+		if (nullptr == m_pPostProcessCBuffer || FAILED(m_pPostProcessCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_POSTPROCESS) })))    return E_FAIL;
+	}
+	{
+		m_pResDynTexTargetMotionBlur = Generate_RenderTarget("DynTex2D_PostProcess_MotionBlur", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+		if (nullptr == m_pResDynTexTargetMotionBlur)	return E_FAIL;
 
 		m_pResDynTexTargetLensFlare = Generate_UnorderedAccessView("UAV_LensFlare", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
 		if (nullptr == m_pResDynTexTargetLensFlare)		return E_FAIL;
 
 		m_pResDynTexTargetPostProcess = Generate_UnorderedAccessView("UAV_PostProcess", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
 		if (nullptr == m_pResDynTexTargetPostProcess)	return E_FAIL;
-
-		m_pLensFlareCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_LENSFLARE", E::CResCBuffer::Create());
-		if (nullptr == m_pLensFlareCBuffer || FAILED(m_pLensFlareCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_LENSFLARE) })))    return E_FAIL;
-
-		m_pPostProcessCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_POSTPROCESS", E::CResCBuffer::Create());
-		if (nullptr == m_pPostProcessCBuffer || FAILED(m_pPostProcessCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_POSTPROCESS) })))    return E_FAIL;
-
-		m_fScreenPosition		= { 0.5f, 0.5f };
-		m_fExpandDuration		= 10.f;
-		m_fCurrentLifeTime		= 0.f;
-		m_fChromaticRingAlpha	= 0.25f;
+	}
+	{	// LENSFLARE Value Initialize
+		m_fScreenPosition = { 0.5f, 0.5f };
+		m_fExpandDuration = 10.f;
+		m_fCurrentLifeTime = 0.f;
+		m_fChromaticRingAlpha = 0.25f;
 	}
 
 	return S_OK;
@@ -390,6 +396,7 @@ HRESULT CRenderer::InitializeBloom() {
 	const uint32_t HalfScreenWidth		= FullScreenWidth / 2					, HalfScreenHeight		= FullScreenHeight / 2;
 	const uint32_t QuarterScreenWidth	= HalfScreenWidth / 2					, QuarterScreenHeight	= HalfScreenHeight / 2;
 
+	m_pResDynTexTargetFinalResult		= Generate_UnorderedAccessView("UAV_FinalResult", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, FullScreenWidth, FullScreenHeight);
 	m_pResDynTexTargetBloomResult		= Generate_UnorderedAccessView("UAV_BloomResult", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, FullScreenWidth, FullScreenHeight);
 	
 	m_pResDynTexTargetBloom_HalfScaleA	= Generate_UnorderedAccessView("UAV_BloomHalfA"	, DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, HalfScreenWidth, HalfScreenHeight);
@@ -398,7 +405,8 @@ HRESULT CRenderer::InitializeBloom() {
 	m_pResDynTexTargetBloom_QuarterScaleA = Generate_UnorderedAccessView("UAV_BloomQuarterA", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, QuarterScreenWidth, QuarterScreenHeight);
 	m_pResDynTexTargetBloom_QuarterScaleB = Generate_UnorderedAccessView("UAV_BloomQuarterB", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, QuarterScreenWidth, QuarterScreenHeight);
 
-	if (!m_pResDynTexTargetBloomResult || !m_pResDynTexTargetBloom_HalfScaleA || !m_pResDynTexTargetBloom_HalfScaleB || 
+	if (!m_pResDynTexTargetBloomResult || !m_pResDynTexTargetFinalResult || 
+		!m_pResDynTexTargetBloom_HalfScaleA || !m_pResDynTexTargetBloom_HalfScaleB ||
 		!m_pResDynTexTargetBloom_QuarterScaleA || !m_pResDynTexTargetBloom_QuarterScaleB)	return E_FAIL;
 
 	m_pBrightPassComputeShader			= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_BrightPass");
@@ -407,8 +415,10 @@ HRESULT CRenderer::InitializeBloom() {
 	m_pBloomPassComputeShader			= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_Combined");
 	m_pUpSampleComputeShader			= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_UpSampling");
 	m_pDownSampleComputeShader			= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_DownSampling");
+	m_pRadialBlurComputeShader			= E::CGameInstance::Get().GetResourceFirst<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_PostProcess_Bloom_RadialBlur");
 
-	if (!m_pBrightPassComputeShader || !m_pVerticalBlurComputeShader || !m_pHorizontalBlurComputeShader || !m_pBloomPassComputeShader || !m_pUpSampleComputeShader || !m_pDownSampleComputeShader)	return E_FAIL;
+	if (!m_pBrightPassComputeShader || !m_pVerticalBlurComputeShader || !m_pHorizontalBlurComputeShader || !m_pBloomPassComputeShader || 
+		!m_pUpSampleComputeShader || !m_pDownSampleComputeShader || !m_pRadialBlurComputeShader)	return E_FAIL;
 
 	m_pBloomCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_Bloom", E::CResCBuffer::Create());
 	if (nullptr == m_pBloomCBuffer || FAILED(m_pBloomCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_BLOOM) })))    return E_FAIL;
@@ -441,6 +451,11 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 		return E_FAIL;
 	}
 
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/CurlNoise.dds", nullptr, m_pCloudCurlNoiseTexture.GetAddressOf()))) {
+		MSG_BOX("Cannot Create Cloud CurlNoise File.");
+		return E_FAIL;
+	}
+	
 	if (m_pVolumetricFroxelCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FROXEL", E::CResCBuffer::Create())) {
 		if (FAILED(m_pVolumetricFroxelCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_FROXEL) })))    return E_FAIL;
 	}
@@ -1639,14 +1654,16 @@ HRESULT CRenderer::Render_VolumetricCloud() {
 	{
 		m_pContext->CSSetShader(m_pVolumetricCloudCS->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11ShaderResourceView* pSRVs[5] = {
+		ID3D11ShaderResourceView* pSRVs[7] = {
 			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
 			nullptr,
 			m_pVolumeTexture.Get(),
 			m_pResDynTexTargetDepth->GetSRV().Get(),
-			m_pWeatherMapTexture.Get()
+			m_pWeatherMapTexture.Get(),
+			m_pBlueNoiseTexture.Get(),
+			m_pCloudCurlNoiseTexture.Get()
 		};
-		m_pContext->CSSetShaderResources(0, 5, pSRVs);
+		m_pContext->CSSetShaderResources(0, 7, pSRVs);
 
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVolumetricCloudTex->GetUAV().Get() };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
@@ -1684,8 +1701,8 @@ HRESULT CRenderer::Render_VolumetricCloud() {
 	{
 		m_pContext->Dispatch((ScreenSize.x + ThreadCount - 1) / ThreadCount, (ScreenSize.y + ThreadCount - 1) / ThreadCount, 1);
 
-		ID3D11ShaderResourceView* pNullSRVs[5] = { nullptr };
-		m_pContext->CSSetShaderResources(0, 5, pNullSRVs);
+		ID3D11ShaderResourceView* pNullSRVs[6] = { nullptr };
+		m_pContext->CSSetShaderResources(0, 6, pNullSRVs);
 
 		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
@@ -2044,12 +2061,16 @@ HRESULT CRenderer::Render_PostProcess_Bloom() {
 		if (FAILED(Render_HorizontalBlurPass(m_pResDynTexTargetBloom_HalfScaleA, m_pResDynTexTargetBloom_HalfScaleB, HalfScreenX, HalfScreenY)))			 return E_FAIL;
 	}
 
-	{
+	{	// Combine
 		if (FAILED(Render_UpSampleCombinePass(m_pResDynTexTargetBloom_HalfScaleB, m_pResDynTexTargetBloom_HalfScaleA, m_pResDynTexTargetBloom_QuarterScaleA, HalfScreenX, HalfScreenY)))	return E_FAIL;
 		if (FAILED(Render_CombinedPass(m_pResDynTexTargetBloomResult, m_pResDynTexTargetPreviousRenderView, m_pResDynTexTargetBloom_HalfScaleB, ScreenX, ScreenY)))							return E_FAIL;
 	}
 
-	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetBloomResult;
+	{	// Radial Blur
+		if (FAILED(Render_RadialBlur(m_pResDynTexTargetFinalResult, m_pResDynTexTargetBloomResult, ScreenX, ScreenY)))								 return E_FAIL;
+	}
+
+	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetFinalResult;
 
 	Unbind_Resources();
 
@@ -3085,8 +3106,30 @@ HRESULT CRenderer::Render_CombinedPass(const SPtr<CResDynamicTexture2D>& _OutPut
 		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
 
-		ID3D11ShaderResourceView* NULLSRV[2] = { nullptr, nullptr };
-		m_pContext->CSSetShaderResources(0, 2, NULLSRV);
+		ID3D11ShaderResourceView* pNULLSRV[2] = { nullptr, nullptr };
+		m_pContext->CSSetShaderResources(0, 2, pNULLSRV);
+	}
+
+	return S_OK;
+}
+HRESULT CRenderer::Render_RadialBlur(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, uint32_t _ScreenX, uint32_t _ScreenY) {
+	{
+		m_pContext->CSSetShader(m_pRadialBlurComputeShader->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11UnorderedAccessView* pUAVs[1] = { _OutPut->GetUAV().Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
+
+		ID3D11ShaderResourceView* pBloomSRV[1] = { _OriginTexture->GetSRV().Get() };
+		m_pContext->CSSetShaderResources(0, 1, pBloomSRV);
+	}
+	{
+		m_pContext->Dispatch((_ScreenX + 7) / 8, (_ScreenY + 7) / 8, 1);
+
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
+
+		ID3D11ShaderResourceView* pNULLSRV[1] = { nullptr };
+		m_pContext->CSSetShaderResources(0, 1, pNULLSRV);
 	}
 
 	return S_OK;

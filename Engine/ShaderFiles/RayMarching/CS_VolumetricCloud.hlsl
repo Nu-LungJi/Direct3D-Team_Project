@@ -1,6 +1,6 @@
 #include "../ShaderHeader/SH_CommonFunction.hlsli"
 
-#define MAX_STEP			64
+#define MAX_STEP			96
 #define MIN_STEP			16
 #define STEP_SIZE			15.f
 
@@ -15,19 +15,29 @@ static const float	FOG_DENSITY			= { 0.0001f };
 
 static const float3 RANDOM_FACTOR		= { float3(0.06711056f, 0.00583715f, 52.9829189f) };
 
-static const uint	LIGHT_STEP_COUNT	= { 4 };
+static const uint	LIGHT_STEP_COUNT	= { 8 };
 static const float	LIGHT_STEP_SIZE		= { 40.f };
 
 static const float3 GLOBAL_SUN_COLOR = { float3(0.6f, 0.6f, 0.8f) };
 
-static const int2 Offsets[4] = { int2(0, -1), int2(0, 1), int2(-1, 0), int2(1, 0) };
+static const uint	BLUENOISE_TEXSIZE = { 256 };
+
+static const int2	Offsets[4] = { int2(0, -1), int2(0, 1), int2(-1, 0), int2(1, 0) };
+
+static const float Weights[3][3] =
+{
+	{ 1.f, 2.f, 1.f },
+	{ 2.f, 4.f, 2.f },
+	{ 1.f, 2.f, 1.f }
+};
 	
 Texture2D<float4>	OriginalTexture		: register(t0);
 Texture2D<float4>	HistoryTexture		: register(t1);
 Texture3D<float>	VolumeTexture		: register(t2);
 Texture2D<float>	DepthTexture		: register(t3);
 Texture2D<float4>	WeatherMapTexture	: register(t4);
-
+Texture2D<float4>	BlueNoiseTexture	: register(t5);
+Texture2D<float4>	CurlNoiseTexture	: register(t6);
 
 RWTexture2D<float4> OUTPUT				: register(u0);
 
@@ -70,10 +80,19 @@ float Compute_GradientNoise(float2 PixelPos)
 {
 	return frac(RANDOM_FACTOR.z * frac(dot(PixelPos, RANDOM_FACTOR.xy)));
 }
+float Jitter_BlueNoise(float2 _PixelPos, uint _Seed)
+{
+	uint2 TemporalOffset = uint2((uint) _Seed * 137, (uint) _Seed * 293);
+	uint3 SamplePos = uint3((_PixelPos + TemporalOffset) % BLUENOISE_TEXSIZE, 0);
+	
+	return BlueNoiseTexture.Load(SamplePos).r;
+}
+
 float Remap(float originalValue, float originalMin, float originalMax, float newMin, float newMax)
 {
 	return newMin + (((originalValue - originalMin) / (originalMax - originalMin)) * (newMax - newMin));
 }
+
 float3 Compute_MultipleScattering(float3 _RayDirection, float3 _LightDirection, float _OpticalDepth, float _BaseScattering)
 {
 	float3 MultipleScatteringTotal = float3(0.f, 0.f, 0.f);
@@ -107,19 +126,29 @@ float Get_CloudDensity(float3 WorldPos, float BaseDensity)
 	float3	WindOffset = WindDirection * WindTimeAccumulation;
 	float3	MovedPos = WorldPos + WindOffset;
 	
+	float2 CurlUV = MovedPos.xz * 0.00005f;
+	float3 CurlNoiseValue = CurlNoiseTexture.SampleLevel(LinearWrap, CurlUV, 0).rgb;
+	CurlNoiseValue = CurlNoiseValue * 2.f - 1.f;
+	
+	float	DistortionStrength = 300.f;
+	float3	DistortedPos = MovedPos + (CurlNoiseValue * DistortionStrength);
+	
 	float2	WeatherOffset = float2(90000.f, -2000.f);
 	float2	WeatherMapUV = (MovedPos.xz + WeatherOffset) * 0.0000095f;
 	float3	WeatherMapTex = WeatherMapTexture.SampleLevel(LinearWrap, WeatherMapUV, 0).rgb;
 	
 	float	WeatherCoverage = smoothstep(0.05f, 0.55f, WeatherMapTex.r);
-	float	WeatherType		= smoothstep(0.0f, 0.6f, WeatherMapTex.g) * 0.8f;
-	float	WeatherDensity	= WeatherMapTex.b; 
+	float	WeatherType		= smoothstep(0.f, 0.6f, WeatherMapTex.g) * 0.8f;
+	float	WeatherDensity	= WeatherMapTex.b;
 	
-	float	BaseNoise	= VolumeTexture.SampleLevel(LinearWrap, MovedPos * BaseCloudNoiseScale, 0).r;
-	float	DetailNoise = VolumeTexture.SampleLevel(LinearWrap, MovedPos * DetailCloudNoiseScale, 0).r;
-	float	RawDensity = BaseNoise * 0.8f + DetailNoise * 0.2f;
+	float	DistToCam = distance(MovedPos, g_vCamPos);
+	float	DetailFade = 1.f - saturate(DistToCam / 50000.f);
 	
-	float	ErodedNoise = saturate(Remap(BaseNoise, DetailNoise * 0.2f, 1.f, 0.f, 1.f));
+	float3	BaseScale = float3(BaseCloudNoiseScale, BaseCloudNoiseScale * 0.4f, BaseCloudNoiseScale);
+	float	BaseNoise = VolumeTexture.SampleLevel(LinearWrap, MovedPos * BaseScale, 0).r;
+	
+	float3	DetailScale = float3(DetailCloudNoiseScale, DetailCloudNoiseScale * 0.6f, DetailCloudNoiseScale);
+	float	DetailNoise = VolumeTexture.SampleLevel(LinearWrap, DistortedPos * DetailScale, 0).r;
 	
 	float3	PlanetCenter = float3(g_vCamPos.x, -SPHERE_RADIUS, g_vCamPos.z);
 	float	CurrentHeight = distance(WorldPos, PlanetCenter) - SPHERE_RADIUS;
@@ -129,13 +158,20 @@ float Get_CloudDensity(float3 WorldPos, float BaseDensity)
 	float	HeightRange = max(1.f, DynamicMaxHeight - CloudMinHeight);
 	float	HeightFraction = saturate((CurrentHeight - CloudMinHeight) / HeightRange);
 	
-	float	HeightGradient = 4.f * HeightFraction * (1.f - HeightFraction);
+	float	PerturbedHeight = HeightFraction - (BaseNoise * 0.2f);
+	
+	float	BottomGradient = saturate(PerturbedHeight / 0.2f);
+	float	TopGradient = saturate((1.f - PerturbedHeight) / 0.6f);
+	float	HeightGradient = BottomGradient * TopGradient;
 	
 	float	FinalCoverage = CloudCoverage * WeatherCoverage;
 	float	CutOffValue = 1.f - FinalCoverage;
 	
+	float	ErosionStrength = lerp(0.3f, 0.8f, saturate(PerturbedHeight));
+	float	ErodedNoise = saturate(BaseNoise - (1.f - DetailNoise) * ErosionStrength);
+	
 	float CloudShape = saturate((ErodedNoise - CutOffValue) / max(0.001f, WeatherCoverage));
-	CloudShape = smoothstep(0.15f, 1.0f, CloudShape);
+	CloudShape = smoothstep(0.15f, 1.f, CloudShape);
 	CloudShape *= WeatherCoverage;
 	CloudShape *= HeightGradient;
 	CloudShape = pow(CloudShape, 1.5f);
@@ -220,15 +256,16 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
 		return;
 	}
-	float DistanceRatio = saturate(CloudStartHeight / CloudLODDistance);
+	float	DistanceRatio = saturate(CloudStartHeight / CloudLODDistance);
 	uint	DynamicStepCount = (uint) lerp((float) MAX_STEP, (float) MIN_STEP, DistanceRatio);
 	
 	float	DynamicStepSize = MaxTravelDistance / float(DynamicStepCount);
 	float3	CurrentPosition = g_vCamPos + (RayDirection * CloudStartHeight);
 	
 	float	TemporalSeed = CloudJitterOffset.x * 1000.f;
-	float2	DynamicJitter = float2(PixelPos.x + TemporalSeed, PixelPos.y + TemporalSeed);
-	float	JitterValue = Compute_GradientNoise(DynamicJitter);
+	//float2	DynamicJitter = float2(PixelPos.x + TemporalSeed, PixelPos.y + TemporalSeed);
+	//float		JitterValue = Compute_GradientNoise(DynamicJitter);
+	float	JitterValue = Jitter_BlueNoise(PixelPos, TemporalSeed);
 	CurrentPosition += RayDirection * (DynamicStepSize * JitterValue);
 
 	float	AccumulatedTransmittance = 1.f;
@@ -292,7 +329,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 }
 
 [numthreads(16, 16, 1)]
-void CSMain_CloudTAA(uint3 ID : SV_DispatchThreadID)
+void CSMain_CloudTAA_(uint3 ID : SV_DispatchThreadID)
 {
 	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y) return;
 
@@ -362,6 +399,42 @@ void CSMain_CloudTAA(uint3 ID : SV_DispatchThreadID)
 	
 	FinalColor = max(0.f, FinalColor);
 
+	OUTPUT[PixelPos] = float4(FinalColor, 1.f);
+	return;
+}
+
+[numthreads(16, 16, 1)]
+void CSMain_CloudTAA(uint3 ID : SV_DispatchThreadID)
+{
+	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y)
+		return;
+
+	uint2	PixelPos = ID.xy;
+	float	CenterDepth = DepthTexture[PixelPos].r;
+	float3	CenterColor = OriginalTexture[PixelPos].rgb;
+	
+	bool bIsSky = (CenterDepth == 1.f || CenterDepth == 0.f);
+
+	float3	TotalColor = 0.f;
+	float	TotalWeight = 0.f;
+	
+	[unroll]
+	for (int x = -1; x <= 1; ++x) {
+		[unroll]
+		for (int y = -1; y <= 1; ++y) {
+			uint2 NeighborPos = clamp(PixelPos + int2(x, y), 0, (uint2) ScreenResolution - 1);
+			float NeighborDepth = DepthTexture[NeighborPos].r;
+			
+			bool bNeighborIsSky = (NeighborDepth == 1.f || NeighborDepth == 0.f);
+			if (bIsSky == bNeighborIsSky) {
+				float W = Weights[x + 1][y + 1];
+				TotalColor += OriginalTexture[NeighborPos].rgb * W;
+				TotalWeight += W;
+			}
+		}
+	}
+	
+	float3 FinalColor = TotalColor / TotalWeight;
 	OUTPUT[PixelPos] = float4(FinalColor, 1.f);
 	return;
 }
