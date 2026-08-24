@@ -119,8 +119,13 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	if (FAILED(SpawnMonster(*hPlayer)))
 		return E_FAIL;
-	//if (FAILED(SpawnNpcPlacements(*hPlayer)))
-	//	return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnIdle.json")))
+		return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnWalk.json")))
+		return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/Cat.json")))
+		return E_FAIL;
+
 	if (FAILED(SpanwAnimal()))
 		return E_FAIL;
 	//gameInstance.Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
@@ -466,11 +471,11 @@ HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer)
+HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer, const _string& Path)
 {
 	E::NPC_PLACEMENT_FILE File{};
 	if (FAILED(E::CGameInstance::Get().JsonDeSerialize(
-		"./Resources/json/NPC/Level_HogwartWorld.json",
+		Path,
 		File,
 		"NpcPlacements")))
 		return E_FAIL;
