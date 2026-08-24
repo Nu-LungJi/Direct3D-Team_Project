@@ -25,7 +25,6 @@ private:
 
 public:
 	void UpdateGUI();
-	void UpdateGUIDrawTreeNode( CGameObject* handle);
 private:
 	char m_GUISearchFilter[256] = {};
 	_bool m_bGUIEnableSearchInput{ false };
@@ -35,21 +34,17 @@ private:
 	bool MatchesLayerObjectFilter(std::string_view sLayerName, CGameObject* pObj) const;
 	std::string GetGameObjectDebugLabel(CGameObject* pObj) const;
 	std::string GetInvalidLayerHandleDebugText(const CHandle& handle) const;
-	bool MatchesFilter(CGameObject* pObj) const;
 
 public:
 	void FrameStart();
 	void FrameEnd();
 
-public:
-	std::optional<CHandle> GetFreeHandle() ;
+private:
+	std::optional<CHandle> AllocateHandleSlot();
 
 public:
 	CGameObject* GetGameObjectByHandle(const CHandle& handle) { return const_cast<CGameObject*>(_GetGameObjectByHandle(handle)); }
 	const CGameObject* GetGameObjectByHandle(const CHandle& handle) const { return _GetGameObjectByHandle(handle); }
-	_bool SetGameObjectParent(
-		const CHandle& hChild,
-		const std::optional<CHandle>& hParent = std::nullopt);
 	template<typename T> T* GetGameObjectByHandleT(const CHandle& handle);
 	template<typename T> const T* GetGameObjectByHandleT(const CHandle& handle) const;
 private:
@@ -90,20 +85,11 @@ private:
 	_bool m_bBatchResetPending{ false };
 	std::unordered_set<std::string> m_PendingResetTargetLayers{};
 
-	struct PENDING_DESTROY_ENTRY
-	{
-		CHandle hObject{};
-		// 부모보다 자식을 먼저 파괴하기 위한 현재 부모 체인의 깊이다.
-		size_t iTreeDepth{};
-	};
-
 	// SetPendingDestroy가 쓰는 요청 큐와 현재 파괴 중인 큐를 분리한다.
 	// 따라서 객체 소멸자에서 새 파괴 요청이 발생해도 순회 중인 메모리를 건드리지 않고
 	// 같은 FrameEnd while 루프의 다음 묶음으로 넘길 수 있다.
 	std::vector<CHandle> m_PendingDestroyHandles{};
 	std::vector<CHandle> m_ProcessingDestroyHandles{};
-	// 세대 검증을 통과한 현재 묶음만 깊이와 함께 보관하는 작업용 배열이다.
-	std::vector<PENDING_DESTROY_ENTRY> m_PendingDestroyEntries{};
 
 public:
 	void FixedUpdate(_float fScaledDelta, _float fUnscaledDelta);
@@ -180,18 +166,12 @@ private:
 	void RemovePendingObjectsFromLayers();
 
 private:
-	// m_Tree는 부모-자식 DFS 순서와 GUI 전체 개수를 보존하는 기준 목록이다.
-	// 네 단계별 배열은 이 트리를 마스크로 한 번 분류한 hot-loop 전용 view다.
-	std::vector<CGameObject*> m_TreePreparation{};
-	std::vector<CGameObject*> m_Tree{};
-	std::vector<CGameObject*> m_DFSReserved{};
-	_bool m_bTreeReBuild{ true };
-
-	// 전체 DFS 트리를 마스크로 안정 필터링한 비소유 포인터 view다.
-	// NONE 객체는 m_Tree에만 남고, 복수 비트 객체는 여러 view에 들어가며 DFS 상대 순서는 유지된다.
+	// 정렬된 레이어와 각 레이어의 Handle 삽입 순서를 마스크로 안정 필터링한 비소유 포인터 view다.
+	// NONE 객체는 네 view 어디에도 들어가지 않고, 복수 비트 객체는 여러 view에 들어간다.
 	// 객체 수명은 FrameEnd 지연 파괴로 보장하고, 런타임 상태인 PendingDestroy와
 	// ManagedUpdateEnabled는 후보 배열을 다시 만들지 않고 각 dispatch 직전에 확인한다.
 	// 연속적인 것은 포인터 목록이며 실제 GameObject 메모리 배치까지 연속화하는 구조는 아니다.
+	_bool m_bUpdateViewsDirty{ true };
 	std::vector<CGameObject*> m_PriorityUpdateObjects{};
 	std::vector<CGameObject*> m_FixedUpdateObjects{};
 	std::vector<CGameObject*> m_UpdateObjects{};

@@ -1197,13 +1197,6 @@ inline CGameObject* CGameInstance::GetGameObjectByHandle(const CHandle& handle)
 	return m_pGameObjectManager->GetGameObjectByHandle(handle);
 }
 
-_bool CGameInstance::SetGameObjectParent(
-	const CHandle& hChild,
-	const std::optional<CHandle>& hParent)
-{
-	return m_pGameObjectManager->SetGameObjectParent(hChild, hParent);
-}
-
 const std::vector<std::pair<std::string, std::vector<CHandle>>>& CGameInstance::GetGameObjectLayers() const
 {
 	return m_pGameObjectManager->GetLayers();

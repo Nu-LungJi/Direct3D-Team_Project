@@ -276,12 +276,7 @@ public:
 		return m_pGameObjectManager->DelLayer(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
 	}
 
-	//std::optional<CHandle> GetFreeHandle() const;
-
 	inline CGameObject* GetGameObjectByHandle(const CHandle& handle);
-	_bool SetGameObjectParent(
-		const CHandle& hChild,
-		const std::optional<CHandle>& hParent = std::nullopt);
 	template<typename T>
 	T* GetGameObjectByHandleT(const CHandle& handle)
 	{

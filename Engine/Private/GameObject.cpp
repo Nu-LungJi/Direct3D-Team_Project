@@ -29,9 +29,7 @@ HRESULT CGameObject::Initialize(void* pArg)
 {
     auto pDesc = static_cast<GAMEOBJECT_DESC*>(pArg);
     m_sObjectTag = pDesc->sObjectTag;
-    //m_ObjectHandle = CGameInstance::Get().GetFreeHandle().value();
-
-    m_ObjectHandle = pDesc->__handle;
+	m_ObjectHandle = pDesc->__handle;
 
     {
         if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Transform", "Com_Transform", nullptr, &m_pComTransform)))
@@ -112,11 +110,6 @@ UPtr<CPrototype> CGameObject::CloneComponentProtoType(const StringID& svGroupTag
 
 void CGameObject::UpdateGUI()
 {
-    if (ImGui::Button("DestroyCascade"))
-    {
-        SetPendingDestroyCascade();
-    }
-    ImGui::SameLine();
     if (ImGui::Button("Destroy"))
     {
         SetPendingDestroy();
@@ -125,7 +118,7 @@ void CGameObject::UpdateGUI()
 	_bool bManagedUpdateEnabled = IsManagedUpdateEnabled();
 	if (ImGui::Checkbox("Managed Update", &bManagedUpdateEnabled))
 	{
-		SetManagedUpdateEnabledCascade(bManagedUpdateEnabled);
+		SetManagedUpdateEnabled(bManagedUpdateEnabled);
 	}
 
     //ImGui::Text("dest: %s", m_bPendingDestroy ? "true" : "false");
@@ -210,7 +203,7 @@ void CGameObject::CommitPendingDestroy()
 
 void CGameObject::SetPendingDestroyCascade(_bool b)
 {
-    MyTreeDFS(this, [&](auto pObj) {pObj->SetPendingDestroy(b); });
+	SetPendingDestroy(b);
 }
 
 void CGameObject::SetManagedUpdateEnabled(_bool bEnabled)
@@ -228,10 +221,7 @@ void CGameObject::SetManagedUpdateEnabled(_bool bEnabled)
 
 void CGameObject::SetManagedUpdateEnabledCascade(_bool bEnabled)
 {
-	MyTreeDFS(this, [bEnabled](CGameObject* pObject)
-	{
-		pObject->SetManagedUpdateEnabled(bEnabled);
-	});
+	SetManagedUpdateEnabled(bEnabled);
 }
 
 void CGameObject::SetUpdateLoopMask(GAMEOBJECT_UPDATE_LOOP eMask)
@@ -252,13 +242,13 @@ _bool CGameObject::AcquireFromPool(void* pArg)
 	if (m_bPendingDestroy || !OnAcquireFromPool(pArg))
 		return false;
 
-	SetManagedUpdateEnabledCascade(true);
+	SetManagedUpdateEnabled(true);
 	return true;
 }
 
 void CGameObject::ReleaseToPool()
 {
-	SetManagedUpdateEnabledCascade(false);
+	SetManagedUpdateEnabled(false);
 	// [LSY] 비활성 객체에 이전 PhysX 결과가 남지 않도록 정리한다.
 	m_PhysXSyncData = {};
 	m_bPhysXSynced = false;
