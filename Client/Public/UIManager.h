@@ -73,6 +73,11 @@ public:
 	void RemoveNPCSpeechBubble(CHandle npcHandle, _bool fadeOut = true);
 	void ClearNPCSpeechBubbles(_bool immediate = false);
 
+	/********퀘스트 안내***********/
+	// Quest UI가 없으면 생성하고, 이미 표시 중이면 텍스트 전환 모션으로 교체한다.
+	void CreateOrChangeQuest(const std::string& questText);
+	void DeleteQuest();
+
 	/********지팡이 상점***********/
 	void OpenWandShop();
 
@@ -134,6 +139,10 @@ private:
 	std::vector<ACTIVE_BUTTON_INFO> m_ActiveButtons{};
 	std::vector<DIALOGUE_POPUP_INFO> m_DialoguePopups{};
 	std::vector<NPC_SPEECH_BUBBLE_INFO> m_NPCSpeechBubbles{};
+	std::optional<CHandle> m_hQuestRoot{};
+	std::optional<CHandle> m_hQuestText{};
+	std::string m_CurrentQuestText{};
+	_float2 m_QuestTextBaseLocalPos{};
 	_float m_fDialogueTargetWidth{};
 	CWandShop m_WandShop{};
 	_bool m_bWandShopWorldMode{ false };

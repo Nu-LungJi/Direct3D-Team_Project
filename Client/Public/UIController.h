@@ -77,7 +77,9 @@ public:
 	// ********** Quest UI
 	_bool SetQuestUIGroupActive(
 		QUEST_UI_GROUP group, _bool active,
-		const std::string& questText = {});
+		const std::string& questText = {},
+		_bool updateMinimap = true,
+		_bool updateQuestWidget = true);
 
 private: // ************ 계속 바뀌는 유아이 ******************* //
 	/*************플레이 화면 유아이******************/

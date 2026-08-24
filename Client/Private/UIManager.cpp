@@ -94,6 +94,26 @@ namespace
 			1u,
 			obj.value("Rows", legacyGridSize));
 	}
+
+	CUIObject* FindUIByNameRecursive(
+		const std::vector<CHandle>& roots,
+		std::string_view targetName)
+	{
+		std::vector<CHandle> pending = roots;
+		for (size_t index = 0; index < pending.size(); ++index)
+		{
+			auto* ui = GetSafeUI(pending[index]);
+			if (!ui)
+				continue;
+
+			if (std::string_view(ui->GetName()) == targetName)
+				return ui;
+
+			const auto& children = ui->GetChildren();
+			pending.insert(pending.end(), children.begin(), children.end());
+		}
+		return nullptr;
+	}
 }
 
 UIManager::~UIManager()
@@ -2084,6 +2104,143 @@ void UIManager::ClearNPCSpeechBubbles(_bool immediate)
 			DeleteUIRecursive(bubble.TextHandle);
 	}
 	m_NPCSpeechBubbles.clear();
+}
+
+void UIManager::CreateOrChangeQuest(const std::string& questText)
+{
+	if (questText.empty())
+	{
+		DeleteQuest();
+		return;
+	}
+
+	auto* root = m_hQuestRoot ? GetSafeUI(*m_hQuestRoot) : nullptr;
+	auto* text = m_hQuestText ? E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextBox>(*m_hQuestText) : nullptr;
+
+	if (!root || !text)
+	{
+		m_hQuestRoot = std::nullopt;
+		m_hQuestText = std::nullopt;
+
+		const auto roots = LoadPrefab("Quest");
+		if (roots.empty())
+			return;
+
+		root = FindUIByNameRecursive(roots, "QuestFrame");
+		if (auto* textUI = FindUIByNameRecursive(roots, "QuestText"))
+		{
+			text = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CTextBox>(textUI->GetHandle());
+		}
+		if (!root || !text)
+		{
+			for (const CHandle rootHandle : roots)
+				DeleteUIRecursive(rootHandle);
+			return;
+		}
+
+		m_hQuestRoot = root->GetHandle();
+		m_hQuestText = text->GetHandle();
+		m_QuestTextBaseLocalPos = {
+			text->GetUIInfo().LocalX,
+			text->GetUIInfo().LocalY
+		};
+		m_CurrentQuestText = questText;
+		text->SetwText(StringToWUTF8(questText));
+		root->SetAlpha(0.f);
+
+		// TextureUI는 최초 APPEAR 처리에서 tween을 초기화한다. 최초 프레임의
+		// APPEAR 콜백에서 FadeIn을 시작해야 알파 0에 고정되지 않는다.
+		const CHandle rootHandle = *m_hQuestRoot;
+		root->Appear = [rootHandle](CUIObject*)
+		{
+			if (auto* questRoot = GetSafeUI(rootHandle))
+			{
+				questRoot->SetAlpha(0.f);
+				GET_SINGLE(UIManager)->PlayFadeIn(
+					rootHandle, 0.f, 0.3f);
+			}
+		};
+		return;
+	}
+
+	if (m_CurrentQuestText == questText)
+		return;
+
+	m_CurrentQuestText = questText;
+	auto* tween = text->GetTweenCom();
+	if (!tween)
+	{
+		text->SetwText(StringToWUTF8(questText));
+		return;
+	}
+
+	tween->ClearTweens();
+	const CHandle textHandle = *m_hQuestText;
+	const _float baseX = m_QuestTextBaseLocalPos.x;
+	const _float baseY = m_QuestTextBaseLocalPos.y;
+	constexpr _float shift = 18.f;
+	constexpr _float outDuration = 0.2f;
+	constexpr _float inDuration = 0.25f;
+	const std::wstring nextText = StringToWUTF8(questText);
+
+	tween->PlayTween(
+		text->GetAlphaRatio(), 0.f, outDuration,
+		[textHandle](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+				ui->SetAlphaRatio(value);
+		},
+		[textHandle, nextText, baseX, baseY]()
+		{
+			if (auto* textBox = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CTextBox>(textHandle))
+			{
+				textBox->SetwText(nextText);
+				textBox->SetLocalPos({ baseX - shift, baseY });
+				textBox->SetAlphaRatio(0.f);
+				textBox->CalcUICoord();
+			}
+		}, EEaseType::EaseOutQuad);
+	tween->PlayTween(
+		baseX, baseX - shift, outDuration,
+		[textHandle, baseY](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+			{
+				ui->SetLocalPos({ value, baseY });
+				ui->CalcUICoord();
+			}
+		}, nullptr, EEaseType::EaseOutQuad);
+	tween->PlayTween(
+		0.f, 1.f, inDuration,
+		[textHandle](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+				ui->SetAlphaRatio(value);
+		}, nullptr, EEaseType::EaseOutQuad, outDuration);
+	tween->PlayTween(
+		baseX - shift, baseX, inDuration,
+		[textHandle, baseY](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+			{
+				ui->SetLocalPos({ value, baseY });
+				ui->CalcUICoord();
+			}
+		}, nullptr, EEaseType::EaseOutQuad, outDuration);
+}
+
+void UIManager::DeleteQuest()
+{
+	if (m_hQuestRoot && GetSafeUI(*m_hQuestRoot))
+		PlayFadeOutDelete(*m_hQuestRoot, 0.f, 0.3f);
+
+	m_hQuestRoot = std::nullopt;
+	m_hQuestText = std::nullopt;
+	m_CurrentQuestText.clear();
+	m_QuestTextBaseLocalPos = {};
 }
 
 void UIManager::UpdateNPCSpeechBubbles(_float fTimeDelta)

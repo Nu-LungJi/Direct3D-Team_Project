@@ -475,7 +475,9 @@ void CUIController::CreatePlayScreen()
 
 _bool CUIController::SetQuestUIGroupActive(
 	QUEST_UI_GROUP group, _bool active,
-	const std::string& questText)
+	const std::string& questText,
+	_bool updateMinimap,
+	_bool updateQuestWidget)
 {
 	const size_t index = static_cast<size_t>(group);
 	if (group == QUEST_UI_GROUP::NONE ||
@@ -483,7 +485,7 @@ _bool CUIController::SetQuestUIGroupActive(
 		index >= QUEST_UI_GROUP_COUNT)
 		return false;
 
-	if (m_QuestUIGroupStates[index] != active)
+	if (updateMinimap && m_QuestUIGroupStates[index] != active)
 	{
 		m_QuestUIGroupStates[index] = active;
 		m_QuestUIGroupDirty[index] = true;
@@ -491,8 +493,10 @@ _bool CUIController::SetQuestUIGroupActive(
 	if (!questText.empty())
 		m_QuestUIGroupTexts[index] = questText;
 
-	ApplyPendingQuestUIGroups();
-	RefreshQuestWidget(group, active);
+	if (updateMinimap)
+		ApplyPendingQuestUIGroups();
+	if (updateQuestWidget)
+		RefreshQuestWidget(group, active);
 	return true;
 }
 
@@ -541,7 +545,8 @@ void CUIController::SubscribeQuestUIEvents()
 			[this](const FQuestUIGroupChanged& event)
 			{
 				SetQuestUIGroupActive(
-					event.Group, event.Active, event.QuestText);
+					event.Group, event.Active, event.QuestText,
+					event.UpdateMinimap, event.UpdateQuestWidget);
 			});
 }
 
@@ -629,7 +634,20 @@ void CUIController::ShowQuestWidget(QUEST_UI_GROUP group)
 		text->SetwText(StringToWUTF8(displayText));
 		m_eDisplayedQuestGroup = group;
 		root->SetAlpha(0.f);
-		GET_SINGLE(UIManager)->PlayFadeIn(*m_hQuestRoot, 0.f, 0.3f);
+
+		// A freshly loaded TextureUI clears its tweens when its first APPEAR
+		// state is processed. Start the fade from the APPEAR callback so the
+		// initial quest does not remain at alpha zero.
+		const CHandle questRootHandle = *m_hQuestRoot;
+		root->Appear = [questRootHandle](CUIObject*)
+		{
+			if (auto* questRoot = GetSafeUI(questRootHandle))
+			{
+				questRoot->SetAlpha(0.f);
+				GET_SINGLE(UIManager)->PlayFadeIn(
+					questRootHandle, 0.f, 0.3f);
+			}
+		};
 		return;
 	}
 

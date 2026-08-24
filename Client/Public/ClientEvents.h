@@ -31,6 +31,10 @@ struct FQuestUIGroupChanged
 	_bool Active{ false };
 	// Empty text uses the UIController's default text for the group.
 	std::string QuestText{};
+	// Battle-zone quests can update the minimap content and quest widget
+	// independently while continuing to use the same quest group.
+	_bool UpdateMinimap{ true };
+	_bool UpdateQuestWidget{ true };
 };
 
 NS_END

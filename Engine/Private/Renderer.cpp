@@ -11,7 +11,6 @@
 NS_USING(Engine)
 CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice{ pDevice }, m_pContext{ pContext }
 {
-	XMStoreFloat4x4(&m_UI3DPanelWorld, XMMatrixIdentity());
 }
 CRenderer::~CRenderer() {}
 
@@ -539,6 +538,7 @@ HRESULT CRenderer::InitializeUI3D()
 
 VOID CRenderer::SetUI3DPanel(const _float4x4& worldMatrix, _bool active, _bool ignoreDepth)
 {
+	XMStoreFloat4x4(&m_UI3DPanelWorld, XMMatrixIdentity());
 	m_UI3DPanelWorld = worldMatrix;
 	m_bUI3DPanelActive = active;
 	m_bUI3DPanelIgnoreDepth = ignoreDepth;
