@@ -102,7 +102,26 @@ void CPlayer_BombardaSkill_State::Update(
 
 	case PHASE::RELEASE:
 		if (m_fAnimRatio >= RELEASE_TO_RECOVERY_RATIO)
+		{
+			auto* pWeapon = CGameInstance::Get().
+				GetGameObjectByHandleT<CPlayer_Weapon>(
+					pPlayer->GetWeaponHandle());
+
+			if (!pWeapon)
+				return;
+
+			const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+
+			const _matrix currentWorld = XMLoadFloat4x4(&spawnWorld);
+
+			const _vector effectPosition = currentWorld.r[3];
+
+			CGameInstance::Get().Set_ChromaticRingOpacity(0.2f);
+
+			CGameInstance::Get().Render_ChromaticRing(effectPosition,0.5f,100);
+
 			m_ePhase = PHASE::RECOVERY;
+		}
 		break;
 
 	case PHASE::RECOVERY:
