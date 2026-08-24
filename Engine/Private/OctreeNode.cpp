@@ -117,7 +117,9 @@ void COctreeNode::CollectDebugBounds(std::vector<OCTREE_DEBUG_BOUNDS>& outBounds
 		{
 			.bounds = m_cullingBounds,
 			.depth = m_depth,
-			.color = m_bInCameraFrustum ? Colors::Magenta : Colors::Cyan
+			// CPU 프러스텀 디버그 색상 비활성화
+			//.color = m_bInCameraFrustum ? Colors::Magenta : Colors::Cyan
+			.color = Colors::Cyan
 		});
 
 	for (const auto& childNode : m_childrenNode)
@@ -127,50 +129,51 @@ void COctreeNode::CollectDebugBounds(std::vector<OCTREE_DEBUG_BOUNDS>& outBounds
 	}
 }
 
-void COctreeNode::OctreeFrustumCull(const BoundingFrustum& cameraFrustum)
-{
-	const ContainmentType containment = cameraFrustum.Contains(m_cullingBounds);
-
-	// 교차안하면 바로 리턴
-	if (containment == DirectX::DISJOINT)
-	{
-		m_bInCameraFrustum = false; //디버그 렌더용
-		return;
-	}
-	if (containment == DirectX::CONTAINS)
-	{
-		m_bInCameraFrustum = true;
-		SetAllObjectsVisibleRecursive();
-		return;
-	}
-
-	// 옥트리 노드랑 프러스텀 걸쳐있을 때
-	// 카메라 프러스텀과 교차한다면
-	{
-		m_bInCameraFrustum = true; //디버그 렌더용
-		//if (m_depth >= m_maxDepth) // 리프노드라면
-		//{
-		for (const auto& handle : m_hObjects)
-		{
-			CMapMeshObject* mapObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(handle);
-			if (mapObj == nullptr)
-				continue;
-
-			BoundingBox objBox{};
-			if (!mapObj->GetOcclusionBounds(objBox) || objBox.Intersects(cameraFrustum))
-				mapObj->SetRenderEnable(true);
-		}
-		//return;
-	//}
-
-		for (const auto& child : m_childrenNode)
-		{
-			if (child)
-				child->OctreeFrustumCull(cameraFrustum);
-		}
-	}
-}
-
+//void COctreeNode::OctreeFrustumCull(const BoundingFrustum& cameraFrustum)
+//{
+//	const ContainmentType containment = cameraFrustum.Contains(m_cullingBounds);
+//
+//	// 교차안하면 바로 리턴
+//	if (containment == DirectX::DISJOINT)
+//	{
+//		m_bInCameraFrustum = false; //디버그 렌더용
+//		return;
+//	}
+//	if (containment == DirectX::CONTAINS)
+//	{
+//		m_bInCameraFrustum = true;
+//		SetAllObjectsVisibleRecursive();
+//		return;
+//	}
+//
+//	// 옥트리 노드랑 프러스텀 걸쳐있을 때
+//	// 카메라 프러스텀과 교차한다면
+//	{
+//		m_bInCameraFrustum = true; //디버그 렌더용
+//		//if (m_depth >= m_maxDepth) // 리프노드라면
+//		//{
+//		for (const auto& handle : m_hObjects)
+//		{
+//			CMapMeshObject* mapObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(handle);
+//			if (mapObj == nullptr)
+//				continue;
+//
+//			BoundingBox objBox{};
+//			if (!mapObj->GetOcclusionBounds(objBox) || objBox.Intersects(cameraFrustum))
+//				mapObj->SetRenderEnable(true);
+//		}
+//		//return;
+//	//}
+//
+//		for (const auto& child : m_childrenNode)
+//		{
+//			if (child)
+//				child->OctreeFrustumCull(cameraFrustum);
+//		}
+//	}
+//}
+//
+//
 void COctreeNode::CollectRayCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection, std::vector<CHandle>& outHandles) const
 {
 	_float nodeDistance = 0.f;
@@ -288,26 +291,27 @@ void COctreeNode::RebuildCullingBounds()
 	}
 }
 
-void COctreeNode::SetAllObjectsVisibleRecursive()
-{
-	for (auto& myObjHandle : m_hObjects)
-	{
-		CMapMeshObject* myObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(myObjHandle);
-		if (myObj)
-		{
-			myObj->SetRenderEnable(true);
-		}
-	}
-
-	for (auto& myChild : m_childrenNode)
-	{
-		if (myChild)
-		{
-			myChild->SetAllObjectsVisibleRecursive();
-		}
-	}
-}
-
+//void COctreeNode::SetAllObjectsVisibleRecursive()
+//{
+//	for (auto& myObjHandle : m_hObjects)
+//	{
+//		CMapMeshObject* myObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(myObjHandle);
+//		if (myObj)
+//		{
+//			myObj->SetRenderEnable(true);
+//		}
+//	}
+//
+//	for (auto& myChild : m_childrenNode)
+//	{
+//		if (myChild)
+//		{
+//			myChild->SetAllObjectsVisibleRecursive();
+//		}
+//	}
+//}
+//
+//
 // OctreeNode.cpp
 UPtr<COctreeNode> COctreeNode::Create(const BoundingBox& bounds, uint32_t depth, uint32_t maxDepth)
 {

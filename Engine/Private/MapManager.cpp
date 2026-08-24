@@ -511,22 +511,22 @@ void CMapManager::Update(_float fTimeDelta)
 	{
 		return;
 	}
-
 	CCameraObject* pCamera = CGameInstance::Get().GetActiveCamera();
 	if (pCamera == nullptr)
 	{
 		return;
 	}
 
-	const auto* pFrustumCollider = pCamera->GetFrustumCollider();
-	if (pFrustumCollider == nullptr)
-		return;
+	// CPU 프러스텀 컬링 비활성화
+	//const auto* pFrustumCollider = pCamera->GetFrustumCollider();
+	//if (pFrustumCollider == nullptr)
+	//	return;
 
 	const auto loadChunks = GetChunksAroundCamera(pCamera, STREAM_LOAD_DIAMETER);
 	const auto retainedChunks = GetChunksAroundCamera(pCamera, STREAM_UNLOAD_DIAMETER);
-	const auto& boundingFrustum = pFrustumCollider->GetBoundingFrustum();
+	//const auto& boundingFrustum = pFrustumCollider->GetBoundingFrustum();
 
-	CullLoadedChunksByCameraFrustum(retainedChunks, boundingFrustum);
+	//CullLoadedChunksByCameraFrustum(retainedChunks, boundingFrustum);
 
 	if (m_bChunkStreaming && !m_sMapRootPath.empty())
 	{
@@ -656,38 +656,39 @@ void CMapManager::RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& nee
 	}
 }
 
-void CMapManager::CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum)
-{
-	for (const auto& coord : neededChunks)
-	{
-		auto iter = m_Chunks.find(coord);
-		if (iter == m_Chunks.end())
-		{
-			continue;
-		}
-
-		if (iter->second.loadState != EChunkLoadState::Loaded)
-		{
-			continue;
-		}
-
-		const auto& selectedChunk = iter->second;
-		const BoundingBox& cullingBounds = selectedChunk.octreeNode
-			? selectedChunk.octreeNode->GetCullingBoundingBox()
-			: selectedChunk.bounds;
-
-		if (!boundingFrustum.Intersects(cullingBounds))
-		{
-			continue;
-		}
-
-		if (const auto& octreeNode = selectedChunk.octreeNode)
-		{
-			octreeNode->OctreeFrustumCull(boundingFrustum);
-		}
-	}
-}
-
+//void CMapManager::CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum)
+//{
+//	for (const auto& coord : neededChunks)
+//	{
+//		auto iter = m_Chunks.find(coord);
+//		if (iter == m_Chunks.end())
+//		{
+//			continue;
+//		}
+//
+//		if (iter->second.loadState != EChunkLoadState::Loaded)
+//		{
+//			continue;
+//		}
+//
+//		const auto& selectedChunk = iter->second;
+//		const BoundingBox& cullingBounds = selectedChunk.octreeNode
+//			? selectedChunk.octreeNode->GetCullingBoundingBox()
+//			: selectedChunk.bounds;
+//
+//		if (!boundingFrustum.Intersects(cullingBounds))
+//		{
+//			continue;
+//		}
+//
+//		if (const auto& octreeNode = selectedChunk.octreeNode)
+//		{
+//			octreeNode->OctreeFrustumCull(boundingFrustum);
+//		}
+//	}
+//}
+//
+//
 void CMapManager::LateUpdate(_float fTimeDelta)
 {
 
@@ -1018,7 +1019,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 			}
 
 			CMapMeshObject* pMeshObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
-			
+
 			if (pMeshObj == nullptr)
 				continue;
 
@@ -1675,6 +1676,7 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 	pObj->GetTransform().Update();
 	/*---------------------------------*/
 
+
 	const MAPCHUNK_COORD coord = WorldToChunkCoord(pObj->GetTransform().GetPosition());
 	auto& chunk = m_Chunks[coord];
 
@@ -1698,9 +1700,10 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 		chunk.octreeNode->BuildOctree(chunk.hObjects);
 	}
 
-	pObj->SetRenderEnable(true);
 
-	
+
+	// CPU 프러스텀 컬링 비활성화
+	//pObj->SetRenderEnable(true);
 
 	/*----------- 광윤 추가 -----------*/
 	BoundingBox ChangedBounds{};
@@ -2117,7 +2120,7 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 		CGameInstance::Get().Notify_StaticShadowSceneChanged(ChangedBounds);
 	}
 	/*---------------------------------*/
-	
+
 	return S_OK;
 }
 

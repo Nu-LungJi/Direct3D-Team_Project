@@ -142,7 +142,8 @@ private:
 		const CCameraObject* pCamera, int64_t diameter) const;
 	void UnloadChunksOutsideRange(const std::vector<MAPCHUNK_COORD>& neededChunks);
 	void RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& neededChunks);
-	void CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum);
+	// CPU 프러스텀 컬링 비활성화
+	//void CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum);
 
 
 	HRESULT AcquireChunkModelResources(MAPCHUNK& chunk, const std::vector<MAP_MESH_OBJECT_LOAD_DESC>& objects);
