@@ -170,7 +170,7 @@ PS_OUT SMOKE(VS_OUT In)
 	float2 distrotedUV = In.vTexcoord + float2(0.03f, 0.01f) *topMask * 0.03f;
 	distrotedUV.x += noise.x * 0.03f * topMask;
 	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, distrotedUV);
-
+		
 	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 	
 	float fadein = smoothstep(0.f, 0.18f, ratio);

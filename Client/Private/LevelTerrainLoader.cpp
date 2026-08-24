@@ -738,5 +738,14 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			return E_FAIL;
 		}
 	}
+
+	//PX_COLLISION_PROXY_PROTOTYPE_GROUP
+	{
+		if (FAILED(E::CGameInstance::Get().AddPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_Coin, CCoin::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
+			return E_FAIL;
+		}
+	}
 	return S_OK;
 }

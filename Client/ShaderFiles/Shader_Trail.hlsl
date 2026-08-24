@@ -194,7 +194,7 @@ PS_OUT PSBombardaEnergyTrail(VS_OUT In) : SV_TARGET
 	float pointAgeRatio = saturate(In.fAgeRatio);
 	// 수명의 35% 까지는 노란색을 유지하고,
 	// 82% 지점까지 천천히 파란색으로 변한다.
-	float colorAgeRatio = smoothstep(0.12f, 0.52f, pointAgeRatio);
+	float colorAgeRatio = smoothstep(0.25f, 0.74f, pointAgeRatio);
 	float remainingRatio = saturate(In.vColor.a);
 
 	float3 startYellow = In.vColor.rgb;
