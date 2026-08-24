@@ -675,7 +675,13 @@ static void ImGui_ImplDX11_RenderWindow(ImGuiViewport* viewport, void*)
 static void ImGui_ImplDX11_SwapBuffers(ImGuiViewport* viewport, void*)
 {
     ImGuiViewportDataDx11* data = (ImGuiViewportDataDx11*)viewport->RendererUserData;
-    data->SwapChain->Present(0, 0); // Present without vsync
+
+    // [LSY] Secondary viewport Present must not stall the game's render thread.
+    // If DWM/GPU is still using the flip-model buffers, skip only this tool-window frame.
+    // The main game swap chain is presented separately and is not affected by this path.
+    const HRESULT hr = data->SwapChain->Present(0, DXGI_PRESENT_DO_NOT_WAIT);
+    if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
+        return;
 }
 
 static void ImGui_ImplDX11_InitPlatformInterface()
