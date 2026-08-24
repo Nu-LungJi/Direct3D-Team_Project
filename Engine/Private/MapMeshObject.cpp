@@ -13,6 +13,9 @@ NS_USING(Engine)
 CMapMeshObject::CMapMeshObject()
 	: CGameObject{}
 {
+	// 프레임 작업은 LateUpdate의 Transform 동기화와 렌더 인스턴스 등록뿐이다.
+	// Priority/Fixed/Update의 빈 가상 호출을 피하도록 프로토타입을 LATE 전용으로 만들며 클론이 이를 상속한다.
+	SetUpdateLoopMask(GAMEOBJECT_UPDATE_LOOP::LATE);
 }
 
 CMapMeshObject::CMapMeshObject(const CMapMeshObject& Prototype)

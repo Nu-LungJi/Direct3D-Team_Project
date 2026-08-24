@@ -62,29 +62,6 @@ _bool CComTransform::Update()
 
         _matrix matWorld = matScale * matRotation * matTranslation;
 
-        //if (m_pGameObject)
-        //{
-        //        if (auto* pParentObj = m_pGameObject->GetParentNode())
-        //        {
-        //            _matrix matParent = XMLoadFloat4x4(pParentObj->GetTransform().GetWorldMatrix());
-
-        //            if (m_bParentScaleNormalize)
-        //            {
-        //                matParent.r[0] = XMVector3Normalize(matParent.r[0]);
-        //                matParent.r[1] = XMVector3Normalize(matParent.r[1]);
-        //                matParent.r[2] = XMVector3Normalize(matParent.r[2]);
-        //            }
-
-        //            matWorld *= matParent;
-        //        }
-        //    
-        //       
-        //    for (const auto& pChildObj : m_pGameObject->GetChildrenNode())
-        //    {
-        //            pChildObj->GetTransform().SetDirty(true);
-        //    }
-        //}
-
         XMStoreFloat4x4(&m_WorldMatrix, matWorld);
 
         if (m_ParentWorldMatrix)
