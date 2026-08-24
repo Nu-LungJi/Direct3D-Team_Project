@@ -23,6 +23,8 @@ private:
 
 	static HRESULT NpcLoad_InWorker();
 	static HRESULT AnimalLoad_InWorker();
+
+	static HRESULT LoadCollsion_InWorker();
 private:
 	constexpr static LEVEL CURR_LEVEL = LEVEL::HOGWART_WORLD;
 };

@@ -91,6 +91,9 @@ HRESULT CLevelTerrain::Initialize()
 		}
 	}
 
+	if (FAILED(SpawnStaticCollision()))
+		return E_FAIL;
+
 	{
 		CRagdollTest::DESC tDesc{};
 		tDesc.sObjectTag = "RagdollTest";
@@ -384,6 +387,20 @@ HRESULT CLevelTerrain::Initialize()
 	//
 	if (FAILED(SpawnMonster(hPlayer)))
 		return E_FAIL;
+	return S_OK;
+}
+
+HRESULT CLevelTerrain::SpawnStaticCollision()
+{
+	auto handles = CGameInstance::Get()
+		.GetPhysXManager()
+		->CreateCollisionProxyObjectsFromFile(
+			"Level_Terrain",
+			"00_CoinCollision");
+
+	if (handles.empty())
+		return E_FAIL;
+
 	return S_OK;
 }
 

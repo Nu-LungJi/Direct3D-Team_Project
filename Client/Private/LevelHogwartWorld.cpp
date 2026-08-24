@@ -98,6 +98,9 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnStaticCollision()))
 		return E_FAIL;
 
+	if (FAILED(SpawnCoinCollision()))
+		return E_FAIL;
+
 	if (FAILED(SpawnTerrain(*hPlayer)))
 		return E_FAIL;
 
@@ -455,6 +458,20 @@ HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 		->CreateCollisionProxyObjectsFromFile(
 			"Level_HogwartWorldLast",
 			"00_MapCollision");
+
+	if (handles.empty())
+		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorld::SpawnCoinCollision()
+{
+	auto handles = CGameInstance::Get()
+		.GetPhysXManager()
+		->CreateCollisionProxyObjectsFromFile(
+			"Level_HogwartCoin",
+			"00_CoinCollision");
 
 	if (handles.empty())
 		return E_FAIL;

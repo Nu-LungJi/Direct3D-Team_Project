@@ -1001,6 +1001,7 @@ HRESULT CRenderer::Draw() {
 	// Effect
 	if (FAILED(Render_Effect()))		 return E_FAIL;
 
+
 	// PostProcess
 	if (FAILED(Render_PostProcess()))    return E_FAIL;
 

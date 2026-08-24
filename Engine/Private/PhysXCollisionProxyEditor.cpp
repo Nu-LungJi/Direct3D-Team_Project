@@ -35,6 +35,7 @@ namespace
 		"Level_LastBossRanrok",
 		"Level_HogwartWorld",
 		"Level_HogwartWorldLast",
+		"Level_HogwartCoin",
 	};
 	_bool IsUnitCylinderConvexPath(const std::string& path)
 	{
