@@ -98,6 +98,13 @@ public:
 
 public:
 	virtual void PlayEffect(uint32_t uiState);
+	void SetRenderGroupOverride(std::optional<RENDERGROUP> renderGroup) { m_RenderGroupOverride = renderGroup; }
+	RENDERGROUP GetResolvedRenderGroup() const
+	{
+		if (m_RenderGroupOverride)
+			return *m_RenderGroupOverride;
+		return m_bWorldSpace ? RENDERGROUP::BLEND : RENDERGROUP::UI;
+	}
 
 protected:
 	std::vector<CUIComponent*> m_UIComponents;
@@ -132,6 +139,7 @@ protected:
 
 	bool m_bInputLocked = false;
 	bool m_bWorldSpace = false;
+	std::optional<RENDERGROUP> m_RenderGroupOverride{};
 
 public:
 	const UI_INFO& GetUIInfo() const { return m_UIINFO; }

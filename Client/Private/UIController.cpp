@@ -8,11 +8,28 @@
 #include "Cursor.h"
 #include "Monster.h"
 #include "EnderDragon.h"
+#include "BossTMB.h"
+#include "Spider.h"
 #include "MiniMap.h"
 #include "ClientEvents.h"
 #include "SpellMiniGame.h"
+#include "Player.h"
 
 NS_USING(Client)
+
+namespace
+{
+	constexpr std::array<SPELL_TYPE, 20> SPELL_BUTTON_TYPES = {
+		SPELL_TYPE::ARRESTOMOMENTUM, SPELL_TYPE::GLACIUS,
+		SPELL_TYPE::LEVIOSO, SPELL_TYPE::TRANSFORMATION,
+		SPELL_TYPE::ASSIO, SPELL_TYPE::DEPULSO, SPELL_TYPE::DESENDO,
+		SPELL_TYPE::FLIPENDO, SPELL_TYPE::CONFRINGO, SPELL_TYPE::DIFFINDO,
+		SPELL_TYPE::EXPELLIARMUS, SPELL_TYPE::BOMBARDA, SPELL_TYPE::INCENDIO,
+		SPELL_TYPE::DISILLUSIONMENT, SPELL_TYPE::LUMOS, SPELL_TYPE::REPARO,
+		SPELL_TYPE::WINGARDIUM, SPELL_TYPE::AVADAKEDAVRA,
+		SPELL_TYPE::CRUCIO, SPELL_TYPE::IMPERIO
+	};
+}
 
 CUIController::CUIController()
 {
@@ -76,6 +93,33 @@ void CUIController::Update(E::_float fTimeDelta)
 	// Temporary wand-shop entry for UI debugging.
 	if (E::CGameInstance::Get().KeyDown(DIK_F3))
 		GET_SINGLE(UIManager)->OpenWandShop();
+
+	// World-space RTT wand-shop debug entry.
+	if (E::CGameInstance::Get().KeyDown(DIK_F4))
+	{
+		CPlayer* player = nullptr;
+		CHandle playerHandle{};
+		if (const auto* playerLayer = E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
+		{
+			for (const CHandle handle : *playerLayer)
+			{
+				player = E::CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(handle);
+				if (player)
+				{
+					playerHandle = handle;
+					break;
+				}
+			}
+		}
+
+		if (player)
+		{
+			GET_SINGLE(UIManager)->OpenWandShopWorld(
+				playerHandle,
+				{ 0.f, 1.6f, 3.f },
+				{ 0.f, 0.f, 0.f });
+		}
+	}
 
 	if (m_hSpellMiniGame && !E::CGameInstance::Get().
 		GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
@@ -415,12 +459,12 @@ void CUIController::CreatePlayScreen()
 	m_SpellSlot[2] = GET_SINGLE(UIManager)->LoadPrefab("SpellSlot3").front();
 	m_SpellSlot[3] = GET_SINGLE(UIManager)->LoadPrefab("SpellSlot4").front();
 
-	for (auto phandle : m_SpellSlot)
+	for (uint32_t i = 0; i < 4u; ++i)
 	{
-		static_cast<CSpellMeter*>(SafeGetOBJ(phandle))->SetSpellType(ETOUI(SPELL_TYPE::NONE));
-		static_cast<CSpellMeter*>(SafeGetOBJ(phandle))->SetResTagDirtyFlag(true);
+		auto* spellMeter = static_cast<CSpellMeter*>(SafeGetOBJ(m_SpellSlot[i]));
+		spellMeter->SetSpellType(GET_SINGLE(UIManager)->GetSavedSpellSlot(i + 1u));
+		spellMeter->SetResTagDirtyFlag(true);
 	}
-	static_cast<CSpellMeter*>(SafeGetOBJ(m_SpellSlot[0]))->SetSpellType(ETOUI(SPELL_TYPE::BOMBARDA));
 
 	/*******포션 개수*******/
 	m_PotionCount = GET_SINGLE(UIManager)->LoadPrefab("PotionCount").front();
@@ -430,7 +474,8 @@ void CUIController::CreatePlayScreen()
 }
 
 _bool CUIController::SetQuestUIGroupActive(
-	QUEST_UI_GROUP group, _bool active)
+	QUEST_UI_GROUP group, _bool active,
+	const std::string& questText)
 {
 	const size_t index = static_cast<size_t>(group);
 	if (group == QUEST_UI_GROUP::NONE ||
@@ -443,8 +488,11 @@ _bool CUIController::SetQuestUIGroupActive(
 		m_QuestUIGroupStates[index] = active;
 		m_QuestUIGroupDirty[index] = true;
 	}
+	if (!questText.empty())
+		m_QuestUIGroupTexts[index] = questText;
 
 	ApplyPendingQuestUIGroups();
+	RefreshQuestWidget(group, active);
 	return true;
 }
 
@@ -492,8 +540,175 @@ void CUIController::SubscribeQuestUIEvents()
 			GetHandle(),
 			[this](const FQuestUIGroupChanged& event)
 			{
-				SetQuestUIGroupActive(event.Group, event.Active);
+				SetQuestUIGroupActive(
+					event.Group, event.Active, event.QuestText);
 			});
+}
+
+std::string CUIController::GetQuestDisplayText(QUEST_UI_GROUP group) const
+{
+	const size_t index = static_cast<size_t>(group);
+	if (index < m_QuestUIGroupTexts.size() &&
+		!m_QuestUIGroupTexts[index].empty())
+	{
+		return m_QuestUIGroupTexts[index];
+	}
+
+	switch (group)
+	{
+	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_01:
+		return "퍼시벌 랙햄의 시험을 완료하기";
+	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_02:
+		return "두 번째 전투 구역으로 이동하기";
+	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_03:
+		return "세 번째 전투 구역으로 이동하기";
+	default:
+		return {};
+	}
+}
+
+void CUIController::RefreshQuestWidget(
+	QUEST_UI_GROUP changedGroup, _bool active)
+{
+	if (active)
+	{
+		ShowQuestWidget(changedGroup);
+		return;
+	}
+
+	if (m_eDisplayedQuestGroup != changedGroup)
+		return;
+
+	for (size_t index = 1; index < QUEST_UI_GROUP_COUNT; ++index)
+	{
+		if (m_QuestUIGroupStates[index])
+		{
+			ShowQuestWidget(static_cast<QUEST_UI_GROUP>(index));
+			return;
+		}
+	}
+
+	HideQuestWidget();
+}
+
+void CUIController::ShowQuestWidget(QUEST_UI_GROUP group)
+{
+	const std::string displayText = GetQuestDisplayText(group);
+	if (displayText.empty())
+		return;
+
+	auto* root = m_hQuestRoot ? GetSafeUI(*m_hQuestRoot) : nullptr;
+	auto* text = m_hQuestText ? E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextBox>(*m_hQuestText) : nullptr;
+
+	if (!root || !text)
+	{
+		m_hQuestRoot = std::nullopt;
+		m_hQuestText = std::nullopt;
+		const auto questObjects = GET_SINGLE(UIManager)->LoadPrefab("Quest");
+		for (const CHandle handle : questObjects)
+		{
+			auto* ui = GetSafeUI(handle);
+			if (!ui)
+				continue;
+			if (std::string_view(ui->GetName()) == "QuestFrame")
+				m_hQuestRoot = handle;
+			else if (std::string_view(ui->GetName()) == "QuestText")
+				m_hQuestText = handle;
+		}
+
+		root = m_hQuestRoot ? GetSafeUI(*m_hQuestRoot) : nullptr;
+		text = m_hQuestText ? E::CGameInstance::Get().
+			GetGameObjectByHandleT<CTextBox>(*m_hQuestText) : nullptr;
+		if (!root || !text)
+		{
+			HideQuestWidget();
+			return;
+		}
+
+		text->SetwText(StringToWUTF8(displayText));
+		m_eDisplayedQuestGroup = group;
+		root->SetAlpha(0.f);
+		GET_SINGLE(UIManager)->PlayFadeIn(*m_hQuestRoot, 0.f, 0.3f);
+		return;
+	}
+
+	if (m_eDisplayedQuestGroup == group &&
+		text->GetwText() == StringToWUTF8(displayText))
+		return;
+
+	auto* tween = text->GetTweenCom();
+	if (!tween)
+	{
+		text->SetwText(StringToWUTF8(displayText));
+		m_eDisplayedQuestGroup = group;
+		return;
+	}
+
+	tween->ClearTweens();
+	const CHandle textHandle = *m_hQuestText;
+	const _float baseLocalX = text->GetUIInfo().LocalX;
+	const _float baseLocalY = text->GetUIInfo().LocalY;
+	constexpr _float shift = 18.f;
+	constexpr _float outDuration = 0.2f;
+	constexpr _float inDuration = 0.25f;
+	const std::wstring nextText = StringToWUTF8(displayText);
+	m_eDisplayedQuestGroup = group;
+
+	tween->PlayTween(
+		text->GetAlphaRatio(), 0.f, outDuration,
+		[textHandle](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+				ui->SetAlphaRatio(value);
+		},
+		[textHandle, nextText, baseLocalX, baseLocalY]()
+		{
+			if (auto* textBox = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CTextBox>(textHandle))
+			{
+				textBox->SetwText(nextText);
+				textBox->SetLocalPos({ baseLocalX - shift, baseLocalY });
+				textBox->SetAlphaRatio(0.f);
+				textBox->CalcUICoord();
+			}
+		}, EEaseType::EaseOutQuad);
+	tween->PlayTween(
+		baseLocalX, baseLocalX - shift, outDuration,
+		[textHandle, baseLocalY](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+			{
+				ui->SetLocalPos({ value, baseLocalY });
+				ui->CalcUICoord();
+			}
+		}, nullptr, EEaseType::EaseOutQuad);
+	tween->PlayTween(
+		0.f, 1.f, inDuration,
+		[textHandle](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+				ui->SetAlphaRatio(value);
+		}, nullptr, EEaseType::EaseOutQuad, outDuration);
+	tween->PlayTween(
+		baseLocalX - shift, baseLocalX, inDuration,
+		[textHandle, baseLocalY](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+			{
+				ui->SetLocalPos({ value, baseLocalY });
+				ui->CalcUICoord();
+			}
+		}, nullptr, EEaseType::EaseOutQuad, outDuration);
+}
+
+void CUIController::HideQuestWidget()
+{
+	if (m_hQuestRoot && GetSafeUI(*m_hQuestRoot))
+		GET_SINGLE(UIManager)->PlayFadeOutDelete(*m_hQuestRoot, 0.f, 0.3f);
+	m_hQuestRoot = std::nullopt;
+	m_hQuestText = std::nullopt;
+	m_eDisplayedQuestGroup = QUEST_UI_GROUP::NONE;
 }
 
 void CUIController::ApplyPendingQuestUIGroups()
@@ -591,6 +806,7 @@ void CUIController::CreateSpellType()
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[17]))->SetDescJsonname("AvadaKedavraDesc");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[18]))->SetDescJsonname("CrucioDesc");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[19]))->SetDescJsonname("ImperioDesc"); 
+	ApplySpellLockStates();
 
 	/********단축키슬롯**********/
 	m_SpellShortCutKeySlot[0] = GET_SINGLE(UIManager)->LoadPrefab("ShortCut1").front();
@@ -624,6 +840,8 @@ void CUIController::DeleteSpellType()
 	{
 		PlayScaleAlphaDownDelete(hBtn);
 	}
+	for (auto& overlay : m_SpellLockOverlays)
+		overlay = std::nullopt;
 	for (auto hBG : m_SpellSlotStatic)
 	{
 		PlayFadeOutDelete(hBG);
@@ -776,7 +994,105 @@ void CUIController::SetSpellType(uint32_t SlotNumber, uint32_t SpellType)
 	defualt:
 		break;
 	}
+	GET_SINGLE(UIManager)->SaveSpellSlot(SlotNumber, SpellType);
+}
 
+_bool CUIController::IsSpellUnlocked(SPELL_TYPE spellType) const
+{
+	return GET_SINGLE(UIManager)->IsSpellUnlocked(spellType);
+}
+
+void CUIController::SetSpellUnlocked(SPELL_TYPE spellType, _bool unlocked)
+{
+	(void)unlocked;
+	for (size_t i = 0; i < SPELL_BUTTON_TYPES.size(); ++i)
+	{
+		if (SPELL_BUTTON_TYPES[i] != spellType)
+			continue;
+		if (i < m_SpellBTNs.size())
+			RefreshSpellLockVisual(i);
+		break;
+	}
+}
+
+void CUIController::ApplySpellLockStates()
+{
+	for (size_t i = 0; i < SPELL_BUTTON_TYPES.size() && i < m_SpellBTNs.size(); ++i)
+		RefreshSpellLockVisual(i);
+}
+
+void CUIController::RefreshSpellLockVisual(size_t spellButtonIndex)
+{
+	if (spellButtonIndex >= SPELL_BUTTON_TYPES.size() ||
+		spellButtonIndex >= m_SpellBTNs.size())
+		return;
+
+	auto* button = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CButton>(m_SpellBTNs[spellButtonIndex]);
+	if (!button)
+		return;
+
+	const _bool unlocked = GET_SINGLE(UIManager)->
+		IsSpellUnlocked(SPELL_BUTTON_TYPES[spellButtonIndex]);
+	button->SetSpellUnlocked(unlocked);
+
+	// SpellTypeHoverEffect is a regular child UI, so it receives its own
+	// ENTER/EXIT events independently from the spell button. Lock it
+	// explicitly while the spell is unavailable, while leaving the parent
+	// button interactive so the description popup can still be displayed.
+	for (const CHandle childHandle : button->GetChildren())
+	{
+		auto* child = GetSafeUI(childHandle);
+		if (!child || std::string_view(child->GetName()) != "SpellTypeHoverEffect")
+			continue;
+
+		child->SetInputLcok(!unlocked);
+		if (!unlocked)
+		{
+			if (auto* tween = child->GetTweenCom())
+				tween->ClearTweens();
+			child->SetAlphaRatio(0.f);
+			child->SetAlpha(0.f);
+			child->CalcUICoord();
+		}
+	}
+
+	auto& overlayHandle = m_SpellLockOverlays[spellButtonIndex];
+	if (unlocked)
+	{
+		if (overlayHandle && GetSafeUI(*overlayHandle))
+			GET_SINGLE(UIManager)->DeleteUIRecursive(*overlayHandle);
+		overlayHandle = std::nullopt;
+		return;
+	}
+
+	if (overlayHandle && GetSafeUI(*overlayHandle))
+		return;
+
+	const auto overlayObjects = GET_SINGLE(UIManager)->LoadPrefab("SpellLockFade");
+	if (overlayObjects.empty())
+		return;
+
+	overlayHandle = overlayObjects.front();
+	auto* overlay = GetSafeUI(*overlayHandle);
+	if (!overlay)
+	{
+		overlayHandle = std::nullopt;
+		return;
+	}
+
+	overlay->SetParent(button->GetHandle());
+	button->AddChildren(*overlayHandle);
+	overlay->SetLocalPos({ 0.f, 0.f });
+	overlay->SetLocalScaleRatio(1.f);
+	overlay->SetAlphaRatio(0.3f);
+	overlay->GetUIInfo().WeightOffset = 1;
+	for (const CHandle handle : overlayObjects)
+	{
+		if (auto* ui = GetSafeUI(handle))
+			ui->SetInputLcok(true);
+	}
+	overlay->CalcUICoord();
 }
 
 uint32_t CUIController::GetSpellType(uint32_t SlotNumber)
@@ -919,15 +1235,39 @@ void CUIController::CreateMonsterHP()
 	if (pMonster->Get_CurrentHp() <= 0.f)
 		return;
 
-	const char* pPrefabName = pMonster->Is<CEnderDragon>()
-		? "RanRockHP"
-		: "MonsterHP";
+	const char* pPrefabName = "MonsterHP";
+	if (pMonster->Is<CEnderDragon>())
+		pPrefabName = "RanRockHP";
+	else if (pMonster->Is<CBossTMB>())
+		pPrefabName = "PensiveHP";
 
 	auto loadedHandles = GET_SINGLE(UIManager)->LoadPrefab(pPrefabName);
 	if (loadedHandles.empty())
 		return;
 
 	m_MonsterHP = loadedHandles.front();
+
+	if (pMonster->Is<CSpider>())
+	{
+		const auto setSpiderName = [](auto&& self, CHandle handle) -> void
+		{
+			auto* pUI = GetSafeUI(handle);
+			if (!pUI)
+				return;
+
+			if (std::string_view(pUI->GetName()) == "MonsterName")
+			{
+				if (auto* pTextBox = dynamic_cast<CTextBox*>(pUI))
+					pTextBox->SetwText(L"가시등 거비");
+			}
+
+			for (const CHandle childHandle : pUI->GetChildren())
+				self(self, childHandle);
+		};
+
+		for (const CHandle rootHandle : loadedHandles)
+			setSpiderName(setSpiderName, rootHandle);
+	}
 }
 
 void CUIController::UpdateMonsterHP()

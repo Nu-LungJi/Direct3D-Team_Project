@@ -1297,7 +1297,7 @@ void CMiniMap::InitRookwoodObjectives()
 		.TintColor = { 1.f, 0.78f, 0.04f },
 		.DistanceHysteresis = 1.f,
 		.ShowScreenMarker = true,
-		.ScreenMarkerSize = 42.f,
+		.ScreenMarkerSize = 28.f,
 		.ScreenMarkerWorldOffset = { 0.f, 2.5f, 0.f },
 		.ScreenMarkerWeight = 100
 	});

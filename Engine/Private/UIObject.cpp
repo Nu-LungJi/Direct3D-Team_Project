@@ -116,10 +116,7 @@ void CUIObject::LateUpdate(_float fTimeDelta)
 	if (!m_isActive)
 		return;
 
-	if (m_bWorldSpace)
-		E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::BLEND, this);
-	else
-		E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
+	E::CGameInstance::Get().AddRenderObject(GetResolvedRenderGroup(), this);
 
 	GetTransform().Update();
 }

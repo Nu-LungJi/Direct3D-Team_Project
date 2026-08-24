@@ -1278,6 +1278,11 @@ void CPlayer::InitializeSkillSlotUI()
 		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
 	if (!pUIController)
 		return;
+	if (GET_SINGLE(UIManager)->HasInitializedSpellSlots())
+	{
+		m_bSkillSlotUIInitialized = true;
+		return;
+	}
 
 	// 테스트용 코드 나중에 실제 프로토타입 시연회 때는 지워야 함 ---------------------------------------
 	uint32_t level = E::CGameInstance::Get().GetCurrentLevelID();

@@ -1,6 +1,7 @@
 #pragma once
 #include "Client_Defines.h"
 #include "UI_Enums.h"
+#include <string>
 
 NS_BEGIN(Client)
 
@@ -28,6 +29,8 @@ struct FQuestUIGroupChanged
 {
 	QUEST_UI_GROUP Group{ QUEST_UI_GROUP::NONE };
 	_bool Active{ false };
+	// Empty text uses the UIController's default text for the group.
+	std::string QuestText{};
 };
 
 NS_END

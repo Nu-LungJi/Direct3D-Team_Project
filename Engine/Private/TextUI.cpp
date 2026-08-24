@@ -54,11 +54,12 @@ void CTextUI::Update(_float fTimeDelta)
 		originX,
 		m_UIINFO.SizeY * 0.5f
 	};
+	const RENDERGROUP renderGroup = GetResolvedRenderGroup();
 
 	if (m_UIINFO.Name == "64px")
 	{
 		CGameInstance::Get().FontAddLateDraw(
-			RENDERGROUP::UI,
+			renderGroup,
 			fontName,
 			m_textInfo.Text.c_str(),
 			{ m_UIINFO.fX, m_UIINFO.fY },
@@ -70,11 +71,11 @@ void CTextUI::Update(_float fTimeDelta)
 	}
 	else
 	{
-		CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, fontName, m_textInfo.Text.c_str(),
+		CGameInstance::Get().FontAddLateDraw(renderGroup, fontName, m_textInfo.Text.c_str(),
 			{ m_UIINFO.fX, m_UIINFO.fY }, fontscale, XMVectorSet(m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha),
 			0.f, textOrigin);
 
-		CGameInstance::Get().FontAddLateDraw(RENDERGROUP::UI, fontName, m_textInfo.Text.c_str(),
+		CGameInstance::Get().FontAddLateDraw(renderGroup, fontName, m_textInfo.Text.c_str(),
 			{ m_UIINFO.fX, m_UIINFO.fY }, fontscale, XMVectorSet(m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha),
 			0.f, textOrigin);
 	}

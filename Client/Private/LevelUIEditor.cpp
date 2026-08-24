@@ -2341,6 +2341,26 @@ void CLevelUIEditor::StateView()
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("Alpha"); ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(100); ImGui::DragFloat("##Alpha", &m_UIINFO.Alpha, 0.001f, 0.0f, 1.f);
+
+		// 일부 에디터 모드는 자식을 선택해도 Global Properties를 사용한다.
+		// 이 경우에도 부모 알파 대비 비율을 직접 편집할 수 있게 노출한다.
+		if (Target_UI != std::nullopt)
+		{
+			auto* selectedUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*Target_UI);
+			if (selectedUI && selectedUI->GetParent() != std::nullopt)
+			{
+				_float alphaRatio = selectedUI->GetAlphaRatio();
+				ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+				ImGui::Text("Parent Alpha Ratio"); ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(140.f);
+				if (ImGui::DragFloat("##GlobalChildAlphaRatio", &alphaRatio, 0.01f, 0.f, 10.f, "%.3f"))
+				{
+					selectedUI->SetAlphaRatio(std::clamp(alphaRatio, 0.f, 10.f));
+					if (auto* parentUI = E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*selectedUI->GetParent()))
+						selectedUI->SetAlpha(parentUI->GetAlpha() * selectedUI->GetAlphaRatio());
+				}
+			}
+		}
 	
 		// weight
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
@@ -2505,10 +2525,21 @@ void CLevelUIEditor::LocalStateView()
 		ImGui::SetNextItemWidth(100); ImGui::DragFloat("X##WRatioX", &widthX, 0.001f, 0.0f, 5.f); ImGui::SameLine();
 		ImGui::SetNextItemWidth(100); ImGui::DragFloat("Y##WRatioY", &widthY, 0.001f, 0.0f, 5.f);
 
-		// Alpha & Weight
+		// 부모의 최종 Alpha에 곱해지는 자식 전용 Alpha 비율
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
-		ImGui::Text("Alpha Ratio"); ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(100); ImGui::DragFloat("##AlphaRatio", &alphaRatio, 0.001f, 0.0f, 1.f);
+		ImGui::Text("Parent Alpha Ratio"); ImGui::TableNextColumn();
+		ImGui::SetNextItemWidth(140.f);
+		if (ImGui::DragFloat("##AlphaRatio", &alphaRatio, 0.01f, 0.f, 10.f, "%.3f"))
+		{
+			alphaRatio = std::clamp(alphaRatio, 0.f, 10.f);
+			selectUI->SetAlphaRatio(alphaRatio);
+			selectUI->SetAlpha(parentUI->GetAlpha() * alphaRatio);
+		}
+
+		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
+		ImGui::Text("Effective Alpha"); ImGui::TableNextColumn();
+		ImGui::TextDisabled("%.3f (Parent %.3f x Ratio %.3f)",
+			parentUI->GetAlpha() * alphaRatio, parentUI->GetAlpha(), alphaRatio);
 
 		ImGui::TableNextRow(); ImGui::TableNextColumn(); ImGui::AlignTextToFramePadding();
 		ImGui::Text("Weight Offset"); ImGui::TableNextColumn();
