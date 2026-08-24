@@ -446,7 +446,7 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 		return E_FAIL;
 	}
 
-	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/cumulus.dds", nullptr, m_pWeatherMapTexture.GetAddressOf()))) {
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/WeatherMap.dds", nullptr, m_pWeatherMapTexture.GetAddressOf()))) {
 		MSG_BOX("Cannot Create WeatherMap Texture File.");
 		return E_FAIL;
 	}
@@ -456,6 +456,15 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 		return E_FAIL;
 	}
 	
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/BaseNoise.dds", nullptr, m_pBaseVolumeTexture.GetAddressOf()))) {
+		MSG_BOX("Cannot Create Cloud BaseNoise File.");
+		return E_FAIL;
+	}
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/DetailNoise.dds", nullptr, m_pDetailVolumeTexture.GetAddressOf()))) {
+		MSG_BOX("Cannot Create Cloud DetailNoise File.");
+		return E_FAIL;
+	}
+
 	if (m_pVolumetricFroxelCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FROXEL", E::CResCBuffer::Create())) {
 		if (FAILED(m_pVolumetricFroxelCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_FROXEL) })))    return E_FAIL;
 	}
@@ -1654,16 +1663,17 @@ HRESULT CRenderer::Render_VolumetricCloud() {
 	{
 		m_pContext->CSSetShader(m_pVolumetricCloudCS->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11ShaderResourceView* pSRVs[7] = {
+		ID3D11ShaderResourceView* pSRVs[8] = {
 			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
 			nullptr,
-			m_pVolumeTexture.Get(),
+			m_pBaseVolumeTexture.Get(),
+			m_pDetailVolumeTexture.Get(),
 			m_pResDynTexTargetDepth->GetSRV().Get(),
 			m_pWeatherMapTexture.Get(),
 			m_pBlueNoiseTexture.Get(),
 			m_pCloudCurlNoiseTexture.Get()
 		};
-		m_pContext->CSSetShaderResources(0, 7, pSRVs);
+		m_pContext->CSSetShaderResources(0, 8, pSRVs);
 
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVolumetricCloudTex->GetUAV().Get() };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
