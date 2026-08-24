@@ -41,6 +41,7 @@
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
 
+#include "Coin.h"
 NS_USING(Client)
 
 std::future<bool> CLevelHogwartWorldLoader::Load()
@@ -91,6 +92,9 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			if (FAILED(NpcLoad_InWorker()))
 				return false;
 			if (FAILED(AnimalLoad_InWorker()))
+				return false;
+
+			if (FAILED(LoadCollsion_InWorker()))
 				return false;
 
 			return SUCCEEDED(LoadPlayerResources());
@@ -478,4 +482,13 @@ HRESULT CLevelHogwartWorldLoader::AnimalLoad_InWorker()
 		MSG_BOX("TERRAIN Failed Prototype_GameObject_GriffChild");
 		return E_FAIL;
 	}
+}
+HRESULT CLevelHogwartWorldLoader::LoadCollsion_InWorker()
+{	
+	if (FAILED(E::CGameInstance::Get().AddPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_Coin, CCoin::Create())))
+	{
+		MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
+		return E_FAIL;
+	}
+	return S_OK;
 }

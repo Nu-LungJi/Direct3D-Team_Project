@@ -102,6 +102,9 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnStaticCollision()))
 		return E_FAIL;
 
+	if (FAILED(SpawnCoinCollision()))
+		return E_FAIL;
+
 	if (FAILED(SpawnTerrain(*hPlayer)))
 		return E_FAIL;
 
@@ -115,8 +118,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnSkyBox()))
 		return E_FAIL;
 
-	if (FAILED(SpawnWater()))
-		return E_FAIL;
+	//if (FAILED(SpawnWater()))
+	//	return E_FAIL;
 
 	if (FAILED(SpawnMonster(*hPlayer)))
 		return E_FAIL;
@@ -241,7 +244,7 @@ HRESULT CLevelHogwartWorld::SpawnPlayerCape(CHandle hPlayer)
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorld::SpawnTerrain(CHandle hPlayer)
+HRESULT CLevelHogwartWorld::SpawnTerrain(std::optional<CHandle> hPlayer)
 {
 	E::CTerrain::DESC desc{};
 	desc.sObjectTag = "HogwartWorldTerrain";
@@ -471,8 +474,22 @@ HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 	auto handles = CGameInstance::Get()
 		.GetPhysXManager()
 		->CreateCollisionProxyObjectsFromFile(
-			"Level_HogwartWorld",
+			"Level_HogwartWorldLast",
 			"00_MapCollision");
+
+	if (handles.empty())
+		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorld::SpawnCoinCollision()
+{
+	auto handles = CGameInstance::Get()
+		.GetPhysXManager()
+		->CreateCollisionProxyObjectsFromFile(
+			"Level_HogwartCoin",
+			"00_CoinCollision");
 
 	if (handles.empty())
 		return E_FAIL;
@@ -553,8 +570,8 @@ HRESULT CLevelHogwartWorld::Initialize_VolumetricFog() {
 
 	CB_VLFOG FogOption{};
 
-	FogOption.g_fFogColor			= { 63.f / 255.f, 88.f / 255.f, 88.f / 255.f };
-	FogOption.g_fFogIntensity		= 1.f;
+	FogOption.g_fFogColor			= { 255.f / 255.f, 227.f / 255.f, 184.f / 255.f };
+	FogOption.g_fFogIntensity		= 0.25f;
 	FogOption.g_fFogDensity			= 0.02f;
 	FogOption.g_fFogNoiseScale		= 0.05f;
 	FogOption.g_fFogScattering		= 0.5f;

@@ -26,7 +26,6 @@ public:
 private:		// Initialize
 	HRESULT		InitializeShaderResource();
 	HRESULT		InitializeBackBuffer();
-	HRESULT		InitializeOffscreen();
 	HRESULT		InitializeFullscreen();
 	HRESULT		InitializeBaseTarget();
 	HRESULT		InitializeTargetPBR();
@@ -87,6 +86,7 @@ private:		// Volumetric Effect Pass Render
 	HRESULT		Render_VolumetricComposite();
 
 private:		// PostProcess Pass Render
+	HRESULT		Update_PostProcessConstantBuffer();
 	HRESULT		Render_PostProcess_MotionBlur();
 	HRESULT		Render_PostProcess_Focusing();
 	HRESULT		Render_PostProcess_LensFlare();
@@ -102,6 +102,8 @@ private:		// Bloom Helper Function
 	HRESULT		Render_UpSampleCombinePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _HalfBloomTex, const SPtr<CResDynamicTexture2D>& _QuarterBloomTex, uint32_t _ScreenX, uint32_t _ScreenY);
 	HRESULT		Render_DownSamplePass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _SrcTex, uint32_t _ScreenX, uint32_t _ScreenY);
 	HRESULT		Render_CombinedPass(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, const SPtr<CResDynamicTexture2D>& _BlurPassTexture, uint32_t _ScreenX, uint32_t _ScreenY);
+
+	HRESULT		Render_RadialBlur(const SPtr<CResDynamicTexture2D>& _OutPut, const SPtr<CResDynamicTexture2D>& _OriginTexture, uint32_t _ScreenX, uint32_t _ScreenY);
 
 private:		// Camera Setting / Render Constext Setting
 	HRESULT		Bind_CameraAttribute(CCameraObject* _ActiveCam);
@@ -134,6 +136,10 @@ public:			// Append Render Queue
 public:			// Extra Function
 	HRESULT		Reset_DefaultShader(RENDERGROUP _Group);
 
+				// 3DUI
+	VOID		SetUI3DPanel(const _float4x4& worldMatrix, _bool active, _bool ignoreDepth = false);
+	VOID		ClearUI3DPanel();
+
 public:			// Volumetric Fog
 	const CB_VLFOG	Get_VolumetricFogOption()							{ return m_pFogInfo; }
 	VOID			Set_VolumetricFogOption(const CB_VLFOG& _FogOption) { m_pFogInfo = _FogOption; }
@@ -141,8 +147,20 @@ public:			// Volumetric Fog
 	_float			Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base);
 
 public:
-	VOID			Apply_RadialBlur(_float _Intensity) { m_fBlurIntensity = _Intensity; }
-	
+	const CB_VOLUMECLOUD	Get_VolumetricCloudOption() { return m_pCloudInfo; }
+	VOID			Set_VolumetricCloudOption(const CB_VOLUMECLOUD& _CloudOption) { m_pCloudInfo = _CloudOption; }
+
+public:
+	VOID			Set_RadialBlurIntensity(const _float _Intensity)	{ m_pPostProcessBuffer.g_fBlurIntensity			= _Intensity; }
+	VOID			Set_DistortionIntensity(const _float _Intensity)	{ m_pPostProcessBuffer.g_fDistortionIntensity	= _Intensity; }
+	VOID			Set_ChromaticIntensity(const _float _Intensity)		{ m_pPostProcessBuffer.g_fChromaticIntensity	= _Intensity; }
+	VOID			Set_VignetteIntensity(const _float _Intensity)		{ m_pPostProcessBuffer.g_fVignetteIntensity		= _Intensity; }
+
+	const _float&	Get_RadialBlurIntensity()	{ return m_pPostProcessBuffer.g_fBlurIntensity;			}
+	const _float&	Get_DistortionIntensity()	{ return m_pPostProcessBuffer.g_fDistortionIntensity;	}
+	const _float&	Get_ChromaticIntensity()	{ return m_pPostProcessBuffer.g_fChromaticIntensity;	}
+	const _float&	Get_VignetteIntensity()		{ return m_pPostProcessBuffer.g_fVignetteIntensity;		}
+
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
@@ -164,8 +182,8 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetMotionBlur{};		// MotionBlur
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetUI{};				// UI
-	SPtr<CResDynamicTexture2D>	m_pOffScreenTex2D{};				// Combined
 	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetUI3D{};			// 3DUI
+	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetUI3DComposite{};	// post-process + world UI panel
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetFocusingDepthMap{};	// DepthMap
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetHBAO{};			// HBAO
@@ -176,16 +194,20 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloom_HalfScaleB{};
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloom_QuarterScaleA{};
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloom_QuarterScaleB{};
-	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloomResult{};
+	
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetBloomResult{};	// Only Bloom
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetFinalResult{};	// Bloom + Radial Blur
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetVolumetric{};		// Volumetric
 
 	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetPreviousRenderView{};
 
-private:
-	SPtr<CResVertexShader>		m_pOffScreenVertexShader{};
-	SPtr<CResPixelShader>		m_pOffScreenPixelShader{};
+	// 3DUI
+	_float4x4					m_UI3DPanelWorld{};
+	_bool						m_bUI3DPanelActive{ false };
+	_bool						m_bUI3DPanelIgnoreDepth{ false };
 
+private:
 	SPtr<CResVertexShader>		m_pPBRVertexShader{};
 
 	SPtr<CResVertexShader>		m_pResVertexShader{};
@@ -204,12 +226,17 @@ private:
 	SPtr<CResComputeShader>		m_pBloomPassComputeShader{};
 	SPtr<CResComputeShader>		m_pUpSampleComputeShader{};
 	SPtr<CResComputeShader>		m_pDownSampleComputeShader{};
+	SPtr<CResComputeShader>		m_pRadialBlurComputeShader{};
 
 	SPtr<CResCBuffer>			m_pBloomCBuffer{};
+	SPtr<CResCBuffer>			m_pPostProcessCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricFroxelCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricVFogCBuffer{};
+
 	SPtr<CResCBuffer>			m_pVolumetricCSMCBuffer{};
 	SPtr<CResCBuffer>			m_pVolumetricCloudCBuffer{};
+	SPtr<CResCBuffer>			m_pVolumetricCloudTAACBuffer{};
+
 	SPtr<CResCBuffer>			m_pLensFlareCBuffer{};
 
 	SPtr<CResComputeShader>		m_pLensFlareComputeShader{};
@@ -240,7 +267,9 @@ private:		// FSR
 private:
 	_bool			m_bApplyEnvLight	= { true };		// 환경광 ON-OFF
 	_bool			m_bApplyFilter		= { true };		// 필터 적용 ON-OFF
-	_bool			m_bApplyVolumetric	= { false };	// 볼류메트릭 효과 ON-OFF
+	_bool			m_bApplyVolumetricFog	= { false };	// 볼류메트릭 효과 ON-OFF
+	_bool			m_bApplyVolumetricCloud		= { false };	// 볼류메트릭 클라우드 ON-OFF
+	_bool			m_bApplyVolumetricCloudTAA = { false };	// 볼류메트릭 클라우드 ON-OFF
 	_bool			m_bApplyShadow		= { false };	// 그림자 ON-OFF
 
 private:		// ChromaticRing
@@ -256,9 +285,11 @@ private:		// Volumetric Fog
 	SPtr<CResComputeShader>		m_pLightIntegrationCS{};
 	SPtr<CResComputeShader>		m_pFroxelAccumulationCS{};
 	SPtr<CResComputeShader>		m_pTemporalBlendedCS{};
+	SPtr<CResVertexShader>		m_pVolumetricCompositeVS{};
 	SPtr<CResPixelShader>		m_pVolumetricCompositePS{};
 
 	SPtr<CResComputeShader>		m_pVolumetricCloudCS{};
+	SPtr<CResComputeShader>		m_pVolumetricCloudTAACS{};
 
 	TEXTURE3D					m_pVoxelLighting{};
 	TEXTURE3D					m_pVoxelAccumulated{};
@@ -266,16 +297,25 @@ private:		// Volumetric Fog
 	TEXTURE3D					m_pPreviousVolumeTex{};
 
 	SPtr<CResDynamicTexture2D>	m_pVolumetricCloudTex{};
+	SPtr<CResDynamicTexture2D>	m_pVolumetricCloudTAATex[2]{};
 
 	CB_VLFOG					m_pFogInfo{};
-	CB_ENVLIGHT					m_pEnvLight{};
+	CB_ENVLIGHT					m_pEnvLightInfo{};
+	CB_VOLUMECLOUD				m_pCloudInfo{};
+	CB_CLOUDTAA					m_pCloudTAAInfo{};
 
 	ComPtr<ID3D11ShaderResourceView>	m_pCSMShadowMapTexture	= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pBlueNoiseTexture		= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pVolumeTexture		= { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	m_pWeatherMapTexture	= { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	m_pCloudCurlNoiseTexture = { nullptr };
+
 
 	XMMATRIX					m_mShadowLightViewProj{};
 	XMMATRIX					m_mPreviousCamViewProj{};
+
+	XMMATRIX					m_mPreviousViewMatrix{};
+	XMMATRIX					m_mPreviousProjMatrix{};
 
 private:		// PostProcess
 	std::optional<CHandle>				m_pOutlineTargetHandle{};
@@ -285,7 +325,7 @@ private:		// PostProcess
 	ComPtr<ID3D11ShaderResourceView>	m_pSRVPreFilteredMap{};
 	ComPtr<ID3D11ShaderResourceView>	m_pSRVBRDFLookUpMap{};
 
-	_float	m_fBlurIntensity{};
+	CB_POSTPROCESS	m_pPostProcessBuffer{};
 
 public:			// Hi-Z Fuction
 	const CHizBuffer* GetPrevHizBuffer() const { return m_bHasPrevHizBuffer ? m_pPrevHizBuffer.get() : nullptr; }

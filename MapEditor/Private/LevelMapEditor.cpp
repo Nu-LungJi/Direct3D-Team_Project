@@ -120,6 +120,9 @@ HRESULT CLevelMapEditor::Initialize()
 	CGameInstance::Get().Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 	//CGameInstance::Get().Add_PointLight({ 1.f, -1.f, 1.f }, { 1.f, 0.f, 0.f }, 30.f, 10.f);
 
+	if (FAILED(Initialize_EnviromentLight()))
+		return E_FAIL;
+
 	return S_OK;
 }
 
@@ -140,6 +143,19 @@ void CLevelMapEditor::UpdateGUI()
 void CLevelMapEditor::FrameStart(E::_float fTimeDelta)
 {
 
+}
+
+HRESULT CLevelMapEditor::Initialize_EnviromentLight() {
+
+	CB_ENVLIGHT EnviromentLightOption{};
+
+	EnviromentLightOption.m_fEnviromentIntensity = 0.75f;
+	EnviromentLightOption.m_fFillLightBrightness = 0.0f;
+	EnviromentLightOption.m_fDirectLightBrightness = 0.25f;
+
+	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
+
+	return S_OK;
 }
 
 Engine::UPtr<CLevelMapEditor> CLevelMapEditor::Create()

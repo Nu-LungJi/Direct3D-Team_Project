@@ -22,6 +22,16 @@ NS_USING(Client)
 
 namespace
 {
+	void SetRenderGroupRecursive(CHandle handle, E::RENDERGROUP renderGroup)
+	{
+		auto* ui = E::CGameInstance::Get().GetGameObjectByHandleT<E::CUIObject>(handle);
+		if (!ui)
+			return;
+		ui->SetRenderGroupOverride(renderGroup);
+		for (const CHandle child : ui->GetChildren())
+			SetRenderGroupRecursive(child, renderGroup);
+	}
+
 	constexpr _float DIALOGUE_FONT_SCALE = 1.f;
 	constexpr _float DIALOGUE_HOLD_TIME = 5.f;
 	constexpr _float DIALOGUE_FADE_IN_TIME = 0.15f;
@@ -84,6 +94,26 @@ namespace
 			1u,
 			obj.value("Rows", legacyGridSize));
 	}
+
+	CUIObject* FindUIByNameRecursive(
+		const std::vector<CHandle>& roots,
+		std::string_view targetName)
+	{
+		std::vector<CHandle> pending = roots;
+		for (size_t index = 0; index < pending.size(); ++index)
+		{
+			auto* ui = GetSafeUI(pending[index]);
+			if (!ui)
+				continue;
+
+			if (std::string_view(ui->GetName()) == targetName)
+				return ui;
+
+			const auto& children = ui->GetChildren();
+			pending.insert(pending.end(), children.begin(), children.end());
+		}
+		return nullptr;
+	}
 }
 
 UIManager::~UIManager()
@@ -91,12 +121,107 @@ UIManager::~UIManager()
 	MFShutdown();
 }
 
+_bool UIManager::IsSpellUnlocked(SPELL_TYPE spellType) const
+{
+	const size_t index = static_cast<size_t>(spellType);
+	return index < m_SpellUnlockStates.size() && m_SpellUnlockStates[index];
+}
+
+void UIManager::SetSpellUnlocked(SPELL_TYPE spellType, _bool unlocked)
+{
+	const size_t index = static_cast<size_t>(spellType);
+	if (index >= m_SpellUnlockStates.size())
+		return;
+
+	m_SpellUnlockStates[index] = unlocked;
+	if (!m_UIController)
+		return;
+
+	if (auto* controller = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CUIController>(*m_UIController))
+	{
+		controller->SetSpellUnlocked(spellType, unlocked);
+	}
+}
+
+uint32_t UIManager::GetSavedSpellSlot(uint32_t slotNumber) const
+{
+	if (slotNumber < 1u || slotNumber > m_SavedSpellSlots.size())
+		return ETOUI(SPELL_TYPE::NONE);
+	return m_SavedSpellSlots[slotNumber - 1u];
+}
+
+void UIManager::SaveSpellSlot(uint32_t slotNumber, uint32_t spellType)
+{
+	if (slotNumber < 1u || slotNumber > m_SavedSpellSlots.size())
+		return;
+	m_SavedSpellSlots[slotNumber - 1u] = spellType;
+	m_bSpellSlotsInitialized = true;
+}
+
 void UIManager::Update(_float fTimeDelta)
 {
+	UpdateWandShopWorldMousePosition();
 	UpdateActiveButtons();
 	UpdateDialoguePopups(fTimeDelta);
 	UpdateNPCSpeechBubbles(fTimeDelta);
 	m_WandShop.Update(*this, fTimeDelta);
+}
+
+void UIManager::UpdateWandShopWorldMousePosition()
+{
+	m_bWandShopPanelMouseHit = false;
+	m_WandShopPanelMousePosition = { -FLT_MAX, -FLT_MAX };
+	if (!m_bWandShopWorldMode)
+		return;
+
+	// Picking must use the same camera that projects the world RTT panel.
+	auto* camera = E::CGameInstance::Get().GetCamera("PlayerCamera");
+	if (!camera)
+		camera = E::CGameInstance::Get().GetActiveCamera();
+	if (!camera)
+		return;
+
+	const _float2 screenSize = E::CGameInstance::Get().GetClientScreenSize();
+	const auto [rayOriginValue, rayDirectionValue] = camera->GetRayFromScreenPixel(
+		E::CGameInstance::Get().GetMousePos(), screenSize);
+	const _vector rayOrigin = XMLoadFloat3(&rayOriginValue);
+	const _vector rayDirection = XMVector3Normalize(XMLoadFloat3(&rayDirectionValue));
+	const _matrix panelWorld = XMLoadFloat4x4(&m_WandShopPanelWorld);
+	const _vector panelPosition = panelWorld.r[3];
+	const _vector panelNormal = XMVector3Normalize(panelWorld.r[2]);
+	const _float denominator = XMVectorGetX(XMVector3Dot(rayDirection, panelNormal));
+	if (std::abs(denominator) <= 0.00001f)
+		return;
+
+	const _float distance = XMVectorGetX(XMVector3Dot(
+		panelPosition - rayOrigin, panelNormal)) / denominator;
+	if (distance < 0.f)
+		return;
+
+	const _vector hitPosition = rayOrigin + rayDirection * distance;
+	const _matrix inversePanel = XMMatrixInverse(nullptr, panelWorld);
+	const _vector localHit = XMVector3TransformCoord(hitPosition, inversePanel);
+	const _float localX = XMVectorGetX(localHit);
+	const _float localY = XMVectorGetY(localHit);
+	if (localX < -0.5f || localX > 0.5f ||
+		localY < -0.5f || localY > 0.5f)
+	{
+		return;
+	}
+
+	const _float u = localX + 0.5f;
+	const _float v = 0.5f - localY;
+	m_WandShopPanelMousePosition = { u * screenSize.x, v * screenSize.y };
+	m_bWandShopPanelMouseHit = true;
+}
+
+_float2 UIManager::GetUIInteractionMousePosition() const
+{
+	if (!m_bWandShopWorldMode)
+		return E::CGameInstance::Get().GetMousePos();
+	return m_bWandShopPanelMouseHit ?
+		m_WandShopPanelMousePosition : _float2{ -FLT_MAX, -FLT_MAX };
 }
 
 void UIManager::Initialize(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
@@ -1981,6 +2106,143 @@ void UIManager::ClearNPCSpeechBubbles(_bool immediate)
 	m_NPCSpeechBubbles.clear();
 }
 
+void UIManager::CreateOrChangeQuest(const std::string& questText)
+{
+	if (questText.empty())
+	{
+		DeleteQuest();
+		return;
+	}
+
+	auto* root = m_hQuestRoot ? GetSafeUI(*m_hQuestRoot) : nullptr;
+	auto* text = m_hQuestText ? E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextBox>(*m_hQuestText) : nullptr;
+
+	if (!root || !text)
+	{
+		m_hQuestRoot = std::nullopt;
+		m_hQuestText = std::nullopt;
+
+		const auto roots = LoadPrefab("Quest");
+		if (roots.empty())
+			return;
+
+		root = FindUIByNameRecursive(roots, "QuestFrame");
+		if (auto* textUI = FindUIByNameRecursive(roots, "QuestText"))
+		{
+			text = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CTextBox>(textUI->GetHandle());
+		}
+		if (!root || !text)
+		{
+			for (const CHandle rootHandle : roots)
+				DeleteUIRecursive(rootHandle);
+			return;
+		}
+
+		m_hQuestRoot = root->GetHandle();
+		m_hQuestText = text->GetHandle();
+		m_QuestTextBaseLocalPos = {
+			text->GetUIInfo().LocalX,
+			text->GetUIInfo().LocalY
+		};
+		m_CurrentQuestText = questText;
+		text->SetwText(StringToWUTF8(questText));
+		root->SetAlpha(0.f);
+
+		// TextureUI는 최초 APPEAR 처리에서 tween을 초기화한다. 최초 프레임의
+		// APPEAR 콜백에서 FadeIn을 시작해야 알파 0에 고정되지 않는다.
+		const CHandle rootHandle = *m_hQuestRoot;
+		root->Appear = [rootHandle](CUIObject*)
+		{
+			if (auto* questRoot = GetSafeUI(rootHandle))
+			{
+				questRoot->SetAlpha(0.f);
+				GET_SINGLE(UIManager)->PlayFadeIn(
+					rootHandle, 0.f, 0.3f);
+			}
+		};
+		return;
+	}
+
+	if (m_CurrentQuestText == questText)
+		return;
+
+	m_CurrentQuestText = questText;
+	auto* tween = text->GetTweenCom();
+	if (!tween)
+	{
+		text->SetwText(StringToWUTF8(questText));
+		return;
+	}
+
+	tween->ClearTweens();
+	const CHandle textHandle = *m_hQuestText;
+	const _float baseX = m_QuestTextBaseLocalPos.x;
+	const _float baseY = m_QuestTextBaseLocalPos.y;
+	constexpr _float shift = 18.f;
+	constexpr _float outDuration = 0.2f;
+	constexpr _float inDuration = 0.25f;
+	const std::wstring nextText = StringToWUTF8(questText);
+
+	tween->PlayTween(
+		text->GetAlphaRatio(), 0.f, outDuration,
+		[textHandle](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+				ui->SetAlphaRatio(value);
+		},
+		[textHandle, nextText, baseX, baseY]()
+		{
+			if (auto* textBox = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CTextBox>(textHandle))
+			{
+				textBox->SetwText(nextText);
+				textBox->SetLocalPos({ baseX - shift, baseY });
+				textBox->SetAlphaRatio(0.f);
+				textBox->CalcUICoord();
+			}
+		}, EEaseType::EaseOutQuad);
+	tween->PlayTween(
+		baseX, baseX - shift, outDuration,
+		[textHandle, baseY](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+			{
+				ui->SetLocalPos({ value, baseY });
+				ui->CalcUICoord();
+			}
+		}, nullptr, EEaseType::EaseOutQuad);
+	tween->PlayTween(
+		0.f, 1.f, inDuration,
+		[textHandle](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+				ui->SetAlphaRatio(value);
+		}, nullptr, EEaseType::EaseOutQuad, outDuration);
+	tween->PlayTween(
+		baseX - shift, baseX, inDuration,
+		[textHandle, baseY](_float value)
+		{
+			if (auto* ui = GetSafeUI(textHandle))
+			{
+				ui->SetLocalPos({ value, baseY });
+				ui->CalcUICoord();
+			}
+		}, nullptr, EEaseType::EaseOutQuad, outDuration);
+}
+
+void UIManager::DeleteQuest()
+{
+	if (m_hQuestRoot && GetSafeUI(*m_hQuestRoot))
+		PlayFadeOutDelete(*m_hQuestRoot, 0.f, 0.3f);
+
+	m_hQuestRoot = std::nullopt;
+	m_hQuestText = std::nullopt;
+	m_CurrentQuestText.clear();
+	m_QuestTextBaseLocalPos = {};
+}
+
 void UIManager::UpdateNPCSpeechBubbles(_float fTimeDelta)
 {
 	if (m_NPCSpeechBubbles.empty())
@@ -2140,9 +2402,36 @@ std::optional<CHandle> UIManager::RootUIPicking()
 	return targetHandle;
 }
 
+_bool UIManager::IsPointerOverInteractiveUI()
+{
+	const auto IsInteractiveHit = [this](const auto& Self, CHandle hUI) -> _bool
+	{
+		auto* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(hUI);
+		if (!pUI || !pUI->GetActive() || !pUI->GetVisible() || pUI->GetWorldSpace())
+			return false;
+
+		// 버튼인 자식 UI까지 검사해야 전체 화면 HUD 루트가 입력을 가로채지 않는다.
+		for (const CHandle hChild : pUI->GetChildren())
+		{
+			if (Self(Self, hChild))
+				return true;
+		}
+
+		return pUI->HasInteractiveButton() &&
+			PtInRect(pUI->GetUIInfo(), pUI->GetScaleRatio());
+	};
+
+	for (const CHandle hRoot : rootUIHandles)
+	{
+		if (IsInteractiveHit(IsInteractiveHit, hRoot))
+			return true;
+	}
+	return false;
+}
+
 _bool UIManager::PtInRect(const UI_INFO& selectInfo, _float scaleRatio)
 {
-	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+	_float2 mousePos = GetUIInteractionMousePosition();
 
 	_float2 origin = { selectInfo.fX, selectInfo.fY };
 	_float2 size = { selectInfo.SizeX * scaleRatio, selectInfo.SizeY * scaleRatio };
@@ -2224,6 +2513,15 @@ std::vector<CHandle> UIManager::LoadPrefabFiltered(
 		LoadUIRecursive(obj, nullptr);
 	}
 
+	if (m_bWandShopWorldMode)
+	{
+		// Selection/hover effects used by the shop may come from the normal
+		// prefab directory.  While the world shop owns the interaction, route
+		// every prefab it creates into the same RTT instead of screen UI.
+		for (const CHandle rootHandle : m_vLoadPrefabRoot)
+			SetRenderGroupRecursive(rootHandle, E::RENDERGROUP::UI3D);
+	}
+
 	return m_vLoadPrefabRoot;
 }
 
@@ -2238,7 +2536,84 @@ void UIManager::OpenWandShop()
 	// Page changes afterwards are handled by CWandShop without recreating them.
 	if (m_WandShop.IsOpen())
 		return;
+	m_bWandShopWorldMode = false;
+	E::CGameInstance::Get().ClearUI3DPanel();
 
+	CGeneralButton::ResetWandShopSelection();
+	LoadPrefab("ShopWand1", "./Resources/SampleClient/UIData/RTT/");
+	m_WandShop.CreatePurchasePrompt();
+}
+
+void UIManager::OpenWandShopWorld(
+	CHandle targetHandle,
+	const _float3& positionOffset,
+	const _float3& rotationOffsetDegrees)
+{
+	auto* targetObject = E::CGameInstance::Get().
+		GetGameObjectByHandle(targetHandle);
+	if (!targetObject)
+		return;
+
+	if (m_WandShop.IsOpen())
+	{
+		// Once spawned in world space, keep the original panel transform.
+		// This also guards against an input implementation reporting F4 for
+		// more than one frame while the key is held.
+		if (m_bWandShopWorldMode)
+			return;
+		m_WandShop.Close(*this);
+	}
+
+	constexpr _float PANEL_WIDTH = 9.6f;
+	constexpr _float PANEL_HEIGHT = 5.4f;
+	constexpr _float MIN_AXIS_LENGTH_SQ = 0.0001f;
+
+	auto& targetTransform = targetObject->GetTransform();
+	_vector targetRight = targetTransform.GetState(STATE::RIGHT);
+	_vector targetUp = targetTransform.GetState(STATE::UP);
+	_vector targetLook = targetTransform.GetState(STATE::LOOK);
+
+	if (XMVectorGetX(XMVector3LengthSq(targetRight)) < MIN_AXIS_LENGTH_SQ)
+		targetRight = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+	if (XMVectorGetX(XMVector3LengthSq(targetUp)) < MIN_AXIS_LENGTH_SQ)
+		targetUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	if (XMVectorGetX(XMVector3LengthSq(targetLook)) < MIN_AXIS_LENGTH_SQ)
+		targetLook = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+
+	targetRight = XMVector3Normalize(targetRight);
+	targetUp = XMVector3Normalize(targetUp);
+	targetLook = XMVector3Normalize(targetLook);
+
+	const _vector panelPosition =
+		targetTransform.GetLoadedPostion() +
+		targetRight * positionOffset.x +
+		targetUp * positionOffset.y +
+		targetLook * positionOffset.z;
+
+	// The panel front faces the target's backward direction by default.
+	// Rotation offsets are specified in degrees and applied X -> Z -> Y.
+	const _matrix targetPanelPose{
+		XMVectorSetW(targetRight, 0.f),
+		XMVectorSetW(targetUp, 0.f),
+		XMVectorSetW(-targetLook, 0.f),
+		XMVectorSetW(panelPosition, 1.f)
+	};
+	const _matrix rotationOffset =
+		XMMatrixRotationX(XMConvertToRadians(rotationOffsetDegrees.x)) *
+		XMMatrixRotationZ(XMConvertToRadians(rotationOffsetDegrees.z)) *
+		XMMatrixRotationY(XMConvertToRadians(rotationOffsetDegrees.y));
+	const _matrix panelWorld =
+		XMMatrixScaling(PANEL_WIDTH, PANEL_HEIGHT, 1.f) *
+		rotationOffset * targetPanelPose;
+
+	_float4x4 storedPanelWorld{};
+	XMStoreFloat4x4(&storedPanelWorld, panelWorld);
+
+	m_bWandShopWorldMode = true;
+	m_WandShopPanelWorld = storedPanelWorld;
+	// The placement is now confirmed, so use the scene depth buffer and let
+	// walls/props occlude the physical panel naturally.
+	E::CGameInstance::Get().SetUI3DPanel(storedPanelWorld, true, false);
 	CGeneralButton::ResetWandShopSelection();
 	LoadPrefab("ShopWand1", "./Resources/SampleClient/UIData/RTT/");
 	m_WandShop.CreatePurchasePrompt();
@@ -2247,6 +2622,8 @@ void UIManager::OpenWandShop()
 void UIManager::CloseWandShop()
 {
 	m_WandShop.Close(*this);
+	m_bWandShopWorldMode = false;
+	E::CGameInstance::Get().ClearUI3DPanel();
 }
 
 E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent)
@@ -2409,6 +2786,12 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 
 	if (pUI == nullptr)
 		return nullptr;
+
+	// Mark every shop object at creation time.  This avoids a one-frame
+	// registration in the normal screen UI queue and also covers children
+	// and dynamically loaded shop effects without relying on a later walk.
+	if (m_bWandShopWorldMode)
+		pUI->SetRenderGroupOverride(E::RENDERGROUP::UI3D);
 
 	if (obj.contains("ScaleRatio"))
 		pUI->SetScaleRatio(obj["ScaleRatio"]);
@@ -2645,6 +3028,124 @@ void UIManager::PlayFadeIn(CHandle pHandle, float delay, float playtime)
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
 		}, nullptr, EEaseType::EaseOutQuad, delay);
+}
+
+void UIManager::PlayFadeOutAll2DUI(float delay, float playtime)
+{
+	UpdateRootUIHandles();
+
+	for (const CHandle handle : rootUIHandles)
+	{
+		auto* pUI = GetSafeUI(handle);
+		if (!pUI || !pUI->GetActive() || !pUI->GetVisible() ||
+			pUI->GetResolvedRenderGroup() != RENDERGROUP::UI)
+			continue;
+
+		// FadeIn 때 복원할 각 UI의 원래 상태를 FadeOut 시작 시점에 보관한다.
+		m_2DUIRestoreAlpha[handle] = pUI->GetAlpha();
+		m_2DUIRestoreInputLock[handle] = pUI->GetInputLcok();
+		pUI->SetInputLcok(true);
+
+		if (auto* pTween = pUI->GetTweenCom())
+		{
+			const _float startAlpha = pUI->GetAlpha();
+			pTween->PlayTween(startAlpha, 0.f, playtime,
+				[handle](_float value)
+				{
+					if (auto* pTarget = GetSafeUI(handle))
+						pTarget->SetAlpha(value);
+				}, nullptr, EEaseType::EaseOutQuad, delay);
+		}
+	}
+
+	// SpellMeter는 알파 전환과 별개로 원래 ScaleRatio를 기억한 뒤 0까지 축소한다.
+	if (const auto* pLayer = CGameInstance::Get().GetGameObjectLayer("Layer_UI"))
+	{
+		for (const CHandle handle : *pLayer)
+		{
+			auto* pSpellMeter = E::CGameInstance::Get().GetGameObjectByHandleT<CSpellMeter>(handle);
+			if (!pSpellMeter || !pSpellMeter->GetActive() || !pSpellMeter->GetVisible() ||
+				pSpellMeter->GetResolvedRenderGroup() != RENDERGROUP::UI)
+				continue;
+
+			const _float startScale = pSpellMeter->GetScaleRatio();
+			m_SpellMeterRestoreScale[handle] = startScale;
+			if (auto* pTween = pSpellMeter->GetTweenCom())
+			{
+				pTween->PlayTween(startScale, 0.f, playtime,
+					[handle](_float value)
+					{
+						if (auto* pTarget = E::CGameInstance::Get().GetGameObjectByHandleT<CSpellMeter>(handle))
+						{
+							pTarget->SetScaleRatio(value);
+							pTarget->CalcUICoord();
+						}
+					}, nullptr, EEaseType::EaseOutQuad, delay);
+			}
+		}
+	}
+}
+
+void UIManager::PlayFadeInAll2DUI(float delay, float playtime)
+{
+	UpdateRootUIHandles();
+
+	for (const CHandle handle : rootUIHandles)
+	{
+		auto* pUI = GetSafeUI(handle);
+		if (!pUI || !pUI->GetActive() || !pUI->GetVisible() ||
+			pUI->GetResolvedRenderGroup() != RENDERGROUP::UI)
+			continue;
+
+		const auto alphaIt = m_2DUIRestoreAlpha.find(handle);
+		const _float targetAlpha = alphaIt != m_2DUIRestoreAlpha.end() ? alphaIt->second : pUI->GetAlpha();
+
+		if (auto* pTween = pUI->GetTweenCom())
+		{
+			const _float startAlpha = pUI->GetAlpha();
+			pTween->PlayTween(startAlpha, targetAlpha, playtime,
+				[handle](_float value)
+				{
+					if (auto* pTarget = GetSafeUI(handle))
+						pTarget->SetAlpha(value);
+				}, [this, handle]()
+				{
+					if (auto* pTarget = GetSafeUI(handle))
+					{
+						const auto lockIt = m_2DUIRestoreInputLock.find(handle);
+						pTarget->SetInputLcok(lockIt != m_2DUIRestoreInputLock.end() ? lockIt->second : false);
+					}
+				}, EEaseType::EaseOutQuad, delay);
+		}
+	}
+
+	// FadeOut에서 저장한 SpellMeter의 고유 ScaleRatio로 천천히 복구한다.
+	for (auto it = m_SpellMeterRestoreScale.begin(); it != m_SpellMeterRestoreScale.end();)
+	{
+		const CHandle handle = it->first;
+		const _float targetScale = it->second;
+		auto* pSpellMeter = E::CGameInstance::Get().GetGameObjectByHandleT<CSpellMeter>(handle);
+		if (!pSpellMeter || pSpellMeter->GetResolvedRenderGroup() != RENDERGROUP::UI)
+		{
+			it = m_SpellMeterRestoreScale.erase(it);
+			continue;
+		}
+
+		if (auto* pTween = pSpellMeter->GetTweenCom())
+		{
+			const _float startScale = pSpellMeter->GetScaleRatio();
+			pTween->PlayTween(startScale, targetScale, playtime,
+				[handle](_float value)
+				{
+					if (auto* pTarget = E::CGameInstance::Get().GetGameObjectByHandleT<CSpellMeter>(handle))
+					{
+						pTarget->SetScaleRatio(value);
+						pTarget->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, delay);
+		}
+		++it;
+	}
 }
 
 void UIManager::PlayFadeInChange(CHandle pHandle, LEVEL level, float delay, float playtime)

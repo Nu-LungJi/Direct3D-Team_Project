@@ -46,6 +46,8 @@ private:
 	_float3 MakePropBarrelSpawnPosition() const;
 
 	HRESULT SpawnMonster(const std::optional<CHandle>& hPlayer);
+
+	HRESULT SpawnStaticCollision();
 public:
 	static Engine::UPtr<CLevelTerrain> Create();
 

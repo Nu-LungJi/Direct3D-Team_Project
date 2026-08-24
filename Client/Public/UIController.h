@@ -55,6 +55,8 @@ public:
 	void SetSpellType(uint32_t SlotNumber, uint32_t SpellType); 
 	uint32_t GetSpellType(uint32_t SlotNumber); // 1234 슬롯 마법 타입 UI_ENUM에 스펠타입 있음
 	void UseSpell(uint32_t SlotNumber);
+	void SetSpellUnlocked(SPELL_TYPE spellType, _bool unlocked);
+	_bool IsSpellUnlocked(SPELL_TYPE spellType) const;
 
 	// ********* Potion
 	void SetPotionCount(_float cnt); // 포션 개수 세팅
@@ -74,7 +76,10 @@ public:
 
 	// ********** Quest UI
 	_bool SetQuestUIGroupActive(
-		QUEST_UI_GROUP group, _bool active);
+		QUEST_UI_GROUP group, _bool active,
+		const std::string& questText = {},
+		_bool updateMinimap = true,
+		_bool updateQuestWidget = true);
 
 private: // ************ 계속 바뀌는 유아이 ******************* //
 	/*************플레이 화면 유아이******************/
@@ -94,6 +99,7 @@ private: // ************ 계속 바뀌는 유아이 ******************* //
 	std::vector<CHandle> m_SpellBTNs = {};
 	uint32_t m_TargetSpellType = ETOUI(SPELL_TYPE::B_NONE);
 	std::vector<CHandle> m_SpellSlotStatic{};
+	std::array<std::optional<CHandle>, 20> m_SpellLockOverlays{};
 
 	/********************죽는 화면**********************/
 	CHandle m_Desolve{};
@@ -126,7 +132,11 @@ private:
 	std::optional<CHandle> m_hMiniMap{ std::nullopt };
 	std::array<_bool, QUEST_UI_GROUP_COUNT> m_QuestUIGroupStates{};
 	std::array<_bool, QUEST_UI_GROUP_COUNT> m_QuestUIGroupDirty{};
+	std::array<std::string, QUEST_UI_GROUP_COUNT> m_QuestUIGroupTexts{};
 	uint64_t m_iQuestUIListenerID{};
+	std::optional<CHandle> m_hQuestRoot{ std::nullopt };
+	std::optional<CHandle> m_hQuestText{ std::nullopt };
+	QUEST_UI_GROUP m_eDisplayedQuestGroup{ QUEST_UI_GROUP::NONE };
 
 	// Spell learning mini game
 	std::optional<CHandle> m_hSpellMiniGame{ std::nullopt };
@@ -135,6 +145,8 @@ private:
 	//*********내부함수*************//
 private:
 	CUIObject* SafeGetOBJ(CHandle pHandle);
+	void ApplySpellLockStates();
+	void RefreshSpellLockVisual(size_t spellButtonIndex);
 
 	/******몬스터 hp********/
 	public:
@@ -149,6 +161,10 @@ private:
 	void BindMiniMap();
 	void SubscribeQuestUIEvents();
 	void ApplyPendingQuestUIGroups();
+	void RefreshQuestWidget(QUEST_UI_GROUP changedGroup, _bool active);
+	void ShowQuestWidget(QUEST_UI_GROUP group);
+	void HideQuestWidget();
+	std::string GetQuestDisplayText(QUEST_UI_GROUP group) const;
 	void FadeOutSpellMiniGameBackground();
 	void FadeOutPotionCountForSpellMiniGame();
 	void FadeInPotionCountAfterSpellMiniGame();

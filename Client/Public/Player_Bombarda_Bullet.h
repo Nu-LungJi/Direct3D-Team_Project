@@ -31,7 +31,7 @@ public:
 		_bool bDebugDraw{ false };
 		_string sProjectileEffectName{ "Bombarda_Projectile" };
 		_string sTrailParticleQueue{ "LSY_Bombarda_Projectile_Trail_Queue.json" };
-		_string sImpactEffectName{ "Bombarda_Impact" };
+		_string sImpactEffectName{ "BombardaImapact" };
 
 		PX_QUERY_FILTER_DESC tQueryFilter{
 			.iQueryMask =

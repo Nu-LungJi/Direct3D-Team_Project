@@ -178,7 +178,14 @@ void CParticleManager::UpdateGUI()
 	static float fStraightEndTime	= 0.12f;
 	static float fHoldEndTime		= 0.3f;
 	static float fFadeEndTime		= 0.15f;
-	ImGui::Begin("SaveResourcesAsJson");
+	const _bool bShowResourceAuthoring = ImGui::Begin("SaveResourcesAsJson");
+	if (bShowResourceAuthoring)
+	{
+		auto ClearFailedThumbnailCache = [this]()
+			{
+				std::erase_if(m_TextureThumbnailCache,
+					[](const auto& entry) { return !entry.second; });
+			};
 
 
 
@@ -370,6 +377,9 @@ void CParticleManager::UpdateGUI()
 		bool bRescanDistortionClicked = ImGui::Button("Rescan Distortion Folder");
 		if (!bDistortionScannedForMesh || bRescanDistortionClicked)
 		{
+			if (bRescanDistortionClicked)
+				ClearFailedThumbnailCache();
+
 			distortionFileListForMesh = ScanTextureFolder(kTextureFolders[2]); 
 			bDistortionScannedForMesh = true;
 		}
@@ -399,6 +409,9 @@ void CParticleManager::UpdateGUI()
 		bool bRescanNoiseClicked = ImGui::Button("Rescan Noise Folder");
 		if (!bNoiseScannedForMesh || bRescanNoiseClicked)
 		{
+			if (bRescanNoiseClicked)
+				ClearFailedThumbnailCache();
+
 			noiseFileListForMesh = ScanTextureFolder(kTextureFolders[3]);
 			bNoiseScannedForMesh = true;
 		}
@@ -425,6 +438,9 @@ void CParticleManager::UpdateGUI()
 		bool bRescanAnyClicked = ImGui::Button("Rescan AnyTexture Folder");
 		if (!bAnyTextureScannedForMesh || bRescanAnyClicked)
 		{
+			if (bRescanAnyClicked)
+				ClearFailedThumbnailCache();
+
 			AnyFileListForMesh = ScanTextureFolder(kTextureFolders[4]);
 			bAnyTextureScannedForMesh = true;
 		}
@@ -463,6 +479,8 @@ void CParticleManager::UpdateGUI()
 
 		if (ImGui::Button("Rescan Texture Folder"))
 		{
+			ClearFailedThumbnailCache();
+
 			for (int s = 0; s < 5; ++s)
 				textureFileList[s] = ScanTextureFolder(kTextureFolders[s]);
 		}
@@ -848,15 +866,18 @@ void CParticleManager::UpdateGUI()
 		ImGui::TextDisabled("Save Json (조건을 먼저 충족하세요)");
 	}
 
-	if (!m_sLastResultMsg.empty())
-	{
-		ImGui::TextColored(m_bLastResultSuccess ? ImVec4(0.3f, 1.f, 0.3f, 1.f) : ImVec4(1.f, 0.3f, 0.3f, 1.f),
-			"%s", m_sLastResultMsg.c_str());
+		if (!m_sLastResultMsg.empty())
+		{
+			ImGui::TextColored(m_bLastResultSuccess ? ImVec4(0.3f, 1.f, 0.3f, 1.f) : ImVec4(1.f, 0.3f, 0.3f, 1.f),
+				"%s", m_sLastResultMsg.c_str());
+		}
 	}
 	ImGui::End();
 
 
-	ImGui::Begin("CParticleManager");
+	const _bool bShowParticleManager = ImGui::Begin("CParticleManager");
+	if (bShowParticleManager)
+	{
 
 
 
@@ -1751,10 +1772,11 @@ void CParticleManager::UpdateGUI()
 			? ("Queue Load Success! (" + std::to_string(m_vecCommandQueue.size()))
 			: "Queue Load Failed!";
 	}
-	if (!m_sLastResultMsg.empty())
-	{
-		ImGui::TextColored(m_bLastResultSuccess ? ImVec4(0.3f, 1.f, 0.3f, 1.f) : ImVec4(1.f, 0.3f, 0.3f, 1.f),
-			"%s", m_sLastResultMsg.c_str());
+		if (!m_sLastResultMsg.empty())
+		{
+			ImGui::TextColored(m_bLastResultSuccess ? ImVec4(0.3f, 1.f, 0.3f, 1.f) : ImVec4(1.f, 0.3f, 0.3f, 1.f),
+				"%s", m_sLastResultMsg.c_str());
+		}
 	}
 	ImGui::End();
 }
@@ -2879,16 +2901,33 @@ ID3D11ShaderResourceView* CParticleManager::GetOrLoadTextureThumbnail(const std:
 		return it->second.Get();
 
 	ComPtr<ID3D11ShaderResourceView> pSRV;
-	HRESULT hr = DirectX::CreateWICTextureFromFile(
-		CGameInstance::Get().GetGraphicDevice().Get(),
-		CGameInstance::Get().GetGraphicDeviceContext().Get(),
-		std::wstring(fullPath.begin(), fullPath.end()).c_str(),
-		nullptr, pSRV.GetAddressOf());
+	const std::filesystem::path texturePath{ fullPath };
+	const std::wstring widePath = texturePath.wstring();
+	const std::string extension = texturePath.extension().string();
+	HRESULT hr = E_FAIL;
+
+	if (_stricmp(extension.c_str(), ".dds") == 0)
+	{
+		hr = DirectX::CreateDDSTextureFromFile(
+			CGameInstance::Get().GetGraphicDevice().Get(),
+			widePath.c_str(), nullptr, pSRV.GetAddressOf());
+	}
+	else
+	{
+		hr = DirectX::CreateWICTextureFromFile(
+			CGameInstance::Get().GetGraphicDevice().Get(),
+			CGameInstance::Get().GetGraphicDeviceContext().Get(),
+			widePath.c_str(), nullptr, pSRV.GetAddressOf());
+	}
 
 	if (FAILED(hr) || !pSRV)
+	{
+		// [LSY] 실패 결과도 보관해 지원하지 않는 파일을 매 프레임 다시 읽지 않는다.
+		m_TextureThumbnailCache.emplace(fullPath, ComPtr<ID3D11ShaderResourceView>{});
 		return nullptr;
+	}
 
-	m_TextureThumbnailCache[fullPath] = pSRV;
+	m_TextureThumbnailCache.emplace(fullPath, pSRV);
 	return pSRV.Get();
 }
 HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)

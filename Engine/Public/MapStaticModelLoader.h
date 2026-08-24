@@ -84,18 +84,35 @@ namespace Engine
 					return value;
 				};
 			const auto mapJson = ReadJson(mapDirectory / "map.json");
-			if (mapJson.contains("objects")) CollectObjects(mapJson["objects"]);
-			if (mapJson.contains("chunks") && mapJson["chunks"].is_array())
+			const bool hasRequiredModelManifest =
+				mapJson.contains("requiredModels") && mapJson["requiredModels"].is_array();
+			if (hasRequiredModelManifest)
 			{
-				for (const auto& chunk : mapJson["chunks"])
+				for (const auto& model : mapJson["requiredModels"])
 				{
-					const auto chunkJson = ReadJson(mapDirectory /
-						chunk.value("file", std::string{}));
-					if (chunkJson.contains("objects")) CollectObjects(chunkJson["objects"]);
+					if (!model.is_object()) continue;
+					if (model.value("modelGroup", std::string{}) != resourceGroup) continue;
+					const std::string tag = model.value("model", std::string{});
+					if (!tag.empty()) requiredTags.insert(tag);
 				}
 			}
-			const auto legacyJson = ReadJson(mapDirectory / "TestMap.json");
-			if (legacyJson.contains("objects")) CollectObjects(legacyJson["objects"]);
+			else
+			{
+				// Version 1 maps have no manifest. Keep the old full scan as a fallback.
+				if (mapJson.contains("objects")) CollectObjects(mapJson["objects"]);
+				if (mapJson.contains("chunks") && mapJson["chunks"].is_array())
+				{
+					for (const auto& chunk : mapJson["chunks"])
+					{
+						const auto chunkJson = ReadJson(mapDirectory /
+							chunk.value("file", std::string{}));
+						if (chunkJson.contains("objects")) CollectObjects(chunkJson["objects"]);
+					}
+				}
+
+				const auto legacyJson = ReadJson(mapDirectory / "TestMap.json");
+				if (legacyJson.contains("objects")) CollectObjects(legacyJson["objects"]);
+			}
 		}
 		catch (const std::exception&)
 		{

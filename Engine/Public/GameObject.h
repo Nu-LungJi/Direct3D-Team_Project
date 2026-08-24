@@ -1,6 +1,5 @@
 #pragma once
 #include "Prototype.h"
-#include "MyTreeNode.h"
 #include "Component.h"
 #include "ComTransform.h"
 #include "ComCollider.h"
@@ -41,19 +40,12 @@ constexpr GAMEOBJECT_UPDATE_LOOP operator|(
 class ENGINE_DLL CGameObject : public CPrototype,
 								public IRenderable,
 								public IPhysicsListener,
-								public IPhysicsSync,
-								public CMyTreeNode<CGameObject>
+								public IPhysicsSync
 {
-	friend class CGameObjectManager;
-	friend class CMyTreeNode<CGameObject>;
-
 public:
 	DECLARE_DERIVED_TYPE(CGameObject, CPrototype)
 	// ENGINE_DLL 인애들은 반드시 명시적으로 복사 생성자, 복사 대입연산자 딜리트하거나 재정의해주어야함
 	CGameObject& operator=(const CGameObject&) = delete;
-
-private:
-	using CMyTreeNode<CGameObject>::SetParentNode;
 
 public:
 	typedef struct tagGameObjectDesc
@@ -198,6 +190,7 @@ public:
 	// false는 FrameEnd가 삭제 배치를 수집하기 전까지만 요청 취소로 인정된다.
 	// 단, DelLayer처럼 Manager가 논리 컨테이너에서 먼저 분리한 확정 파괴 요청은 취소할 수 없다.
 	void SetPendingDestroy(_bool b = true);
+	// GameObject 계층 제거 후 남은 호환 API다. 현재 객체 하나에만 동일 요청을 전달한다.
 	void SetPendingDestroyCascade(_bool b = true);
 	_bool GetPendingDestroy() const { return m_bPendingDestroy; }
 private:
@@ -209,6 +202,7 @@ public:
 	// 전체 Managed Update 참여 여부를 제어하는 런타임 master switch다.
 	// 각 dispatch 직전에 검사하므로 단계별 배열을 재구축하지 않아도 즉시 반영되며 Pool 활성/비활성에도 사용한다.
 	void SetManagedUpdateEnabled(_bool bEnabled);
+	// GameObject 계층 제거 후 남은 호환 API다. 현재 객체 하나에만 동일 요청을 전달한다.
 	void SetManagedUpdateEnabledCascade(_bool bEnabled);
 	_bool IsManagedUpdateEnabled() const { return m_bManagedUpdateEnabled; }
 

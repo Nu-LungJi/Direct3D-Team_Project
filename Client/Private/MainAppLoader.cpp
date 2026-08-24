@@ -168,7 +168,10 @@ HRESULT CMainAppLoader::Load()
 
 HRESULT CMainAppLoader::Load_Transformation_Resources()
 {
-	constexpr char RESOURCE_GROUP[] = "PERMANENT";
+	// StringID's const char* overload keeps the debug string pointer.
+	// A local char array becomes dangling when this loader returns, which made
+	// the PERMANENT resource group (25 transformation resources) display garbage.
+	static constexpr char RESOURCE_GROUP[] = "PERMANENT";
 
 	if (auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
 		RESOURCE_GROUP,

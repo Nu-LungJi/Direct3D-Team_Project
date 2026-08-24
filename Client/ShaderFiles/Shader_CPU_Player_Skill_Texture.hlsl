@@ -389,8 +389,8 @@ PS_OUT LumosWaver(VS_OUT In)
 PS_OUT TransformationLight(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
-
-	float lifeRatio = saturate(1.f - In.life / max(In.maxLife, 0.0001f));
+	
+	float lifeRatio = saturate(In.life / max(In.maxLife, 0.0001f));
 	float4 tex = g_DiffuseTexture.Sample(LinearWrap, In.vTexcoord);
 	float mask = max(tex.r, max(tex.g, tex.b));
 	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, lifeRatio);

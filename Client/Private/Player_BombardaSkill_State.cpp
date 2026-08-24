@@ -86,11 +86,42 @@ void CPlayer_BombardaSkill_State::Update(
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
+	{
+		auto* pWeapon = CGameInstance::Get().
+			GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+		if (!pWeapon)
+			return;
+
+		_float4x4 mat;
+		XMStoreFloat4x4(&mat,
+		XMMatrixTranslation(pWeapon->GetSpawnWorldMatrix()._41, pWeapon->GetSpawnWorldMatrix()._42, pWeapon->GetSpawnWorldMatrix()._43));
+		
+		CGameInstance::Get().Spawn("Bombarda_CastEnd_Particle_Queue.json", mat);
+	}
 		break;
 
 	case PHASE::RELEASE:
 		if (m_fAnimRatio >= RELEASE_TO_RECOVERY_RATIO)
+		{
+			auto* pWeapon = CGameInstance::Get().
+				GetGameObjectByHandleT<CPlayer_Weapon>(
+					pPlayer->GetWeaponHandle());
+
+			if (!pWeapon)
+				return;
+
+			const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+
+			const _matrix currentWorld = XMLoadFloat4x4(&spawnWorld);
+
+			const _vector effectPosition = currentWorld.r[3];
+
+			CGameInstance::Get().Set_ChromaticRingOpacity(0.2f);
+
+			CGameInstance::Get().Render_ChromaticRing(effectPosition,0.5f,100);
+
 			m_ePhase = PHASE::RECOVERY;
+		}
 		break;
 
 	case PHASE::RECOVERY:
@@ -161,8 +192,8 @@ void CPlayer_BombardaSkill_State::StartCastEffect(CPlayer& player)
 		"Bombarda_Cast_Energy_Trail",
 		"Bombarda_Cast_Energy_Trail"))
 	{
-		pTrail->SetColor({ 0.52f, 0.72f, 1.f, 1.f });
-		pTrail->SetEmissive({ 0.32f, 0.58f, 1.f, 6.f });
+		pTrail->SetColor({ 1.f,0.55f,0.05f,1.f });
+		pTrail->SetEmissive({ 0.03f,0.32f,1.f,30.f });
 	}
 
 	const _float3 wandPosition{
@@ -329,27 +360,27 @@ void CPlayer_BombardaSkill_State::EmitCastParticleCurve() const
 
 	const _float fSpacing = std::max(m_fCastParticleSpacing, 0.01f);
 	constexpr uint32_t MAX_TRAIL_SPAWN_PER_FRAME = 12;
-	const uint32_t iSpawnCount = std::clamp(
-		static_cast<uint32_t>(std::ceil(fCurveLength / fSpacing)),
-		1u,
-		MAX_TRAIL_SPAWN_PER_FRAME);
+	//const uint32_t iSpawnCount = std::clamp(
+	//	static_cast<uint32_t>(std::ceil(fCurveLength / fSpacing)),
+	//	1u,
+	//	MAX_TRAIL_SPAWN_PER_FRAME);
 
-	for (uint32_t i = 1; i <= iSpawnCount; ++i)
-	{
-		const _float fRatio = static_cast<_float>(i) /
-			static_cast<_float>(iSpawnCount);
-		_float3 spawnPosition{};
-		XMStoreFloat3(
-			&spawnPosition,
-			XMVectorCatmullRom(vPoint0, vPoint1, vPoint2, vPoint3, fRatio));
+	//for (uint32_t i = 1; i <= iSpawnCount; ++i)
+	//{
+	//	const _float fRatio = static_cast<_float>(i) /
+	//		static_cast<_float>(iSpawnCount);
+	//	_float3 spawnPosition{};
+	//	XMStoreFloat3(
+	//		&spawnPosition,
+	//		XMVectorCatmullRom(vPoint0, vPoint1, vPoint2, vPoint3, fRatio));
 
-		_float4x4 spawnWorld{};
-		XMStoreFloat4x4(&spawnWorld, XMMatrixIdentity());
-		spawnWorld._41 = spawnPosition.x;
-		spawnWorld._42 = spawnPosition.y;
-		spawnWorld._43 = spawnPosition.z;
-		CGameInstance::Get().Spawn(m_CastParticleCommands, spawnWorld);
-	}
+	//	_float4x4 spawnWorld{};
+	//	XMStoreFloat4x4(&spawnWorld, XMMatrixIdentity());
+	//	spawnWorld._41 = spawnPosition.x;
+	//	spawnWorld._42 = spawnPosition.y;
+	//	spawnWorld._43 = spawnPosition.z;
+	//	CGameInstance::Get().Spawn(m_CastParticleCommands, spawnWorld);
+	//}
 }
 
 void CPlayer_BombardaSkill_State::EmitCastEnergyTrail(

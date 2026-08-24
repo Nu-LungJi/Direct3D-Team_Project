@@ -276,12 +276,7 @@ public:
 		return m_pGameObjectManager->DelLayer(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
 	}
 
-	//std::optional<CHandle> GetFreeHandle() const;
-
 	inline CGameObject* GetGameObjectByHandle(const CHandle& handle);
-	_bool SetGameObjectParent(
-		const CHandle& hChild,
-		const std::optional<CHandle>& hParent = std::nullopt);
 	template<typename T>
 	T* GetGameObjectByHandleT(const CHandle& handle)
 	{
@@ -342,6 +337,8 @@ public:
 	_bool IsOcclusionCulled(const IRenderable* pRenderObject);
 	const CHizBuffer* GetPrevHizBuffer() const;
 	HRESULT	Reset_DefaultShader(RENDERGROUP _Group);
+	VOID SetUI3DPanel(const _float4x4& worldMatrix, _bool active = true, _bool ignoreDepth = false);
+	VOID ClearUI3DPanel();
 
 	SPtr<CResDynamicTexture2D>	Generate_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _Format, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
 	SPtr<CResDynamicTexture2D>	Generate_DepthStencil_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _TexFormat, DXGI_FORMAT _DSVFormat, DXGI_FORMAT _SRVFormat, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
@@ -360,6 +357,19 @@ public:
 
 	const CB_VLFOG	Get_VolumetricFogOption();
 	VOID			Set_VolumetricFogOption(const CB_VLFOG& _FogOption);
+
+	const CB_VOLUMECLOUD	Get_VolumetricCloudOption();
+	VOID			Set_VolumetricCloudOption(const CB_VOLUMECLOUD& _CloudOption);
+
+	VOID			Set_RadialBlurIntensity(const _float _Intensity);
+	VOID			Set_DistortionIntensity(const _float _Intensity);
+	VOID			Set_ChromaticIntensity(const _float _Intensity);
+	VOID			Set_VignetteIntensity(const _float _Intensity);
+
+	const _float&	Get_RadialBlurIntensity();
+	const _float&	Get_DistortionIntensity();
+	const _float&	Get_ChromaticIntensity();
+	const _float&	Get_VignetteIntensity();
 
 #pragma endregion
 

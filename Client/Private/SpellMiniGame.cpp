@@ -2216,6 +2216,11 @@ void CSpellMiniGame::UpdateCompletionSequence(_float fTimeDelta)
 		if (m_fCompletionPhaseElapsed >=
 			DESTINATION_SUCCESS_EXIT_DURATION)
 		{
+			GET_SINGLE(UIManager)->SetSpellUnlocked(
+				m_eMode == MODE::FLIPENDO
+				? SPELL_TYPE::AVADAKEDAVRA
+				: SPELL_TYPE::TRANSFORMATION,
+				true);
 			ShowSuccessAlarm();
 			SetPendingDestroy();
 			m_eCompletionPhase = COMPLETION_PHASE::NONE;

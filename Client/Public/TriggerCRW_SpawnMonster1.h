@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PhysXCollisionProxyObject.h"
+#include "UI_Enums.h"
 
 #include <vector>
 
@@ -29,7 +30,10 @@ public:
 private:
 	_bool m_bSpawned{ false };
 	_bool m_bTrialCompleted{ false };
+	QUEST_UI_GROUP m_eEncounterGroup{ QUEST_UI_GROUP::NONE };
 	std::vector<CHandle> m_vSpawnedMonsterHandles{};
+
+	QUEST_UI_GROUP ResolveEncounterGroup() const;
 };
 
 NS_END

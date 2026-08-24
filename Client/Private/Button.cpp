@@ -79,7 +79,7 @@ void CButton::PriorityUpdate(E::_float fTimeDelta)
 
 void CButton::Update(E::_float fTimeDelta)
 {
-	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+	_float2 mousePos = GET_SINGLE(UIManager)->GetUIInteractionMousePosition();
 
 	if (!m_isActive)
 		return;
@@ -212,12 +212,12 @@ void CButton::PlayEffect(uint32_t uiState)
 
 	if (uiState & ETOUI(UI_STATE::ENTER))
 	{
-		if (OnHoverEnter) {
+		if (m_bSpellUnlocked && OnHoverEnter) {
 			ClearEffectTweens();
 			OnHoverEnter(this);
 		}
 
-		if (m_Effect_Hovered_Handle != std::nullopt && 
+		if (m_bSpellUnlocked && m_Effect_Hovered_Handle != std::nullopt && 
 			(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_Effect_Hovered_Handle)))
 		{
 			CUIObject* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_Effect_Hovered_Handle);
@@ -235,7 +235,8 @@ void CButton::PlayEffect(uint32_t uiState)
 			static_cast<CVideoObject*>(SafeGetOBJ(SafeGetOBJ(m_SpellPaper)->GetChildren()[0]))->SetPath(m_VideoPath);
 		}
 
-		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/ButtonSelect.wav", SOUND_PLAY_DESC{
+		if (m_bSpellUnlocked)
+			E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/ButtonSelect.wav", SOUND_PLAY_DESC{
 		.sBusID = SOUND_BUS::UI,
 		.fVolume = 1.f,
 		.fPitch = 1.f,
@@ -246,12 +247,12 @@ void CButton::PlayEffect(uint32_t uiState)
 
 	if (uiState & ETOUI(UI_STATE::EXIT))
 	{
-		if (OnHoverExit) {
+		if (m_bSpellUnlocked && OnHoverExit) {
 			ClearEffectTweens();
 			OnHoverExit(this);
 		}
 
-		if (m_Effect_Hovered_Handle != std::nullopt &&
+		if (m_bSpellUnlocked && m_Effect_Hovered_Handle != std::nullopt &&
 			(nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(*m_Effect_Hovered_Handle)))
 		{
 			CUIObject* pHoverUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_Effect_Hovered_Handle);
@@ -268,7 +269,9 @@ void CButton::PlayEffect(uint32_t uiState)
 
 	if (uiState & ETOUI(UI_STATE::CLICK))
 	{
-		
+		if (!m_bSpellUnlocked)
+			return;
+
 		if (OnClicked) {
 			ClearEffectTweens();
 			OnClicked(this);
