@@ -39,6 +39,7 @@ namespace Client
 		MOVING_PLATFORM = 1u << 16,	// 플레이어, 몬스터와 동적 물체가 올라탈 수 있는 움직이는 발판
 		PLAYER_HURTBOX = 1u << 17,	// 적 공격에 피격되는 플레이어의 부위별 판정
 		ENEMY_HURTBOX = 1u << 18,	// 플레이어 공격에 피격되는 적의 부위별 판정
+		WORLD_STATIC_WALL = 1u << 19,	// 벽
 	};
 
 
