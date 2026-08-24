@@ -1359,6 +1359,22 @@ const CB_VLFOG	CGameInstance::Get_VolumetricFogOption() {
 VOID			CGameInstance::Set_VolumetricFogOption(const CB_VLFOG& _FogOption) {
 	m_pRenderer->Set_VolumetricFogOption(_FogOption);
 }
+const CB_VOLUMECLOUD	CGameInstance::Get_VolumetricCloudOption() {
+	return m_pRenderer->Get_VolumetricCloudOption();
+}
+VOID			CGameInstance::Set_VolumetricCloudOption(const CB_VOLUMECLOUD& _CloudOption) {
+	m_pRenderer->Set_VolumetricCloudOption(_CloudOption);
+}
+
+VOID			CGameInstance::Set_RadialBlurIntensity(const _float _Intensity) { m_pRenderer->Set_RadialBlurIntensity(_Intensity); }
+VOID			CGameInstance::Set_DistortionIntensity(const _float _Intensity) { m_pRenderer->Set_DistortionIntensity(_Intensity); }
+VOID			CGameInstance::Set_ChromaticIntensity(const _float _Intensity) { m_pRenderer->Set_ChromaticIntensity(_Intensity); }
+VOID			CGameInstance::Set_VignetteIntensity(const _float _Intensity) { m_pRenderer->Set_VignetteIntensity(_Intensity); }
+
+const _float&	CGameInstance::Get_RadialBlurIntensity() { return m_pRenderer->Get_RadialBlurIntensity(); }
+const _float&	CGameInstance::Get_DistortionIntensity() { return m_pRenderer->Get_DistortionIntensity(); }
+const _float&	CGameInstance::Get_ChromaticIntensity() { return m_pRenderer->Get_ChromaticIntensity(); }
+const _float&	CGameInstance::Get_VignetteIntensity() { return m_pRenderer->Get_VignetteIntensity(); }
 
 #pragma endregion
 

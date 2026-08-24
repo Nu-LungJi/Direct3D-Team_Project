@@ -534,8 +534,8 @@ HRESULT CLevelHogwartWorld::Initialize_VolumetricFog() {
 
 	CB_VLFOG FogOption{};
 
-	FogOption.g_fFogColor			= { 63.f / 255.f, 88.f / 255.f, 88.f / 255.f };
-	FogOption.g_fFogIntensity		= 1.f;
+	FogOption.g_fFogColor			= { 255.f / 255.f, 227.f / 255.f, 184.f / 255.f };
+	FogOption.g_fFogIntensity		= 0.25f;
 	FogOption.g_fFogDensity			= 0.02f;
 	FogOption.g_fFogNoiseScale		= 0.05f;
 	FogOption.g_fFogScattering		= 0.5f;

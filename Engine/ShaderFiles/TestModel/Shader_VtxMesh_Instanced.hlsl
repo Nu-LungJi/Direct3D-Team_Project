@@ -79,8 +79,9 @@ PS_OUT PSMain(PS_IN IN)
     
     if (fDiffuse.a == 0.0f) discard;
     
-    float3 fNormal      = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
-    float3 fMRO         = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);
+	float3 fNormal = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
+
+	float3 fMRO         = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);
     
     float fFinalMetallic    = fMRO.r * MetallicIntensity;
     float fFinalRoughness   = fMRO.g * RoughnessIntensity;
