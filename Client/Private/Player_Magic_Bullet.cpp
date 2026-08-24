@@ -209,6 +209,9 @@ void CPlayer_Magic_Bullet::Update(E::_float fTimeDelta)
 		vstart = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y + 0.4f, m_pComTransform->GetPosition().z);
 		vend = _float3(m_pComTransform->GetPosition().x, m_pComTransform->GetPosition().y - 0.4f, m_pComTransform->GetPosition().z);
 		CGameInstance::Get().AddTrailPoint("PlayerAttackTrail_CPU", "PlayerAttackTrail_CPU", GetHandle(), vstart, vend);
+		_float4x4 mat;
+		XMStoreFloat4x4(&mat, m_pComTransform->GetLoadedWorldMatrix());
+		CGameInstance::Get().Spawn("PlayerAttackSpread1.json", mat);
 	}
 }
 
@@ -324,7 +327,9 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 		XMStoreFloat4x4(&impactWorldData, impactWorld);
 		CGameInstance::Get().PlayEffect("PlayerAttackSpread", impactWorldData);
 	}
-	if (auto pTmbGurdian= Cast<CMonster>(tHit.pGameObject))
+	auto* pHitMonster = Cast<CMonster>(tHit.pGameObject);
+	const _bool bHitMonster = nullptr != pHitMonster;
+	if (pHitMonster)
 	{
 	/*	static constexpr const char* HIT_SOUND_PATHS[] =
 		{
@@ -355,7 +360,7 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 		//	MSG_BOX("INVALID_SOUND_ID");
 		//}
 
-		pTmbGurdian->Check_Table(PLAYER_SKILL_TYPE::ATTACK);
+		pHitMonster->Check_Table(PLAYER_SKILL_TYPE::ATTACK);
 	}
 	if (auto* pPropBarrel = Cast<CPropBarrel>(tHit.pGameObject))
 	{
@@ -367,9 +372,9 @@ void CPlayer_Magic_Bullet::HandleSweepHit(
 	}
 
 	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
-		.fIntensity = 0.065f,
-		.fDuration = 0.085f,
-		.fFrequency = 28.f });
+		.fIntensity = bHitMonster ? 0.45f : 0.25f,
+		.fDuration = bHitMonster ? 0.12f : 0.08f,
+		.fFrequency = bHitMonster ? 40.f : 34.f });
 	SetPendingDestroy();
 }
 

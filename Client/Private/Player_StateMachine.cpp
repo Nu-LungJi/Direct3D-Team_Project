@@ -135,6 +135,15 @@ _bool CPlayer_StateMachine::CanTransition(PLAYER_STATE eCurrent, PLAYER_STATE eN
 	if (eCurrent == eNext || eCurrent == PLAYER_STATE::DEAD)
 		return false;
 
+	// 큰 피격의 넉다운 시퀀스는 공중 피격부터 착지, 기상까지 끊기면 안 된다.
+	// 키 입력으로 요청되는 공격/회피/스킬/포션 상태는 모두 막고,
+	// 시퀀스가 끝난 뒤의 내부 locomotion 요청과 사망 전환만 허용한다.
+	if (eCurrent == PLAYER_STATE::KNOCKDOWN)
+	{
+		return eNext == PLAYER_STATE::LOCOMOTION ||
+			eNext == PLAYER_STATE::DEAD;
+	}
+
 	if (IsSkillState(eCurrent))
 	{
 		// 프로테고가 공격을 실제로 막았을 때의 방어 반응은 Q 입력이나

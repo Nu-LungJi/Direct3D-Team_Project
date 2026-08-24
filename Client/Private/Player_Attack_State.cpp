@@ -7,10 +7,11 @@
 #include "ComCharacterMotor.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComModelInstance.h"
-#include "CameraObject.h"
+#include "PlayerThirdPersonCamera.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "ResModel.h"
 #include "ResModelAnim.h"
+#include "UIManager.h"
 
 NS_USING(Client)
 
@@ -41,6 +42,14 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 	}
 	if (animator->HasUpperAnimation())
 		animator->Stop_UpperAnim(0.08f);
+	if (auto* pCamera = dynamic_cast<CPlayerThirdPersonCamera*>(
+		CGameInstance::Get().GetActiveCamera());
+		pCamera && pCamera->BeginDistanceOverride(
+			ATTACK_CAMERA_DISTANCE_OFFSET,
+			ATTACK_CAMERA_BLEND_IN_RESPONSE))
+	{
+		m_hDistanceOverrideCamera = pCamera->GetHandle();
+	}
 
 	player->SetCurrentMoveSpeed(0.f);
 	player->SetMovementLocked(true);
@@ -65,6 +74,16 @@ void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
 	auto* player = pStateMachine ? pStateMachine->GetOwner<CPlayer>() : nullptr;
 	if (!player)
 		return;
+	if (m_hDistanceOverrideCamera)
+	{
+		if (auto* pCamera = CGameInstance::Get().GetGameObjectByHandleT<
+			CPlayerThirdPersonCamera>(*m_hDistanceOverrideCamera))
+		{
+			pCamera->EndDistanceOverride(
+				ATTACK_CAMERA_BLEND_OUT_RESPONSE);
+		}
+		m_hDistanceOverrideCamera.reset();
+	}
 
 	player->SetMovementLocked(false);
 	player->SetRootMotionTranslationActive(false);
@@ -128,7 +147,13 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 			COMBO_INPUT_START_RATIO,
 			COMBO_INPUT_END_RATIO);
 
-	if (bInComboInputWindow && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	const _bool bPointerCapturedByUI =
+		ImGui::GetIO().WantCaptureMouse ||
+		GET_SINGLE(UIManager)->IsPointerOverInteractiveUI();
+
+	if (bInComboInputWindow &&
+		!bPointerCapturedByUI &&
+		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		m_bAttackQueued = true;
 	}

@@ -170,7 +170,7 @@ PS_OUT SMOKE(VS_OUT In)
 	float2 distrotedUV = In.vTexcoord + float2(0.03f, 0.01f) *topMask * 0.03f;
 	distrotedUV.x += noise.x * 0.03f * topMask;
 	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, distrotedUV);
-
+		
 	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
 	
 	float fadein = smoothstep(0.f, 0.18f, ratio);
@@ -598,6 +598,40 @@ PS_OUT PSCircleMask(VS_OUT In)
 	float finalAlpha = circleMask * In.vColor.a * ObjectAlpha;
 	finalAlpha = pow(saturate(finalAlpha), 2.2f);
 	
+	clip(finalAlpha - 0.01f);
+
+	Out.vDiffuse = float4(finalColor, finalAlpha);
+	return Out;
+}
+PS_OUT PSAttackIndicator(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float ageRatio = saturate(1.f - In.life / max(In.maxLife, 0.0001f));
+	float2 uv = In.vTexcoord;
+
+	float3 ringTex = g_DiffuseTexture.Sample(LinearClamp, uv).rgb;
+	float3 unblockTex = g_AnyTexture.Sample(LinearClamp, uv).rgb;
+	float3 channelMask = g_NoiseTexture.Sample(LinearClamp, uv).rgb;
+
+	float ringMask = max(ringTex.r, max(ringTex.g, ringTex.b));
+	float unblockShape = max(unblockTex.r, max(unblockTex.g, unblockTex.b));
+
+	float3 channelPulse = 0.55f + 0.45f * sin(g_fAccumulationTime * 9.f + float3(0.f, 2.094f, 4.188f));
+	float unblockAnimation = saturate(dot(channelMask, channelPulse) * 0.7f);
+	float unblockMask = unblockShape * unblockAnimation;
+
+	float fadeIn = smoothstep(0.f, 0.12f, ageRatio);
+	float fadeOut = 1.f - smoothstep(0.72f, 1.f, ageRatio);
+	float lifeFade = fadeIn * fadeOut;
+
+	float pulse = 0.8f + sin(g_fAccumulationTime * 12.f) * 0.2f;
+	float3 baseColor = In.vColor.rgb * ringMask * 0.35f;
+	float3 ringEmissive = In.vEmissive.rgb * In.vEmissive.a * ringMask * pulse;
+	float3 unblockEmissive = In.vEmissive.rgb * In.vEmissive.a * unblockMask * 1.6f;
+	float3 finalColor = baseColor + ringEmissive + unblockEmissive;
+
+	float finalAlpha = saturate((ringMask + unblockMask) * In.vColor.a * lifeFade);
 	clip(finalAlpha - 0.01f);
 
 	Out.vDiffuse = float4(finalColor, finalAlpha);

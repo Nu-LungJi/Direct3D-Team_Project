@@ -41,7 +41,7 @@ void CCoin::Update(_float fTimeDelta)
 
 void CCoin::OnTriggerEnter(E::CGameObject* pObj, const E::PX_ON_TRIGGER_DATA& info)
 {
-	if (nullptr == pObj || m_bCollected)
+   	if (nullptr == pObj || m_bCollected)
 		return;
 
 	auto* pPlayer = dynamic_cast<CPlayer*>(pObj);

@@ -36,3 +36,5 @@
 //NPC
 #include "BTNaviMove.h"
 #include "BTAnimNpc.h"
+#include "BTChangeState.h"
+#include "BTDecNpcState.h"

@@ -211,6 +211,8 @@ void CWandShop::CompletePurchase(UIManager& manager)
 
 void CWandShop::Close(UIManager& manager)
 {
+	E::CGameInstance::Get().ClearUI3DPanel();
+	manager.m_bWandShopWorldMode = false;
 	auto deleteRoots = [&manager](std::vector<CHandle>& roots)
 	{
 		for (const CHandle handle : roots)

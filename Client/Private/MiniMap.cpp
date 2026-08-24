@@ -787,8 +787,20 @@ void CMiniMap::UpdateObjectiveMarkers(
 			SetObjectivePhaseVisible(
 				phase, isSelected, fTimeDelta);
 
+			_bool showScreenMarker = isSelected && phase.ShowScreenMarker;
+			if (showScreenMarker &&
+				phase.ScreenMarkerHideWithinDistance > 0.f)
+			{
+				const _float distance = sqrtf(distanceSq);
+				const _float showThreshold =
+					phase.ScreenMarkerHideWithinDistance +
+					(phase.ScreenMarkerDesiredVisible ? 0.f :
+						std::max(0.f, phase.DistanceHysteresis));
+				showScreenMarker = distance > showThreshold;
+			}
+
 			const _float screenMarkerTargetAlpha =
-				isSelected && phase.ShowScreenMarker ?
+				showScreenMarker ?
 				UpdateScreenObjectiveMarkerPosition(
 					phase, objective.WorldPosition, camera) :
 				0.f;
@@ -953,7 +965,9 @@ void CMiniMap::SetObjectivePhaseVisible(
 	}
 
 	marker->SetAlphaRatio(phase.MarkerAlphaRatio);
-	marker->SetAlpha(m_UIINFO.Alpha * phase.MarkerAlphaRatio);
+	// This marker is a MiniMap child. CalcUICoord derives its effective alpha
+	// from parent alpha * AlphaRatio, so writing Alpha directly here would be
+	// overwritten and could apply the parent alpha twice during a fade.
 
 	if (!visible && phase.MarkerAlphaRatio <= 0.f)
 		marker->SetActive(false);
@@ -1255,7 +1269,7 @@ void CMiniMap::InitRookwoodBattleZone()
 	BATTLE_ZONE_INFO trial02{};
 	trial02.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_02;
 	trial02.Enabled = false;
-	trial02.Center = { -252.f, 0.f, -120.f };
+	trial02.Center = { -252.469f, 0.f, -109.236f };
 	trial02.WorldRadius = 20.f;
 	trial02.VisibleDistance = 60.f;
 	trial02.Alpha = 0.25f;
@@ -1285,24 +1299,48 @@ void CMiniMap::InitRookwoodObjectives()
 	objective.Key = "Rookwood_MainMission_Test";
 	objective.WorldPosition = { -178.f, -226.f, 160.f };
 	objective.LevelID = ETOUI(LEVEL::CHARLES_ROOKWOOD);
-	objective.ActiveRule = OBJECTIVE_ACTIVE_RULE::PROXIMITY;
-	objective.AutoActivateDistance = 150.f;
-	objective.ActivationHysteresis = 5.f;
+	objective.ActiveRule = OBJECTIVE_ACTIVE_RULE::MANUAL;
+	objective.ManualActive = true;
 	objective.VisualPhases.push_back({
-		.MinDistance = 10.f,
+		.MinDistance = 0.f,
 		.MaxDistance = 0.f,
-		.TextureTag = "TEX_UI_T_MiniMap_MainMission",
+		.TextureTag = "TEX_UI_T_MiniMap_ActiveMission_Area",
 		.PrototypeTag = "Prototype_GameObject_TextureUI",
 		.IconSize = 36.f,
 		.TintColor = { 1.f, 0.78f, 0.04f },
 		.DistanceHysteresis = 1.f,
 		.ShowScreenMarker = true,
-		.ScreenMarkerSize = 42.f,
-		.ScreenMarkerWorldOffset = { 0.f, 2.5f, 0.f },
+		.ScreenMarkerHideWithinDistance = 40.f,
+		.ScreenMarkerSize = 28.f,
+		.ScreenMarkerWorldOffset = { 0.f, 0.f, 0.f },
 		.ScreenMarkerWeight = 100
 	});
 
 	AddObjective(std::move(objective));
+
+	MINIMAP_OBJECTIVE_INFO secondObjective{};
+	secondObjective.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_02;
+	secondObjective.Enabled = false;
+	secondObjective.Key = "Rookwood_MainMission_Battle02";
+	secondObjective.WorldPosition = { -252.469f, -224.784f, -109.236f };
+	secondObjective.LevelID = ETOUI(LEVEL::CHARLES_ROOKWOOD);
+	secondObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::MANUAL;
+	secondObjective.ManualActive = true;
+	secondObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_MiniMap_ActiveMission_Area",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = 36.f,
+		.TintColor = { 1.f, 0.78f, 0.04f },
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = true,
+		.ScreenMarkerHideWithinDistance = 20.f,
+		.ScreenMarkerSize = 28.f,
+		.ScreenMarkerWorldOffset = { 0.f, 0.f, 0.f },
+		.ScreenMarkerWeight = 100
+	});
+	AddObjective(std::move(secondObjective));
 }
 
 CUIObject* CMiniMap::SafeGetOBJ(CHandle pHandle)

@@ -799,6 +799,8 @@ _bool CResourceGUI::ImportObjectMapManifest(const std::filesystem::path& manifes
 	uint32_t createdCount = 0;
 	uint32_t skippedCount = 0;
 	std::unordered_map<std::string, std::string> loadedResourceTags;
+	std::vector<std::unique_ptr<IEditorCommand>> importCommands;
+	importCommands.reserve(manifest["objects"].size());
 
 	for (const auto& entry : manifest["objects"])
 	{
@@ -860,7 +862,7 @@ _bool CResourceGUI::ImportObjectMapManifest(const std::filesystem::path& manifes
 				scale[2].get<float>() * importScale
 			};
 
-			m_pCommandManager->Submit(
+			importCommands.push_back(
 				std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), GetSelectedHandle()));
 			++createdCount;
 		}
@@ -870,8 +872,10 @@ _bool CResourceGUI::ImportObjectMapManifest(const std::filesystem::path& manifes
 		}
 	}
 
+	m_pCommandManager->SubmitBatch(std::move(importCommands));
+
 	m_WholeMapImportStatus = "Object-map import: " + std::to_string(createdCount) +
-		" objects created, " + std::to_string(loadedResourceTags.size()) + " resources loaded";
+		" objects queued in batches, " + std::to_string(loadedResourceTags.size()) + " resources loaded";
 	if (skippedCount > 0)
 		m_WholeMapImportStatus += ", " + std::to_string(skippedCount) + " skipped";
 	m_WholeMapImportStatus += ".";

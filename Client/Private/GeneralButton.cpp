@@ -947,7 +947,7 @@ void CGeneralButton::UpdateWandSliderInteraction()
 	if (!slider)
 		return;
 
-	const _float2 mouse = E::CGameInstance::Get().GetMousePos();
+	const _float2 mouse = GET_SINGLE(UIManager)->GetUIInteractionMousePosition();
 	const UI_INFO& sliderInfo = slider->GetUIInfo();
 	const _float relativeX = mouse.x - sliderInfo.fX;
 	const _float relativeY = mouse.y - sliderInfo.fY;
@@ -1005,7 +1005,7 @@ void CGeneralButton::UpdateWandSliderFromMouse()
 
 	const _float parentScale = std::max(slider->GetScaleRatio(), 0.001f);
 	const _float localMouseX = std::clamp(
-		(E::CGameInstance::Get().GetMousePos().x -
+		(GET_SINGLE(UIManager)->GetUIInteractionMousePosition().x -
 			slider->GetUIInfo().fX) / parentScale,
 		WAND_SLIDER_MIN_X,
 		WAND_SLIDER_MAX_X);
@@ -1341,6 +1341,7 @@ void CGeneralButton::RefreshWandSlider(
 		auto* child = GetSafeUI(*handle);
 		if (!child)
 			return nullptr;
+		child->SetRenderGroupOverride(slider->GetResolvedRenderGroup());
 		child->SetParent(slider->GetHandle());
 		slider->AddChildren(*handle);
 		child->GetUIInfo().LocalX = localX;
@@ -1471,6 +1472,7 @@ std::optional<CHandle> CGeneralButton::CreateCategoryEffectTexture(
 	if (!effect)
 		return std::nullopt;
 
+	effect->SetRenderGroupOverride(GetResolvedRenderGroup());
 	effect->SetParent(GetHandle());
 	AddChildren(*handle);
 	auto& effectInfo = effect->GetUIInfo();
@@ -1786,6 +1788,7 @@ void CGeneralButton::CreateWandCoreSelectionEffect()
 		return;
 
 	m_SelectionEffect = *handle;
+	effect->SetRenderGroupOverride(GetResolvedRenderGroup());
 	effect->SetParent(GetHandle());
 	AddChildren(*handle);
 	auto& effectInfo = effect->GetUIInfo();

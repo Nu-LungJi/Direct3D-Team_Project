@@ -20,7 +20,8 @@
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
 #include "ClientEvents.h"
-
+#include "BlackBoardKey.h"
+#include "BTBlackBoard.h"
 #include "UIManager.h"
 #include "ComSound.h"
 NS_USING(Client)
@@ -663,7 +664,13 @@ void CMonster::Find_Target()
 	}
 
 	if (nullptr != pLastTarget)
+	{
+		auto* pBB = Get_BlackBoard();
 		m_TargetHandle = pLastTarget->GetHandle();
+		if( nullptr != pBB)
+			pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
+
+	}
 	else
 		m_TargetHandle = {};
 }

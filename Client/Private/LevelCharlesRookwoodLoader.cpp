@@ -456,6 +456,28 @@ _bool CLevelCharlesRookwoodLoader::UILoad()
 			for (const auto& targetDir : targetDirectories)
 				UITextureResourceLoader::LoadDirectory(
 					"LEVEL_CHARLES_ROOKWOOD", targetDir);
+
+			// Quest.json uses this background, but the original asset currently
+			// lives in the UI-editor TexUI directory rather than PlayScreen.
+			// Register only this required runtime texture instead of loading the
+			// entire editor-only directory.
+			constexpr const char* questBackgroundTag =
+				"TEX_UI_T_HUD_FinisherFill_BG";
+			if (!E::CGameInstance::Get().GetResourceFirst<E::CResTexture2D>(
+				"LEVEL_CHARLES_ROOKWOOD", questBackgroundTag))
+			{
+				const std::string questBackgroundPath =
+					UITextureResourceLoader::ResolvePreferredPath(
+						"./Resources/SampleClient/Textures/UI/TexUI/"
+						"MiniMap/UI_T_HUD_FinisherFill_BG.png");
+				if (auto resource = E::CGameInstance::Get().AddResource(
+					"LEVEL_CHARLES_ROOKWOOD",
+					questBackgroundTag,
+					E::CResTexture2D::Create(questBackgroundPath)))
+				{
+					resource->Load();
+				}
+			}
 		}
 
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_CHARLES_ROOKWOOD", "Prototype_GameObject_TextureUI", CTextureUI::Create())))

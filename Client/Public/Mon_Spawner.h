@@ -28,6 +28,8 @@ public:
 	void						LateUpdate(E::_float fTimeDelta) override;
 
 private:
+
+	void						Debug_Point();
 	void						Picking();
 	void						Picking_TerrainMon();
 private:

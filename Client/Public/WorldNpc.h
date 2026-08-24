@@ -4,7 +4,6 @@
 
 
 NS_BEGIN(Client)
-
 class CWorldNpc final : public CNpcMom
 {
 public:
@@ -25,6 +24,7 @@ public:
 	void						LateUpdate(E::_float fTimeDelta) override;
 	HRESULT						Ready_Fsm(const _string& LevelTag);
 	void						Ready_BBKeyValue(NPC_DESC* pDesc);
+	int32_t						Find_AnimIndex(const _string& AnimName);
 
 public:
 	void						Set_Gravity(_bool bGravity);

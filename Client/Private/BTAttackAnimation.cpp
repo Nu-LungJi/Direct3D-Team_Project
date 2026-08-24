@@ -92,6 +92,8 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				Gravity();
 				Play_Sound(fTimeDelta);
 				_bool bFinished = pAnimator->GetFinish();
+				// KMS 추가
+				UpdateAttackIndicator(pOwner, pTarget, fAnimRatio);
 				Att(pOwner, pTransform, pTarget, fAnimRatio,fTimeDelta);
 				EventFlagToRatio(fAnimRatio);
 				ShakeCam(fAnimRatio);
@@ -362,6 +364,64 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 	
 
 }
+
+// KMS 추가
+void CBTAttackAnimation::UpdateAttackIndicator(
+	CMonster* pMonster,
+	CGameObject* pTarget,
+	_float fAnimRatio)
+{
+	if (m_bAttackIndicatorTriggered || !pMonster || !pTarget ||
+		pMonster->GetPendingDestroy() || pMonster->Get_CurrentHp() <= 0)
+		return;
+
+	auto* pPlayer = Cast<CPlayer>(pTarget);
+	if (!pPlayer || pPlayer->GetPendingDestroy() || pPlayer->GetCurrentHp() <= 0)
+		return;
+
+	// 근접 공격은 실제 오버랩 판정 시작 비율을 사용한다.
+	// 오버랩이 없는 투사체/스킬형 공격은 첫 스킬 생성 비율을 사용한다.
+	_float fImpactRatio = 1.f;
+	_bool bHasImpactRatio = false;
+	if (m_vOverlabRatio.y > m_vOverlabRatio.x && m_vOverlabRatio.y > 0.f)
+	{
+		fImpactRatio = std::clamp(m_vOverlabRatio.x, 0.f, 1.f);
+		bHasImpactRatio = true;
+	}
+	else
+	{
+		for (const auto& Skill : m_Skills)
+		{
+			if (Skill.eSkill == ATTMON::END)
+				continue;
+			fImpactRatio = std::min(fImpactRatio, std::clamp(Skill.fRatio, 0.f, 1.f));
+			bHasImpactRatio = true;
+		}
+
+		// KMS 추가: 보스의 기존 BT 데이터는 NewSkillTable 대신
+		// BTAnimRoot의 SkillType/SkillRatio만 사용하는 공격이 많다.
+		if (!bHasImpactRatio && m_eSkillType != ATTMON::END)
+		{
+			fImpactRatio = std::clamp(m_fSkillRatio.x, 0.f, 1.f);
+			bHasImpactRatio = true;
+		}
+	}
+
+	if (!bHasImpactRatio)
+		return;
+
+	const _float fWarningRatio = std::max(0.f,
+		fImpactRatio - ATTACK_INDICATOR_LEAD_RATIO);
+	const _bool bImmediateAttack = fImpactRatio <= FLT_EPSILON;
+	if (fAnimRatio < fWarningRatio ||
+		(!bImmediateAttack && fAnimRatio >= fImpactRatio))
+		return;
+
+	pPlayer->RequestAttackIndicator(
+		pMonster->Get_Damage() >= DODGE_ONLY_DAMAGE_THRESHOLD);
+	m_bAttackIndicatorTriggered = true;
+}
+
 void CBTAttackAnimation::ShakeCam(_float fRotRatio)
 {
 	if (m_CamInfo.fCamStartRatio == 0.f)
@@ -461,6 +521,8 @@ void CBTAttackAnimation::OnEnter()
 	m_bDir = false;
 	__super::OnEnter();
 	m_bAttRatio = m_bActiveSkill = false;
+	// KMS 추가
+	m_bAttackIndicatorTriggered = false;
 	m_bCamShake = true;
 	m_fTime = 0.f;
 	m_fCurOverLabSpeed = m_fAttRadius;

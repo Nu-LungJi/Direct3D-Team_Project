@@ -203,31 +203,19 @@ HRESULT CGriff::Initialize(void* pArg)
 	m_pModelAnimator->Play_Anim(0, true);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
 
-	m_WayPoint.push_back(_float3(226.097f, 78.242f, 170.f));
-	m_WayPoint.push_back(_float3(280.097f, 78.242f, 300.f));
-	m_WayPoint.push_back(_float3(360.097f, 78.242f, 400.f));
-	m_WayPoint.push_back(_float3(400.097f, 78.242f, 600.f));
-	m_WayPoint.push_back(_float3(226.097f, 78.242f, 170.f));
+	m_WayPoint.push_back(_float3(30.f, 75.f, -346.f));
+	m_WayPoint.push_back(_float3(-8.f, 135.f, -61.f));
+	m_WayPoint.push_back(_float3(213.f, 122.f, -82.f));
+	m_WayPoint.push_back(_float3(360.f, 169.f, 19.f));
+	m_WayPoint.push_back(_float3(292.f, 186.f, 215.f));
+	m_WayPoint.push_back(_float3(-196.f, 139.f, 23.f));
+	m_WayPoint.push_back(_float3(30.f, 75.f, -346.f));
 	return S_OK;
 }
 
 void CGriff::PriorityUpdate(E::_float fTimeDelta)
 {
 	__super::PriorityUpdate(fTimeDelta);
-
-}
-
-void CGriff::Update(E::_float fTimeDelta)
-{
-	__super::Update(fTimeDelta);
-
-}
-
-void CGriff::FixedUpdate(E::_float fTimeDelta)
-{
-	m_pCharacterMotor->FixedUpdate(fTimeDelta);
-	
-	//테스트용
 	if (m_WayPoint.empty())
 		return;
 
@@ -236,19 +224,19 @@ void CGriff::FixedUpdate(E::_float fTimeDelta)
 		m_bLoop = false;
 		--m_iIndex;
 	}
-	else if(m_iIndex <= 0)
+	else if (m_iIndex <= 0)
 	{
 		m_bLoop = true;
 	}
-		
+
 	_vector vNextPos = XMLoadFloat3(&m_WayPoint[m_iIndex]);
 	_vector vCurPos = XMLoadFloat3(&GetTransform().GetPosition());
-	
+
 	_vector vLen = vNextPos - vCurPos;
 	_vector vNextDir = XMVector3Normalize(vLen);
-	
+
 	_float fDis = XMVectorGetX(XMVector3Length(vLen));
-	
+
 	if (fDis < 3.f)
 	{
 		if (m_bLoop)
@@ -256,13 +244,27 @@ void CGriff::FixedUpdate(E::_float fTimeDelta)
 		else
 			--m_iIndex;
 	}
-		
-	
+
+
 	_float3 vLastDir{};
 	XMStoreFloat3(&vLastDir, vNextDir);
-	m_pMoveIntent->SetFacingIntentImmediate(vLastDir);
-	m_pMoveIntent->SetMoveIntent(vLastDir, 15.f);
 
+	m_pMoveIntent->SetFacingIntent(vLastDir, 60.f);
+	m_pMoveIntent->SetMoveIntent(vLastDir, 30.f);
+}
+
+void CGriff::Update(E::_float fTimeDelta)
+{
+	__super::Update(fTimeDelta);
+	
+
+}
+
+void CGriff::FixedUpdate(E::_float fTimeDelta)
+{
+	m_pCharacterMotor->FixedUpdate(fTimeDelta);
+	
+	//테스트용
 	
 }
 void CGriff::LateUpdate(E::_float fTimeDelta)
@@ -286,9 +288,12 @@ void CGriff::Set_Child()
 	Child.sObjectTag = "GriffChild";
 	Child.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
 	Child.ReSourceTag = "Model_Resource_Griff";
-	for (size_t i = 0; i < 7; ++i)
+	_float3 vOffset = m_WayPoint.front();
+	_float iCnt = 10.f;
+	for (size_t i = 0; i < size_t(iCnt); ++i)
 	{
-		Child.vPos = _float3(226.097f + Randf(-5.f, 5.f), 48.242f + Randf(-5.f, 5.f), 122.760f + Randf(-5.f, 5.f));
+		Child.vPos = _float3(vOffset.x + Randf(-iCnt, iCnt), 
+			vOffset.y + Randf(-iCnt, iCnt), vOffset.z + Randf(-iCnt, iCnt));
 			
 		auto Griff = CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_GriffChild, "02_GriffChild", &Child);
 		if (Griff)

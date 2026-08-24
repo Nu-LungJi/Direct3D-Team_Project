@@ -519,7 +519,10 @@ void CTrail_CPU::BuildTrailGeometry(const TRAIL_STREAM& Stream)
 	{
 		const auto& frame = Stream.Frames[i];
 
-		float fAgeRatio = frame.fAge / m_Desc.fMaxDuration;
+		float fAgeRatio = std::clamp(
+			frame.fAge / std::max(m_Desc.fMaxDuration, 0.0001f),
+			0.f,
+			1.f);
 		float fDeath = powf(fAgeRatio, 1.2f);
 		float fLifeRatio = 1.f - fDeath;
 		float t = bLegacy
@@ -582,6 +585,7 @@ void CTrail_CPU::BuildTrailGeometry(const TRAIL_STREAM& Stream)
 		vTop.vPosition = vTip;
 		vTop.vUV = { t, 0.f };
 		vTop.vEmissive = m_vEmissive;
+		vTop.fAgeRatio = fAgeRatio;
 		const float alpha = bLegacy ? fLifeRatio : m_vColor.w * fLifeRatio;
 
 		XMStoreFloat4(&vTop.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), alpha));
@@ -591,6 +595,7 @@ void CTrail_CPU::BuildTrailGeometry(const TRAIL_STREAM& Stream)
 		vBottom.vPosition = vBase;
 		vBottom.vUV = { t, 1.f };
 		vBottom.vEmissive = m_vEmissive;
+		vBottom.fAgeRatio = fAgeRatio;
 		XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor), alpha));
 
 		//XMStoreFloat4(&vBottom.vColor, XMVectorSetW(XMLoadFloat4(&m_vColor),1.f *fLifeRatio));
