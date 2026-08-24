@@ -345,6 +345,8 @@ private:
 	CHandle m_hPrevAutoTarget;
 	CHandle m_hMonsterHPUITarget{};
 	std::optional<CHandle> m_hPendingAncientThrowTarget{};
+	CHandle m_hAncientMagicButtonTarget{};
+	CHandle m_hAncientThrowButtonTarget{};
 	StringID m_LevelTag;
 private:
 	CHandle m_UIHandle;
@@ -360,6 +362,7 @@ private:
 	void UpdateLumosHoldAnimation();
 	void UpdateLumosLight();
 	std::optional<CHandle> FindAncientThrowTarget() const;
+	void UpdateAncientMagicActiveButtons();
 	_bool TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const;
 	void UpdateWiggenweldPotion();
 	CHandle m_hWiggenweldPotion{};

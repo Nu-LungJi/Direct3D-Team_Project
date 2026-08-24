@@ -28,7 +28,8 @@ enum class QUEST_UI_GROUP : uint32_t
 enum class ACTIVE_BUTTON_KEY : uint8_t
 {
 	E,
-	F
+	F,
+	X
 };
 
 enum class GENERAL_BUTTON_TYPE : uint32_t

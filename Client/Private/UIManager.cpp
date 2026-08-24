@@ -1491,6 +1491,11 @@ void UIManager::CreateActiveButton(CHandle handle, _ubyte KeyType)
 		resourceTag = "TEX_UI_T_cbi_Keyboard_F";
 		inputKey = DIK_F;
 	}
+	else if (KeyType == static_cast<_ubyte>(ACTIVE_BUTTON_KEY::X) || KeyType == DIK_X)
+	{
+		resourceTag = "TEX_UI_T_cbi_Keyboard_X";
+		inputKey = DIK_X;
+	}
 	else
 	{
 		return;
@@ -1576,10 +1581,13 @@ void UIManager::UpdateActiveButtons()
 
 	CHandle nearestE{};
 	CHandle nearestF{};
+	CHandle nearestX{};
 	_bool foundNearestE{};
 	_bool foundNearestF{};
+	_bool foundNearestX{};
 	_float nearestEDistanceSq = FLT_MAX;
 	_float nearestFDistanceSq = FLT_MAX;
+	_float nearestXDistanceSq = FLT_MAX;
 
 	for (auto iter = m_ActiveButtons.begin(); iter != m_ActiveButtons.end();)
 	{
@@ -1646,6 +1654,12 @@ void UIManager::UpdateActiveButtons()
 				nearestF = iter->TargetHandle;
 				foundNearestF = true;
 			}
+			else if (iter->KeyType == DIK_X && distanceSq < nearestXDistanceSq)
+			{
+				nearestXDistanceSq = distanceSq;
+				nearestX = iter->TargetHandle;
+				foundNearestX = true;
+			}
 		}
 
 		++iter;
@@ -1657,6 +1671,8 @@ void UIManager::UpdateActiveButtons()
 		RemoveActiveButton(nearestE);
 	if (foundNearestF && E::CGameInstance::Get().KeyDown(DIK_F))
 		RemoveActiveButton(nearestF);
+	if (foundNearestX && E::CGameInstance::Get().KeyDown(DIK_X))
+		RemoveActiveButton(nearestX);
 }
 
 void UIManager::AddDialoguePopup(

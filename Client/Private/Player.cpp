@@ -1189,7 +1189,9 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 	if (CGameInstance::Get().KeyDown(DIK_X) &&
-		CPlayer_SkillStateBase::HasValidTarget(*this))
+		CPlayer_SkillStateBase::HasValidTarget(*this) &&
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle) &&
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle)->CanUseFinisher())
 	{
 		if (auto* pUIController =
 			CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
@@ -1212,6 +1214,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			}
 		}
 	}
+
+	UpdateAncientMagicActiveButtons();
 
 	 // 임시
 	if (m_bCoolTime_Num1 == true) {
@@ -3308,6 +3312,46 @@ std::optional<CHandle> CPlayer::FindAncientThrowTarget() const
 	return hBestTarget;
 }
 
+void CPlayer::UpdateAncientMagicActiveButtons()
+{
+	auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+	const _bool bCanRequestAncientMagic = m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() != PLAYER_STATE::ACIENTATTACK_SKILL;
+
+	CHandle monsterTarget{};
+	if (bCanRequestAncientMagic && pUIController && pUIController->CanUseFinisher() &&
+		CPlayer_SkillStateBase::HasValidTarget(*this))
+	{
+		monsterTarget = m_hAutoTarget;
+	}
+
+	CHandle throwTarget{};
+	if (bCanRequestAncientMagic &&
+		CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget))
+	{
+		if (const auto target = FindAncientThrowTarget())
+			throwTarget = *target;
+	}
+
+	auto syncButton = [](
+		CHandle& currentTarget, CHandle nextTarget, _ubyte key)
+	{
+		if (currentTarget == nextTarget)
+			return;
+
+		if (currentTarget != CHandle{})
+			GET_SINGLE(UIManager)->RemoveActiveButton(currentTarget);
+
+		currentTarget = nextTarget;
+		if (currentTarget != CHandle{})
+			GET_SINGLE(UIManager)->CreateActiveButton(currentTarget, key);
+	};
+
+	syncButton(m_hAncientMagicButtonTarget, monsterTarget, DIK_X);
+	syncButton(m_hAncientThrowButtonTarget, throwTarget, DIK_E);
+}
+
 std::optional<CHandle> CPlayer::ConsumeAncientThrowTarget()
 {
 	auto target = m_hPendingAncientThrowTarget;
@@ -3512,6 +3556,10 @@ E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 
 void CPlayer::Free()
 {
+	if (m_hAncientMagicButtonTarget != CHandle{})
+		GET_SINGLE(UIManager)->RemoveActiveButton(m_hAncientMagicButtonTarget, false);
+	if (m_hAncientThrowButtonTarget != CHandle{})
+		GET_SINGLE(UIManager)->RemoveActiveButton(m_hAncientThrowButtonTarget, false);
 	SetLumosActive(false);
 	CAnimationObject::Free();
 }
