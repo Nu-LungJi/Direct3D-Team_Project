@@ -2006,9 +2006,6 @@
     <FxCompile Include="..\ShaderFiles\Deferred Rendering\PS_Deferred.hlsl">
       <Filter>ShaderFiles\DeferredRendering</Filter>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl">
-      <Filter>ShaderFiles</Filter>
-    </FxCompile>
     <FxCompile Include="..\ShaderFiles\DbgLineRender\DbgLineRender.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
@@ -2047,9 +2044,6 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\PostProcess\CS_PostProcess.hlsl">
       <Filter>ShaderFiles\PostProcess</Filter>
-    </FxCompile>
-    <FxCompile Include="..\ShaderFiles\UI\9SliceUI.hlsl">
-      <Filter>ShaderFiles</Filter>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
@@ -2146,6 +2140,12 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\RayMarching\VS_Volumetric.hlsl">
       <Filter>ShaderFiles\RayMarching</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\9SliceUI.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl">
+      <Filter>ShaderFiles</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

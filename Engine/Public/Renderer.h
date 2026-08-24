@@ -136,6 +136,10 @@ public:			// Append Render Queue
 public:			// Extra Function
 	HRESULT		Reset_DefaultShader(RENDERGROUP _Group);
 
+				// 3DUI
+	VOID		SetUI3DPanel(const _float4x4& worldMatrix, _bool active, _bool ignoreDepth = false);
+	VOID		ClearUI3DPanel();
+
 public:			// Volumetric Fog
 	const CB_VLFOG	Get_VolumetricFogOption()							{ return m_pFogInfo; }
 	VOID			Set_VolumetricFogOption(const CB_VLFOG& _FogOption) { m_pFogInfo = _FogOption; }
@@ -179,6 +183,7 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetPostProcess{};	// PostProcess
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetUI{};				// UI
 	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetUI3D{};			// 3DUI
+	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetUI3DComposite{};	// post-process + world UI panel
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetFocusingDepthMap{};	// DepthMap
 
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetHBAO{};			// HBAO
@@ -196,6 +201,11 @@ private:
 	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetVolumetric{};		// Volumetric
 
 	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetPreviousRenderView{};
+
+	// 3DUI
+	_float4x4					m_UI3DPanelWorld{};
+	_bool						m_bUI3DPanelActive{ false };
+	_bool						m_bUI3DPanelIgnoreDepth{ false };
 
 private:
 	SPtr<CResVertexShader>		m_pPBRVertexShader{};

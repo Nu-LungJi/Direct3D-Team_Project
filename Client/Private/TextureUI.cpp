@@ -71,7 +71,7 @@ void CTextureUI::PriorityUpdate(E::_float fTimeDelta)
 
 void CTextureUI::Update(E::_float fTimeDelta)
 {
-	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+	_float2 mousePos = GET_SINGLE(UIManager)->GetUIInteractionMousePosition();
 
 	if (!m_isActive)
 		return;
@@ -106,7 +106,7 @@ void CTextureUI::Update(E::_float fTimeDelta)
 	}
 	else
 	{
-		_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+		_float2 mousePos = GET_SINGLE(UIManager)->GetUIInteractionMousePosition();
 		m_pComCButton->CheckPixelPerfectCollision(mousePos, true);
 
 		if (m_bMouseTracking)

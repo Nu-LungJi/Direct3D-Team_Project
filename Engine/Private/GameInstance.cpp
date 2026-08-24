@@ -1323,6 +1323,16 @@ HRESULT	CGameInstance::Reset_DefaultShader(RENDERGROUP _Group) {
 	return m_pRenderer->Reset_DefaultShader(_Group);
 }
 
+VOID CGameInstance::SetUI3DPanel(const _float4x4& worldMatrix, _bool active, _bool ignoreDepth)
+{
+	m_pRenderer->SetUI3DPanel(worldMatrix, active, ignoreDepth);
+}
+
+VOID CGameInstance::ClearUI3DPanel()
+{
+	m_pRenderer->ClearUI3DPanel();
+}
+
 SPtr<CResDynamicTexture2D>	CGameInstance::Generate_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _Format, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight) {
 	return m_pRenderer->Generate_RenderTarget(_sResTag, _Format, _BindFlags, _TexWidth, _TexHeight);
 }

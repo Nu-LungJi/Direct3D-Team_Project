@@ -106,7 +106,7 @@ void CFontManager::Draw(const StringID& fontName, const _tchar* pText, const _fl
 {
     if (auto font = CGameInstance::Get().GetResourceFirst<CResFontCustom>("FONT", fontName))
     {
-        m_pBatch->Begin();
+		m_pBatch->Begin();
         font->GetFont()->DrawString(m_pBatch.get(), pText, vPosition, vColor, fRotation, vOrigin, fScale);
         m_pBatch->End();
     }
@@ -184,8 +184,8 @@ void CFontManager::LateDraw(RENDERGROUP eRenderGroup)
 
     for (const auto& [fontName, vecDesc] : m_mapLateDraws[ETOUI(eRenderGroup)])
     {
-        if (auto font = CGameInstance::Get().GetResourceFirst<CResFontCustom>("FONT", fontName))
-        {
+		if (auto font = CGameInstance::Get().GetResourceFirst<CResFontCustom>("FONT", fontName))
+		{
 			m_pBatch->Begin(DirectX::SpriteSortMode_Deferred, pAlphaBlend.Get());
             for (const auto& Desc : vecDesc)
             {

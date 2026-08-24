@@ -9,7 +9,9 @@
 #include "MyFSR2_2.h"
 
 NS_USING(Engine)
-CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice{ pDevice }, m_pContext{ pContext } {}
+CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice{ pDevice }, m_pContext{ pContext }
+{
+}
 CRenderer::~CRenderer() {}
 
 VOID	CRenderer::UpdateGUI()
@@ -137,7 +139,6 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load()))			return E_FAIL;
 	}
-
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_LensFlare", "./ShaderFiles/PostProcess/CS_PostProcess.hlsl"))
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_LensFlare", .sTarget = "cs_5_0" })))    return E_FAIL;
@@ -546,18 +547,46 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 
 HRESULT CRenderer::InitializeUI3D()
 {
-	if (m_pUI3DVertexShader = CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_UI3D")) {
-		if (nullptr == m_pUI3DVertexShader)   return E_FAIL;
-	}
+	m_pUI3DVertexShader = CGameInstance::Get().GetResourceFirst<E::CResVertexShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, "VS_UI3D");
+	if (!m_pUI3DVertexShader)
+		return E_FAIL;
 
-	if (m_pUI3DPixelShader = CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_UI3D")) {
-		if (nullptr == m_pUI3DPixelShader)    return E_FAIL;
-	}
+	m_pUI3DPixelShader = CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, "PS_UI3D");
+	if (!m_pUI3DPixelShader)
+		return E_FAIL;
 
-	m_pResDynTexTargetUI3D = Generate_RenderTarget("DynTex2D_UI3D", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+	m_pResDynTexTargetUI3D = Generate_RenderTarget(
+		"DynTex2D_UI3D", DXGI_FORMAT_R16G16B16A16_FLOAT,
+		D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+	if (!m_pResDynTexTargetUI3D)
+		return E_FAIL;
+
+	// UAV_PostProcess has no RTV, so world-panel composition needs an
+	// RTV-capable copy of the post-process result.
+	m_pResDynTexTargetUI3DComposite = Generate_RenderTarget(
+		"DynTex2D_UI3DComposite", DXGI_FORMAT_R16G16B16A16_FLOAT,
+		D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+	if (!m_pResDynTexTargetUI3DComposite)
+		return E_FAIL;
 
 	return S_OK;
 }
+
+VOID CRenderer::SetUI3DPanel(const _float4x4& worldMatrix, _bool active, _bool ignoreDepth)
+{
+	XMStoreFloat4x4(&m_UI3DPanelWorld, XMMatrixIdentity());
+	m_UI3DPanelWorld = worldMatrix;
+	m_bUI3DPanelActive = active;
+	m_bUI3DPanelIgnoreDepth = ignoreDepth;
+}
+
+VOID CRenderer::ClearUI3DPanel()
+{
+	m_bUI3DPanelActive = false;
+}
+
 #pragma endregion
 
 #pragma region  EXTRAFUNCTION
@@ -2112,52 +2141,148 @@ HRESULT CRenderer::Render_PostProcess_Filter() {
 }
 HRESULT CRenderer::Render_UI3D() {
 	ZoneScopedN("Render_UserInterface3D");
+	if (!m_bUI3DPanelActive)
+		return S_OK;
+
+	ComPtr<ID3D11SamplerState> previousLinearClamp;
+	m_pContext->PSGetSamplers(1, 1, previousLinearClamp.GetAddressOf());
+
+	ID3D11ShaderResourceView* nullSRV = nullptr;
+	m_pContext->PSSetShaderResources(0, 1, &nullSRV);
+	ID3D11RenderTargetView* uiRTV = m_pResDynTexTargetUI3D->GetRTV().Get();
+	m_pContext->OMSetRenderTargets(1, &uiRTV, nullptr);
+	const _float clearColor[4]{ 0.f, 0.f, 0.f, 0.f };
+	m_pContext->ClearRenderTargetView(uiRTV, clearColor);
+	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+
+	// Ordinary UI shaders sample their textures through LinearClamp (s1).
+	// Post-process passes may leave that slot empty, so bind the UI states
+	// explicitly before drawing the shop into the transparent RTT.
+	auto linearClamp = CGameInstance::Get().GetResourceFirst<CResSamplerState>(
+		TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_CLAMP);
+	auto noCull = CGameInstance::Get().GetResourceFirst<CResRasterizerState>(
+		TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	if (linearClamp)
 	{
-		m_pContext->CopyResource(m_pResDynTexTargetUI3D->GetTexture().Get(), m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
+		ID3D11SamplerState* sampler = linearClamp->GetSamplerState().Get();
+		m_pContext->PSSetSamplers(1, 1, &sampler);
+	}
+	if (noCull)
+		m_pContext->RSSetState(noCull->GetRasterizerState().Get());
 
-		ID3D11RenderTargetView* pRTVs[1] = { m_pResDynTexTargetUI3D->GetRTV().Get() };
-		m_pContext->OMSetRenderTargets(1, pRTVs, nullptr);
-		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+	auto* uiCamera = CGameInstance::Get().GetCamera("UI");
+	if (uiCamera &&
+		SUCCEEDED(Reset_RenderContext(RENDERPASS::DEFAULT, uiCamera)) &&
+		SUCCEEDED(Bind_CameraAttribute(uiCamera)))
+	{
+		RenderUI3D();
+	}
 
-		const auto& vs = m_pUI3DVertexShader;
-		const auto& ps = m_pUI3DPixelShader;
-		const auto& viBuffer = m_pFullscreenVIBuffer;
+	// UAV_PostProcess is SRV/UAV-only and GetRTV() is null. Preserve it in the
+	// dedicated renderable target before compositing the physical world quad.
+	m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
+	m_pContext->CopyResource(
+		m_pResDynTexTargetUI3DComposite->GetTexture().Get(),
+		m_pResDynTexTargetPreviousRenderView->GetTexture().Get());
+	ID3D11RenderTargetView* sceneRTV =
+		m_pResDynTexTargetUI3DComposite->GetRTV().Get();
+	ID3D11DepthStencilView* sceneDSV = m_pResDynTexTargetDepth->GetDSV().Get();
+	m_pContext->OMSetRenderTargets(1, &sceneRTV, sceneDSV);
+	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
-		m_pContext->VSSetShader(vs->GetVertexShader().Get(), nullptr, 0);
-		m_pContext->PSSetShader(ps->GetPixelShader().Get(), nullptr, 0);
-
-		m_pContext->IASetInputLayout(vs->GetInputLayout().Get());
-
-		ID3D11Buffer* vertexBuffers[] = {
-			   viBuffer->GetVertexBuffer().Get()
-		};
-		uint32_t strides[] = {
-			   viBuffer->GetVertexStride()
-		};
-		uint32_t offsets[] = {
-			   0
-		};
-
-		m_pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-		m_pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
+	// The RTT contents use the orthographic UI camera, but the physical quad
+	// must always be projected by the gameplay camera.  Do not depend on the
+	// camera left in the render context by the preceding RTT pass.
+	auto* gameCamera = CGameInstance::Get().GetCamera("PlayerCamera");
+	if (!gameCamera)
+		gameCamera = CGameInstance::Get().GetActiveCamera();
+	if (gameCamera &&
+		SUCCEEDED(Reset_RenderContext(RENDERPASS::DEFAULT, gameCamera)) &&
+		SUCCEEDED(Bind_CameraAttribute(gameCamera)))
+	{
+		// Use the regular unit quad for a world-space panel.  The fullscreen
+		// quad already spans -1..1 clip space and doubles the intended world
+		// dimensions when it is transformed by a world matrix.
+		const auto& viBuffer = CGameInstance::Get().
+			GetResourceFirst<CResQuadTexBuffer>(
+				TAG_RES_GRP_PERMANENT_BUFFER, "VIBuffer_QuadTex");
+		if (!viBuffer)
+		{
+			Unbind_Resources();
+			ID3D11SamplerState* restoreSampler = previousLinearClamp.Get();
+			m_pContext->PSSetSamplers(1, 1, &restoreSampler);
+			return E_FAIL;
+		}
+		m_pContext->IASetInputLayout(m_pUI3DVertexShader->GetInputLayout().Get());
+		m_pContext->VSSetShader(m_pUI3DVertexShader->GetVertexShader().Get(), nullptr, 0);
+		m_pContext->PSSetShader(m_pUI3DPixelShader->GetPixelShader().Get(), nullptr, 0);
+		ID3D11Buffer* vertexBuffer = viBuffer->GetVertexBuffer().Get();
+		UINT stride = viBuffer->GetVertexStride();
+		UINT offset = 0;
+		m_pContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		m_pContext->IASetIndexBuffer(
+			viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
 		m_pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
 
-		m_pContext->PSSetShaderResources(0, 1, m_pResDynTexTargetPreviousRenderView->GetSRV().GetAddressOf());		// Combined Texture
+		auto perObjectBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(
+			TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerObject");
+		D3D11_MAPPED_SUBRESOURCE mapped{};
+		if (perObjectBuffer && SUCCEEDED(m_pContext->Map(
+			perObjectBuffer->GetCBuffer().Get(), 0,
+			D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+		{
+			CB_PER_OBJECT perObject{};
+			const _matrix world = XMLoadFloat4x4(&m_UI3DPanelWorld);
+			XMStoreFloat4x4(&perObject.matWorld, world);
+			XMStoreFloat4x4(&perObject.matWVP,
+				world * gameCamera->GetView() * gameCamera->GetProj());
+			memcpy(mapped.pData, &perObject, sizeof(perObject));
+			m_pContext->Unmap(perObjectBuffer->GetCBuffer().Get(), 0);
+			ID3D11Buffer* objectCB = perObjectBuffer->GetCBuffer().Get();
+			m_pContext->VSSetConstantBuffers(0, 1, &objectCB);
+		}
 
+		auto perUIBuffer = CGameInstance::Get().GetResourceFirst<CResCBuffer>(
+			TAG_RES_GRP_PERMANENT_BUFFER, "CB_PerUI");
+		if (perUIBuffer && SUCCEEDED(m_pContext->Map(
+			perUIBuffer->GetCBuffer().Get(), 0,
+			D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+		{
+			CB_PER_UI perUI{};
+			perUI.color = { 1.f, 1.f, 1.f, 0.8f };
+			memcpy(mapped.pData, &perUI, sizeof(perUI));
+			m_pContext->Unmap(perUIBuffer->GetCBuffer().Get(), 0);
+			ID3D11Buffer* uiCB = perUIBuffer->GetCBuffer().Get();
+			m_pContext->VSSetConstantBuffers(7, 1, &uiCB);
+			m_pContext->PSSetConstantBuffers(7, 1, &uiCB);
+		}
 
-		auto pGameCam = CGameInstance::Get().GetActiveCamera();
-		if (nullptr == pGameCam) { Unbind_Resources(); return S_OK; }
-
-		if (FAILED(Reset_RenderContext(RENDERPASS::DEFAULT, pGameCam))) { Unbind_Resources(); return S_OK; }
-
-		if (FAILED(Bind_CameraAttribute(pGameCam))) { Unbind_Resources(); return S_OK; }
-
-		if (FAILED(RenderUI3D())) { Unbind_Resources(); return S_OK; }
-
-		Unbind_Resources();
-
-		m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetUI3D;
+		auto alphaBlend = CGameInstance::Get().GetResourceFirst<CResBlendState>(
+			TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+		auto depthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(
+			TAG_RES_GRP_PERMANENT_STATE,
+			m_bUI3DPanelIgnoreDepth ? "DS_NO_DEPTHSTENCIL" : "DS_ALPHA_BLEND_DEPTH");
+		if (alphaBlend)
+			m_pContext->OMSetBlendState(alphaBlend->GetBlendState().Get(), nullptr, 0xffffffff);
+		if (noCull)
+			m_pContext->RSSetState(noCull->GetRasterizerState().Get());
+		if (depthState)
+			m_pContext->OMSetDepthStencilState(depthState->GetDepthStencilState().Get(), 0);
+		if (linearClamp)
+		{
+			ID3D11SamplerState* sampler = linearClamp->GetSamplerState().Get();
+			m_pContext->PSSetSamplers(1, 1, &sampler);
+		}
+		ID3D11ShaderResourceView* uiSRV = m_pResDynTexTargetUI3D->GetSRV().Get();
+		m_pContext->PSSetShaderResources(0, 1, &uiSRV);
+		m_pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 	}
+
+	Unbind_Resources();
+	// Normal screen HUD now consumes the scene containing the world panel.
+	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetUI3DComposite;
+	ID3D11SamplerState* restoreSampler = previousLinearClamp.Get();
+	m_pContext->PSSetSamplers(1, 1, &restoreSampler);
 
 	return S_OK;
 }
@@ -2438,17 +2563,28 @@ HRESULT CRenderer::RenderCollider()
 
 HRESULT CRenderer::RenderUI3D() {
 	ZoneScopedN("RenderUI3D");
+	auto& renderList = m_pRenderObject[ETOUI(RENDERGROUP::UI3D)];
+	std::stable_sort(renderList.begin(), renderList.end(),
+		[](const IRenderable* lhs, const IRenderable* rhs)
+		{
+			return static_cast<const CUIObject*>(lhs)->GetWeight() <
+				static_cast<const CUIObject*>(rhs)->GetWeight();
+		});
 
 	auto Alphablend = E::CGameInstance::Get().GetResourceFirst<E::CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
 	m_pContext->OMSetBlendState(Alphablend->GetBlendState().Get(), nullptr, 0xffffffff);
+	auto noDepth = E::CGameInstance::Get().GetResourceFirst<E::CResDepthStencilState>(
+		TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL");
+	m_pContext->OMSetDepthStencilState(noDepth->GetDepthStencilState().Get(), 0);
 
-	for (auto& pRenderObject : m_pRenderObject[ETOUI(RENDERGROUP::UI3D)])
+	for (auto& pRenderObject : renderList)
 	{
 		if (pRenderObject->HasRenderPass(m_pRenderContext.pass))
 		{
 			pRenderObject->Render(m_pContext.Get(), m_pRenderContext);
 		}
 	}
+	E::CGameInstance::Get().FontLateDraw(RENDERGROUP::UI3D);
 
 	auto Nonblend = E::CGameInstance::Get().GetResourceFirst<E::CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
 	m_pContext->OMSetBlendState(Nonblend->GetBlendState().Get(), nullptr, 0xffffffff);
