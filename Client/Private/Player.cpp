@@ -964,7 +964,13 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			m_bStupefyCounterRequested = false;
 	}
 
-	if (m_pStateMachine &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	const _bool bPointerCapturedByUI =
+		ImGui::GetIO().WantCaptureMouse ||
+		GET_SINGLE(UIManager)->RootUIPicking().has_value();
+
+	if (m_pStateMachine &&
+		!bPointerCapturedByUI &&
+		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		const PLAYER_STATE eCurrentState =m_pStateMachine->GetCurrentState();
 		const _bool bCanRequestAttack =
