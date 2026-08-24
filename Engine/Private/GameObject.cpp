@@ -16,7 +16,9 @@ CGameObject::CGameObject()
 CGameObject::CGameObject(const CGameObject& Prototype)
     : CPrototype{ Prototype }
 	, m_eTimeDomain{ Prototype.m_eTimeDomain }
+	, m_eUpdateLoopMask{ Prototype.m_eUpdateLoopMask }
 {
+	// 프로토타입에서 정한 시간 도메인과 Update 단계 분류는 모든 복제 객체가 동일하게 사용한다.
 }
 
 CGameObject::~CGameObject()
@@ -175,7 +177,35 @@ void CGameObject::Free()
 
 void CGameObject::SetPendingDestroy(_bool b)
 {
-    m_bPendingDestroy = b;
+	// Manager가 레이어에서 이미 분리한 객체는 취소하면 다시 찾을 소유 컨테이너가 없으므로 확정 삭제한다.
+	if (!b && m_bPendingDestroyCommitted)
+		return;
+
+	// 같은 상태를 다시 설정할 때 삭제 큐에 동일 요청이 계속 쌓이는 것을 막는다.
+	if (m_bPendingDestroy == b)
+		return;
+
+	m_bPendingDestroy = b;
+
+	if (m_bPendingDestroy)
+	{
+		// GameObject는 파괴 시점을 직접 결정하지 않고 자신의 Handle만 Manager 큐에 알린다.
+		CGameInstance::Get().QueuePendingGameObjectDestroy(m_ObjectHandle);
+	}
+	// 취소(false)는 큐에서 O(N)으로 찾아 지우지 않는다.
+	// FrameEnd가 처리 wave를 수집할 때 Handle과 PendingDestroy를 다시 검증해 취소 요청을 버리며,
+	// 이미 수집되어 레이어 제거가 시작된 wave는 일관성을 위해 확정 삭제한다.
+}
+
+void CGameObject::CommitPendingDestroy()
+{
+	// DelLayer의 즉시 논리 삭제와 FrameEnd의 실제 슬롯 삭제 사이에는 취소를 허용하지 않는다.
+	m_bPendingDestroyCommitted = true;
+	if (m_bPendingDestroy)
+		return;
+
+	m_bPendingDestroy = true;
+	CGameInstance::Get().QueuePendingGameObjectDestroy(m_ObjectHandle);
 }
 
 void CGameObject::SetPendingDestroyCascade(_bool b)
@@ -202,6 +232,15 @@ void CGameObject::SetManagedUpdateEnabledCascade(_bool bEnabled)
 	{
 		pObject->SetManagedUpdateEnabled(bEnabled);
 	});
+}
+
+void CGameObject::SetUpdateLoopMask(GAMEOBJECT_UPDATE_LOOP eMask)
+{
+	// 잘못된 비트가 단계별 배열 분류에 섞이지 않도록 공개된 네 단계 범위로 제한한다.
+	constexpr uint8_t iValidMask =
+		static_cast<uint8_t>(GAMEOBJECT_UPDATE_LOOP::ALL);
+	m_eUpdateLoopMask = static_cast<GAMEOBJECT_UPDATE_LOOP>(
+		static_cast<uint8_t>(eMask) & iValidMask);
 }
 
 _bool CGameObject::AcquireFromPool(void* pArg)
