@@ -56,7 +56,7 @@ public:
 
 	const _float4x4* Get_BoneMatrixPtr(const _char* pBoneName);
 
-	const _float4x4& Get_PreTransformMatrix() { return m_PreTransformMatrix; }
+	const _float4x4& Get_PreTransformMatrix() const { return m_PreTransformMatrix; }
 	uint32_t Get_NumBones() const { return static_cast<uint32_t>(m_Bones.size()); }
 	// [LSY] 모델/Skeleton 종류와 무관하게 경로 기반 공유 Clip을 추가한다.
 	HRESULT Add_SharedAnimation(const _string& sAnimationPath);

@@ -25,6 +25,7 @@ class CResPhysXBoxGeometry;
 class CComPxCharacterController;
 class CComCharacterMoveIntent;
 class CComCharacterMotor;
+class CComFootIK;
 class CComSound;
 NS_END
 
@@ -190,6 +191,7 @@ public:
 
 	void SetBodyEffectID(uint32_t effectID) { m_iDashBodyEffectID = effectID; }
 	void UpdateAttachedEffects();
+	void UpdateFootIKGroundSamples(_float fTimeDelta);
 	CHandle& GetWeaponHandle() { return m_Partes[ETOUI(PARTES::WEAPON)]; }
 	const CHandle& GetWeaponHandle() const { return m_Partes[ETOUI(PARTES::WEAPON)]; }
 	void SetBroomVisible(_bool bVisible);
@@ -267,6 +269,7 @@ private:
 	CComPxCharacterController* m_pComCharacterController{};
 	CComCharacterMoveIntent* m_pComMoveIntent{};
 	CComCharacterMotor* m_pComCharacterMotor{};
+	CComFootIK* m_pComFootIK{};
 	CPlayer_StateMachine* m_pStateMachine{};
 	_bool m_bMovementLocked{};
 	_bool m_bRootMotionRotationActive{};

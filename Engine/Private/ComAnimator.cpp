@@ -2,6 +2,7 @@
 #include "GameInstance.h"
 #include "ComAnimator.h"
 #include "ComModelInstance.h"
+#include "ComFootIK.h"
 #include "ResModelAnim.h"
 #include "ResModel.h"
 NS_USING(Engine)
@@ -839,6 +840,15 @@ void CComAnimator::Build_BoneMatrices_CPU(_float fTimeDelta)
 	Update_UpperLayer(fTimeDelta);
 	Build_UpperLocalPose();
 	Compose_FinalLocalPose();
+	if (m_pGameObject)
+	{
+		if (auto* pFootIK =
+			m_pGameObject->GetComponent<CComFootIK>("ComFootIK"))
+		{
+			pFootIK->ApplyToLocalPose(
+				*m_pModelInstance, m_FinalLocalBoneMatrices);
+		}
+	}
 
 	// 3. Combined Matrix 계산
 	_matrix matPreTransform = XMLoadFloat4x4(&pModel->Get_PreTransformMatrix());
