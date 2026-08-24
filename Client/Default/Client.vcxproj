@@ -285,6 +285,10 @@
     <ClInclude Include="..\Public\BTTurnSlow.h" />
     <ClInclude Include="..\Public\Button.h" />
     <ClInclude Include="..\Public\GeneralButton.h" />
+    <ClInclude Include="..\public\Troll.h" />
+    <ClInclude Include="..\public\Troll_Combat.h" />
+    <ClInclude Include="..\public\Troll_Hit.h" />
+    <ClInclude Include="..\public\Troll_Spawn.h" />
     <ClInclude Include="..\Public\WandShop.h" />
     <ClInclude Include="..\Public\ClientEvents.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
@@ -486,6 +490,10 @@
     <ClCompile Include="..\Private\CinematicEditor.cpp" />
     <ClCompile Include="..\Private\Button.cpp" />
     <ClCompile Include="..\Private\GeneralButton.cpp" />
+    <ClCompile Include="..\private\Troll.cpp" />
+    <ClCompile Include="..\private\Troll_Combat.cpp" />
+    <ClCompile Include="..\private\Troll_Hit.cpp" />
+    <ClCompile Include="..\private\Troll_Spawn.cpp" />
     <ClCompile Include="..\Private\WandShop.cpp" />
     <ClCompile Include="..\Private\Cursor.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />

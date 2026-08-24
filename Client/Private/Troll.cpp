@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Spider.h"
+#include "Troll.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
@@ -18,58 +18,56 @@
 #include "UIManager.h"
 //FSM
 #include "Mon_State.h"
-#include "Spider_Spawn.h"
-#include "Spider_Combat.h"
-#include "Spider_Hit.h"
-#include "Spider_Dead.h"
-#include "Mon_Godae.h"
 //BB
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
 //Skill
+#include "Troll_Hit.h"
+#include "Troll_Combat.h"
+#include "Troll_Spawn.h"
 NS_USING(Client)
 
-CSpider::CSpider()
+CTroll::CTroll()
 {
 }
 
 
-CSpider::~CSpider()
+CTroll::~CTroll()
 {
 }
 
-void CSpider::UpdateGUI()
+void CTroll::UpdateGUI()
 {
 	__super::UpdateGUI();
-	
+	ImGui::DragInt("HP", &m_iHp, 0, 1);
+
 }
 
-HRESULT CSpider::InitializePrototype(void* pArg)
+HRESULT CTroll::InitializePrototype(void* pArg)
 {
 	if (FAILED(__super::InitializePrototype(pArg)))
 	{
 		return E_FAIL;
 	}
-	
 	return S_OK;
 }
 
-HRESULT CSpider::Initialize(void* pArg)
+HRESULT CTroll::Initialize(void* pArg)
 {
-	auto MonDesc = static_cast<SPIDER_DESC*>(pArg);
+	auto MonDesc = static_cast<TROLL_DESC*>(pArg);
 	if (FAILED(__super::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
-	m_iHp = m_iMaxHp = 35;
-	m_fDissolve = 0.f;
+	m_iHp = m_iMaxHp = 555;
+
 	{
 		CComPxRigidBody::DESC Desc{};
 		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
 			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComPxRigidBody", &Desc, &m_pComRigidBody)))
 		{
-			MSG_BOX("Create Failed ComPxRigidBody Spider");
+			MSG_BOX("Create Failed ComPxRigidBody EnderDragon");
 			return E_FAIL;
 		}
 	}
@@ -89,7 +87,7 @@ HRESULT CSpider::Initialize(void* pArg)
 			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
 				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
 		{
-			MSG_BOX("Create Failed ComPxSphereCollider Spider");
+			MSG_BOX("Create Failed ComPxSphereCollider EnderDragon");
 			return E_FAIL;
 		}
 		if (!m_pComSphereCol->SetQueryEnabled(false))
@@ -181,7 +179,7 @@ HRESULT CSpider::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-
+	
 	{
 		CComAnimator::DESC DescAnim{};
 		DescAnim.sComTag = "ComCModelIntance";
@@ -191,7 +189,6 @@ HRESULT CSpider::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-
 	{
 		CComCollider::DESC Desc{};
 		Desc.eCollType = CollType::Box;
@@ -201,111 +198,116 @@ HRESULT CSpider::Initialize(void* pArg)
 			return E_FAIL;
 		};
 	}
-	
+
 	if (FAILED(Ready_Fsm(MonDesc->LevelTag)))
 	{
 		MSG_BOX("Create Failed Fsm");
 		return E_FAIL;
 	}
-	//if (FAILED(Ready_Skill(MonDesc->LevelTag)))
-	//{
-	//	MSG_BOX("Create Failed Skill");
-	//	return E_FAIL;
-	//}
+	if (FAILED(Ready_Skill(MonDesc->LevelTag)))
+	{
+		MSG_BOX("Create Failed Skill");
+		return E_FAIL;
+	}
+
 	Ready_BBKeyValue();
 
 	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
+
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
-	m_eMonType = MONSTER_TYPE::NORMAL;
-	
+	m_eMonType = MONSTER_TYPE::BOSS;
+
+	ReadySound();
 	m_pComSphereCol->SetQueryEnabled(true);
-	//m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RigPelvisSocket");
-	m_pModelAnimator->Play_Anim(0, false);
-	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
-
-	m_bSpawn = MonDesc->bSpawn;
-	auto pBB = Get_BlackBoard();
-
-	pBB->Set_Value<_float3>(NPC_KEY::STARTPOS, MonDesc->vPatrollStart);
-	pBB->Set_Value<_float3>(NPC_KEY::ENDPOS, MonDesc->vPatrollEnd);
+	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_targetSocket");
 	return S_OK;
 }
-HRESULT CSpider::Ready_Fsm(const _string& LevelTag)
+void CTroll::ReadySound()
+{
+}
+HRESULT CTroll::Ready_Fsm(const _string& LevelTag)
 {
 	CMon_State::DESC Desc{};
 	if (FAILED(AddComponentFromProto(LevelTag, "Prototype_Component_Mon_FSM", "Mon_Fsm", &Desc, &m_pFsm))) return E_FAIL;
 	
+	if (false == m_pFsm->Add_State(MON_STATE::SPAWN, CTroll_Spawn::Create(LevelTag))) return E_FAIL;
 	
-	if (false == m_pFsm->Add_State(MON_STATE::SPAWN, CSpider_Spawn::Create(LevelTag))) return E_FAIL;
-	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CSpider_Combat::Create(LevelTag))) return E_FAIL;
-	if (false == m_pFsm->Add_State(MON_STATE::HIT, CSpider_Hit::Create(LevelTag,this))) return E_FAIL;
-	if (false == m_pFsm->Add_State(MON_STATE::DEAD, CSpider_Dead::Create())) return E_FAIL;
-	//if (false == m_pFsm->Add_State(MON_STATE::GODAE, CMon_Godae::Create(,this))) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CTroll_Combat::Create())) return E_FAIL;
+	
+	if (false == m_pFsm->Add_State(MON_STATE::HIT, CTroll_Hit::Create())) return E_FAIL;
+
+	//if (false == m_pFsm->Add_State(MON_STATE::HIT, CMon_Godae::Create())) return E_FAIL;
 
 	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
 
 
 	return S_OK;
 }
-HRESULT CSpider::Ready_Skill(const _string& LevelTag)
+HRESULT CTroll::Ready_Skill(const _string& LevelTag)
 {
+	if (ETOUI(TROLL_SKILL::END) > ETOUI(ATTMON::END))
+		return E_FAIL;
+
+	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(TROLL_SKILL::BOOM);
+	//////////////////////파티클 넣는곳/////////////////////////
+	m_EffectNames[ETOUI(TROLL_SKILL::BOOM)] = "FireBall";
+	////////////////////////////////////////////////////////////
 
 	return S_OK;
 }
-void CSpider::Ready_BBKeyValue()
+void CTroll::Ready_BBKeyValue()
 {
-	auto pBB = Get_BlackBoard();
 
-	pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
 }
-void CSpider::PriorityUpdate(E::_float fTimeDelta)
+void CTroll::PriorityUpdate(E::_float fTimeDelta)
 {
-	if (m_iHp <= 0.f || m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
-		m_pFsm->Request_State(MON_STATE::DEAD);
-	
-	if (!m_bSpawn) return;
 	if (m_bEndGame)
 	{
 		SetPendingDestroy();
 		return;
 	}
-	m_fTick += fTimeDelta;
+	if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_H))
+		m_bDebug = !m_bDebug;
+
+	if (!m_bDebug) return;
+
 	m_pFsm->PriorityUpdate(fTimeDelta);
 	Update_BBToFsm();
 	__super::PriorityUpdate(fTimeDelta);
 	m_pFsm->Update(fTimeDelta);
 }
 
-void CSpider::Update(E::_float fTimeDelta)
+void CTroll::Update(E::_float fTimeDelta)
 {
-	if (!m_bSpawn) return;
 	if (m_bEndGame) return;
+	if (!m_bDebug) return;
 	__super::Update(fTimeDelta);
-	if (m_fTick > 3.f)
-	{
-		Find_Target();
-		m_fTick = 0.f;
-	}
 }
 
-void CSpider::FixedUpdate(E::_float fTimeDelta)
+void CTroll::Stuck()
 {
-	if (!m_bSpawn) return;
+	if (nullptr == m_pFsm) return;
+	m_pFsm->Request_State(MON_STATE::GODAE);
+}
+
+void CTroll::FixedUpdate(E::_float fTimeDelta)
+{
 	if (m_bEndGame) return;
+	if (!m_bDebug) return;
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
-void CSpider::LateUpdate(E::_float fTimeDelta)
+void CTroll::LateUpdate(E::_float fTimeDelta)
 {
-	if (!m_bSpawn) return;
+	if (!m_bDebug) return;
 	m_pFsm->LateUpdate(fTimeDelta);
 	__super::LateUpdate(fTimeDelta);
 
 }
 
-void CSpider::Set_StateFinished(_bool bFinished)
+void CTroll::Set_StateFinished(_bool bFinished)
 {
 	//스테이트가 완료된 판정에 대해서 다시 초기회
 	auto pBB = Get_BlackBoard();
@@ -313,7 +315,7 @@ void CSpider::Set_StateFinished(_bool bFinished)
 
 	pBB->Set_Value(EDG_KEY::BSTATE_FINISHED, bFinished);
 }
-_bool CSpider::Is_StateFinished()
+_bool CTroll::Is_StateFinished()
 {
 	//스테이트가 끝났는지 확인
 	auto pBB = Get_BlackBoard();
@@ -324,25 +326,22 @@ _bool CSpider::Is_StateFinished()
 
 	return *pbFinished;
 }
-_string CSpider::Get_SkillName(ATTMON SkillNode)
+_string CTroll::Get_SkillName(ATTMON SkillNode)
 {
 	auto pValue = m_MonSkillLists.find(SkillNode);
 
 	if (pValue == m_MonSkillLists.end())
 		return "";
 
-	if (pValue->second >= ETOUI(SPIDER_SKILL::END))
+	if (pValue->second >= ETOUI(TROLL_SKILL::END))
 		return "";
 
-	return MagicEnumToStringView(static_cast<SPIDER_SKILL>(pValue->second)).data();
+	return MagicEnumToStringView(static_cast<TROLL_SKILL>(pValue->second)).data();
 }
 
-_bool CSpider::Check_Table(PLAYER_SKILL_TYPE eType)
+_bool CTroll::Check_Table(PLAYER_SKILL_TYPE eType)
 {
-	if (eType == PLAYER_SKILL_TYPE::ACIENT_LIGHTNING || eType == PLAYER_SKILL_TYPE::ABRA)
-		m_iHp = 0;
-
-	if (m_iHp <= 0.f || m_pFsm->GetCurState() == MON_STATE::DEAD)
+	if (m_iHp <= 0 && m_pFsm->GetCurState() == MON_STATE::DEAD)
 		return false;
 
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)
@@ -360,47 +359,50 @@ _bool CSpider::Check_Table(PLAYER_SKILL_TYPE eType)
 			}
 		}
 	}
-	 
-	m_PendingMonTable.eAttType = m_eAttType;
-	m_PendingMonTable.eHitType = eType;
-	
-	m_bPending = true;
-	m_pFsm->Request_State(MON_STATE::HIT);
+
+	if (true == BreakSkillType(eType) && false == m_bIsBreak)
+	{
+		m_pFsm->Request_State(MON_STATE::HIT);
+		m_bIsBreak = true;
+
+		m_PendingMonTable.eAttType = m_eAttType;
+		m_PendingMonTable.eHitType = PLAYER_SKILL_TYPE::DESTORY;
+
+		m_bPending = true;
+	}
+
 	return true;
 
 }
 
-void CSpider::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
+void CTroll::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 {
 	if (eType == ATTMON::END)
 		return;
 
+	auto pbEffect = Get_BlackBoard()->Get_Value<_bool>(EDG_KEY::EDGEFFECT);
 	uint32_t iSkillNum = Find_SkillNum(eType);
-	if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(SPIDER_SKILL::END))
+	if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(TROLL_SKILL::END))
 		return;
 
+	if (*pbEffect)
+	{
+		_float4x4 mat;
+		XMStoreFloat4x4(&mat, GetTransform().GetLoadedWorldMatrix());
+		CGameInstance::Get().Spawn(m_EffectNames[iSkillNum], mat);
+		Get_BlackBoard()->Set_Value<_bool>(EDG_KEY::EDGEFFECT, false);
+	}
 
 	m_CurEffectName.clear();
 	m_eAttType = ATTMON::END;
 	m_eLastSkillTable = m_eAttType = eType;
 
 }
-void CSpider::Flag_Check(_float fTimeDelta)
+void CTroll::Flag_Check(_float fTimeDelta)
 {
 	
 }
-void CSpider::Set_Gravity(_bool bGravity)
-{
-		if (bGravity)
-			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
-		else
-			m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
-}
-const _float CSpider::Get_Damage()
-{
-	return 5.f;
-}
-void CSpider::Update_BBToFsm()
+void CTroll::Update_BBToFsm()
 {
 	auto pBB = Get_BlackBoard();
 
@@ -409,7 +411,7 @@ void CSpider::Update_BBToFsm()
 
 	pBB->Set_Value(EDG_KEY::STATE, m_pFsm->GetCurState());
 }
-_bool CSpider::BreakSkillType(PLAYER_SKILL_TYPE eType)
+_bool CTroll::BreakSkillType(PLAYER_SKILL_TYPE eType)
 {
 	uint32_t iSkillNumber = Find_SkillNum(m_eAttType);
 	//파훼 됨?
@@ -426,31 +428,35 @@ _bool CSpider::BreakSkillType(PLAYER_SKILL_TYPE eType)
 		break;
 
 	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+		return true;
 		break;
 	case PLAYER_SKILL_TYPE::DESTORY:
+		return true;
+		break;
+	case PLAYER_SKILL_TYPE::ABRA:
 		return true;
 		break;
 	}
 	return false;
 }
 
-E::UPtr<CSpider> CSpider::Create()
+E::UPtr<CTroll> CTroll::Create()
 {
-	auto pInstance = E::ToUPtr(new CSpider{});
+	auto pInstance = E::ToUPtr(new CTroll{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CSpider");
+		MSG_BOX("Failed to Created : CTroll");
 		return nullptr;
 	}
 	return  pInstance;
 }
 
-E::UPtr<E::CPrototype> CSpider::Clone(void* pArg)
+E::UPtr<E::CPrototype> CTroll::Clone(void* pArg)
 {
-	auto	pInstance = E::ToUPtr(new CSpider{ *this });
+	auto	pInstance = E::ToUPtr(new CTroll{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CSpider");
+		MSG_BOX("Failed to Cloned : CTroll");
 		return nullptr;
 	}
 

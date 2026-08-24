@@ -16,6 +16,7 @@
 #include "Griff.h"
 #include "NpcPlacementData.h"
 #include "NpcPlacementManager.h"
+#include "Troll.h"
 // Client에도 같은 이름의 Terrain.h가 있으므로 Engine SDK 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
@@ -456,6 +457,14 @@ HRESULT CLevelHogwartWorld::SpawnMonster(std::optional<CHandle> hPlayer)
 	{
 		return E_FAIL;
 	}
+
+	//CTroll::TROLL_DESC Troll{};
+	//Troll.sObjectTag = "02.Troll";
+	//Troll.TargetHandle = hPlayer.value();
+	//if (!CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, "02.Troll", &Troll))
+	//{
+	//	return E_FAIL;
+	//}
 }
 HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 {

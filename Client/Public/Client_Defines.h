@@ -96,6 +96,7 @@ namespace Client
 		Prototype_GameObject_PlayerBombardaBullet,
 		Prototype_GameObject_Water,
 		Prototype_GameObject_MonSpawner,
+		Prototype_GameObject_Troll,
 		Prototype_GameObject_WorldNpc,
 		Prototype_GameObject_Griff,
 		Prototype_GameObject_GriffChild,

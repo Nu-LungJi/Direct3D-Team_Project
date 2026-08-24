@@ -457,6 +457,12 @@
     <Filter Include="GameObject\AI\Decorator\NPC">
       <UniqueIdentifier>{7b304845-9a6a-49c7-a431-ff56919fa54f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Monster\Troll">
+      <UniqueIdentifier>{c4e0f584-a177-4558-bf8c-7ace3920df78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\Troll\FSM">
+      <UniqueIdentifier>{49dab577-3bd2-431e-88ff-db93170b3214}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -1098,6 +1104,18 @@
     <ClInclude Include="..\public\BTChangeState.h">
       <Filter>GameObject\AI\Action\NPC</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\Troll.h">
+      <Filter>GameObject\Monster\Troll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Troll_Spawn.h">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Troll_Hit.h">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Troll_Combat.h">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1678,6 +1696,18 @@
     </ClCompile>
     <ClCompile Include="..\private\BTChangeState.cpp">
       <Filter>GameObject\AI\Action\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Troll.cpp">
+      <Filter>GameObject\Monster\Troll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Troll_Spawn.cpp">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Troll_Hit.cpp">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Troll_Combat.cpp">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

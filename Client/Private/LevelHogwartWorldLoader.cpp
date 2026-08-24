@@ -36,6 +36,7 @@
 #include "WorldNpc.h"
 #include "Griff.h"
 #include "GriffChild.h"
+#include "Troll.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
@@ -364,6 +365,19 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 				return E_FAIL;
 			}
 		}
+
+		//if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Troll",
+		//	CResModel::Create("./Resources/SampleClient/Models/Skeleton/Troll/SK_Troll.bin"))) {
+		//
+		//	E::CResModel::DESC pDesc{};
+		//	pDesc.PreTransformMatrix = XMMatrixScaling(6.f, 6.f, 6.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+		//
+		//	if (FAILED(res->Load(pDesc)))
+		//	{
+		//		MSG_BOX("TERRAIN Failed Model_Resource_Troll");
+		//		return E_FAIL;
+		//	}
+		//}
 		if (auto res = CGameInstance::Get().AddResource("SPAWNER", "SPIDERSPAWN", CResJson::Create("./Resources/json/Spawn/SPIDERSPAWN.json")))
 		{
 			if (FAILED(res->Load()))
@@ -390,6 +404,12 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spawner");
 			return E_FAIL;
 		}
+		//if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, CTroll::Create())))
+		//{
+		//	MSG_BOX("TERRAIN Failed Prototype_GameObject_Troll");
+		//	return E_FAIL;
+		//}
+
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
 
 	}
