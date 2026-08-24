@@ -42,6 +42,7 @@ nlohmann::json CBTNaviMove::Save_Node()
 	SaveJsonEnum(j, "MOVE", m_eMove);
 	SaveJsonValue(j, "Loop", m_bLoop);
 
+	SaveJsonValue(j, "BBValue", m_bBBValue);
 	return j;
 }
 
@@ -50,6 +51,8 @@ HRESULT CBTNaviMove::Load_json(const nlohmann::json& j)
 	__super::Load_json(j);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	LoadJsonValue(j, "Loop", m_bLoop);
+
+	LoadJsonValue(j, "BBValue", m_bBBValue);
 	return S_OK;
 }
 
@@ -208,6 +211,9 @@ void CBTNaviMove::Update_Gui()
 
 	if (ImGui::Button(m_bLoop == true ? "Loop : TRUE" : "Loop : FALSE"))
 		m_bLoop = !m_bLoop;
+
+	if (ImGui::Button(m_bBBValue == true ? "BBValue : TRUE" : "BBValue : FALSE"))
+		m_bBBValue = !m_bBBValue;
 }
 
 void CBTNaviMove::Abort()

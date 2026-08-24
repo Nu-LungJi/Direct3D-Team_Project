@@ -270,17 +270,20 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 	_vector vAwaySum = XMVectorZero();
 	
 	_float fFarCheck = XMVectorGetX(XMVector3Length(vTargetPos - vSrcPos));
-
-	_vector vFollowDir = XMVectorZero();
 	
-
+	if (fFarCheck <= 5.f)
+	{
+		m_pMoveIntent->SetMoveIntent({}, 0.f);
+		return;
+	}
+	_vector vFollowDir = XMVectorZero();
 	//리더와 일정거리 떨어진 경우에만 따라오게
-	_float fPower = (fFarCheck - 5.f) / 20.f;
+	_float fPower = (fFarCheck - 5.f) / 25.f;
 	
 	fPower = std::clamp(fPower, 0.f, 1.f);
 
 	vFollowDir = vSrcToTargetDir * fPower;
-	_float fSpeed = std::lerp(30.f, 38.f, fPower);
+	_float fSpeed = std::lerp(30.f, 33.f, fPower);
 	
 
 	int32_t iCnt{}, iAligCnt{}, iCohesionCnt{};
@@ -352,7 +355,7 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 	}
 
 
-	vMoveDir = vTargetLook * 1.f + vFollowDir * 3.f 
+	vMoveDir = vTargetLook * 1.f + vFollowDir * 1.5f 
 		+ vAwaySum * 2.f + vDirAverage * 0.6f + vCohesionDir * 0.3f;
 
 	_vector vTargetDir = XMVector3Normalize(vMoveDir);

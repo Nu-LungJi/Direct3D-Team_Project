@@ -761,6 +761,103 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			}
 			pNpcPlacement->AddMinorNameToNpcPlacement("NPC_CROUCH_LOOK_INTEREST");
 		}
+
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "NPC_DANCE1", CResJson::Create("./Resources/json/BeHavior/Npc_Dance1.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED NPC_DANCE1 JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("NPC_DANCE1");
+		}
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "NPC_DANCE2", CResJson::Create("./Resources/json/BeHavior/Npc_Dance2.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED NPC_DANCE2 JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("NPC_DANCE2");
+		}
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "NPC_SIT", CResJson::Create("./Resources/json/BeHavior/Npc_Sit.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED NPC_SIT JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("NPC_SIT");
+		}
+
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "NPC_WALLLEAN", CResJson::Create("./Resources/json/BeHavior/Npc_WallLean.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED NPC_WALLLEAN JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("NPC_WALLLEAN");
+		}
+
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "NPC_BEHINDFOOT", CResJson::Create("./Resources/json/BeHavior/Npc_CheckBehindFoot.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED NPC_BEHINDFOOT JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("NPC_BEHINDFOOT");
+		}
+
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "CAT_FORAGING", CResJson::Create("./Resources/json/BeHavior/Cat_Foraging.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED CAT_FORAGING JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("CAT_FORAGING");
+		}
+
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "CAT_GROOMING", CResJson::Create("./Resources/json/BeHavior/Cat_Grooming.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED CAT_GROOMING JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("CAT_GROOMING");
+		}
+		
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "CAT_INVESTIGATE", CResJson::Create("./Resources/json/BeHavior/Cat_Investigate.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED CAT_INVESTIGATE JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("CAT_INVESTIGATE");
+		}
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "CAT_SITTING", CResJson::Create("./Resources/json/BeHavior/Cat_Sitting.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED CAT_SITTING JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("CAT_SITTING");
+		}
+	
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "CAT_SLEEPING", CResJson::Create("./Resources/json/BeHavior/Cat_Sleeping.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED CAT_SLEEPING JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("CAT_SLEEPING");
+		}
 	}
 	////서브트리
 	{

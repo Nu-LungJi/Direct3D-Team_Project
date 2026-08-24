@@ -414,6 +414,7 @@ void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t 
 			const _float3 vScale = Desc.vScale;
 			const _float3 vPatrolStart = Desc.vPatrolStartPosition;
 			const _float3 vPatrolEnd = Desc.vPatrolEndPosition;
+			_float fSpeed = Desc.fSpeed;
 			Desc = Iter->second;
 			Desc.iPlacementId = iPlacementId;
 			Desc.vPosition = vPosition;
@@ -421,6 +422,7 @@ void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t 
 			Desc.vScale = vScale;
 			Desc.vPatrolStartPosition = vPatrolStart;
 			Desc.vPatrolEndPosition = vPatrolEnd;
+			Desc.fSpeed = fSpeed;
 		}
 	}
 

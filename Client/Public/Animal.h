@@ -40,7 +40,7 @@ public:
 		_float fCCTRadius{ 0.45f };
 		_float fCCTStepOffset{ 0.4f };
 		_float3 vCCTCenterOffset{ 0.f, 1.5f, 0.f };
-
+		_float fOffset{};
 		_string resBeHaviorMajor{}, resBeHaviorMinor{};
 		_float3 vStartPos{}, vEndPos{};
 		CHandle						TargetHandle{};

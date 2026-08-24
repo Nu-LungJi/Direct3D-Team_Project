@@ -56,7 +56,7 @@ protected:
 	void				Play_Sound(_float fTimeDelta);
 protected:
 	_bool						m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bEarly{ false }, m_bGravity{ false }, m_bShow{ false };
-
+	_bool						m_bResetAnimTime{ false };
 	ATTMON						m_eSkillType{ ATTMON::END };
 	_float2						m_fSkillRatio{}, m_fRatio{}, m_vRotRatio{};
 	_float					    m_fBlend{ 0.1f }, m_fEarlyRatio{ 1.f }, m_fGravity{ -9.8f };

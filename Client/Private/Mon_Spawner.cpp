@@ -18,7 +18,7 @@ void CMon_Spawner::UpdateGUI()
 {
 	ImGui::Text(m_bPick == true ? "Pick : TRUE" : "Pick FALSE");
 	
-	if (ImGui::Button("Save"))
+	if (ImGui::Button("Save SmallSpider"))
 	{
 		nlohmann::json j;
 		JsonSaveLoadManager::SaveJsonTypeFloat3list(j, "SPIDERSPAWN", m_SpawnPos);
@@ -26,8 +26,23 @@ void CMon_Spawner::UpdateGUI()
 		path << j.dump(4);
 		path.close();
 	}
+	if (ImGui::Button("Save EventSpider"))
+	{
+		nlohmann::json j;
+		JsonSaveLoadManager::SaveJsonTypeFloat3list(j, "EVENTSPIDER", m_SpawnPos);
+		std::ofstream path("./Resources/json/Spawn/EVENTSPIDER.json");
+		path << j.dump(4);
+		path.close();
+	}
+	if (ImGui::Button("Reset"))
+		m_SpawnPos.clear();
+	Debug_Point();
 
-	
+	if (ImGui::Button("Undo"))
+	{
+		if (!m_SpawnPos.empty())
+			m_SpawnPos.pop_back();
+	}
 }
 
 HRESULT CMon_Spawner::InitializePrototype(void* pArg)
@@ -45,6 +60,7 @@ HRESULT CMon_Spawner::Initialize(void* pArg)
 	m_LeveTag = Desc->LevelTag;
 	if (Desc->LevelTag != "TERRAIN")
 	{
+		m_SpawnPos.clear();
 		CSpider::SPIDER_DESC Spider{};
 		Spider.sObjectTag = "Spider";
 		m_Handle = Spider.TargetHandle = Desc->handle;
@@ -54,36 +70,25 @@ HRESULT CMon_Spawner::Initialize(void* pArg)
 		Spider.resBeHaviorMinor = "SPIDER";
 		Spider.MonType = MONSTER_TYPE::NORMAL;
 
-
-		XMStoreFloat3(&Spider.vPos, XMVectorSet(390.f, 52.f, 283.657f, 1.f));
-		m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
-
-		XMStoreFloat3(&Spider.vPos, XMVectorSet(361.174f, 56.162f, 268.648f, 1.f));
-		m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
-
-		XMStoreFloat3(&Spider.vPos, XMVectorSet(318.072, 60.217f, 239.747f, 1.f));
-		m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
-
-		XMStoreFloat3(&Spider.vPos, XMVectorSet(254.278f, 51.272f, 215.513f, 1.f));
-		m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
-
-		XMStoreFloat3(&Spider.vPos, XMVectorSet(218.640f, 51.217f, 174.264f, 1.f));
-		m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
-
-		XMStoreFloat3(&Spider.vPos, XMVectorSet(226.097f, 48.242f, 122.760f, 1.f));
-		m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
-
-		XMStoreFloat3(&Spider.vPos, XMVectorSet(265.425f, 47.085f, 104.495f, 1.f));
-		m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
-
-		XMStoreFloat3(&Spider.vPos, XMVectorSet(338.362f, 49.f, 91.720f, 1.f));
-		m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
-
+		auto pRes = CGameInstance::Get().GetResourceFirst<CResJson>("SPAWNER", "EVENTSPIDER");
+		if (nullptr == pRes)
+		{
+			MSG_BOX("Load Failed Json To EVENTSPIDER SPAWN");
+			return E_FAIL;
+		}
+		auto json = pRes->Get_Json();
+		JsonSaveLoadManager::LoadJsonTypeFloat3list(json, "EVENTSPIDER", m_SpawnPos);
+		for (auto& iter : m_SpawnPos)
+		{
+			Spider.vPos = iter;
+			m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
+		}
+		
 	}
 	
 	if (Desc->LevelTag != "TERRAIN")
 	{
-
+		m_SpawnPos.clear();
 		auto pRes = CGameInstance::Get().GetResourceFirst<CResJson>("SPAWNER", "SPIDERSPAWN");
 		if (nullptr == pRes)
 		{
@@ -150,6 +155,23 @@ void CMon_Spawner::Update(E::_float fTimeDelta)
 
 void CMon_Spawner::LateUpdate(E::_float fTimeDelta)
 {
+}
+
+void CMon_Spawner::Debug_Point()
+{
+	int32_t i = 0;
+	for (auto& iter : m_SpawnPos)
+	{
+		auto pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
+
+		const auto vPreviousColor = pDbgLineRender->GetColor();
+		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
+		pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
+		pDbgLineRender->SetDepthTest(true);
+		pDbgLineRender->AddSphere(1.2f, XMMatrixTranslation(iter.x, iter.y, iter.z));
+		pDbgLineRender->SetColor(vPreviousColor);
+		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
+	}
 }
 
 void CMon_Spawner::Picking()

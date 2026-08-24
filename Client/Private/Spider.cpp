@@ -62,7 +62,7 @@ HRESULT CSpider::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	m_iHp = m_iMaxHp = 35;
-
+	m_fDissolve = 0.f;
 	{
 		CComPxRigidBody::DESC Desc{};
 		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
