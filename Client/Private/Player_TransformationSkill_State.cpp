@@ -197,7 +197,7 @@ void CPlayer_TransformationSkill_State::TransformTargetToBarrel()
 	// 배럴 모델의 길이축(Z)을 월드 업축(Y)에 맞춰 세운다.
 	desc.vInitialRotation.x -= 90.f;
 	// 변신 직후 Y축으로 빠르게 돌고 자연스럽게 감속한다.
-	desc.vInitialImpulse = { 0.f, 0.5f, 0.f };
+	desc.vInitialImpulse = { 0.f, 1.5f, 0.f };
 	desc.vInitialAngularVelocityRadians = { 0.f, 40.f, 0.f };
 	desc.fAngularDamping = 2.f;
 
