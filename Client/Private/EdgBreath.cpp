@@ -243,7 +243,8 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	if (m_fBreathParticleTick >= fBreathSpawnInterval)
 	{
 		m_fBreathParticleTick -= fBreathSpawnInterval;
-		CGameInstance::Get().Spawn("DragonBreath.json", breathWorldData);
+		CGameInstance::Get().Spawn("FinalBreath.json", breathWorldData);
+		//CGameInstance::Get().Spawn("DragonBreath.json", breathWorldData);
 	}
 
 	m_fBreathDis = m_fMaxBreath * tBreath;

@@ -3670,10 +3670,12 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 
 			for (PARTICLE_SPAWN_DATA& spawnData : spawnList)
 			{
-				const _bool bOrbit = (spawnData.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0;
+				const _bool bOrbitalMotion =
+					(spawnData.iBehaviorType &
+						(CParticle::BEHAVIOR_ORBIT | CParticle::BEHAVIOR_SPIRAL)) != 0;
 				XMStoreFloat3(&spawnData.position, XMVector3TransformCoord(XMLoadFloat3(&spawnData.position), matWorld));
 				XMStoreFloat3(&spawnData.velocity, XMVector3TransformNormal(XMLoadFloat3(&spawnData.velocity), matWorld));
-				if (bOrbit)
+				if (bOrbitalMotion)
 				{
 					XMStoreFloat3(&spawnData.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&spawnData.originalPosition), matWorld));
 					_vector vOrbitAxis = XMVector3TransformNormal(XMLoadFloat3(&spawnData.rotationAxis), matWorld);
@@ -3682,7 +3684,7 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 				}
 				if (cmd.bInheritWorldRotation)
 					spawnData.rotation = ComposeParticleRotation(spawnData.rotation, cmd.inheritedWorldRotation);
-				if (!bOrbit)
+				if (!bOrbitalMotion)
 					spawnData.originalPosition = spawnData.position;
 				spawnData.originalVelocity = spawnData.velocity;
 			}

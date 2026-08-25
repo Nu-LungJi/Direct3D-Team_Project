@@ -104,6 +104,7 @@ namespace Engine
 	constexpr uint32_t BEHAVIOR_FADEOUT = 1 << 13;
 	constexpr uint32_t BEHAVIOR_FADEOUT_LATE = 1 << 14;
 	constexpr uint32_t BEHAVIOR_ORBIT = 1 << 15;
+	constexpr uint32_t BEHAVIOR_SPIRAL = 1 << 16;
 	// ============================================================
 	// X-매크로: 필드 목록을 한 곳에서만 정의
 	// X(타입, 이름, 기본값)
@@ -227,14 +228,37 @@ namespace Engine
 
 #define SPIRAL_FIELDS(X) \
     X(_float3, vCenter, _float3(0,0,0)) \
-    X(_float, fRadius, 3.f) \
+    X(_bool, bRandomTrajectory, false) \
+    X(_float, fStartAngleDegree, 0.f) \
+    X(_float, fRadius, 0.5f) \
+    X(_float, fRadiusGrowthPerStep, 0.03f) \
+    X(_float, fRadiusJitter, 0.1f) \
     X(uint32_t, iCount, 20) \
-    X(_float, fHeightPerStep, 0.2f) \
-    X(_float, fAngleStepDeg, 15.f) \
+    X(uint32_t, iStrandCount, 2) \
+    X(_float, fForwardOffsetPerStep, 0.12f) \
+    X(_float, fAngleStepDeg, 45.f) \
+    X(_float, fAngleJitterDegree, 8.f) \
+    X(_float, fForwardSpeedMin, 70.f) \
+    X(_float, fForwardSpeedMax, 110.f) \
+    X(_float, fTangentialSpeed, 2.f) \
+    X(_float, fLifeMin, 0.6f) \
+    X(_float, fLifeMax, 1.f) \
+    X(_float, fSpawnDelay, 0.f) \
+    X(_float, fSpawnInterval, 0.004f) \
+    X(_bool, bRandomSize, false) \
     X(_float3, fSize, _float3(1,1,1)) \
-    X(_float, fLife, 1.f) \
+    X(_float3, fSizeMin, _float3(0.7f,0.7f,0.7f)) \
+    X(_float3, fSizeMax, _float3(1.3f,1.3f,1.3f)) \
+    X(_float3, fEndSize, _float3(1,1,1)) \
+    X(_bool, bRandomRot, false) \
+    X(_float3, vMinRot, _float3(0,0,0)) \
+    X(_float3, vMaxRot, _float3(0,0,0)) \
+    X(_float3, vRotation, _float3(0,0,0)) \
     X(_float4, color, _float4(1,1,1,1)) \
-    X(_float4, emissive, _float4(0,0,0,0))\
+    X(_float4, emissive, _float4(0,0,0,0)) \
+    X(_float, startIntensity, 0.f) \
+    X(_float4, endEmissive, _float4(0,0,0,0)) \
+    X(_float, endIntensity, 0.f) \
    COMMON_PATTERN_FIELDS(X)
 
 
