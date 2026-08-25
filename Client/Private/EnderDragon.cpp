@@ -1169,7 +1169,7 @@ _bool CEnderDragon::BreakSkillType(PLAYER_SKILL_TYPE eType)
 	case PLAYER_SKILL_TYPE::DESCENDO:
 		break;
 
-	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
 		return true;
 		break;
 	case PLAYER_SKILL_TYPE::DESTORY:

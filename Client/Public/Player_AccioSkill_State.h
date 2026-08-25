@@ -54,7 +54,7 @@ private:
 	static constexpr _float MONSTER_PULL_TIME = 0.f;
 	static constexpr _float ATTACK_END_RATIO = 0.7f;
 	static constexpr _float RECOVERY_EXIT_RATIO = 0.3f;
-	_float	m_fAnimRatio = 0.f;
+	_float	m_fAnimationRatio = 0.f;
 	_bool	m_bPulling = true;
 	uint32_t m_iAccioEffectID = INVALID_EFFECT_INSTANCE_ID;
 

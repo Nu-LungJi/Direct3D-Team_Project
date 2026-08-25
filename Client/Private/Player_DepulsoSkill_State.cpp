@@ -63,7 +63,7 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 	// explicitly by ApplyDirectionalMovement below.
 	SetSkillControl(*pPlayer, true, false, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
-	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::DEPULSO);
+	pPlayer->SetCurrentSkill(PLAYER_SKILL_TYPE::DEPULSO);
 	//if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
 	//{
 	//	pMonster->Check_Table(PLAYER_SKILL_TYPE::DEPULSO);
@@ -71,8 +71,8 @@ void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 	//}
 
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
-	m_fPreviousAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
+	m_fPreviousAnimationRatio = 0.f;
 
 
 
@@ -111,19 +111,19 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 		return;
 	}
 
-	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
+	m_fAnimationRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
 	pPlayer->SetCurrentMoveSpeed(0.f);
 
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
-		if (m_fAnimRatio >= CAST_START_RATIO)
+		if (m_fAnimationRatio >= CAST_START_RATIO)
 		{
 			m_ePhase = PHASE::ATTACK;
-			m_fPreviousAnimRatio = 0.f;
+			m_fPreviousAnimationRatio = 0.f;
 			if (!PlayRandomTargetAttack(*pPlayer))
 				RequestLocomotion(pStateMachine);
-			m_fAnimRatio = 0.f;
+			m_fAnimationRatio = 0.f;
 	
 		}
 		break;
@@ -132,8 +132,8 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 	{
 		const _float fMoveTime =
 			PlayerAnimationRatioGuard::CalculateActiveDeltaTime(
-				m_fPreviousAnimRatio,
-				m_fAnimRatio,
+				m_fPreviousAnimationRatio,
+				m_fAnimationRatio,
 				ATTACK_MOVE_START_RATIO,
 				ATTACK_MOVE_END_RATIO,
 				fTimeDelta);
@@ -165,7 +165,7 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 			}
 		}
 
-		if (m_fAnimRatio >= CAST_END_RATIO) {
+		if (m_fAnimationRatio >= CAST_END_RATIO) {
 	/*		if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DEPULSO))
 			{
 				m_ePhase = PHASE::ATTACK_FAILED;
@@ -218,7 +218,7 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 		break;
 
 	case PHASE::PUSH:
-		if (m_fAnimRatio >= ATTACK_END_RATIO && m_fAnimRatio != 1.f) {
+		if (m_fAnimationRatio >= ATTACK_END_RATIO && m_fAnimationRatio != 1.f) {
 			m_ePhase = PHASE::RECOVERY;
 			RequestLocomotion(pStateMachine);
 		}
@@ -226,12 +226,12 @@ void CPlayer_DepulsoSkill_State::Update(CStateMachine* pStateMachine, _float fTi
 		break;
 
 	case PHASE::RECOVERY:
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO)
+		if (m_fAnimationRatio >= RECOVERY_EXIT_RATIO)
 			RequestLocomotion(pStateMachine);
 		break;
 	}
 
-	m_fPreviousAnimRatio = m_fAnimRatio;
+	m_fPreviousAnimationRatio = m_fAnimationRatio;
 }
 
 void CPlayer_DepulsoSkill_State::Exit(CStateMachine* pStateMachine)
@@ -240,8 +240,8 @@ void CPlayer_DepulsoSkill_State::Exit(CStateMachine* pStateMachine)
 		ResetSkillControl(*pPlayer);
 
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
-	m_fPreviousAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
+	m_fPreviousAnimationRatio = 0.f;
 }
 
 SPtr<CPlayer_DepulsoSkill_State> CPlayer_DepulsoSkill_State::Create()

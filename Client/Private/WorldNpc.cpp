@@ -300,7 +300,7 @@ void CWorldNpc::LateUpdate(E::_float fTimeDelta)
 
 _bool CWorldNpc::Check_Table(PLAYER_SKILL_TYPE eType)
 {
-	if (eType == PLAYER_SKILL_TYPE::ACIENT_LIGHTNING || eType == PLAYER_SKILL_TYPE::ABRA)
+	if (eType == PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING || eType == PLAYER_SKILL_TYPE::ABRA)
 		m_iHp = 0;
 
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)

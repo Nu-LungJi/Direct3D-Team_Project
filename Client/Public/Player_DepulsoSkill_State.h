@@ -52,8 +52,8 @@ private:
 	static constexpr _float ATTACK_MOVE_END_RATIO = 0.15f;
 	static constexpr _float ATTACK_MOVE_SPEED = 2.f;
 	// Depulso 이동 조절값. Root Motion 대신 이 구간 동안 전방으로 이동한다.
-	_float	m_fAnimRatio = 0.f;
-	_float	m_fPreviousAnimRatio = 0.f;
+	_float	m_fAnimationRatio = 0.f;
+	_float	m_fPreviousAnimationRatio = 0.f;
 
 };
 

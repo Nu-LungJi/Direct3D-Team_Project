@@ -37,7 +37,7 @@ private:
 	int32_t	m_iRepairoLoopAnimation = -1;
 	int32_t	m_iRepairoEndAnimation = -1;
 	PHASE	m_ePhase = PHASE::CAST;
-	_float	m_fAnimRatio = 0.f;
+	_float	m_fAnimationRatio = 0.f;
 
 
 	static constexpr _float PHASE_EXIT_RATIO = 0.98f;

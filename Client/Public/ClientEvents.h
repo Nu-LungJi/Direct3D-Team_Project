@@ -23,7 +23,7 @@ struct FPlayerDied
 	_float fLevelBgmFadeDuration{ 1.f };
 };
 
-struct FAcientMagicStart {};
+struct FAncientMagicStart {};
 
 struct FQuestUIGroupChanged
 {

@@ -46,7 +46,7 @@ void CPlayer_BombardaSkill_State::Enter(CStateMachine* pStateMachine)
 
 	pPlayer->SetRootMotionTranslationActive(false);
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 	m_bCastingEffectCueReached = false;
 	m_bReleaseEffectCueReached = false;
 }
@@ -63,19 +63,19 @@ void CPlayer_BombardaSkill_State::Update(
 	}
 
 	auto* pAnimator = pPlayer->GetAnimator();
-	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(
+	m_fAnimationRatio = PlayerAnimationRatioGuard::Sanitize(
 		pAnimator->GetPlayAnimRatio());
 	pPlayer->SetCurrentMoveSpeed(0.f);
 
 	if (!m_bCastingEffectCueReached &&
-		m_fAnimRatio >= CASTING_EFFECT_RATIO)
+		m_fAnimationRatio >= CASTING_EFFECT_RATIO)
 	{
 		m_bCastingEffectCueReached = true;
 		StartCastEffect(*pPlayer);
 	}
 
 	if (!m_bReleaseEffectCueReached &&
-		m_fAnimRatio >= RELEASE_EFFECT_RATIO)
+		m_fAnimationRatio >= RELEASE_EFFECT_RATIO)
 	{
 		m_bReleaseEffectCueReached = true;
 		m_ePhase = PHASE::RELEASE;
@@ -101,7 +101,7 @@ void CPlayer_BombardaSkill_State::Update(
 		break;
 
 	case PHASE::RELEASE:
-		if (m_fAnimRatio >= RELEASE_TO_RECOVERY_RATIO)
+		if (m_fAnimationRatio >= RELEASE_TO_RECOVERY_RATIO)
 		{
 			auto* pWeapon = CGameInstance::Get().
 				GetGameObjectByHandleT<CPlayer_Weapon>(
@@ -125,7 +125,7 @@ void CPlayer_BombardaSkill_State::Update(
 		break;
 
 	case PHASE::RECOVERY:
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO || pAnimator->GetFinish())
+		if (m_fAnimationRatio >= RECOVERY_EXIT_RATIO || pAnimator->GetFinish())
 			RequestLocomotion(pStateMachine);
 		break;
 	}
@@ -146,7 +146,7 @@ void CPlayer_BombardaSkill_State::Exit(CStateMachine* pStateMachine)
 		ResetSkillControl(*pPlayer);
 
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 	m_bCastingEffectCueReached = false;
 	m_bReleaseEffectCueReached = false;
 }

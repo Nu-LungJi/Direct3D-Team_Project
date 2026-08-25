@@ -50,12 +50,12 @@ void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
 	CacheAnimationIndices(*pPlayer);
 	SetSkillControl(*pPlayer, true, true, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
-	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::ACCIO);
+	pPlayer->SetCurrentSkill(PLAYER_SKILL_TYPE::ACCIO);
 	//if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
 	//	pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
 	TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO); //창준 변경
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 	m_bPulling = true;
 }
 
@@ -91,12 +91,12 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 		return;
 	}
 
-	m_fAnimRatio =PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
+	m_fAnimationRatio =PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
 
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
-		if (m_fAnimRatio >= CAST_START_RATIO)
+		if (m_fAnimationRatio >= CAST_START_RATIO)
 		{
 			m_ePhase = PHASE::ATTACK;
 			if (!PlayRandomTargetAttack(*pPlayer))
@@ -131,7 +131,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 
 	case PHASE::ATTACK:
 	{
-		if (m_fAnimRatio >= CAST_END_RATIO) {
+		if (m_fAnimationRatio >= CAST_END_RATIO) {
 			//if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO))
 			//{
 			//	m_ePhase = PHASE::ATTACK_FAILED;
@@ -179,7 +179,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 		}
 
 		
-		if (m_fAnimRatio >= MONSTER_PULL_TIME && m_bPulling && Target->Monster_Type(MONSTER_TYPE::NORMAL))
+		if (m_fAnimationRatio >= MONSTER_PULL_TIME && m_bPulling && Target->Monster_Type(MONSTER_TYPE::NORMAL))
 		{
 			auto* pMoveIntent = Target->GetComponent<CComCharacterMoveIntent>("ComCharacterMoveIntent");
 
@@ -245,7 +245,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 			m_ePhase = PHASE::RECOVERY;
 		}
 
-		if (m_fAnimRatio >= ATTACK_END_RATIO)
+		if (m_fAnimationRatio >= ATTACK_END_RATIO)
 			RequestLocomotion(pStateMachine);
 		break;
 
@@ -253,7 +253,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 	}
 
 	case PHASE::RECOVERY:
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO) {
+		if (m_fAnimationRatio >= RECOVERY_EXIT_RATIO) {
 			CGameInstance::Get().StopEffect(m_iAccioEffectID);
 			RequestLocomotion(pStateMachine);
 		}
@@ -267,7 +267,7 @@ void CPlayer_AccioSkill_State::Exit(CStateMachine* pStateMachine)
 		ResetSkillControl(*pPlayer);
 	m_bPulling = false;
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 }
 
 SPtr<CPlayer_AccioSkill_State> CPlayer_AccioSkill_State::Create()

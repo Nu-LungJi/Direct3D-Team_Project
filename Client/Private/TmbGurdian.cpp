@@ -818,7 +818,7 @@ void CTmbGurdian::Damaged(PLAYER_SKILL_TYPE eType)
 {
 	__super::Damaged(eType);
 
-	if (eType == PLAYER_SKILL_TYPE::ACIENT_LIGHTNING)
+	if (eType == PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING)
 		m_iHp = 0.f;
 
 }

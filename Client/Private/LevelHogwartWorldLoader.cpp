@@ -401,20 +401,44 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 
 HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 {
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(
-		LEVEL::HOGWART_WORLD,
-		"Model_Resource_NPC_VictorRookwood",
-		CResModel::Create("./Resources/SampleClient/Models/Skeleton/NPC_VictorRookwood/SK_NPC_VictorRookwood.bin")))
+	struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
+	static constexpr NPC_MODEL_ENTRY NpcModels[] =
 	{
-		E::CResModel::DESC Desc{};
-		Desc.PreTransformMatrix =
-			XMMatrixScaling(3.f, 3.f, 3.f) *
-			XMMatrixRotationY(XMConvertToRadians(180.f)) *
-			XMMatrixTranslation(0.f, 0.f, 0.f);
-		if (FAILED(res->Load(Desc)))
+		{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },
+		{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },
+		{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
+		{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
+		{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
+		{ "Model_Resource_NPC_EffieBones", "EffieBones" },
+		{ "Model_Resource_NPC_EleazarFig", "EleazarFig" },
+		{ "Model_Resource_NPC_GladwinMoon", "GladwinMoon" },
+		{ "Model_Resource_NPC_HelenThistlewood", "HelenThistlewood" },
+		{ "Model_Resource_NPC_JasperTrout", "JasperTrout" },
+		{ "Model_Resource_NPC_LeonaPeck", "LeonaPeck" },
+		{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
+		{ "Model_Resource_NPC_NoreenBlainey", "NoreenBlainey" },
+		{ "Model_Resource_NPC_PadraicHaggarty", "PadraicHaggarty" },
+		{ "Model_Resource_NPC_PercivalPippin", "PercivalPippin" },
+		{ "Model_Resource_NPC_PhineasBlack", "PhineasBlack" },
+		{ "Model_Resource_NPC_SironaRyan", "SironaRyan" },
+		{ "Model_Resource_NPC_ThomasBrown", "ThomasBrown" },
+		{ "Model_Resource_NPC_TimothyTeasdale", "TimothyTeasdale" },
+	};
+	for (const auto& Entry : NpcModels)
+	{
+		const _string ModelPath = "./Resources/SampleClient/Models/Skeleton/NPC_" + _string(Entry.pCharacter) +
+			"/SK_NPC_" + Entry.pCharacter + ".bin";
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(
+			LEVEL::HOGWART_WORLD, Entry.pTag, CResModel::Create(ModelPath)))
 		{
-			MSG_BOX("HOGWART Failed Model_Resource_NPC_VictorRookwood");
-			return E_FAIL;
+			E::CResModel::DESC Desc{};
+			Desc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) *
+				XMMatrixRotationY(XMConvertToRadians(180.f));
+			if (FAILED(res->Load(Desc)))
+			{
+				MSG_BOX("HOGWART Failed NPC model resource");
+				return E_FAIL;
+			}
 		}
 	}
 

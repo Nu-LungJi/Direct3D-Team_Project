@@ -15,7 +15,7 @@ void CPlayer_ProtegoSkill_State::Enter(CStateMachine* pStateMachine)
 	if (!pPlayer)
 		return;
 
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 
 	auto* pAnimator = pPlayer->GetAnimator();
 	CacheAnimationIndices(*pPlayer);
@@ -83,7 +83,7 @@ void CPlayer_ProtegoSkill_State::Exit(CStateMachine* pStateMachine)
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (pPlayer)
 		ResetSkillControl(*pPlayer);
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 }
 
 SPtr<CPlayer_ProtegoSkill_State> CPlayer_ProtegoSkill_State::Create()

@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Player_AcientAttack_State.h"
+#include "Player_AncientAttack_State.h"
 
 #include "Player.h"
 #include "ComAnimator.h"
@@ -16,12 +16,12 @@ NS_USING(Client)
 
 namespace
 {
-	const StringID ACIENT_THROW_TIME_SCALE_TAG{ "AncientThrow_PreLaunch" };
-	const StringID ACIENT_THROW_WAND_TRAIL_TAG{
+	const StringID ANCIENT_THROW_TIME_SCALE_TAG{ "AncientThrow_PreLaunch" };
+	const StringID ANCIENT_THROW_WAND_TRAIL_TAG{
 		"AncientThrow_WandTrail_CPU" };
 }
 
-void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
+void CPlayer_AncientAttack_State::Enter(CStateMachine* pStateMachine)
 {
 	// 이전 시전이 비정상 종료된 경우 이 상태가 소유한 요청만 정리한다.
 	EndThrowSlowMotion(true);
@@ -39,8 +39,8 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 	{
 		auto* pTrail = dynamic_cast<CTrail_CPU*>(
 			CGameInstance::Get().GetParticle(
-				ACIENT_THROW_WAND_TRAIL_TAG,
-				ACIENT_THROW_WAND_TRAIL_TAG));
+				ANCIENT_THROW_WAND_TRAIL_TAG,
+				ANCIENT_THROW_WAND_TRAIL_TAG));
 		if (pTrail)
 		{
 			pTrail->Clear(pPlayer->GetHandle());
@@ -70,11 +70,10 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 	}
 
 	CacheAnimationIndices(*pPlayer);
-	const auto iSkillIndex = ETOUI(ACIENT_SKILL::ACIENT_LIGHTENING);
 	if ((bThrowBranch && m_iAncientThrowLeftAnimation < 0 &&
 		m_iAncientThrowRightAnimation < 0) ||
-		(!bThrowBranch && (m_AcientCast_Animations[iSkillIndex] < 0 ||
-		m_AcientEnd_Animations[iSkillIndex] < 0)))
+		(!bThrowBranch && (m_iLightningCastAnimation < 0 ||
+		m_iLightningEndAnimation < 0)))
 	{
 		RequestLocomotion(pStateMachine);
 		return;
@@ -89,12 +88,13 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 
 	SetSkillControl(*pPlayer, true, true, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
-	pPlayer->SetPlayerCurSKill(
-		bThrowBranch ? PLAYER_SKILL_TYPE::DEFAULT : PLAYER_SKILL_TYPE::ACIENT_LIGHTNING);
+	pPlayer->SetCurrentSkill(
+		bThrowBranch ? PLAYER_SKILL_TYPE::DEFAULT : PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING);
 
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
-	m_fAcientElapsed = 0.f;
+	m_fAnimationRatio = 0.f;
+	m_fAncientElapsed = 0.f;
+	m_fSpawnDelay = 0.f;
 	m_bThrowReleased = false;
 	m_fThrowSlowHoldUnscaledElapsed = 0.f;
 	m_fThrowPostLaunchUnscaledElapsed = 0.f;
@@ -110,9 +110,9 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 
 		// 끌어온 오브젝트는 항상 플레이어 오른쪽에서 대기하므로
 		// 오른손 투척 애니메이션을 우선 사용한다.
-		int32_t animation = m_iAncientThrowRightAnimation;
-		if (animation < 0)
-			animation = m_iAncientThrowLeftAnimation >= 0
+		int32_t iAnimation = m_iAncientThrowRightAnimation;
+		if (iAnimation < 0)
+			iAnimation = m_iAncientThrowLeftAnimation >= 0
 				? m_iAncientThrowLeftAnimation
 				: m_iAncientThrowRightAnimation;
 		m_vThrowPullStartCenter = pBarrel->GetVisualCenterPosition();
@@ -122,32 +122,23 @@ void CPlayer_AcientAttack_State::Enter(CStateMachine* pStateMachine)
 			RequestLocomotion(pStateMachine);
 			return;
 		}
-		pAnimator->Play_Anim(animation, false, 0.18f);
+		pAnimator->Play_Anim(iAnimation, false, 0.18f);
 		DEBUG_LOG("[AncientMagic] Throw target connected; animation started.\n");
 		return;
 	}
 
-	// 고대마법 발동 이벤트 발행
+	CGameInstance::Get().EventPublish<FAncientMagicStart>();
+}
 
-		CGameInstance::Get().EventPublish<FAcientMagicStart>();
-	}
-
-void CPlayer_AcientAttack_State::CacheAnimationIndices(const CPlayer& player)
+void CPlayer_AncientAttack_State::CacheAnimationIndices(const CPlayer& player)
 {
 	if (m_bAnimationIndicesCached)
 		return;
 
-	const auto iSkillIndex = ETOUI(ACIENT_SKILL::ACIENT_LIGHTENING);
-	m_AcientCast_Animations[iSkillIndex] = FindAnimationIndex(
+	m_iLightningCastAnimation = FindAnimationIndex(
 		player,
 		"AN_ProfessorSharp_MasterRig_DW_Cmbt_Atk_AOE_Lightning_Cast_Start_anm.bin");
-	//m_AcientEnd_Animations[iSkillIndex] = FindAnimationIndex(
-	//	player,
-	//	"AN_ProfessorSharp_MasterRig_DW_Cmbt_Atk_AOE_Lightning_Cast_End_anm.bin");
-	//m_AcientCast_Animations[iSkillIndex] = FindAnimationIndex(
-	//	player,
-	//	"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Slam_Dwn_anm.bin");
-	m_AcientEnd_Animations[iSkillIndex] = FindAnimationIndex(
+	m_iLightningEndAnimation = FindAnimationIndex(
 		player,
 		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Cast_Slam_Dwn_anm.bin");
 
@@ -158,14 +149,10 @@ void CPlayer_AcientAttack_State::CacheAnimationIndices(const CPlayer& player)
 		player,
 		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Parry_Counter_Atk_Fwd_ArmRht_Spin_Rht_Send_anm.bin");
 
-	m_bAnimationIndicesCached =
-		m_AcientCast_Animations[iSkillIndex] >= 0 &&
-		m_AcientEnd_Animations[iSkillIndex] >= 0 &&
-		(m_iAncientThrowLeftAnimation >= 0 ||
-		m_iAncientThrowRightAnimation >= 0);
+	m_bAnimationIndicesCached = true;
 }
 
-_bool CPlayer_AcientAttack_State::UpdateThrowPull(
+_bool CPlayer_AncientAttack_State::UpdateThrowPull(
 	CPlayer& player,
 	_float fPullRatio)
 {
@@ -198,9 +185,9 @@ _bool CPlayer_AcientAttack_State::UpdateThrowPull(
 		player.GetTransform().GetState(STATE::POSITION);
 	const _vector vHoldPosition =
 		vPlayerPosition +
-		vRight * ACIENT_THROW_HOLD_SIDE_OFFSET +
-		XMVectorSet(0.f, ACIENT_THROW_HOLD_HEIGHT, 0.f, 0.f) +
-		vLook * ACIENT_THROW_HOLD_FORWARD_OFFSET;
+		vRight * ANCIENT_THROW_HOLD_SIDE_OFFSET +
+		XMVectorSet(0.f, ANCIENT_THROW_HOLD_HEIGHT, 0.f, 0.f) +
+		vLook * ANCIENT_THROW_HOLD_FORWARD_OFFSET;
 
 	const _float fRawRatio = std::clamp(fPullRatio, 0.f, 1.f);
 	const _float fSmoothedRatio =
@@ -212,13 +199,13 @@ _bool CPlayer_AcientAttack_State::UpdateThrowPull(
 	vPullPosition = XMVectorSetY(
 		vPullPosition,
 		XMVectorGetY(vPullPosition) +
-		std::sin(XM_PI * fSmoothedRatio) * ACIENT_THROW_PULL_ARC_HEIGHT);
+		std::sin(XM_PI * fSmoothedRatio) * ANCIENT_THROW_PULL_ARC_HEIGHT);
 
 	const _vector vSpinAxis = XMVector3Normalize(
 		vRight * 0.75f + XMVectorSet(0.f, 1.f, 0.f, 0.f) * 0.25f);
 	const _vector qSpin = XMQuaternionRotationAxis(
 		vSpinAxis,
-		XM_2PI * ACIENT_THROW_PULL_SPIN_TURNS * fSmoothedRatio);
+		XM_2PI * ANCIENT_THROW_PULL_SPIN_TURNS * fSmoothedRatio);
 	_vector qRotation = XMQuaternionMultiply(
 		qSpin, XMLoadFloat4(&m_vThrowPullStartRotation));
 	if (fRawRatio >= 1.f && m_bThrowSlowMotionActive)
@@ -228,7 +215,7 @@ _bool CPlayer_AcientAttack_State::UpdateThrowPull(
 			XMVectorSet(0.f, 1.f, 0.f, 0.f) * 0.75f +
 			vLook * 0.25f);
 		const _float fHoldSpinAngle = XM_2PI *
-			ACIENT_THROW_HOLD_SPIN_TURNS_PER_SECOND *
+			ANCIENT_THROW_HOLD_SPIN_TURNS_PER_SECOND *
 			m_fThrowSlowHoldUnscaledElapsed;
 		const _vector qHoldSpin = XMQuaternionRotationAxis(
 			vHoldSpinAxis, fHoldSpinAngle);
@@ -243,7 +230,7 @@ _bool CPlayer_AcientAttack_State::UpdateThrowPull(
 	return pBarrel->SetAncientThrowVisualPose(pullPosition, pullRotation);
 }
 
-_bool CPlayer_AcientAttack_State::LaunchThrow(CPlayer& player)
+_bool CPlayer_AncientAttack_State::LaunchThrow(CPlayer& player)
 {
 	if (!m_hThrowBarrel || !m_hThrowDestination)
 		return false;
@@ -281,7 +268,7 @@ _bool CPlayer_AcientAttack_State::LaunchThrow(CPlayer& player)
 
 	const _vector vLaunchDirection = XMVector3Normalize(vDisplacement);
 	const _vector vLaunchVelocity =
-		vLaunchDirection * ACIENT_THROW_DIRECT_SPEED;
+		vLaunchDirection * ANCIENT_THROW_DIRECT_SPEED;
 	const _vector vHorizontalDisplacement = XMVectorSetY(vDisplacement, 0.f);
 	const _float fHorizontalDistance = XMVectorGetX(
 		XMVector3Length(vHorizontalDisplacement));
@@ -308,11 +295,11 @@ _bool CPlayer_AcientAttack_State::LaunchThrow(CPlayer& player)
 	XMStoreFloat3(&linearVelocity, vLaunchVelocity);
 	XMStoreFloat3(
 		&angularVelocity,
-		vSpinAxis * ACIENT_THROW_SPIN_SPEED);
+		vSpinAxis * ANCIENT_THROW_SPIN_SPEED);
 	return pBarrel->Launch(linearVelocity, angularVelocity);
 }
 
-void CPlayer_AcientAttack_State::EmitThrowWandTrail(CPlayer& player) const
+void CPlayer_AncientAttack_State::EmitThrowWandTrail(CPlayer& player) const
 {
 	auto* pWeapon = CGameInstance::Get().
 		GetGameObjectByHandleT<CPlayer_Weapon>(player.GetWeaponHandle());
@@ -345,69 +332,80 @@ void CPlayer_AcientAttack_State::EmitThrowWandTrail(CPlayer& player) const
 		&trailEnd,
 		vWandPosition - vRibbonAxis * THROW_WAND_TRAIL_HALF_WIDTH);
 	CGameInstance::Get().AddTrailPoint(
-		ACIENT_THROW_WAND_TRAIL_TAG,
-		ACIENT_THROW_WAND_TRAIL_TAG,
+		ANCIENT_THROW_WAND_TRAIL_TAG,
+		ANCIENT_THROW_WAND_TRAIL_TAG,
 		player.GetHandle(),
 		trailStart,
 		trailEnd);
 }
 
-void CPlayer_AcientAttack_State::BeginThrowSlowMotion()
+void CPlayer_AncientAttack_State::BeginThrowSlowMotion()
 {
 	if (m_bThrowSlowMotionActive)
 		return;
 
 	TIME_SCALE_REQUEST_DESC Desc{};
-	Desc.fTargetScale = ACIENT_THROW_SLOW_SCALE;
-	Desc.fBlendIn = ACIENT_THROW_SLOW_BLEND_IN;
-	Desc.fMaxUnscaledDuration = ACIENT_THROW_SLOW_MAX_UNSCALED_DURATION;
-	Desc.fSafetyBlendOut = ACIENT_THROW_SLOW_BLEND_OUT;
-	Desc.sTag = ACIENT_THROW_TIME_SCALE_TAG;
+	Desc.fTargetScale = ANCIENT_THROW_SLOW_SCALE;
+	Desc.fBlendIn = ANCIENT_THROW_SLOW_BLEND_IN;
+	Desc.fMaxUnscaledDuration = ANCIENT_THROW_SLOW_MAX_UNSCALED_DURATION;
+	Desc.fSafetyBlendOut = ANCIENT_THROW_SLOW_BLEND_OUT;
+	Desc.sTag = ANCIENT_THROW_TIME_SCALE_TAG;
 	m_bThrowSlowMotionActive = CGameInstance::Get().BeginTimeScale(Desc);
 	if (m_bThrowSlowMotionActive)
 	{
+		auto& GameInstance = CGameInstance::Get();
+		m_fPreviousThrowBlurIntensity = GameInstance.Get_RadialBlurIntensity();
+		GameInstance.Set_RadialBlurIntensity(ANCIENT_THROW_BLUR_INTENSITY);
+		m_bThrowBlurActive = true;
+
 		if (auto* pCamera = dynamic_cast<CPlayerThirdPersonCamera*>(
-			CGameInstance::Get().GetActiveCamera());
+			GameInstance.GetActiveCamera());
 			pCamera && pCamera->BeginFovOverride(
-				ACIENT_THROW_FOV_Y,
-				ACIENT_THROW_FOV_BLEND_IN_RESPONSE))
+				ANCIENT_THROW_FOV_Y,
+				ANCIENT_THROW_FOV_BLEND_IN_RESPONSE))
 		{
 			m_hThrowFovCamera = pCamera->GetHandle();
 		}
 	}
 }
 
-void CPlayer_AcientAttack_State::EndThrowSlowMotion(_bool bImmediate)
+void CPlayer_AncientAttack_State::EndThrowSlowMotion(_bool bImmediate)
 {
 	auto& GameInstance = CGameInstance::Get();
+	if (m_bThrowBlurActive)
+	{
+		GameInstance.Set_RadialBlurIntensity(m_fPreviousThrowBlurIntensity);
+		m_bThrowBlurActive = false;
+	}
+
 	if (m_hThrowFovCamera)
 	{
 		if (auto* pCamera = GameInstance.GetGameObjectByHandleT<
 			CPlayerThirdPersonCamera>(*m_hThrowFovCamera))
 		{
 			pCamera->EndFovOverride(
-				ACIENT_THROW_FOV_BLEND_OUT_RESPONSE);
+				ANCIENT_THROW_FOV_BLEND_OUT_RESPONSE);
 		}
 		m_hThrowFovCamera.reset();
 	}
 
 	if (!m_bThrowSlowMotionActive &&
-		!GameInstance.IsTimeScaleActive(ACIENT_THROW_TIME_SCALE_TAG))
+		!GameInstance.IsTimeScaleActive(ANCIENT_THROW_TIME_SCALE_TAG))
 	{
 		return;
 	}
 
 	if (bImmediate)
-		GameInstance.CancelTimeScale(ACIENT_THROW_TIME_SCALE_TAG);
+		GameInstance.CancelTimeScale(ANCIENT_THROW_TIME_SCALE_TAG);
 	else
 		GameInstance.EndTimeScale(
-			ACIENT_THROW_TIME_SCALE_TAG,
-			ACIENT_THROW_SLOW_BLEND_OUT);
+			ANCIENT_THROW_TIME_SCALE_TAG,
+			ANCIENT_THROW_SLOW_BLEND_OUT);
 
 	m_bThrowSlowMotionActive = false;
 }
 
-void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
+void CPlayer_AncientAttack_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 {
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer)
@@ -426,18 +424,18 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 			return;
 		}
 
-		const _float throwAnimRatio = PlayerAnimationRatioGuard::Sanitize(
+		const _float fThrowAnimationRatio = PlayerAnimationRatioGuard::Sanitize(
 			pAnimator->GetPlayAnimRatio());
 		EmitThrowWandTrail(*pPlayer);
-		const _float throwPullRatio = std::clamp(
-			throwAnimRatio / ACIENT_THROW_PULL_END_ANIM_RATIO,
+		const _float fThrowPullRatio = std::clamp(
+			fThrowAnimationRatio / ANCIENT_THROW_PULL_END_ANIM_RATIO,
 			0.f,
 			1.f);
 		const _bool bThrowPullReady =
-			throwAnimRatio >= ACIENT_THROW_PULL_END_ANIM_RATIO;
+			fThrowAnimationRatio >= ANCIENT_THROW_PULL_END_ANIM_RATIO;
 
 		if (!m_bThrowReleased &&
-			!UpdateThrowPull(*pPlayer, throwPullRatio))
+			!UpdateThrowPull(*pPlayer, fThrowPullRatio))
 		{
 			DEBUG_LOG("[AncientMagic] Failed to pull throw target.\n");
 			EndThrowSlowMotion();
@@ -451,14 +449,14 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 		{
 			BeginThrowSlowMotion();
 			pAnimator->GetCurAnimState().fSpeed =
-				ACIENT_THROW_WAIT_ANIM_SPEED;
+				ANCIENT_THROW_WAIT_ANIM_SPEED;
 			m_fThrowSlowHoldUnscaledElapsed +=
 				CGameInstance::Get().GetUnscaledDelta();
 		}
 
 		if (!m_bThrowReleased && bThrowPullReady &&
 			m_fThrowSlowHoldUnscaledElapsed >=
-			ACIENT_THROW_SLOW_HOLD_DURATION)
+			ANCIENT_THROW_SLOW_HOLD_DURATION)
 		{
 			pAnimator->GetCurAnimState().fSpeed = 1.f;
 			if (!LaunchThrow(*pPlayer))
@@ -469,6 +467,8 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 				return;
 			}
 			m_bThrowReleased = true;
+			CGameInstance::Get().Set_RadialBlurIntensity(
+				ANCIENT_THROW_RELEASE_BLUR_INTENSITY);
 			m_fThrowPostLaunchUnscaledElapsed = 0.f;
 		}
 
@@ -477,7 +477,7 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 			m_fThrowPostLaunchUnscaledElapsed +=
 				CGameInstance::Get().GetUnscaledDelta();
 			if (m_fThrowPostLaunchUnscaledElapsed >=
-				ACIENT_THROW_SLOW_POST_LAUNCH_DURATION)
+				ANCIENT_THROW_SLOW_POST_LAUNCH_DURATION)
 			{
 				EndThrowSlowMotion();
 			}
@@ -485,7 +485,8 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 
 		if (auto* pMoveIntent = pPlayer->GetMoveIntent())
 		{
-			if (throwAnimRatio < ACIENT_THROW_FACING_END_RATIO && m_hThrowDestination)
+			if (fThrowAnimationRatio < ANCIENT_THROW_FACING_END_RATIO &&
+				m_hThrowDestination)
 			{
 				if (auto* pDestination = CGameInstance::Get().GetGameObjectByHandle(
 					*m_hThrowDestination);
@@ -500,7 +501,7 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 						_float3 facingDirection{};
 						XMStoreFloat3(&facingDirection, XMVector3Normalize(direction));
 						pMoveIntent->SetFacingIntent(
-							facingDirection, ACIENT_THROW_TURN_SPEED);
+							facingDirection, ANCIENT_THROW_TURN_SPEED);
 					}
 				}
 			}
@@ -510,7 +511,11 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 			}
 		}
 
-		if (throwAnimRatio >= ACIENT_THROW_STATE_RELEASE_RATIO ||
+		const _bool bInputRecovery = m_bThrowReleased &&
+			fThrowAnimationRatio >= ANCIENT_THROW_INPUT_RELEASE_RATIO &&
+			pPlayer->HasRawMoveInput();
+		if (fThrowAnimationRatio >= ANCIENT_THROW_STATE_RELEASE_RATIO ||
+			bInputRecovery ||
 			pAnimator->GetFinish())
 		{
 			RequestLocomotion(pStateMachine);
@@ -525,14 +530,15 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 		return;
 	}
 
-	m_fAnimRatio =PlayerAnimationRatioGuard::Sanitize(	pAnimator->GetPlayAnimRatio());
+	m_fAnimationRatio = PlayerAnimationRatioGuard::Sanitize(
+		pAnimator->GetPlayAnimRatio());
 
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
 		m_ePhase = PHASE::ATTACK;
 		pAnimator->Play_Anim(
-			m_AcientCast_Animations[ETOUI(ACIENT_SKILL::ACIENT_LIGHTENING)],
+			m_iLightningCastAnimation,
 			false,
 			0.24f);
 
@@ -549,71 +555,79 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 		break;
 
 	case PHASE::ATTACK:
-		m_fAcientElapsed += std::max(0.f, fTimeDelta);
+		m_fAncientElapsed += std::max(0.f, fTimeDelta);
 
+		if (!m_bOnceLightning)
+		{
+			m_fSpawnDelay += fTimeDelta;
+			auto* pWeapon = CGameInstance::Get().
+				GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
+			if (!pWeapon)
+				return;
 
+			const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
+			const _float3 vTrailStart{
+				spawnWorld._41, spawnWorld._42 + 0.2f, spawnWorld._43 };
+			const _float3 vTrailEnd{
+				spawnWorld._41, spawnWorld._42 - 0.2f, spawnWorld._43 };
+			CGameInstance::Get().AddTrailPoint(
+				"Lightning_Trail", "Lightning_Trail",
+				pPlayer->GetHandle(), vTrailStart, vTrailEnd);
 
-		if (!m_bOnceLighting) {
+			if (m_fSpawnDelay > 0.03f)
 			{
-				m_fSpawnDelay += fTimeDelta;
-				auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
-
-				if (!pWeapon)
-					return;
-
-				const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
-				_float3 vstart, vend;
-				vstart = _float3(spawnWorld._41, spawnWorld._42 + 0.2f, spawnWorld._43);
-				vend = _float3(spawnWorld._41, spawnWorld._42 - 0.2f, spawnWorld._43);
-				CGameInstance::Get().AddTrailPoint("Lightning_Trail", "Lightning_Trail", pPlayer->GetHandle(), vstart, vend);
-
-
-				if (m_fSpawnDelay > 0.03f) {
-					CGameInstance::Get().PlayEffect("Lightning_Trail_Particle", pWeapon->GetSpawnWorldMatrix());
-					m_fSpawnDelay = 0.f;
-				}
+				CGameInstance::Get().PlayEffect(
+					"Lightning_Trail_Particle", pWeapon->GetSpawnWorldMatrix());
+				m_fSpawnDelay = 0.f;
 			}
 		}
-		if (m_fAcientElapsed >= ACIENT_LIGHTENING_ATTACK_DURATION)
+		if (m_fAncientElapsed >= ANCIENT_LIGHTNING_ATTACK_DURATION)
 		{
-			if (!m_bOnceLighting) {
+			if (!m_bOnceLightning)
+			{
 				auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
 
 				if (!pWeapon)
 					return;
 				CGameInstance::Get().PlayEffect("Lightning_Wand", pWeapon->GetSpawnWorldMatrix());
 
-				m_bOnceLighting = true;
+				m_bOnceLightning = true;
 			}
 			
 			pAnimator->GetCurAnimState().fSpeed = 0.2f;
-			if (m_fAcientElapsed >= ACIENT_LIGHTENING_ATTACK_STOP_DURATION) {
+			if (m_fAncientElapsed >= ANCIENT_LIGHTNING_ATTACK_STOP_DURATION)
+			{
 				m_ePhase = PHASE::RECOVERY;
 
-				auto* Target = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle());
+				auto* pTarget = CGameInstance::Get().
+					GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle());
 
-				if (!Target)
+				if (!pTarget)
 					return;
-				CGameInstance::Get().PlayEffect("Player_Lightning", *Target->GetTransform().GetWorldMatrix());
-				pAnimator->Play_Anim(m_AcientEnd_Animations[ETOUI(ACIENT_SKILL::ACIENT_LIGHTENING)], false, 0.25f);
+				CGameInstance::Get().PlayEffect(
+					"Player_Lightning",
+					*pTarget->GetTransform().GetWorldMatrix());
+				pAnimator->Play_Anim(
+					m_iLightningEndAnimation, false, 0.25f);
 				pAnimator->GetCurAnimState().fSpeed = 1.f;
-
 			}
-		
 		}
 		break;
 
 	case PHASE::RECOVERY:
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO) {
-			//내리고 있는ㅇㅋ
-	
+		if (m_fAnimationRatio >= RECOVERY_EXIT_RATIO ||
+			(m_fAnimationRatio >= RECOVERY_INPUT_EXIT_RATIO &&
+				pPlayer->HasRawMoveInput()))
+		{
 			RequestLocomotion(pStateMachine);
 		}
 		
-		if (m_fAnimRatio >= ACIENT_LIGHTENING_LAST_ATTACK && !m_bOnceLastLighting) {
+		if (m_fAnimationRatio >= ANCIENT_LIGHTNING_LAST_ATTACK &&
+			!m_bOnceLastLightning)
+		{
 			if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
-				pMonster->Check_Table(PLAYER_SKILL_TYPE::ACIENT_LIGHTNING);
-			m_bOnceLastLighting = true;
+				pMonster->Check_Table(PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING);
+			m_bOnceLastLightning = true;
 		
 			//CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
 			//	{
@@ -627,7 +641,7 @@ void CPlayer_AcientAttack_State::Update(CStateMachine* pStateMachine, _float fTi
 	}
 }
 
-void CPlayer_AcientAttack_State::Exit(CStateMachine* pStateMachine)
+void CPlayer_AncientAttack_State::Exit(CStateMachine* pStateMachine)
 {
 	EndThrowSlowMotion();
 
@@ -648,11 +662,11 @@ void CPlayer_AcientAttack_State::Exit(CStateMachine* pStateMachine)
 			pMoveIntent->ClearFacingIntent();
 		ResetSkillControl(*pPlayer);
 	}
-	m_bOnceLighting = false;
-	m_bOnceLastLighting = false;
+	m_bOnceLightning = false;
+	m_bOnceLastLightning = false;
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
-	m_fAcientElapsed = 0.f;
+	m_fAnimationRatio = 0.f;
+	m_fAncientElapsed = 0.f;
 	m_hThrowBarrel.reset();
 	m_hThrowDestination.reset();
 	m_bThrowReleased = false;
@@ -662,7 +676,7 @@ void CPlayer_AcientAttack_State::Exit(CStateMachine* pStateMachine)
 	m_fThrowPostLaunchUnscaledElapsed = 0.f;
 }
 
-SPtr<CPlayer_AcientAttack_State> CPlayer_AcientAttack_State::Create()
+SPtr<CPlayer_AncientAttack_State> CPlayer_AncientAttack_State::Create()
 {
-	return ToSPtr(new CPlayer_AcientAttack_State{});
+	return ToSPtr(new CPlayer_AncientAttack_State{});
 }

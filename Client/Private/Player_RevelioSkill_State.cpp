@@ -50,7 +50,7 @@ void CPlayer_RevelioSkill_State::Enter(CStateMachine* pStateMachine)
 	pAnimator->Play_Anim(m_iRevelioAnimation, false, 0.2f);
 
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 }
 
 void CPlayer_RevelioSkill_State::CacheAnimationIndices(const CPlayer& player)
@@ -81,13 +81,13 @@ void CPlayer_RevelioSkill_State::Update(CStateMachine* pStateMachine,_float)
 		return;
 	}
 
-	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
+	m_fAnimationRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
 	pPlayer->SetCurrentMoveSpeed(0.f);
 
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
-		if (m_fAnimRatio >= REVEAL_START_RATIO)
+		if (m_fAnimationRatio >= REVEAL_START_RATIO)
 		{
 			m_ePhase = PHASE::REVEAL;
 			// TODO: 탐색 범위 판정 및 오브젝트 강조 연출 호출
@@ -95,12 +95,12 @@ void CPlayer_RevelioSkill_State::Update(CStateMachine* pStateMachine,_float)
 		break;
 
 	case PHASE::REVEAL:
-		if (m_fAnimRatio >= RECOVERY_START_RATIO)
+		if (m_fAnimationRatio >= RECOVERY_START_RATIO)
 			m_ePhase = PHASE::RECOVERY;
 		break;
 
 	case PHASE::RECOVERY:
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO || pAnimator->GetFinish())
+		if (m_fAnimationRatio >= RECOVERY_EXIT_RATIO || pAnimator->GetFinish())
 			RequestLocomotion(pStateMachine);
 		break;
 	}
@@ -112,7 +112,7 @@ void CPlayer_RevelioSkill_State::Exit(CStateMachine* pStateMachine)
 		ResetSkillControl(*pPlayer);
 
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 }
 
 SPtr<CPlayer_RevelioSkill_State> CPlayer_RevelioSkill_State::Create()
