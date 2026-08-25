@@ -16,15 +16,18 @@
 #include "ComPxSphereCollider.h"
 #include "UIController.h"
 #include "UIManager.h"
+#include "TrollWeapon.h"
 //FSM
 #include "Mon_State.h"
 //BB
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
 //Skill
+#include "Mon_Godae.h"
 #include "Troll_Hit.h"
 #include "Troll_Combat.h"
 #include "Troll_Spawn.h"
+#include "Troll_Grogy.h"
 NS_USING(Client)
 
 CTroll::CTroll()
@@ -199,6 +202,22 @@ HRESULT CTroll::Initialize(void* pArg)
 		};
 	}
 
+	CTrollWeapon::TROLL_WEAPON_DESC WeaponDesc{};
+	WeaponDesc.sObjectTag = "Weapon";
+	WeaponDesc.ParentHandle = GetHandle();
+	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_RightHand");
+	WeaponDesc.WeaponName = MonDesc->WeaponResourceName;
+	WeaponDesc.LevelTag = MonDesc->LevelTag;
+	WeaponDesc.vScale = MonDesc->vWeaponScale;
+	WeaponDesc.vOwnerScale = MonDesc->vScale;
+	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(MonDesc->LevelTag, MonDesc->WeaponProtoName, "03_Weapon", &WeaponDesc);
+	if (!Weapon.has_value())
+	{
+		MSG_BOX("Create Failed Weapon To Troll");
+		return E_FAIL;
+	}
+	m_Partes[ETOUI(PARTES::WEAPON)] = Weapon.value();
+
 	if (FAILED(Ready_Fsm(MonDesc->LevelTag)))
 	{
 		MSG_BOX("Create Failed Fsm");
@@ -219,7 +238,7 @@ HRESULT CTroll::Initialize(void* pArg)
 
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
-
+	m_pModelAnimator->Play_Anim(0, false);
 	ReadySound();
 	m_pComSphereCol->SetQueryEnabled(true);
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_targetSocket");
@@ -237,9 +256,11 @@ HRESULT CTroll::Ready_Fsm(const _string& LevelTag)
 	
 	if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CTroll_Combat::Create())) return E_FAIL;
 	
-	if (false == m_pFsm->Add_State(MON_STATE::HIT, CTroll_Hit::Create())) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::HIT, CTroll_Hit::Create(this))) return E_FAIL;
 
-	//if (false == m_pFsm->Add_State(MON_STATE::HIT, CMon_Godae::Create())) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::GROGGY, CTrollGroggy::Create(this))) return E_FAIL;
+
+	if (false == m_pFsm->Add_State(MON_STATE::GODAE, CMon_Godae::Create("AN_SK_Troll_ArmoredTroll_CMB_Master_LOD0_Skeleton_Trl_Cmbt_Idle_01_anm.bin", this))) return E_FAIL;
 
 	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
 
@@ -251,16 +272,17 @@ HRESULT CTroll::Ready_Skill(const _string& LevelTag)
 	if (ETOUI(TROLL_SKILL::END) > ETOUI(ATTMON::END))
 		return E_FAIL;
 
-	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(TROLL_SKILL::BOOM);
+	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(TROLL_SKILL::DOLJIN);
 	//////////////////////파티클 넣는곳/////////////////////////
-	m_EffectNames[ETOUI(TROLL_SKILL::BOOM)] = "FireBall";
+	m_EffectNames[ETOUI(TROLL_SKILL::DOLJIN)] = "Doljin";
 	////////////////////////////////////////////////////////////
 
 	return S_OK;
 }
 void CTroll::Ready_BBKeyValue()
 {
-
+	auto* pBB = Get_BlackBoard();
+	pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
 }
 void CTroll::PriorityUpdate(E::_float fTimeDelta)
 {
@@ -269,11 +291,7 @@ void CTroll::PriorityUpdate(E::_float fTimeDelta)
 		SetPendingDestroy();
 		return;
 	}
-	if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_H))
-		m_bDebug = !m_bDebug;
-
-	if (!m_bDebug) return;
-
+	Flag_Check(fTimeDelta);
 	m_pFsm->PriorityUpdate(fTimeDelta);
 	Update_BBToFsm();
 	__super::PriorityUpdate(fTimeDelta);
@@ -283,7 +301,6 @@ void CTroll::PriorityUpdate(E::_float fTimeDelta)
 void CTroll::Update(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;
-	if (!m_bDebug) return;
 	__super::Update(fTimeDelta);
 }
 
@@ -296,12 +313,10 @@ void CTroll::Stuck()
 void CTroll::FixedUpdate(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;
-	if (!m_bDebug) return;
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 void CTroll::LateUpdate(E::_float fTimeDelta)
 {
-	if (!m_bDebug) return;
 	m_pFsm->LateUpdate(fTimeDelta);
 	__super::LateUpdate(fTimeDelta);
 
@@ -362,12 +377,21 @@ _bool CTroll::Check_Table(PLAYER_SKILL_TYPE eType)
 
 	if (true == BreakSkillType(eType) && false == m_bIsBreak)
 	{
-		m_pFsm->Request_State(MON_STATE::HIT);
-		m_bIsBreak = true;
+		if(eType == PLAYER_SKILL_TYPE::ACIENT_LIGHTNING ||
+		   eType == PLAYER_SKILL_TYPE::DESTORY ||
+		   eType == PLAYER_SKILL_TYPE::ABRA)
+		{
+
+			m_pFsm->Request_State(MON_STATE::GROGGY);
+		}
+		else
+		{
+			m_pFsm->Request_State(MON_STATE::HIT);
+		}
 
 		m_PendingMonTable.eAttType = m_eAttType;
-		m_PendingMonTable.eHitType = PLAYER_SKILL_TYPE::DESTORY;
-
+		m_PendingMonTable.eHitType = eType;
+		m_bIsBreak = true;
 		m_bPending = true;
 	}
 
@@ -381,6 +405,8 @@ void CTroll::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 		return;
 
 	auto pbEffect = Get_BlackBoard()->Get_Value<_bool>(EDG_KEY::EDGEFFECT);
+	if (nullptr == pbEffect) return;
+
 	uint32_t iSkillNum = Find_SkillNum(eType);
 	if (iSkillNum == UINT_MAX || iSkillNum >= ETOUI(TROLL_SKILL::END))
 		return;
@@ -394,13 +420,13 @@ void CTroll::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	}
 
 	m_CurEffectName.clear();
-	m_eAttType = ATTMON::END;
+	m_eAttType = eType;
 	m_eLastSkillTable = m_eAttType = eType;
 
 }
 void CTroll::Flag_Check(_float fTimeDelta)
 {
-	
+
 }
 void CTroll::Update_BBToFsm()
 {
@@ -423,8 +449,16 @@ _bool CTroll::BreakSkillType(PLAYER_SKILL_TYPE eType)
 		break;
 	case PLAYER_SKILL_TYPE::DEPULSO:
 		break;
-
 	case PLAYER_SKILL_TYPE::DESCENDO:
+		break;
+	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+		return true;
+		break;
+	case PLAYER_SKILL_TYPE::DESTORY:
+		return true;
+		break;
+	case PLAYER_SKILL_TYPE::ABRA:
+		return true;
 		break;
 	}
 	return false;

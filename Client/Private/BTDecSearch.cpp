@@ -36,6 +36,9 @@ nlohmann::json CBTDecSearch::Save_Node()
 	nlohmann::json j = __super::Save_Node();
 	SaveJsonValue(j, "Distance", m_fDis);
 	SaveJsonEnum(j, "BTUserType", m_eUser);
+	SaveJsonValue(j, "Run", m_bRunning);
+
+	
 	return j;
 }
 
@@ -44,6 +47,8 @@ HRESULT CBTDecSearch::Load_json(const nlohmann::json& j)
 	__super::Load_json(j);
 	LoadJsonValue(j, "Distance", m_fDis);
 	LoadJsonEnum(j, "BTUserType", m_eUser);
+	LoadJsonValue(j, "Run", m_bRunning);
+
 	return S_OK;
 }
 
@@ -84,19 +89,27 @@ EVALUATE CBTDecSearch::Evaluate(_float fTimeDelta)
 
 	if(nullptr == pTargetTransform)
 		return m_eDebug = EVALUATE::FAILED;
+
 	auto& vSrc = pTransform;
 	_vector vSrcPos = XMLoadFloat3(&vSrc->GetPosition());
 	_vector vDestPos = XMLoadFloat3(&pTargetTransform->GetPosition());
 	_vector vDeletYPos = XMVectorSetY(vSrcPos - vDestPos, 0.f);
 	_float fDistance = XMVectorGetX(XMVector3Length(vDeletYPos));
-	if (fDistance <= m_fDis)
+
+	if(m_bRunning && m_PreEval == EVALUATE::RUN)
 		return  m_eDebug = __super::Evaluate(fTimeDelta);
+
+	if (fDistance <= m_fDis)
+		return  m_PreEval = m_eDebug = __super::Evaluate(fTimeDelta);
 
 	return  m_eDebug = EVALUATE::FAILED;
 }
 
 void		CBTDecSearch::Update_Gui()
 {
+	if (ImGui::Button(m_bRunning == true ? "RUN : TRUE" : "RUN : FALSE"))
+		m_bRunning = !m_bRunning;
+
 	ImGui::DragFloat("##Dist", &m_fDis, 0, 100);
 	if (ImGui::BeginCombo("User", MagicEnumToStringView(m_eUser).data()))
 	{
@@ -114,6 +127,18 @@ void		CBTDecSearch::Update_Gui()
 		}
 		ImGui::EndCombo();
 	}
+}
+void CBTDecSearch::Abort()
+{
+	__super::Abort();
+	m_PreEval = EVALUATE::SUCCESS;
+}
+void CBTDecSearch::OnEnter()
+{
+	m_PreEval = EVALUATE::SUCCESS;
+}
+void CBTDecSearch::OnExit(EVALUATE eResult)
+{
 }
 E::UPtr<CBTDecSearch> CBTDecSearch::Create()
 {

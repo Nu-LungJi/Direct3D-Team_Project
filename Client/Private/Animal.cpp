@@ -83,15 +83,22 @@ HRESULT CAnimal::Initialize(void* pArg)
 
 void CAnimal::PriorityUpdate(E::_float fTimeDelta)
 {
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DROP) | ETOUI(CBTRoot::BTFLAG::DEAD) | ETOUI(CBTRoot::BTFLAG::DEBRIS)))
-		m_pCharacterMotor->SetUseGravity(true);
-	else m_pCharacterMotor->SetUseGravity(false);
+	if (nullptr != m_pCharacterMotor)
+	{
+		if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DROP) | ETOUI(CBTRoot::BTFLAG::DEAD) | ETOUI(CBTRoot::BTFLAG::DEBRIS)))
+			m_pCharacterMotor->SetUseGravity(true);
+		else m_pCharacterMotor->SetUseGravity(false);
+	}
 
-	m_pMoveIntent->ClearMoveIntent();
-	m_pMoveIntent->ClearFacingIntent();
+	if (nullptr != m_pMoveIntent)
+	{
+		m_pMoveIntent->ClearMoveIntent();
+		m_pMoveIntent->ClearFacingIntent();
+	}
 	__super::PriorityUpdate(fTimeDelta);
-
+	if(nullptr != m_pCharacterMotor)
 	m_pCharacterMotor->SetGravity(-9.8f);
+	
 	m_pBeHavior->Update(fTimeDelta);
 
 }
@@ -131,8 +138,11 @@ void CAnimal::Update_Animation(_float fTimeDelta)
 void CAnimal::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
-	const _float3 vControllerPosition = m_pCharacterController->GetPosition();
-	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
+	if (nullptr != m_pCharacterController)
+	{
+		const _float3 vControllerPosition = m_pCharacterController->GetPosition();
+		GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
+	}
 	GetTransform().Update();
 
 	const auto& pModel = m_pComModelInstance->GetModel();

@@ -20,50 +20,77 @@ HRESULT CTroll_Spawn::Initialize(const _string& strLevelTag)
 }
 void CTroll_Spawn::Enter(CStateMachine* pStateMachine)
 {
-	CSpider* pSpider = pStateMachine->GetOwner<CSpider>();
+	CTroll* pTroll = pStateMachine->GetOwner<CTroll>();
 
-	if (nullptr == pSpider)
+	if (nullptr == pTroll)
 		return;
 
 
-	pSpider->Set_StateFinished(false);
+	pTroll->Set_StateFinished(false);
 
-	//m_Anims.push_back(MON_ANIM_FSM{ .iAnimIndex =
-	//	pSpider->Find_AnimIndex("AN_SK_Thornback_Spider_Biting_Master_LOD0_Skeleton_SPD_Spawn_BurrowUp_anm.bin"),.fBlend = 0.1f });
+	m_Anims[TRS_CHASE] = MON_ANIM_FSM{ .iAnimIndex =
+		pTroll->Find_AnimIndex("AN_SK_Troll_ArmoredTroll_CMB_Master_LOD0_Skeleton_Trl_Cmbt_Atk_Charge_Loop_anm.bin"),.fBlend = 0.1f,.bLoop = true };
 
+	m_Anims[TRS_FINISHE]=MON_ANIM_FSM{ .iAnimIndex =
+		pTroll->Find_AnimIndex("AN_SK_Troll_ArmoredTroll_CMB_Master_LOD0_Skeleton_Trl_Cmbt_Atk_Charge_Stop_Turn_Lft_anm.bin"),.fBlend = 0.1f };
+
+	m_vStartPos = _float3(260.353f, 40.679f, 138.799f);
+	m_vEndPos = _float3(300.263f, 36.808f, 100.997f);
+	XMStoreFloat3(&m_vFirstLook,
+	XMVector3Normalize(XMLoadFloat3(&m_vEndPos) - XMLoadFloat3(&m_vStartPos)));
+	
 }
-_bool CTroll_Spawn::Play_Anim(CSpider* pSpider, _float fTimeDelta)
+_bool CTroll_Spawn::Play_Anim(CTroll* pTroll, _float fTimeDelta, uint32_t iIndex)
 {
-	auto pTarget = pSpider->Get_Target();
-	if (nullptr == pTarget) return true;
+	if (iIndex >= TRS_END)
+		return true;
 
-	auto pMove = pSpider->Get_MoveIntent();
-	if (nullptr == pMove) return true;
-	_float3 vDir{};
-	XMStoreFloat3(&vDir, XMVector3Normalize(XMLoadFloat3(&pTarget->GetTransform().GetPosition()) -
-		XMLoadFloat3(&pSpider->GetTransform().GetPosition())));
-
-	pMove->SetFacingIntentImmediate(vDir);
-
-	auto pAnimator = pSpider->Get_Animator();
+	auto pAnimator = pTroll->Get_Animator();
 	if (nullptr == pAnimator) return true;
 
-	if (!m_Anims.empty())
-	{
-		if (pAnimator->GetFinish())
-			return true;
+	MON_ANIM_FSM EdgAnim = m_Anims[iIndex];
+	pAnimator->Play_Anim(EdgAnim.iAnimIndex, EdgAnim.bLoop, EdgAnim.fBlend);
 
-	}
-
-	MON_ANIM_FSM EdgAnim = m_Anims.front();
-	pAnimator->Play_Anim(EdgAnim.iAnimIndex, false, EdgAnim.fBlend);
+	if (pAnimator->GetFinish())
+		return true;
 
 	return false;
 }
+void CTroll_Spawn::Idle(CTroll* pTroll, _float fTimeDelta)
+{
+	auto pMove = pTroll->Get_MoveIntent();
+	if (nullptr == pMove) return;
+	Play_Anim(pTroll, fTimeDelta, TRS_CHASE);
+
+	_vector vSrcPos = XMLoadFloat3(&pTroll->GetTransform().GetPosition());
+
+	_vector vStartPos = XMLoadFloat3(&m_vStartPos);
+	_vector vEndPos = XMLoadFloat3(&m_vEndPos);
+	_vector vLen = vEndPos - vStartPos;
+
+	_vector vCheckDir = XMVector3Normalize(vEndPos - vSrcPos);
+	if (XMVectorGetX(XMVector3Length(vLen)) <= 3.f || XMVectorGetX(XMVector3Dot(vCheckDir,XMLoadFloat3(&m_vFirstLook))) < 0 )
+	{
+		m_eState = MON_DEF_STATE::RUN;
+	}
+
+	pMove->SetMoveIntent(m_vFirstLook, 15.f);
+	pMove->SetFacingIntent(m_vFirstLook, 60.f);
+
+}
+void CTroll_Spawn::Run(CTroll* pTroll, _float fTimeDelta)
+{
+	if (Play_Anim(pTroll, fTimeDelta, TRS_FINISHE))
+		m_eState = MON_DEF_STATE::END;
+}
+void CTroll_Spawn::End(CTroll* pTroll, CMon_State* pMonState, _float fTimeDelta)
+{
+	pMonState->Request_State(MON_STATE::COMBAT);
+}
 void CTroll_Spawn::Exit(CStateMachine* pStateMachine)
 {
-	auto pSpider = pStateMachine->GetOwner<CSpider>();
-	if (nullptr == pSpider) return;
+	auto pTroll = pStateMachine->GetOwner<CTroll>();
+	if (nullptr == pTroll) return;
 
 
 }
@@ -74,17 +101,28 @@ void CTroll_Spawn::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelt
 
 void CTroll_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 {
-	auto pSpiderFsm = Cast<CMon_State>(pStateMachine);
-	if (nullptr == pSpiderFsm) return;
+	auto pTrollFsm = Cast<CMon_State>(pStateMachine);
+	if (nullptr == pTrollFsm) return;
 
-	auto pSpider = pStateMachine->GetOwner<CSpider>();
-	if (nullptr == pSpider) return;
+	auto pTroll = pStateMachine->GetOwner<CTroll>();
+	if (nullptr == pTroll) return;
 
-	auto pBB = pSpider->Get_BlackBoard();
+	auto pBB = pTroll->Get_BlackBoard();
 	if (nullptr == pBB) return;
 
-	if (Play_Anim(pSpider, fTimeDelta))
-		pSpiderFsm->Request_State(MON_STATE::COMBAT);
+	switch(m_eState)
+	{
+	case MON_DEF_STATE::IDLE:
+		Idle(pTroll,fTimeDelta);
+		break;
+	case MON_DEF_STATE::RUN:
+		Run(pTroll, fTimeDelta);
+		break;
+	case MON_DEF_STATE::END:
+		End(pTroll, pTrollFsm, fTimeDelta);
+		break;
+
+	}
 
 }
 

@@ -212,6 +212,8 @@
     <ClInclude Include="..\public\BTDecEdgState.h" />
     <ClInclude Include="..\public\BTDecHitPlayer.h" />
     <ClInclude Include="..\public\BTDecNpcState.h" />
+    <ClInclude Include="..\public\BTDecWallCrash.h" />
+    <ClInclude Include="..\public\BTDirectChase.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
     <ClInclude Include="..\public\BTNaviMove.h" />
     <ClInclude Include="..\public\Coin.h" />
@@ -286,7 +288,9 @@
     <ClInclude Include="..\Public\Button.h" />
     <ClInclude Include="..\Public\GeneralButton.h" />
     <ClInclude Include="..\public\Troll.h" />
+    <ClInclude Include="..\public\TrollWeapon.h" />
     <ClInclude Include="..\public\Troll_Combat.h" />
+    <ClInclude Include="..\public\Troll_Grogy.h" />
     <ClInclude Include="..\public\Troll_Hit.h" />
     <ClInclude Include="..\public\Troll_Spawn.h" />
     <ClInclude Include="..\Public\WandShop.h" />
@@ -414,6 +418,8 @@
     <ClCompile Include="..\private\BTChangeState.cpp" />
     <ClCompile Include="..\private\BTDecHitPlayer.cpp" />
     <ClCompile Include="..\private\BTDecNpcState.cpp" />
+    <ClCompile Include="..\private\BTDecWallCrash.cpp" />
+    <ClCompile Include="..\private\BTDirectChase.cpp" />
     <ClCompile Include="..\private\BTNaviMove.cpp" />
     <ClCompile Include="..\private\Coin.cpp" />
     <ClCompile Include="..\private\Edg_Godae.cpp" />
@@ -491,7 +497,9 @@
     <ClCompile Include="..\Private\Button.cpp" />
     <ClCompile Include="..\Private\GeneralButton.cpp" />
     <ClCompile Include="..\private\Troll.cpp" />
+    <ClCompile Include="..\private\TrollWeapon.cpp" />
     <ClCompile Include="..\private\Troll_Combat.cpp" />
+    <ClCompile Include="..\private\Troll_Grogy.cpp" />
     <ClCompile Include="..\private\Troll_Hit.cpp" />
     <ClCompile Include="..\private\Troll_Spawn.cpp" />
     <ClCompile Include="..\Private\WandShop.cpp" />

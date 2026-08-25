@@ -1,7 +1,7 @@
 #pragma once
 #include "Client_Defines.h"
 #include "StateMachine.h"
-#include "EnderDragon.h"
+#include "Troll.h"
 NS_BEGIN(Client)
 class CTroll_Hit : public CState
 {
@@ -19,14 +19,16 @@ public:
 
 private:
 
-	HRESULT		Initialize();
-	_bool Play_Hit_Anim(CEnderDragon* pDragon);
-	_bool Is_Finished(CEnderDragon* pDragon);
+	HRESULT			Initialize(CTroll* pTroll);
+	_bool			Play_Hit_Anim(CTroll* pTroll);
+	_bool			Is_Finished(CTroll* pTroll);
+	HIT_MOTION		ReActiveTable(TROLL_SKILL eType);
 private:
-	MON_HIT_INFO				m_eHitInfo{};
-	uint32_t					m_iIndex{}, m_iSound{};
+	NEW_HIT_TABLE					m_HitTable{};
+	std::vector<MON_ANIM_FSM>		m_Anims[ETOUI(HIT_MOTION::END)];
+	uint32_t						m_iIndex{}, m_iSound{};
 public:
-	static SPtr<CTroll_Hit> Create();
+	static SPtr<CTroll_Hit> Create(CTroll* pTroll);
 };
 
 NS_END

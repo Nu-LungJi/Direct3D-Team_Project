@@ -3,12 +3,7 @@
 #include "BTAnimRoot.h"
 
 NS_BEGIN(Client)
-typedef struct strcamshake
-{
-	_float fCamStartRatio{0.f};
-	_float fPower{ 1.f }, fTime{ 1.f }, fCnt{15.f}; // 강도 0 ~ 1
 
-}CAMSK_DESC;
 class CBTAttackAnimation final : public CBTAnimRoot
 {
 typedef struct strattskillevent
@@ -38,7 +33,6 @@ public:
 	HRESULT							Load_json(const nlohmann::json& j) override;
 private:
 	void							Att(CMonster* pMon, CComTransform* pSrcTransform, CGameObject* pTarget, _float fRotRatio,_float fTimeDelta);
-	void							ShakeCam(_float fRotRatio);
 	// KMS 추가
 	void							UpdateAttackIndicator(CMonster* pMonster, CGameObject* pTarget, _float fAnimRatio);
 
@@ -52,7 +46,7 @@ private:
 	_float3				m_vEmissiveColor{}, m_vLastPos{}, m_vLastDir{};
 	_float2				m_vRatio{}, m_vRotRatio{}, m_vAttRatio{}, m_vOverlabRatio{0.f,0.f};
 	_float				m_fDis{}, m_fTime{}, m_fIntensive{ 0.5f }, m_fAttRadius{ 5.f }, m_fOverLabSpeed{5.f}, m_fCurOverLabSpeed{};
-	_bool				m_bRatioInvert{ false }, m_bActiveSkill{ false }, m_bCamShake{ true }, m_bAttRatio{ false }, m_bOverLabLoop{ false }, m_bOverLabMove{ false }, m_bDir{false};
+	_bool				m_bRatioInvert{ false }, m_bActiveSkill{ false }, m_bAttRatio{ false }, m_bOverLabLoop{ false }, m_bOverLabMove{ false }, m_bDir{false};
 	// KMS 추가
 	_bool				m_bAttackIndicatorTriggered{ false };
 	_bool				m_bTrigger{ false };

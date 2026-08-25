@@ -161,8 +161,8 @@ public:
 	void						Set_HideOnBush(_bool bHide) { m_bHide = bHide; }
 
 
-protected:
 	uint32_t					Find_SkillNum(ATTMON eType);
+protected:
 	 _bool						Check_Flag(uint32_t iFlag);
 	virtual	void				Damaged(PLAYER_SKILL_TYPE eType);
 	void						Update_HurtBox();

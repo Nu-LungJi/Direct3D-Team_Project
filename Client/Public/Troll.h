@@ -1,7 +1,7 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
-enum class TROLL_SKILL { BOOM, END };
+enum class TROLL_SKILL { SMASH,DOLJIN, END };
 
 NS_BEGIN(Client)
 typedef struct strtrollskillInfo
@@ -56,7 +56,7 @@ public:
 	void						Set_AttTable(ATTMON eType, _float2 fSkillRatio) override;
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
 	TROLL_SKILL_INFO&			Get_SkillInfo(TROLL_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
-	const _string&				Get_SkillNmae(TROLL_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
+	const _string&				Get_SkillName(TROLL_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
 	void						Set_EndGame() { m_bEndGame = true; }
 private:
 	void						Update_BBToFsm();
@@ -71,9 +71,8 @@ private:
 	_string			m_EffectNames[ETOUI(TROLL_SKILL::END)]{};
 	TROLL_SKILL_INFO m_SkillHandle[ETOUI(TROLL_SKILL::END)]{};
 	TROLL_SKILL		m_eDragonSkill{};
-	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false }, m_bPopupL{ false }, m_bEndGame{ false };
+	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bEndGame{ false };
 
-	_string						m_WayName{};
 public:
 	static E::UPtr<CTroll> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

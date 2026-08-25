@@ -236,10 +236,6 @@ void CBTNaviMove::OnEnter()
 	auto* pOwner = pBT->GetGameObject();
 
 	if (nullptr == pBB || nullptr == pOwner) return;
-	auto* pvStart = pBB->Get_Value<_float3>(NPC_KEY::STARTPOS);
-	auto* pvEnd = pBB->Get_Value<_float3>(NPC_KEY::ENDPOS);
-
-	if (nullptr == pvStart || nullptr == pvEnd) 	return;
 
 	auto* pNavMesh = CGameInstance::Get().GetNavMeshManager();
 	if (nullptr == pNavMesh) return;
@@ -247,10 +243,16 @@ void CBTNaviMove::OnEnter()
 	// 시작 위치는 지정된 Start가 아니라 현재 NPC 위치를 사용
 	_float3 vCurrentPosition = pOwner->GetTransform().GetPosition();
 	
-	_float3& vDestination = m_bMoveToEnd ? *pvEnd : *pvStart;
 	
-	if(m_bLoop)
+	if (m_bLoop)
+	{
+		auto* pvStart = pBB->Get_Value<_float3>(NPC_KEY::STARTPOS);
+		auto* pvEnd = pBB->Get_Value<_float3>(NPC_KEY::ENDPOS);
+
+		if (nullptr == pvStart || nullptr == pvEnd) 	return;
+		_float3& vDestination = m_bMoveToEnd ? *pvEnd : *pvStart;
 		pNavMesh->FindPathCenter(vCurrentPosition, vDestination, m_NaviPath);
+	}
 	else
 	{
 		auto* pBB = pBT->Get_Blackboard();

@@ -21,7 +21,7 @@ public:
 	void						FixedUpdate(E::_float fTimeDelta) override;
 	void						Update(E::_float fTimeDelta) override;
 	void						LateUpdate(E::_float fTimeDelta) override;
-
+	std::vector<CHandle>&		Get_Neighbor() { return m_ChildHandles; }
 public:
 	void						Set_Gravity(_bool bGravity);
 	void						Set_Child();

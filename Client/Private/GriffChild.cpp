@@ -12,9 +12,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "DbgLineRender.h"
-#include "ComPxRigidBody.h"
-#include "ComPxSphereCollider.h"
-
+#include "Griff.h"
 //BB
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
@@ -52,98 +50,6 @@ HRESULT CGriffChild::Initialize(void* pArg)
 	if (FAILED(__super::Initialize(pArg)))
 	{
 		return E_FAIL;
-	}
-
-	{
-		CComPxRigidBody::DESC Desc{};
-		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
-		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComPxRigidBody", &Desc, &m_pComRigidBody)))
-		{
-			MSG_BOX("Create Failed ComPxRigidBody Npc");
-			return E_FAIL;
-		}
-	}
-
-	{
-		CComPxSphereCollider::DESC Desc{};
-		Desc.pComPxRigidBody = m_pComRigidBody;
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.bIsTrigger = false;
-		Desc.tFilter = PX_FILTER_DESC{
-			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_HURTBOX),
-			.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
-			//.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
-		};
-		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 1.2f });
-		if (!Desc.pResMaterial ||
-			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
-				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
-		{
-			MSG_BOX("Create Failed ComPxSphereCollider Npc");
-			return E_FAIL;
-		}
-		if (!m_pComSphereCol->SetQueryEnabled(false))
-			return E_FAIL;
-	}
-
-	//피직스
-	{
-		CComPxCharacterController::DESC Desc{};
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		const _float fHorizontalScale =
-			std::max(std::abs(NpcDesc->vScale.x), std::abs(NpcDesc->vScale.z));
-		const _float fVerticalScale = std::abs(NpcDesc->vScale.y);
-		const _float3 vCenterOffset{
-			NpcDesc->vCCTCenterOffset.x * NpcDesc->vScale.x,
-			NpcDesc->vCCTCenterOffset.y * fVerticalScale,
-			NpcDesc->vCCTCenterOffset.z * NpcDesc->vScale.z };
-		Desc.fHeight = NpcDesc->fCCTHeight * fVerticalScale;
-		Desc.fRadius = NpcDesc->fCCTRadius * fHorizontalScale;
-		Desc.fStepOffset = NpcDesc->fCCTStepOffset;
-		Desc.vPosition = {
-			NpcDesc->vPos.x + vCenterOffset.x,
-			NpcDesc->vPos.y + vCenterOffset.y,
-			NpcDesc->vPos.z + vCenterOffset.z };
-		Desc.tFilter = NpcDesc->tFilter;
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,
-			"ComPxCharacterController", &Desc, &m_pCharacterController)))
-		{
-			return E_FAIL;
-		}
-	}
-	//캐릭컨트롤러
-	{
-		CComCharacterMoveIntent::DESC Desc{};
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
-			"ComCharacterMoveIntent", &Desc, &m_pMoveIntent)))
-		{
-			return E_FAIL;
-		}
-	}
-	//캐릭 모터
-	{
-		CComCharacterMotor::DESC Desc{};
-		Desc.pMoveIntent = m_pMoveIntent;
-		Desc.pCharacterController = m_pCharacterController;
-		Desc.fGravity = -9.81f;
-		Desc.vControllerCenterOffset = {
-			NpcDesc->vCCTCenterOffset.x * NpcDesc->vScale.x,
-			NpcDesc->vCCTCenterOffset.y * std::abs(NpcDesc->vScale.y),
-			NpcDesc->vCCTCenterOffset.z * NpcDesc->vScale.z };
-		Desc.bUseGravity = true;
-		Desc.bSyncTransform = true;
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
-			"ComCharacterMotor", &Desc, &m_pCharacterMotor)))
-		{
-			return E_FAIL;
-		}
 	}
 
 	CComBeHavior::BEHAVIOR_DESC Desc{};
@@ -195,13 +101,12 @@ HRESULT CGriffChild::Initialize(void* pArg)
 
 
 
-	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
+//	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	GetTransform().Update();
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 	GetTransform().SetPosition(XMLoadFloat3(&NpcDesc->vPos));
 
-	m_pComSphereCol->SetQueryEnabled(true);
 	m_pModelAnimator->Play_Anim(0, true);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
 
@@ -224,7 +129,7 @@ void CGriffChild::Update(E::_float fTimeDelta)
 
 void CGriffChild::FixedUpdate(E::_float fTimeDelta)
 {
-	m_pCharacterMotor->FixedUpdate(fTimeDelta);
+	//m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 void CGriffChild::LateUpdate(E::_float fTimeDelta)
 {
@@ -232,14 +137,7 @@ void CGriffChild::LateUpdate(E::_float fTimeDelta)
 
 }
 
-void CGriffChild::Set_Neighbor(std::vector<CHandle>& Neighbors)
-{
-	for (auto& iter : Neighbors)
-	{
-		if (iter != GetHandle())
-			m_Neighbors.push_back(iter);
-	}
-}
+
 
 void CGriffChild::Set_Gravity(_bool bGravity)
 {
@@ -251,7 +149,7 @@ void CGriffChild::Set_Gravity(_bool bGravity)
 
 void CGriffChild::Chase_Leader(_float fTimeDelta)
 {
-	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle);
+	auto* pTarget = CGameInstance::Get().GetGameObjectByHandleT<CGriff>(m_TargetHandle);
 	if (nullptr == pTarget) return;
 	//부모보다 조금 뒤에 쫓아오게
 	_vector vTargetPos = XMLoadFloat3(&pTarget->GetTransform().GetPosition());
@@ -273,7 +171,7 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 	
 	if (fFarCheck <= 5.f)
 	{
-		m_pMoveIntent->SetMoveIntent({}, 0.f);
+		//m_pMoveIntent->SetMoveIntent({}, 0.f);
 		return;
 	}
 	_vector vFollowDir = XMVectorZero();
@@ -293,8 +191,10 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 	_vector vCenterSum = XMVectorZero();
 	_vector vCohesionDir = XMVectorZero();
 	
-	for (auto& iter : m_Neighbors)
+	for (auto& iter : pTarget->Get_Neighbor())
 	{
+		if (iter == GetHandle())
+			continue;
 		auto* pNeighbor = CGameInstance::Get().GetGameObjectByHandle(iter);
 		if (nullptr == pNeighbor)continue;
 
@@ -362,7 +262,7 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 	_float fMoveLength = XMVectorGetX(XMVector3Length(vMoveDir));
 	if (fMoveLength < 0.000001f)
 	{
-		m_pMoveIntent->SetMoveIntent({}, 0.f);
+		//m_pMoveIntent->SetMoveIntent({}, 0.f);
 		return;
 	}
 	_vector vCurDir = XMLoadFloat3(&m_vCurDir);
@@ -380,8 +280,13 @@ void CGriffChild::Chase_Leader(_float fTimeDelta)
 		XMStoreFloat3(&m_vCurDir, XMVector3Normalize(vLastDir));
 	}
 
-	m_pMoveIntent->SetFacingIntent(m_vCurDir, 60.f);
-	m_pMoveIntent->SetMoveIntent(m_vCurDir, fSpeed);
+
+	_float fYaw = std::atan2(m_vCurDir.x, m_vCurDir.z);
+
+	m_pComTransform->SetQuaternion(XMQuaternionRotationAxis(XMVectorSet(0.f, 1.f, 0.f, 0.f), fYaw));
+	_float3 vPos{};
+	XMStoreFloat3(&vPos, vSrcPos + XMLoadFloat3(&m_vCurDir) * fSpeed * fTimeDelta);
+	m_pComTransform->SetPosition(vPos);
 }
 
 E::UPtr<CGriffChild> CGriffChild::Create()

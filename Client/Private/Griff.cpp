@@ -12,8 +12,6 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
 #include "DbgLineRender.h"
-#include "ComPxRigidBody.h"
-#include "ComPxSphereCollider.h"
 #include "GriffChild.h"
 //BB
 #include "BlackBoardKey.h"
@@ -52,39 +50,6 @@ HRESULT CGriff::Initialize(void* pArg)
 	if (FAILED(__super::Initialize(pArg)))
 	{
 		return E_FAIL;
-	}
-
-	{
-		CComPxRigidBody::DESC Desc{};
-		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
-		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComPxRigidBody", &Desc, &m_pComRigidBody)))
-		{
-			MSG_BOX("Create Failed ComPxRigidBody Npc");
-			return E_FAIL;
-		}
-	}
-
-	{
-		CComPxSphereCollider::DESC Desc{};
-		Desc.pComPxRigidBody = m_pComRigidBody;
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.bIsTrigger = false;
-		Desc.tFilter = PX_FILTER_DESC{
-			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_HURTBOX),
-			.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
-			//.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
-		};
-		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 1.2f });
-		if (!Desc.pResMaterial ||
-			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
-				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
-		{
-			MSG_BOX("Create Failed ComPxSphereCollider Npc");
-			return E_FAIL;
-		}
-		if (!m_pComSphereCol->SetQueryEnabled(false))
-			return E_FAIL;
 	}
 
 	//피직스
@@ -199,7 +164,6 @@ HRESULT CGriff::Initialize(void* pArg)
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 	GetTransform().SetPosition(XMLoadFloat3(&NpcDesc->vPos));
 
-	m_pComSphereCol->SetQueryEnabled(true);
 	m_pModelAnimator->Play_Anim(0, true);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
 
@@ -263,9 +227,6 @@ void CGriff::Update(E::_float fTimeDelta)
 void CGriff::FixedUpdate(E::_float fTimeDelta)
 {
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
-	
-	//테스트용
-	
 }
 void CGriff::LateUpdate(E::_float fTimeDelta)
 {
@@ -298,12 +259,6 @@ void CGriff::Set_Child()
 		auto Griff = CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_GriffChild, "02_GriffChild", &Child);
 		if (Griff)
 			m_ChildHandles.push_back(Griff.value());
-	}
-	for (auto& iter : m_ChildHandles)
-	{
-		auto pChild = CGameInstance::Get().GetGameObjectByHandleT<CGriffChild>(iter);
-		if (pChild)
-			pChild->Set_Neighbor(m_ChildHandles);
 	}
 }
 

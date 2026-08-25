@@ -96,8 +96,6 @@ protected:
 	CComPxCharacterController* m_pCharacterController{};
 	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
-	CComPxRigidBody* m_pComRigidBody{};
-	CComPxSphereCollider* m_pComSphereCol{};
 	CComSound* m_pComSound{};
 
 	// Anim

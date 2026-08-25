@@ -20,20 +20,20 @@ HRESULT CTroll_Combat::Initialize()
 }
 void CTroll_Combat::Enter(CStateMachine* pStateMachine)
 {
-	CSpider* pSpider = pStateMachine->GetOwner<CSpider>();
+	CTroll* pTroll = pStateMachine->GetOwner<CTroll>();
 
-	if (nullptr == pSpider)
+	if (nullptr == pTroll)
 		return;
 
-	pSpider->Set_StateFinished(false);
+	pTroll->Set_StateFinished(false);
 
 
 }
 
 void CTroll_Combat::Exit(CStateMachine* pStateMachine)
 {
-	auto pSpider = pStateMachine->GetOwner<CSpider>();
-	if (nullptr == pSpider) return;
+	auto pTroll = pStateMachine->GetOwner<CTroll>();
+	if (nullptr == pTroll) return;
 
 
 }
@@ -44,16 +44,14 @@ void CTroll_Combat::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDel
 
 void CTroll_Combat::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 {
-	auto pSpiderFsm = Cast<CMon_State>(pStateMachine);
-	if (nullptr == pSpiderFsm) return;
+	auto pTrollFsm = Cast<CMon_State>(pStateMachine);
+	if (nullptr == pTrollFsm) return;
 
-	auto pSpider = pStateMachine->GetOwner<CSpider>();
-	if (nullptr == pSpider) return;
+	auto pTroll = pStateMachine->GetOwner<CTroll>();
+	if (nullptr == pTroll) return;
 
-	auto pBB = pSpider->Get_BlackBoard();
+	auto pBB = pTroll->Get_BlackBoard();
 	if (nullptr == pBB) return;
-
-
 
 }
 

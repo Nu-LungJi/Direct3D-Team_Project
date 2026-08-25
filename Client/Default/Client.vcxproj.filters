@@ -463,6 +463,9 @@
     <Filter Include="GameObject\Monster\Troll\FSM">
       <UniqueIdentifier>{49dab577-3bd2-431e-88ff-db93170b3214}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\AI\Decorator\Troll">
+      <UniqueIdentifier>{f77ed991-313e-43ec-8dab-841c5b116c79}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -1116,6 +1119,18 @@
     <ClInclude Include="..\public\Troll_Combat.h">
       <Filter>GameObject\Monster\Troll\FSM</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\BTDirectChase.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TrollWeapon.h">
+      <Filter>GameObject\Monster\Troll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecWallCrash.h">
+      <Filter>GameObject\AI\Decorator\Troll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Troll_Grogy.h">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1707,6 +1722,18 @@
       <Filter>GameObject\Monster\Troll\FSM</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Troll_Combat.cpp">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDirectChase.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TrollWeapon.cpp">
+      <Filter>GameObject\Monster\Troll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecWallCrash.cpp">
+      <Filter>GameObject\AI\Decorator\Troll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Troll_Grogy.cpp">
       <Filter>GameObject\Monster\Troll\FSM</Filter>
     </ClCompile>
   </ItemGroup>
