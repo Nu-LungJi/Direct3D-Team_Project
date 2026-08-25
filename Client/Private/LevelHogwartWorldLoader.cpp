@@ -34,6 +34,7 @@
 #include "Mon_Spawner.h"
 #include "Mon_State.h"
 #include "WorldNpc.h"
+#include "MiniGameNpc.h"
 #include "Griff.h"
 #include "GriffChild.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
@@ -445,6 +446,14 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc, CWorldNpc::Create())))
 	{
 		MSG_BOX("TERRAIN Failed Prototype_GameObject_Npc");
+		return E_FAIL;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
+		CMiniGameNpc::Create())))
+	{
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_MiniGameNpc");
 		return E_FAIL;
 	}
 	return S_OK;

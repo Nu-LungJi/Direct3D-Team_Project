@@ -362,6 +362,7 @@ public:
 	VOID			Set_VolumetricCloudOption(const CB_VOLUMECLOUD& _CloudOption);
 
 	VOID			Set_RadialBlurIntensity(const _float _Intensity);
+	VOID			Set_MotionBlurEnabled(_bool bEnabled);
 	VOID			Set_DistortionIntensity(const _float _Intensity);
 	VOID			Set_ChromaticIntensity(const _float _Intensity);
 	VOID			Set_VignetteIntensity(const _float _Intensity);

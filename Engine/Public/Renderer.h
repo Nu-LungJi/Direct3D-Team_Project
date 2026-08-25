@@ -152,6 +152,7 @@ public:
 
 public:
 	VOID			Set_RadialBlurIntensity(const _float _Intensity)	{ m_pPostProcessBuffer.g_fBlurIntensity			= _Intensity; }
+	VOID			Set_MotionBlurEnabled(_bool bEnabled)			{ m_bMotionBlurEnabled = bEnabled; }
 	VOID			Set_DistortionIntensity(const _float _Intensity)	{ m_pPostProcessBuffer.g_fDistortionIntensity	= _Intensity; }
 	VOID			Set_ChromaticIntensity(const _float _Intensity)		{ m_pPostProcessBuffer.g_fChromaticIntensity	= _Intensity; }
 	VOID			Set_VignetteIntensity(const _float _Intensity)		{ m_pPostProcessBuffer.g_fVignetteIntensity		= _Intensity; }
@@ -267,6 +268,7 @@ private:		// FSR
 private:
 	_bool			m_bApplyEnvLight	= { true };		// 환경광 ON-OFF
 	_bool			m_bApplyFilter		= { true };		// 필터 적용 ON-OFF
+	_bool			m_bMotionBlurEnabled{};
 	_bool			m_bApplyVolumetricFog	= { false };	// 볼류메트릭 효과 ON-OFF
 	_bool			m_bApplyVolumetricCloud		= { false };	// 볼류메트릭 클라우드 ON-OFF
 	_bool			m_bApplyVolumetricCloudTAA = { false };	// 볼류메트릭 클라우드 ON-OFF

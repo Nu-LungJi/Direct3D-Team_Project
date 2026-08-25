@@ -25,6 +25,7 @@ class CComSound;
 NS_END
 
 NS_BEGIN(Client)
+enum class PLAYER_STATE : uint32_t;
 class CPlayer_StateMachine;
 class CPlayerRagdollController;
 
@@ -157,6 +158,7 @@ public:
 
 	void SetCurrentSkill(PLAYER_SKILL_TYPE eSkillType) { m_eSkillType = eSkillType; }
 	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
+	void SetDialoguePose(const _float3& vPosition, const _float3& vLookAt);
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
 	void SetRootMotionTranslationScale(_float fScale) { m_fRootMotionTranslationScale = std::max(0.f, fScale); }
@@ -308,6 +310,10 @@ private:
 	_bool  m_bProtegoActive{ false };
 	_float m_fProtegoRemainTime{};
 	_float m_fParryCounterRemainTime{};
+	PLAYER_STATE m_ePreviousMotionBlurState{ static_cast<PLAYER_STATE>(0) };
+	_float m_fMotionBlurPulseRemainUnscaled{};
+	static constexpr _bool MOTION_BLUR_ENABLED = false;
+	static constexpr _float MOTION_BLUR_STATE_PULSE_DURATION = 0.12f;
 	_float m_fProtegoRecoilRemainTime{};
 	_float3 m_vProtegoRecoilDirection{};
 	_bool  m_bStupefyCounterRequested{};

@@ -47,7 +47,7 @@ HRESULT CNpcMom::InitializePrototype(void* pArg)
 		return E_FAIL;
 	}
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
-	if (FAILED(m_pResPixelShader->Load()))
+	if (!m_pResPixelShader || FAILED(m_pResPixelShader->Load()))
 	{
 		return E_FAIL;
 	}
@@ -100,7 +100,8 @@ void CNpcMom::PriorityUpdate(E::_float fTimeDelta)
 	__super::PriorityUpdate(fTimeDelta);
 
 	m_pCharacterMotor->SetGravity(-9.8f);
-	m_pBeHavior->Update(fTimeDelta);
+	if (m_pBeHavior)
+		m_pBeHavior->Update(fTimeDelta);
 
 }
 
@@ -111,7 +112,8 @@ void CNpcMom::Update(E::_float fTimeDelta)
 		m_pComSound->Update();
 	Update_Animation(fTimeDelta);
 
-	m_pBeHavior->AbortNode();
+	if (m_pBeHavior)
+		m_pBeHavior->AbortNode();
 	Update_HurtBox();
 }
 
@@ -222,10 +224,17 @@ HRESULT CNpcMom::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 	pContext->VSSetShaderResources(7, 1, &cpuBonePaletteSRV);
 	pContext->VSSetShaderResources(8, 1, &skinBonesSRV);
 
-	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
+	const auto& meshes = pModel->GetMeshes();
+	const auto& materials = pModel->GetMaterials();
+	const uint32_t meshCount = std::min<uint32_t>(
+		pModel->Get_NumMeshes(), static_cast<uint32_t>(meshes.size()));
+	for (uint32_t iMeshIndex = 0; iMeshIndex < meshCount; ++iMeshIndex)
 	{
-		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
+		const auto& mesh = meshes[iMeshIndex];
 		if (!mesh)
+			continue;
+		const uint32_t materialIndex = mesh->Get_MaterialIndex();
+		if (materialIndex >= materials.size() || !materials[materialIndex])
 			continue;
 
 		const auto& skinRange = pModel->Get_GPUMeshSkinRange(iMeshIndex);
@@ -418,7 +427,8 @@ void CNpcMom::ReActiveTable()
 
 	m_ActiveMonTable = {};
 	m_bActiveHit = false;
-	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::DEL);
+	if (m_pBeHavior)
+		m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::DEL);
 }
 
 _bool CNpcMom::Is_Grounded()
