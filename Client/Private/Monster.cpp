@@ -144,7 +144,7 @@ HRESULT CMonster::Initialize(void* pArg)
 		}
 
 
-		CGameInstance::Get().EventSubscribe<FAcientMagicStart>(GetHandle(), [=]() { Stuck(); });
+		CGameInstance::Get().EventSubscribe<FAncientMagicStart>(GetHandle(), [=]() { Stuck(); });
 	}
 	return S_OK;
 }
@@ -855,7 +855,7 @@ void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 		GET_SINGLE(UIManager)->CreateDamageFont(20, GetHandle(), true);
 		m_iHp -= 20.f;
 		break;
-	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
 		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
 		m_iHp -= 25.f;
 		break;

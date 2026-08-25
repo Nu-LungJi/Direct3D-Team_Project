@@ -14,7 +14,6 @@ HRESULT CPlayer_StateMachine::Initialize(void* pArg)
 	if (FAILED(CStateMachine::Initialize(pArg)))
 		return E_FAIL;
 
-	m_RegisteredStateIDs.clear();
 	m_eCurrentState = PLAYER_STATE::NONE;
 	m_eRequestedState = PLAYER_STATE::NONE;
 
@@ -168,7 +167,7 @@ uint32_t CPlayer_StateMachine::GetTransitionPriority(PLAYER_STATE eState) const
 	case PLAYER_STATE::ROLL:   return 60;
 	case PLAYER_STATE::JUMP:   return 50;
 	case PLAYER_STATE::DASH_SKILL: return 45;
-	case PLAYER_STATE::ACIENTATTACK_SKILL: return 45;
+	case PLAYER_STATE::ANCIENT_ATTACK_SKILL: return 45;
 	case PLAYER_STATE::ACCIO_SKILL: return 45;
 	case PLAYER_STATE::DEPULSO_SKILL: return 45;
 	case PLAYER_STATE::DESCENDO_SKILL: return 45;
@@ -189,6 +188,5 @@ uint32_t CPlayer_StateMachine::GetTransitionPriority(PLAYER_STATE eState) const
 
 void CPlayer_StateMachine::Free()
 {
-	m_RegisteredStateIDs.clear();
 	CStateMachine::Free();
 }

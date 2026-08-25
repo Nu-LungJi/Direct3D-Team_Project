@@ -82,6 +82,8 @@ void CPlayer_Knockdown_State::Exit(CStateMachine* pStateMachine)
 	player->SetRootMotionTranslationScale(1.f);
 	player->SetRootMotionRotationActive(false);
 	player->SetInvincible(false);
+	if (auto* animator = player->GetAnimator())
+		animator->GetCurAnimState().fSpeed = 1.f;
 	if (auto* motor = player->GetCharacterMotor(); motor && m_bMotorSettingsCaptured)
 	{
 		motor->SetGravity(m_fPreviousGravity);
@@ -191,13 +193,16 @@ void CPlayer_Knockdown_State::Update(CStateMachine* pStateMachine, _float fTimeD
 			return;
 		}
 
-		if (m_fSequenceTime >= DOWN_HOLD_DURATION &&
+		if ((m_fSequenceTime >= DOWN_HOLD_DURATION || player->HasRawMoveInput()) &&
 			!PlaySequence(*player, SEQUENCE::GETUP))
 		{
 			playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		}
 		return;
 	}
+
+	if (m_eSequence == SEQUENCE::GETUP && player->HasRawMoveInput())
+		animator->GetCurAnimState().fSpeed = INPUT_GETUP_ANIMATION_SPEED;
 
 	if (!animator->GetFinish())
 		return;

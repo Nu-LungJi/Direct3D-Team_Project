@@ -1,10 +1,7 @@
-
 #pragma once
+
 #include "AnimationObject.h"
 #include "Client_Defines.h"
-
-
-
 NS_BEGIN(Engine)
 class CComConstantBuffer;
 class CResTexture2D;
@@ -16,8 +13,6 @@ class CResCBuffer;
 class CComModelInstance;
 class CComAnimator;
 class CComSocket;
-
-
 class CComPxRigidBody;
 class CComPxBoxCollider;
 class CComPxSphereCollider;
@@ -139,7 +134,7 @@ private:
 	};
 	STUPEFY_DEBUG_SETTINGS m_StupefyDebug{};
 	CHandle m_hLastStupefyProjectile{};
-public:
+
 public:
 	void OnWake() override;
 	void OnSleep() override;
@@ -158,9 +153,9 @@ public:
 	CHandle GetTargetHandle() const { return m_hAutoTarget; }
 	const StringID& GetLevelTag() const { return m_LevelTag; }
 	CHandle GetUIControllerHandle() const { return m_UIHandle; }
-	PLAYER_SKILL_TYPE GetPlayerCurSkill() const { return m_eSkill_Type; }
+	PLAYER_SKILL_TYPE GetCurrentSkill() const { return m_eSkillType; }
 
-	void SetPlayerCurSKill(PLAYER_SKILL_TYPE _Skill_Type) { m_eSkill_Type = _Skill_Type; }
+	void SetCurrentSkill(PLAYER_SKILL_TYPE eSkillType) { m_eSkillType = eSkillType; }
 	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
@@ -186,8 +181,8 @@ public:
 	void SetFlyRequested(_bool bRequested);
 	_bool IsFlyRequested() const { return m_bFlyRequested; }
 
-	_bool GetRenderInfluence() { return m_bRenderInfluence; }
-	void SetRenderInfluence(_bool _RenderInfluence) { m_bRenderInfluence = _RenderInfluence; }
+	_bool GetRenderInfluence() const { return m_bRenderInfluence; }
+	void SetRenderInfluence(_bool bRenderInfluence) { m_bRenderInfluence = bRenderInfluence; }
 
 
 	void SetBodyEffectID(uint32_t effectID) { m_iDashBodyEffectID = effectID; }
@@ -226,7 +221,7 @@ private:
 	CHandle m_Partes[ETOUI(PARTES::END)]{};
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
-	CComSocket* m_pSocket;
+	CComSocket* m_pSocket{};
 
 
 	_float4 m_fAlbedoColor = { 1.f, 1.f, 1.f, 1.f };
@@ -341,14 +336,16 @@ private:
 #endif
 
 private:
-	CHandle m_hAutoTarget;
-	CHandle m_hPrevAutoTarget;
+	CHandle m_hAutoTarget{};
+	CHandle m_hPrevAutoTarget{};
 	CHandle m_hMonsterHPUITarget{};
 	std::optional<CHandle> m_hPendingAncientThrowTarget{};
+	CHandle m_hAncientMagicButtonTarget{};
+	CHandle m_hAncientThrowButtonTarget{};
 	StringID m_LevelTag;
 private:
-	CHandle m_UIHandle;
-	_bool m_bSkillSlotUIInitialized{ false };
+	CHandle m_UIHandle{};
+	_bool m_bSkillSlotUIInitialized{};
 	_bool m_bLumosActive{};
 	std::optional<CHandle> m_hLumosLight{};
 	EFFECT_INSTANCE_ID m_iLumosEffectID{ INVALID_EFFECT_INSTANCE_ID };
@@ -360,6 +357,7 @@ private:
 	void UpdateLumosHoldAnimation();
 	void UpdateLumosLight();
 	std::optional<CHandle> FindAncientThrowTarget() const;
+	void UpdateAncientMagicActiveButtons();
 	_bool TryGetLumosGlowWorldMatrix(_float4x4& outWorld) const;
 	void UpdateWiggenweldPotion();
 	CHandle m_hWiggenweldPotion{};
@@ -391,7 +389,7 @@ private:
 #pragma endregion
 
 private:
-	PLAYER_SKILL_TYPE m_eSkill_Type;
+	PLAYER_SKILL_TYPE m_eSkillType{ PLAYER_SKILL_TYPE::DEFAULT };
 private:
 	static constexpr _float DASH_HOLD_TIME = 0.35f;
 
@@ -400,23 +398,23 @@ private:
 
 
 private:
-	_float m_fCoolTime_Num1{ 0.f };
-	_bool m_bCoolTime_Num1{ false};
-	_float m_fCoolTime_Num2{ 0.f };
-	_bool m_bCoolTime_Num2{ false };
-	_float m_fCoolTime_Num3{ 0.f };
-	_bool m_bCoolTime_Num3{ false };
-	_float m_fCoolTime_Num4{ 0.f };
-	_bool m_bCoolTime_Num4{ false };
+	_float m_fCoolTime_Num1{};
+	_bool m_bCoolTime_Num1{};
+	_float m_fCoolTime_Num2{};
+	_bool m_bCoolTime_Num2{};
+	_float m_fCoolTime_Num3{};
+	_bool m_bCoolTime_Num3{};
+	_float m_fCoolTime_Num4{};
+	_bool m_bCoolTime_Num4{};
 
 private:
 	void DelayFinish(_float fTimeDelta);
 private:
-	_float m_fDelayTime{ 0.f };
+	_float m_fDelayTime{};
 private:
-	_bool  m_bUI = false;
-	_bool  m_bDistanceUI = false;
-	CHandle m_hUI;
+	_bool m_bUI{};
+	_bool m_bDistanceUI{};
+	CHandle m_hUI{};
 
 private:
 	CComSound* m_pComSound{};
@@ -432,9 +430,9 @@ protected:
 
 private:
 	//성민 지울거임
-	uint32_t testEffectID = 0;
-	_float	m_fDistanceOffeset = 1.6f;
-	_float3	m_vSpwanPos{};
+	uint32_t testEffectID{};
+	_float m_fDistanceOffset{ 1.6f };
+	_float3 m_vSpawnPosition{};
 };
 
 NS_END

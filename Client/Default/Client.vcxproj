@@ -355,7 +355,7 @@
     <ClInclude Include="..\Public\Player_BombardaSkill_State.h" />
     <ClInclude Include="..\Public\Player_TransformationSkill_State.h" />
     <ClInclude Include="..\Public\Player_ConfringoSkill_State.h" />
-    <ClInclude Include="..\Public\Player_AcientAttack_State.h" />
+    <ClInclude Include="..\Public\Player_AncientAttack_State.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
     <ClInclude Include="..\Public\Player_DashSkill_State.h" />
     <ClInclude Include="..\Public\Player_DepulsoSkill_State.h" />
@@ -557,7 +557,7 @@
     <ClCompile Include="..\Private\Player_BombardaSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_TransformationSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_ConfringoSkill_State.cpp" />
-    <ClCompile Include="..\Private\Player_AcientAttack_State.cpp" />
+    <ClCompile Include="..\Private\Player_AncientAttack_State.cpp" />
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />
     <ClCompile Include="..\Private\Player_DashSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_DepulsoSkill_State.cpp" />

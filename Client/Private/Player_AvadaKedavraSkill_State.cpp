@@ -82,7 +82,7 @@ void CPlayer_AvadaKedavraSkill_State::Enter(CStateMachine* pStateMachine)
 	}
 
 	m_ePhase = PHASE::CAST_BEGIN;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 	StartCastEffect(*pPlayer);
 }
 
@@ -102,13 +102,13 @@ void CPlayer_AvadaKedavraSkill_State::Update(
 	if (m_bCinematicStarted && !CGameInstance::Get().IsCinematicPlaying())
 		m_bCinematicStarted = false;
 
-	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(
+	m_fAnimationRatio = PlayerAnimationRatioGuard::Sanitize(
 		pAnimator->GetPlayAnimRatio());
 
 	switch (m_ePhase)
 	{
 	case PHASE::CAST_BEGIN:
-		if (m_fAnimRatio >= RELEASE_RATIO)
+		if (m_fAnimationRatio >= RELEASE_RATIO)
 		{
 			m_ePhase = PHASE::RELEASE;
 			if (!ReleaseSpell(*pPlayer))
@@ -117,12 +117,12 @@ void CPlayer_AvadaKedavraSkill_State::Update(
 		break;
 
 	case PHASE::RELEASE:
-		if (m_fAnimRatio >= RECOVERY_RATIO)
+		if (m_fAnimationRatio >= RECOVERY_RATIO)
 			m_ePhase = PHASE::RECOVERY;
 		break;
 
 	case PHASE::RECOVERY:
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO || pAnimator->GetFinish())
+		if (m_fAnimationRatio >= RECOVERY_EXIT_RATIO || pAnimator->GetFinish())
 			RequestLocomotion(pStateMachine);
 		break;
 	}
@@ -154,7 +154,7 @@ void CPlayer_AvadaKedavraSkill_State::Exit(CStateMachine* pStateMachine)
 		ResetSkillControl(*pPlayer);
 
 	m_ePhase = PHASE::CAST_BEGIN;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 }
 
 void CPlayer_AvadaKedavraSkill_State::CacheAnimationIndices(

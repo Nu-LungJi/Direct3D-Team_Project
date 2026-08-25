@@ -339,7 +339,7 @@ _string CSpider::Get_SkillName(ATTMON SkillNode)
 
 _bool CSpider::Check_Table(PLAYER_SKILL_TYPE eType)
 {
-	if (eType == PLAYER_SKILL_TYPE::ACIENT_LIGHTNING || eType == PLAYER_SKILL_TYPE::ABRA)
+	if (eType == PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING || eType == PLAYER_SKILL_TYPE::ABRA)
 		m_iHp = 0;
 
 	if (m_iHp <= 0.f || m_pFsm->GetCurState() == MON_STATE::DEAD)
@@ -425,7 +425,7 @@ _bool CSpider::BreakSkillType(PLAYER_SKILL_TYPE eType)
 	case PLAYER_SKILL_TYPE::DESCENDO:
 		break;
 
-	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
 		break;
 	case PLAYER_SKILL_TYPE::DESTORY:
 		return true;

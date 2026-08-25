@@ -206,7 +206,7 @@ HIT_TYPE CGur_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround
 	case PLAYER_SKILL_TYPE::PROTEGO:
 		break;
 
-	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
 		break;
 	}
 

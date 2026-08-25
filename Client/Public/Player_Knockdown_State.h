@@ -42,6 +42,7 @@ private:
 	static constexpr _float BLEND_DURATION = 0.1f;
 	static constexpr _float LANDING_BLEND_DURATION = 0.18f;
 	static constexpr _float DOWN_HOLD_DURATION = 0.75f;
+	static constexpr _float INPUT_GETUP_ANIMATION_SPEED = 1.65f;
 	static constexpr _float AIRBORNE_ANIMATION_SPEED = 1.0f;
 	static constexpr _float LAUNCH_VERTICAL_SPEED = 13.5f;
 	static constexpr _float LAUNCH_HORIZONTAL_SPEED = 13.5f;
@@ -58,10 +59,10 @@ private:
 	_float m_fLandingSlideTime{};
 	_float3 m_vLandingSlideVelocity{};
 	_float3 m_vLaunchSlideDirection{};
-	_float m_fPreviousGravity{ -9.81f };
+	_float m_fPreviousGravity{};
 	_bool m_bWasAirborne{};
 	_bool m_bLandingSliding{};
-	_bool m_bPreviousUseGravity{ true };
+	_bool m_bPreviousUseGravity{};
 	_bool m_bPreviousPreserveHorizontalVelocity{};
 	_bool m_bMotorSettingsCaptured{};
 	_bool m_bAnimationIndicesCached{};

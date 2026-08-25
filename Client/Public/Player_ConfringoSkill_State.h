@@ -41,7 +41,7 @@ protected:
 
 private:
 	PHASE m_ePhase{ PHASE::CAST };
-	_float m_fAnimRatio{};
+	_float m_fAnimationRatio{};
 	_bool m_bCastingCueReached{};
 	_bool m_bProjectileCueReached{};
 

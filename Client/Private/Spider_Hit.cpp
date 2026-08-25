@@ -224,7 +224,7 @@ HIT_TYPE CSpider_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGro
 	case PLAYER_SKILL_TYPE::PROTEGO:
 		break;
 
-	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
 		break;
 	case PLAYER_SKILL_TYPE::CONFRIGO:
 		if (m_HitTable.eHitMotion == HIT_MOTION::AIR || m_HitTable.eHitMotion == HIT_MOTION::FALLING)
