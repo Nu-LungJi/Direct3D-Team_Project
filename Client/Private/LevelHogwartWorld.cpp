@@ -465,7 +465,7 @@ HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 	auto handles = CGameInstance::Get()
 		.GetPhysXManager()
 		->CreateCollisionProxyObjectsFromFile(
-			"Level_HogwartWorldLast",
+			"Level_HogwartWorld",
 			"00_MapCollision");
 
 	if (handles.empty())
