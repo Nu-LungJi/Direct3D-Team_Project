@@ -1,9 +1,22 @@
 #pragma once
 #include "Engine_Base.h"
+#include <functional>
 
 NS_BEGIN(Engine)
 
 class COctreeNode;
+
+// 맵 청크 좌표를 unordered 컨테이너의 키로 사용할 때 필요한 해시 함수다.
+struct tagMapChunkCoordHash
+{
+	size_t operator()(const MAPCHUNK_COORD& coord) const
+	{
+		const size_t xHash = std::hash<int64_t>{}(coord.x);
+		const size_t yHash = std::hash<int64_t>{}(coord.y);
+		const size_t zHash = std::hash<int64_t>{}(coord.z);
+		return xHash ^ (yHash << 1) ^ (zHash << 3);
+	}
+};
 
 enum class EChunkLoadState
 {
