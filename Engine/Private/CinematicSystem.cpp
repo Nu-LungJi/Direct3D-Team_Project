@@ -288,6 +288,15 @@ HRESULT CCinematicSystem::Play(const StringID& CinematicID, const std::optional<
 		return E_INVALIDARG;
 	}
 
+	if (!std::isfinite(Options.vLookAtTargetLocalOffset.x) ||
+		!std::isfinite(Options.vLookAtTargetLocalOffset.y) ||
+		!std::isfinite(Options.vLookAtTargetLocalOffset.z) ||
+		(Options.LookAtTargetHandle.has_value() &&
+		 CGameInstance::Get().GetGameObjectByHandle(*Options.LookAtTargetHandle) == nullptr))
+	{
+		return E_INVALIDARG;
+	}
+
 	auto iter = m_Assets.find(CinematicID);
 	if (iter == m_Assets.end() || iter->second == nullptr)
 	{
@@ -637,6 +646,89 @@ HRESULT CCinematicSystem::GetTargetWorldMatrix(_matrix& OutTargetWorld) const
 	return S_OK;
 }
 
+HRESULT CCinematicSystem::ApplyLookAtTarget(FCinematicCameraPose& InOutPose) const
+{
+	if (!m_PlayOptions.LookAtTargetHandle.has_value())
+	{
+		return S_FALSE;
+	}
+
+	const CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(
+		*m_PlayOptions.LookAtTargetHandle);
+	if (pTarget == nullptr)
+	{
+		return E_FAIL;
+	}
+
+	_vector vScale{};
+	_vector vTargetRotation{};
+	_vector vTargetPosition{};
+	if (!XMMatrixDecompose(
+		&vScale,
+		&vTargetRotation,
+		&vTargetPosition,
+		pTarget->GetTransform().GetLoadedCombinedWorldMatrix()))
+	{
+		return E_FAIL;
+	}
+
+	const _vector vLookAtPosition =
+		XMVector3Rotate(
+			XMLoadFloat3(&m_PlayOptions.vLookAtTargetLocalOffset),
+			XMQuaternionNormalize(vTargetRotation)) +
+		vTargetPosition;
+	const _vector vCameraPosition = XMLoadFloat3(&InOutPose.vPosition);
+	_vector vLook = vLookAtPosition - vCameraPosition;
+
+	_float fLookLengthSq{};
+	XMStoreFloat(&fLookLengthSq, XMVector3LengthSq(vLook));
+	if (!std::isfinite(fLookLengthSq) || fLookLengthSq <= FLT_EPSILON)
+	{
+		return E_FAIL;
+	}
+	vLook = XMVector3Normalize(vLook);
+
+	_vector vUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	const _float fUpDot = std::abs(XMVectorGetX(XMVector3Dot(vLook, vUp)));
+	if (fUpDot >= 0.999f)
+	{
+		vUp = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+	}
+
+	const _vector vRight = XMVector3Normalize(XMVector3Cross(vUp, vLook));
+	vUp = XMVector3Cross(vLook, vRight);
+
+	_matrix LookAtWorld = XMMatrixIdentity();
+	LookAtWorld.r[0] = vRight;
+	LookAtWorld.r[1] = vUp;
+	LookAtWorld.r[2] = vLook;
+	const _vector vLookAtRotation =
+		XMQuaternionNormalize(XMQuaternionRotationMatrix(LookAtWorld));
+
+	if (m_ePlayState == EPlayState::BlendingIn &&
+		m_PlayOptions.fStartBlendDuration > FLT_EPSILON)
+	{
+		_float fRatio = std::clamp(
+			m_fStartBlendTime / m_PlayOptions.fStartBlendDuration,
+			0.f,
+			1.f);
+		fRatio = fRatio * fRatio * (3.f - 2.f * fRatio);
+		XMStoreFloat4(
+			&InOutPose.vRotation,
+			XMQuaternionSlerp(
+				XMQuaternionNormalize(XMLoadFloat4(&m_BlendStartPose.vRotation)),
+				vLookAtRotation,
+				fRatio));
+		return S_OK;
+	}
+
+	XMStoreFloat4(
+		&InOutPose.vRotation,
+		vLookAtRotation);
+
+	return S_OK;
+}
+
 HRESULT CCinematicSystem::ConvertTargetLocalPose(const FCinematicCameraPose& LocalPose, _fmatrix TargetWorld, FCinematicCameraPose& OutWorldPose) const
 {
 	const _vector vLocalRotation = XMLoadFloat4(&LocalPose.vRotation);
@@ -911,6 +1003,14 @@ HRESULT CCinematicSystem::ApplyCameraPose(const FCinematicCameraPose& Pose)
 			XMStoreFloat3(&vTargetPosition, TargetWorld.r[3]);
 			TargetToCameraSphereSweep(vTargetPosition,Pose.vPosition, CINEMATIC_CAMERA_COLLISION_RADIUS, CorrectedPose.vPosition);
 		}
+	}
+
+	// 복귀 블렌드에서는 원래 카메라 회전으로 자연스럽게 돌아가야 한다.
+	if (m_ePlayState != EPlayState::Stopped &&
+		m_ePlayState != EPlayState::BlendingOut &&
+		FAILED(ApplyLookAtTarget(CorrectedPose)))
+	{
+		return E_FAIL;
 	}
 
 	return pCinematicCam->ApplyPose(CorrectedPose.vPosition, CorrectedPose.vRotation, CorrectedPose.fFovY);
