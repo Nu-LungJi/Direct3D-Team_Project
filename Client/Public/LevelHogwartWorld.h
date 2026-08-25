@@ -35,6 +35,7 @@ private:
 	HRESULT SpawnMonster(std::optional<CHandle> hPlayer);
 	HRESULT SpawnStaticCollision();
 	HRESULT SpawnCoinCollision();
+	HRESULT SpawnLightPlacement();
 
 	/*----------- 광윤 추가 -----------*/
 	HRESULT Initialize_VolumetricFog();

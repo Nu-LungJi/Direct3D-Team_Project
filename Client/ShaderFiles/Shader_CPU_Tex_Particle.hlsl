@@ -637,3 +637,31 @@ PS_OUT PSAttackIndicator(VS_OUT In)
 	Out.vDiffuse = float4(finalColor, finalAlpha);
 	return Out;
 }
+
+PS_OUT PSSteam8x8(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+	
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+	
+	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, float2(In.vTexcoord.x, In.vTexcoord.y + ratio * 0.001f));
+    
+	if (all(texColor.rgb <= 0.03f))	discard;
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+	
+	float4 vFinalColor = texColor * In.vColor;
+	clip(vFinalColor.a - 0.02f);
+	
+	float2 edgeFadeUV = In.vTexcoord + ratio * 0.01f;
+	float edgeMask = smoothstep(0.0f, 0.15f, edgeFadeUV.x) * smoothstep(1.0f, 0.85f, edgeFadeUV.x) *
+                 smoothstep(0.0f, 0.15f, edgeFadeUV.y) * smoothstep(1.0f, 0.85f, edgeFadeUV.y);
+	
+	float3 FinalColor = vFinalColor.rgb + lerpedEmissive.rgb * lerpedEmissive.a;
+	
+	float fadeIn = smoothstep(0.f, 0.2f, ratio);
+	float fadeOut = 1.f - smoothstep(0.45f, 1.f, ratio);
+	float lifeFade = fadeIn * fadeOut;
+	
+	Out.vDiffuse = float4(FinalColor, vFinalColor.a * (lifeFade));
+	return Out;
+}

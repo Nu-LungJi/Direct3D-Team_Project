@@ -25,6 +25,7 @@ private:
 	static HRESULT AnimalLoad_InWorker();
 
 	static HRESULT LoadCollsion_InWorker();
+	static HRESULT LoadHogsmeade_ExtraAsset();
 private:
 	constexpr static LEVEL CURR_LEVEL = LEVEL::HOGWART_WORLD;
 };

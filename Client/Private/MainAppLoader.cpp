@@ -521,6 +521,9 @@ HRESULT CMainAppLoader::Load_Particle_Resources()
 	if (auto PXL = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_EXTRAEFFECT", CResPixelShader::Create("./ShaderFiles/Shader_CPU_ExtraEffect.hlsl"))) {
 		if (FAILED(PXL->Load(CResShader::DESC{ .sEntryPoint = "PSMain_StarBurst"	 , .sTarget = "ps_5_0" })))	return E_FAIL;
 	}
+	if (auto PXL = CGameInstance::Get().AddResource("PERMANENT_PARTICLE_PSSHADER", "PS_VTX_CPU_STEAM8X8", CResPixelShader::Create("./ShaderFiles/Shader_CPU_Tex_Particle.hlsl"))) {
+		if (FAILED(PXL->Load(CResShader::DESC{ .sEntryPoint = "PSSteam8x8"	 , .sTarget = "ps_5_0" })))	return E_FAIL;
+	}
 	/////////////////////////////////////
 
 	{

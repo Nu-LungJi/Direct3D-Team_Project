@@ -82,6 +82,7 @@ namespace Client
 		Prototype_GameObject_PlayerBroom,
 		Prototype_GameObject_Terrain,
 		Prototype_GameObject_OilBarrel,
+		Prototype_GameObject_WaterWheel,
 		Prototype_GameObject_WiggenweldPotion,
 		Prototype_GameObject_RagdollTest,
 		Prototype_GameObject_TestPathPlayback,

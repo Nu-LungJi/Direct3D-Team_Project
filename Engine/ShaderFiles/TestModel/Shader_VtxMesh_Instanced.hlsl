@@ -75,17 +75,19 @@ PS_OUT PSMain(PS_IN IN)
 {
     PS_OUT Out;
     
-    float4 fDiffuse     = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord) * float4(AlbedoColor, ObjectAlpha);
+    float4 fDiffuse     = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord) * float4(AlbedoColor, 1.f);
     
-    if (fDiffuse.a == 0.0f) discard;
-    
+    //if (fDiffuse.a == 0.0f) discard;
+	clip(fDiffuse.a - 0.25f);
+	
 	float3 fNormal = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
 
-	float3 fMRO         = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);
+	float4 fMRO         = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);
     
     float fFinalMetallic    = fMRO.r * MetallicIntensity;
     float fFinalRoughness   = fMRO.g * RoughnessIntensity;
     float fFinalAO          = fMRO.b * AmbientIntensity;
+	float fFinalAlpha		= fMRO.a * ObjectAlpha;
 
     float3 fEmissive = g_EmissiveTexture.Sample(LinearWrap, IN.vTexcoord).r * EmissiveColor * EmissiveIntensity;
     
