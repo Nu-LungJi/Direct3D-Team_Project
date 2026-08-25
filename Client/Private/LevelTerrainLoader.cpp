@@ -705,10 +705,10 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
 		static constexpr NPC_MODEL_ENTRY NpcModels[] =
 		{
-			{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },
-			{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },
+			/*{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },
+			{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },*/
 			{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
-			{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
+			/*{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
 			{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
 			{ "Model_Resource_NPC_EffieBones", "EffieBones" },
 			{ "Model_Resource_NPC_EleazarFig", "EleazarFig" },
@@ -723,7 +723,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			{ "Model_Resource_NPC_PhineasBlack", "PhineasBlack" },
 			{ "Model_Resource_NPC_SironaRyan", "SironaRyan" },
 			{ "Model_Resource_NPC_ThomasBrown", "ThomasBrown" },
-			{ "Model_Resource_NPC_TimothyTeasdale", "TimothyTeasdale" },
+			{ "Model_Resource_NPC_TimothyTeasdale", "TimothyTeasdale" },*/
 		};
 		for (const auto& Entry : NpcModels)
 		{
