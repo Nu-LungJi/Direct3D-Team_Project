@@ -1959,8 +1959,8 @@ HRESULT CRenderer::Render_PostProcess_Focusing() {
 
 	if (!m_pOutlineTargetHandle)	return S_OK;
 
-	auto OutLineObject = CGameInstance::Get().GetGameObjectByHandle(m_pOutlineTargetHandle.value());
-	if (nullptr == OutLineObject)	return S_OK;
+	auto pOutlineObject = CGameInstance::Get().GetGameObjectByHandle(m_pOutlineTargetHandle.value());
+	if (nullptr == pOutlineObject || pOutlineObject->GetPendingDestroy())	return S_OK;
 
 	{
 		ID3D11DepthStencilState* pDSS = nullptr;
@@ -1979,28 +1979,81 @@ HRESULT CRenderer::Render_PostProcess_Focusing() {
 
 		m_pContext->PSSetShader(nullptr, nullptr, 0);
 	}
+
+	// [LSY] 이 패스는 별도의 외곽선 Depth DSV와 DS_DEPTHWRITE를 바인딩한다.
+	// 성공 여부와 관계없이 다음 PostProcess가 이 상태를 물려받지 않도록 공통으로 해제한다.
+	// Unbind_Resources()는 RenderTarget은 해제하지만 DepthStencilState는 복구하지 않으므로
+	// DepthStencilState까지 이 함수에서 명시적으로 기본 상태로 되돌린다.
+	const auto CleanupFocusingDepthPass = [this]()
+	{
+		ID3D11RenderTargetView* pNullRTV = nullptr;
+		m_pContext->OMSetRenderTargets(1, &pNullRTV, nullptr);
+		m_pContext->OMSetDepthStencilState(nullptr, 0);
+	};
+
 	{
 		auto pGameCam = CGameInstance::Get().GetActiveCamera();
-		if (nullptr == pGameCam)    return S_OK;
+		if (nullptr == pGameCam)
+		{
+			CleanupFocusingDepthPass();
+			return S_OK;
+		}
 
-		if (FAILED(Reset_RenderContext(RENDERPASS::DEPTH, pGameCam))) { Unbind_Resources(); return S_OK; }
-
-		if (FAILED(Bind_CameraAttribute(pGameCam))) { Unbind_Resources(); return S_OK; }
-
-		if (FAILED(CGameInstance::Get().Render_OutlineInstance(m_pContext.Get(), m_pRenderContext, m_pOutlineTargetHandle.value())))
+		if (FAILED(Reset_RenderContext(RENDERPASS::DEPTH, pGameCam)))
 		{
 			Unbind_Resources();
+			CleanupFocusingDepthPass();
+			return S_OK;
+		}
+
+		if (FAILED(Bind_CameraAttribute(pGameCam)))
+		{
+			Unbind_Resources();
+			CleanupFocusingDepthPass();
+			return S_OK;
+		}
+
+		// [LSY] 기존 외곽선 경로는 CPU Skinning 인스턴스 배치에서 대상 Handle을 찾아
+		// 해당 인스턴스 하나만 외곽선 Depth Map에 그린다. 이 경로가 성공(S_OK)하면
+		// 기존 동작을 그대로 사용하고 아래 직접 렌더 경로는 실행하지 않는다.
+		const HRESULT outlineResult = CGameInstance::Get().Render_OutlineInstance(
+			m_pContext.Get(),
+			m_pRenderContext,
+			m_pOutlineTargetHandle.value());
+
+		if (outlineResult == S_FALSE)
+		{
+			// [LSY] S_FALSE는 오류가 아니라 대상 Handle이 지원 대상 인스턴스 배치에
+			// 없다는 뜻이다. 정적/비인스턴싱 오브젝트도 외곽선을 사용할 수 있도록
+			// 오브젝트가 DEPTH 패스를 명시적으로 지원할 때만 같은 Depth Map에 직접 그린다.
+			// Render()에는 DEPTH RenderContext가 전달되므로 구현체는 Pixel Shader나
+			// 불필요한 Material 바인딩 없이 깊이만 기록해야 한다.
+			if (!pOutlineObject->HasRenderPass(RENDERPASS::DEPTH))
+			{
+				CleanupFocusingDepthPass();
+				return S_OK;
+			}
+
+			if (FAILED(pOutlineObject->Render(
+				m_pContext.Get(), m_pRenderContext)))
+			{
+				Unbind_Resources();
+				CleanupFocusingDepthPass();
+				return S_OK;
+			}
+		}
+		else if (FAILED(outlineResult))
+		{
+			// [LSY] 인스턴싱 배치에서 대상을 찾았지만 실제 Depth 렌더에 실패한 경우다.
+			// 이때 직접 렌더로 재시도하면 동일 오브젝트가 일부만 중복 기록될 수 있으므로
+			// fallback하지 않고 이번 프레임의 외곽선만 생략한다.
+			Unbind_Resources();
+			CleanupFocusingDepthPass();
 			return S_OK;
 		}
 	}
-	{
-		SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
-		if (nullptr == DepthWriteState) return S_OK;
 
-		ID3D11RenderTargetView* pNullRTVs[1] = { nullptr };
-		m_pContext->OMSetRenderTargets(1, pNullRTVs, nullptr);
-		m_pContext->OMSetDepthStencilState(nullptr, 0);
-	}
+	CleanupFocusingDepthPass();
 
 
 	return S_OK;
