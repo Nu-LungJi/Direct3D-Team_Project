@@ -139,26 +139,21 @@ void CAccioBall::LateUpdate(_float)
 		return;
 	}
 
-	const auto& pModel = m_pComModelInstance->GetModel();
-	if (!pModel->HasLocalBounds())
-		return;
+	// PhysX로 움직이는 Client 오브젝트는 정적 맵 상주 버퍼가 아니라
+	// 프레임 단위 동적 인스턴싱 경로에 제출한다.
+	CGameInstance::Get().Add_Instance(
+		m_pComModelInstance,
+		*GetTransform().GetCombinedWorldMatrix());
+}
 
-	MAPMESH_INSTANCE_DATA instanceData{};
-	XMStoreFloat4x4(
-		&instanceData.world,
-		GetTransform().GetLoadedCombinedWorldMatrix());
-
-	BoundingBox worldBounds{};
-	pModel->GetLocalBounds().Transform(
-		worldBounds,
-		GetTransform().GetLoadedCombinedWorldMatrix());
-
-	MAPMESH_OCCLUSION_DATA occlusionData{};
-	occlusionData.worldCenter = worldBounds.Center;
-	occlusionData.worldExtents = worldBounds.Extents;
-
-	CGameInstance::Get().PushMapObjectInstance(
-		pModel, instanceData, occlusionData);
+HRESULT CAccioBall::Render_Instanced(
+	ID3D11DeviceContext* pContext,
+	const RENDER_CTX&,
+	const MODEL_INSTANCE_BATCH& batch)
+{
+	return m_pComModelInstance
+		? m_pComModelInstance->RenderDynamicInstances(pContext, batch)
+		: E_FAIL;
 }
 
 HRESULT CAccioBall::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)

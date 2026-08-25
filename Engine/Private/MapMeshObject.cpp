@@ -4,7 +4,6 @@
 #include "ComStaticModelInstance.h"
 #include "ComModelInstance.h"
 #include "GameInstance.h"
-#include "MapMeshGpuCuller.h"
 #include "Resources.h"
 #include "CollBox.h"
 
@@ -13,9 +12,8 @@ NS_USING(Engine)
 CMapMeshObject::CMapMeshObject()
 	: CGameObject{}
 {
-	// 프레임 작업은 LateUpdate의 Transform 동기화와 렌더 인스턴스 등록뿐이다.
-	// Priority/Fixed/Update의 빈 가상 호출을 피하도록 프로토타입을 LATE 전용으로 만들며 클론이 이를 상속한다.
-	SetUpdateLoopMask(GAMEOBJECT_UPDATE_LOOP::LATE);
+	// 정적 맵 메시 데이터는 청크 변경 시 렌더러에 한 번 등록되므로 프레임 업데이트가 필요 없다.
+	SetUpdateLoopMask(GAMEOBJECT_UPDATE_LOOP::NONE);
 }
 
 CMapMeshObject::CMapMeshObject(const CMapMeshObject& Prototype)
@@ -84,90 +82,6 @@ HRESULT CMapMeshObject::Initialize(void* pArg)
 	m_WindDesc = pDesc->windDesc;
 
 	return S_OK;
-}
-
-void CMapMeshObject::LateUpdate(_float fTimeDelta)
-{
-	GetTransform().Update();
-
-	// CPU 프러스텀 컬링 비활성화: 모든 로드된 인스턴스를 GPU 컬러에 전달한다.
-	//if (m_bRenderEnable == false)
-	//	return;
-
-	//m_bRenderEnable = false;
-
-	if (m_pComModelInstance == nullptr || m_pComModelInstance->GetModel() == nullptr)
-	{
-		return;
-	}
-
-	if (CGameInstance::Get().IsDebugBoundsEnabled())
-	{
-		BoundingBox debugBounds{};
-		if (GetOcclusionBounds(debugBounds))
-		{
-			auto* pDebugLine = CGameInstance::Get().GetDbgLineRender();
-			if (pDebugLine != nullptr)
-			{
-				pDebugLine->SetColor({ 1.f, 1.f, 0.f, 1.f });
-				pDebugLine->AddBox(debugBounds.Extents, XMMatrixTranslation(
-					debugBounds.Center.x, debugBounds.Center.y, debugBounds.Center.z));
-				pDebugLine->SetColor();
-			}
-		}
-	}
-
-	if (!CGameInstance::Get().IsInstancingEnabled())
-	{
-		// ------------------------------------------- 인스턴싱 OFF --------------------------------------
-		CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
-		return;
-		//------------------------------------------------------------------------------------------------
-	}
-	else
-	{
-		// ------------------------------------------- 인스턴싱 ON --------------------------------------
-		// 렌더 큐에 넣지않고 instance데이터 push
-		MAPMESH_INSTANCE_DATA instanceData{};
-		MAPMESH_OCCLUSION_DATA occlusionData{};
-		XMStoreFloat4x4(&instanceData.world, GetTransform().GetLoadedCombinedWorldMatrix());
-		instanceData.windParams = {
-			m_WindDesc.strength,
-			m_WindDesc.speed,
-			m_WindDesc.frequency,
-			m_WindDesc.bendExponent
-		};
-
-		const auto& model = m_pComModelInstance->GetModel();
-		if (model != nullptr && model->HasLocalBounds())
-		{
-			const BoundingBox& localBounds = model->GetLocalBounds();
-			const _float modelMinY = localBounds.Center.y - localBounds.Extents.y;
-			const _float modelHeight = localBounds.Extents.y * 2.f;
-			const _float heightStart = std::clamp(m_WindDesc.heightStart, 0.f, 1.f);
-			const _float heightEnd = std::clamp(m_WindDesc.heightEnd, heightStart, 1.f);
-			const _float influenceHeight = modelHeight * (heightEnd - heightStart);
-			
-			if (influenceHeight > 0.0001f)
-			{
-				instanceData.windHeightParams = {
-					modelMinY + modelHeight * heightStart,
-					1.f / influenceHeight
-				};
-			}
-		}
-		instanceData.windType = static_cast<uint32_t>(m_WindDesc.type);
-		const auto renderFeature = (instanceData.windType == static_cast<uint32_t>(EWindType::None))
-			? EMapMeshRenderFeature::Static : EMapMeshRenderFeature::Foliage;
-
-		BoundingBox boundingBox;
-		if (!GetOcclusionBounds(boundingBox))
-			return;
-		occlusionData.worldCenter = boundingBox.Center;
-		occlusionData.worldExtents = boundingBox.Extents;
-		CGameInstance::Get().PushMapObjectInstance(m_pComModelInstance->GetModel(), instanceData, occlusionData, renderFeature);
-		//------------------------------------------------------------------------------------------------
-	}
 }
 
 HRESULT CMapMeshObject::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
