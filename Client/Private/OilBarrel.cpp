@@ -148,25 +148,19 @@ void COilBarrel::LateUpdate(E::_float fTimeDelta)
 		return;
 	}
 
-	const auto& pModel = m_pComModelInstance->GetModel();
-	if (!pModel->HasLocalBounds())
-		return;
+	CGameInstance::Get().Add_Instance(
+		m_pComModelInstance,
+		*GetTransform().GetCombinedWorldMatrix());
+}
 
-	MAPMESH_INSTANCE_DATA InstanceData{};
-	XMStoreFloat4x4(
-		&InstanceData.world,
-		GetTransform().GetLoadedCombinedWorldMatrix());
-
-	BoundingBox WorldBounds{};
-	pModel->GetLocalBounds().Transform(
-		WorldBounds,
-		GetTransform().GetLoadedCombinedWorldMatrix());
-
-	MAPMESH_OCCLUSION_DATA OcclusionData{};
-	OcclusionData.worldCenter = WorldBounds.Center;
-	OcclusionData.worldExtents = WorldBounds.Extents;
-
-	CGameInstance::Get().PushMapObjectInstance(pModel, InstanceData, OcclusionData);
+HRESULT COilBarrel::Render_Instanced(
+	ID3D11DeviceContext* pContext,
+	const E::RENDER_CTX&,
+	const E::MODEL_INSTANCE_BATCH& batch)
+{
+	return m_pComModelInstance
+		? m_pComModelInstance->RenderDynamicInstances(pContext, batch)
+		: E_FAIL;
 }
 
 HRESULT COilBarrel::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)

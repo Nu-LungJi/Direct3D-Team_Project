@@ -73,13 +73,13 @@ namespace
 		}
 	}
 
-	ImU32 ChunkColor(const E::MAPCHUNK& chunk, bool selected)
+	ImU32 ChunkColor(const E::CMapChunk& chunk, bool selected)
 	{
 		if (selected)
 		{
 			return IM_COL32(255, 215, 96, 220);
 		}
-		if (chunk.saveState == E::EChunkSaveState::Unsaved)
+		if (chunk.GetSaveState() == E::EChunkSaveState::Unsaved)
 		{
 			return IM_COL32(255, 145, 80, 170);
 		}
@@ -158,7 +158,7 @@ void CMapChunkGUI::UpdateGUI(E::_float fTimeDelta)
 			for (const auto& [coord, chunk] : chunks)
 			{
 				const bool selected = m_bHasSelection && coord == m_SelectedCoord;
-				std::string label = CoordToString(coord) + "  objects: " + std::to_string(chunk.hObjects.size());
+				std::string label = CoordToString(coord) + "  objects: " + std::to_string(chunk.GetObjectHandles().size());
 				if (ImGui::Selectable(label.c_str(), selected))
 				{
 					m_SelectedCoord = coord;
@@ -174,11 +174,11 @@ void CMapChunkGUI::UpdateGUI(E::_float fTimeDelta)
 				if (iter != chunks.end())
 				{
 					const auto& chunk = iter->second;
-					ImGui::Text("Selected: %s", CoordToString(chunk.coord).c_str());
-					DrawBoundsText(chunk.bounds);
-					ImGui::Text("Load: %s", LoadStateText(chunk.loadState));
-					ImGui::Text("Save: %s", SaveStateText(chunk.saveState));
-					ImGui::Text("File: %s", chunk.filePath.c_str());
+					ImGui::Text("Selected: %s", CoordToString(chunk.GetCoord()).c_str());
+					DrawBoundsText(chunk.GetBounds());
+					ImGui::Text("Load: %s", LoadStateText(chunk.GetLoadState()));
+					ImGui::Text("Save: %s", SaveStateText(chunk.GetSaveState()));
+					ImGui::Text("File: %s", chunk.GetFilePath().c_str());
 
 					if (ImGui::Button("Load Selected Chunk", ImVec2(160.f, 0.f)))
 					{
@@ -192,7 +192,7 @@ void CMapChunkGUI::UpdateGUI(E::_float fTimeDelta)
 
 					if (ImGui::TreeNode("Objects"))
 					{
-						for (const auto& handle : chunk.hObjects)
+						for (const auto& handle : chunk.GetObjectHandles())
 						{
 							auto* object = E::CGameInstance::Get().GetGameObjectByHandle(handle);
 							if (!object)
@@ -275,7 +275,7 @@ void CMapChunkGUI::UpdateGUI(E::_float fTimeDelta)
 						const float y = originY + static_cast<float>(maxZ - coord.z) * cell;
 				const bool selected = m_bHasSelection && coord == m_SelectedCoord;
 				ImU32 color = ChunkColor(chunk, selected);
-				if (chunk.loadState != E::EChunkLoadState::Loaded)
+				if (chunk.GetLoadState() != E::EChunkLoadState::Loaded)
 				{
 					color = selected ? IM_COL32(255, 215, 96, 150) : IM_COL32(90, 95, 105, 110);
 				}
@@ -284,7 +284,7 @@ void CMapChunkGUI::UpdateGUI(E::_float fTimeDelta)
 
 						if (cell >= 26.f)
 						{
-							std::string count = std::to_string(chunk.hObjects.size());
+							std::string count = std::to_string(chunk.GetObjectHandles().size());
 							ImVec2 textSize = ImGui::CalcTextSize(count.c_str());
 							drawList->AddText(ImVec2(x + (cell - textSize.x) * 0.5f, y + (cell - textSize.y) * 0.5f), IM_COL32(255, 255, 255, 230), count.c_str());
 						}

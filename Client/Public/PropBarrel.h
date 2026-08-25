@@ -67,6 +67,7 @@ public:
 	void FixedUpdate(_float fTimeDelta) override;
 	void Update(_float fTimeDelta) override;
 	void LateUpdate(_float fTimeDelta) override;
+	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx, const MODEL_INSTANCE_BATCH& batch) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
 	void UpdateGUI() override;
 	void OnCollisionEnter(
