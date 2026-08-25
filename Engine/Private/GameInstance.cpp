@@ -1447,11 +1447,21 @@ HRESULT CGameInstance::RegisterMapMeshObjectToMapChunk(const CHandle& hObject)
 {
 	return m_pMapManager->RegisterMapMeshObject(hObject);
 }
+
+HRESULT CGameInstance::RefreshMapMeshObjectInMapChunk(const CHandle& hObject)
+{
+	return m_pMapManager->RefreshMapMeshObject(hObject);
+}
+
+HRESULT CGameInstance::UnregisterMapMeshObjectFromMapChunk(const CHandle& hObject)
+{
+	return m_pMapManager->UnregisterMapMeshObject(hObject);
+}
 std::vector<CHandle> CGameInstance::CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const
 {
 	return m_pMapManager->CollectMapMeshPickCandidates(rayOrigin, rayDirection);
 }
-const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
+const std::unordered_map<MAPCHUNK_COORD, CMapChunk, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
 {
 	return m_pMapManager->GetChunks();
 }
@@ -1469,8 +1479,9 @@ _bool CGameInstance::IsMapChunkStreaming() const
 }
 
 /*----------- 광윤 추가 -----------*/
-const MATERIAL_DESC CGameInstance::FindMaterial(const std::string& ModelName) {
-	return m_pMapManager->FindMaterial(ModelName);
+MATERIAL_DESC CGameInstance::FindMaterial(const std::string& modelName)
+{
+	return m_pMapManager->FindMaterial(modelName);
 }
 /*---------------------------------*/
 
@@ -1653,9 +1664,23 @@ _bool	CGameInstance::Has_ActiveDynamicShadowBatch() {
 #pragma endregion
 
 #pragma region MAPMESH_INSTANCE_RENDER
-HRESULT CGameInstance::PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData, EMapMeshRenderFeature renderFeature)
+HRESULT CGameInstance::RegisterMapMeshResidentChunk(
+	const MAPCHUNK_COORD& coord,
+	const std::vector<CHandle>& objectHandles)
 {
-	return m_pMapMeshInstancingRenderer->PushMapObjectInstance(pModel, renderFeature, instanceData, occlusionData);
+	return m_pMapMeshInstancingRenderer
+		? m_pMapMeshInstancingRenderer->RegisterResidentChunk(coord, objectHandles)
+		: E_FAIL;
+}
+void CGameInstance::UnregisterMapMeshResidentChunk(const MAPCHUNK_COORD& coord)
+{
+	if (m_pMapMeshInstancingRenderer)
+		m_pMapMeshInstancingRenderer->UnregisterResidentChunk(coord);
+}
+void CGameInstance::ClearMapMeshResidentChunks()
+{
+	if (m_pMapMeshInstancingRenderer)
+		m_pMapMeshInstancingRenderer->ClearResidentChunks();
 }
 // 인스턴싱 On/Off , 드로우 콜 GUI
 _bool CGameInstance::IsInstancingEnabled()

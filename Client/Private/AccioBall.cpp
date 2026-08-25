@@ -224,10 +224,18 @@ void CAccioBall::LateUpdate(_float)
 	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
 		return;
 
-	// [LSY] 개별 Handle 외곽선을 위해 MapMesh 인스턴싱은 사용하지 않는다.
-	// MAPMESH 그룹의 직접 렌더를 사용해 NONBLEND 전역 Depth 선행 패스와
-	// 본 렌더가 같은 깊이를 두 번 기록하는 상황을 피한다.
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
+	if (!CGameInstance::Get().IsInstancingEnabled())
+	{
+		// [LSY] 인스턴싱 비활성화 시에도 MapMesh의 스텐실 정책을 유지한다.
+		CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
+		return;
+	}
+
+	// [LSY] 움직이는 공은 정적 MapMesh 상주 데이터가 아니다. 매 프레임 갱신되는
+	// Model Instance Manager 경로로 제출하고, 선택 외곽선의 Depth만 Render() 폴백을 사용한다.
+	CGameInstance::Get().Add_Instance(
+		m_pComModelInstance,
+		*GetTransform().GetCombinedWorldMatrix());
 }
 
 void CAccioBall::SyncRenderPoseFromRigidBody()
@@ -241,6 +249,16 @@ void CAccioBall::SyncRenderPoseFromRigidBody()
 	const _float4 vRotation = m_pComPxRigidBody->GetRotation();
 	GetTransform().SetPosition(vPosition);
 	GetTransform().SetQuaternion(vRotation);
+}
+
+HRESULT CAccioBall::Render_Instanced(
+	ID3D11DeviceContext* pContext,
+	const RENDER_CTX&,
+	const MODEL_INSTANCE_BATCH& batch)
+{
+	return m_pComModelInstance
+		? m_pComModelInstance->RenderDynamicInstances(pContext, batch)
+		: E_FAIL;
 }
 
 HRESULT CAccioBall::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)

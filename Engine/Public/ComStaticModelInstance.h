@@ -41,6 +41,11 @@ public:
 	VOID Bind_Materials(ID3D11DeviceContext* pContext, _float3 _EmissiveColor, _float _EmissiveIntensity, _float3 _DissolveColor, _float _DissolveIntensity, _float _ObjectAlpha,
 		_float _NormalIntensity = 1.f, _float _MetallicIntensity = 1.f, _float _RoughnessIntensity = 1.f, _float _AmbientIntensity = 1.f);
 	/*---------------------------------*/
+	// 움직이는 비애니메이션 오브젝트의 프레임 배치를 공통 셰이더로 렌더링한다.
+	// 정적 MapMesh 상주 인스턴싱과는 별도의 Model Instance Manager 경로다.
+	HRESULT RenderDynamicInstances(
+		ID3D11DeviceContext* context,
+		const MODEL_INSTANCE_BATCH& batch);
 	SPtr<CResTexture2D> Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
 
 public:

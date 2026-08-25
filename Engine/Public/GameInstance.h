@@ -497,14 +497,16 @@ public:
 	HRESULT UnLoadMapChunk(const MAPCHUNK_COORD& coord);
 	void RebuildMapChunks();
 	HRESULT RegisterMapMeshObjectToMapChunk(const CHandle& hObject);
+	HRESULT RefreshMapMeshObjectInMapChunk(const CHandle& hObject);
+	HRESULT UnregisterMapMeshObjectFromMapChunk(const CHandle& hObject);
 	std::vector<CHandle> CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const;
-	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetMapChunks() const;
+	const std::unordered_map<MAPCHUNK_COORD, CMapChunk, tagMapChunkCoordHash>& GetMapChunks() const;
 	const _float3& GetMapChunkSize() const;
 	void SetMapChunkStreaming(_bool enable);
 	_bool IsMapChunkStreaming() const;
 
 	/*----------- 광윤 추가 -----------*/
-	const MATERIAL_DESC FindMaterial(const std::string& ModelName);
+	MATERIAL_DESC FindMaterial(const std::string& modelName);
 	/*---------------------------------*/
 #ifdef _DEBUG
 	void SetDebugDrawMapChunk(_bool draw);
@@ -565,7 +567,9 @@ public:
 #pragma endregion
 
 #pragma region MAPMESH_INSTANCE_RENDER
-	HRESULT PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData, EMapMeshRenderFeature renderFeature = EMapMeshRenderFeature::Static);
+	HRESULT RegisterMapMeshResidentChunk(const MAPCHUNK_COORD& coord, const std::vector<CHandle>& objectHandles);
+	void UnregisterMapMeshResidentChunk(const MAPCHUNK_COORD& coord);
+	void ClearMapMeshResidentChunks();
 	// 인스턴싱 On/Off , 드로우 콜 GUI
 	_bool IsInstancingEnabled();
 	void SetInstancingEnabled(_bool bEnabled);
