@@ -332,11 +332,11 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 	float3	TexCoord = (float3(ID.xyz) + 0.5f + JitterOffset) / FroxelGridSize;
 	
 	float3	VoxelWorldPos	= FroxelZToWorldPos(TexCoord);
-	float	FogDensity = GetVolumeFogDensity(VoxelWorldPos);
+	float FogDensity = GetVolumeFogDensity(VoxelWorldPos);
  
 	if (FogDensity <= 0.0001f)
 	{
-		OUTPUT3D[ID] = float4(1.f, 0.f, 0.f, 0.f);
+		OUTPUT3D[ID] = float4(0.f, 0.f, 0.f, 0.f);
 		return;
 	}
 	

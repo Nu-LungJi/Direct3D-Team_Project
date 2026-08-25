@@ -97,12 +97,12 @@ HRESULT CMainApp::Initialize()
 	LOG_MEMORY("CMainApp::Initialize End");
 
 	// 광윤 추가 : 만약 이게 Merge할때 안 지워졌다면 전적으로 제 책임이니까 걍 죽여주세요
-//#ifdef _DEBUG
-//	CGameInstance::Get().ChangeLevel("TO_TERRAIN");
-//#endif
-//#ifdef NDEBUG
-//	CGameInstance::Get().ChangeLevel("TO_HOGWART_WORLD");
-//#endif
+#ifdef _DEBUG
+	CGameInstance::Get().ChangeLevel("TO_TERRAIN");
+#endif
+#ifdef NDEBUG
+	CGameInstance::Get().ChangeLevel("TO_HOGWART_WORLD");
+#endif
 
 	return S_OK;
 }
