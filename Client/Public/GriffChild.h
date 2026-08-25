@@ -1,12 +1,12 @@
 #pragma once
-#include "Animal.h"
+#include "WorldAgent.h"
 #include "Client_Defines.h"
 
 NS_BEGIN(Client)
-class CGriffChild final : public CAnimal
+class CGriffChild final : public CWorldAgent
 {
 public:
-	DECLARE_DERIVED_TYPE(CGriffChild, CAnimal)
+	DECLARE_DERIVED_TYPE(CGriffChild, CWorldAgent)
 
 private:
 	CGriffChild();

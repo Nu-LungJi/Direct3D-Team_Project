@@ -27,7 +27,6 @@ private:
 private:
 	_float				m_fDis{10.f};
 	_bool				m_bTrue{ false }, m_bRunning{ false };
-	BT_USER				m_eUser{BT_USER::MON};
 	EVALUATE			m_PreEval{ EVALUATE::SUCCESS };
 public:
 	static UPtr<CBTDecSearch> Create();

@@ -38,6 +38,7 @@
 #include "GriffChild.h"
 #include "Troll.h"
 #include "TrollWeapon.h"
+#include "WorldAnimal.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
@@ -92,7 +93,7 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 			if (FAILED(NpcLoad_InWorker()))
 				return false;
-			if (FAILED(AnimalLoad_InWorker()))
+			if (FAILED(WorldAgentLoad_InWorker()))
 				return false;
 
 			if (FAILED(LoadCollsion_InWorker()))
@@ -408,14 +409,6 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 				return E_FAIL;
 			}
 		}
-		if (auto res = CGameInstance::Get().AddResource("SPAWNER", "SPIDERSPAWN", CResJson::Create("./Resources/json/Spawn/SPIDERSPAWN.json")))
-		{
-			if (FAILED(res->Load()))
-			{
-				MSG_BOX("LOAD FAILED EDGWAYPT SPAWNER JSON");
-				return E_FAIL;
-			}
-		}
 		if (auto res = CGameInstance::Get().AddResource("SPAWNER", "EVENTSPIDER", CResJson::Create("./Resources/json/Spawn/EVENTSPIDER.json")))
 		{
 			if (FAILED(res->Load()))
@@ -491,7 +484,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorldLoader::AnimalLoad_InWorker()
+HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 {
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Griff",
 		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Griff/SK_Griff.bin"))) {
@@ -527,6 +520,12 @@ HRESULT CLevelHogwartWorldLoader::AnimalLoad_InWorker()
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_GriffChild");
 		return E_FAIL;
 	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldAnimal, CWorldAnimal::Create())))
+	{
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_WorldWorldAgent");
+		return E_FAIL;
+	}
+	return S_OK;
 }
 HRESULT CLevelHogwartWorldLoader::LoadCollsion_InWorker()
 {	

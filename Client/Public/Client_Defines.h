@@ -102,6 +102,7 @@ namespace Client
 		Prototype_GameObject_WorldNpc,
 		Prototype_GameObject_Griff,
 		Prototype_GameObject_GriffChild,
+		Prototype_GameObject_WorldAnimal,
 		Prototype_GameObject_PropBarrel,
 		Prototype_GameObject_PropBarrelDebris,
 		Prototype_GameObject_Coin,
@@ -126,6 +127,7 @@ namespace Client
 	enum class MONSTER_TYPE{NORMAL,ELITE, BOSS};
 	enum class NPCACTION {IDLE,WALK,LISTEN};
 	enum class BT_USER { MON, NPC };
+	enum class AGENT_STATE { IDLE, HIT, TALK, END };
 enum class PARTES { WEAPON, BROOM, EFFECT, END };
 }
 

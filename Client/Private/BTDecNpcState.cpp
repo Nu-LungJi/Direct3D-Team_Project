@@ -41,7 +41,7 @@ EVALUATE CBTDecNpcState::Evaluate(_float fTimeDelta)
 	auto pBB = pBT->Get_Blackboard();
 	if (!pBB) return m_eDebug = EVALUATE::FAILED;
 
-	auto pState = pBB->Get_Value<NPC_STATE>(NPC_KEY::STATE);
+	auto pState = pBB->Get_Value<AGENT_STATE>(NPC_KEY::STATE);
 	if (!pState) return m_eDebug = EVALUATE::FAILED;
 	//--------------------------------------//
 
@@ -55,13 +55,13 @@ void CBTDecNpcState::Update_Gui()
 	ImGui::Text("NpcState");
 	if (ImGui::BeginCombo("##NpcState", MagicEnumToStringView(m_eState).data()))
 	{
-		for (uint32_t i = 0; i < ETOUI(NPC_STATE::END); ++i)
+		for (uint32_t i = 0; i < ETOUI(AGENT_STATE::END); ++i)
 		{
 			_bool bSelect = i == ETOUI(m_eState);
 
-			if (ImGui::Selectable(MagicEnumToStringView(static_cast<NPC_STATE>(i)).data(), bSelect))
+			if (ImGui::Selectable(MagicEnumToStringView(static_cast<AGENT_STATE>(i)).data(), bSelect))
 			{
-				m_eState = static_cast<NPC_STATE>(i);
+				m_eState = static_cast<AGENT_STATE>(i);
 			}
 			if (bSelect)
 				ImGui::SetItemDefaultFocus();
@@ -74,13 +74,13 @@ void CBTDecNpcState::Update_Gui()
 nlohmann::json CBTDecNpcState::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
-	SaveJsonEnum(j, "NPC_STATE", m_eState);
+	SaveJsonEnum(j, "AGENT_STATE", m_eState);
 	return  j;
 }
 HRESULT CBTDecNpcState::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
-	LoadJsonEnum(j, "NPC_STATE", m_eState);
+	LoadJsonEnum(j, "AGENT_STATE", m_eState);
 	return S_OK;
 }
 E::UPtr<CBTDecNpcState> CBTDecNpcState::Create()

@@ -130,10 +130,10 @@ private:
 	_bool m_bSliderVisualBaseCaptured{};
 	_bool m_bWandCoreCardInitialized{};
 	std::optional<CHandle> m_WandCoreBackground{};
-	std::optional<CHandle> m_WandCoreAnimal{};
+	std::optional<CHandle> m_WandCoreWorldAgent{};
 	std::vector<std::pair<CHandle, _float>> m_vWandCoreBaseBrightness{};
 	_float m_fWandCoreBackgroundBaseScale{ 1.1f };
-	_float m_fWandCoreAnimalBaseScale{ 1.f };
+	_float m_fWandCoreWorldAgentBaseScale{ 1.f };
 	_float m_fWandCoreHoverAmount{};
 
 private:

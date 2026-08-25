@@ -478,10 +478,10 @@ void CBTAnimRoot::OnEnter()
 	auto pBT = Get_ComBT();
 	if (nullptr == pBT) return;
 
-	auto pSrc = static_cast<CMonster*>(pBT->GetGameObject());
+	auto pSrc = pBT->GetGameObject();
 	if (nullptr == pSrc) return;
 
-	auto pAnim = pSrc->Get_Animator();
+	auto pAnim = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 	if (nullptr == pAnim) return;
 
 	auto& pA = pAnim->GetCurAnimState();

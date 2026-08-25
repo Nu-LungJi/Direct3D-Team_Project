@@ -2,7 +2,7 @@
 #include "BTNaviMove.h"
 #include "ComTransform.h" 
 #include "ComCharacterMoveIntent.h"
-#include "NpcMom.h"
+#include "WorldAgent.h"
 #include "BTBlackBoard.h"
 #include "BlackBoardKey.h"
 #include "NavMeshManager.h"

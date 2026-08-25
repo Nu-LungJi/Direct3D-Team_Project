@@ -237,124 +237,6 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	}
 	m_iHp = m_iMaxHp = 555;
 	
-	{
-		CComPxRigidBody::DESC Desc{};
-		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
-		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComPxRigidBody", &Desc, &m_pComRigidBody)))
-		{
-			MSG_BOX("Create Failed ComPxRigidBody EnderDragon");
-			return E_FAIL;
-		}
-	}
-
-	{
-		CComPxSphereCollider::DESC Desc{};
-		Desc.pComPxRigidBody = m_pComRigidBody;
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.bIsTrigger = false;
-		Desc.tFilter = PX_FILTER_DESC{
-			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_HURTBOX),
-			.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
-			//.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
-		};
-		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 1.2f });
-		if (!Desc.pResMaterial ||
-			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
-				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
-		{
-			MSG_BOX("Create Failed ComPxSphereCollider EnderDragon");
-			return E_FAIL;
-		}
-		if (!m_pComSphereCol->SetQueryEnabled(false))
-			return E_FAIL;
-	}
-
-	//피직스
-	{
-		CComPxCharacterController::DESC Desc{};
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		const _float fHorizontalScale =
-			std::max(std::abs(MonDesc->vScale.x), std::abs(MonDesc->vScale.z));
-		const _float fVerticalScale = std::abs(MonDesc->vScale.y);
-		const _float3 vCenterOffset{
-			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
-			MonDesc->vCCTCenterOffset.y * fVerticalScale,
-			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
-		Desc.fHeight = MonDesc->fCCTHeight * fVerticalScale;
-		Desc.fRadius = MonDesc->fCCTRadius * fHorizontalScale;
-		Desc.fStepOffset = MonDesc->fCCTStepOffset;
-		Desc.vPosition = {
-			MonDesc->vPos.x + vCenterOffset.x,
-			MonDesc->vPos.y + vCenterOffset.y,
-			MonDesc->vPos.z + vCenterOffset.z };
-		Desc.tFilter = MonDesc->tFilter;
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,
-			"ComPxCharacterController", &Desc, &m_pCharacterController)))
-		{
-			return E_FAIL;
-		}
-	}
-	//캐릭컨트롤러
-	{
-		CComCharacterMoveIntent::DESC Desc{};
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
-			"ComCharacterMoveIntent", &Desc, &m_pMoveIntent)))
-		{
-			return E_FAIL;
-		}
-	}
-	//캐릭 모터
-	{
-		CComCharacterMotor::DESC Desc{};
-		Desc.pMoveIntent = m_pMoveIntent;
-		Desc.pCharacterController = m_pCharacterController;
-		Desc.fGravity = -9.81f;
-		Desc.vControllerCenterOffset = {
-			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
-			MonDesc->vCCTCenterOffset.y * std::abs(MonDesc->vScale.y),
-			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
-		Desc.bUseGravity = true;
-		Desc.bSyncTransform = true;
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
-			"ComCharacterMotor", &Desc, &m_pCharacterMotor)))
-		{
-			return E_FAIL;
-		}
-	}
-
-	CComBeHavior::BEHAVIOR_DESC Desc{};
-	Desc.OwnerName = "Com_BT";
-	Desc.resBeHaviorMajor = MonDesc->resBeHaviorMajor;
-	Desc.resBeHaviorMinor = MonDesc->resBeHaviorMinor;
-	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
-	{
-		return E_FAIL;
-	};
-	{
-		CComConstantBuffer::DESC Desc{};
-		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
-		{
-			return E_FAIL;
-		};
-	}
-	{
-		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = MonDesc->LevelTag;
-		Desc.sResTag = MonDesc->ReSourceTag;
-
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
-		{
-			return E_FAIL;
-		};
-	}
 	/*----------- 광윤 추가 -----------*/
 	{
 		CComModelInstance::DESC Desc{};
@@ -367,24 +249,6 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 		};
 	}
 	/*---------------------------------*/
-	{
-		CComAnimator::DESC DescAnim{};
-		DescAnim.sComTag = "ComCModelIntance";
-
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Animator", "ComCModelAnimator", &DescAnim, &m_pModelAnimator)))
-		{
-			return E_FAIL;
-		};
-	}
-	{
-		CComCollider::DESC Desc{};
-		Desc.eCollType = CollType::Box;
-		Desc.vExtents = { 1.f, 1.f, 1.f };
-		if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComColl", &Desc, &m_pComCollider)))
-		{
-			return E_FAIL;
-		};
-	}
 	
 	if (FAILED(Ready_Fsm(MonDesc->LevelTag)))
 	{
@@ -397,12 +261,6 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 		return E_FAIL;
 	}
 	Ready_BBKeyValue();
-
-	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
-	GetTransform().Update();
-	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
-	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
-
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
 	InitializeEffects();
@@ -555,7 +413,7 @@ void CEnderDragon::Ready_BBKeyValue()
 	pBB->Set_Value<DRAGON_PHASE>(EDG_KEY::EDGPHASE, m_ePhase);
 	pBB->Set_Value<MOVE>(EDG_KEY::EPATROL, MOVE::LEFT);
 	pBB->Set_Value<_bool>(EDG_KEY::EDGEFFECT, false);
-
+	pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
 	
 }
 void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)

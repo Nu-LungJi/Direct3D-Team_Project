@@ -251,7 +251,7 @@ HRESULT CLevelTerrain::Initialize()
 			}
 			else if (Placement.sPrototypeTag == MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc))
 			{
-				CWorldNpc::NPC_DESC Desc{};
+				CWorldNpc::WORLD_AGENT_DESC Desc{};
 				Desc.sObjectTag = "NpcPlacement_" + std::to_string(Placement.iPlacementId);
 				Desc.TargetHandle = hTarget;
 				Desc.LevelTag = Placement.sModelGroupTag;

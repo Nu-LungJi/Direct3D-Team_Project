@@ -54,10 +54,8 @@ public:
 	_bool						Check_Table(PLAYER_SKILL_TYPE eType) override;
 
 	void						Set_AttTable(ATTMON eType, _float2 fSkillRatio) override;
-	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
 	TROLL_SKILL_INFO&			Get_SkillInfo(TROLL_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
 	const _string&				Get_SkillName(TROLL_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
-	void						Set_EndGame() { m_bEndGame = true; }
 private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
@@ -68,10 +66,10 @@ private:
 private:
 	class CMon_State* m_pFsm{ nullptr };
 
-	_string			m_EffectNames[ETOUI(TROLL_SKILL::END)]{};
-	TROLL_SKILL_INFO m_SkillHandle[ETOUI(TROLL_SKILL::END)]{};
-	TROLL_SKILL		m_eDragonSkill{};
-	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bEndGame{ false };
+	_string				m_EffectNames[ETOUI(TROLL_SKILL::END)]{};
+	TROLL_SKILL_INFO	m_SkillHandle[ETOUI(TROLL_SKILL::END)]{};
+	TROLL_SKILL			m_eDragonSkill{};
+	_bool				m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bEndGame{ false };
 
 public:
 	static E::UPtr<CTroll> Create();

@@ -7,7 +7,7 @@
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
 #include "ClientEvents.h" 
-#include "NpcMom.h"
+#include "WorldAgent.h"
 NS_USING(Client)
 
 CBTAttackAnimation::CBTAttackAnimation()
@@ -347,7 +347,7 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 			if (pxOverLapNpcResult.bHit)
 			{
 				//m_fDamage
-				auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CNpcMom>(pxOverLapNpcResult.hGameObject);
+				auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CWorldAgent>(pxOverLapNpcResult.hGameObject);
 				_float MonDamange = pMon->Get_Damage();
 				pTarget->OnQueryHit(MonDamange);
 				m_bAttRatio = true;

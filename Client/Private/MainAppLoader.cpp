@@ -865,6 +865,15 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			}
 			pNpcPlacement->AddMinorNameToNpcPlacement("CAT_SLEEPING");
 		}
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "RUN_SPIDER", CResJson::Create("./Resources/json/BeHavior/RunSpider.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED RUN_SPIDER JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("RUN_SPIDER");
+		}
 	}
 	////서브트리
 	{

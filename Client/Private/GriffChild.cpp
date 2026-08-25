@@ -46,70 +46,13 @@ HRESULT CGriffChild::InitializePrototype(void* pArg)
 
 HRESULT CGriffChild::Initialize(void* pArg)
 {
-	auto NpcDesc = static_cast<ANIMAL_DESC*>(pArg);
+	auto WorldAgentDesc = static_cast<WORLD_AGENT_DESC*>(pArg);
 	if (FAILED(__super::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
 
-	CComBeHavior::BEHAVIOR_DESC Desc{};
-	Desc.OwnerName = "Com_BT";
-	Desc.resBeHaviorMajor = NpcDesc->resBeHaviorMajor;
-	Desc.resBeHaviorMinor = NpcDesc->resBeHaviorMinor;
-	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
-	{
-		return E_FAIL;
-	};
-	{
-		CComConstantBuffer::DESC Desc{};
-		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
-		{
-			return E_FAIL;
-		};
-	}
-	{
-		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = NpcDesc->LevelTag;
-		Desc.sResTag = NpcDesc->ReSourceTag;
-
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
-		{
-			return E_FAIL;
-		};
-	}
-
-	{
-		CComAnimator::DESC DescAnim{};
-		DescAnim.sComTag = "ComCModelIntance";
-
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Animator", "ComCModelAnimator", &DescAnim, &m_pModelAnimator)))
-		{
-			return E_FAIL;
-		};
-	}
-
-	{
-		CComCollider::DESC Desc{};
-		Desc.eCollType = CollType::Box;
-		Desc.vExtents = { 1.f, 1.f, 1.f };
-		if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComColl", &Desc, &m_pComCollider)))
-		{
-			return E_FAIL;
-		};
-	}
-
-
-
-//	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
-	GetTransform().Update();
-	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
-	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
-	GetTransform().SetPosition(XMLoadFloat3(&NpcDesc->vPos));
-
-	m_pModelAnimator->Play_Anim(0, true);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
-
 	m_vSpreadDir = _float3(Randf(-1.f, 1.f), Randf(-0.3f, 0.3f), Randf(-1.f, 1.f));
 	m_vOffsetPos = _float3(Randf(-20.f, 20.f), Randf(-8.f, 8.f), Randf(0.f, 15.f));
 	return S_OK;

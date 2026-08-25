@@ -32,9 +32,6 @@ void CTrollGroggy::Enter(CStateMachine* pStateMachine)
 	if (nullptr == pTroll) return;
 	auto pBB = pTroll->Get_BlackBoard();
 	if (nullptr == pBB) return;
-	if (false == pTroll->Activate_PendingHit()) return;
-
-	m_iIndex = 0;
 
 	//MONSOUND Sound_Desc{};
 	//_float3 vPos = pTroll->GetTransform().GetPosition();

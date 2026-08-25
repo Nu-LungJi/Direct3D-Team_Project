@@ -2,7 +2,7 @@
 #include "BTAnimNpc.h"
 #include "ComAnimator.h" 
 #include "ComCharacterMoveIntent.h"
-#include "NpcMom.h"
+#include "WorldAgent.h"
 #include "Player.h"
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
@@ -41,7 +41,7 @@ EVALUATE CBTAnimNpc::Evaluate(_float fTimeDelta)
 	auto pBT = Get_ComBT();
 	if (nullptr == pBT) return m_eDebug = EVALUATE::FAILED;
 	
-	auto pOwner = static_cast<CNpcMom*>(pBT->GetGameObject());
+	auto pOwner = static_cast<CWorldAgent*>(pBT->GetGameObject());
 	if(nullptr == pOwner) return m_eDebug = EVALUATE::FAILED;
 		
 	auto pTarget = pOwner->Get_Target();
@@ -199,7 +199,7 @@ void CBTAnimNpc::OnEnter()
 		auto* pBT = Get_ComBT();
 		if (nullptr == pBT) return;
 
-		auto* pSrc = static_cast<CNpcMom*>(pBT->GetGameObject());
+		auto* pSrc = static_cast<CWorldAgent*>(pBT->GetGameObject());
 		if (nullptr == pSrc) return;
 
 		m_iAnimIndex = pSrc->Find_AnimIndex(m_AnimName);

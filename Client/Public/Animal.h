@@ -43,6 +43,7 @@ public:
 		_float fOffset{};
 		_string resBeHaviorMajor{}, resBeHaviorMinor{};
 		_float3 vStartPos{}, vEndPos{};
+		_float fSpeed;
 		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::NPC_BODY),

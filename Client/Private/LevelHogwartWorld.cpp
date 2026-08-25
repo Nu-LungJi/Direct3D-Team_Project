@@ -13,6 +13,7 @@
 #include "UIManager.h"
 #include "Mon_Spawner.h"
 #include "WorldNpc.h"
+#include "WorldAgent.h"
 #include "Griff.h"
 #include "NpcPlacementData.h"
 #include "NpcPlacementManager.h"
@@ -54,9 +55,6 @@ HRESULT CLevelHogwartWorld::Initialize()
 		NpcOption.sBehaviorMajorTag = "BTJSON";
 		NpcOption.sBehaviorMinorTag = "NPC1";
 		pNpcManager->RegisterNpcOption("World NPC", NpcOption);
-		pNpcManager->RegisterNpcSkeletonOption(
-			NpcOption.sPrototypeTag, "Spider Skeleton",
-			NpcOption.sModelGroupTag, NpcOption.sModelResourceTag);
 		struct NPC_SKELETON_OPTION { const char* pName; const char* pTag; };
 		static constexpr NPC_SKELETON_OPTION NpcSkeletons[] =
 		{
@@ -73,16 +71,24 @@ HRESULT CLevelHogwartWorld::Initialize()
 		};
 		for (const auto& Option : NpcSkeletons)
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, Option.pName, NpcOption.sModelGroupTag, Option.pTag);
-		pNpcManager->RegisterNpcSkeletonOption(
-			NpcOption.sPrototypeTag, "Cat",
-			NpcOption.sModelGroupTag, "Model_Resource_Cat");
+	
+
 		pNpcManager->RegisterBehaviorOption("World NPC", "BTJSON", "NPC1");
+		{
+			NpcOption.sPrototypeTag = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldAnimal);
+			NpcOption.sLayerTag = "02_Animal";
+			pNpcManager->RegisterNpcOption("Animal", NpcOption);
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Spider",NpcOption.sModelGroupTag, "Model_Resource_Spider");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Cat", NpcOption.sModelGroupTag, "Model_Resource_Cat");
+		}
+
 		pNpcManager->SetSpawnCallback([hTarget = *hPlayer](const E::NPC_PLACEMENT_DESC& Placement)
 		{
-			if (Placement.sPrototypeTag != MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc))
+			if (Placement.sPrototypeTag != MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc) &&
+				Placement.sPrototypeTag != MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldAnimal))
 				return E::NPC_PLACEMENT_RESULT{ Placement.iPlacementId, false, {}, "Unsupported Hogwarts NPC." };
-
-			CWorldNpc::NPC_DESC Desc{};
+			
+			CWorldNpc::WORLD_AGENT_DESC Desc{};
 			Desc.sObjectTag = "NpcPlacement_" + std::to_string(Placement.iPlacementId);
 			Desc.TargetHandle = hTarget;
 			Desc.LevelTag = Placement.sModelGroupTag;
@@ -142,8 +148,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 		return E_FAIL;
 	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/Cat.json")))
 		return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/RunSpider.json")))
+		return E_FAIL;
 
-	if (FAILED(SpanwAnimal()))
+	if (FAILED(SpanwWorldAgent()))
 		return E_FAIL;
 	//gameInstance.Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
 
@@ -536,7 +544,7 @@ HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer, const _string& P
 		if (Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::GPU_CROWD_AMBIENT)
 			return E_NOTIMPL;
 
-		CWorldNpc::NPC_DESC Desc{};
+		CWorldNpc::WORLD_AGENT_DESC Desc{};
 		Desc.sObjectTag = Placement.sPrototypeTag;
 		Desc.TargetHandle = hPlayer;
 		Desc.LevelTag = Placement.sModelGroupTag.empty()
@@ -564,9 +572,9 @@ HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer, const _string& P
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorld::SpanwAnimal()
+HRESULT CLevelHogwartWorld::SpanwWorldAgent()
 {
-	CGriff::ANIMAL_DESC Griff{};
+	CGriff::WORLD_AGENT_DESC Griff{};
 	Griff.sObjectTag = "Griff";
 	Griff.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
 	Griff.ReSourceTag = "Model_Resource_Griff";

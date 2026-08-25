@@ -81,6 +81,12 @@ HRESULT CAnimal::Initialize(void* pArg)
 }
 
 
+CBTBlackBoard* CAnimal::Get_BlackBoard()
+{
+	if (nullptr == m_pBeHavior) return nullptr;
+	return m_pBeHavior->Get_Blackboard();
+}
+
 void CAnimal::PriorityUpdate(E::_float fTimeDelta)
 {
 	if (nullptr != m_pCharacterMotor)

@@ -203,7 +203,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\public\Animal.h" />
     <ClInclude Include="..\Public\BackGround.h" />
     <ClInclude Include="..\public\BTChangeState.h" />
     <ClInclude Include="..\public\BTDecEdgPatroll.h" />
@@ -242,7 +241,7 @@
     <ClInclude Include="..\public\LevelLastBossRanrokLoader.h" />
     <ClInclude Include="..\public\Mon_Godae.h" />
     <ClInclude Include="..\public\Mon_Spawner.h" />
-    <ClInclude Include="..\public\NpcMom.h" />
+    <ClInclude Include="..\public\WorldAgent.h" />
     <ClInclude Include="..\Public\Player_Fly_State.h" />
     <ClInclude Include="..\public\AccioBall.h" />
     <ClInclude Include="..\public\AccioActivityPartBase.h" />
@@ -329,7 +328,7 @@
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\public\NvClothCape.h" />
     <ClInclude Include="..\public\OilBarrel.h" />
-    <ClInclude Include="..\public\Spider_Dead.h" />
+    <ClInclude Include="..\public\Mon_Dead.h" />
     <ClInclude Include="..\Public\WiggenweldPotion.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
     <ClInclude Include="..\Public\Player_Knockdown_State.h" />
@@ -404,6 +403,7 @@
     <ClInclude Include="..\Public\Mon_Weapon.h" />
     <ClInclude Include="..\Public\UI_Structs.h" />
     <ClInclude Include="..\Public\VideoObject.h" />
+    <ClInclude Include="..\public\WorldAnimal.h" />
     <ClInclude Include="..\public\WorldNpc.h" />
     <ClInclude Include="BTAnimNpc.h" />
     <ClInclude Include="Client.h" />
@@ -413,7 +413,6 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\private\Animal.cpp" />
     <ClCompile Include="..\Private\BackGround.cpp" />
     <ClCompile Include="..\private\BTChangeState.cpp" />
     <ClCompile Include="..\private\BTDecHitPlayer.cpp" />
@@ -451,7 +450,7 @@
     <ClCompile Include="..\private\EnderDragon_State.cpp" />
     <ClCompile Include="..\private\Mon_Godae.cpp" />
     <ClCompile Include="..\private\Mon_Spawner.cpp" />
-    <ClCompile Include="..\private\NpcMom.cpp" />
+    <ClCompile Include="..\private\WorldAgent.cpp" />
     <ClCompile Include="..\Private\Player_Fly_State.cpp" />
     <ClCompile Include="..\private\AccioBall.cpp" />
     <ClCompile Include="..\private\AccioActivityPartBase.cpp" />
@@ -533,7 +532,7 @@
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\private\NvClothCape.cpp" />
     <ClCompile Include="..\private\OilBarrel.cpp" />
-    <ClCompile Include="..\private\Spider_Dead.cpp" />
+    <ClCompile Include="..\private\Mon_Dead.cpp" />
     <ClCompile Include="..\Private\WiggenweldPotion.cpp" />
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
     <ClCompile Include="..\Private\Player_Knockdown_State.cpp" />
@@ -603,6 +602,7 @@
     <ClCompile Include="..\private\TriggerCRW_ToBoss.cpp" />
     <ClCompile Include="..\Private\Mon_Weapon.cpp" />
     <ClCompile Include="..\Private\VideoObject.cpp" />
+    <ClCompile Include="..\private\WorldAnimal.cpp" />
     <ClCompile Include="..\private\WorldNpc.cpp" />
     <ClCompile Include="BTAnimNpc.cpp" />
     <ClCompile Include="Client.cpp" />

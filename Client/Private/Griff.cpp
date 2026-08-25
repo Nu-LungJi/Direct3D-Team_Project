@@ -46,125 +46,13 @@ HRESULT CGriff::InitializePrototype(void* pArg)
 
 HRESULT CGriff::Initialize(void* pArg)
 {
-	auto NpcDesc = static_cast<ANIMAL_DESC*>(pArg);
+	auto WorldAgentDesc = static_cast<WORLD_AGENT_DESC*>(pArg);
 	if (FAILED(__super::Initialize(pArg)))
 	{
 		return E_FAIL;
 	}
 
-	//피직스
-	{
-		CComPxCharacterController::DESC Desc{};
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		const _float fHorizontalScale =
-			std::max(std::abs(NpcDesc->vScale.x), std::abs(NpcDesc->vScale.z));
-		const _float fVerticalScale = std::abs(NpcDesc->vScale.y);
-		const _float3 vCenterOffset{
-			NpcDesc->vCCTCenterOffset.x * NpcDesc->vScale.x,
-			NpcDesc->vCCTCenterOffset.y * fVerticalScale,
-			NpcDesc->vCCTCenterOffset.z * NpcDesc->vScale.z };
-		Desc.fHeight = NpcDesc->fCCTHeight * fVerticalScale;
-		Desc.fRadius = NpcDesc->fCCTRadius * fHorizontalScale;
-		Desc.fStepOffset = NpcDesc->fCCTStepOffset;
-		Desc.vPosition = {
-			NpcDesc->vPos.x + vCenterOffset.x,
-			NpcDesc->vPos.y + vCenterOffset.y,
-			NpcDesc->vPos.z + vCenterOffset.z };
-		Desc.tFilter = NpcDesc->tFilter;
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,
-			"ComPxCharacterController", &Desc, &m_pCharacterController)))
-		{
-			return E_FAIL;
-		}
-	}
-	//캐릭컨트롤러
-	{
-		CComCharacterMoveIntent::DESC Desc{};
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
-			"ComCharacterMoveIntent", &Desc, &m_pMoveIntent)))
-		{
-			return E_FAIL;
-		}
-	}
-	//캐릭 모터
-	{
-		CComCharacterMotor::DESC Desc{};
-		Desc.pMoveIntent = m_pMoveIntent;
-		Desc.pCharacterController = m_pCharacterController;
-		Desc.fGravity = -9.81f;
-		Desc.vControllerCenterOffset = {
-			NpcDesc->vCCTCenterOffset.x * NpcDesc->vScale.x,
-			NpcDesc->vCCTCenterOffset.y * std::abs(NpcDesc->vScale.y),
-			NpcDesc->vCCTCenterOffset.z * NpcDesc->vScale.z };
-		Desc.bUseGravity = true;
-		Desc.bSyncTransform = true;
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
-			"ComCharacterMotor", &Desc, &m_pCharacterMotor)))
-		{
-			return E_FAIL;
-		}
-	}
-
-	CComBeHavior::BEHAVIOR_DESC Desc{};
-	Desc.OwnerName = "Com_BT";
-	Desc.resBeHaviorMajor = NpcDesc->resBeHaviorMajor;
-	Desc.resBeHaviorMinor = NpcDesc->resBeHaviorMinor;
-	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
-	{
-		return E_FAIL;
-	};
-	{
-		CComConstantBuffer::DESC Desc{};
-		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
-		{
-			return E_FAIL;
-		};
-	}
-	{
-		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = NpcDesc->LevelTag;
-		Desc.sResTag = NpcDesc->ReSourceTag;
-
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
-		{
-			return E_FAIL;
-		};
-	}
-
-	{
-		CComAnimator::DESC DescAnim{};
-		DescAnim.sComTag = "ComCModelIntance";
-
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Animator", "ComCModelAnimator", &DescAnim, &m_pModelAnimator)))
-		{
-			return E_FAIL;
-		};
-	}
-
-	{
-		CComCollider::DESC Desc{};
-		Desc.eCollType = CollType::Box;
-		Desc.vExtents = { 1.f, 1.f, 1.f };
-		if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComColl", &Desc, &m_pComCollider)))
-		{
-			return E_FAIL;
-		};
-	}
 	
-	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
-	GetTransform().Update();
-	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
-	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
-	GetTransform().SetPosition(XMLoadFloat3(&NpcDesc->vPos));
-
-	m_pModelAnimator->Play_Anim(0, true);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
 
 	m_WayPoint.push_back(_float3(30.f, 75.f, -346.f));
@@ -220,8 +108,6 @@ void CGriff::PriorityUpdate(E::_float fTimeDelta)
 void CGriff::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
-	
-
 }
 
 void CGriff::FixedUpdate(E::_float fTimeDelta)
@@ -244,11 +130,12 @@ void CGriff::Set_Gravity(_bool bGravity)
 
 void CGriff::Set_Child()
 {
-	ANIMAL_DESC Child{};
+	WORLD_AGENT_DESC Child{};
 	Child.TargetHandle = GetHandle();
 	Child.sObjectTag = "GriffChild";
 	Child.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
 	Child.ReSourceTag = "Model_Resource_Griff";
+	Child.bPhyx = false;
 	_float3 vOffset = m_WayPoint.front();
 	_float iCnt = 10.f;
 	for (size_t i = 0; i < size_t(iCnt); ++i)

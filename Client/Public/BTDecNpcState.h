@@ -2,7 +2,7 @@
 #include "Client_Defines.h"
 #include "BTDecorator.h"
 #include "BlackBoardKey.h"
-#include "NpcMom.h"
+#include "WorldAgent.h"
 NS_BEGIN(Client)
 class CBTDecNpcState final : public CBTDecorator
 {
@@ -23,7 +23,7 @@ public:
 	virtual nlohmann::json		Save_Node()override;
 	HRESULT						Load_json(const nlohmann::json& j) override;
 private:
-	NPC_STATE					m_eState{ NPC_STATE::END };
+	AGENT_STATE					m_eState{ AGENT_STATE::END };
 public:
 	static UPtr<CBTDecNpcState> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

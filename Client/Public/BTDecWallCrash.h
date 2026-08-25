@@ -29,6 +29,7 @@ private:
 	_bool						Wall_Crash();
 private:
 	_bool						m_bCrash{false};
+	_float						m_fTick{}, m_fTime{2.f};
 public:
 	static UPtr<CBTDecWallCrash> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;
