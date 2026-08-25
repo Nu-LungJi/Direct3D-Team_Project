@@ -822,6 +822,10 @@ void CGameInstance::StopEffect(EFFECT_INSTANCE_ID iEffectId) {
 	m_pEffectManager->StopEffect(iEffectId);
 }
 
+void CGameInstance::ChangeEffectColorByOwner(EFFECT_INSTANCE_ID iEffectId, const _float4& vColor) {
+	m_pEffectManager->ChangeColorByOwner(iEffectId, vColor);
+}
+
 void CGameInstance::SetEffectPosition(EFFECT_INSTANCE_ID iEffectId, const _float3& vPosition) {
 	m_pEffectManager->SetEffectPosition(iEffectId, vPosition);
 

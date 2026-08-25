@@ -477,6 +477,7 @@ public:
 		_fvector vEndPosition = XMVectorZero(), EFFECT_FINISHED_CALLBACK onFinsihed = {});
 
 	void StopEffect(EFFECT_INSTANCE_ID iEffectId);
+	void ChangeEffectColorByOwner(EFFECT_INSTANCE_ID iEffectId, const _float4& vColor);
 
 	void SetEffectPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& vPosition);
 
