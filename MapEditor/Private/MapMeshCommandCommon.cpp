@@ -76,6 +76,8 @@ _bool Client::DestroyMapMeshObject(const E::CHandle& handle)
 	auto* object = E::CGameInstance::Get().GetGameObjectByHandleT<E::CMapMeshObject>(handle);
 	if (object == nullptr)
 		return false;
+	if (FAILED(E::CGameInstance::Get().UnregisterMapMeshObjectFromMapChunk(handle)))
+		return false;
 
 	object->SetPendingDestroyCascade(true);
 	return true;
