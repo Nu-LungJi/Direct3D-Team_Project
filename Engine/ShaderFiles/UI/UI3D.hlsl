@@ -29,20 +29,36 @@ PS_IN VSMain(VS_IN vin)
 // Pixel Shader
 float4 PSMain(PS_IN input) : SV_Target
 {
-	float4 texColor = tex.Sample(LinearClamp, input.uv);
-	
-	if (texColor.a < 0.01f)
-	{
-		discard;
-	}
+	// The RTT is often viewed at an oblique angle.  Average four samples over
+	// the pixel footprint to suppress the stair-step shimmer that a single
+	// bilinear lookup leaves on thin UI lines and text.
+	const float2 uvDx = ddx(input.uv);
+	const float2 uvDy = ddy(input.uv);
+	const float2 sampleDx = uvDx * 0.25f;
+	const float2 sampleDy = uvDy * 0.25f;
+	float4 texColor =
+		tex.Sample(LinearClamp, input.uv - sampleDx - sampleDy) +
+		tex.Sample(LinearClamp, input.uv + sampleDx - sampleDy) +
+		tex.Sample(LinearClamp, input.uv - sampleDx + sampleDy) +
+		tex.Sample(LinearClamp, input.uv + sampleDx + sampleDy);
+	texColor *= 0.25f;
 
-	float brightness = dot(texColor.rgb, float3(0.299, 0.587, 0.114));
-	brightness = pow(brightness, 1.f);
+	// The RTT is presented as a physical rectangular panel.  Transparent
+	// pixels therefore reveal a dark panel surface instead of making the
+	// entire world quad disappear.  UI colors themselves remain untouched.
+	const float3 panelColor = float3(0.008f, 0.006f, 0.015f);
+	float sourceAlpha = saturate(texColor.a);
+	float3 resultColor = texColor.rgb + panelColor * (1.f - sourceAlpha);
+	float panelAlpha = max(sourceAlpha, 0.92f) * g_ui_color.a;
 
-	if (max(g_ui_color.r, max(g_ui_color.g, g_ui_color.b)) > 0.0f)
-	{
-		texColor.rgb = g_ui_color.rgb * brightness;
-	}
+	// Analytic anti-aliasing for the physical quad silhouette.  fwidth keeps
+	// the transition approximately one screen pixel wide at any distance or
+	// viewing angle, while leaving the panel interior untouched.
+	const float2 distanceToEdge2D = min(input.uv, 1.f - input.uv);
+	const float distanceToEdge = min(distanceToEdge2D.x, distanceToEdge2D.y);
+	const float edgeFilterWidth = max(fwidth(input.uv.x), fwidth(input.uv.y)) * 1.25f;
+	const float edgeCoverage = smoothstep(0.f, max(edgeFilterWidth, 0.00001f), distanceToEdge);
+	panelAlpha *= edgeCoverage;
 
-	return float4(texColor.rgb, texColor.a * g_ui_color.a);
+	return float4(resultColor, panelAlpha);
 }

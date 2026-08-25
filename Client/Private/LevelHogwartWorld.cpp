@@ -59,6 +59,9 @@ HRESULT CLevelHogwartWorld::Initialize()
 		pNpcManager->RegisterNpcSkeletonOption(
 			NpcOption.sPrototypeTag, "Victor Rookwood",
 			NpcOption.sModelGroupTag, "Model_Resource_NPC_VictorRookwood");
+		pNpcManager->RegisterNpcSkeletonOption(
+			NpcOption.sPrototypeTag, "Cat",
+			NpcOption.sModelGroupTag, "Model_Resource_Cat");
 		pNpcManager->RegisterBehaviorOption("World NPC", "BTJSON", "NPC1");
 		pNpcManager->SetSpawnCallback([hTarget = *hPlayer](const E::NPC_PLACEMENT_DESC& Placement)
 		{
@@ -79,7 +82,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 			Desc.vRot = Placement.vRotation;
 			Desc.vScale = Placement.vScale;
 			Desc.bDonMove = Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
-
+			Desc.fSpeed = Placement.fSpeed;
 			const auto hNpc = E::CGameInstance::Get().AddGameObjectToLayer(
 				Placement.sPrototypeGroupTag, Placement.sPrototypeTag, Placement.sLayerTag, &Desc);
 			if (!hNpc)
@@ -114,13 +117,18 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnSkyBox()))
 		return E_FAIL;
 
-	if (FAILED(SpawnWater()))
-		return E_FAIL;
+	//if (FAILED(SpawnWater()))
+	//	return E_FAIL;
 
 	if (FAILED(SpawnMonster(*hPlayer)))
 		return E_FAIL;
-	//if (FAILED(SpawnNpcPlacements(*hPlayer)))
-	//	return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnIdle.json")))
+		return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnWalk.json")))
+		return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/Cat.json")))
+		return E_FAIL;
+
 	if (FAILED(SpanwAnimal()))
 		return E_FAIL;
 	//gameInstance.Add_DirectionalLight({ 1.f, -1.f, 1.f }, { 1.f, 1.f, 1.f }, 10.f);
@@ -235,7 +243,7 @@ HRESULT CLevelHogwartWorld::SpawnPlayerCape(CHandle hPlayer)
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorld::SpawnTerrain(CHandle hPlayer)
+HRESULT CLevelHogwartWorld::SpawnTerrain(std::optional<CHandle> hPlayer)
 {
 	E::CTerrain::DESC desc{};
 	desc.sObjectTag = "HogwartWorldTerrain";
@@ -261,6 +269,7 @@ HRESULT CLevelHogwartWorld::SpawnTerrain(CHandle hPlayer)
 
 	if (FAILED(terrain->LoadTerrain(CLevelHogwartWorldLoader::TERRAIN_PATH, hPlayer)))
 		return E_FAIL;
+
 	return SpawnNaviMesh(terrain); 
 }
 
@@ -456,7 +465,7 @@ HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 	auto handles = CGameInstance::Get()
 		.GetPhysXManager()
 		->CreateCollisionProxyObjectsFromFile(
-			"Level_HogwartWorld",
+			"Level_HogwartWorldLast",
 			"00_MapCollision");
 
 	if (handles.empty())
@@ -479,11 +488,11 @@ HRESULT CLevelHogwartWorld::SpawnCoinCollision()
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer)
+HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer, const _string& Path)
 {
 	E::NPC_PLACEMENT_FILE File{};
 	if (FAILED(E::CGameInstance::Get().JsonDeSerialize(
-		"./Resources/json/NPC/Level_HogwartWorld.json",
+		Path,
 		File,
 		"NpcPlacements")))
 		return E_FAIL;
@@ -511,6 +520,7 @@ HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer)
 		Desc.vEndPos = Placement.vPatrolEndPosition;
 		Desc.vRot = Placement.vRotation;
 		Desc.vScale = Placement.vScale;
+		Desc.fSpeed = Placement.fSpeed;
 		Desc.bDonMove = Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
 
 		if (!E::CGameInstance::Get().AddGameObjectToLayer(
@@ -529,7 +539,7 @@ HRESULT CLevelHogwartWorld::SpanwAnimal()
 	Griff.sObjectTag = "Griff";
 	Griff.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
 	Griff.ReSourceTag = "Model_Resource_Griff";
-	Griff.vPos = _float3(226.097f, 48.242f, 122.760f);
+	Griff.vPos = _float3(30.f, 75.f, -326.f);
 
 	auto Handle = CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Griff, "02_Griff", &Griff);
 	if (!Handle)
@@ -551,8 +561,8 @@ HRESULT CLevelHogwartWorld::Initialize_VolumetricFog() {
 
 	CB_VLFOG FogOption{};
 
-	FogOption.g_fFogColor			= { 63.f / 255.f, 88.f / 255.f, 88.f / 255.f };
-	FogOption.g_fFogIntensity		= 1.f;
+	FogOption.g_fFogColor			= { 255.f / 255.f, 227.f / 255.f, 184.f / 255.f };
+	FogOption.g_fFogIntensity		= 0.25f;
 	FogOption.g_fFogDensity			= 0.02f;
 	FogOption.g_fFogNoiseScale		= 0.05f;
 	FogOption.g_fFogScattering		= 0.5f;

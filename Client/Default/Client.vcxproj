@@ -205,10 +205,13 @@
   <ItemGroup>
     <ClInclude Include="..\public\Animal.h" />
     <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\public\BTChangeState.h" />
     <ClInclude Include="..\public\BTDecEdgPatroll.h" />
     <ClInclude Include="..\Public\BlackBoardKey.h" />
     <ClInclude Include="..\public\BTDecEdgPhase.h" />
     <ClInclude Include="..\public\BTDecEdgState.h" />
+    <ClInclude Include="..\public\BTDecHitPlayer.h" />
+    <ClInclude Include="..\public\BTDecNpcState.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
     <ClInclude Include="..\public\BTNaviMove.h" />
     <ClInclude Include="..\public\Coin.h" />
@@ -404,6 +407,9 @@
   <ItemGroup>
     <ClCompile Include="..\private\Animal.cpp" />
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\BTChangeState.cpp" />
+    <ClCompile Include="..\private\BTDecHitPlayer.cpp" />
+    <ClCompile Include="..\private\BTDecNpcState.cpp" />
     <ClCompile Include="..\private\BTNaviMove.cpp" />
     <ClCompile Include="..\private\Coin.cpp" />
     <ClCompile Include="..\private\Edg_Godae.cpp" />

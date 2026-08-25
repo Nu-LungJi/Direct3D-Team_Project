@@ -39,6 +39,38 @@ cbuffer CB_MapMeshGpuCull : register(b0)
     float gHizBias;
 };
 
+bool IsOutsideFrustum(MAPMESH_OCCLUSION_DATA bounds)
+{
+    bool allOutsideLeft = true;
+    bool allOutsideRight = true;
+    bool allOutsideBottom = true;
+    bool allOutsideTop = true;
+    bool allOutsideNear = true;
+    bool allOutsideFar = true;
+
+    [unroll]
+    for (uint i = 0; i < 8; ++i)
+    {
+        float3 signVec = float3(
+            ((i & 1) != 0) ? 1.f : -1.f,
+            ((i & 2) != 0) ? 1.f : -1.f,
+            ((i & 4) != 0) ? 1.f : -1.f);
+        float3 corner = bounds.worldCenter + bounds.worldExtents * signVec;
+        float4 clip = mul(float4(corner, 1.f), gMatViewProj);
+
+        allOutsideLeft = allOutsideLeft && clip.x < -clip.w;
+        allOutsideRight = allOutsideRight && clip.x > clip.w;
+        allOutsideBottom = allOutsideBottom && clip.y < -clip.w;
+        allOutsideTop = allOutsideTop && clip.y > clip.w;
+        allOutsideNear = allOutsideNear && clip.z < 0.f;
+        allOutsideFar = allOutsideFar && clip.z > clip.w;
+    }
+
+    return allOutsideLeft || allOutsideRight ||
+        allOutsideBottom || allOutsideTop ||
+        allOutsideNear || allOutsideFar;
+}
+
 bool ProjectBounds(MAPMESH_OCCLUSION_DATA bounds, out float2 minScreen, out float2 maxScreen, out float nearestDepth)
 {
     minScreen = float2(3.402823e38f, 3.402823e38f);
@@ -118,6 +150,9 @@ void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
     uint index = dispatchThreadID.x;
     if (index >= gInstanceCount)
+        return;
+
+    if (IsOutsideFrustum(gOcclusionData[index]))
         return;
 
     bool visible = true;

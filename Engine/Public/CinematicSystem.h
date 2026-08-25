@@ -60,6 +60,7 @@ private:
 	const FCinematicCameraShot* FindActiveShot(_float fPlayTime) const;
 	HRESULT EvaluateShot(const FCinematicCameraShot& Shot, _float fShotTime, FCinematicCameraPose& OutPose) const;
 	HRESULT GetTargetWorldMatrix(_matrix& OutTargetWorld) const;
+	HRESULT ApplyLookAtTarget(FCinematicCameraPose& InOutPose) const;
 	HRESULT ConvertTargetLocalPose(const FCinematicCameraPose& LocalPose, _fmatrix TargetWorld, FCinematicCameraPose& OutWorldPose) const;
 	HRESULT GetCameraPose(const CCameraObject* pCamera, FCinematicCameraPose& OutPose) const;
 	HRESULT ApplyCameraPose(const FCinematicCameraPose& Pose);

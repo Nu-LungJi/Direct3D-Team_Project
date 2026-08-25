@@ -20,6 +20,44 @@ NS_USING(Client)
 
 namespace
 {
+	DirectX::XMVECTOR MakeWholeMapPivotRotation(const E::_float3& eulerDegrees)
+	{
+		return DirectX::XMQuaternionNormalize(
+			DirectX::XMQuaternionRotationRollPitchYaw(
+				DirectX::XMConvertToRadians(eulerDegrees.x),
+				DirectX::XMConvertToRadians(eulerDegrees.y),
+				DirectX::XMConvertToRadians(eulerDegrees.z)));
+	}
+
+	E::_float3 TransformWholeMapPosition(
+		const E::_float3& localPosition,
+		float scale,
+		const E::_float3& origin,
+		DirectX::FXMVECTOR pivotRotation)
+	{
+		const DirectX::XMVECTOR scaledPosition = DirectX::XMVectorScale(
+			DirectX::XMLoadFloat3(&localPosition), scale);
+		const DirectX::XMVECTOR rotatedPosition = DirectX::XMVector3Rotate(
+			scaledPosition, pivotRotation);
+		E::_float3 result{};
+		DirectX::XMStoreFloat3(
+			&result,
+			DirectX::XMVectorAdd(rotatedPosition, DirectX::XMLoadFloat3(&origin)));
+		return result;
+	}
+
+	E::_float4 TransformWholeMapRotation(
+		const E::_float4& localRotation,
+		DirectX::FXMVECTOR pivotRotation)
+	{
+		E::_float4 result{};
+		DirectX::XMStoreFloat4(
+			&result,
+			DirectX::XMQuaternionNormalize(DirectX::XMQuaternionMultiply(
+				DirectX::XMLoadFloat4(&localRotation), pivotRotation)));
+		return result;
+	}
+
 	struct ModelResourceDragPayload
 	{
 		char groupName[128]{};
@@ -494,6 +532,14 @@ void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 	ImGui::SameLine();
 	if (ImGui::Button("Reset Origin"))
 		m_vWholeMapOrigin = {};
+	ImGui::SetNextItemWidth(300.f);
+	ImGui::DragFloat3(
+		"Whole Map Rotation (Degrees)",
+		&m_vWholeMapRotationDegrees.x,
+		0.5f, 0.f, 0.f, "%.1f");
+	ImGui::SameLine();
+	if (ImGui::Button("Reset Rotation"))
+		m_vWholeMapRotationDegrees = {};
 	if (!m_WholeMapImportStatus.empty())
 	{
 		ImGui::TextWrapped("%s", m_WholeMapImportStatus.c_str());
@@ -795,10 +841,14 @@ _bool CResourceGUI::ImportObjectMapManifest(const std::filesystem::path& manifes
 	const std::string importPrefix = "ObjectMap_" + modelName + "_Import" +
 		std::to_string(objectMapImportIndex++);
 	const float importScale = std::clamp(m_fWholeMapScale, 0.01f, 100.f);
+	const DirectX::XMVECTOR pivotRotation =
+		MakeWholeMapPivotRotation(m_vWholeMapRotationDegrees);
 
 	uint32_t createdCount = 0;
 	uint32_t skippedCount = 0;
 	std::unordered_map<std::string, std::string> loadedResourceTags;
+	std::vector<std::unique_ptr<IEditorCommand>> importCommands;
+	importCommands.reserve(manifest["objects"].size());
 
 	for (const auto& entry : manifest["objects"])
 	{
@@ -845,22 +895,23 @@ _bool CResourceGUI::ImportObjectMapManifest(const std::filesystem::path& manifes
 			snapshot.modelGroupTag = E::TAG_RES_GRP_MAPEDITOR_STATIC_MODEL;
 			snapshot.modelResTag = tagIt->second;
 			snapshot.layerTag = E::MAPMESHOBJECTLAYER;
-			snapshot.position = {
-				m_vWholeMapOrigin.x + position[0].get<float>() * importScale,
-				m_vWholeMapOrigin.y + position[1].get<float>() * importScale,
-				m_vWholeMapOrigin.z + position[2].get<float>() * importScale
+			const E::_float3 localPosition{
+				position[0].get<float>(), position[1].get<float>(), position[2].get<float>()
 			};
-			snapshot.rotation = {
+			const E::_float4 localRotation{
 				rotation[0].get<float>(), rotation[1].get<float>(),
 				rotation[2].get<float>(), rotation[3].get<float>()
 			};
+			snapshot.position = TransformWholeMapPosition(
+				localPosition, importScale, m_vWholeMapOrigin, pivotRotation);
+			snapshot.rotation = TransformWholeMapRotation(localRotation, pivotRotation);
 			snapshot.scale = {
 				scale[0].get<float>() * importScale,
 				scale[1].get<float>() * importScale,
 				scale[2].get<float>() * importScale
 			};
 
-			m_pCommandManager->Submit(
+			importCommands.push_back(
 				std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), GetSelectedHandle()));
 			++createdCount;
 		}
@@ -870,8 +921,10 @@ _bool CResourceGUI::ImportObjectMapManifest(const std::filesystem::path& manifes
 		}
 	}
 
+	m_pCommandManager->SubmitBatch(std::move(importCommands));
+
 	m_WholeMapImportStatus = "Object-map import: " + std::to_string(createdCount) +
-		" objects created, " + std::to_string(loadedResourceTags.size()) + " resources loaded";
+		" objects queued in batches, " + std::to_string(loadedResourceTags.size()) + " resources loaded";
 	if (skippedCount > 0)
 		m_WholeMapImportStatus += ", " + std::to_string(skippedCount) + " skipped";
 	m_WholeMapImportStatus += ".";
@@ -918,6 +971,9 @@ _bool CResourceGUI::ImportWholeMapManifest(const std::filesystem::path& manifest
 		std::to_string(wholeMapImportIndex++);
 	uint32_t createdCount = 0;
 	uint32_t skippedCount = 0;
+	const float wholeMapScale = std::clamp(m_fWholeMapScale, 0.01f, 100.f);
+	const DirectX::XMVECTOR pivotRotation =
+		MakeWholeMapPivotRotation(m_vWholeMapRotationDegrees);
 
 	for (const auto& chunk : manifest["chunks"])
 	{
@@ -956,13 +1012,13 @@ _bool CResourceGUI::ImportWholeMapManifest(const std::filesystem::path& manifest
 		snapshot.modelResTag = resourceTag;
 		snapshot.layerTag = E::MAPMESHOBJECTLAYER;
 
-		const float wholeMapScale = std::clamp(m_fWholeMapScale, 0.01f, 100.f);
-
-		snapshot.position = {
-			m_vWholeMapOrigin.x + origin[0].get<float>() * wholeMapScale,
-			m_vWholeMapOrigin.y + origin[1].get<float>() * wholeMapScale,
-			m_vWholeMapOrigin.z + origin[2].get<float>() * wholeMapScale
+		const E::_float3 localOrigin{
+			origin[0].get<float>(), origin[1].get<float>(), origin[2].get<float>()
 		};
+		snapshot.position = TransformWholeMapPosition(
+			localOrigin, wholeMapScale, m_vWholeMapOrigin, pivotRotation);
+		const E::_float4 identityRotation{ 0.f, 0.f, 0.f, 1.f };
+		snapshot.rotation = TransformWholeMapRotation(identityRotation, pivotRotation);
 
 		snapshot.scale = {
 			wholeMapScale,

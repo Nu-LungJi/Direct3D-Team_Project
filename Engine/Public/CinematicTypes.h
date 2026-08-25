@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine_Defines.h"
+#include "Handle.h"
 #include "SerializerInterface.h"
 
 
@@ -191,6 +192,11 @@ struct FCinematicPlayOptions
 
 	ECinematicReturnMode eReturnMode { ECinematicReturnMode::Immediate };
 	_float fReturnBlendDuration { 0.5f };
+
+	// 지정하면 키프레임 회전 대신 이 오브젝트를 매 프레임 바라본다.
+	std::optional<CHandle> LookAtTargetHandle{};
+	// 타겟의 회전 기준 로컬 오프셋 (예: 캐릭터 머리 높이).
+	_float3 vLookAtTargetLocalOffset{};
 };
 
 NS_END

@@ -157,6 +157,14 @@ _bool CPlayer_StupefySkill_State::PlayCounterAnimation(CPlayer& player, const _f
 	if (iAnimation < 0) return false;
 	pAnimator->Play_Anim(iAnimation, false, BLEND_DURATION);
 	pAnimator->GetCurAnimState().fSpeed = TURN_SPEED;
+
+	TIME_SCALE_REQUEST_DESC TimeScaleDesc{};
+	TimeScaleDesc.fTargetScale = 0.2f;
+	TimeScaleDesc.fMaxUnscaledDuration = 0.06f;
+	TimeScaleDesc.fSafetyBlendOut = 0.04f;
+	TimeScaleDesc.sTag = "Combat_StupefyCounter";
+	CGameInstance::Get().BeginTimeScale(TimeScaleDesc);
+
 	if (auto* pSound = player.GetSound())
 	{
 		pSound->PlaySlot2D(

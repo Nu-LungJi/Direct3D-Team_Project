@@ -251,6 +251,7 @@
     <ClInclude Include="..\Public\CinematicTypes.h" />
     <ClInclude Include="..\public\ComPxCharacterController.h" />
     <ClInclude Include="..\Public\ComCharacterMoveIntent.h" />
+    <ClInclude Include="..\Public\ComFootIK.h" />
     <ClInclude Include="..\Public\ComCharacterMotor.h" />
     <ClInclude Include="..\Public\ComSound.h" />
     <ClInclude Include="..\Public\ComSocket.h" />
@@ -304,9 +305,11 @@
     <ClInclude Include="..\Public\EventManager.h" />
     <ClInclude Include="..\Public\Engine_ParticleDefines.h" />
     <ClInclude Include="..\Public\HizBuffer.h" />
+    <ClInclude Include="..\Public\MapMeshInstanceBatchCollector.h" />
     <ClInclude Include="..\Public\MapMeshGpuCuller.h" />
     <ClInclude Include="..\Public\ButtonComponent.h" />
     <ClInclude Include="..\Public\MapMeshInstancingRenderer.h" />
+    <ClInclude Include="..\Public\MapMeshTextureCache.h" />
     <ClInclude Include="..\Public\Model_Instance_Manager.h" />
     <ClInclude Include="..\public\GameInstanceInitLoader.h" />
     <ClInclude Include="..\public\LuaScriptInstance.h" />
@@ -602,6 +605,7 @@
     <ClCompile Include="..\Private\CinematicSystem.cpp" />
     <ClCompile Include="..\private\ComPxCharacterController.cpp" />
     <ClCompile Include="..\Private\ComCharacterMoveIntent.cpp" />
+    <ClCompile Include="..\Private\ComFootIK.cpp" />
     <ClCompile Include="..\Private\ComCharacterMotor.cpp" />
     <ClCompile Include="..\Private\ComSound.cpp" />
     <ClCompile Include="..\Private\ComSocket.cpp" />
@@ -663,9 +667,11 @@
     <ClCompile Include="..\Private\EventManager.cpp" />
     <ClCompile Include="..\Private\HizBuffer.cpp" />
     <ClCompile Include="..\Private\HizOcclusionCuller.cpp" />
+    <ClCompile Include="..\Private\MapMeshInstanceBatchCollector.cpp" />
     <ClCompile Include="..\Private\MapMeshGpuCuller.cpp" />
     <ClCompile Include="..\Private\ButtonComponent.cpp" />
     <ClCompile Include="..\Private\MapMeshInstancingRenderer.cpp" />
+    <ClCompile Include="..\Private\MapMeshTextureCache.cpp" />
     <ClCompile Include="..\Private\Model_Instance_Manager.cpp" />
     <ClCompile Include="..\private\GameInstanceInitLoader.cpp" />
     <ClCompile Include="..\private\LuaScriptInstance.cpp" />
@@ -826,6 +832,9 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\RayMarching\PS_Volumetric.hlsl" />
+    <FxCompile Include="..\ShaderFiles\RayMarching\VS_Volumetric.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Terrain\Shader_Terrain.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

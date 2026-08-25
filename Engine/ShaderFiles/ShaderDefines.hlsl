@@ -1,9 +1,10 @@
 
 const static float	PI = 3.14159265359f;
+const static float	EPSILON = 1e-4f;
 
 const static float3 AlbedoColor = { 1.f, 1.f, 1.f };
 
-const static float	SpecularIntensity	= 1.f;
+const static float	SpecularIntensity = 1.f;
 
 #define GAME_QUALITY_LEVEL1
 

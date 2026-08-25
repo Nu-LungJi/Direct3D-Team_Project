@@ -5,6 +5,7 @@
 #include "ResTexture2D.h"
 #include <fstream>
 #include <filesystem>
+#include <set>
 
 #include "CameraObject.h"
 #include "CollFrustum.h"
@@ -510,22 +511,22 @@ void CMapManager::Update(_float fTimeDelta)
 	{
 		return;
 	}
-
 	CCameraObject* pCamera = CGameInstance::Get().GetActiveCamera();
 	if (pCamera == nullptr)
 	{
 		return;
 	}
 
-	const auto* pFrustumCollider = pCamera->GetFrustumCollider();
-	if (pFrustumCollider == nullptr)
-		return;
+	// CPU 프러스텀 컬링 비활성화
+	//const auto* pFrustumCollider = pCamera->GetFrustumCollider();
+	//if (pFrustumCollider == nullptr)
+	//	return;
 
-	const auto loadChunks = GetChunksAroundCamera(pCamera, STREAM_LOAD_RADIUS);
-	const auto retainedChunks = GetChunksAroundCamera(pCamera, STREAM_UNLOAD_RADIUS);
-	const auto& boundingFrustum = pFrustumCollider->GetBoundingFrustum();
+	const auto loadChunks = GetChunksAroundCamera(pCamera, STREAM_LOAD_DIAMETER);
+	const auto retainedChunks = GetChunksAroundCamera(pCamera, STREAM_UNLOAD_DIAMETER);
+	//const auto& boundingFrustum = pFrustumCollider->GetBoundingFrustum();
 
-	CullLoadedChunksByCameraFrustum(retainedChunks, boundingFrustum);
+	//CullLoadedChunksByCameraFrustum(retainedChunks, boundingFrustum);
 
 	if (m_bChunkStreaming && !m_sMapRootPath.empty())
 	{
@@ -537,37 +538,52 @@ void CMapManager::Update(_float fTimeDelta)
     //               ↓
     //  워커가 완료한 청크를 월드에 조금씩 반영
     //               ↓
-    //  카메라 주변 5×5×5 청크 계산
+    //  카메라 주변 6×6×6 청크 계산
     //  카메라 주변 7×7×7 유지 영역 계산
     //               ↓
     //  7×7×7 밖의 청크 언로드
     //               ↓
-    //  5×5×5 안에서 가장 가까운 청크 하나 로드 요청
+    //  6×6×6 안에서 가장 가까운 청크 로드 요청
 }
 
-std::vector<MAPCHUNK_COORD> CMapManager::GetChunksAroundCamera(const CCameraObject* pCamera, int64_t radius) const
+std::vector<MAPCHUNK_COORD> CMapManager::GetChunksAroundCamera(const CCameraObject* pCamera, int64_t diameter) const
 {
-
 	const auto& pos = pCamera->GetTransform().GetPosition();
-	const MAPCHUNK_COORD cameraChunkCoord = WorldToChunkCoord(pos);
-
-	const size_t diameter = static_cast<size_t>(radius * 2 + 1);
 	std::vector<MAPCHUNK_COORD> chunks;
-	chunks.reserve(diameter * diameter * diameter);
+	if (diameter <= 0)
+		return chunks;
 
-	// radius 2 = 5x5x5 load range, radius 3 = 7x7x7 retention range.
-	for (int64_t y = -radius; y <= radius; ++y)
-	{
-		for (int64_t z = -radius; z <= radius; ++z)
+	const size_t chunkCountPerAxis = static_cast<size_t>(diameter);
+	chunks.reserve(chunkCountPerAxis * chunkCountPerAxis * chunkCountPerAxis);
+
+	// For an even diameter, move the extra half of the range toward the side of
+	// the chunk that contains the camera. This keeps the 6-wide load range inside
+	// the centered 7-wide retention range while avoiding a permanent axis bias.
+	const auto GetFirstCoord = [diameter](_float position, _float chunkSize)
 		{
-			for (int64_t x = -radius; x <= radius; ++x)
+			return static_cast<int64_t>(std::floor(
+				position / chunkSize - static_cast<_float>(diameter - 1) * 0.5f));
+		};
+
+	const MAPCHUNK_COORD firstCoord
+	{
+		GetFirstCoord(pos.x, m_vChunkSize.x),
+		GetFirstCoord(pos.y, m_vChunkSize.y),
+		GetFirstCoord(pos.z, m_vChunkSize.z)
+	};
+
+	for (int64_t y = 0; y < diameter; ++y)
+	{
+		for (int64_t z = 0; z < diameter; ++z)
+		{
+			for (int64_t x = 0; x < diameter; ++x)
 			{
 				chunks.push_back(
 					MAPCHUNK_COORD
 					{
-						cameraChunkCoord.x + x,
-						cameraChunkCoord.y + y,
-						cameraChunkCoord.z + z
+						firstCoord.x + x,
+						firstCoord.y + y,
+						firstCoord.z + z
 					});
 			}
 		}
@@ -640,38 +656,39 @@ void CMapManager::RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& nee
 	}
 }
 
-void CMapManager::CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum)
-{
-	for (const auto& coord : neededChunks)
-	{
-		auto iter = m_Chunks.find(coord);
-		if (iter == m_Chunks.end())
-		{
-			continue;
-		}
-
-		if (iter->second.loadState != EChunkLoadState::Loaded)
-		{
-			continue;
-		}
-
-		const auto& selectedChunk = iter->second;
-		const BoundingBox& cullingBounds = selectedChunk.octreeNode
-			? selectedChunk.octreeNode->GetCullingBoundingBox()
-			: selectedChunk.bounds;
-
-		if (!boundingFrustum.Intersects(cullingBounds))
-		{
-			continue;
-		}
-
-		if (const auto& octreeNode = selectedChunk.octreeNode)
-		{
-			octreeNode->OctreeFrustumCull(boundingFrustum);
-		}
-	}
-}
-
+//void CMapManager::CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum)
+//{
+//	for (const auto& coord : neededChunks)
+//	{
+//		auto iter = m_Chunks.find(coord);
+//		if (iter == m_Chunks.end())
+//		{
+//			continue;
+//		}
+//
+//		if (iter->second.loadState != EChunkLoadState::Loaded)
+//		{
+//			continue;
+//		}
+//
+//		const auto& selectedChunk = iter->second;
+//		const BoundingBox& cullingBounds = selectedChunk.octreeNode
+//			? selectedChunk.octreeNode->GetCullingBoundingBox()
+//			: selectedChunk.bounds;
+//
+//		if (!boundingFrustum.Intersects(cullingBounds))
+//		{
+//			continue;
+//		}
+//
+//		if (const auto& octreeNode = selectedChunk.octreeNode)
+//		{
+//			octreeNode->OctreeFrustumCull(boundingFrustum);
+//		}
+//	}
+//}
+//
+//
 void CMapManager::LateUpdate(_float fTimeDelta)
 {
 
@@ -726,9 +743,17 @@ HRESULT CMapManager::EnsureModelResourceLoaded(const MAP_MODEL_RESOURCE_KEY& key
 		: E_FAIL;
 }
 
+SPtr<std::mutex> CMapManager::GetModelResourceMutex(const MAP_MODEL_RESOURCE_KEY& key)
+{
+	std::lock_guard<std::mutex> lock(m_ModelResourceMutexMapMutex);
+	auto& modelMutex = m_ModelResourceMutexes[key];
+	if (!modelMutex)
+		modelMutex = std::make_shared<std::mutex>();
+	return modelMutex;
+}
+
 HRESULT CMapManager::AcquireChunkModelResources(MAPCHUNK& chunk, const std::vector<MAP_MESH_OBJECT_LOAD_DESC>& objects)
 {
-	std::lock_guard<std::mutex> resourceLock(m_ModelResourceLoadMutex);
 	std::unordered_set<MAP_MODEL_RESOURCE_KEY, MAP_MODEL_RESOURCE_KEY_HASH> uniqueModels;
 	for (const auto& object : objects)
 	{
@@ -736,35 +761,32 @@ HRESULT CMapManager::AcquireChunkModelResources(MAPCHUNK& chunk, const std::vect
 			uniqueModels.insert({ object.modelGroup, object.model });
 	}
 
-	std::vector<MAP_MODEL_RESOURCE_KEY> loadedForThisChunk;
-	for (const auto& key : uniqueModels)
-	{
-		const auto existing = CGameInstance::Get().GetResourceFirst<CResStaticModel>(key.group, key.tag);
-		const bool wasAlreadyLoaded = existing && existing->GetState() == CResource::STATE::LOADED;
-
-		if (FAILED(EnsureModelResourceLoaded(key)))
-		{
-			for (const auto& candidate : loadedForThisChunk)
-			{
-				auto model = CGameInstance::Get().GetResourceFirst<CResStaticModel>(candidate.group, candidate.tag);
-				if (!model)
-					continue;
-
-				CGameInstance::Get().EraseMapMeshTextureCache(model);
-				model->Unload();
-				CGameInstance::Get().DelResource(candidate.group, candidate.tag);
-			}
-			return E_FAIL;
-		}
-
-		if (!wasAlreadyLoaded)
-			loadedForThisChunk.push_back(key);
-	}
-
 	chunk.modelResources.clear();
 	chunk.modelResources.reserve(uniqueModels.size());
 	for (const auto& key : uniqueModels)
 	{
+		auto modelMutex = GetModelResourceMutex(key);
+		std::lock_guard<std::mutex> resourceLock(*modelMutex);
+
+		if (FAILED(EnsureModelResourceLoaded(key)))
+		{
+			for (const auto& acquiredKey : chunk.modelResources)
+			{
+				auto refIter = m_ModelChunkRefCounts.find(acquiredKey);
+				if (refIter == m_ModelChunkRefCounts.end())
+					continue;
+				if (refIter->second > 1)
+					--refIter->second;
+				else
+				{
+					m_ModelChunkRefCounts.erase(refIter);
+					m_DeferredUnusedModelReleases.push_back(acquiredKey);
+				}
+			}
+			chunk.modelResources.clear();
+			return E_FAIL;
+		}
+
 		++m_ModelChunkRefCounts[key];
 		chunk.modelResources.push_back(key);
 	}
@@ -782,36 +804,21 @@ HRESULT CMapManager::PreloadChunkModelResources(PENDING_CHUNK_LOAD_RESULT& resul
 			uniqueModels.insert({ object.modelGroup, object.model });
 	}
 
-	std::lock_guard<std::mutex> resourceLock(m_ModelResourceLoadMutex);
-	std::vector<MAP_MODEL_RESOURCE_KEY> loadedForThisResult;
+	result.modelResources.clear();
+	result.modelResources.reserve(uniqueModels.size());
 	for (const auto& key : uniqueModels)
 	{
-		const auto existing = CGameInstance::Get().GetResourceFirst<CResStaticModel>(key.group, key.tag);
-		const bool wasAlreadyLoaded = existing && existing->GetState() == CResource::STATE::LOADED;
+		auto modelMutex = GetModelResourceMutex(key);
+		std::lock_guard<std::mutex> resourceLock(*modelMutex);
 
 		if (FAILED(EnsureModelResourceLoaded(key)))
-		{
-			for (const auto& loadedKey : loadedForThisResult)
-			{
-				auto model = CGameInstance::Get().GetResourceFirst<CResStaticModel>(loadedKey.group, loadedKey.tag);
-				if (!model)
-					continue;
-
-				model->Unload();
-				CGameInstance::Get().DelResource(loadedKey.group, loadedKey.tag);
-			}
 			return E_FAIL;
-		}
 
-		if (!wasAlreadyLoaded)
-			loadedForThisResult.push_back(key);
-	}
-
-	result.modelResources.assign(uniqueModels.begin(), uniqueModels.end());
-	{
-		std::lock_guard<std::mutex> pendingLock(m_PendingModelRefMutex);
-		for (const auto& key : result.modelResources)
+		result.modelResources.push_back(key);
+		{
+			std::lock_guard<std::mutex> pendingLock(m_PendingModelRefMutex);
 			++m_PendingModelRefCounts[key];
+		}
 	}
 	return S_OK;
 }
@@ -887,10 +894,6 @@ void CMapManager::ProcessDeferredModelReleases()
 	if (m_DeferredModelReleases.empty() && m_DeferredUnusedModelReleases.empty())
 		return;
 
-	std::unique_lock<std::mutex> resourceLock(m_ModelResourceLoadMutex, std::try_to_lock);
-	if (!resourceLock.owns_lock())
-		return;
-
 	auto releases = std::move(m_DeferredModelReleases);
 	m_DeferredModelReleases.clear();
 	auto candidates = std::move(m_DeferredUnusedModelReleases);
@@ -919,6 +922,14 @@ void CMapManager::ProcessDeferredModelReleases()
 	{
 		if (m_ModelChunkRefCounts.contains(key))
 			continue;
+
+		auto modelMutex = GetModelResourceMutex(key);
+		std::unique_lock<std::mutex> resourceLock(*modelMutex, std::try_to_lock);
+		if (!resourceLock.owns_lock())
+		{
+			m_DeferredUnusedModelReleases.push_back(key);
+			continue;
+		}
 
 		{
 			std::lock_guard<std::mutex> pendingLock(m_PendingModelRefMutex);
@@ -950,10 +961,10 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 	}
 
 	nlohmann::ordered_json rootJson = {};
-	rootJson["version"] = 1;
+	rootJson["version"] = 2;
 	rootJson["chunkSize"] = { m_vChunkSize.x, m_vChunkSize.y, m_vChunkSize.z };
 	rootJson["chunks"] = nlohmann::ordered_json::array();
-	rootJson["objects"] = nlohmann::ordered_json::array();
+	rootJson["requiredModels"] = nlohmann::ordered_json::array();
 	rootJson["decals"] = nlohmann::ordered_json::array();
 
 	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
@@ -994,6 +1005,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 		});
 	}
 
+	std::set<std::pair<std::string, std::string>> requiredModels;
 	for (const auto& pair : layers)
 	{
 		const auto& objects = pair.second;
@@ -1007,16 +1019,21 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 			}
 
 			CMapMeshObject* pMeshObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
-			
+
 			if (pMeshObj == nullptr)
 				continue;
 
-			const auto& layerName = pair.first;
-
-			const auto& pos = pMeshObj->GetTransform().GetPosition();
-			const MAPCHUNK_COORD coord = WorldToChunkCoord(pos);
-			rootJson["objects"].push_back(MakeObjectJson(pMeshObj, layerName, coord));
+			requiredModels.emplace(pMeshObj->GetModelResourceGroup(), pMeshObj->GetModelResourceTag());
 		}
+	}
+
+	for (const auto& [modelGroup, model] : requiredModels)
+	{
+		rootJson["requiredModels"].push_back(nlohmann::ordered_json
+		{
+			{ "modelGroup", modelGroup },
+			{ "model", model }
+		});
 	}
 
 	for (const auto& coord : originallyUnloadedChunks)
@@ -1659,6 +1676,7 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 	pObj->GetTransform().Update();
 	/*---------------------------------*/
 
+
 	const MAPCHUNK_COORD coord = WorldToChunkCoord(pObj->GetTransform().GetPosition());
 	auto& chunk = m_Chunks[coord];
 
@@ -1682,9 +1700,10 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 		chunk.octreeNode->BuildOctree(chunk.hObjects);
 	}
 
-	pObj->SetRenderEnable(true);
 
-	
+
+	// CPU 프러스텀 컬링 비활성화
+	//pObj->SetRenderEnable(true);
 
 	/*----------- 광윤 추가 -----------*/
 	BoundingBox ChangedBounds{};
@@ -1934,6 +1953,7 @@ HRESULT CMapManager::ContinueApplyLoadedChunkResult(PENDING_CHUNK_APPLY_STATE& s
 	MAPCHUNK& chunk = iter->second;
 	if (FAILED(state.result.hr))
 	{
+		ReleasePendingModelResources(state.result);
 		chunk.hObjects.clear();
 		chunk.octreeNode.reset();
 		chunk.loadState = EChunkLoadState::Unloaded;
@@ -2100,7 +2120,7 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 		CGameInstance::Get().Notify_StaticShadowSceneChanged(ChangedBounds);
 	}
 	/*---------------------------------*/
-	
+
 	return S_OK;
 }
 
@@ -2110,17 +2130,9 @@ _bool CMapManager::IsChunkInStreamingRange(const MAPCHUNK_COORD& coord)
 	if (pCam == nullptr)
 		return false;
 
-	const auto& pos = pCam->GetTransform().GetPosition();
-	MAPCHUNK_COORD cameraCoord = WorldToChunkCoord(pos);
-
-	const int64_t dx = std::llabs(cameraCoord.x - coord.x);
-	const int64_t dy = std::llabs(cameraCoord.y - coord.y);
-	const int64_t dz = std::llabs(cameraCoord.z - coord.z);
-
 	// Discard an async result if it arrived after leaving the load range.
-	return dx <= STREAM_LOAD_RADIUS
-		&& dy <= STREAM_LOAD_RADIUS
-		&& dz <= STREAM_LOAD_RADIUS;
+	const auto loadChunks = GetChunksAroundCamera(pCam, STREAM_LOAD_DIAMETER);
+	return std::find(loadChunks.begin(), loadChunks.end(), coord) != loadChunks.end();
 }
 
 UPtr<CMapManager> CMapManager::Create()

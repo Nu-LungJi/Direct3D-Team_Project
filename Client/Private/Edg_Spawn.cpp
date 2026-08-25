@@ -38,6 +38,7 @@ void CEdg_Spawn::Enter(CStateMachine* pStateMachine)
 	if (nullptr == pDragon)
 		return;
 
+
 	pDragon->Set_WingParticlesEnabled(false);
 	pDragon->Set_StateFinished(false);
 	
@@ -53,6 +54,7 @@ void CEdg_Spawn::Enter(CStateMachine* pStateMachine)
 	
 	pDragon->Get_Animator()->Play_Anim(0);
 	pDragon->Set_HideOnBush(true);
+
 }
 
 void CEdg_Spawn::Exit(CStateMachine* pStateMachine)

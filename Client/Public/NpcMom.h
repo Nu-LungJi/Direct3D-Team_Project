@@ -25,7 +25,7 @@ NS_END
 
 
 NS_BEGIN(Client)
-
+enum class NPC_STATE { IDLE, HIT, TALK ,END};
 class CNpcMom : public CAnimationObject, public CSkillTarget
 {
 public:
@@ -42,17 +42,19 @@ public:
 		_float fCCTRadius{ 0.45f };
 		_float fCCTStepOffset{ 0.4f };
 		_float3 vCCTCenterOffset{ 0.f, 1.5f, 0.f };
-
+		NPCACTION eAnimAction;
 		_string resBeHaviorMajor{}, resBeHaviorMinor{};
 		_float3 vStartPos{}, vEndPos{};
+		_float fSpeed{};
 		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::NPC_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
 			// [LSY] 캐릭터 CCT끼리는 충돌하되 전투용 HurtBox는 이동 Query에서 제외한다.
 			.iQueryMask =
-				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+
 				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
 				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 				ETOUI(COLLISION_LAYER::PLAYER_BODY) |
 				ETOUI(COLLISION_LAYER::ENEMY_BODY)
@@ -116,7 +118,6 @@ protected:
 	virtual	void				Damaged(PLAYER_SKILL_TYPE eType);
 	void						Update_HurtBox();
 	virtual void				Stuck();
-	
 private:
 	void						Update_Animation(_float fTimeDelta);
 	// 민수 추가 ----------------------------------------------------------
@@ -150,7 +151,7 @@ protected:
 	
 	uint32_t							m_iCurrentInstanceCount{};
 	_float								m_fDissolve{};
-	int32_t								m_iHp{}, m_iMaxHp{}, m_iColliderBoneIndex{}, m_iEventBoneIndex{ -1 };
+	int32_t								m_iHp{}, m_iMaxHp{}, m_iColliderBoneIndex{}, m_iEventBoneIndex{ -1 }, m_iCurAnimIndex{-1};
 	_bool								m_bRootMotionTranslationActive{ false }, m_bRootMotionRotationActive{ false };
 	_float								m_fRootMotionTranslationScale{ 1.f };
 	_string								m_SocketName{};

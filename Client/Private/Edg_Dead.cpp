@@ -5,6 +5,7 @@
 #include "DragonSkill.h"
 #include "EnderDragon_State.h"
 #include "ComBeHavior.h"
+#include "ComAnimator.h"
 NS_USING(Client)
 CEdg_Dead::CEdg_Dead()
 {
@@ -40,8 +41,9 @@ void CEdg_Dead::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta)
 
 	auto pBT = pDragon->GetComponent<CComBeHavior>("Com_BT");
 	if (nullptr == pBT) return;
-
-	if (pBT->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
+	auto pAnimator = pDragon->Get_Animator();
+	if (nullptr == pAnimator) return;
+	if (pAnimator->GetPlayAnimRatio() >= 0.8f)
 	{
 		m_fTick += fTimeDelta;
 

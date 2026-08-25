@@ -58,8 +58,9 @@ public:
 	CComStaticModelInstance* GetStaticModelInstance() const { return m_pComModelInstance; }
 	/*---------------------------------*/
 
-public:
-	void SetRenderEnable(_bool enable) { m_bRenderEnable = enable; }
+	// CPU 프러스텀 컬링 비활성화
+	//public:
+	//	void SetRenderEnable(_bool enable) { m_bRenderEnable = enable; }
 
 private:
 	std::string m_modelResourceGroup{};
@@ -69,9 +70,9 @@ private:
 	SPtr<CResVertexShader> m_pResVertexShader{};
 	SPtr<CResPixelShader> m_pResPixelShader{};
 
-private:
-	_bool m_bRenderEnable = true; // 렌더러에 들어갈 놈인가 (컬링 통과된 놈들)
-
+	// CPU 프러스텀 컬링 비활성화
+	//private:
+	//	_bool m_bRenderEnable = true; // 렌더러에 들어갈 놈인가 (컬링 통과된 놈들)
 
 private:
 	WIND_DESC m_WindDesc {};

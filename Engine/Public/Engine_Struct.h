@@ -118,17 +118,6 @@ namespace Engine
 		}
 	} TEXTURE3D;
 
-	typedef struct tagPostProcess
-	{
-		_float BloomIntensity;		 // 블룸 강도
-
-		_float DistortionIntensity;  // 왜곡 강도
-		_float ChromaticIntensity;   // 색수차 강도
-		_float VignetteIntensity;    // 비네팅 강도
-		_float VignetteSmoothness;   // 비네팅
-
-		_float3 PostProcessPadding;
-	} POSTPROCESS;
 	typedef struct tagUiDesc
 	{
 		_string name;

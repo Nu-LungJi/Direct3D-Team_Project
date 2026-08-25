@@ -26,7 +26,7 @@ static const float4 OutlineColor = float4(1.f, 1.f, 1.f, 1.f);
 // LUT ColorGrading Global Variable
 static const float LUT_Size = 16.f;
 
-static const float EPSILON = 1e-4f;
+static const float VignetteSmoothness = { 0.8f };
 
 // ToneMapping Global Variable
 static const float3x3 AGX_InMatrix = float3x3(
@@ -44,23 +44,25 @@ static const float3x3 AGX_OutMatrix = float3x3(
 static const float Min_Luminance = -12.47393f;
 static const float Max_Luminance = 4.026069f;
 
-static const float DistortionIntensity	= { 0.f }; // 왜곡 강도
-static const float ChromaticIntensity	= { 0.f }; // 색수차 강도
-static const float VignetteIntensity	= { 0.f }; // 비네팅 강도
-static const float VignetteSmoothness	= { 0.f }; // 비네팅
-
 RWTexture2D<float4> OUTPUT : register(u0);
 
 #define	BLUR_SAMPLING_COUNT 10
 
-cbuffer CB_POSTPROCESS : register(b10)
+cbuffer CB_BLOOM : register(b10)
 {
 	float2	TexelSize;
-	float	BlurIntensity;
-	float	_pad;
+	float2	CB_BLOOM_PADDING;
 };
 
-cbuffer CB_LENSFLARE : register(b11)
+cbuffer CB_POSTPROCESS : register(b11)
+{
+	float	BlurIntensity;
+	float	DistortionIntensity;
+	float	ChromaticIntensity;
+	float	VignetteIntensity;
+};
+
+cbuffer CB_LENSFLARE : register(b12)
 {
 	float2	FlareCenterUV;
 	float	FlareCurrentLifeTime;
@@ -239,20 +241,20 @@ float SoftKneeCurve(float _Luminance, float _Threshold, float _Knee)
 	return Soft;
 }
 
-float3 Apply_RadialBlur(float3 _FinalColor, float2 _TexCoord)
+float3 Apply_RadialBlur(float2 _TexCoord)
 {
 	float2 CenterToPixelDir = float2(0.5f, 0.5f) - _TexCoord;
 	
 	CenterToPixelDir *= BlurIntensity / (float) BLUR_SAMPLING_COUNT;
-	float4 PixelColor = 0.f;
+	float4 BluredColor = 0.f;
 	float2 CurrentTexCoord = _TexCoord;
 	
 	for (int i = 0; i < BLUR_SAMPLING_COUNT; i++)
 	{
-		PixelColor += OriginalTexture.SampleLevel(LinearWrap, CurrentTexCoord, 0);
+		BluredColor += OriginalTexture.SampleLevel(LinearClamp, CurrentTexCoord, 0);
 		CurrentTexCoord += CenterToPixelDir;
 	}
-	return PixelColor / (float) BLUR_SAMPLING_COUNT;
+	return BluredColor / (float) BLUR_SAMPLING_COUNT;
 }
 
 [numthreads(8, 8, 1)]
@@ -310,11 +312,19 @@ void CSMain_Combined(uint3 ID : SV_DispatchThreadID)
 	float3 BloomBlurColor	= BlurPassTexture.SampleLevel(LinearClamp, TexCoord, 0).rgb;
 	
 	float3 FinalColor = OriginalColor + BloomBlurColor * BloomIntensity;
-	
-	// Radial Blur
-	//FinalColor = Apply_RadialBlur(FinalColor, TexCoord);
-	
+
 	OUTPUT[ID.xy] = float4(FinalColor, 1.f);
+	return;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain_RadialBlur(uint3 ID : SV_DispatchThreadID)
+{
+	float2 TexCoord;
+	[branch]
+	if (!GetOutputTexCoord(ID.xy, TexCoord))	return;
+	
+	OUTPUT[ID.xy] = float4(Apply_RadialBlur(TexCoord), 1.f);
 	return;
 }
 

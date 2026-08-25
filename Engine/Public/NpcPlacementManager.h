@@ -59,7 +59,7 @@ public:
 		const _string& sBehaviorMajorTag, const _string& sBehaviorMinorTag);
 	void ClearNpcOptions();
 	void SetPickingQueryMask(uint32_t iQueryMask) { m_iPickingQueryMask = iQueryMask; }
-
+	void AddMinorNameToNpcPlacement(const _string& strName) { m_ResMinorNames.push_back(strName); }
 	NPC_PLACEMENT_RESULT Spawn(uint64_t iPlacementId);
 	const std::vector<NPC_PLACEMENT_RESULT>& SpawnAll();
 	HRESULT Save(const _string& sFilePath) const;
@@ -109,6 +109,7 @@ private:
 	_string m_sFileStatus{};
 	_bool m_bPlacementPicking{};
 	_bool m_bSpawnOnPick{ true };
+	std::vector<_string>		m_ResMinorNames;
 	uint32_t m_iPickingQueryMask{ PX_ALL_LAYERS };
 	FILE_CONFIRM_ACTION m_eFileConfirmAction{ FILE_CONFIRM_ACTION::NONE };
 

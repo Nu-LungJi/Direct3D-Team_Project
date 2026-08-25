@@ -71,7 +71,7 @@ private:
 
 	_string			m_EffectNames[ETOUI(SPIDER_SKILL::END)];
 	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bPopup{ false }, m_bPopupL{ false }, m_bEndGame{ false }, m_bSpawn{ true };
-
+	_float						m_fTick{};
 	_string						m_WayName{};
 	std::list<_float3>			m_DebugPoint;
 public:
