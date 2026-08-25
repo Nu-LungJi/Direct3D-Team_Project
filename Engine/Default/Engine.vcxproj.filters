@@ -1062,6 +1062,9 @@
     <ClInclude Include="..\Public\MapManager.h">
       <Filter>GameObject\Manager</Filter>
     </ClInclude>
+	<ClInclude Include="..\Public\MapChunk.h">
+	  <Filter>GameObject\MapMeshObject</Filter>
+	</ClInclude>
     <ClInclude Include="..\Public\MapStaticModelLoader.h">
       <Filter>GameObject\Manager</Filter>
     </ClInclude>
@@ -1656,6 +1659,9 @@
     <ClCompile Include="..\Private\MapManager.cpp">
       <Filter>GameObject\Manager</Filter>
     </ClCompile>
+	<ClCompile Include="..\Private\MapChunk.cpp">
+	  <Filter>GameObject\MapMeshObject</Filter>
+	</ClCompile>
     <ClCompile Include="..\Private\DebugDraw.cpp">
       <Filter>DebugDraw</Filter>
     </ClCompile>

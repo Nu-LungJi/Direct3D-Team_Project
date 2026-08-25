@@ -10,59 +10,11 @@
 #include <deque>
 #include <shared_mutex>
 #include "Engine_Base.h"
+#include "MapChunk.h"
 
 NS_BEGIN(Engine)
 class COctreeNode;
 class CCameraObject;
-
-enum class EChunkLoadState
-{
-	Unloading,  // 언로드 요청 중
-	Unloaded,   // 메타만 있고 월드에는 없음
-	Loading,    // 비동기 로딩 요청 중
-	Loaded,     // 월드에 올라와 있음
-};
-
-enum class EChunkSaveState
-{
-	Unsaved,    // 아직 저장 파일 없음
-	Saved,      // 저장 파일 있음
-};
-
-struct MAP_MODEL_RESOURCE_KEY
-{
-	std::string group;
-	std::string tag;
-
-	bool operator==(const MAP_MODEL_RESOURCE_KEY& rhs) const
-	{
-		return group == rhs.group && tag == rhs.tag;
-	}
-};
-
-struct MAP_MODEL_RESOURCE_KEY_HASH
-{
-	size_t operator()(const MAP_MODEL_RESOURCE_KEY& key) const
-	{
-		const size_t groupHash = std::hash<std::string>{}(key.group);
-		const size_t tagHash = std::hash<std::string>{}(key.tag);
-		return groupHash ^ (tagHash << 1);
-	}
-};
-
-typedef struct tagMapChunk
-{
-	MAPCHUNK_COORD coord{};
-	std::vector<CHandle> hObjects{};
-	std::vector<MAP_MODEL_RESOURCE_KEY> modelResources{};
-	BoundingBox bounds{};
-	UPtr<COctreeNode> octreeNode;
-
-	EChunkLoadState loadState = EChunkLoadState::Unloaded;
-	EChunkSaveState saveState = EChunkSaveState::Unsaved;
-
-	std::string filePath;
-}MAPCHUNK;
 
 struct tagMapChunkCoordHash
 {
@@ -129,7 +81,7 @@ public:
 	void RebuildChunks();
 	HRESULT RegisterMapMeshObject(const CHandle& hObject);
 	std::vector<CHandle> CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const;
-	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetChunks() const { return m_Chunks; }
+	const std::unordered_map<MAPCHUNK_COORD, CMapChunk, tagMapChunkCoordHash>& GetChunks() const { return m_Chunks; }
 	const _float3& GetChunkSize() const { return m_vChunkSize; }
 	void SetChunkStreaming(_bool enable) { m_bChunkStreaming = enable; }
 	_bool IsChunkStreaming() const { return m_bChunkStreaming; } 
@@ -146,16 +98,16 @@ private:
 	//void CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum);
 
 
-	HRESULT AcquireChunkModelResources(MAPCHUNK& chunk, const std::vector<MAP_MESH_OBJECT_LOAD_DESC>& objects);
+	HRESULT AcquireChunkModelResources(CMapChunk& chunk, const std::vector<MAP_MESH_OBJECT_LOAD_DESC>& objects);
 	HRESULT PreloadChunkModelResources(PENDING_CHUNK_LOAD_RESULT& result);
-	HRESULT AcquirePreloadedChunkModelResources(MAPCHUNK& chunk, const PENDING_CHUNK_LOAD_RESULT& result);
+	HRESULT AcquirePreloadedChunkModelResources(CMapChunk& chunk, const PENDING_CHUNK_LOAD_RESULT& result);
 	void ReleasePendingModelResources(const PENDING_CHUNK_LOAD_RESULT& result);
 
 	// 청크가 런타임에 로드될 때 m_MapModelPaths에서 파일 경로를 찾고 해당 모델만 로드
 	HRESULT EnsureModelResourceLoaded(const MAP_MODEL_RESOURCE_KEY& key);
 	SPtr<std::mutex> GetModelResourceMutex(const MAP_MODEL_RESOURCE_KEY& key);
 
-	void QueueChunkModelRelease(MAPCHUNK& chunk);
+	void QueueChunkModelRelease(CMapChunk& chunk);
 	void QueueAllChunkModelReleases();
 	void ProcessDeferredModelReleases();
 private:
@@ -166,7 +118,7 @@ private:
 	std::string m_sMapRootPath;
 
 private:
-	std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash> m_Chunks;
+	std::unordered_map<MAPCHUNK_COORD, CMapChunk, tagMapChunkCoordHash> m_Chunks;
 	_bool m_bChunkStreaming = true;
 
 	std::atomic_uint64_t m_MapGeneration{};

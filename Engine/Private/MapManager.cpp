@@ -139,23 +139,6 @@ namespace
 		return desc;
 	}
 
-	_bool HasHandle(const std::vector<CHandle>& handles, const CHandle& target)
-	{
-		return std::find(handles.begin(), handles.end(), target) != handles.end();
-	}
-
-	_bool CanAutoUnload(const MAPCHUNK& chunk)
-	{
-		return chunk.loadState == EChunkLoadState::Loaded
-			&& chunk.saveState != EChunkSaveState::Unsaved;
-	}
-
-	_bool CanAutoLoad(const MAPCHUNK& chunk)
-	{
-		return chunk.loadState == EChunkLoadState::Unloaded
-			&& chunk.saveState != EChunkSaveState::Unsaved;
-	}
-
 	std::optional<CHandle> CreateMapMeshObjectFromJson(const nlohmann::ordered_json& objectJson)
 	{
 		if (!objectJson.contains("type") || objectJson["type"] != "MapMeshObject")
@@ -602,7 +585,7 @@ void CMapManager::UnloadChunksOutsideRange(const std::vector<MAPCHUNK_COORD>& ne
 	// 모든 Chunk들 중 주변3*3*3 Chunk가 아니라면 UnLoad
 	for (auto& [coord, chunk] : m_Chunks)
 	{
-		if (CanAutoUnload(chunk) && !isNeededChunk(coord))
+		if (chunk.CanAutoUnload() && !isNeededChunk(coord))
 		{
 			UnLoadChunk(coord);
 		}
@@ -646,7 +629,7 @@ void CMapManager::RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& nee
 			continue;
 		}
 
-		if (CanAutoLoad(iter->second))
+		if (iter->second.CanAutoLoad())
 		{
 			// 각 요청은 워커풀내의 독립적인 작업
 			// 가장 가까운 청크부터 제출됨
@@ -656,39 +639,6 @@ void CMapManager::RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& nee
 	}
 }
 
-//void CMapManager::CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum)
-//{
-//	for (const auto& coord : neededChunks)
-//	{
-//		auto iter = m_Chunks.find(coord);
-//		if (iter == m_Chunks.end())
-//		{
-//			continue;
-//		}
-//
-//		if (iter->second.loadState != EChunkLoadState::Loaded)
-//		{
-//			continue;
-//		}
-//
-//		const auto& selectedChunk = iter->second;
-//		const BoundingBox& cullingBounds = selectedChunk.octreeNode
-//			? selectedChunk.octreeNode->GetCullingBoundingBox()
-//			: selectedChunk.bounds;
-//
-//		if (!boundingFrustum.Intersects(cullingBounds))
-//		{
-//			continue;
-//		}
-//
-//		if (const auto& octreeNode = selectedChunk.octreeNode)
-//		{
-//			octreeNode->OctreeFrustumCull(boundingFrustum);
-//		}
-//	}
-//}
-//
-//
 void CMapManager::LateUpdate(_float fTimeDelta)
 {
 
@@ -752,7 +702,7 @@ SPtr<std::mutex> CMapManager::GetModelResourceMutex(const MAP_MODEL_RESOURCE_KEY
 	return modelMutex;
 }
 
-HRESULT CMapManager::AcquireChunkModelResources(MAPCHUNK& chunk, const std::vector<MAP_MESH_OBJECT_LOAD_DESC>& objects)
+HRESULT CMapManager::AcquireChunkModelResources(CMapChunk& chunk, const std::vector<MAP_MESH_OBJECT_LOAD_DESC>& objects)
 {
 	std::unordered_set<MAP_MODEL_RESOURCE_KEY, MAP_MODEL_RESOURCE_KEY_HASH> uniqueModels;
 	for (const auto& object : objects)
@@ -761,8 +711,9 @@ HRESULT CMapManager::AcquireChunkModelResources(MAPCHUNK& chunk, const std::vect
 			uniqueModels.insert({ object.modelGroup, object.model });
 	}
 
-	chunk.modelResources.clear();
-	chunk.modelResources.reserve(uniqueModels.size());
+	auto& modelResources = chunk.GetModelResources();
+	modelResources.clear();
+	modelResources.reserve(uniqueModels.size());
 	for (const auto& key : uniqueModels)
 	{
 		auto modelMutex = GetModelResourceMutex(key);
@@ -770,7 +721,7 @@ HRESULT CMapManager::AcquireChunkModelResources(MAPCHUNK& chunk, const std::vect
 
 		if (FAILED(EnsureModelResourceLoaded(key)))
 		{
-			for (const auto& acquiredKey : chunk.modelResources)
+			for (const auto& acquiredKey : modelResources)
 			{
 				auto refIter = m_ModelChunkRefCounts.find(acquiredKey);
 				if (refIter == m_ModelChunkRefCounts.end())
@@ -783,12 +734,12 @@ HRESULT CMapManager::AcquireChunkModelResources(MAPCHUNK& chunk, const std::vect
 					m_DeferredUnusedModelReleases.push_back(acquiredKey);
 				}
 			}
-			chunk.modelResources.clear();
+			modelResources.clear();
 			return E_FAIL;
 		}
 
 		++m_ModelChunkRefCounts[key];
-		chunk.modelResources.push_back(key);
+		modelResources.push_back(key);
 	}
 
 	return S_OK;
@@ -823,7 +774,7 @@ HRESULT CMapManager::PreloadChunkModelResources(PENDING_CHUNK_LOAD_RESULT& resul
 	return S_OK;
 }
 
-HRESULT CMapManager::AcquirePreloadedChunkModelResources(MAPCHUNK& chunk, const PENDING_CHUNK_LOAD_RESULT& result)
+HRESULT CMapManager::AcquirePreloadedChunkModelResources(CMapChunk& chunk, const PENDING_CHUNK_LOAD_RESULT& result)
 {
 	for (const auto& key : result.modelResources)
 	{
@@ -849,8 +800,8 @@ HRESULT CMapManager::AcquirePreloadedChunkModelResources(MAPCHUNK& chunk, const 
 		}
 	}
 
-	chunk.modelResources = result.modelResources;
-	for (const auto& key : chunk.modelResources)
+	chunk.SetModelResources(result.modelResources);
+	for (const auto& key : chunk.GetModelResources())
 		++m_ModelChunkRefCounts[key];
 	return S_OK;
 }
@@ -874,13 +825,12 @@ void CMapManager::ReleasePendingModelResources(const PENDING_CHUNK_LOAD_RESULT& 
 	m_DeferredUnusedModelReleases.insert(m_DeferredUnusedModelReleases.end(), result.modelResources.begin(), result.modelResources.end());
 }
 
-void CMapManager::QueueChunkModelRelease(MAPCHUNK& chunk)
+void CMapManager::QueueChunkModelRelease(CMapChunk& chunk)
 {
-	if (chunk.modelResources.empty())
+	if (chunk.GetModelResources().empty())
 		return;
 
-	m_DeferredModelReleases.push_back(std::move(chunk.modelResources));
-	chunk.modelResources.clear();
+	m_DeferredModelReleases.push_back(chunk.TakeModelResources());
 }
 
 void CMapManager::QueueAllChunkModelReleases()
@@ -972,7 +922,8 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 	std::vector<MAPCHUNK_COORD> originallyUnloadedChunks;
 	for (auto& [coord, chunk] : m_Chunks)
 	{
-		if (chunk.loadState == EChunkLoadState::Unloaded && chunk.saveState != EChunkSaveState::Unsaved)
+		if (chunk.GetLoadState() == EChunkLoadState::Unloaded &&
+			chunk.GetSaveState() != EChunkSaveState::Unsaved)
 		{
 			originallyUnloadedChunks.push_back(coord);
 			if (FAILED(/*RequestLoadChunkAsync(coord)*/LoadChunk(coord))) // Synchronous load while saving.
@@ -988,20 +939,20 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 		const std::filesystem::path relativePath = std::filesystem::path("chunks") / fileName;
 		const std::filesystem::path chunkPath = mapDir / relativePath;
 
-		chunk.filePath = relativePath.generic_string();
+		chunk.SetFilePath(relativePath.generic_string());
 
 		if (FAILED(SaveChunk(coord, chunkPath.generic_string())))
 		{
 			return E_FAIL;
 		}
 
-		chunk.saveState = EChunkSaveState::Saved;
+		chunk.SetSaveState(EChunkSaveState::Saved);
 
 		rootJson["chunks"].push_back(nlohmann::ordered_json
 		{
 			{"coord", MakeCoordJson(coord)},
-			{"file", chunk.filePath},
-			{"objectCount", chunk.hObjects.size()}
+			{"file", chunk.GetFilePath()},
+			{"objectCount", chunk.GetObjectHandles().size()}
 		});
 	}
 
@@ -1162,10 +1113,14 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 	for (auto& [coord, objects] : legacyObjectsByChunk)
 	{
 		auto& chunk = m_Chunks[coord];
-		chunk.coord = coord;
-		chunk.bounds = MakeChunkBoundingBox(coord);
+		chunk.SetCoord(coord);
+		chunk.SetBounds(MakeChunkBoundingBox(coord));
+		chunk.BeginLoading();
 		if (FAILED(AcquireChunkModelResources(chunk, objects)))
+		{
+			chunk.CancelLoading();
 			return E_FAIL;
+		}
 
 		for (const auto& objectDesc : objects)
 		{
@@ -1189,11 +1144,10 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 			object->GetTransform().SetPosition(objectDesc.position);
 			object->GetTransform().SetQuaternion(objectDesc.rotation);
 			object->GetTransform().SetScale(objectDesc.scale);
-			chunk.hObjects.push_back(hObject.value());
+			chunk.AddObject(hObject.value());
 		}
 
-		chunk.loadState = EChunkLoadState::Loaded;
-		chunk.saveState = EChunkSaveState::Saved;
+		chunk.CompleteLoading(MakeChunkBoundingBox(coord), EChunkSaveState::Saved);
 	}
 	return S_OK;
 }
@@ -1214,14 +1168,15 @@ HRESULT CMapManager::SaveChunk(const MAPCHUNK_COORD& coord, const std::string& c
 		return E_FAIL;
 	}
 
-	const MAPCHUNK& chunk = iter->second;
+	const CMapChunk& chunk = iter->second;
+	const BoundingBox& chunkBounds = chunk.GetBounds();
 	nlohmann::ordered_json chunkJson = {};
 	chunkJson["version"] = 1;
 	chunkJson["coord"] = MakeCoordJson(coord);
 	chunkJson["bounds"] =
 	{
-		{"center", { chunk.bounds.Center.x, chunk.bounds.Center.y, chunk.bounds.Center.z }},
-		{"extents", { chunk.bounds.Extents.x, chunk.bounds.Extents.y, chunk.bounds.Extents.z }}
+		{"center", { chunkBounds.Center.x, chunkBounds.Center.y, chunkBounds.Center.z }},
+		{"extents", { chunkBounds.Extents.x, chunkBounds.Extents.y, chunkBounds.Extents.z }}
 	};
 	chunkJson["objects"] = nlohmann::ordered_json::array();
 
@@ -1230,7 +1185,7 @@ HRESULT CMapManager::SaveChunk(const MAPCHUNK_COORD& coord, const std::string& c
 	{
 		for (const auto& handle : layer)
 		{
-			if (!HasHandle(chunk.hObjects, handle))
+			if (!chunk.ContainsObject(handle))
 			{
 				continue;
 			}
@@ -1301,12 +1256,10 @@ HRESULT CMapManager::LoadMapData(const std::string& path)
 	for (const auto& chunkMetaJson : rootJson["chunks"])
 	{
 		const MAPCHUNK_COORD coord = ReadCoordJson(chunkMetaJson["coord"]);
-		MAPCHUNK chunk{};
-		chunk.coord = coord;
-		chunk.bounds = MakeChunkBoundingBox(coord);
-		chunk.filePath = chunkMetaJson.value("file", (std::filesystem::path("chunks") / ChunkFileName(coord)).generic_string());
-		chunk.loadState = EChunkLoadState::Unloaded;
-		chunk.saveState = EChunkSaveState::Saved;
+		CMapChunk chunk{ coord, MakeChunkBoundingBox(coord) };
+		chunk.SetFilePath(chunkMetaJson.value(
+			"file", (std::filesystem::path("chunks") / ChunkFileName(coord)).generic_string()));
+		chunk.SetSaveState(EChunkSaveState::Saved);
 
 		m_Chunks.emplace(coord, std::move(chunk));
 	}
@@ -1322,17 +1275,17 @@ HRESULT CMapManager::LoadChunk(const MAPCHUNK_COORD& coord)
 		return E_FAIL;
 	}
 
-	MAPCHUNK& chunk = iter->second;
-	if (chunk.loadState == EChunkLoadState::Loaded)
+	CMapChunk& chunk = iter->second;
+	if (chunk.IsLoaded())
 	{
 		return S_OK;
 	}
 
-	std::filesystem::path chunkPath = std::filesystem::path(m_sMapRootPath) / chunk.filePath;
-	if (chunk.filePath.empty())
+	std::filesystem::path chunkPath = std::filesystem::path(m_sMapRootPath) / chunk.GetFilePath();
+	if (chunk.GetFilePath().empty())
 	{
-		chunk.filePath = (std::filesystem::path("chunks") / ChunkFileName(coord)).generic_string();
-		chunkPath = std::filesystem::path(m_sMapRootPath) / chunk.filePath;
+		chunk.SetFilePath((std::filesystem::path("chunks") / ChunkFileName(coord)).generic_string());
+		chunkPath = std::filesystem::path(m_sMapRootPath) / chunk.GetFilePath();
 	}
 
 	std::ifstream inFile(chunkPath.string());
@@ -1345,8 +1298,7 @@ HRESULT CMapManager::LoadChunk(const MAPCHUNK_COORD& coord)
 	inFile >> chunkJson;
 	inFile.close();
 
-	chunk.hObjects.clear();
-	chunk.loadState = EChunkLoadState::Loading;
+	chunk.BeginLoading();
 
 	std::vector<MAP_MESH_OBJECT_LOAD_DESC> objectDescs;
 	objectDescs.reserve(chunkJson["objects"].size());
@@ -1358,7 +1310,7 @@ HRESULT CMapManager::LoadChunk(const MAPCHUNK_COORD& coord)
 
 	if (FAILED(AcquireChunkModelResources(chunk, objectDescs)))
 	{
-		chunk.loadState = EChunkLoadState::Unloaded;
+		chunk.CancelLoading();
 		return E_FAIL;
 	}
 
@@ -1366,25 +1318,16 @@ HRESULT CMapManager::LoadChunk(const MAPCHUNK_COORD& coord)
 	{
 		if (auto hObject = CreateMapMeshObjectFromJson(objectJson))
 		{
-			chunk.hObjects.push_back(hObject.value());
+			chunk.AddObject(hObject.value());
 		}
 	}
 
-	chunk.bounds = MakeChunkBoundingBox(coord);
-	chunk.loadState = EChunkLoadState::Loaded;
-	chunk.saveState = EChunkSaveState::Saved;
-
-	chunk.octreeNode.reset();
-	chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0);
-	if (chunk.octreeNode)
-	{
-		chunk.octreeNode->BuildOctree(chunk.hObjects);
-	}
+	chunk.CompleteLoading(MakeChunkBoundingBox(coord), EChunkSaveState::Saved);
 
 	/*----------- 광윤 추가 -----------*/
-	if (!chunk.hObjects.empty())
+	if (!chunk.GetObjectHandles().empty())
 	{
-		const BoundingBox& ChangedBounds = chunk.octreeNode ? chunk.octreeNode->GetCullingBoundingBox() : chunk.bounds;
+		const BoundingBox& ChangedBounds = chunk.GetCullingBounds();
 		CGameInstance::Get().Notify_StaticShadowSceneChanged(ChangedBounds);
 	}
 	/*---------------------------------*/
@@ -1400,22 +1343,22 @@ HRESULT CMapManager::UnLoadChunk(const MAPCHUNK_COORD& coord)
 		return E_FAIL;
 	}
 
-	MAPCHUNK& chunk = iter->second;
-	if (chunk.saveState == EChunkSaveState::Unsaved)
+	CMapChunk& chunk = iter->second;
+	if (chunk.GetSaveState() == EChunkSaveState::Unsaved)
 	{
 		return E_FAIL;
 	}
 
 
 	/*----------- 광윤 추가 -----------*/
-	const _bool bHadObjects = !chunk.hObjects.empty();
-	const BoundingBox RemovedBounds = chunk.octreeNode ? chunk.octreeNode->GetCullingBoundingBox() : chunk.bounds;
+	const _bool bHadObjects = !chunk.GetObjectHandles().empty();
+	const BoundingBox RemovedBounds = chunk.GetCullingBounds();
 	/*---------------------------------*/
 
 
-	chunk.loadState = EChunkLoadState::Unloading;
+	chunk.BeginUnloading();
 
-	for (const auto& handle : chunk.hObjects)
+	for (const auto& handle : chunk.GetObjectHandles())
 	{
 		if (auto* pObj = CGameInstance::Get().GetGameObjectByHandle(handle))
 		{
@@ -1424,9 +1367,7 @@ HRESULT CMapManager::UnLoadChunk(const MAPCHUNK_COORD& coord)
 	}
 
 	QueueChunkModelRelease(chunk);
-	chunk.hObjects.clear();
-	chunk.octreeNode.reset();
-	chunk.loadState = EChunkLoadState::Unloaded;
+	chunk.CompleteUnloading();
 
 	/*----------- 광윤 추가 -----------*/
 	if (bHadObjects)	CGameInstance::Get().Notify_StaticShadowSceneChanged(RemovedBounds);
@@ -1581,38 +1522,17 @@ MAPCHUNK_COORD CMapManager::WorldToChunkCoord(const _float3& pos) const
 void CMapManager::RebuildChunks()
 {
 	m_MapGeneration.fetch_add(1, std::memory_order_acq_rel);
-	std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash> prevChunks;
-	prevChunks.reserve(m_Chunks.size());
-	//prevChunks.insert(m_Chunks.begin(), m_Chunks.end());
-
-	for (auto& [coord, chunk] : m_Chunks)
-	{
-		MAPCHUNK prev{};
-		prev.coord = chunk.coord;
-		prev.bounds = chunk.bounds;
-		prev.loadState = chunk.loadState;
-		prev.saveState = chunk.saveState;
-		prev.filePath = chunk.filePath;
-		prev.modelResources = std::move(chunk.modelResources);
-
-		prevChunks.emplace(coord, std::move(prev));
-	}
-
+	auto previousChunks = std::move(m_Chunks);
 	m_Chunks.clear();
-	m_Chunks.reserve(prevChunks.size());
+	m_Chunks.reserve(previousChunks.size());
 
-	for (const auto& [coord, prevChunk] : prevChunks)
+	// 저장 상태와 모델 참조는 유지하되 오브젝트 목록과 옥트리는 현재 월드를 기준으로 다시 만든다.
+	for (auto& [coord, previousChunk] : previousChunks)
 	{
-		MAPCHUNK rebuiltChunk{};
-		rebuiltChunk.coord = prevChunk.coord;
-		rebuiltChunk.bounds = prevChunk.bounds;
-		rebuiltChunk.loadState = prevChunk.loadState;
-		rebuiltChunk.saveState = prevChunk.saveState;
-		rebuiltChunk.filePath = prevChunk.filePath;
-		rebuiltChunk.modelResources = prevChunk.modelResources;
-
-		rebuiltChunk.hObjects.clear();
-		rebuiltChunk.loadState = prevChunk.loadState; //EChunkLoadState::Unloaded;
+		CMapChunk rebuiltChunk{ coord, previousChunk.GetBounds() };
+		rebuiltChunk.SetFilePath(previousChunk.GetFilePath());
+		rebuiltChunk.SetSaveState(previousChunk.GetSaveState());
+		rebuiltChunk.SetModelResources(previousChunk.TakeModelResources());
 		m_Chunks.emplace(coord, std::move(rebuiltChunk));
 	}
 
@@ -1629,39 +1549,30 @@ void CMapManager::RebuildChunks()
 
 			const auto& pos = pObj->GetTransform().GetPosition();
 
-			MAPCHUNK_COORD coord = WorldToChunkCoord(pos);
+			const MAPCHUNK_COORD coord = WorldToChunkCoord(pos);
 
-			auto prevIter = prevChunks.find(coord);
-			const bool isKnownChunk = prevIter != prevChunks.end();
-
-			auto& chunk = m_Chunks[coord];
-			if (!isKnownChunk)
+			auto chunkIter = m_Chunks.find(coord);
+			if (chunkIter == m_Chunks.end())
 			{
-				chunk.coord = coord;
-				chunk.bounds = MakeChunkBoundingBox(coord);
-				chunk.saveState = EChunkSaveState::Unsaved;
-				chunk.filePath.clear();
-				chunk.octreeNode.reset();
+				CMapChunk newChunk{ coord, MakeChunkBoundingBox(coord) };
+				newChunk.SetSaveState(EChunkSaveState::Unsaved);
+				chunkIter = m_Chunks.emplace(coord, std::move(newChunk)).first;
 			}
 
-			chunk.hObjects.push_back(handle);
-			chunk.loadState = EChunkLoadState::Loaded;
+			chunkIter->second.AddObject(handle);
 		}
 	}
 
 	for (auto& [coord, chunk] : m_Chunks)
 	{
-		if (chunk.loadState != EChunkLoadState::Loaded)
+		const auto previousIter = previousChunks.find(coord);
+		const _bool wasLoaded = previousIter != previousChunks.end()
+			&& previousIter->second.IsLoaded();
+		if (!wasLoaded && chunk.GetObjectHandles().empty())
 			continue;
 
-		chunk.bounds = MakeChunkBoundingBox(coord);
-		chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0);
-		if (chunk.octreeNode)
-		{
-			chunk.octreeNode->BuildOctree(chunk.hObjects);
-		}
+		chunk.CompleteLoading(MakeChunkBoundingBox(coord), chunk.GetSaveState());
 	}
-
 }
 
 HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
@@ -1678,27 +1589,16 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 
 
 	const MAPCHUNK_COORD coord = WorldToChunkCoord(pObj->GetTransform().GetPosition());
-	auto& chunk = m_Chunks[coord];
-
-	chunk.coord = coord;
-	chunk.bounds = MakeChunkBoundingBox(coord);
-	chunk.loadState = EChunkLoadState::Loaded;
-	chunk.saveState = EChunkSaveState::Unsaved; // 새 오브젝트가 배치되면서 변질된 chunk니까 Unsaved되는게 맞음
-
-	if (!HasHandle(chunk.hObjects, hObject))
+	auto chunkIter = m_Chunks.find(coord);
+	if (chunkIter == m_Chunks.end())
 	{
-		chunk.hObjects.push_back(hObject);
+		CMapChunk newChunk{ coord, MakeChunkBoundingBox(coord) };
+		chunkIter = m_Chunks.emplace(coord, std::move(newChunk)).first;
 	}
 
-	if (!chunk.octreeNode)
-	{
-		chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0);
-	}
-
-	if (chunk.octreeNode)
-	{
-		chunk.octreeNode->BuildOctree(chunk.hObjects);
-	}
+	auto& chunk = chunkIter->second;
+	chunk.AddObject(hObject);
+	chunk.CompleteLoading(MakeChunkBoundingBox(coord), EChunkSaveState::Unsaved);
 
 
 
@@ -1712,7 +1612,7 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 		CGameInstance::Get().Notify_StaticShadowSceneChanged(ChangedBounds);
 	}
 	else {
-		CGameInstance::Get().Notify_StaticShadowSceneChanged(chunk.bounds);
+		CGameInstance::Get().Notify_StaticShadowSceneChanged(chunk.GetBounds());
 	}
 	/*---------------------------------*/
 	return S_OK;
@@ -1724,10 +1624,10 @@ std::vector<CHandle> CMapManager::CollectMapMeshPickCandidates(FXMVECTOR rayOrig
 
 	for (const auto& [coord, chunk] : m_Chunks)
 	{
-		if (chunk.loadState != EChunkLoadState::Loaded || !chunk.octreeNode)
+		if (!chunk.IsLoaded() || !chunk.GetOctree())
 			continue;
 
-		chunk.octreeNode->CollectRayCandidates(rayOrigin, rayDirection, candidates);
+		chunk.GetOctree()->CollectRayCandidates(rayOrigin, rayDirection, candidates);
 	}
 
 	return candidates;
@@ -1761,10 +1661,10 @@ HRESULT CMapManager::RenderDebugMapChunk()
 
 	for (const auto& [coord, mapChunk] : m_Chunks)
 	{
-		if (mapChunk.loadState == EChunkLoadState::Loaded && mapChunk.octreeNode)
+		if (mapChunk.IsLoaded() && mapChunk.GetOctree())
 		{
 			std::vector<OCTREE_DEBUG_BOUNDS> octreeBounds;
-			mapChunk.octreeNode->CollectDebugBounds(octreeBounds);
+			mapChunk.GetOctree()->CollectDebugBounds(octreeBounds);
 
 			for (const auto& nodeBounds : octreeBounds)
 			{
@@ -1773,8 +1673,8 @@ HRESULT CMapManager::RenderDebugMapChunk()
 				DrawBox(nodeBounds.bounds, Colors::Red, view, proj, XMMatrixIdentity());
 			}
 		}
-		FXMVECTOR color = mapChunk.loadState == EChunkLoadState::Loaded ? Colors::Lime : Colors::Red;
-		DrawBox(mapChunk.bounds, color, view, proj, XMMatrixIdentity());
+		FXMVECTOR color = mapChunk.IsLoaded() ? Colors::Lime : Colors::Red;
+		DrawBox(mapChunk.GetBounds(), color, view, proj, XMMatrixIdentity());
 	}
 
 	//// 카메라 주변 3x3x3 스트리밍 대상 청크 표시
@@ -1829,23 +1729,24 @@ HRESULT CMapManager::RequestLoadChunkAsync(const MAPCHUNK_COORD& coord)
 	if (iter == m_Chunks.end())
 		return E_FAIL;
 
-	MAPCHUNK& chunk = iter->second;
+	CMapChunk& chunk = iter->second;
 
-	if (chunk.loadState == EChunkLoadState::Loaded || chunk.loadState == EChunkLoadState::Loading)
+	if (chunk.GetLoadState() == EChunkLoadState::Loaded ||
+		chunk.GetLoadState() == EChunkLoadState::Loading)
 	{
 		return S_OK;
 	}
 
-	if (chunk.filePath.empty())
+	if (chunk.GetFilePath().empty())
 	{
-		chunk.filePath = (std::filesystem::path("chunks") / ChunkFileName(coord)).generic_string();
+		chunk.SetFilePath((std::filesystem::path("chunks") / ChunkFileName(coord)).generic_string());
 	}
 
-	const std::filesystem::path chunkPath = std::filesystem::path(m_sMapRootPath) / chunk.filePath;
+	const std::filesystem::path chunkPath = std::filesystem::path(m_sMapRootPath) / chunk.GetFilePath();
 	const uint64_t mapGeneration = m_MapGeneration.load(std::memory_order_acquire);
 
 	// 큐에 넣기 전에 메인스레드에서 Loading으로 바꿔야 중복 요청이 안 들어감
-	chunk.loadState = EChunkLoadState::Loading;
+	chunk.BeginLoading();
 	m_AsyncChunkLoadsInFlight.fetch_add(1, std::memory_order_acq_rel);
 
 	const _bool queued = CGameInstance::Get().WorkerEnqueue("LoadChunk", [this, coord, chunkPath, mapGeneration]()
@@ -1893,7 +1794,7 @@ HRESULT CMapManager::RequestLoadChunkAsync(const MAPCHUNK_COORD& coord)
 	if (!queued)
 	{
 		m_AsyncChunkLoadsInFlight.fetch_sub(1, std::memory_order_acq_rel);
-		chunk.loadState = EChunkLoadState::Unloaded;
+		chunk.CancelLoading();
 		return E_FAIL;
 	}
 
@@ -1950,13 +1851,11 @@ HRESULT CMapManager::ContinueApplyLoadedChunkResult(PENDING_CHUNK_APPLY_STATE& s
 		return E_FAIL;
 	}
 
-	MAPCHUNK& chunk = iter->second;
+	CMapChunk& chunk = iter->second;
 	if (FAILED(state.result.hr))
 	{
 		ReleasePendingModelResources(state.result);
-		chunk.hObjects.clear();
-		chunk.octreeNode.reset();
-		chunk.loadState = EChunkLoadState::Unloaded;
+		chunk.CancelLoading();
 		completed = true;
 		return E_FAIL;
 	}
@@ -1968,9 +1867,7 @@ HRESULT CMapManager::ContinueApplyLoadedChunkResult(PENDING_CHUNK_APPLY_STATE& s
 		else
 		{
 			ReleasePendingModelResources(state.result);
-			chunk.hObjects.clear();
-			chunk.octreeNode.reset();
-			chunk.loadState = EChunkLoadState::Unloaded;
+			chunk.CancelLoading();
 		}
 		completed = true;
 		return S_OK;
@@ -1978,11 +1875,10 @@ HRESULT CMapManager::ContinueApplyLoadedChunkResult(PENDING_CHUNK_APPLY_STATE& s
 
 	if (!state.initialized)
 	{
-		chunk.hObjects.clear();
+		chunk.BeginLoading();
 		if (FAILED(AcquirePreloadedChunkModelResources(chunk, state.result)))
 		{
-			chunk.octreeNode.reset();
-			chunk.loadState = EChunkLoadState::Unloaded;
+			chunk.CancelLoading();
 			completed = true;
 			return E_FAIL;
 		}
@@ -2017,7 +1913,7 @@ HRESULT CMapManager::ContinueApplyLoadedChunkResult(PENDING_CHUNK_APPLY_STATE& s
 				transform.SetPosition(objectDesc.position);
 				transform.SetQuaternion(objectDesc.rotation);
 				transform.SetScale(objectDesc.scale);
-				chunk.hObjects.push_back(hObject.value());
+				chunk.AddObject(hObject.value());
 			}
 		}
 	}
@@ -2026,12 +1922,8 @@ HRESULT CMapManager::ContinueApplyLoadedChunkResult(PENDING_CHUNK_APPLY_STATE& s
 	if (state.nextObjectIndex < state.result.objects.size())
 		return S_OK;
 
-	chunk.bounds = MakeChunkBoundingBox(state.result.coord);
-	chunk.loadState = EChunkLoadState::Loaded;
-	chunk.saveState = EChunkSaveState::Saved;
-	chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0);
-	if (chunk.octreeNode)
-		chunk.octreeNode->BuildOctree(chunk.hObjects);
+	chunk.CompleteLoading(
+		MakeChunkBoundingBox(state.result.coord), EChunkSaveState::Saved);
 
 	completed = true;
 	return S_OK;
@@ -2043,13 +1935,11 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 	if (iter == m_Chunks.end())
 		return E_FAIL;
 
-	MAPCHUNK& chunk = iter->second;
+	CMapChunk& chunk = iter->second;
 
 	if (FAILED(result.hr))
 	{
-		chunk.hObjects.clear();
-		chunk.octreeNode.reset();
-		chunk.loadState = EChunkLoadState::Unloaded;
+		chunk.CancelLoading();
 		return E_FAIL;
 	}
 
@@ -2058,18 +1948,15 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 		// 스트리밍 모드일때, 워커스레드가 뒤늦게 로드해준 Chunk 결과가 지금 카메라 위치를 보고 유효한 결과인지 판단
 		if (IsChunkInStreamingRange(result.coord) == false)
 		{
-			chunk.hObjects.clear();
-			chunk.octreeNode.reset();
-			chunk.loadState = EChunkLoadState::Unloaded;
+			chunk.CancelLoading();
 			return S_OK;
 		}
 	}
 
-	chunk.hObjects.clear();
+	chunk.BeginLoading();
 	if (FAILED(AcquireChunkModelResources(chunk, result.objects)))
 	{
-		chunk.octreeNode.reset();
-		chunk.loadState = EChunkLoadState::Unloaded;
+		chunk.CancelLoading();
 		return E_FAIL;
 	}
 
@@ -2101,22 +1988,15 @@ HRESULT CMapManager::ApplyLoadedChunkResult(const PENDING_CHUNK_LOAD_RESULT& res
 		transform.SetQuaternion(objectDesc.rotation);
 		transform.SetScale(objectDesc.scale);
 
-		chunk.hObjects.push_back(hObject.value());
+		chunk.AddObject(hObject.value());
 	}
 
-	chunk.bounds = MakeChunkBoundingBox(result.coord);
-	chunk.loadState = EChunkLoadState::Loaded;
-	chunk.saveState = EChunkSaveState::Saved;
-	chunk.octreeNode = COctreeNode::Create(chunk.bounds, 0);
-	if (chunk.octreeNode)
-	{
-		chunk.octreeNode->BuildOctree(chunk.hObjects);
-	}
+	chunk.CompleteLoading(MakeChunkBoundingBox(result.coord), EChunkSaveState::Saved);
 
 
 	/*----------- 광윤 추가 -----------*/
-	if (!chunk.hObjects.empty()) {
-		const BoundingBox& ChangedBounds = chunk.octreeNode? chunk.octreeNode->GetCullingBoundingBox() : chunk.bounds;
+	if (!chunk.GetObjectHandles().empty()) {
+		const BoundingBox& ChangedBounds = chunk.GetCullingBounds();
 		CGameInstance::Get().Notify_StaticShadowSceneChanged(ChangedBounds);
 	}
 	/*---------------------------------*/

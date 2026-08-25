@@ -1447,7 +1447,7 @@ std::vector<CHandle> CGameInstance::CollectMapMeshPickCandidates(FXMVECTOR rayOr
 {
 	return m_pMapManager->CollectMapMeshPickCandidates(rayOrigin, rayDirection);
 }
-const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
+const std::unordered_map<MAPCHUNK_COORD, CMapChunk, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
 {
 	return m_pMapManager->GetChunks();
 }

@@ -372,6 +372,7 @@
     <ClInclude Include="..\Public\Level.h" />
     <ClInclude Include="..\Public\LevelManager.h" />
     <ClInclude Include="..\Public\ComModelInstance.h" />
+	<ClInclude Include="..\Public\MapChunk.h" />
     <ClInclude Include="..\Public\MapManager.h" />
     <ClInclude Include="..\Public\MapStaticModelLoader.h" />
     <ClInclude Include="..\Public\MapMeshObject.h" />
@@ -718,6 +719,7 @@
     <ClCompile Include="..\Private\LightManager.cpp" />
     <ClCompile Include="..\Private\LightPlacementEditor.cpp" />
     <ClCompile Include="..\Private\LightPlacementObject.cpp" />
+	<ClCompile Include="..\Private\MapChunk.cpp" />
     <ClCompile Include="..\Private\MapManager.cpp" />
     <ClCompile Include="..\Private\MapMeshObject.cpp" />
     <ClCompile Include="..\Private\Terrain.cpp" />
