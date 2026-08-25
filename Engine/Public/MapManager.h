@@ -56,6 +56,8 @@ public:
 public:
 	void RebuildChunks();
 	HRESULT RegisterMapMeshObject(const CHandle& hObject);
+	HRESULT RefreshMapMeshObject(const CHandle& hObject);
+	HRESULT UnregisterMapMeshObject(const CHandle& hObject);
 	std::vector<CHandle> CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const;
 	const std::unordered_map<MAPCHUNK_COORD, CMapChunk, tagMapChunkCoordHash>& GetChunks() const { return m_Chunks; }
 	const _float3& GetChunkSize() const { return m_ChunkSize; }

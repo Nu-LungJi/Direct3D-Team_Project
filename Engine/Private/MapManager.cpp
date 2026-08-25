@@ -61,6 +61,7 @@ void CMapManager::Update(_float)
 void CMapManager::ClearAllChunk()
 {
 	m_ChunkStreamer.InvalidatePendingLoads();
+	CGameInstance::Get().ClearMapMeshResidentChunks();
 	m_ModelResourceTracker.QueueAllChunkReleases(m_Chunks);
 	m_Chunks.clear();
 }
@@ -282,6 +283,11 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 		}
 
 		chunk.CompleteLoading(MakeChunkBoundingBox(coord), EChunkSaveState::Saved);
+		if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
+			coord, chunk.GetObjectHandles())))
+		{
+			return E_FAIL;
+		}
 	}
 	return S_OK;
 }
@@ -334,6 +340,7 @@ HRESULT CMapManager::LoadMapData(const std::string& path)
 
 	m_MapRootPath = mapDir.generic_string();
 	m_ChunkStreamer.InvalidatePendingLoads();
+	CGameInstance::Get().ClearMapMeshResidentChunks();
 	m_ModelResourceTracker.QueueAllChunkReleases(m_Chunks);
 	m_Chunks.clear();
 	CGameInstance::Get().DelGameObjectLayer(E::MAPDECALOBJECTLAYER);
@@ -401,6 +408,12 @@ HRESULT CMapManager::LoadChunk(const MAPCHUNK_COORD& coord)
 	}
 
 	chunk.CompleteLoading(MakeChunkBoundingBox(coord), EChunkSaveState::Saved);
+	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
+		coord, chunk.GetObjectHandles())))
+	{
+		UnLoadChunk(coord);
+		return E_FAIL;
+	}
 
 	if (!chunk.GetObjectHandles().empty())
 	{
@@ -428,6 +441,7 @@ HRESULT CMapManager::UnLoadChunk(const MAPCHUNK_COORD& coord)
 	const _bool hadObjects = !chunk.GetObjectHandles().empty();
 	const BoundingBox removedBounds = chunk.GetCullingBounds();
 
+	CGameInstance::Get().UnregisterMapMeshResidentChunk(coord);
 	chunk.BeginUnloading();
 
 	for (const auto& handle : chunk.GetObjectHandles())
@@ -545,6 +559,7 @@ MAPCHUNK_COORD CMapManager::WorldToChunkCoord(const _float3& pos) const
 void CMapManager::RebuildChunks()
 {
 	m_ChunkStreamer.InvalidatePendingLoads();
+	CGameInstance::Get().ClearMapMeshResidentChunks();
 	auto previousChunks = std::move(m_Chunks);
 	m_Chunks.clear();
 	m_Chunks.reserve(previousChunks.size());
@@ -595,6 +610,8 @@ void CMapManager::RebuildChunks()
 			continue;
 
 		chunk.CompleteLoading(MakeChunkBoundingBox(coord), chunk.GetSaveState());
+		CGameInstance::Get().RegisterMapMeshResidentChunk(
+			coord, chunk.GetObjectHandles());
 	}
 }
 
@@ -619,6 +636,11 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 	auto& chunk = chunkIter->second;
 	chunk.AddObject(hObject);
 	chunk.CompleteLoading(MakeChunkBoundingBox(coord), EChunkSaveState::Unsaved);
+	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
+		coord, chunk.GetObjectHandles())))
+	{
+		return E_FAIL;
+	}
 
 	BoundingBox changedBounds{};
 	if (pObj->GetShadowBounds(changedBounds))
@@ -630,6 +652,73 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 		CGameInstance::Get().Notify_StaticShadowSceneChanged(chunk.GetBounds());
 	}
 	return S_OK;
+}
+
+HRESULT CMapManager::RefreshMapMeshObject(const CHandle& hObject)
+{
+	auto* mapObject = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(hObject);
+	if (mapObject == nullptr)
+		return E_FAIL;
+
+	mapObject->GetTransform().Update();
+	const MAPCHUNK_COORD newCoord = WorldToChunkCoord(mapObject->GetTransform().GetPosition());
+
+	auto oldChunkIter = std::find_if(
+		m_Chunks.begin(), m_Chunks.end(),
+		[&](const auto& entry) { return entry.second.ContainsObject(hObject); });
+
+	if (oldChunkIter != m_Chunks.end() && oldChunkIter->first != newCoord)
+	{
+		CMapChunk& oldChunk = oldChunkIter->second;
+		oldChunk.RemoveObject(hObject);
+		oldChunk.CompleteLoading(oldChunk.GetBounds(), EChunkSaveState::Unsaved);
+		if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
+			oldChunkIter->first, oldChunk.GetObjectHandles())))
+		{
+			return E_FAIL;
+		}
+	}
+
+	auto newChunkIter = m_Chunks.find(newCoord);
+	if (newChunkIter == m_Chunks.end())
+	{
+		CMapChunk newChunk{ newCoord, MakeChunkBoundingBox(newCoord) };
+		newChunkIter = m_Chunks.emplace(newCoord, std::move(newChunk)).first;
+	}
+
+	CMapChunk& newChunk = newChunkIter->second;
+	newChunk.AddObject(hObject);
+	newChunk.CompleteLoading(MakeChunkBoundingBox(newCoord), EChunkSaveState::Unsaved);
+	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
+		newCoord, newChunk.GetObjectHandles())))
+	{
+		return E_FAIL;
+	}
+
+	BoundingBox changedBounds{};
+	if (mapObject->GetShadowBounds(changedBounds))
+		CGameInstance::Get().Notify_StaticShadowSceneChanged(changedBounds);
+	return S_OK;
+}
+
+HRESULT CMapManager::UnregisterMapMeshObject(const CHandle& hObject)
+{
+	BoundingBox removedBounds{};
+	if (auto* mapObject = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(hObject))
+		mapObject->GetShadowBounds(removedBounds);
+
+	for (auto& [coord, chunk] : m_Chunks)
+	{
+		if (!chunk.RemoveObject(hObject))
+			continue;
+
+		chunk.CompleteLoading(chunk.GetBounds(), EChunkSaveState::Unsaved);
+		const HRESULT result = CGameInstance::Get().RegisterMapMeshResidentChunk(
+			coord, chunk.GetObjectHandles());
+		CGameInstance::Get().Notify_StaticShadowSceneChanged(removedBounds);
+		return result;
+	}
+	return E_FAIL;
 }
 
 std::vector<CHandle> CMapManager::CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const

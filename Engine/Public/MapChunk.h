@@ -91,6 +91,7 @@ public:
 
 	// 청크에 속한 게임 오브젝트 핸들을 중복 없이 추가한다.
 	_bool AddObject(const CHandle& objectHandle);
+	_bool RemoveObject(const CHandle& objectHandle);
 	void ClearObjects();
 	_bool ContainsObject(const CHandle& objectHandle) const;
 	void RebuildOctree();

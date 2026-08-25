@@ -39,8 +39,8 @@ public:
 	// 요청한 인스턴스·배치·Draw 수를 담을 수 있도록 GPU 버퍼를 확장한다
 	// 기존 용량으로 충분하면 버퍼를 다시 만들지 않는다
 	HRESULT EnsureCapacity(uint32_t instanceCount, uint32_t batchCount, uint32_t drawCount);
-	// 컬링 입력을 GPU에 업로드하고 두 단계 컴퓨트 셰이더를 실행해
-	// 가시 인스턴스와 메시별 간접 드로우 인자를 완성한다
+	// 청크 변경 프레임에만 컬링 입력을 GPU에 업로드하고, 매 프레임 컬링을 실행한다.
+	// uploadResidentData가 false면 기존 GPU 입력을 그대로 재사용한다.
 	HRESULT BuildVisibleInstancesAndIndirectArgs(
 		ID3D11DeviceContext* context,
 		const std::vector<MAPMESH_INSTANCE_DATA>& instances,
@@ -49,6 +49,7 @@ public:
 		uint32_t batchCount,
 		const std::vector<uint32_t>& drawBatchIndices,
 		const std::vector<D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS>& indirectArgs,
+		_bool uploadResidentData,
 		const CHizBuffer* previousHizBuffer,
 		_matrix matViewProj,
 		const _float2& screenSize);
@@ -76,7 +77,7 @@ private:
 	uint32_t m_BatchCapacity = 0;
 	uint32_t m_DrawCapacity = 0;
 
-	// CPU가 매 프레임 갱신하고 컬링 컴퓨트 셰이더가 읽는 입력 버퍼
+	// 청크 변경 시에만 CPU가 갱신하고 평상시에는 GPU에 상주하는 입력 버퍼
 	SPtr<CResStructuredBuffer> m_pInstanceInputBuffer{};
 	SPtr<CResStructuredBuffer> m_pOcclusionInputBuffer{};
 	SPtr<CResStructuredBuffer> m_pCullMetaInputBuffer{};

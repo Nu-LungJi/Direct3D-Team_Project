@@ -948,6 +948,7 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_DynamicInstanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced_Foliage.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxPartObject.hlsl" />

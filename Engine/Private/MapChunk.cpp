@@ -56,6 +56,16 @@ _bool CMapChunk::AddObject(const CHandle& objectHandle)
 	return true;
 }
 
+_bool CMapChunk::RemoveObject(const CHandle& objectHandle)
+{
+	const auto iter = std::find(m_ObjectHandles.begin(), m_ObjectHandles.end(), objectHandle);
+	if (iter == m_ObjectHandles.end())
+		return false;
+
+	m_ObjectHandles.erase(iter);
+	return true;
+}
+
 void CMapChunk::ClearObjects()
 {
 	m_ObjectHandles.clear();
@@ -98,4 +108,3 @@ _bool CMapChunk::CanAutoUnload() const
 	return m_LoadState == EChunkLoadState::Loaded
 		&& m_SaveState != EChunkSaveState::Unsaved;
 }
-

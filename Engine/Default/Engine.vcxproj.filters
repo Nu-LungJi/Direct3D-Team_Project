@@ -2084,6 +2084,9 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_DynamicInstanced.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>

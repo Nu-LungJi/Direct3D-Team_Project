@@ -382,6 +382,13 @@ HRESULT CMapChunkStreamer::ContinueApplyLoadedChunkResult(
 	chunk.CompleteLoading(
 		MakeChunkBoundingBox(state.result.coord, chunkSize),
 		EChunkSaveState::Saved);
+	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
+		state.result.coord, chunk.GetObjectHandles())))
+	{
+		m_UnloadChunkCallback(state.result.coord);
+		completed = true;
+		return E_FAIL;
+	}
 	completed = true;
 	return S_OK;
 }

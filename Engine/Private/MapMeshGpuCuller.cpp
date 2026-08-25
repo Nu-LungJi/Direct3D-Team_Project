@@ -134,6 +134,7 @@ HRESULT CMapMeshGpuCuller::BuildVisibleInstancesAndIndirectArgs(
 	uint32_t batchCount,
 	const std::vector<uint32_t>& drawBatchIndices,
 	const std::vector<D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS>& indirectArgs,
+	_bool uploadResidentData,
 	const CHizBuffer* previousHizBuffer,
 	_matrix matViewProj,
 	const _float2& screenSize)
@@ -149,19 +150,24 @@ HRESULT CMapMeshGpuCuller::BuildVisibleInstancesAndIndirectArgs(
 	if (FAILED(EnsureCapacity(instanceCount, batchCount, drawCount)))
 		return E_FAIL;
 
-	// 1단계: 이번 프레임의 인스턴스와 Draw-배치 대응 정보를 GPU 입력 버퍼에 업로드
-	if (FAILED(m_pInstanceInputBuffer->UpdateData(instances.data(), sizeof(MAPMESH_INSTANCE_DATA) * instanceCount)) ||
-		FAILED(m_pOcclusionInputBuffer->UpdateData(occlusionData.data(), sizeof(MAPMESH_OCCLUSION_DATA) * instanceCount)) ||
-		FAILED(m_pCullMetaInputBuffer->UpdateData(cullMeta.data(), sizeof(MAPMESH_CULL_META) * instanceCount)) ||
-		FAILED(m_pDrawBatchInputBuffer->UpdateData(drawBatchIndices.data(), sizeof(uint32_t) * drawCount)))
-		return E_FAIL;
+	if (uploadResidentData)
+	{
+		// 청크 구성이 변경된 프레임에만 정적 입력과 Draw 원본을 GPU에 다시 기록한다.
+		if (FAILED(m_pInstanceInputBuffer->UpdateData(instances.data(), sizeof(MAPMESH_INSTANCE_DATA) * instanceCount)) ||
+			FAILED(m_pOcclusionInputBuffer->UpdateData(occlusionData.data(), sizeof(MAPMESH_OCCLUSION_DATA) * instanceCount)) ||
+			FAILED(m_pCullMetaInputBuffer->UpdateData(cullMeta.data(), sizeof(MAPMESH_CULL_META) * instanceCount)) ||
+			FAILED(m_pDrawBatchInputBuffer->UpdateData(drawBatchIndices.data(), sizeof(uint32_t) * drawCount)))
+			return E_FAIL;
 
-	// IndexCount 등 CPU가 아는 고정값을 먼저 기록하고 GPU가 가시 개수만 덮어쓰게 한다.
-	D3D11_BOX indirectArgsUploadRegion{};
-	indirectArgsUploadRegion.right = sizeof(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS) * drawCount;
-	indirectArgsUploadRegion.bottom = 1;
-	indirectArgsUploadRegion.back = 1;
-	context->UpdateSubresource(m_pIndirectArgsBuffer.Get(), 0, &indirectArgsUploadRegion, indirectArgs.data(), 0, 0);
+		// IndexCount 등 고정값은 유지하고 GPU가 매 프레임 InstanceCount만 덮어쓴다.
+		D3D11_BOX indirectArgsUploadRegion{};
+		indirectArgsUploadRegion.right = sizeof(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS) * drawCount;
+		indirectArgsUploadRegion.bottom = 1;
+		indirectArgsUploadRegion.back = 1;
+		context->UpdateSubresource(
+			m_pIndirectArgsBuffer.Get(), 0, &indirectArgsUploadRegion,
+			indirectArgs.data(), 0, 0);
+	}
 
 	// 배치별 가시 개수는 매 프레임 컬링 전에 0부터 다시 누적한다.
 	const UINT clearValues[4]{};
