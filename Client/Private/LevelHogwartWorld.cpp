@@ -603,8 +603,8 @@ HRESULT CLevelHogwartWorld::Initialize_VolumetricFog() {
 	FogOption.g_fFogMaxHeight		= 600.f;
 	FogOption.g_fFogHeightFallOff	= 0.01f;
 
-	FogOption.g_fFogStartDistance	= 50.f;
-	FogOption.g_fFogEndDistance		= 150.f;
+	FogOption.g_fFogStartDistance	= 0.f;
+	FogOption.g_fFogEndDistance		= 10.f;
 
 	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
 

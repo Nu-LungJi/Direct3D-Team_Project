@@ -1637,17 +1637,15 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer() {
 			D3D11_MAPPED_SUBRESOURCE MRES{};
 			if (SUCCEEDED(m_pContext->Map(m_pVolumetricVFogCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 			{
-				CB_VLFOG cbVLFog = m_pFogInfo;
-
 				if (auto LightHandle = CGameInstance::Get().Get_MainDirectionalLightData().m_pLightHandle) {
 					if (auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value()))
-						cbVLFog.g_fFogLightDirection = LightOBJ->Get_LightDirection();
+						m_pFogInfo.g_fFogLightDirection = LightOBJ->Get_LightDirection();
 					else
-						cbVLFog.g_fFogLightDirection = _float3(0.f, 0.f, 0.f);
+						m_pFogInfo.g_fFogLightDirection = _float3(0.f, 0.f, 0.f);
 				}
 
-				cbVLFog.g_fFogTime = std::fmod(m_fTimeAccumulation, 4096.f);
-				memcpy(MRES.pData, &cbVLFog, sizeof(CB_VLFOG));
+				m_pFogInfo.g_fFogTime = std::fmod(m_fTimeAccumulation, 4096.f);
+				memcpy(MRES.pData, &m_pFogInfo, sizeof(CB_VLFOG));
 				m_pContext->Unmap(m_pVolumetricVFogCBuffer->GetCBuffer().Get(), 0);
 			}
 			m_pContext->PSSetConstantBuffers(11, 1, m_pVolumetricVFogCBuffer->GetCBuffer().GetAddressOf());
