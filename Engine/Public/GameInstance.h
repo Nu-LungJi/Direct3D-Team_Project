@@ -503,7 +503,7 @@ public:
 	_bool IsMapChunkStreaming() const;
 
 	/*----------- 광윤 추가 -----------*/
-	const MATERIAL_DESC FindMaterial(const std::string& ModelName);
+	MATERIAL_DESC FindMaterial(const std::string& modelName);
 	/*---------------------------------*/
 #ifdef _DEBUG
 	void SetDebugDrawMapChunk(_bool draw);

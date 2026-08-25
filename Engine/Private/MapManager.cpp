@@ -3,7 +3,6 @@
 #include "MapMeshObject.h"
 #include "DecalVolume.h"
 #include "ResTexture2D.h"
-#include <fstream>
 #include <filesystem>
 #include <set>
 
@@ -32,393 +31,6 @@ namespace
 			&& std::fabs(lhs.z - rhs.z) <= FLT_EPSILON;
 	}
 
-	std::string ChunkFileName(const MAPCHUNK_COORD& coord)
-	{
-		return std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_" + std::to_string(coord.z) + ".json";
-	}
-
-	nlohmann::ordered_json MakeCoordJson(const MAPCHUNK_COORD& coord)
-	{
-		return nlohmann::ordered_json
-		{
-			{"x", coord.x},
-			{"y", coord.y},
-			{"z", coord.z}
-		};
-	}
-
-	MAPCHUNK_COORD ReadCoordJson(const nlohmann::ordered_json& coordJson)
-	{
-		return MAPCHUNK_COORD
-		{
-			coordJson["x"].get<int64_t>(),
-			coordJson["y"].get<int64_t>(),
-			coordJson["z"].get<int64_t>()
-		};
-	}
-
-	nlohmann::ordered_json MakeWindJson(const WIND_DESC& windDesc)
-	{
-		return nlohmann::ordered_json
-		{
-			{ "type", static_cast<uint32_t>(windDesc.type) },
-			{ "strength", windDesc.strength },
-			{ "speed", windDesc.speed },
-			{ "frequency", windDesc.frequency },
-			{ "bendExponent", windDesc.bendExponent },
-			{ "heightStart", windDesc.heightStart },
-			{ "heightEnd", windDesc.heightEnd }
-		};
-	}
-
-	WIND_DESC ReadWindJson(const nlohmann::ordered_json& objectJson)
-	{
-		WIND_DESC windDesc{};
-		if (!objectJson.contains("wind") || !objectJson["wind"].is_object())
-			return windDesc;
-
-		const auto& windJson = objectJson["wind"];
-		const uint32_t windType = windJson.value("type", static_cast<uint32_t>(EWindType::None));
-		if (windType <= static_cast<uint32_t>(EWindType::Tree))
-			windDesc.type = static_cast<EWindType>(windType);
-		windDesc.strength = windJson.value("strength", windDesc.strength);
-		windDesc.speed = windJson.value("speed", windDesc.speed);
-		windDesc.frequency = windJson.value("frequency", windDesc.frequency);
-		windDesc.bendExponent = windJson.value("bendExponent", windDesc.bendExponent);
-		windDesc.heightStart = windJson.value("heightStart", windDesc.heightStart);
-		windDesc.heightEnd = windJson.value("heightEnd", windDesc.heightEnd);
-		return windDesc;
-	}
-
-	nlohmann::ordered_json MakeObjectJson(CMapMeshObject* pMeshObj, const std::string& layerName, const MAPCHUNK_COORD& coord)
-	{
-		const auto& pTransform = pMeshObj->GetTransform();
-		const auto& pos = pTransform.GetPosition();
-		const auto& quat = pTransform.GetQuaternion();
-		const auto& scale = pTransform.GetScale();
-
-		return nlohmann::ordered_json
-		{
-			{"type", "MapMeshObject"},
-			{"objectTag", std::string(pMeshObj->GetObjectTag())},
-			{"protoGroup", "PERMANENT"},
-			{"prototype", "Prototype_GameObject_MapMeshObject"},
-			{"modelGroup", pMeshObj->GetModelResourceGroup()},
-			{"model", pMeshObj->GetModelResourceTag()},
-			{"layer", layerName},
-			{"position", { pos.x, pos.y, pos.z }},
-			{"rotation", { quat.x, quat.y, quat.z, quat.w }},
-			{"scale", { scale.x, scale.y, scale.z }},
-			{"wind", MakeWindJson(pMeshObj->GetWindDesc())},
-			{"chunk", MakeCoordJson(coord)}
-		};
-	}
-
-	std::optional<MAP_MESH_OBJECT_LOAD_DESC> MakeMapMeshLoadDesc(const nlohmann::ordered_json& objectJson)
-	{
-		if (!objectJson.contains("type") || objectJson["type"] != "MapMeshObject")
-			return std::nullopt;
-
-		MAP_MESH_OBJECT_LOAD_DESC desc{};
-		desc.objectTag = objectJson["objectTag"];
-		desc.protoGroup = objectJson.value("protoGroup", "PERMANENT");
-		desc.prototype = objectJson.value("prototype", "Prototype_GameObject_MapMeshObject");
-		desc.modelGroup = objectJson["modelGroup"];
-		desc.model = objectJson["model"];
-		desc.layer = objectJson["layer"];
-
-		const auto& pos = objectJson["position"];
-		const auto& rot = objectJson["rotation"];
-		const auto& scale = objectJson["scale"];
-
-		desc.position = _float3{ pos[0], pos[1], pos[2] };
-		desc.rotation = _float4{ rot[0], rot[1], rot[2], rot[3] };
-		desc.scale = _float3{ scale[0], scale[1], scale[2] };
-		desc.windDesc = ReadWindJson(objectJson);
-
-		return desc;
-	}
-
-	std::optional<CHandle> CreateMapMeshObjectFromJson(const nlohmann::ordered_json& objectJson)
-	{
-		if (!objectJson.contains("type") || objectJson["type"] != "MapMeshObject")
-		{
-			return std::nullopt;
-		}
-
-		const std::string objectTag = objectJson["objectTag"];
-		const std::string modelGroup = objectJson["modelGroup"];
-		const std::string model = objectJson["model"];
-		const std::string layer = objectJson["layer"];
-
-		E::CMapMeshObject::MAP_MESH_OBJECT_DESC desc{};
-		desc.sObjectTag = objectTag;
-		desc.modelGroupTag = modelGroup;
-		desc.modelResTag = model;
-		desc.protoGroupTag = objectJson.value("protoGroup", "PERMANENT");
-		desc.prototypeTag = objectJson.value("prototype", "Prototype_GameObject_MapMeshObject");
-		desc.windDesc = ReadWindJson(objectJson);
-
-		auto hObject = E::CGameInstance::Get().AddGameObjectToLayer(
-			desc.protoGroupTag,
-			desc.prototypeTag,
-			layer,
-			&desc);
-		if (!hObject.has_value())
-		{
-			return std::nullopt;
-		}
-
-		auto* newObj = E::CGameInstance::Get().GetGameObjectByHandle(hObject.value());
-		if (newObj == nullptr)
-		{
-			return std::nullopt;
-		}
-
-		const auto& pos = objectJson["position"];
-		const auto& rot = objectJson["rotation"];
-		const auto& scale = objectJson["scale"];
-
-		auto& newObjTransform = newObj->GetTransform();
-		newObjTransform.SetPosition(XMVectorSet(pos[0], pos[1], pos[2], 1.f));
-		newObjTransform.SetQuaternion(_float4{ rot[0], rot[1], rot[2], rot[3] });
-		newObjTransform.SetScale(_float3{ scale[0], scale[1], scale[2] });
-
-		/*----------- 광윤 추가 -----------*/
-		newObjTransform.Update();
-		/*---------------------------------*/
-
-		return hObject;
-	}
-
-	_float4 ReadFloat4(const nlohmann::ordered_json& objectJson, const char* key, const _float4& fallback)
-	{
-		if (!objectJson.contains(key) || !objectJson[key].is_array() || objectJson[key].size() < 4)
-			return fallback;
-		const auto& value = objectJson[key];
-		return { value[0], value[1], value[2], value[3] };
-	}
-
-	_float3 ReadFloat3(const nlohmann::ordered_json& objectJson, const char* key, const _float3& fallback)
-	{
-		if (!objectJson.contains(key) || !objectJson[key].is_array() || objectJson[key].size() < 3)
-			return fallback;
-		const auto& value = objectJson[key];
-		return { value[0], value[1], value[2] };
-	}
-
-	nlohmann::ordered_json MakeDecalJson(CDecalVolume* decal, const std::string& layerName)
-	{
-		const auto& transform = decal->GetTransform();
-		const auto position = transform.GetPosition();
-		const auto rotation = transform.GetQuaternion();
-		const auto scale = transform.GetScale();
-		const bool hasMaskOverride = decal->GetMaskTextureGroup().hash != 0 &&
-			decal->GetMaskTextureTag().hash != 0;
-		const std::string maskGroup = hasMaskOverride ? decal->GetMaskTextureGroup().GetDbgStr() : "";
-		const std::string maskTag = hasMaskOverride ? decal->GetMaskTextureTag().GetDbgStr() : "";
-
-
-		nlohmann::ordered_json result
-		{
-			{ "type", "DecalVolume" },
-			{ "objectTag", std::string(decal->GetObjectTag()) },
-			{ "protoGroup", "PERMANENT" },
-			{ "prototype", "Prototype_GameObject_DecalVolume" },
-			{ "layer", layerName },
-			{ "position", { position.x, position.y, position.z } },
-			{ "rotation", { rotation.x, rotation.y, rotation.z, rotation.w } },
-			{ "scale", { scale.x, scale.y, scale.z } },
-			{ "materialPath", decal->GetMaterialPath() },
-			{ "opacity", decal->GetOpacity() },
-			{ "normalThreshold", decal->GetNormalThreshold() },
-			{ "edgeSoftness", decal->GetEdgeSoftness() },
-			{ "textureGroup", maskGroup },
-			{ "textureTag", maskTag },
-			{ "texturePath", decal->GetMaskTexturePath() }
-		};
-
-		auto savedParameters = nlohmann::ordered_json::object();
-		for (const auto& parameter : decal->GetMaterialParameters())
-		{
-			const _float* value = decal->GetMaterialParameterData(parameter.name);
-			if (!value)
-				continue;
-			if (parameter.count == 1)
-				savedParameters[parameter.name] = value[0];
-			else
-			{
-				auto values = nlohmann::ordered_json::array();
-				for (uint32_t i = 0; i < parameter.count; ++i)
-					values.push_back(value[i]);
-				savedParameters[parameter.name] = std::move(values);
-			}
-		}
-		result["materialParameters"] = std::move(savedParameters);
-		auto savedTextures = nlohmann::ordered_json::array();
-		for (UINT slot = CDecalMaterial::TEXTURE_SLOT_BEGIN; slot <= CDecalMaterial::TEXTURE_SLOT_END; ++slot)
-		{
-			const auto& group = decal->GetTextureOverrideGroup(slot);
-			const auto& tag = decal->GetTextureOverrideTag(slot);
-			if (group.hash == 0 || tag.hash == 0)
-				continue;
-			savedTextures.push_back(
-			{
-				{ "slot", slot },
-				{ "group", std::string(group.GetDbgStr()) },
-				{ "tag", std::string(tag.GetDbgStr()) },
-				{ "path", decal->GetTextureOverridePath(slot) }
-			});
-		}
-		result["textureOverrides"] = std::move(savedTextures);
-
-		return result;
-	}
-
-	std::optional<CHandle> CreateDecalFromJson(const nlohmann::ordered_json& objectJson)
-	{
-		if (!objectJson.is_object() || objectJson.value("type", std::string{}) != "DecalVolume")
-			return std::nullopt;
-
-		const std::string textureGroup = objectJson.value(
-			"textureGroup", std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE));
-		const std::string textureTag = objectJson.value("textureTag", std::string{});
-		const std::string texturePath = objectJson.value("texturePath", std::string{});
-
-		auto& gameInstance = CGameInstance::Get();
-		if (!textureTag.empty() && !gameInstance.GetResourceFirst<CResTexture2D>(textureGroup, textureTag))
-		{
-			if (texturePath.empty())
-				return std::nullopt;
-			auto texture = gameInstance.AddResourceT<CResTexture2D>(
-				textureGroup, textureTag, CResTexture2D::Create(texturePath));
-			if (!texture || FAILED(texture->Load()))
-				return std::nullopt;
-		}
-
-		CDecalVolume::DECAL_VOLUME_DESC desc{};
-		desc.sObjectTag = objectJson.value("objectTag", std::string("MapDecal"));
-		desc.sMaterialPath = objectJson.value(
-			"materialPath", std::string(CDecalVolume::DEFAULT_MATERIAL_PATH));
-		desc.fOpacity = objectJson.value("opacity", desc.fOpacity);
-		desc.fNormalThreshold = objectJson.value("normalThreshold", desc.fNormalThreshold);
-		desc.fEdgeSoftness = objectJson.value("edgeSoftness", desc.fEdgeSoftness);
-		if (!textureTag.empty())
-		{
-			desc.sTextureGroup = textureGroup;
-			desc.sMaskTextureTag = textureTag;
-		}
-
-		auto handle = gameInstance.AddGameObjectToLayer(
-			objectJson.value("protoGroup", std::string("PERMANENT")),
-			objectJson.value("prototype", std::string("Prototype_GameObject_DecalVolume")),
-			MAPDECALOBJECTLAYER,
-			&desc);
-		if (!handle)
-			return std::nullopt;
-
-		auto* decal = gameInstance.GetGameObjectByHandleT<CDecalVolume>(*handle);
-		if (!decal)
-			return std::nullopt;
-
-		const auto position = ReadFloat3(objectJson, "position", {});
-		const auto rotation = ReadFloat4(objectJson, "rotation", { 0.f, 0.f, 0.f, 1.f });
-		const auto scale = ReadFloat3(objectJson, "scale", { 10.f, 2.f, 10.f });
-		auto& transform = decal->GetTransform();
-		transform.SetPosition(position);
-		transform.SetQuaternion(rotation);
-		transform.SetScale(scale);
-		transform.Update();
-
-		if (objectJson.contains("materialParameters") && objectJson["materialParameters"].is_object())
-		{
-			const auto& savedParameters = objectJson["materialParameters"];
-			for (const auto& parameter : decal->GetMaterialParameters())
-			{
-				const auto iter = savedParameters.find(parameter.name);
-				if (iter == savedParameters.end())
-					continue;
-
-				std::array<_float, 4> values{};
-				if (iter->is_number())
-					values[0] = iter->get<_float>();
-				else if (iter->is_array())
-					for (uint32_t i = 0; i < parameter.count && i < iter->size(); ++i)
-						if ((*iter)[i].is_number())
-							values[i] = (*iter)[i].get<_float>();
-				decal->SetMaterialParameter(parameter.name, values.data(), parameter.count);
-			}
-		}
-		else
-		{
-			const auto albedo = ReadFloat4(objectJson, "albedo", { 1.f, 1.f, 1.f, 1.f });
-			const auto emissive = ReadFloat3(objectJson, "emissive", { 1.f, 0.f, 0.f });
-			const _float intensity = objectJson.value("emissiveIntensity", 1.f);
-			decal->SetMaterialParameter("Albedo", &albedo.x, 4);
-			decal->SetMaterialParameter("Emissive Color", &emissive.x, 3);
-			decal->SetMaterialParameter("Emissive Intensity", &intensity, 1);
-		}
-
-		if (objectJson.contains("textureOverrides") && objectJson["textureOverrides"].is_array())
-		{
-			for (const auto& savedTexture : objectJson["textureOverrides"])
-			{
-				const UINT slot = savedTexture.value("slot", 0u);
-				const std::string group = savedTexture.value(
-					"group", std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE));
-				const std::string tag = savedTexture.value("tag", std::string{});
-				const std::string path = savedTexture.value("path", std::string{});
-				if (slot < CDecalMaterial::TEXTURE_SLOT_BEGIN ||
-					slot > CDecalMaterial::TEXTURE_SLOT_END ||
-					tag.empty())
-					continue;
-
-				if (!gameInstance.GetResourceFirst<CResTexture2D>(group, tag))
-				{
-					if (path.empty())
-						continue;
-					auto texture = gameInstance.AddResourceT<CResTexture2D>(
-						group, tag, CResTexture2D::Create(path));
-					if (!texture || FAILED(texture->Load()))
-						continue;
-				}
-				decal->SetTextureOverride(slot, group, tag);
-			}
-		}
-		return handle;
-	}
-	/*----------- 광윤 추가 -----------*/	// Material 정보 읽기/쓰기
-	nlohmann::ordered_json MakeMaterialJson(const MATERIAL_DESC& matDesc)
-	{
-		_float3 EmissiveColor = matDesc.m_fEmissiveColor;
-		return nlohmann::ordered_json
-		{
-			{ "NormalIntensity", matDesc.m_fNormalIntensity },
-			{ "MetallicIntensity", matDesc.m_fMetallicIntensity },
-			{ "RoughnessIntensity", matDesc.m_fRoughnessIntensity },
-			{ "AmbientIntensity", matDesc.m_fAmbientIntensity },
-			{ "EmissiveColor", { EmissiveColor.x, EmissiveColor.y, EmissiveColor.z } },
-			{ "EmissiveIntensity", matDesc.m_fEmissiveIntensity },
-			{ "ObjectAlpha", matDesc.m_fObjectAlpha }
-		};
-	}
-	MATERIAL_DESC ReadMaterialJson(const nlohmann::ordered_json& objectJson)
-	{
-		MATERIAL_DESC matDesc{};
-		if (!objectJson.is_object())
-			return matDesc;
-
-		matDesc.m_fNormalIntensity = objectJson.value("NormalIntensity", matDesc.m_fNormalIntensity);
-		matDesc.m_fMetallicIntensity = objectJson.value("MetallicIntensity", matDesc.m_fMetallicIntensity);
-		matDesc.m_fRoughnessIntensity = objectJson.value("RoughnessIntensity", matDesc.m_fRoughnessIntensity);
-		matDesc.m_fAmbientIntensity = objectJson.value("AmbientIntensity", matDesc.m_fAmbientIntensity);
-		matDesc.m_fEmissiveColor = ReadFloat3(objectJson, "EmissiveColor", matDesc.m_fEmissiveColor);
-		matDesc.m_fEmissiveIntensity = objectJson.value("EmissiveIntensity", matDesc.m_fEmissiveIntensity);
-		matDesc.m_fObjectAlpha = objectJson.value("ObjectAlpha", matDesc.m_fObjectAlpha);
-
-		return matDesc;
-	}
-	/*---------------------------------*/
 }
 
 #ifdef _DEBUG
@@ -702,7 +314,7 @@ SPtr<std::mutex> CMapManager::GetModelResourceMutex(const MAP_MODEL_RESOURCE_KEY
 	return modelMutex;
 }
 
-HRESULT CMapManager::AcquireChunkModelResources(CMapChunk& chunk, const std::vector<MAP_MESH_OBJECT_LOAD_DESC>& objects)
+HRESULT CMapManager::AcquireChunkModelResources(CMapChunk& chunk, const std::vector<MAP_MESH_OBJECT_FILE_DATA>& objects)
 {
 	std::unordered_set<MAP_MODEL_RESOURCE_KEY, MAP_MODEL_RESOURCE_KEY_HASH> uniqueModels;
 	for (const auto& object : objects)
@@ -897,6 +509,222 @@ void CMapManager::ProcessDeferredModelReleases()
 	}
 }
 
+MAP_MESH_OBJECT_FILE_DATA CMapManager::MakeMapMeshObjectFileData(
+	const CMapMeshObject& object,
+	const std::string& layerName) const
+{
+	const auto& transform = object.GetTransform();
+
+	MAP_MESH_OBJECT_FILE_DATA fileData{};
+	fileData.objectTag = object.GetObjectTag();
+	fileData.protoGroup = "PERMANENT";
+	fileData.prototype = "Prototype_GameObject_MapMeshObject";
+	fileData.modelGroup = object.GetModelResourceGroup();
+	fileData.model = object.GetModelResourceTag();
+	fileData.layer = layerName;
+	fileData.position = transform.GetPosition();
+	fileData.rotation = transform.GetQuaternion();
+	fileData.scale = transform.GetScale();
+	fileData.windDesc = object.GetWindDesc();
+	return fileData;
+}
+
+std::optional<CHandle> CMapManager::CreateMapMeshObject(
+	const MAP_MESH_OBJECT_FILE_DATA& objectData) const
+{
+	CMapMeshObject::MAP_MESH_OBJECT_DESC desc{};
+	desc.sObjectTag = objectData.objectTag;
+	desc.protoGroupTag = objectData.protoGroup;
+	desc.prototypeTag = objectData.prototype;
+	desc.modelGroupTag = objectData.modelGroup;
+	desc.modelResTag = objectData.model;
+	desc.windDesc = objectData.windDesc;
+
+	auto handle = CGameInstance::Get().AddGameObjectToLayer(
+		desc.protoGroupTag,
+		desc.prototypeTag,
+		objectData.layer,
+		&desc);
+	if (!handle)
+		return std::nullopt;
+
+	auto* object = CGameInstance::Get().GetGameObjectByHandle(*handle);
+	if (!object)
+		return std::nullopt;
+
+	auto& transform = object->GetTransform();
+	transform.SetPosition(objectData.position);
+	transform.SetQuaternion(objectData.rotation);
+	transform.SetScale(objectData.scale);
+	transform.Update();
+	return handle;
+}
+
+MAP_DECAL_FILE_DATA CMapManager::MakeDecalFileData(
+	const CDecalVolume& decal,
+	const std::string& layerName) const
+{
+	const auto& transform = decal.GetTransform();
+	const _bool hasMaskOverride = decal.GetMaskTextureGroup().hash != 0 &&
+		decal.GetMaskTextureTag().hash != 0;
+
+	MAP_DECAL_FILE_DATA fileData{};
+	fileData.objectTag = decal.GetObjectTag();
+	fileData.layer = layerName;
+	fileData.materialPath = decal.GetMaterialPath();
+	fileData.textureGroup = hasMaskOverride ? decal.GetMaskTextureGroup().GetDbgStr() : "";
+	fileData.textureTag = hasMaskOverride ? decal.GetMaskTextureTag().GetDbgStr() : "";
+	fileData.texturePath = decal.GetMaskTexturePath();
+	fileData.position = transform.GetPosition();
+	fileData.rotation = transform.GetQuaternion();
+	fileData.scale = transform.GetScale();
+	fileData.opacity = decal.GetOpacity();
+	fileData.normalThreshold = decal.GetNormalThreshold();
+	fileData.edgeSoftness = decal.GetEdgeSoftness();
+	fileData.hasMaterialParameters = true;
+
+	for (const auto& parameter : decal.GetMaterialParameters())
+	{
+		const _float* values = decal.GetMaterialParameterData(parameter.name);
+		if (!values)
+			continue;
+
+		MAP_DECAL_PARAMETER_DATA parameterData{};
+		parameterData.name = parameter.name;
+		parameterData.values.assign(values, values + parameter.count);
+		fileData.materialParameters.push_back(std::move(parameterData));
+	}
+
+	for (UINT slot = CDecalMaterial::TEXTURE_SLOT_BEGIN;
+		slot <= CDecalMaterial::TEXTURE_SLOT_END;
+		++slot)
+	{
+		const auto& group = decal.GetTextureOverrideGroup(slot);
+		const auto& tag = decal.GetTextureOverrideTag(slot);
+		if (group.hash == 0 || tag.hash == 0)
+			continue;
+
+		fileData.textureOverrides.push_back(
+		{
+			slot,
+			group.GetDbgStr(),
+			tag.GetDbgStr(),
+			decal.GetTextureOverridePath(slot)
+		});
+	}
+
+	return fileData;
+}
+
+std::optional<CHandle> CMapManager::CreateDecal(
+	const MAP_DECAL_FILE_DATA& decalData) const
+{
+	auto& gameInstance = CGameInstance::Get();
+	const std::string textureGroup = decalData.textureGroup.empty()
+		? std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE)
+		: decalData.textureGroup;
+
+	if (!decalData.textureTag.empty() &&
+		!gameInstance.GetResourceFirst<CResTexture2D>(textureGroup, decalData.textureTag))
+	{
+		if (decalData.texturePath.empty())
+			return std::nullopt;
+		auto texture = gameInstance.AddResourceT<CResTexture2D>(
+			textureGroup,
+			decalData.textureTag,
+			CResTexture2D::Create(decalData.texturePath));
+		if (!texture || FAILED(texture->Load()))
+			return std::nullopt;
+	}
+
+	CDecalVolume::DECAL_VOLUME_DESC desc{};
+	desc.sObjectTag = decalData.objectTag;
+	desc.sMaterialPath = decalData.materialPath.empty()
+		? std::string(CDecalVolume::DEFAULT_MATERIAL_PATH)
+		: decalData.materialPath;
+	desc.fOpacity = decalData.opacity;
+	desc.fNormalThreshold = decalData.normalThreshold;
+	desc.fEdgeSoftness = decalData.edgeSoftness;
+	if (!decalData.textureTag.empty())
+	{
+		desc.sTextureGroup = textureGroup;
+		desc.sMaskTextureTag = decalData.textureTag;
+	}
+
+	auto handle = gameInstance.AddGameObjectToLayer(
+		decalData.protoGroup,
+		decalData.prototype,
+		MAPDECALOBJECTLAYER,
+		&desc);
+	if (!handle)
+		return std::nullopt;
+
+	auto* decal = gameInstance.GetGameObjectByHandleT<CDecalVolume>(*handle);
+	if (!decal)
+		return std::nullopt;
+
+	auto& transform = decal->GetTransform();
+	transform.SetPosition(decalData.position);
+	transform.SetQuaternion(decalData.rotation);
+	transform.SetScale(decalData.scale);
+	transform.Update();
+
+	if (decalData.hasMaterialParameters)
+	{
+		for (const auto& parameter : decal->GetMaterialParameters())
+		{
+			const auto savedParameter = std::find_if(
+				decalData.materialParameters.begin(),
+				decalData.materialParameters.end(),
+				[&parameter](const MAP_DECAL_PARAMETER_DATA& candidate)
+				{
+					return candidate.name == parameter.name;
+				});
+			if (savedParameter == decalData.materialParameters.end())
+				continue;
+
+			std::array<_float, 4> values{};
+			const size_t copyCount = std::min<size_t>(
+				parameter.count, savedParameter->values.size());
+			std::copy_n(savedParameter->values.begin(), copyCount, values.begin());
+			decal->SetMaterialParameter(parameter.name, values.data(), parameter.count);
+		}
+	}
+	else
+	{
+		decal->SetMaterialParameter("Albedo", &decalData.legacyAlbedo.x, 4);
+		decal->SetMaterialParameter("Emissive Color", &decalData.legacyEmissive.x, 3);
+		decal->SetMaterialParameter(
+			"Emissive Intensity", &decalData.legacyEmissiveIntensity, 1);
+	}
+
+	for (const auto& textureData : decalData.textureOverrides)
+	{
+		if (textureData.slot < CDecalMaterial::TEXTURE_SLOT_BEGIN ||
+			textureData.slot > CDecalMaterial::TEXTURE_SLOT_END ||
+			textureData.tag.empty())
+			continue;
+
+		const std::string group = textureData.group.empty()
+			? std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE)
+			: textureData.group;
+		if (!gameInstance.GetResourceFirst<CResTexture2D>(group, textureData.tag))
+		{
+			if (textureData.path.empty())
+				continue;
+			auto texture = gameInstance.AddResourceT<CResTexture2D>(
+				group,
+				textureData.tag,
+				CResTexture2D::Create(textureData.path));
+			if (!texture || FAILED(texture->Load()))
+				continue;
+		}
+		decal->SetTextureOverride(textureData.slot, group, textureData.tag);
+	}
+
+	return handle;
+}
+
 HRESULT CMapManager::SaveMap(const std::string& path)
 {
 	RebuildChunks();
@@ -910,12 +738,8 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 		return E_FAIL;
 	}
 
-	nlohmann::ordered_json rootJson = {};
-	rootJson["version"] = 2;
-	rootJson["chunkSize"] = { m_vChunkSize.x, m_vChunkSize.y, m_vChunkSize.z };
-	rootJson["chunks"] = nlohmann::ordered_json::array();
-	rootJson["requiredModels"] = nlohmann::ordered_json::array();
-	rootJson["decals"] = nlohmann::ordered_json::array();
+	MAP_FILE_DATA mapFileData{};
+	mapFileData.chunkSize = m_vChunkSize;
 
 	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
 
@@ -935,7 +759,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 
 	for (auto& [coord, chunk] : m_Chunks)
 	{
-		const std::string fileName = ChunkFileName(coord);
+		const std::string fileName = m_ChunkSerializer.MakeChunkFileName(coord);
 		const std::filesystem::path relativePath = std::filesystem::path("chunks") / fileName;
 		const std::filesystem::path chunkPath = mapDir / relativePath;
 
@@ -948,11 +772,11 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 
 		chunk.SetSaveState(EChunkSaveState::Saved);
 
-		rootJson["chunks"].push_back(nlohmann::ordered_json
+		mapFileData.chunks.push_back(
 		{
-			{"coord", MakeCoordJson(coord)},
-			{"file", chunk.GetFilePath()},
-			{"objectCount", chunk.GetObjectHandles().size()}
+			coord,
+			chunk.GetFilePath(),
+			chunk.GetObjectHandles().size()
 		});
 	}
 
@@ -965,7 +789,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 		{
 			if (auto* decal = CGameInstance::Get().GetGameObjectByHandleT<CDecalVolume>(objectHandle))
 			{
-				rootJson["decals"].push_back(MakeDecalJson(decal, pair.first));
+				mapFileData.decals.push_back(MakeDecalFileData(*decal, pair.first));
 				continue;
 			}
 
@@ -979,27 +803,15 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 	}
 
 	for (const auto& [modelGroup, model] : requiredModels)
-	{
-		rootJson["requiredModels"].push_back(nlohmann::ordered_json
-		{
-			{ "modelGroup", modelGroup },
-			{ "model", model }
-		});
-	}
+		mapFileData.requiredModels.push_back({ modelGroup, model });
 
 	for (const auto& coord : originallyUnloadedChunks)
 	{
 		UnLoadChunk(coord);
 	}
 
-	std::ofstream outFile((mapDir / "map.json").string());
-	if (!outFile.is_open())
-	{
+	if (FAILED(m_ChunkSerializer.SaveMapFile(mapDir / "map.json", mapFileData)))
 		return E_FAIL;
-	}
-
-	outFile << rootJson.dump(4);
-	outFile.close();
 
 	/*----------- 광윤 추가 -----------*/
 	SaveMaterial(mapDir.string());
@@ -1086,29 +898,13 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 	}
 
 	mapFilePath = mapDir / "TestMap.json";
-	std::ifstream inFile(mapFilePath.string());
-	if (!inFile.is_open())
-	{
+	std::vector<MAP_MESH_OBJECT_FILE_DATA> legacyObjects;
+	if (FAILED(m_ChunkSerializer.LoadLegacyMapFile(mapFilePath, legacyObjects)))
 		return E_FAIL;
-	}
 
-	nlohmann::ordered_json rootJson;
-	inFile >> rootJson;
-
-	inFile.close();
-
-	int version = rootJson["version"];
-
-	std::unordered_map<MAPCHUNK_COORD, std::vector<MAP_MESH_OBJECT_LOAD_DESC>, tagMapChunkCoordHash> legacyObjectsByChunk;
-	for (const auto& objectJson : rootJson["objects"])
-	{
-		if (auto desc = MakeMapMeshLoadDesc(objectJson))
-		{
-			const auto& pos = objectJson["position"];
-			const MAPCHUNK_COORD coord = WorldToChunkCoord({ pos[0], pos[1], pos[2] });
-			legacyObjectsByChunk[coord].push_back(std::move(desc.value()));
-		}
-	}
+	std::unordered_map<MAPCHUNK_COORD, std::vector<MAP_MESH_OBJECT_FILE_DATA>, tagMapChunkCoordHash> legacyObjectsByChunk;
+	for (auto& object : legacyObjects)
+		legacyObjectsByChunk[WorldToChunkCoord(object.position)].push_back(std::move(object));
 
 	for (auto& [coord, objects] : legacyObjectsByChunk)
 	{
@@ -1160,25 +956,10 @@ HRESULT CMapManager::SaveChunk(const MAPCHUNK_COORD& coord, const std::string& c
 		return E_FAIL;
 	}
 
-	const std::filesystem::path filePath(chunkPath);
-	std::error_code ec;
-	std::filesystem::create_directories(filePath.parent_path(), ec);
-	if (ec)
-	{
-		return E_FAIL;
-	}
-
 	const CMapChunk& chunk = iter->second;
-	const BoundingBox& chunkBounds = chunk.GetBounds();
-	nlohmann::ordered_json chunkJson = {};
-	chunkJson["version"] = 1;
-	chunkJson["coord"] = MakeCoordJson(coord);
-	chunkJson["bounds"] =
-	{
-		{"center", { chunkBounds.Center.x, chunkBounds.Center.y, chunkBounds.Center.z }},
-		{"extents", { chunkBounds.Extents.x, chunkBounds.Extents.y, chunkBounds.Extents.z }}
-	};
-	chunkJson["objects"] = nlohmann::ordered_json::array();
+	MAP_CHUNK_FILE_DATA chunkFileData{};
+	chunkFileData.coord = coord;
+	chunkFileData.bounds = chunk.GetBounds();
 
 	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
 	for (const auto& [layerName, layer] : layers)
@@ -1196,20 +977,11 @@ HRESULT CMapManager::SaveChunk(const MAPCHUNK_COORD& coord, const std::string& c
 				continue;
 			}
 
-			chunkJson["objects"].push_back(MakeObjectJson(pMeshObj, layerName, coord));
+			chunkFileData.objects.push_back(MakeMapMeshObjectFileData(*pMeshObj, layerName));
 		}
 	}
 
-	std::ofstream outFile(filePath.string());
-	if (!outFile.is_open())
-	{
-		return E_FAIL;
-	}
-
-	outFile << chunkJson.dump(4);
-	outFile.close();
-
-	return S_OK;
+	return m_ChunkSerializer.SaveChunkFile(chunkPath, chunkFileData);
 }
 
 HRESULT CMapManager::LoadMapData(const std::string& path)
@@ -1217,48 +989,28 @@ HRESULT CMapManager::LoadMapData(const std::string& path)
 	const std::filesystem::path mapDir(path);
 	const std::filesystem::path mapFilePath = mapDir / "map.json";
 
-	std::ifstream inFile(mapFilePath.string());
-	if (!inFile.is_open())
-	{
+	MAP_FILE_DATA mapFileData{};
+	if (FAILED(m_ChunkSerializer.LoadMapFile(mapFilePath, mapFileData)))
 		return E_FAIL;
-	}
-
-	nlohmann::ordered_json rootJson;
-	inFile >> rootJson;
-	inFile.close();
 
 	m_sMapRootPath = mapDir.generic_string();
 	m_MapGeneration.fetch_add(1, std::memory_order_acq_rel);
 	QueueAllChunkModelReleases();
 	m_Chunks.clear();
 	CGameInstance::Get().DelGameObjectLayer(E::MAPDECALOBJECTLAYER);
-	if (rootJson.contains("decals") && rootJson["decals"].is_array())
+	for (const auto& decalData : mapFileData.decals)
 	{
-		for (const auto& decalJson : rootJson["decals"])
-		{
-			if (!CreateDecalFromJson(decalJson))
-				return E_FAIL;
-		}
+		if (!CreateDecal(decalData))
+			return E_FAIL;
 	}
 
+	m_vChunkSize = mapFileData.chunkSize;
 
-	if (rootJson.contains("chunkSize"))
+	for (const auto& chunkMetadata : mapFileData.chunks)
 	{
-		const auto& chunkSize = rootJson["chunkSize"];
-		m_vChunkSize = _float3{ chunkSize[0], chunkSize[1], chunkSize[2] };
-	}
-
-	if (!rootJson.contains("chunks"))
-	{
-		return S_OK;
-	}
-
-	for (const auto& chunkMetaJson : rootJson["chunks"])
-	{
-		const MAPCHUNK_COORD coord = ReadCoordJson(chunkMetaJson["coord"]);
+		const MAPCHUNK_COORD coord = chunkMetadata.coord;
 		CMapChunk chunk{ coord, MakeChunkBoundingBox(coord) };
-		chunk.SetFilePath(chunkMetaJson.value(
-			"file", (std::filesystem::path("chunks") / ChunkFileName(coord)).generic_string()));
+		chunk.SetFilePath(chunkMetadata.filePath);
 		chunk.SetSaveState(EChunkSaveState::Saved);
 
 		m_Chunks.emplace(coord, std::move(chunk));
@@ -1284,39 +1036,26 @@ HRESULT CMapManager::LoadChunk(const MAPCHUNK_COORD& coord)
 	std::filesystem::path chunkPath = std::filesystem::path(m_sMapRootPath) / chunk.GetFilePath();
 	if (chunk.GetFilePath().empty())
 	{
-		chunk.SetFilePath((std::filesystem::path("chunks") / ChunkFileName(coord)).generic_string());
+		chunk.SetFilePath((std::filesystem::path("chunks") /
+			m_ChunkSerializer.MakeChunkFileName(coord)).generic_string());
 		chunkPath = std::filesystem::path(m_sMapRootPath) / chunk.GetFilePath();
 	}
 
-	std::ifstream inFile(chunkPath.string());
-	if (!inFile.is_open())
-	{
+	MAP_CHUNK_FILE_DATA chunkFileData{};
+	if (FAILED(m_ChunkSerializer.LoadChunkFile(chunkPath, chunkFileData)))
 		return E_FAIL;
-	}
-
-	nlohmann::ordered_json chunkJson;
-	inFile >> chunkJson;
-	inFile.close();
 
 	chunk.BeginLoading();
 
-	std::vector<MAP_MESH_OBJECT_LOAD_DESC> objectDescs;
-	objectDescs.reserve(chunkJson["objects"].size());
-	for (const auto& objectJson : chunkJson["objects"])
-	{
-		if (auto desc = MakeMapMeshLoadDesc(objectJson))
-			objectDescs.push_back(std::move(desc.value()));
-	}
-
-	if (FAILED(AcquireChunkModelResources(chunk, objectDescs)))
+	if (FAILED(AcquireChunkModelResources(chunk, chunkFileData.objects)))
 	{
 		chunk.CancelLoading();
 		return E_FAIL;
 	}
 
-	for (const auto& objectJson : chunkJson["objects"])
+	for (const auto& objectData : chunkFileData.objects)
 	{
-		if (auto hObject = CreateMapMeshObjectFromJson(objectJson))
+		if (auto hObject = CreateMapMeshObject(objectData))
 		{
 			chunk.AddObject(hObject.value());
 		}
@@ -1376,119 +1115,72 @@ HRESULT CMapManager::UnLoadChunk(const MAPCHUNK_COORD& coord)
 
 	return S_OK;
 }
-/*----------- 광윤 추가 -----------*/
 HRESULT CMapManager::SaveMaterial(const std::string& path)
 {
-	const std::filesystem::path matDir(path);
-
-	nlohmann::ordered_json rootJson = nlohmann::ordered_json::object();
-	rootJson["Version"] = 1;
-	rootJson["Materials"] = nlohmann::ordered_json::object();
-
-	std::unordered_set<std::string> LoadedResTag;
-
-	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
-	for (const auto& pair : layers)
-	{
-		const auto& objects = pair.second;
-
-		for (const auto& objectHandle : objects)
-		{
-			CMapMeshObject* pMeshObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
-			if (pMeshObj == nullptr)
-				continue;
-
-			const std::string ResTag = pMeshObj->GetModelResourceTag();
-			if (ResTag.empty())
-				continue;
-
-			if (LoadedResTag.find(ResTag) != LoadedResTag.end())
-				continue;
-
-			const MATERIAL_DESC matDesc = pMeshObj->GetStaticModelInstance()->GetModel()->GetMaterialDesc();
-			rootJson["Materials"][ResTag] = MakeMaterialJson(matDesc);
-
-			LoadedResTag.insert(ResTag);
-		}
-	}
-
-	std::ofstream outFile(matDir / "Material.json");
-	if (!outFile.is_open())
-	{
-		return E_FAIL;
-	}
-
-	outFile << rootJson.dump(4);
-	outFile.close();
-
-	return S_OK;
+	return m_MaterialRepository.SaveFile(
+		std::filesystem::path(path) / "Material.json",
+		CollectMapMaterials());
 }
 
 HRESULT CMapManager::LoadMaterial(const std::string& path)
 {
-	{
-		std::unique_lock<std::shared_mutex> lock(m_MaterialDescsMutex);
-		m_MaterialDescs.clear();
-	}
-	const std::filesystem::path matFilePath = std::filesystem::path(path) / "Material.json";
-	if (!std::filesystem::exists(matFilePath))	 return S_OK;
-
-	std::ifstream inFile(matFilePath.string());
-	if (!inFile.is_open())
-	{
+	if (FAILED(m_MaterialRepository.LoadFile(
+		std::filesystem::path(path) / "Material.json")))
 		return E_FAIL;
-	}
 
-	nlohmann::ordered_json rootJson;
-	inFile >> rootJson;
-
-	inFile.close();
-
-	if (!rootJson.contains("Materials") || !rootJson["Materials"].is_object())
-	{
-		return E_FAIL;
-	}
-
-	const auto& MaterialsJson = rootJson["Materials"];
-
-	std::unordered_map<std::string, MATERIAL_DESC> materialDescs;
-
-	for (const auto& [matName, matJson] : MaterialsJson.items())
-	{
-		materialDescs[matName] = ReadMaterialJson(matJson);
-	}
-
-	{
-		std::unique_lock<std::shared_mutex> lock(m_MaterialDescsMutex);
-		m_MaterialDescs = materialDescs;
-	}
-
-	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
-	for (const auto& pair : layers)
-	{
-		const auto& objects = pair.second;
-
-		for (const auto& objectHandle : objects)
-		{
-			CMapMeshObject* pMeshObj = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
-			if (pMeshObj == nullptr)	continue;
-
-			auto iter = materialDescs.find(pMeshObj->GetModelResourceTag());
-			if (iter != materialDescs.end())
-			{
-				pMeshObj->GetStaticModelInstance()->GetModel()->SetMaterialDesc(iter->second);
-			}
-		}
-	}
-
+	ApplyStoredMaterialsToLoadedModels();
 	return S_OK;
 }
-const MATERIAL_DESC CMapManager::FindMaterial(const std::string& ModelName) {
-	std::shared_lock<std::shared_mutex> lock(m_MaterialDescsMutex);
-	auto iter = m_MaterialDescs.find(ModelName);
-	return iter != m_MaterialDescs.end() ? iter->second : MATERIAL_DESC{};
+
+MATERIAL_DESC CMapManager::FindMaterial(const std::string& modelName) const
+{
+	return m_MaterialRepository.Find(modelName);
 }
-/*---------------------------------*/
+
+CMapMaterialRepository::MATERIAL_MAP CMapManager::CollectMapMaterials() const
+{
+	CMapMaterialRepository::MATERIAL_MAP materials;
+	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
+	for (const auto& [layerName, objects] : layers)
+	{
+		for (const auto& objectHandle : objects)
+		{
+			auto* mapObject =
+				CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
+			if (!mapObject)
+				continue;
+
+			const std::string modelName = mapObject->GetModelResourceTag();
+			if (modelName.empty() || materials.contains(modelName))
+				continue;
+
+			materials.emplace(
+				modelName,
+				mapObject->GetStaticModelInstance()->GetModel()->GetMaterialDesc());
+		}
+	}
+	return materials;
+}
+
+void CMapManager::ApplyStoredMaterialsToLoadedModels() const
+{
+	const auto materials = m_MaterialRepository.GetSnapshot();
+	const auto& layers = CGameInstance::Get().GetGameObjectLayers();
+	for (const auto& [layerName, objects] : layers)
+	{
+		for (const auto& objectHandle : objects)
+		{
+			auto* mapObject =
+				CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
+			if (!mapObject)
+				continue;
+
+			const auto material = materials.find(mapObject->GetModelResourceTag());
+			if (material != materials.end())
+				mapObject->GetStaticModelInstance()->GetModel()->SetMaterialDesc(material->second);
+		}
+	}
+}
 _float3 CMapManager::GetChunkCenter(const MAPCHUNK_COORD& coord)
 {
 	return _float3(
@@ -1739,7 +1431,8 @@ HRESULT CMapManager::RequestLoadChunkAsync(const MAPCHUNK_COORD& coord)
 
 	if (chunk.GetFilePath().empty())
 	{
-		chunk.SetFilePath((std::filesystem::path("chunks") / ChunkFileName(coord)).generic_string());
+		chunk.SetFilePath((std::filesystem::path("chunks") /
+			m_ChunkSerializer.MakeChunkFileName(coord)).generic_string());
 	}
 
 	const std::filesystem::path chunkPath = std::filesystem::path(m_sMapRootPath) / chunk.GetFilePath();
@@ -1757,21 +1450,14 @@ HRESULT CMapManager::RequestLoadChunkAsync(const MAPCHUNK_COORD& coord)
 
 			try
 			{
-				std::ifstream inFile(chunkPath.string());
-				if (!inFile.is_open())
+				MAP_CHUNK_FILE_DATA chunkFileData{};
+				if (FAILED(m_ChunkSerializer.LoadChunkFile(chunkPath, chunkFileData)))
 				{
 					result.hr = E_FAIL;
 				}
 				else
 				{
-					nlohmann::ordered_json chunkJson;
-					inFile >> chunkJson;
-
-					for (const auto& objectJson : chunkJson["objects"])
-					{
-						if (auto desc = MakeMapMeshLoadDesc(objectJson))
-							result.objects.push_back(std::move(desc.value()));
-					}
+					result.objects = std::move(chunkFileData.objects);
 
 					if (result.mapGeneration != m_MapGeneration.load(std::memory_order_acquire))
 						result.hr = E_ABORT;

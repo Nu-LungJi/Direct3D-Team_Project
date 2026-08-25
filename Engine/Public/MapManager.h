@@ -8,13 +8,16 @@
 #include <functional>
 #include <chrono>
 #include <deque>
-#include <shared_mutex>
 #include "Engine_Base.h"
 #include "MapChunk.h"
+#include "MapChunkSerializer.h"
+#include "MapMaterialRepository.h"
 
 NS_BEGIN(Engine)
 class COctreeNode;
 class CCameraObject;
+class CMapMeshObject;
+class CDecalVolume;
 
 struct tagMapChunkCoordHash
 {
@@ -29,7 +32,6 @@ struct tagMapChunkCoordHash
 };
 
 // 전방선언
-struct MAP_MESH_OBJECT_LOAD_DESC;
 struct PENDING_CHUNK_LOAD_RESULT;
 struct PENDING_CHUNK_APPLY_STATE;
 
@@ -66,12 +68,9 @@ public:
 	HRESULT LoadChunk(const MAPCHUNK_COORD& coord); // 메인스레드 동기 로드, 저장/툴용
 	HRESULT UnLoadChunk(const MAPCHUNK_COORD& coord);
 
-	/*----------- 광윤 추가 -----------*/
 	HRESULT SaveMaterial(const std::string& path);
 	HRESULT LoadMaterial(const std::string& path);
-
-	const MATERIAL_DESC FindMaterial(const std::string& ModelName);
-	/*---------------------------------*/
+	MATERIAL_DESC FindMaterial(const std::string& modelName) const;
 
 	// 모델 태그 → 모델 .bin 파일 경로
 	void SetMapModelResourceIndex(const std::filesystem::path& staticModelRoot, const std::string& resourceGroup, std::unordered_map<std::string, std::filesystem::path> modelPaths);
@@ -98,7 +97,7 @@ private:
 	//void CullLoadedChunksByCameraFrustum(const std::vector<MAPCHUNK_COORD>& neededChunks, const BoundingFrustum& boundingFrustum);
 
 
-	HRESULT AcquireChunkModelResources(CMapChunk& chunk, const std::vector<MAP_MESH_OBJECT_LOAD_DESC>& objects);
+	HRESULT AcquireChunkModelResources(CMapChunk& chunk, const std::vector<MAP_MESH_OBJECT_FILE_DATA>& objects);
 	HRESULT PreloadChunkModelResources(PENDING_CHUNK_LOAD_RESULT& result);
 	HRESULT AcquirePreloadedChunkModelResources(CMapChunk& chunk, const PENDING_CHUNK_LOAD_RESULT& result);
 	void ReleasePendingModelResources(const PENDING_CHUNK_LOAD_RESULT& result);
@@ -110,6 +109,21 @@ private:
 	void QueueChunkModelRelease(CMapChunk& chunk);
 	void QueueAllChunkModelReleases();
 	void ProcessDeferredModelReleases();
+
+	// 런타임 게임 오브젝트와 파일 전용 데이터 사이의 변환을 담당한다.
+	MAP_MESH_OBJECT_FILE_DATA MakeMapMeshObjectFileData(
+		const CMapMeshObject& object,
+		const std::string& layerName) const;
+	std::optional<CHandle> CreateMapMeshObject(
+		const MAP_MESH_OBJECT_FILE_DATA& objectData) const;
+	MAP_DECAL_FILE_DATA MakeDecalFileData(
+		const CDecalVolume& decal,
+		const std::string& layerName) const;
+	std::optional<CHandle> CreateDecal(const MAP_DECAL_FILE_DATA& decalData) const;
+
+	// 월드의 모델 머티리얼을 수집하고 Repository의 값을 런타임 모델에 반영한다.
+	CMapMaterialRepository::MATERIAL_MAP CollectMapMaterials() const;
+	void ApplyStoredMaterialsToLoadedModels() const;
 private:
 	static constexpr int64_t STREAM_LOAD_DIAMETER = 6;   // 6 x 6 x 6
 	static constexpr int64_t STREAM_UNLOAD_DIAMETER = 7; // 7 x 7 x 7
@@ -119,6 +133,8 @@ private:
 
 private:
 	std::unordered_map<MAPCHUNK_COORD, CMapChunk, tagMapChunkCoordHash> m_Chunks;
+	CMapChunkSerializer m_ChunkSerializer;
+	CMapMaterialRepository m_MaterialRepository;
 	_bool m_bChunkStreaming = true;
 
 	std::atomic_uint64_t m_MapGeneration{};
@@ -142,11 +158,6 @@ private:
 
 	std::vector<std::vector<MAP_MODEL_RESOURCE_KEY>> m_DeferredModelReleases;
 	std::vector<MAP_MODEL_RESOURCE_KEY> m_DeferredUnusedModelReleases;
-
-	/*----------- 광윤 추가 -----------*/ // CResStaticModel 원본에 넣을 Material 정보 저장소
-	std::unordered_map<std::string, MATERIAL_DESC>	m_MaterialDescs;
-	mutable std::shared_mutex							m_MaterialDescsMutex;
-	/*---------------------------------*/
 
 // ---------------------------------MapChunk-----------------------------------
 
@@ -191,29 +202,12 @@ public:
 
 };
 
-// 워커스레드는 파일읽고, 데이터 포장까지만
-// 실제 월드 반영은 메인스레드가
-struct MAP_MESH_OBJECT_LOAD_DESC
-{
-	std::string objectTag;
-	std::string protoGroup;
-	std::string prototype;
-	std::string modelGroup;
-	std::string model;
-	std::string layer;
-
-	_float3 position{};
-	_float4 rotation{ 0.f, 0.f, 0.f, 1.f };
-	_float3 scale{ 1.f, 1.f, 1.f };
-	WIND_DESC windDesc{};
-};
-
 struct PENDING_CHUNK_LOAD_RESULT
 {
 	MAPCHUNK_COORD coord{};
 	uint64_t mapGeneration{};
 	HRESULT hr = E_FAIL;
-	std::vector<MAP_MESH_OBJECT_LOAD_DESC> objects{};
+	std::vector<MAP_MESH_OBJECT_FILE_DATA> objects{};
 	std::vector<MAP_MODEL_RESOURCE_KEY> modelResources{};
 };
 NS_END
