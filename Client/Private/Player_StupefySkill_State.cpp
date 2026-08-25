@@ -9,6 +9,8 @@ NS_USING(Client)
 
 void CPlayer_StupefySkill_State::Enter(CStateMachine* pStateMachine)
 {
+	EndBlur();
+
 	auto* pPlayer = GetPlayer(pStateMachine);
 	if (!pPlayer || !pPlayer->GetAnimator()) { RequestLocomotion(pStateMachine); return; }
 	_bool bHeavyReaction = false;
@@ -16,15 +18,23 @@ void CPlayer_StupefySkill_State::Enter(CStateMachine* pStateMachine)
 		pPlayer->ConsumeProtegoReaction(m_vParryPosition, bHeavyReaction);
 	m_bCounterQueued = pPlayer->ConsumeParryCounter(m_vParryPosition);
 	if (!bProtegoReaction && !m_bCounterQueued) { RequestLocomotion(pStateMachine); return; }
+	if (bProtegoReaction)
+	{
+		BeginBlur(
+			bHeavyReaction ? PROTEGO_HEAVY_BLUR_INTENSITY
+				: PROTEGO_LIGHT_BLUR_INTENSITY,
+			bHeavyReaction ? PROTEGO_HEAVY_BLUR_DURATION
+				: PROTEGO_LIGHT_BLUR_DURATION);
+	}
 	if (bHeavyReaction)
 		pPlayer->StartProtegoRecoil(m_vParryPosition);
 	CacheAnimationIndices(*pPlayer);
 	SetSkillControl(*pPlayer, true, true, true);
 	pPlayer->SetCurrentMoveSpeed(0.f);
-	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::ATTACK);
+	pPlayer->SetCurrentSkill(PLAYER_SKILL_TYPE::ATTACK);
 	m_bSpeedRestored = false;
 	m_bProjectileReleased = false;
-	m_fPreviousAnimRatio = 0.f;
+	m_fPreviousAnimationRatio = 0.f;
 	m_ePhase = PHASE::PARRY_REACTION;
 
 	// 약한 공격은 제자리 방어, 강한 공격은 슬라이드 방어 후 반격한다.
@@ -46,15 +56,23 @@ void CPlayer_StupefySkill_State::Enter(CStateMachine* pStateMachine)
 
 void CPlayer_StupefySkill_State::Update(CStateMachine* pStateMachine, _float)
 {
+	if (m_bBlurActive)
+	{
+		m_fBlurRemainUnscaled -= CGameInstance::Get().GetUnscaledDelta();
+		if (m_fBlurRemainUnscaled <= 0.f)
+			EndBlur();
+	}
+
 	auto* pPlayer = GetPlayer(pStateMachine);
 	auto* pAnimator = pPlayer ? pPlayer->GetAnimator() : nullptr;
 	if (!pPlayer || !pAnimator) { RequestLocomotion(pStateMachine); return; }
-	const _float fRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
+	const _float fAnimationRatio = PlayerAnimationRatioGuard::Sanitize(
+		pAnimator->GetPlayAnimRatio());
 	pPlayer->SetCurrentMoveSpeed(0.f);
 
 	if (m_ePhase == PHASE::PARRY_REACTION)
 	{
-		if (fRatio >= REACTION_EXIT_RATIO || pAnimator->GetFinish())
+		if (fAnimationRatio >= REACTION_EXIT_RATIO || pAnimator->GetFinish())
 		{
 			if (!m_bCounterQueued)
 				m_bCounterQueued = pPlayer->ConsumeParryCounter(m_vParryPosition);
@@ -64,7 +82,7 @@ void CPlayer_StupefySkill_State::Update(CStateMachine* pStateMachine, _float)
 				return;
 			}
 			m_ePhase = PHASE::COUNTER_ATTACK;
-			m_fPreviousAnimRatio = 0.f;
+			m_fPreviousAnimationRatio = 0.f;
 			m_bSpeedRestored = false;
 			if (!PlayCounterAnimation(*pPlayer, m_vParryPosition))
 				RequestLocomotion(pStateMachine);
@@ -72,32 +90,42 @@ void CPlayer_StupefySkill_State::Update(CStateMachine* pStateMachine, _float)
 		return;
 	}
 
-	if (!m_bSpeedRestored && fRatio >= TURN_END_RATIO)
+	if (!m_bSpeedRestored && fAnimationRatio >= TURN_END_RATIO)
 	{
 		pAnimator->GetCurAnimState().fSpeed = ATTACK_SPEED;
 		m_bSpeedRestored = true;
 	}
-	if (!m_bProjectileReleased && m_fPreviousAnimRatio < PROJECTILE_RELEASE_RATIO && fRatio >= PROJECTILE_RELEASE_RATIO)
+	if (!m_bProjectileReleased &&
+		PlayerAnimationRatioGuard::Crossed(
+			m_fPreviousAnimationRatio,
+			fAnimationRatio,
+			PROJECTILE_RELEASE_RATIO))
 	{
 		m_bProjectileReleased = true;
+		BeginBlur(
+			PROJECTILE_RELEASE_BLUR_INTENSITY,
+			PROJECTILE_RELEASE_BLUR_DURATION);
 		// [Stupefy Effect] 완드 섬광, 순백색 코어, 옅은 청백색 리본 트레일,
 		// 피격 섬광은 FireStupefyProjectile()의 데이터 이름으로 각각 연결한다.
 		if (!pPlayer->FireStupefyProjectile())
 			DEBUG_LOG("[Stupefy] Failed to spawn projectile.\n");
 	}
-	m_fPreviousAnimRatio = fRatio;
+	m_fPreviousAnimationRatio = fAnimationRatio;
 	// 발사가 끝난 뒤 애니메이션 후반부를 기다리지 않고 다음 조작을 받는다.
-	if ((m_bProjectileReleased && fRatio >= RECOVERY_EXIT_RATIO) || pAnimator->GetFinish())
+	if ((m_bProjectileReleased &&
+		fAnimationRatio >= RECOVERY_EXIT_RATIO) ||
+		pAnimator->GetFinish())
 		RequestLocomotion(pStateMachine);
 }
 
 void CPlayer_StupefySkill_State::Exit(CStateMachine* pStateMachine)
 {
+	EndBlur();
 	if (auto* pPlayer = GetPlayer(pStateMachine)) ResetSkillControl(*pPlayer);
 	m_bSpeedRestored = false;
 	m_bProjectileReleased = false;
 	m_bCounterQueued = false;
-	m_fPreviousAnimRatio = 0.f;
+	m_fPreviousAnimationRatio = 0.f;
 	m_vParryPosition = {};
 	m_ePhase = PHASE::PARRY_REACTION;
 }
@@ -163,7 +191,8 @@ _bool CPlayer_StupefySkill_State::PlayCounterAnimation(CPlayer& player, const _f
 	TimeScaleDesc.fMaxUnscaledDuration = 0.06f;
 	TimeScaleDesc.fSafetyBlendOut = 0.04f;
 	TimeScaleDesc.sTag = "Combat_StupefyCounter";
-	CGameInstance::Get().BeginTimeScale(TimeScaleDesc);
+	if (CGameInstance::Get().BeginTimeScale(TimeScaleDesc))
+		BeginBlur(COUNTER_BLUR_INTENSITY, COUNTER_BLUR_DURATION);
 
 	if (auto* pSound = player.GetSound())
 	{
@@ -179,6 +208,29 @@ _bool CPlayer_StupefySkill_State::PlayCounterAnimation(CPlayer& player, const _f
 			});
 	}
 	return true;
+}
+
+void CPlayer_StupefySkill_State::BeginBlur(
+	_float fIntensity, _float fUnscaledDuration)
+{
+	auto& GameInstance = CGameInstance::Get();
+	if (!m_bBlurActive)
+		m_fPreviousBlurIntensity = GameInstance.Get_RadialBlurIntensity();
+
+	GameInstance.Set_RadialBlurIntensity(fIntensity);
+	m_fBlurRemainUnscaled = std::max(0.f, fUnscaledDuration);
+	m_bBlurActive = true;
+}
+
+void CPlayer_StupefySkill_State::EndBlur()
+{
+	if (!m_bBlurActive)
+		return;
+
+	CGameInstance::Get().Set_RadialBlurIntensity(
+		m_fPreviousBlurIntensity);
+	m_fBlurRemainUnscaled = 0.f;
+	m_bBlurActive = false;
 }
 
 SPtr<CPlayer_StupefySkill_State> CPlayer_StupefySkill_State::Create()

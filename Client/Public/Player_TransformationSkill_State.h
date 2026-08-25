@@ -31,7 +31,7 @@ private:
 	void TransformTargetToBarrel();
 
 	PHASE m_ePhase{ PHASE::CAST_BEGIN };
-	_float m_fAnimRatio{};
+	_float m_fAnimationRatio{};
 	_float m_fTransformationElapsed{};
 	_bool m_bTransformationResolved{};
 	CHandle m_hTransformationTarget{};

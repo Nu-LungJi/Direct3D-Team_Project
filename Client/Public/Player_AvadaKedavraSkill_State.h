@@ -60,7 +60,7 @@ private:
 	int32_t m_iCastAnimation{ -1 };
 	_bool m_bAnimationsCached{};
 	PHASE m_ePhase{ PHASE::CAST_BEGIN };
-	_float m_fAnimRatio{};
+	_float m_fAnimationRatio{};
 	_bool m_bCinematicStarted{};
 
 	CHandle m_hOwner{};

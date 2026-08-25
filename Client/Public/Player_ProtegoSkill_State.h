@@ -24,7 +24,7 @@ private:
 	static constexpr _float PHASE_EXIT_RATIO = 0.92f;
 	void CacheAnimationIndices(const CPlayer& player);
 
-	_float m_fAnimRatio{};
+	_float m_fAnimationRatio{};
 	int32_t m_iProtegoStartAnimation{ -1 };
 	_bool m_bAnimationIndicesCached{};
 };

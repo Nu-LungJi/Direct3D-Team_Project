@@ -53,7 +53,7 @@ void CPlayer_Roll_State::Enter(CStateMachine* pStateMachine)
 	}
 	player->SetInvincible(true);
 	animator->Play_Anim(m_iRollAnimation, false, 0.1f);
-	m_fPreviousAnimRatio = 0.f;
+	m_fPreviousAnimationRatio = 0.f;
 }
 
 void CPlayer_Roll_State::Exit(CStateMachine* pStateMachine)
@@ -69,7 +69,7 @@ void CPlayer_Roll_State::Exit(CStateMachine* pStateMachine)
 	if (auto* moveIntent = player->GetMoveIntent())
 		moveIntent->ClearMoveIntent();
 
-	m_fPreviousAnimRatio = 0.f;
+	m_fPreviousAnimationRatio = 0.f;
 }
 
 void CPlayer_Roll_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
@@ -139,12 +139,12 @@ void CPlayer_Roll_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 	}
 
 	const _float fMoveRatioEnd = std::min(fAnimationRatio, m_fRollMoveEndRatio);
-	const _float fMoveTime = PlayerAnimationRatioGuard::CalculateActiveDeltaTime(m_fPreviousAnimRatio, fAnimationRatio, 0.f,m_fRollMoveEndRatio, fTimeDelta);
+	const _float fMoveTime = PlayerAnimationRatioGuard::CalculateActiveDeltaTime(m_fPreviousAnimationRatio, fAnimationRatio, 0.f,m_fRollMoveEndRatio, fTimeDelta);
 
 	if (fMoveTime > 0.f)
 	{
 		const _float fSampleRatio =
-			(m_fPreviousAnimRatio + fMoveRatioEnd) * 0.5f;
+			(m_fPreviousAnimationRatio + fMoveRatioEnd) * 0.5f;
 		_float fSpeedScale{ 1.f };
 		if (fSampleRatio > m_fRollStopStartRatio)
 		{
@@ -163,7 +163,7 @@ void CPlayer_Roll_State::Update(CStateMachine* pStateMachine,_float fTimeDelta)
 			m_fRollSpeed * fSpeedScale,
 			fMoveTime);
 	}
-	m_fPreviousAnimRatio = fAnimationRatio;
+	m_fPreviousAnimationRatio = fAnimationRatio;
 
 	// 지정 비율 이후 이동 입력이 있으면 Roll을 취소하고 Locomotion으로 복귀한다.
 	if (fAnimationRatio >= m_fLocomotionCancelRatio &&player->HasRawMoveInput())

@@ -62,12 +62,12 @@ void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
 	}
 	SetSkillControl(*pPlayer, true, true, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
-	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::ACCIO);
+	pPlayer->SetCurrentSkill(PLAYER_SKILL_TYPE::ACCIO);
 	//if (auto pMonster = CGameInstance::Get().GetGameObjectByHandleT<CMonster>(pPlayer->GetTargetHandle()))
 	//	pMonster->Check_Table(PLAYER_SKILL_TYPE::ACCIO);
 	TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO); //창준 변경
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 	m_bPulling = true;
 }
 
@@ -83,7 +83,7 @@ _bool CPlayer_AccioSkill_State::EnterObjectAccio(
 	// [LSY] 공을 당기는 동안에도 이동은 허용한다. 물리 힘은 공의 FixedUpdate가
 	// 컨트롤러 Handle을 따라 계산하므로 상태는 소유권과 연출만 관리한다.
 	SetSkillControl(player, false, false, false, false);
-	player.SetPlayerCurSKill(PLAYER_SKILL_TYPE::ACCIO);
+	player.SetCurrentSkill(PLAYER_SKILL_TYPE::ACCIO);
 	m_eAccio = ACCIOSTATE::OBJECT;
 	m_hObjectBall = ball.GetHandle();
 	m_bObjectAnimationPlaying = false;
@@ -131,12 +131,12 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 		return;
 	}
 
-	m_fAnimRatio =PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
+	m_fAnimationRatio =PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
 
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
-		if (m_fAnimRatio >= CAST_START_RATIO)
+		if (m_fAnimationRatio >= CAST_START_RATIO)
 		{
 			m_ePhase = PHASE::ATTACK;
 			if (!PlayRandomTargetAttack(*pPlayer))
@@ -171,7 +171,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 
 	case PHASE::ATTACK:
 	{
-		if (m_fAnimRatio >= CAST_END_RATIO) {
+		if (m_fAnimationRatio >= CAST_END_RATIO) {
 			//if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::ACCIO))
 			//{
 			//	m_ePhase = PHASE::ATTACK_FAILED;
@@ -219,7 +219,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 		}
 
 		
-		if (m_fAnimRatio >= MONSTER_PULL_TIME && m_bPulling && Target->Monster_Type(MONSTER_TYPE::NORMAL))
+		if (m_fAnimationRatio >= MONSTER_PULL_TIME && m_bPulling && Target->Monster_Type(MONSTER_TYPE::NORMAL))
 		{
 			auto* pMoveIntent = Target->GetComponent<CComCharacterMoveIntent>("ComCharacterMoveIntent");
 
@@ -285,7 +285,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 			m_ePhase = PHASE::RECOVERY;
 		}
 
-		if (m_fAnimRatio >= ATTACK_END_RATIO)
+		if (m_fAnimationRatio >= ATTACK_END_RATIO)
 			RequestLocomotion(pStateMachine);
 		break;
 
@@ -293,7 +293,7 @@ void CPlayer_AccioSkill_State::Update(CStateMachine* pStateMachine, _float delta
 	}
 
 	case PHASE::RECOVERY:
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO) {
+		if (m_fAnimationRatio >= RECOVERY_EXIT_RATIO) {
 			CGameInstance::Get().StopEffect(m_iAccioEffectID);
 			RequestLocomotion(pStateMachine);
 		}
@@ -601,7 +601,7 @@ void CPlayer_AccioSkill_State::Exit(CStateMachine* pStateMachine)
 	m_bPulling = false;
 	m_ePhase = PHASE::CAST;
 	m_eAccio = ACCIOSTATE::END;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 }
 
 SPtr<CPlayer_AccioSkill_State> CPlayer_AccioSkill_State::Create()

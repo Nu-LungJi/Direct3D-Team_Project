@@ -39,7 +39,7 @@ void CPlayer_TransformationSkill_State::Enter(CStateMachine* pStateMachine)
 
 	pPlayer->SetRootMotionTranslationActive(false);
 	m_ePhase = PHASE::CAST_BEGIN;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 
 	auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
 
@@ -67,7 +67,7 @@ void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _fl
 	}
 
 	auto* pAnimator = pPlayer->GetAnimator();
-	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(
+	m_fAnimationRatio = PlayerAnimationRatioGuard::Sanitize(
 		pAnimator->GetPlayAnimRatio());
 	pPlayer->SetCurrentMoveSpeed(0.f);
 
@@ -92,7 +92,7 @@ void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _fl
 		// [TRANSFORMATION_CAST_BEGIN]
 		// 캐릭터가 주문을 준비하는 구간이다. 손/완드 차징 이펙트와 시전음을 연결한다.
 		// 타깃 변신 판정은 아직 수행하지 않는다.
-		if (m_fAnimRatio >= RELEASE_RATIO)
+		if (m_fAnimationRatio >= RELEASE_RATIO)
 		{
 			// [TRANSFORMATION_RELEASE_CUE]
 			// 주문이 실제로 방출되는 프레임이다. 완드 발사와 타깃 피격
@@ -140,7 +140,7 @@ void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _fl
 			TransformTargetToBarrel();
 		}
 
-		if (m_bTransformationResolved && m_fAnimRatio >= RECOVERY_RATIO)
+		if (m_bTransformationResolved && m_fAnimationRatio >= RECOVERY_RATIO)
 		{
 			// [TRANSFORMATION_RECOVERY_CUE]
 			// 주문 방출이 끝나고 후딜로 넘어가는 시점이다.
@@ -152,7 +152,7 @@ void CPlayer_TransformationSkill_State::Update(CStateMachine* pStateMachine, _fl
 		// [TRANSFORMATION_RECOVERY]
 		// 후딜 구간이다. 캔슬 입력이나 다음 행동 허용이 필요하면 여기에서 처리한다.
 		// 현재는 지정 비율 또는 애니메이션 종료까지 조작 잠금을 유지한다.
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO || pAnimator->GetFinish())
+		if (m_fAnimationRatio >= RECOVERY_EXIT_RATIO || pAnimator->GetFinish())
 		{
 			// [TRANSFORMATION_EXIT_CUE] 이동 상태로 복귀해 일반 조작을 다시 허용한다.
 			RequestLocomotion(pStateMachine);
@@ -170,7 +170,7 @@ void CPlayer_TransformationSkill_State::Exit(CStateMachine* pStateMachine)
 	}
 
 	m_ePhase = PHASE::CAST_BEGIN;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 	m_fTransformationElapsed = 0.f;
 	m_bTransformationResolved = false;
 	m_hTransformationTarget = {};
