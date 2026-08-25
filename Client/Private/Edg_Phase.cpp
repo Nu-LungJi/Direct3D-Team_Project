@@ -354,10 +354,10 @@ void CEdg_Phase::Before_Action5(CEnderDragon* pDragon, _float fTimeDelta)
 	if (m_iEffectID == INVALID_EFFECT_INSTANCE_ID)
 		Effect_Single(pDragon, "RanrokStaySmoke");
 }
-void CEdg_Phase::After_Action2(CEnderDragon* pDragon, _float fTimeDelta)
+_bool CEdg_Phase::After_Action2(CEnderDragon* pDragon, _float fTimeDelta)
 {
 	auto pAnimator = pDragon->Get_Animator();
-	if (nullptr == pAnimator) return;
+	if (nullptr == pAnimator) return true;
 
 	m_fTick += fTimeDelta;
 	_float t = std::min(m_fTick / 3.f, 1.f);
@@ -371,7 +371,7 @@ void CEdg_Phase::After_Action2(CEnderDragon* pDragon, _float fTimeDelta)
 		m_Anims[ETOUI(m_ePhase)].pop_front();
 		m_fTick = 0.f;
 		m_eNum = EDG_SPAWN_NUMBER::SECOND;
-		return;
+		return true;
 	}
 
 	EDG_ANIM_FSM eAnim = m_Anims[ETOUI(m_ePhase)].front();
@@ -380,7 +380,7 @@ void CEdg_Phase::After_Action2(CEnderDragon* pDragon, _float fTimeDelta)
 	if (m_iEffectID == INVALID_EFFECT_INSTANCE_ID)
 		Effect_Single(pDragon, "RanrokStaySmoke");
 
-	
+	return false;
 }
 void CEdg_Phase::Phase_Before_Action(CEnderDragon* pDragon, _float fTimeDelta)
 {
@@ -443,16 +443,19 @@ void CEdg_Phase::Phase_After_Action(CEnderDragon* pDragon, _float fTimeDelta)
 		m_eNum = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	case DRAGON_PHASE::PHASE2:
-		After_Action2(pDragon, fTimeDelta);
+		if(After_Action2(pDragon, fTimeDelta))
+			Cinematic_SmokeMove(pDragon, _float3(0.f,5.f,0.f));
 		break;
 	case DRAGON_PHASE::PHASE3:
 		m_eNum = EDG_SPAWN_NUMBER::SECOND;
 		break;
 	case DRAGON_PHASE::PHASE4:
-		After_Action2(pDragon, fTimeDelta);
+		if(After_Action2(pDragon, fTimeDelta))
+			Cinematic_SmokeMove(pDragon, _float3(0.f, 5.f, 0.f));
 		break;
 	case DRAGON_PHASE::PHASE5:
-		After_Action2(pDragon, fTimeDelta);
+		if(After_Action2(pDragon, fTimeDelta))
+			Cinematic_SmokeMove(pDragon, _float3(0.f, 5.f, 0.f));
 		break;
 	}
 	
@@ -522,6 +525,19 @@ void CEdg_Phase::Effect_Single(CEnderDragon* pDragon, const _string& strName)
 				return;
 			m_iEffectID = INVALID_EFFECT_INSTANCE_ID;
 		});
+}
+void CEdg_Phase::Cinematic_SmokeMove(CEnderDragon* pDragon, _float3 vOffset)
+{
+	// 란록이 검은연기로 변해서 이동할 때
+	FCinematicPlayOptions option{};
+	option.eStartMode = ECinematicStartMode::Blend;
+	option.fStartBlendDuration = 1.f;
+	option.eReturnMode = ECinematicReturnMode::Blend;
+	option.fReturnBlendDuration = 2.f;
+	option.LookAtTargetHandle = pDragon->GetHandle(); /*란록 핸들값 넣어주세요 (카메라가 바라볼 대상)*/
+	option.vLookAtTargetLocalOffset = vOffset; // 카메라가 바라볼 대상 트랜스폼 + offset
+	CGameInstance::Get().PlayCinematic("RanrokMove", pDragon->GetHandle(), option);
+	
 }
 void CEdg_Phase::End(CEnderDragon_State* pStateMachine, CBTBlackBoard* pBlackBoard)
 {
