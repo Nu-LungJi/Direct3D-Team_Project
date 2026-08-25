@@ -426,16 +426,6 @@ _bool CTroll::BreakSkillType(PLAYER_SKILL_TYPE eType)
 
 	case PLAYER_SKILL_TYPE::DESCENDO:
 		break;
-
-	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
-		return true;
-		break;
-	case PLAYER_SKILL_TYPE::DESTORY:
-		return true;
-		break;
-	case PLAYER_SKILL_TYPE::ABRA:
-		return true;
-		break;
 	}
 	return false;
 }
