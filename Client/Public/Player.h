@@ -341,6 +341,13 @@ private:
 #endif
 
 private:
+	// [LSY] 몬스터 락온 거리와 무관하게 아씨오 공을 더 먼 거리에서 선택하고 유지한다.
+	static constexpr _float DEFAULT_TARGET_ACQUIRE_RANGE = 25.f;
+	static constexpr _float DEFAULT_TARGET_KEEP_RANGE = 40.f;
+	static constexpr _float ACCIO_BALL_TARGET_ACQUIRE_RANGE = 60.f;
+	static constexpr _float ACCIO_BALL_TARGET_KEEP_RANGE = 80.f;
+	static constexpr uint32_t TARGET_QUERY_MAX_HITS = 32;
+
 	CHandle m_hAutoTarget;
 	CHandle m_hPrevAutoTarget;
 	CHandle m_hMonsterHPUITarget{};

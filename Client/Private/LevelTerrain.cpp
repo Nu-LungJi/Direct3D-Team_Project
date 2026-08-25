@@ -1134,7 +1134,6 @@ void CLevelTerrain::Update(E::_float fTimeDelta)
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 
 	Picking();
-	DrawSelectedAccioBallDebug();
 }
 
 HRESULT CLevelTerrain::InitializeAccioActivityTest()
@@ -1151,17 +1150,18 @@ HRESULT CLevelTerrain::SpawnAccioBalls()
 	{
 		const _char* pObjectTag;
 		const _char* pResourceTag;
+		CAccioBall::COLOR eColor;
 		_float3 vPosition;
 	};
 
 	constexpr ACCIO_BALL_PLACEMENT ballPlacements[] =
 	{
-		{ "AccioBall_Blue_1", "Static_AccioBall_Blue_Resource", { 20.f, 9.25f, 126.f } },
-		{ "AccioBall_Red_1", "Static_AccioBall_Red_Resource", { 23.f, 9.25f, 126.f } },
-		{ "AccioBall_Blue_2", "Static_AccioBall_Blue_Resource", { 26.f, 9.25f, 126.f } },
-		{ "AccioBall_Red_2", "Static_AccioBall_Red_Resource", { 29.f, 9.25f, 126.f } },
-		{ "AccioBall_Blue_3", "Static_AccioBall_Blue_Resource", { 32.f, 9.25f, 126.f } },
-		{ "AccioBall_Red_3", "Static_AccioBall_Red_Resource", { 35.f, 9.25f, 126.f } },
+		{ "AccioBall_Blue_1", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { 20.f, 9.25f, 126.f } },
+		{ "AccioBall_Red_1", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { 23.f, 9.25f, 126.f } },
+		{ "AccioBall_Blue_2", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { 26.f, 9.25f, 126.f } },
+		{ "AccioBall_Red_2", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { 29.f, 9.25f, 126.f } },
+		{ "AccioBall_Blue_3", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { 32.f, 9.25f, 126.f } },
+		{ "AccioBall_Red_3", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { 35.f, 9.25f, 126.f } },
 	};
 
 	static_assert(std::size(ballPlacements) == 6);
@@ -1172,10 +1172,16 @@ HRESULT CLevelTerrain::SpawnAccioBalls()
 		desc.sObjectTag = placement.pObjectTag;
 		desc.sResourceGroup = LEVEL::TERRAIN;
 		desc.sModelResourceTag = placement.pResourceTag;
+		desc.eColor = placement.eColor;
 		desc.vInitialPosition = placement.vPosition;
-		desc.vInitialScale = { 2.f, 2.f, 2.f };
+		desc.vInitialScale = { 3.f, 3.f, 3.f };
 		desc.fSphereRadius = 0.5f;
-		desc.fMass = 1.f;
+		desc.fMass = m_fAccioBallMass;
+		desc.fRollingTorque = m_fAccioBallPushTorque;
+		desc.fMaxRollAngularSpeed = m_fAccioBallMaxRollAngularSpeed;
+		desc.fMaxPullAcceleration = m_fAccioBallMaxPullAcceleration;
+		desc.fMaxPullLinearSpeed = m_fAccioBallMaxPullLinearSpeed;
+		desc.fPullSlowRadius = m_fAccioBallPullSlowRadius;
 
 		const auto handle = CGameInstance::Get().AddGameObjectToLayer(
 			LEVEL::TERRAIN,
@@ -1197,13 +1203,28 @@ HRESULT CLevelTerrain::SpawnAccioActivityObjects()
 	CAccioActivity_Base::DESC baseDesc{};
 	baseDesc.sObjectTag = "AccioActivity_Base";
 	baseDesc.vInitialPosition = { 27.f, 5.f, 100.f };
-	if (!CGameInstance::Get().AddGameObjectToLayer(
+	const auto hAccioActivityBase = CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::TERRAIN,
 		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Base,
 		"01_Terrain",
-		&baseDesc))
+		&baseDesc);
+	if (!hAccioActivityBase)
 	{
 		return E_FAIL;
+	}
+	m_hAccioActivityBase = *hAccioActivityBase;
+	auto* pAccioActivityBase = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_Base>(m_hAccioActivityBase);
+	if (!pAccioActivityBase)
+		return E_FAIL;
+
+	pAccioActivityBase->SetParticipantHandle(
+		CAccioActivity_Base::PARTICIPANT::PLAYER,
+		m_hPlayer);
+	for (const CHandle& hBall : m_hAccioBalls)
+	{
+		if (!pAccioActivityBase->RegisterBall(hBall))
+			return E_FAIL;
 	}
 
 	struct ACCIO_ACTIVITY_PLACEMENT
@@ -1252,35 +1273,6 @@ HRESULT CLevelTerrain::SpawnAccioActivityObjects()
 	return S_OK;
 }
 
-void CLevelTerrain::DrawSelectedAccioBallDebug()
-{
-	if (m_iSelectedAccioBall < 0 ||
-		m_iSelectedAccioBall >= static_cast<int32_t>(m_hAccioBalls.size()))
-	{
-		return;
-	}
-
-	auto* pBall = CGameInstance::Get().GetGameObjectByHandleT<CAccioBall>(
-		m_hAccioBalls[static_cast<size_t>(m_iSelectedAccioBall)]);
-	auto* pDebug = CGameInstance::Get().GetDbgLineRender();
-	if (!pBall || !pDebug)
-		return;
-
-	const _float4 previousColor = pDebug->GetColor();
-	const auto previousDepthMode = pDebug->GetDepthMode();
-	const _float3 position = pBall->GetTransform().GetPosition();
-	pDebug->SetColor({ 1.f, 0.85f, 0.05f, 1.f });
-	pDebug->SetDepthTest(false);
-	pDebug->AddArrow(
-		{ position.x, position.y + pBall->GetSphereRadius() + 2.f, position.z },
-		{ 0.f, -1.f, 0.f },
-		1.5f,
-		0.35f,
-		30.f);
-	pDebug->SetColor(previousColor);
-	pDebug->SetDepthMode(previousDepthMode);
-}
-
 _bool CLevelTerrain::PushSelectedAccioBallTowardPlayer()
 {
 	if (m_iSelectedAccioBall < 0 ||
@@ -1302,45 +1294,40 @@ _bool CLevelTerrain::PushSelectedAccioBallTowardPlayer()
 		0.f,
 		playerPosition.z - ballPosition.z
 	};
-	const _vector loadedDirection = XMLoadFloat3(&direction);
-	if (XMVectorGetX(XMVector3LengthSq(loadedDirection)) <= FLT_EPSILON)
-		return false;
-
-	XMStoreFloat3(&direction, XMVector3Normalize(loadedDirection));
-	_float3 torqueAxis{};
-	XMStoreFloat3(
-		&torqueAxis,
-		XMVector3Normalize(XMVector3Cross(
-			XMVectorSet(0.f, 1.f, 0.f, 0.f),
-			XMLoadFloat3(&direction))));
-
-	return pBall->ApplyTorque({
-		torqueAxis.x * m_fAccioBallPushTorque,
-		torqueAxis.y * m_fAccioBallPushTorque,
-		torqueAxis.z * m_fAccioBallPushTorque
-	});
+	return pBall->ApplyPullMotion(direction);
 }
 
 void CLevelTerrain::ApplyAccioBallMotionTuning()
 {
-	for (size_t i = 0; i < m_hAccioBalls.size(); ++i)
+	for (const CHandle& hBall : m_hAccioBalls)
 	{
 		if (auto* pBall = CGameInstance::Get()
-			.GetGameObjectByHandleT<CAccioBall>(m_hAccioBalls[i]))
+			.GetGameObjectByHandleT<CAccioBall>(hBall))
 		{
-			const _float mass = i == static_cast<size_t>(m_iSelectedAccioBall)
-				? m_fAccioBallSelectedMass
-				: m_fAccioBallIdleMass;
 			pBall->SetMotionTuning(
-				mass,
+				m_fAccioBallMass,
 				m_fAccioBallLinearDamping,
 				m_fAccioBallAngularDamping);
+			pBall->SetRollingTuning(
+				m_fAccioBallPushTorque,
+				m_fAccioBallMaxRollAngularSpeed);
+			pBall->SetPullTuning(
+				m_fAccioBallMaxPullAcceleration,
+				m_fAccioBallMaxPullLinearSpeed,
+				m_fAccioBallPullSlowRadius);
 		}
 	}
 }
 
 void CLevelTerrain::ResetAccioBalls()
 {
+	if (auto* pActivityBase = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_Base>(m_hAccioActivityBase))
+	{
+		pActivityBase->ResetMatch(true);
+		return;
+	}
+
 	for (const CHandle& hBall : m_hAccioBalls)
 	{
 		auto* pBall = CGameInstance::Get()
@@ -1354,6 +1341,26 @@ void CLevelTerrain::UpdateAccioActivityTestGUI()
 {
 	if (!ImGui::CollapsingHeader("Accio Activity Test"))
 		return;
+
+	const auto* pActivityBase = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_Base>(m_hAccioActivityBase);
+	if (pActivityBase)
+	{
+		ImGui::TextColored(
+			ImVec4{ 0.25f, 0.55f, 1.f, 1.f },
+			"Blue Score: %d",
+			pActivityBase->GetBlueScore());
+		ImGui::SameLine();
+		ImGui::TextColored(
+			ImVec4{ 1.f, 0.25f, 0.2f, 1.f },
+			"Red Score: %d",
+			pActivityBase->GetRedScore());
+	}
+	else
+	{
+		ImGui::TextDisabled("Score board is not available.");
+	}
+	ImGui::Separator();
 
 	constexpr const _char* ballNames[] =
 	{
@@ -1381,19 +1388,28 @@ void CLevelTerrain::UpdateAccioActivityTestGUI()
 
 	ImGui::Text("Selected Ball: %s",
 		ballNames[static_cast<size_t>(m_iSelectedAccioBall)]);
-	ImGui::DragFloat(
+	_bool motionTuningChanged{};
+	motionTuningChanged |= ImGui::DragFloat(
 		"Roll Torque", &m_fAccioBallPushTorque,
 		0.5f, 0.f, 100.f, "%.1f");
+	motionTuningChanged |= ImGui::DragFloat(
+		"Max Roll Angular Speed", &m_fAccioBallMaxRollAngularSpeed,
+		0.1f, 0.1f, 50.f, "%.1f");
+	motionTuningChanged |= ImGui::DragFloat(
+		"Max Pull Acceleration", &m_fAccioBallMaxPullAcceleration,
+		0.25f, 0.f, 100.f, "%.1f");
+	motionTuningChanged |= ImGui::DragFloat(
+		"Max Pull Linear Speed", &m_fAccioBallMaxPullLinearSpeed,
+		0.1f, 0.f, 50.f, "%.1f");
+	motionTuningChanged |= ImGui::DragFloat(
+		"Pull Slow Radius", &m_fAccioBallPullSlowRadius,
+		0.1f, 0.f, 20.f, "%.1f");
 	ImGui::Button("Hold To Roll Selected Ball To Player");
 	if (ImGui::IsItemActive() && !PushSelectedAccioBallTowardPlayer())
 		DEBUG_LOG("[AccioBall] Failed to push selected ball.\n");
 
-	_bool motionTuningChanged{};
 	motionTuningChanged |= ImGui::DragFloat(
-		"Selected Ball Mass", &m_fAccioBallSelectedMass,
-		0.05f, 0.05f, 100.f, "%.2f");
-	motionTuningChanged |= ImGui::DragFloat(
-		"Idle Ball Mass", &m_fAccioBallIdleMass,
+		"Ball Mass", &m_fAccioBallMass,
 		0.05f, 0.05f, 100.f, "%.2f");
 	motionTuningChanged |= ImGui::DragFloat(
 		"Linear Damping", &m_fAccioBallLinearDamping,
