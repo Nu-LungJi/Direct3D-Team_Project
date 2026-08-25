@@ -27,7 +27,8 @@ public:
 	HRESULT Initialize(const BoundingBox& bounds, uint32_t depth, uint32_t maxDepth);
 	void BuildOctree(const std::vector<CHandle>& hObjects);
 	void CollectDebugBounds(std::vector<OCTREE_DEBUG_BOUNDS>& outBounds) const;
-	void OctreeFrustumCull(const BoundingFrustum& cameraFrustum);
+	// CPU 프러스텀 컬링 비활성화
+	//void OctreeFrustumCull(const BoundingFrustum& cameraFrustum);
 	void CollectRayCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection, std::vector<CHandle>& outHandles) const;
 
 	bool IsLeaf() const;
@@ -40,7 +41,7 @@ public:
 private:
 	void Subdivide();
 	void RebuildCullingBounds();
-	void SetAllObjectsVisibleRecursive();
+	//void SetAllObjectsVisibleRecursive();
 
 private:
 	BoundingBox m_bounds; // 공간 분할용
@@ -52,7 +53,7 @@ private:
 
 private:
 	_bool m_bDebugDrawOctree = false;
-	_bool m_bInCameraFrustum = false; // 디버그렌더용
+	//_bool m_bInCameraFrustum = false; // 디버그렌더용
 
 public:
 	static UPtr<COctreeNode> Create(const BoundingBox& bounds, uint32_t depth, uint32_t maxDepth = 4);

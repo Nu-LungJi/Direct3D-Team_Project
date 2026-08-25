@@ -7,143 +7,56 @@ NS_USING(Engine)
 
 namespace
 {
-	struct MAPMESH_COMMAND_LIST_RESULT
+	// 워커 하나가 기록한 명령 목록과 실행 결과를 메인 렌더 스레드로 전달한다.
+	struct DRAW_COMMAND_LIST_RESULT
 	{
+		// 명령 기록 또는 FinishCommandList의 성공 여부다.
 		HRESULT result = E_FAIL;
+		// Immediate Context에서 실행할 완성된 명령 목록이다.
 		ComPtr<ID3D11CommandList> commandList{};
+		// 통계에 합산할 이 명령 목록의 Draw 호출 수다.
 		uint32_t drawCalls = 0;
 	};
-
-	SPtr<CResTexture2D> GetMapMeshTexture(const SPtr<CResStaticModel>& pModel, uint32_t meshIndex, AI_TEXTURE_TYPE materialType)
-	{
-		if (pModel == nullptr)
-		{
-			return nullptr;
-		}
-
-		auto& meshes = pModel->GetMeshes();
-		if (meshIndex >= meshes.size() || meshes[meshIndex] == nullptr)
-		{
-			return nullptr;
-		}
-
-		auto& materials = pModel->GetMaterials();
-		const uint32_t materialIndex = meshes[meshIndex]->Get_MaterialIndex();
-		if (materialIndex >= materials.size() || materials[materialIndex] == nullptr)
-		{
-			return nullptr;
-		}
-
-		auto textures = materials[materialIndex]->GetTextures();
-		if (textures[materialType].empty())
-		{
-			return nullptr;
-		}
-
-		return textures[materialType].front();
-	}
 }
 
-const std::vector<CMapMeshInstancingRenderer::MAPMESH_TEXTURE_SET>*
-CMapMeshInstancingRenderer::GetOrCreateMapMeshTextureCache(const SPtr<CResStaticModel>& pModel)
+HRESULT CMapMeshInstancingRenderer::BindMapMeshMaterial(
+	ID3D11DeviceContext* context,
+	const SPtr<CResCBuffer>& materialConstantBuffer,
+	const MATERIAL_DESC& materialDesc)
+{
+	if (context == nullptr || materialConstantBuffer == nullptr)
 	{
-		if (pModel == nullptr)
-		{
-			return nullptr;
-		}
-
-		if (const auto iter = m_MapMeshTextureCache.find(pModel); iter != m_MapMeshTextureCache.end())
-		{
-			return &iter->second;
-		}
-
-		MAPMESH_TEXTURE_SET defaultTextures{
-			CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_DIFFUSE"),
-			CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL"),
-			CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_SMRO"),
-			CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_EMISSIVE")
-		};
-		if (std::ranges::any_of(defaultTextures, [](const auto& texture) { return texture == nullptr; }))
-		{
-			return nullptr;
-		}
-
-		std::vector<MAPMESH_TEXTURE_SET> textureSets(pModel->Get_NumMeshes(), defaultTextures);
-		for (uint32_t meshIndex = 0; meshIndex < textureSets.size(); ++meshIndex)
-		{
-			auto& textures = textureSets[meshIndex];
-			if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_DIFFUSE))
-				textures[0] = std::move(texture);
-			if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_NORMALS))
-				textures[1] = std::move(texture);
-			if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_METALNESS))
-				textures[2] = std::move(texture);
-			if (auto texture = GetMapMeshTexture(pModel, meshIndex, AI_TEXTURE_TYPE::aiTextureType_EMISSIVE))
-				textures[3] = std::move(texture);
-		}
-
-		auto [iter, inserted] = m_MapMeshTextureCache.emplace(pModel, std::move(textureSets));
-		return &iter->second;
+		return E_FAIL;
 	}
 
-HRESULT CMapMeshInstancingRenderer::BindMapMeshTextures(
-	ID3D11DeviceContext* pContext,
-	const std::vector<MAPMESH_TEXTURE_SET>& textureCache,
-	uint32_t meshIndex) const
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+	if (FAILED(context->Map(materialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 	{
-		if (pContext == nullptr || meshIndex >= textureCache.size())
-		{
-			return E_FAIL;
-		}
-
-		ID3D11ShaderResourceView* srvs[MAPMESH_TEXTURE_COUNT]{};
-		for (size_t i = 0; i < MAPMESH_TEXTURE_COUNT; ++i)
-		{
-			if (textureCache[meshIndex][i] == nullptr)
-				return E_FAIL;
-			srvs[i] = textureCache[meshIndex][i]->GetSRV().Get();
-		}
-		pContext->PSSetShaderResources(0, MAPMESH_TEXTURE_COUNT, srvs);
-
-		return S_OK;
+		return E_FAIL;
 	}
-/*----------- 광윤 추가 및 수정 : CB_MATERIAL 변수 추가 + m_DrawItems 변수 추가로 매개변수 수정, 바인딩 코드 추가-----------*/
-HRESULT BindMapMeshMaterial(ID3D11DeviceContext* pContext,const SPtr<CResCBuffer>& materialConstantBuffer, const MATERIAL_DESC& materialDesc)
-	{
-		if (pContext == nullptr || materialConstantBuffer == nullptr)
-		{
-			return E_FAIL;
-		}
 
-		D3D11_MAPPED_SUBRESOURCE mapped{};
-		if (FAILED(pContext->Map(materialConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-		{
-			return E_FAIL;
-		}
+	CB_MATERIAL material{};
+	material.NormalIntensity = materialDesc.m_fNormalIntensity;
+	material.MetallicIntensity = materialDesc.m_fMetallicIntensity;
+	material.RoughnessIntensity = materialDesc.m_fRoughnessIntensity;
+	material.AmbientIntensity = materialDesc.m_fAmbientIntensity;
 
-		CB_MATERIAL material{};
-		/*----------- 광윤 추가 및 수정 -----------*/
-		material.NormalIntensity = materialDesc.m_fNormalIntensity;
-		material.MetallicIntensity = materialDesc.m_fMetallicIntensity;
-		material.RoughnessIntensity = materialDesc.m_fRoughnessIntensity;
-		material.AmbientIntensity = materialDesc.m_fAmbientIntensity;
+	material.EmissiveColor = materialDesc.m_fEmissiveColor;
+	material.EmissiveIntensity = materialDesc.m_fEmissiveIntensity;
+	material.ObjectAlpha = materialDesc.m_fObjectAlpha;
+	memcpy(mapped.pData, &material, sizeof(CB_MATERIAL));
+	context->Unmap(materialConstantBuffer->GetCBuffer().Get(), 0);
+	context->PSSetConstantBuffers(
+		ETOUI(B_SLOTNUMBER::MATERIAL), 1,
+		materialConstantBuffer->GetCBuffer().GetAddressOf());
 
-		material.EmissiveColor = materialDesc.m_fEmissiveColor;
-		material.EmissiveIntensity = materialDesc.m_fEmissiveIntensity;
-		material.ObjectAlpha = materialDesc.m_fObjectAlpha;
-		/*---------------------------------*/
-		memcpy(mapped.pData, &material, sizeof(CB_MATERIAL));
-		pContext->Unmap(materialConstantBuffer->GetCBuffer().Get(), 0);
-		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, materialConstantBuffer->GetCBuffer().GetAddressOf());
-
-		return S_OK;
-	}
-/*---------------------------------*/
+	return S_OK;
+}
 
 CMapMeshInstancingRenderer::CMapMeshInstancingRenderer()
 {
-
 }
+
 CMapMeshInstancingRenderer::~CMapMeshInstancingRenderer()
 {
 	ReleaseInstancingResources();
@@ -151,88 +64,78 @@ CMapMeshInstancingRenderer::~CMapMeshInstancingRenderer()
 
 HRESULT CMapMeshInstancingRenderer::Initialize()
 {
-	s_pGpuCuller = CMapMeshGpuCuller::Create();
+	m_pGpuCuller = CMapMeshGpuCuller::Create();
 
-	if (s_pGpuCuller == nullptr)
+	if (m_pGpuCuller == nullptr)
 		return E_FAIL;
-
 
 	return S_OK;
 }
 
-HRESULT CMapMeshInstancingRenderer::PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, EMapMeshRenderFeature renderFeature, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData)
+HRESULT CMapMeshInstancingRenderer::PushMapObjectInstance(const SPtr<CResStaticModel>& model, EMapMeshRenderFeature renderFeature, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData)
 {
-	if (pModel == nullptr)
+	if (FAILED(m_InstanceBatchCollector.AddInstance(
+		model, renderFeature, instanceData, occlusionData)))
 	{
 		return E_FAIL;
 	}
-	MAPOBJECTKEY key{ pModel, renderFeature };
-	auto& batch = s_InstanceBatches[key];
 
-	occlusionData.instanceIndex = static_cast<uint32_t>(batch.instances.size());
-
-	batch.instances.push_back(instanceData);
-	batch.occlusionData.push_back(occlusionData);
-
-	if(s_bInstancingEnabled)
-		++s_FrameStats.iInstances;
+	if (m_bInstancingEnabled)
+		++m_CurrentFrameStats.iInstances;
 
 	return S_OK;
 }
 
 void CMapMeshInstancingRenderer::Update()
 {
-	// 인스턴싱 ON 일 때
-	if (s_bInstancingEnabled)
+	// 인스턴싱이 활성화된 프레임에만 렌더 큐에 등록한다.
+	if (m_bInstancingEnabled)
 		CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
 }
 
 void CMapMeshInstancingRenderer::FrameEnd()
 {
-	ClearInstancingData();
-	ClearFrameScratchBuffers();
+	FinalizeFrameBatches();
+	ClearFrameDrawData();
 }
 
 void CMapMeshInstancingRenderer::ClearTextureCache()
 {
-	m_MapMeshTextureCache.clear();
+	m_TextureCache.ClearAll();
 }
 
 void CMapMeshInstancingRenderer::EraseTextureCache(const SPtr<CResStaticModel>& model)
 {
-	//auto iter = m_MapMeshTextureCache.find(model);
-	//if (iter == m_MapMeshTextureCache.end())
-	//{
-	//	return;
-	//}
-	m_MapMeshTextureCache.erase(model);
+	m_TextureCache.EraseModel(model);
 }
 
-HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
+HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* context, const RENDER_CTX& renderContext)
 {
 	ZoneScopedN("MapMeshInstancingRender");
 
 	DRAW_PACKET packet{};
-	// 배치 병합, 캐시 준비, GPU 컬링
-	if (FAILED(PrepareDrawPacket(pContext, ctx, packet)))
+	// 수집한 인스턴스를 실제 Draw에 필요한 한 프레임 데이터로 변환한다.
+	if (FAILED(PrepareDrawPacket(context, renderContext, packet)))
 		return E_FAIL;
-	if (!packet.bReady)
+	if (!packet.isReady)
 		return S_OK;
 
 	const uint32_t commandCount = static_cast<uint32_t>(m_DrawCommandIndices.size());
 	const uint32_t availableWorkers = CGameInstance::Get().GetRenderWorkerCount();
+	// 작은 작업의 과도한 분할을 막기 위해 실제 명령 수와 최대 4개 워커로 제한한다.
 	const uint32_t workerCount = std::min({ 4u, availableWorkers, commandCount });
 	if (workerCount == 0)
 		return S_OK;
 
-	std::vector<std::future<MAPMESH_COMMAND_LIST_RESULT>> commandListFutures{};
+	std::vector<std::future<DRAW_COMMAND_LIST_RESULT>> commandListFutures{};
 	commandListFutures.reserve(workerCount);
 
 	const uint32_t commandsPerWorker = commandCount / workerCount;
+	// 나누어떨어지지 않는 명령은 앞쪽 워커부터 하나씩 추가한다.
 	const uint32_t remainder = commandCount % workerCount;
 	uint32_t commandBegin = 0;
-	
-	// 워커에게 commandList 기록 작업 분배
+
+	// Draw 명령을 여러 Deferred Context에 균등하게 분배한다.
 	for (uint32_t workerIndex = 0; workerIndex < workerCount; ++workerIndex)
 	{
 		const uint32_t commandEnd = commandBegin + commandsPerWorker + (workerIndex < remainder ? 1u : 0u);
@@ -241,17 +144,18 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 		commandListFutures.push_back(
 			CGameInstance::Get().RenderWorkerEnqueueWithFuture(
 				taskName,
-				[this, packet, commandBegin, commandEnd](ID3D11DeviceContext* pDeferredContext)
+				[this, packet, commandBegin, commandEnd](ID3D11DeviceContext* deferredContext)
 				{
-					MAPMESH_COMMAND_LIST_RESULT result{};
+					DRAW_COMMAND_LIST_RESULT result{};
 					result.result = RecordDrawCommands(
-						pDeferredContext, packet,
+						deferredContext, packet,
 						commandBegin, commandEnd, result.drawCalls);
 
 					if (FAILED(result.result))
 						return result;
 
-					result.result = pDeferredContext->FinishCommandList(FALSE, result.commandList.GetAddressOf());
+					result.result = deferredContext->FinishCommandList(
+						FALSE, result.commandList.GetAddressOf());
 
 					return result;
 				}));
@@ -259,7 +163,7 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 		commandBegin = commandEnd;
 	}
 
-	std::vector<MAPMESH_COMMAND_LIST_RESULT> commandListResults(workerCount);
+	std::vector<DRAW_COMMAND_LIST_RESULT> commandListResults(workerCount);
 	try
 	{
 		ZoneScopedN("MapMeshWaitForCommandLists");
@@ -277,115 +181,158 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* pContext, const 
 		return E_FAIL;
 	}
 
-	// ImmediateContext가 gpu에게 commandList 제출
+	// 완성된 명령 목록을 Immediate Context에서 순서대로 실행한다.
 	{
 		ZoneScopedN("MapMeshExecuteCommandLists");
 		for (const auto& commandListResult : commandListResults)
 		{
-			s_FrameStats.iDrawCalls += commandListResult.drawCalls;
-			pContext->ExecuteCommandList(commandListResult.commandList.Get(), TRUE);
+			m_CurrentFrameStats.iDrawCalls += commandListResult.drawCalls;
+			context->ExecuteCommandList(commandListResult.commandList.Get(), TRUE);
 		}
 	}
 	return S_OK;
 }
 
-HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx, DRAW_PACKET& outPacket)
+HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(
+	ID3D11DeviceContext* context,
+	const RENDER_CTX& renderContext,
+	DRAW_PACKET& outPacket)
 {
 	ZoneScopedN("MapMeshPrepareDrawPacket");
 	outPacket = {};
-	ClearFrameScratchBuffers();
-	if (pContext == nullptr || s_InstanceBatches.empty())
+	ClearFrameDrawData();
+
+	if (context == nullptr || m_InstanceBatchCollector.IsEmpty())
+		return S_OK;
+	if (FAILED(ResolveDrawResources(outPacket)))
+		return E_FAIL;
+
+	uint32_t batchCount = 0;
+	if (FAILED(BuildFrameDrawData(batchCount)))
+		return E_FAIL;
+	if (m_FrameInstances.empty() || m_DrawItems.empty())
 		return S_OK;
 
+	if (FAILED(RunGpuCulling(context, renderContext, batchCount, outPacket)))
+		return E_FAIL;
+	if (FAILED(CapturePipelineState(context, outPacket)))
+		return E_FAIL;
+
+	outPacket.isReady = true;
+	return S_OK;
+}
+
+HRESULT CMapMeshInstancingRenderer::ResolveDrawResources(DRAW_PACKET& outPacket) const
+{
+	ZoneScopedN("MapMeshResolveDrawResources");
 	auto& gameInstance = CGameInstance::Get();
 
-	outPacket.vertexStaticShader = gameInstance.GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced");
-	outPacket.vertexFoliageShader = gameInstance.GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced_Foliage");
-	outPacket.pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim_Instanced");
-	outPacket.sampler = gameInstance.GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-	outPacket.materialConstantBuffer = gameInstance.GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+	outPacket.vertexStaticShader = gameInstance.GetResourceFirst<CResVertexShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced");
+	outPacket.vertexFoliageShader = gameInstance.GetResourceFirst<CResVertexShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced_Foliage");
+	outPacket.pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim_Instanced");
+	outPacket.sampler = gameInstance.GetResourceFirst<CResSamplerState>(
+		TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
+	outPacket.materialConstantBuffer = gameInstance.GetResourceFirst<CResCBuffer>(
+		TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
 
 	if (!outPacket.vertexStaticShader || !outPacket.vertexFoliageShader ||
 		!outPacket.pixelShader || !outPacket.sampler ||
 		!outPacket.materialConstantBuffer)
+	{
 		return E_FAIL;
-
-	if (s_pGpuCuller == nullptr)
-	{
-		s_pGpuCuller = CMapMeshGpuCuller::Create();
-		if (s_pGpuCuller == nullptr)
-			return E_FAIL;
 	}
+	return S_OK;
+}
 
-	size_t totalInstances = 0;
-	size_t totalDraws = 0;
-	for (const auto& [pair, batch] : s_InstanceBatches)
+void CMapMeshInstancingRenderer::ReserveFrameDrawData()
+{
+	// 실제 병합 전에 필요한 크기를 합산해 vector 확장과 복사를 최소화한다.
+	size_t instanceCapacity = 0;
+	size_t drawCapacity = 0;
+	for (const auto& [key, batch] : m_InstanceBatchCollector.GetFrameBatches())
 	{
-		const auto& model = pair.first;
-		if (model && !batch.instances.empty())
-		{
-			totalInstances += batch.instances.size();
-			totalDraws += model->Get_NumMeshes();
-		}
-	}
-
-	m_Instances.reserve(totalInstances);
-	m_OcclusionData.reserve(totalInstances);
-	m_CullMeta.reserve(totalInstances);
-	m_DrawBatchIndices.reserve(totalDraws);
-	m_IndirectArgs.reserve(totalDraws);
-	m_DrawItems.reserve(totalDraws);
-	m_DrawCommandIndices.reserve(totalDraws);
-
-	uint32_t batchIndex = 0;
-	for (const auto& [pair, batch] : s_InstanceBatches)
-	{
-		const auto& model = pair.first;
-		const auto& renderFeature = pair.second;
+		const auto& model = key.first;
 		if (!model || batch.instances.empty())
 			continue;
-		if (batch.occlusionData.size() != batch.instances.size())
-			return E_FAIL;
 
-		const auto* textureCache = GetOrCreateMapMeshTextureCache(model);
-		/*----------- 광윤 추가 -----------*/ // Material 정보 Get
-		const MATERIAL_DESC materialDesc = model->GetMaterialDesc();
-		/*---------------------------------*/
-		if (textureCache == nullptr)
-			return E_FAIL;
-
-		const uint32_t instanceOffset = static_cast<uint32_t>(m_Instances.size());
-		m_Instances.insert(m_Instances.end(), batch.instances.begin(), batch.instances.end());
-		m_OcclusionData.insert(m_OcclusionData.end(), batch.occlusionData.begin(), batch.occlusionData.end());
-		m_CullMeta.insert(m_CullMeta.end(), batch.instances.size(), MAPMESH_CULL_META{ instanceOffset, batchIndex });
-
-		for (uint32_t meshIndex = 0; meshIndex < model->Get_NumMeshes(); ++meshIndex)
-		{
-			const auto& mesh = model->GetMeshes()[meshIndex];
-
-			if (mesh == nullptr)
-				continue;
-
-			const uint32_t drawIndex = static_cast<uint32_t>(m_DrawItems.size());
-
-			m_DrawBatchIndices.push_back(batchIndex);
-			D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS args{};
-			args.IndexCountPerInstance = static_cast<uint32_t>(mesh->GetNumIndices());
-			m_IndirectArgs.push_back(args);
-			/*----------- 광윤 수정 -----------*/	// 메쉬별 Material 정보 추가
-			m_DrawItems.push_back({ model, renderFeature, textureCache, materialDesc, meshIndex, instanceOffset });
-			/*---------------------------------*/
-
-			const size_t featureIndex = static_cast<size_t>(renderFeature);
-			if (featureIndex >= RENDER_FEATURE_COUNT)
-				return E_FAIL;
-
-			m_DrawIndicesByFeature[featureIndex].push_back(drawIndex);
-		}
-		++batchIndex;
+		instanceCapacity += batch.instances.size();
+		drawCapacity += model->Get_NumMeshes();
 	}
-	if (m_Instances.empty() || m_DrawItems.empty())
+
+	m_FrameInstances.reserve(instanceCapacity);
+	m_FrameOcclusionData.reserve(instanceCapacity);
+	m_FrameCullMetadata.reserve(instanceCapacity);
+	m_BatchIndexByDraw.reserve(drawCapacity);
+	m_IndirectDrawArguments.reserve(drawCapacity);
+	m_DrawItems.reserve(drawCapacity);
+	m_DrawCommandIndices.reserve(drawCapacity);
+}
+
+HRESULT CMapMeshInstancingRenderer::AppendInstanceBatch(
+	const CMapMeshInstanceBatchCollector::MODEL_RENDER_KEY& key,
+	const MAPMESH_INSTANCE_BATCH& batch,
+	uint32_t& batchIndex)
+{
+	const auto& [model, renderFeature] = key;
+	if (!model || batch.instances.empty())
 		return S_OK;
+	if (batch.occlusionData.size() != batch.instances.size())
+		return E_FAIL;
+
+	const auto* textureSets = m_TextureCache.GetOrCreateTextureSets(model);
+	if (textureSets == nullptr)
+		return E_FAIL;
+
+	const MATERIAL_DESC materialDesc = model->GetMaterialDesc();
+	// 이 배치가 병합된 전체 인스턴스 배열에서 시작하는 위치다.
+	const uint32_t instanceOffset = static_cast<uint32_t>(m_FrameInstances.size());
+	m_FrameInstances.insert(m_FrameInstances.end(), batch.instances.begin(), batch.instances.end());
+	m_FrameOcclusionData.insert(m_FrameOcclusionData.end(), batch.occlusionData.begin(), batch.occlusionData.end());
+	m_FrameCullMetadata.insert(
+		m_FrameCullMetadata.end(), batch.instances.size(),
+		MAPMESH_CULL_META{ instanceOffset, batchIndex });
+
+	// 렌더 기능별 Draw 버킷을 선택하는 배열 인덱스다.
+	const size_t featureIndex = static_cast<size_t>(renderFeature);
+	if (featureIndex >= RENDER_FEATURE_COUNT)
+		return E_FAIL;
+
+	for (uint32_t meshIndex = 0; meshIndex < model->Get_NumMeshes(); ++meshIndex)
+	{
+		const auto& mesh = model->GetMeshes()[meshIndex];
+		if (mesh == nullptr)
+			continue;
+
+		const uint32_t drawIndex = static_cast<uint32_t>(m_DrawItems.size());
+		m_BatchIndexByDraw.push_back(batchIndex);
+
+		D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS args{};
+		args.IndexCountPerInstance = static_cast<uint32_t>(mesh->GetNumIndices());
+		m_IndirectDrawArguments.push_back(args);
+		m_DrawItems.push_back({
+			model, renderFeature, textureSets, materialDesc,
+			meshIndex, instanceOffset });
+		m_DrawIndicesByFeature[featureIndex].push_back(drawIndex);
+	}
+
+	++batchIndex;
+	return S_OK;
+}
+
+HRESULT CMapMeshInstancingRenderer::BuildFrameDrawData(uint32_t& outBatchCount)
+{
+	ZoneScopedN("MapMeshBuildFrameDrawData");
+	ReserveFrameDrawData();
+
+	outBatchCount = 0;
+	for (const auto& [key, batch] : m_InstanceBatchCollector.GetFrameBatches())
+	{
+		if (FAILED(AppendInstanceBatch(key, batch, outBatchCount)))
+			return E_FAIL;
+	}
 
 	for (const auto& drawIndices : m_DrawIndicesByFeature)
 	{
@@ -393,64 +340,73 @@ HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(ID3D11DeviceContext* pCont
 			m_DrawCommandIndices.end(), drawIndices.begin(), drawIndices.end());
 	}
 
-	if (m_DrawCommandIndices.size() != m_DrawItems.size())
-		return E_FAIL;
+	return m_DrawCommandIndices.size() == m_DrawItems.size() ? S_OK : E_FAIL;
+}
 
-	/*----------- 광윤 수정 -----------*/ // Material 메쉬 종류별 Material 적용으로 RecordDrawCommands의 DrawIndexedInstancedIndirect 이전으로 이관
-	//if (FAILED(BindMapMeshMaterial(
-	//	pContext, outPacket.materialConstantBuffer,
-	//	{ 1.f, 1.f, 1.f }, 0.f, 1.f)))
-	//{
-	//	return E_FAIL;
-	//}
-	/*---------------------------------*/
-	if (FAILED(s_pGpuCuller->BuildVisibleInstancesAndIndirectArgs(
-		pContext, m_Instances, m_OcclusionData, m_CullMeta, batchIndex,
-		m_DrawBatchIndices, m_IndirectArgs,
-		gameInstance.GetPrevHizBuffer(), ctx.matViewProj,
+HRESULT CMapMeshInstancingRenderer::RunGpuCulling(
+	ID3D11DeviceContext* context,
+	const RENDER_CTX& renderContext,
+	uint32_t batchCount,
+	DRAW_PACKET& outPacket)
+{
+	ZoneScopedN("MapMeshRunGpuCulling");
+	if (m_pGpuCuller == nullptr)
+	{
+		m_pGpuCuller = CMapMeshGpuCuller::Create();
+		if (m_pGpuCuller == nullptr)
+			return E_FAIL;
+	}
+
+	auto& gameInstance = CGameInstance::Get();
+	if (FAILED(m_pGpuCuller->BuildVisibleInstancesAndIndirectArgs(
+		context, m_FrameInstances, m_FrameOcclusionData, m_FrameCullMetadata, batchCount,
+		m_BatchIndexByDraw, m_IndirectDrawArguments,
+		gameInstance.GetPrevHizBuffer(), renderContext.matViewProj,
 		gameInstance.GetClientScreenSize())))
 	{
 		return E_FAIL;
 	}
 
-	outPacket.visibleInstanceBuffer = s_pGpuCuller->GetVisibleInstanceBuffer();
-	outPacket.indirectArgsBuffer = s_pGpuCuller->GetIndirectArgsBuffer();
-	if (!outPacket.visibleInstanceBuffer || !outPacket.indirectArgsBuffer)
-		return E_FAIL;
+	outPacket.visibleInstanceBuffer = m_pGpuCuller->GetVisibleInstanceBuffer();
+	outPacket.indirectArgsBuffer = m_pGpuCuller->GetIndirectArgsBuffer();
+	return outPacket.visibleInstanceBuffer && outPacket.indirectArgsBuffer ? S_OK : E_FAIL;
+}
 
+HRESULT CMapMeshInstancingRenderer::CapturePipelineState(
+	ID3D11DeviceContext* context,
+	DRAW_PACKET& outPacket) const
+{
+	ZoneScopedN("MapMeshCapturePipelineState");
 	ID3D11RenderTargetView* renderTargets[DRAW_PACKET::RENDER_TARGET_COUNT]{};
 	ID3D11DepthStencilView* depthStencilView = nullptr;
-	pContext->OMGetRenderTargets(DRAW_PACKET::RENDER_TARGET_COUNT, renderTargets, &depthStencilView);
+	context->OMGetRenderTargets(DRAW_PACKET::RENDER_TARGET_COUNT, renderTargets, &depthStencilView);
 	for (uint32_t i = 0; i < DRAW_PACKET::RENDER_TARGET_COUNT; ++i)
-	{
 		outPacket.renderTargets[i].Attach(renderTargets[i]);
-	}
 	outPacket.depthStencilView.Attach(depthStencilView);
 
 	ID3D11DepthStencilState* depthStencilState = nullptr;
-	pContext->OMGetDepthStencilState(&depthStencilState, &outPacket.stencilRef);
+	context->OMGetDepthStencilState(&depthStencilState, &outPacket.stencilRef);
 	outPacket.depthStencilState.Attach(depthStencilState);
 
 	ID3D11RasterizerState* rasterizerState = nullptr;
-	pContext->RSGetState(&rasterizerState);
+	context->RSGetState(&rasterizerState);
 	outPacket.rasterizerState.Attach(rasterizerState);
 
 	ID3D11BlendState* blendState = nullptr;
-	pContext->OMGetBlendState(&blendState, outPacket.blendFactor.data(), &outPacket.sampleMask);
+	context->OMGetBlendState(&blendState, outPacket.blendFactor.data(), &outPacket.sampleMask);
 	outPacket.blendState.Attach(blendState);
 
 	UINT viewportCount = 1;
-	pContext->RSGetViewports(&viewportCount, &outPacket.viewport);
-
+	context->RSGetViewports(&viewportCount, &outPacket.viewport);
 	if (viewportCount != 1)
 		return E_FAIL;
 
 	ID3D11Buffer* perPassConstantBuffer = nullptr;
-	pContext->VSGetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, &perPassConstantBuffer);
+	context->VSGetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, &perPassConstantBuffer);
 	outPacket.perPassConstantBuffer.Attach(perPassConstantBuffer);
 
 	ID3D11ShaderResourceView* noiseShaderResourceView = nullptr;
-	pContext->PSGetShaderResources(13, 1, &noiseShaderResourceView);
+	context->PSGetShaderResources(13, 1, &noiseShaderResourceView);
 	outPacket.noiseShaderResourceView.Attach(noiseShaderResourceView);
 
 	if (!outPacket.depthStencilView || !outPacket.depthStencilState ||
@@ -460,13 +416,11 @@ HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(ID3D11DeviceContext* pCont
 	{
 		return E_FAIL;
 	}
-
-	outPacket.bReady = true;
 	return S_OK;
 }
 
 HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
-	ID3D11DeviceContext* pContext,
+	ID3D11DeviceContext* context,
 	const DRAW_PACKET& packet,
 	uint32_t commandBegin,
 	uint32_t commandEnd,
@@ -474,7 +428,7 @@ HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
 {
 	ZoneScopedN("MapMeshRecordDrawCommands");
 	outDrawCalls = 0;
-	if (pContext == nullptr || !packet.bReady ||
+	if (context == nullptr || !packet.isReady ||
 		!packet.vertexStaticShader || !packet.vertexFoliageShader ||
 		!packet.pixelShader || !packet.sampler ||
 		!packet.materialConstantBuffer ||
@@ -492,25 +446,26 @@ HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
 		renderTargets[i] = packet.renderTargets[i].Get();
 	}
 
-	pContext->OMSetRenderTargets(DRAW_PACKET::RENDER_TARGET_COUNT, renderTargets, packet.depthStencilView.Get());
-	pContext->OMSetDepthStencilState(packet.depthStencilState.Get(), packet.stencilRef);
-	pContext->OMSetBlendState(packet.blendState.Get(), packet.blendFactor.data(), packet.sampleMask);
-	pContext->RSSetState(packet.rasterizerState.Get());
-	pContext->RSSetViewports(1, &packet.viewport);
+	context->OMSetRenderTargets(DRAW_PACKET::RENDER_TARGET_COUNT, renderTargets, packet.depthStencilView.Get());
+	context->OMSetDepthStencilState(packet.depthStencilState.Get(), packet.stencilRef);
+	context->OMSetBlendState(packet.blendState.Get(), packet.blendFactor.data(), packet.sampleMask);
+	context->RSSetState(packet.rasterizerState.Get());
+	context->RSSetViewports(1, &packet.viewport);
 
 	ID3D11Buffer* perPassConstantBuffer = packet.perPassConstantBuffer.Get();
-	pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, &perPassConstantBuffer);
-	pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, &perPassConstantBuffer);
+	context->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, &perPassConstantBuffer);
+	context->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, &perPassConstantBuffer);
 
 	ID3D11ShaderResourceView* noiseShaderResourceView = packet.noiseShaderResourceView.Get();
-	pContext->PSSetShaderResources(13, 1, &noiseShaderResourceView);
+	context->PSSetShaderResources(13, 1, &noiseShaderResourceView);
 
-	pContext->PSSetShader(packet.pixelShader->GetPixelShader().Get(), nullptr, 0);
-	pContext->PSSetSamplers(0, 1, packet.sampler->GetSamplerState().GetAddressOf());
+	context->PSSetShader(packet.pixelShader->GetPixelShader().Get(), nullptr, 0);
+	context->PSSetSamplers(0, 1, packet.sampler->GetSamplerState().GetAddressOf());
 
 	ID3D11Buffer* materialConstantBuffer = packet.materialConstantBuffer->GetCBuffer().Get();
-	pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, &materialConstantBuffer);
+	context->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, &materialConstantBuffer);
 
+	// 직전 Draw와 렌더 기능이 같으면 버텍스 셰이더 재바인딩을 생략한다.
 	std::optional<EMapMeshRenderFeature> currentFeature{};
 	for (uint32_t commandIndex = commandBegin; commandIndex < commandEnd; ++commandIndex)
 	{
@@ -534,8 +489,8 @@ HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
 				return E_FAIL;
 			}
 
-			pContext->IASetInputLayout((*vertexShader)->GetInputLayout().Get());
-			pContext->VSSetShader((*vertexShader)->GetVertexShader().Get(), nullptr, 0);
+			context->IASetInputLayout((*vertexShader)->GetInputLayout().Get());
+			context->VSSetShader((*vertexShader)->GetVertexShader().Get(), nullptr, 0);
 			currentFeature = item.renderFeature;
 		}
 
@@ -544,16 +499,16 @@ HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
 		uint32_t strides[] = { mesh->GetVertexStride(), static_cast<uint32_t>(sizeof(MAPMESH_INSTANCE_DATA)) };
 		uint32_t offsets[] = { 0, item.instanceOffset * static_cast<uint32_t>(sizeof(MAPMESH_INSTANCE_DATA)) };
 
-			pContext->IASetVertexBuffers(0, 2, vertexBuffers, strides, offsets);
-			pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
-			pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
-			if (FAILED(BindMapMeshTextures(pContext, *item.textureCache, item.meshIndex)))
-				return E_FAIL;
-			/*----------- 광윤 수정 -----------*/ // Material 메쉬 종류별 Material 적용으로 RecordDrawCommands의 DrawIndexedInstancedIndirect 이전으로 이관
-			if (FAILED(BindMapMeshMaterial(pContext, packet.materialConstantBuffer, item.materialDesc)))
-				return E_FAIL;
-			/*---------------------------------*/
-		pContext->DrawIndexedInstancedIndirect(packet.indirectArgsBuffer.Get(),
+		context->IASetVertexBuffers(0, 2, vertexBuffers, strides, offsets);
+		context->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+		context->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+		if (FAILED(m_TextureCache.BindTextures(context, *item.textureSets, item.meshIndex)))
+			return E_FAIL;
+
+		// 모델의 머티리얼은 메시 Draw 직전에 갱신한다.
+		if (FAILED(BindMapMeshMaterial(context, packet.materialConstantBuffer, item.materialDesc)))
+			return E_FAIL;
+		context->DrawIndexedInstancedIndirect(packet.indirectArgsBuffer.Get(),
 			drawIndex * static_cast<uint32_t>(sizeof(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS)));
 		++outDrawCalls;
 	}
@@ -561,45 +516,42 @@ HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
 	return S_OK;
 }
 
-bool CMapMeshInstancingRenderer::HasRenderPass(RENDERPASS ePass) const
+bool CMapMeshInstancingRenderer::HasRenderPass(RENDERPASS renderPass) const
 {
-	return ePass == RENDERPASS::DEFAULT;
+	return renderPass == RENDERPASS::DEFAULT;
 }
 
-void CMapMeshInstancingRenderer::SetInstancingEnabled(_bool bEnabled)
+void CMapMeshInstancingRenderer::SetInstancingEnabled(_bool enabled)
 {
-	if (s_bInstancingEnabled == bEnabled)
+	if (m_bInstancingEnabled == enabled)
 	{
 		return;
 	}
 
-	s_bInstancingEnabled = bEnabled;
-	ClearInstancingData();
+	m_bInstancingEnabled = enabled;
+	FinalizeFrameBatches();
 }
 
-void CMapMeshInstancingRenderer::ClearInstancingData()
+void CMapMeshInstancingRenderer::FinalizeFrameBatches()
 {
-	s_FrameStats.bEnabled = s_bInstancingEnabled;
-	s_FrameStats.iInstances = 0;
-	for (const auto& [pModel, instancesBatch] : s_InstanceBatches)
-	{
-		s_FrameStats.iInstances += static_cast<uint32_t>(instancesBatch.instances.size());
-	}
-	s_FrameStats.iBatches = static_cast<uint32_t>(s_InstanceBatches.size());
-	s_LastStats = s_FrameStats;
-	s_FrameStats = {};
-	s_FrameStats.bEnabled = s_bInstancingEnabled;
+	// 현재 프레임 통계를 확정한 뒤 다음 프레임의 수집 상태를 준비한다.
+	m_CurrentFrameStats.bEnabled = m_bInstancingEnabled;
+	m_CurrentFrameStats.iInstances = m_InstanceBatchCollector.GetInstanceCount();
+	m_CurrentFrameStats.iBatches = static_cast<uint32_t>(m_InstanceBatchCollector.GetBatchCount());
+	m_PreviousFrameStats = m_CurrentFrameStats;
+	m_CurrentFrameStats = {};
+	m_CurrentFrameStats.bEnabled = m_bInstancingEnabled;
 
-	s_InstanceBatches.clear();
+	m_InstanceBatchCollector.ClearFrameBatches();
 }
 
-void CMapMeshInstancingRenderer::ClearFrameScratchBuffers()
+void CMapMeshInstancingRenderer::ClearFrameDrawData()
 {
-	m_Instances.clear();
-	m_OcclusionData.clear();
-	m_CullMeta.clear();
-	m_DrawBatchIndices.clear();
-	m_IndirectArgs.clear();
+	m_FrameInstances.clear();
+	m_FrameOcclusionData.clear();
+	m_FrameCullMetadata.clear();
+	m_BatchIndexByDraw.clear();
+	m_IndirectDrawArguments.clear();
 	m_DrawItems.clear();
 	m_DrawCommandIndices.clear();
 	for (auto& drawIndices : m_DrawIndicesByFeature)
@@ -608,10 +560,10 @@ void CMapMeshInstancingRenderer::ClearFrameScratchBuffers()
 
 void CMapMeshInstancingRenderer::ReleaseInstancingResources()
 {
-	s_InstanceBatches.clear();
-	ClearFrameScratchBuffers();
+	m_InstanceBatchCollector.ClearFrameBatches();
+	ClearFrameDrawData();
 	ClearTextureCache();
-	s_pGpuCuller.reset();
+	m_pGpuCuller.reset();
 }
 
 UPtr<CMapMeshInstancingRenderer> CMapMeshInstancingRenderer::Create()
@@ -622,8 +574,8 @@ UPtr<CMapMeshInstancingRenderer> CMapMeshInstancingRenderer::Create()
 		return nullptr;
 	}
 	return pInstance;
-	
 }
+
 void CMapMeshInstancingRenderer::Free()
 {
 	CEngineBase::Free();

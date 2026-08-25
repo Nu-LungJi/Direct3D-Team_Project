@@ -90,11 +90,11 @@ void CMapMeshObject::LateUpdate(_float fTimeDelta)
 {
 	GetTransform().Update();
 
-	// 컬링된 애면 렌더러 등록x
-	if (m_bRenderEnable == false)
-		return;
+	// CPU 프러스텀 컬링 비활성화: 모든 로드된 인스턴스를 GPU 컬러에 전달한다.
+	//if (m_bRenderEnable == false)
+	//	return;
 
-	m_bRenderEnable = false;
+	//m_bRenderEnable = false;
 
 	if (m_pComModelInstance == nullptr || m_pComModelInstance->GetModel() == nullptr)
 	{

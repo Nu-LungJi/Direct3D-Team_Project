@@ -565,6 +565,12 @@
     <Filter Include="ShaderFiles\Water">
       <UniqueIdentifier>{7848e7e8-6884-4f43-bace-d1d37c9e0629}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Instance\BatchCollector">
+      <UniqueIdentifier>{c48b5f6a-7047-4514-b953-f8b2b20dbb39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Instance\TextureCache">
+      <UniqueIdentifier>{b1c9803c-a634-42c6-bb47-e74d0f91dd5f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1300,6 +1306,12 @@
     <ClInclude Include="..\Public\Water.h">
       <Filter>Terrain\Water</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\MapMeshInstanceBatchCollector.h">
+      <Filter>Instance\BatchCollector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapMeshTextureCache.h">
+      <Filter>Instance\TextureCache</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1953,6 +1965,12 @@
     </ClCompile>
     <ClCompile Include="..\Private\Water.cpp">
       <Filter>Terrain\Water</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapMeshInstanceBatchCollector.cpp">
+      <Filter>Instance\BatchCollector</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapMeshTextureCache.cpp">
+      <Filter>Instance\TextureCache</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
