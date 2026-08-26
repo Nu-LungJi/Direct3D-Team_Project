@@ -139,6 +139,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(Initialize_EnviromentLight()))
 		return E_FAIL;
 
+	// 레벨 진입 후 3초 동안 검은 화면을 유지하고,
+	// 이후 2초 동안 검은 UI를 사라지게 해 게임 화면을 드러낸다.
+	GET_SINGLE(UIManager)->CreateFadeOut(3.f, 2.f);
+
 	return S_OK;
 }
 
@@ -612,5 +616,8 @@ void CLevelHogwartWorld::Free()
 {
 	if (auto* pNpcManager = E::CGameInstance::Get().GetNpcPlacementManager())
 		pNpcManager->ClearNpcOptions();
+
+
+
 	CLevel::Free();
 }

@@ -42,6 +42,9 @@ private:
 	/*---------------------------------*/
 	HRESULT SpanwAnimal();
 	HRESULT SpawnNpcPlacements(CHandle hPlayer, const _string& Path);
+
+
+
 public:
 	static UPtr<CLevelHogwartWorld> Create();
 
