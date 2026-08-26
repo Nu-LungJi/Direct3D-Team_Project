@@ -14,6 +14,7 @@ class CAccioActivity_Platform final : public CAccioActivityPartBase
 {
 public:
 	DECLARE_DERIVED_TYPE(CAccioActivity_Platform, CAccioActivityPartBase)
+	static constexpr uint32_t NPC_MOVE_AREA_SHAPE_SUB_INDEX = 100u;
 
 	struct WEDGE_COLLIDER_DESC
 	{
@@ -32,9 +33,18 @@ public:
 			.vScale = { 26.75f, 3.55f, 4.8f },
 			.vLocalOffset = { 0.f, 0.95f, -35.25f }
 		};
+		ACCIO_ACTIVITY_BOX_COLLIDER_DESC NpcMoveAreaTrigger{
+			.vHalfExtents = { 12.5f, 2.f, 4.25f },
+			.vLocalOffset = { 0.f, 4.25f, -27.9f }
+		};
 		PX_FILTER_DESC tPhysicsFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::WORLD_STATIC),
 			.iSimulationMask = PX_ALL_LAYERS,
+			.iQueryMask = PX_ALL_LAYERS
+		};
+		PX_FILTER_DESC tNpcMoveAreaTriggerFilter{
+			.iLayer = ETOUI(COLLISION_LAYER::TRIGGER),
+			.iSimulationMask = ETOUI(COLLISION_LAYER::NPC_BODY),
 			.iQueryMask = PX_ALL_LAYERS
 		};
 	};
@@ -47,6 +57,8 @@ private:
 public:
 	static UPtr<CAccioActivity_Platform> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
+	CComPxBoxCollider* GetNpcMoveAreaTrigger() const { return m_pComPxNpcMoveAreaTrigger; }
+	_bool GetNpcMoveAreaWorldOBB(BoundingOrientedBox& outArea) const;
 
 protected:
 	StringID GetModelResourceTag() const override;
@@ -56,6 +68,7 @@ private:
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxBoxCollider* m_pComPxBoxCollider{};
 	CComPxConvexCollider* m_pComPxWedgeCollider{};
+	CComPxBoxCollider* m_pComPxNpcMoveAreaTrigger{};
 };
 
 NS_END

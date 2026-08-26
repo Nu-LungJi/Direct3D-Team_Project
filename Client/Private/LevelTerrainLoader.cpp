@@ -63,6 +63,7 @@
 #include "AccioActivity_BumperB.h"
 #include "AccioActivity_RampLarge.h"
 #include "AccioActivity_LampSmall.h"
+#include "AccioActivity_Npc.h"
 
 NS_USING(Client)
 
@@ -166,7 +167,10 @@ std::future<bool> CLevelTerrainLoader::Load()
 						CAccioActivity_RampLarge::Create())) ||
 					FAILED(CGameInstance::Get().AddPrototype(
 						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_LampSmall,
-						CAccioActivity_LampSmall::Create())))
+						CAccioActivity_LampSmall::Create())) ||
+					FAILED(CGameInstance::Get().AddPrototype(
+						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Npc,
+						CAccioActivity_Npc::Create())))
 					return false;
 			}
 

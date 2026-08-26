@@ -170,7 +170,10 @@ void CAccioBall::FixedUpdate(_float fTimeDelta)
 		}
 		else
 		{
-			const _float3 vBallPosition = GetTransform().GetPosition();
+			// [LSY] FixedUpdate가 한 렌더 프레임에 여러 번 실행되어도 이전
+			// LateUpdate Transform이 아닌 현재 PhysX Pose로 당김 방향을 계산한다.
+			const _float3 vBallPosition = m_pComPxRigidBody ?
+				m_pComPxRigidBody->GetPosition() : GetTransform().GetPosition();
 			const _float3 vControllerPosition =
 				pController->GetTransform().GetPosition();
 			ApplyPullMotion({
@@ -457,9 +460,9 @@ _bool CAccioBall::ApplyPullMotion(const _float3& vToTarget)
 	return bTorqueApplied && bForceApplied;
 }
 
-_bool CAccioBall::TryAcquireControl(const CHandle& hController)
+_bool CAccioBall::CanAcquireControl(const CHandle& hController) const
 {
-	if (hController == CHandle{})
+	if (hController == CHandle{} || GetPendingDestroy())
 		return false;
 
 	if (const auto* pActivity = CGameInstance::Get().
@@ -469,15 +472,21 @@ _bool CAccioBall::TryAcquireControl(const CHandle& hController)
 			return false;
 	}
 
-	if (m_hController != CHandle{} && m_hController != hController)
-	{
-		const auto* pCurrentController = CGameInstance::Get().
-			GetGameObjectByHandle(m_hController);
-		if (pCurrentController && !pCurrentController->GetPendingDestroy())
-			return false;
+	if (m_hController == CHandle{} || m_hController == hController)
+		return true;
 
+	const auto* pCurrentController = CGameInstance::Get().
+		GetGameObjectByHandle(m_hController);
+	return !pCurrentController || pCurrentController->GetPendingDestroy();
+}
+
+_bool CAccioBall::TryAcquireControl(const CHandle& hController)
+{
+	if (!CanAcquireControl(hController))
+		return false;
+
+	if (m_hController != CHandle{} && m_hController != hController)
 		m_hController = CHandle{};
-	}
 
 	m_hController = hController;
 	if (m_pComPxRigidBody)

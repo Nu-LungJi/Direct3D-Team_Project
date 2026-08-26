@@ -250,6 +250,7 @@
     <ClInclude Include="..\public\AccioActivity_BumperB.h" />
     <ClInclude Include="..\public\AccioActivity_RampLarge.h" />
     <ClInclude Include="..\public\AccioActivity_LampSmall.h" />
+    <ClInclude Include="..\public\AccioActivity_Npc.h" />
     <ClInclude Include="..\public\PropBarrel.h" />
     <ClInclude Include="..\public\PropBarrelDebris.h" />
     <ClInclude Include="..\public\SkillTarget.h" />
@@ -453,6 +454,7 @@
     <ClCompile Include="..\private\AccioActivity_BumperB.cpp" />
     <ClCompile Include="..\private\AccioActivity_RampLarge.cpp" />
     <ClCompile Include="..\private\AccioActivity_LampSmall.cpp" />
+    <ClCompile Include="..\private\AccioActivity_Npc.cpp" />
     <ClCompile Include="..\private\PropBarrel.cpp" />
     <ClCompile Include="..\private\PropBarrelDebris.cpp" />
     <ClCompile Include="..\private\SkillTarget.cpp" />

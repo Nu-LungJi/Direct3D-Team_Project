@@ -52,6 +52,7 @@
 #include "AccioActivity_BumperB.h"
 #include "AccioActivity_RampLarge.h"
 #include "AccioActivity_LampSmall.h"
+#include "AccioActivity_Npc.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -183,6 +184,15 @@ HRESULT CLevelTerrain::Initialize()
 		return E_FAIL;
 	m_hPlayer = *hPlayer;
 
+	if (auto* pAccioActivity = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_Base>(m_hAccioActivityBase))
+	{
+		// [LSY] 경기장은 플레이어보다 먼저 생성되므로 실제 Handle은 플레이어 등록 후 전달한다.
+		pAccioActivity->SetParticipantHandle(
+			CAccioActivity_Base::PARTICIPANT::PLAYER,
+			m_hPlayer);
+	}
+
 	// 미니게임 NPC 근접 상호작용 테스트용 배치.
 	// 플레이어 시작점(5, 100, 5)의 카메라 정면(+Z) 2.5m 위치다.
 	{
@@ -227,6 +237,7 @@ HRESULT CLevelTerrain::Initialize()
 			return E_FAIL;
 		}
 	}
+
 	if (auto* pNpcManager = CGameInstance::Get().GetNpcPlacementManager())
 	{
 		pNpcManager->ClearNpcOptions();
@@ -1197,32 +1208,105 @@ void CLevelTerrain::Update(E::_float fTimeDelta)
 
 HRESULT CLevelTerrain::InitializeAccioActivityTest()
 {
-	if (FAILED(SpawnAccioBalls()))
-		return E_FAIL;
-
-	return SpawnAccioActivityObjects();
+	ACCIO_ACTIVITY_SET_DESC desc{};
+	desc.vOrigin = m_vAccioActivitySetOrigin;
+	desc.fYawDegrees = m_fAccioActivitySetYawDegrees;
+	// [LSY] 현재 Terrain에서는 분리 파츠 확인용 배치도 함께 유지한다.
+	desc.bSpawnDetachedPartSamples = true;
+	return SpawnAccioActivitySet(desc);
 }
 
-HRESULT CLevelTerrain::SpawnAccioBalls()
+HRESULT CLevelTerrain::SpawnAccioActivitySet(
+	const ACCIO_ACTIVITY_SET_DESC& setDesc)
 {
+	if (CGameInstance::Get().GetGameObjectByHandle(m_hAccioActivityBase))
+	{
+		DEBUG_LOG("[AccioActivity] Activity set is already spawned.\n");
+		return E_FAIL;
+	}
+
+	const _float3 vSetRotation{ 0.f, setDesc.fYawDegrees, 0.f };
+	const _matrix setWorld =
+		XMMatrixRotationY(XMConvertToRadians(setDesc.fYawDegrees)) *
+		XMMatrixTranslation(
+			setDesc.vOrigin.x,
+			setDesc.vOrigin.y,
+			setDesc.vOrigin.z);
+	const auto makeWorldPosition = [&setWorld](const _float3& vLocalPosition)
+	{
+		_float3 vWorldPosition{};
+		XMStoreFloat3(
+			&vWorldPosition,
+			XMVector3TransformCoord(
+				XMLoadFloat3(&vLocalPosition),
+				setWorld));
+		return vWorldPosition;
+	};
+
+	std::vector<CHandle> spawnedHandles{};
+	spawnedHandles.reserve(13);
+	const auto rollbackSpawnedObjects = [&spawnedHandles]()
+	{
+		for (auto iter = spawnedHandles.rbegin();
+			iter != spawnedHandles.rend();
+			++iter)
+		{
+			if (auto* pObject = CGameInstance::Get().
+				GetGameObjectByHandle(*iter))
+			{
+				pObject->SetPendingDestroyCascade();
+			}
+		}
+	};
+
+	CAccioActivity_Base::DESC baseDesc{};
+	baseDesc.sObjectTag = "AccioActivity_Base";
+	baseDesc.vInitialPosition = setDesc.vOrigin;
+	baseDesc.vInitialRotation = vSetRotation;
+	const auto hBase = CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::TERRAIN,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Base,
+		"01_Terrain",
+		&baseDesc);
+	if (!hBase)
+		return E_FAIL;
+	spawnedHandles.push_back(*hBase);
+
+	CAccioActivity_Platform::DESC platformDesc{};
+	platformDesc.sObjectTag = "AccioActivity_Platform";
+	platformDesc.vInitialPosition = setDesc.vOrigin;
+	platformDesc.vInitialRotation = vSetRotation;
+	const auto hPlatform = CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::TERRAIN,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Platform,
+		"01_Terrain",
+		&platformDesc);
+	if (!hPlatform)
+	{
+		rollbackSpawnedObjects();
+		return E_FAIL;
+	}
+	spawnedHandles.push_back(*hPlatform);
+
 	struct ACCIO_BALL_PLACEMENT
 	{
 		const _char* pObjectTag;
 		const _char* pResourceTag;
 		CAccioBall::COLOR eColor;
-		_float3 vPosition;
+		_float3 vLocalPosition;
 	};
 
 	constexpr ACCIO_BALL_PLACEMENT ballPlacements[] =
 	{
-		{ "AccioBall_Blue_1", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { 20.f, 9.25f, 126.f } },
-		{ "AccioBall_Red_1", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { 23.f, 9.25f, 126.f } },
-		{ "AccioBall_Blue_2", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { 26.f, 9.25f, 126.f } },
-		{ "AccioBall_Red_2", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { 29.f, 9.25f, 126.f } },
-		{ "AccioBall_Blue_3", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { 32.f, 9.25f, 126.f } },
-		{ "AccioBall_Red_3", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { 35.f, 9.25f, 126.f } },
+		{ "AccioBall_Blue_1", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { -7.f, 4.25f, 26.f } },
+		{ "AccioBall_Red_1", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { -4.f, 4.25f, 26.f } },
+		{ "AccioBall_Blue_2", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { -1.f, 4.25f, 26.f } },
+		{ "AccioBall_Red_2", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { 2.f, 4.25f, 26.f } },
+		{ "AccioBall_Blue_3", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { 5.f, 4.25f, 26.f } },
+		{ "AccioBall_Red_3", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { 8.f, 4.25f, 26.f } },
 	};
 
+	std::array<CHandle, 6> ballHandles{};
 	static_assert(std::size(ballPlacements) == 6);
 	for (size_t i = 0; i < std::size(ballPlacements); ++i)
 	{
@@ -1232,7 +1316,8 @@ HRESULT CLevelTerrain::SpawnAccioBalls()
 		desc.sResourceGroup = LEVEL::TERRAIN;
 		desc.sModelResourceTag = placement.pResourceTag;
 		desc.eColor = placement.eColor;
-		desc.vInitialPosition = placement.vPosition;
+		desc.vInitialPosition = makeWorldPosition(placement.vLocalPosition);
+		desc.vInitialRotation = vSetRotation;
 		desc.vInitialScale = { 3.f, 3.f, 3.f };
 		desc.fSphereRadius = 0.5f;
 		desc.fMass = m_fAccioBallMass;
@@ -1248,85 +1333,114 @@ HRESULT CLevelTerrain::SpawnAccioBalls()
 			"AccioBall",
 			&desc);
 		if (!handle)
+		{
+			rollbackSpawnedObjects();
 			return E_FAIL;
+		}
 
-		m_hAccioBalls[i] = *handle;
+		ballHandles[i] = *handle;
+		spawnedHandles.push_back(*handle);
 	}
 
-	ApplyAccioBallMotionTuning();
-	return S_OK;
-}
-
-HRESULT CLevelTerrain::SpawnAccioActivityObjects()
-{
-	CAccioActivity_Base::DESC baseDesc{};
-	baseDesc.sObjectTag = "AccioActivity_Base";
-	baseDesc.vInitialPosition = { 27.f, 5.f, 100.f };
-	const auto hAccioActivityBase = CGameInstance::Get().AddGameObjectToLayer(
-		LEVEL::TERRAIN,
-		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Base,
-		"01_Terrain",
-		&baseDesc);
-	if (!hAccioActivityBase)
-	{
-		return E_FAIL;
-	}
-	m_hAccioActivityBase = *hAccioActivityBase;
 	auto* pAccioActivityBase = CGameInstance::Get().
-		GetGameObjectByHandleT<CAccioActivity_Base>(m_hAccioActivityBase);
+		GetGameObjectByHandleT<CAccioActivity_Base>(*hBase);
 	if (!pAccioActivityBase)
+	{
+		rollbackSpawnedObjects();
 		return E_FAIL;
+	}
 
-	pAccioActivityBase->SetParticipantHandle(
-		CAccioActivity_Base::PARTICIPANT::PLAYER,
-		m_hPlayer);
-	for (const CHandle& hBall : m_hAccioBalls)
+	for (const CHandle& hBall : ballHandles)
 	{
 		if (!pAccioActivityBase->RegisterBall(hBall))
-			return E_FAIL;
-	}
-
-	struct ACCIO_ACTIVITY_PLACEMENT
-	{
-		const _char* pObjectTag;
-		PROTO_GAMEOBJECT ePrototype;
-		_float3 vPosition;
-	};
-
-	constexpr ACCIO_ACTIVITY_PLACEMENT placements[] =
-	{
-		{ "AccioActivity_BumperA", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_BumperA, { 37.f, 5.f, 20.f } },
-		{ "AccioActivity_BumperB", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_BumperB, { 33.f, 5.f, 20.f } },
-		{ "AccioActivity_RampLarge", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_RampLarge, { 41.f, 5.f, 20.f } },
-		{ "AccioActivity_LampSmall", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_LampSmall, { 47.f, 5.f, 20.f } },
-	};
-
-	for (const auto& placement : placements)
-	{
-		CAccioActivityPartBase::DESC desc{};
-		desc.sObjectTag = placement.pObjectTag;
-		desc.vInitialPosition = placement.vPosition;
-
-		if (!CGameInstance::Get().AddGameObjectToLayer(
-			LEVEL::TERRAIN,
-			placement.ePrototype,
-			"01_Terrain",
-			&desc))
 		{
+			rollbackSpawnedObjects();
 			return E_FAIL;
 		}
 	}
 
-	CAccioActivity_Platform::DESC platformDesc{};
-	platformDesc.sObjectTag = "AccioActivity_Platform";
-	platformDesc.vInitialPosition = { 27.f, 5.f, 100.f };
-	if (!CGameInstance::Get().AddGameObjectToLayer(
+	CAccioActivity_Npc::DESC npcDesc{};
+	npcDesc.sObjectTag = "AccioActivity_Npc";
+	npcDesc.hActivity = *hBase;
+	npcDesc.hPlatform = *hPlatform;
+	// [LSY] NPC의 X는 이동 영역 중앙에, Y는 실제 플랫폼 상판에 맞춘다.
+	// Z는 경기장을 바라보는 기준으로 뒤쪽 경계 안에 배치한다.
+	const _float fNpcRestLocalZ =
+		platformDesc.NpcMoveAreaTrigger.vLocalOffset.z -
+		std::max(
+			platformDesc.NpcMoveAreaTrigger.vHalfExtents.z -
+			npcDesc.fMoveAreaMargin,
+			0.f);
+	const _float3 vNpcLocalPosition{
+		platformDesc.NpcMoveAreaTrigger.vLocalOffset.x,
+		platformDesc.BoxCollider.vLocalOffset.y +
+		platformDesc.BoxCollider.vHalfExtents.y + 0.05f,
+		fNpcRestLocalZ
+	};
+	npcDesc.vInitialPosition = makeWorldPosition(vNpcLocalPosition);
+	npcDesc.vInitialRotation = vSetRotation;
+	const auto hNpc = CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::TERRAIN,
-		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Platform,
-		"01_Terrain",
-		&platformDesc))
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Npc,
+		"02_Npc",
+		&npcDesc);
+	if (!hNpc)
 	{
+		rollbackSpawnedObjects();
 		return E_FAIL;
+	}
+	spawnedHandles.push_back(*hNpc);
+
+	struct ACCIO_ACTIVITY_PART_PLACEMENT
+	{
+		const _char* pObjectTag;
+		PROTO_GAMEOBJECT ePrototype;
+		_float3 vLocalPosition;
+	};
+
+	constexpr ACCIO_ACTIVITY_PART_PLACEMENT partPlacements[] =
+	{
+		{ "AccioActivity_BumperA", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_BumperA, { 10.f, 0.f, -80.f } },
+		{ "AccioActivity_BumperB", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_BumperB, { 6.f, 0.f, -80.f } },
+		{ "AccioActivity_RampLarge", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_RampLarge, { 14.f, 0.f, -80.f } },
+		{ "AccioActivity_LampSmall", PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_LampSmall, { 20.f, 0.f, -80.f } },
+	};
+
+	if (setDesc.bSpawnDetachedPartSamples)
+	{
+		for (const auto& placement : partPlacements)
+		{
+			CAccioActivityPartBase::DESC desc{};
+			desc.sObjectTag = placement.pObjectTag;
+			desc.vInitialPosition = makeWorldPosition(
+				placement.vLocalPosition);
+			desc.vInitialRotation = vSetRotation;
+
+			const auto hPart = CGameInstance::Get().AddGameObjectToLayer(
+				LEVEL::TERRAIN,
+				placement.ePrototype,
+				"01_Terrain",
+				&desc);
+			if (!hPart)
+			{
+				rollbackSpawnedObjects();
+				return E_FAIL;
+			}
+			spawnedHandles.push_back(*hPart);
+		}
+	}
+
+	// [LSY] 모든 구성요소가 성공한 뒤에만 Level이 사용할 대표 Handle을 확정한다.
+	m_hAccioActivityBase = *hBase;
+	m_hAccioActivityNpc = *hNpc;
+	m_hAccioBalls = ballHandles;
+	ApplyAccioBallMotionTuning();
+
+	if (CGameInstance::Get().GetGameObjectByHandle(m_hPlayer))
+	{
+		pAccioActivityBase->SetParticipantHandle(
+			CAccioActivity_Base::PARTICIPANT::PLAYER,
+			m_hPlayer);
 	}
 
 	return S_OK;
@@ -1334,6 +1448,15 @@ HRESULT CLevelTerrain::SpawnAccioActivityObjects()
 
 _bool CLevelTerrain::PushSelectedAccioBallTowardPlayer()
 {
+	if (const auto* pActivity = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_Base>(m_hAccioActivityBase);
+		pActivity && pActivity->GetMatchState() !=
+		CAccioActivity_Base::MATCH_STATE::READY)
+	{
+		// [LSY] 직접 힘을 주는 테스트는 경기 턴/사용 공 추적을 우회하므로 준비 상태에서만 허용한다.
+		return false;
+	}
+
 	if (m_iSelectedAccioBall < 0 ||
 		m_iSelectedAccioBall >= static_cast<int32_t>(m_hAccioBalls.size()))
 	{
@@ -1383,7 +1506,8 @@ void CLevelTerrain::ResetAccioBalls()
 	if (auto* pActivityBase = CGameInstance::Get().
 		GetGameObjectByHandleT<CAccioActivity_Base>(m_hAccioActivityBase))
 	{
-		pActivityBase->ResetMatch(true);
+		if (!pActivityBase->ResetMatch(true))
+			DEBUG_LOG("[AccioActivity] Failed to reset one or more balls.\n");
 		return;
 	}
 
@@ -1401,10 +1525,24 @@ void CLevelTerrain::UpdateAccioActivityTestGUI()
 	if (!ImGui::CollapsingHeader("Accio Activity Test"))
 		return;
 
-	const auto* pActivityBase = CGameInstance::Get().
+	auto* pActivityBase = CGameInstance::Get().
 		GetGameObjectByHandleT<CAccioActivity_Base>(m_hAccioActivityBase);
 	if (pActivityBase)
 	{
+		ImGui::Text("Match: %s", pActivityBase->GetMatchStateText());
+		ImGui::SameLine();
+		if (pActivityBase->GetMatchState() ==
+			CAccioActivity_Base::MATCH_STATE::READY)
+		{
+			if (ImGui::Button("Start Match") && !pActivityBase->StartMatch())
+				DEBUG_LOG("[AccioActivity] Participants or balls are invalid.\n");
+		}
+		else if (ImGui::Button("Reset Match"))
+		{
+			if (!pActivityBase->ResetMatch(true))
+				DEBUG_LOG("[AccioActivity] Failed to reset one or more balls.\n");
+		}
+
 		ImGui::TextColored(
 			ImVec4{ 0.25f, 0.55f, 1.f, 1.f },
 			"Blue Score: %d",
@@ -1483,7 +1621,14 @@ void CLevelTerrain::UpdateAccioActivityTestGUI()
 		ResetAccioBalls();
 
 	ImGui::TextUnformatted("Order: Blue / Red / Blue / Red / Blue / Red");
-	ImGui::TextUnformatted("X: 20, 23, 26, 29, 32, 35 / Y: 9.25 / Z: 126");
+	ImGui::Text(
+		"Set Origin: %.2f, %.2f, %.2f / Yaw: %.1f",
+		m_vAccioActivitySetOrigin.x,
+		m_vAccioActivitySetOrigin.y,
+		m_vAccioActivitySetOrigin.z,
+		m_fAccioActivitySetYawDegrees);
+	ImGui::TextUnformatted(
+		"Ball Local X: -7, -4, -1, 2, 5, 8 / Y: 4.25 / Z: 26");
 	ImGui::Separator();
 }
 

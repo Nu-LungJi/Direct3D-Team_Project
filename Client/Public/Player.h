@@ -348,9 +348,12 @@ private:
 	static constexpr _float ACCIO_BALL_TARGET_ACQUIRE_RANGE = 60.f;
 	static constexpr _float ACCIO_BALL_TARGET_KEEP_RANGE = 80.f;
 	static constexpr uint32_t TARGET_QUERY_MAX_HITS = 32;
+	static constexpr uint32_t ACCIO_BALL_TARGET_QUERY_MAX_HITS = 128;
 
 	CHandle m_hAutoTarget{};
 	CHandle m_hPrevAutoTarget{};
+	// [LSY] 공 아씨오 해제 연출 중 다시 누른 입력만 다음 Locomotion까지 보존한다.
+	CHandle m_hPendingObjectAccioTarget{};
 	CHandle m_hMonsterHPUITarget{};
 	std::optional<CHandle> m_hPendingAncientThrowTarget{};
 	CHandle m_hAncientMagicButtonTarget{};

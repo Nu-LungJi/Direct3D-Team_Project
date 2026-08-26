@@ -9,6 +9,8 @@ NS_END
 
 NS_BEGIN(Client)
 
+class CAccioBall;
+
 class CAccioActivity_Base final : public CAccioActivityPartBase
 {
 public:
@@ -29,6 +31,12 @@ public:
 		NPC_TURN,
 		WAIT_NPC_BALL_SETTLED,
 		MATCH_END
+	};
+
+	struct BALL_PATH_HIT
+	{
+		CHandle hBall{};
+		_float fDistanceUntilCollision{};
 	};
 
 	struct DESC : public CAccioActivityPartBase::DESC
@@ -110,12 +118,36 @@ public:
 
 	int32_t GetBlueScore() const { return m_iBlueScore; }
 	int32_t GetRedScore() const { return m_iRedScore; }
+	int32_t ResolveScoreAtPosition(const _float3& vWorldPosition) const;
 	MATCH_STATE GetMatchState() const { return m_eMatchState; }
+	const _char* GetMatchStateText() const;
 	uint32_t GetCurrentRound() const { return m_iCurrentRound; }
 	_bool RegisterBall(const CHandle& hBall);
+	std::optional<CHandle> FindControllableBall(const CHandle& hController) const;
+	std::optional<CHandle> FindHighestScoringBall(
+		PARTICIPANT eParticipant,
+		_bool bSettledOnly = true) const;
+	std::vector<CHandle> FindScoringBalls(
+		PARTICIPANT eParticipant,
+		int32_t iMinimumScore,
+		_bool bSettledOnly = true) const;
+	std::optional<BALL_PATH_HIT> FindFirstBallOnPath(
+		PARTICIPANT eParticipant,
+		const CHandle& hIgnoredBall,
+		const _float3& vPathStart,
+		const _float3& vPathDirection,
+		_float fMovingBallRadius,
+		_float fMaximumPathDistance = FLT_MAX) const;
+	_bool CanPushBallOutsidePlayArea(
+		const CAccioBall& ball,
+		const _float3& vPushDirection,
+		_float fMaxDistanceToEdge) const;
+	std::optional<_float> GetDistanceToPlayAreaEdge(
+		const CAccioBall& ball,
+		const _float3& vPushDirection) const;
 	void SetParticipantHandle(PARTICIPANT eParticipant, const CHandle& hObject);
 	_bool StartMatch();
-	void ResetMatch(_bool bResetBalls);
+	_bool ResetMatch(_bool bResetBalls);
 	_bool CanControlBall(
 		const CHandle& hController,
 		const CHandle& hBall) const;
@@ -125,6 +157,7 @@ public:
 	void NotifyBallControlReleased(
 		const CHandle& hController,
 		const CHandle& hBall);
+	_bool SkipNpcTurn(const CHandle& hController);
 
 protected:
 	StringID GetModelResourceTag() const override;
@@ -138,7 +171,10 @@ private:
 	void UpdateSettledScores();
 	void RefreshScores();
 	void UpdateTurnState();
-	int32_t ResolveScoreAtPosition(const _float3& vWorldPosition) const;
+	_bool ValidateRegisteredBalls() const;
+	void ReleaseActiveBallControl();
+	_bool AreInPlayBallsSettled() const;
+	_bool IsBallOnPlayArea(const CAccioBall& ball) const;
 	_bool IsPointInsideScoreZone(
 		const _float3& vWorldPosition,
 		const ACCIO_ACTIVITY_BOX_COLLIDER_DESC& zone) const;
@@ -180,6 +216,7 @@ private:
 	CComPxBoxCollider* m_pComPxScore20Trigger{};
 	CComPxBoxCollider* m_pComPxScore30Trigger{};
 	CComPxBoxCollider* m_pComPxScore50Trigger{};
+	ACCIO_ACTIVITY_BOX_COLLIDER_DESC m_PlayArea{};
 	std::array<ACCIO_ACTIVITY_BOX_COLLIDER_DESC, 4> m_ScoreZones{};
 	std::unordered_map<CHandle, BALL_SCORE_STATE, HANDLE_HASH> m_BallScoreStates{};
 	std::unordered_set<CHandle, HANDLE_HASH> m_UsedBalls{};

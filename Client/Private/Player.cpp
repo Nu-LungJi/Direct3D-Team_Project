@@ -65,13 +65,18 @@ NS_USING(Client)
 
 namespace
 {
-	_bool IsPlayerLockOnTargetCandidate(const CGameObject* pObject)
+	_bool IsPlayerLockOnTargetCandidate(
+		const CGameObject* pObject,
+		const CHandle& hPlayer)
 	{
 		if (!pObject || pObject->GetPendingDestroy())
 			return false;
 
-		return dynamic_cast<const CSkillTarget*>(pObject) != nullptr ||
-			dynamic_cast<const CAccioBall*>(pObject) != nullptr;
+		if (dynamic_cast<const CSkillTarget*>(pObject))
+			return true;
+
+		const auto* pBall = dynamic_cast<const CAccioBall*>(pObject);
+		return pBall && pBall->CanAcquireControl(hPlayer);
 	}
 
 	_bool IsAncientThrowTargetInCameraView(
@@ -1040,7 +1045,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
 
 		// [LSY] 몬스터 검색량은 기존대로 유지하고 아씨오 공만 더 넓은 범위에서 찾는다.
-		const auto AppendTargets = [&](const _float fRadius, const uint32_t iQueryMask)
+		const auto AppendTargets = [&](const _float fRadius,
+			const uint32_t iQueryMask, const uint32_t iMaxHits)
 		{
 			PX_OVERLAP_DESC targetOverlapDesc{};
 			targetOverlapDesc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
@@ -1050,7 +1056,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 			std::vector<PX_OVERLAP_RESULT> queryResults{};
 			if (pPhysXManager->OverlapMultiple(
-				targetOverlapDesc, queryResults, TARGET_QUERY_MAX_HITS))
+				targetOverlapDesc, queryResults, iMaxHits))
 			{
 				results.insert(
 					results.end(), queryResults.begin(), queryResults.end());
@@ -1059,10 +1065,12 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 		AppendTargets(
 			DEFAULT_TARGET_ACQUIRE_RANGE,
-			ETOUI(COLLISION_LAYER::ENEMY_BODY));
+			ETOUI(COLLISION_LAYER::ENEMY_BODY),
+			TARGET_QUERY_MAX_HITS);
 		AppendTargets(
 			ACCIO_BALL_TARGET_ACQUIRE_RANGE,
-			ETOUI(COLLISION_LAYER::WORLD_DYNAMIC));
+			ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
+			ACCIO_BALL_TARGET_QUERY_MAX_HITS);
 
 		if (!results.empty())
 		{
@@ -1080,7 +1088,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 				for (const auto& result : results)
 				{
 					auto* pCandidate = result.pGameObject;
-					if (!IsPlayerLockOnTargetCandidate(pCandidate))
+					if (!IsPlayerLockOnTargetCandidate(pCandidate, GetHandle()))
 						continue;
 
 					_vector vToTarget =
@@ -1122,6 +1130,15 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	else {
 		auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+		if (pTarget && !IsPlayerLockOnTargetCandidate(pTarget, GetHandle()))
+		{
+			// [LSY] 외곽선은 보이지만 경기 규칙상 당길 수 없는 공이
+			// 이전 Target으로 남아 미들클릭을 조용히 막지 않게 한다.
+			m_hPrevAutoTarget = m_hAutoTarget;
+			m_hAutoTarget = CHandle{};
+			m_bDistanceUI = false;
+			pTarget = nullptr;
+		}
 		//  그냥 일상시 타깃 감지
 		if (!pTarget) {
 			auto ori = m_pComTransform->GetPosition();
@@ -1144,35 +1161,45 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (pTarget) {
 			auto ori = m_pComTransform->GetPosition();
 
-
-			std::vector<PX_OVERLAP_RESULT> results{};
-
-			PX_OVERLAP_DESC keepTargetOverlapDesc{};
-			keepTargetOverlapDesc.tGeometry.eType =
-				PX_QUERY_GEOMETRY_TYPE::SPHERE;
-			const _bool bAccioBallTarget =
-				dynamic_cast<CAccioBall*>(pTarget) != nullptr;
-			keepTargetOverlapDesc.tPose.vPosition = ori;
-			if (bAccioBallTarget)
+			_bool bTargetStillInRange = false;
+			if (auto* pBall = dynamic_cast<CAccioBall*>(pTarget))
 			{
-				keepTargetOverlapDesc.tGeometry.fRadius =
+				// [LSY] 이미 알고 있는 공 하나의 거리 확인에 매 프레임 넓은
+				// WORLD_DYNAMIC Overlap을 반복하지 않고 실제 PhysX 중심을 사용한다.
+				_float3 vBallPosition = pBall->GetTransform().GetPosition();
+				if (pBall->GetRigidBody())
+					vBallPosition = pBall->GetRigidBody()->GetPosition();
+
+				const _vector vDistance = XMLoadFloat3(&vBallPosition) -
+					XMLoadFloat3(&ori);
+				bTargetStillInRange = XMVectorGetX(
+					XMVector3LengthSq(vDistance)) <=
+					ACCIO_BALL_TARGET_KEEP_RANGE *
 					ACCIO_BALL_TARGET_KEEP_RANGE;
-				keepTargetOverlapDesc.tFilter.iQueryMask =
-					ETOUI(COLLISION_LAYER::WORLD_DYNAMIC);
 			}
 			else
 			{
+				std::vector<PX_OVERLAP_RESULT> results{};
+				PX_OVERLAP_DESC keepTargetOverlapDesc{};
+				keepTargetOverlapDesc.tGeometry.eType =
+					PX_QUERY_GEOMETRY_TYPE::SPHERE;
 				keepTargetOverlapDesc.tGeometry.fRadius =
 					DEFAULT_TARGET_KEEP_RANGE;
+				keepTargetOverlapDesc.tPose.vPosition = ori;
 				keepTargetOverlapDesc.tFilter.iQueryMask =
 					ETOUI(COLLISION_LAYER::ENEMY_BODY);
+
+				const _bool bOverlapped = CGameInstance::Get().
+					GetPhysXManager()->OverlapMultiple(
+						keepTargetOverlapDesc, results, TARGET_QUERY_MAX_HITS);
+				bTargetStillInRange = bOverlapped && std::ranges::any_of(
+					results,
+					[this](const PX_OVERLAP_RESULT& result)
+					{
+						return result.pGameObject &&
+							result.pGameObject->GetHandle() == m_hAutoTarget;
+					});
 			}
-
-			const bool bOverlapped = CGameInstance::Get()
-				.GetPhysXManager()->OverlapMultiple(
-					keepTargetOverlapDesc, results, TARGET_QUERY_MAX_HITS);
-
-			const bool bTargetStillInRange =bOverlapped &&std::ranges::any_of(results,[this](const PX_OVERLAP_RESULT& result){return result.pGameObject &&result.pGameObject->GetHandle() == m_hAutoTarget;});
 
 			if (!bTargetStillInRange)
 			{
@@ -1206,7 +1233,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	// 타겟 봐야 하는 곳 -----------------------------------------------------------------------------------------------------------
 	if (auto* pOutlineTarget =
 		CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
-		IsPlayerLockOnTargetCandidate(pOutlineTarget))
+		IsPlayerLockOnTargetCandidate(pOutlineTarget, GetHandle()))
 	{
 		CGameInstance::Get().Apply_OutlineEffect(
 			std::optional<CHandle>{ m_hAutoTarget });
@@ -1218,11 +1245,50 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 
 	// [LSY] 공 아씨오도 상태 머신을 통해 시작한다. 이후 애니메이션과 연출은
 	// CPlayer_AccioSkill_State가, 고정 물리 힘은 CAccioBall이 담당한다.
-	if (m_pStateMachine && !bPointerCapturedByUI &&
-		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::MB) &&
-		CGameInstance::Get().GetGameObjectByHandleT<CAccioBall>(m_hAutoTarget))
+	auto* pAccioBall = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioBall>(m_hAutoTarget);
+	const _bool bObjectAccioHeld = CGameInstance::Get().
+		MousePressing(MOUSEKEYSTATE::MB);
+	const _bool bObjectAccioPressed = CGameInstance::Get().
+		MouseDown(MOUSEKEYSTATE::MB);
+	if (!bObjectAccioHeld)
+		m_hPendingObjectAccioTarget = CHandle{};
+
+	if (m_pStateMachine && !bPointerCapturedByUI && bObjectAccioPressed &&
+		pAccioBall && pAccioBall->CanAcquireControl(GetHandle()))
 	{
-		m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+		if (m_pStateMachine->GetCurrentState() == PLAYER_STATE::ACCIO_SKILL)
+		{
+			// [LSY] 같은 아씨오 상태의 해제 연출 때문에 거절되는 재입력만 보존한다.
+			m_hPendingObjectAccioTarget = m_hAutoTarget;
+		}
+		else
+		{
+			m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+		}
+	}
+
+	if (m_hPendingObjectAccioTarget != CHandle{} && m_pStateMachine)
+	{
+		const PLAYER_STATE eCurrentState = m_pStateMachine->GetCurrentState();
+		if (!bObjectAccioHeld || bPointerCapturedByUI ||
+			m_hAutoTarget != m_hPendingObjectAccioTarget)
+		{
+			m_hPendingObjectAccioTarget = CHandle{};
+		}
+		else if (eCurrentState == PLAYER_STATE::LOCOMOTION)
+		{
+			auto* pPendingBall = CGameInstance::Get().
+				GetGameObjectByHandleT<CAccioBall>(m_hPendingObjectAccioTarget);
+			if (pPendingBall && pPendingBall->CanAcquireControl(GetHandle()))
+				m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+			m_hPendingObjectAccioTarget = CHandle{};
+		}
+		else if (eCurrentState != PLAYER_STATE::ACCIO_SKILL)
+		{
+			// [LSY] 피격 등 다른 상태로 끊긴 입력은 나중에 자동 발동하지 않는다.
+			m_hPendingObjectAccioTarget = CHandle{};
+		}
 	}
 
 	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))

@@ -82,6 +82,8 @@ public:
 	_bool ApplyTorque(const _float3& vTorque);
 	_bool ApplyRollingTorque(const _float3& vTorqueAxis);
 	_bool ApplyPullMotion(const _float3& vToTarget);
+	// [LSY] 선택 표시와 실제 획득이 같은 경기 규칙을 사용하도록 상태를 바꾸지 않고 검사한다.
+	_bool CanAcquireControl(const CHandle& hController) const;
 	_bool TryAcquireControl(const CHandle& hController);
 	_bool ReleaseControl(const CHandle& hController);
 	_bool IsControlledBy(const CHandle& hController) const;
