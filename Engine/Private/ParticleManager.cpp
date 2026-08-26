@@ -3372,15 +3372,18 @@ HRESULT CParticleManager::LoadParticlePresets(const std::string& strJsonPath)
 
 
 
-// 3) 예전 호출부(strJsonPath로 바로 부르던 곳) 호환용 오버로드 - 필요하면 유지
-uint32_t CParticleManager::Spawn(const std::string& strJsonPath,
-	const _float4x4& worldMat, _fvector endPos)
+uint32_t CParticleManager::Spawn(
+	const std::string& strJsonPath,
+	const _float4x4& worldMat,
+	_fvector endPos,
+	_bool bApplyWorldScaleToParticleSize)
 {
 	const auto* pCommands = FindCachedCommandQueue(strJsonPath);
 	if (nullptr == pCommands || pCommands->empty())
 		return INVALID_PARTICLE_OWNER_ID;
 
-	return Spawn(*pCommands, worldMat, endPos);
+	return Spawn(
+		*pCommands, worldMat, endPos, bApplyWorldScaleToParticleSize);
 }
 
 // 1) 순수 파싱: matWorld 관여 없음, 로컬값 그대로
@@ -3572,8 +3575,11 @@ const std::vector<SPAWN_COMMAND>* CParticleManager::FindCachedCommandQueue(const
 	return iter != m_ParsedCommandCache.end() ? &iter->second : nullptr;
 }
 
-uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateCommands,
-	const _float4x4& worldMat, _fvector endPos)
+uint32_t CParticleManager::Spawn(
+	const std::vector<SPAWN_COMMAND>& templateCommands,
+	const _float4x4& worldMat,
+	_fvector endPos,
+	_bool bApplyWorldScaleToParticleSize)
 {
 	XMMATRIX matWorld = XMLoadFloat4x4(&worldMat);
 
@@ -3586,6 +3592,30 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 		return (uint32_t)E_FAIL;
 	}
 
+	XMVECTOR vWorldScale{};
+	XMVECTOR vWorldRotation{};
+	XMVECTOR vWorldTranslation{};
+	const _bool bWorldDecomposed = XMMatrixDecompose(
+		&vWorldScale,
+		&vWorldRotation,
+		&vWorldTranslation,
+		matWorld);
+
+	_float3 vParticleSizeScale{ 1.f, 1.f, 1.f };
+	if (bWorldDecomposed)
+	{
+		if (bApplyWorldScaleToParticleSize)
+			XMStoreFloat3(&vParticleSizeScale, XMVectorAbs(vWorldScale));
+		vWorldRotation = XMQuaternionNormalize(vWorldRotation);
+	}
+
+	const auto ApplyWorldScaleToSize = [&vParticleSizeScale](_float3& vSize)
+	{
+		vSize.x *= vParticleSizeScale.x;
+		vSize.y *= vParticleSizeScale.y;
+		vSize.z *= vParticleSizeScale.z;
+	};
+
 	std::vector<SPAWN_COMMAND> localQueue;
 	localQueue.reserve(templateCommands.size());
 
@@ -3593,13 +3623,9 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 	{
 		SPAWN_COMMAND cmd = srcCmd; // 복사본에만 변환, 원본(호출자가 들고 있는 벡터)은 그대로
 		cmd.ownerId = m_iNextOwnerId;
-		if (cmd.bInheritWorldRotation)
+		if (cmd.bInheritWorldRotation && bWorldDecomposed)
 		{
-			XMVECTOR worldScale{};
-			XMVECTOR worldRotation{};
-			XMVECTOR worldTranslation{};
-			if (XMMatrixDecompose(&worldScale, &worldRotation, &worldTranslation, matWorld))
-				XMStoreFloat4(&cmd.inheritedWorldRotation, XMQuaternionNormalize(worldRotation));
+			XMStoreFloat4(&cmd.inheritedWorldRotation, vWorldRotation);
 		}
 
 		switch (cmd.sGroupTag_KindTag)
@@ -3635,7 +3661,12 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 			XMStoreFloat3(&velT, XMVector3TransformNormal(XMLoadFloat3(&p.velocity), matWorld));
 			p.velocity = velT;
 
-		
+			ApplyWorldScaleToSize(p.fSize);
+			ApplyWorldScaleToSize(p.fEndSize);
+			ApplyWorldScaleToSize(p.startSizeMin);
+			ApplyWorldScaleToSize(p.startSizeMax);
+			ApplyWorldScaleToSize(p.endSizeMin);
+			ApplyWorldScaleToSize(p.endSizeMax);
 
 			// rotMin/rotMax는 변환하지 않음
 			break;
@@ -3675,6 +3706,8 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 						(CParticle::BEHAVIOR_ORBIT | CParticle::BEHAVIOR_SPIRAL)) != 0;
 				XMStoreFloat3(&spawnData.position, XMVector3TransformCoord(XMLoadFloat3(&spawnData.position), matWorld));
 				XMStoreFloat3(&spawnData.velocity, XMVector3TransformNormal(XMLoadFloat3(&spawnData.velocity), matWorld));
+				ApplyWorldScaleToSize(spawnData.fSize);
+				ApplyWorldScaleToSize(spawnData.fEndSize);
 				if (bOrbitalMotion)
 				{
 					XMStoreFloat3(&spawnData.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&spawnData.originalPosition), matWorld));

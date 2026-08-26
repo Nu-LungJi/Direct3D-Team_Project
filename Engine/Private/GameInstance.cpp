@@ -741,10 +741,11 @@ HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag
 uint32_t CGameInstance::Spawn(
 	const std::string& strJsonPath,
 	const _float4x4& worldMat,
-	const _fvector endPos)
+	const _fvector endPos,
+	_bool bApplyWorldScaleToParticleSize)
 {
-	// [LSY] 콘텐츠에서 파티클 큐 경로만으로 재생하고 Owner ID를 추적할 수 있게 전달한다.
-	return m_pParticleManager->Spawn(strJsonPath, worldMat, endPos);
+	return m_pParticleManager->Spawn(
+		strJsonPath, worldMat, endPos, bApplyWorldScaleToParticleSize);
 }
 
 std::vector<SPAWN_COMMAND>  CGameInstance::Parse_Command(const std::string& strJsonFile)
@@ -757,8 +758,14 @@ const std::vector<SPAWN_COMMAND>* CGameInstance::FindCachedCommandQueue(const st
 	return m_pParticleManager->FindCachedCommandQueue(strJsonPath);
 }
 
-uint32_t CGameInstance::Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos) {
-	return m_pParticleManager->Spawn(templateCommands, worldMat ,endPos);
+uint32_t CGameInstance::Spawn(
+	const std::vector<SPAWN_COMMAND>& templateCommands,
+	const _float4x4& worldMat,
+	_fvector endPos,
+	_bool bApplyWorldScaleToParticleSize)
+{
+	return m_pParticleManager->Spawn(
+		templateCommands, worldMat, endPos, bApplyWorldScaleToParticleSize);
 }
 HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle)
 {

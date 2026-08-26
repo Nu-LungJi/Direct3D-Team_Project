@@ -230,8 +230,29 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	if (bCanControlFlight)
 	{
 		// 입력 유무와 부스트 키에 따라 목표 속도로 부드럽게 가감속한다.
+
 		m_bBoosting =
 			CGameInstance::Get().KeyPressing(DIK_LSHIFT);
+
+
+		if (m_bBoosting) {
+			if (CGameInstance::Get().Get_RadialBlurIntensity() < m_fBloomLimit) {
+				m_fCurBlurIntensity += fTimeDelta;
+			}
+			else {
+				m_fCurBlurIntensity = 5.0f;
+			}
+		}
+		else {
+			if (m_fCurBlurIntensity > 0.0f) {
+				m_fCurBlurIntensity -= fTimeDelta *3;
+			}
+			else {
+				m_fCurBlurIntensity = 0.0f;
+			}
+		}
+		CGameInstance::Get().Set_RadialBlurIntensity(m_fCurBlurIntensity);
+
 		const _float fTargetSpeed = bHasFlightInput
 			? (m_bBoosting ? m_fBoostFlightSpeed : m_fCruiseFlightSpeed)
 			: 0.f;
