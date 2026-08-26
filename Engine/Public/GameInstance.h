@@ -451,13 +451,21 @@ public:
 	HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
 		uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 		_bool bLoop, _float fSpawnInterval);
-	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos = XMVectorZero());
+	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat,
+		const _fvector endPos = XMVectorZero(),
+		_bool bApplyWorldScaleToParticleSize = false);
+	uint32_t Spawn(const std::string& strJsonPath, const _matrix& worldMat,
+		const _fvector endPos = XMVectorZero(),
+		_bool bApplyWorldScaleToParticleSize = false);
 	HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<class CParticle> particle);
 
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
 	const std::vector<SPAWN_COMMAND>* FindCachedCommandQueue(const std::string& strJsonPath) const;
-	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos = XMVectorSet(0,0,0,1));
+	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands,
+		const _float4x4& worldMat,
+		_fvector endPos = XMVectorSet(0.f, 0.f, 0.f, 1.f),
+		_bool bApplyWorldScaleToParticleSize = false);
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag);
 	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
 	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
