@@ -12,7 +12,7 @@ NS_USING(Engine)
 CMapMeshObject::CMapMeshObject()
 	: CGameObject{}
 {
-	// 정적 맵 메시 데이터는 청크 변경 시 렌더러에 한 번 등록되므로 프레임 업데이트가 필요 없다.
+	// 정적 맵 메시 데이터는 청크 변경 시 렌더러에 한 번 등록되므로 프레임 업데이트 없앰
 	SetUpdateLoopMask(GAMEOBJECT_UPDATE_LOOP::NONE);
 }
 
@@ -84,60 +84,60 @@ HRESULT CMapMeshObject::Initialize(void* pArg)
 	return S_OK;
 }
 
-HRESULT CMapMeshObject::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
-{
-	// 인스턴싱 ON이면 개별 오브젝트에서 Render하지않는다.
-	if (CGameInstance::Get().IsInstancingEnabled())
-		return S_OK;
-
-	// ------------------------------------------- 인스턴싱 OFF --------------------------------------
-	if (m_pComModelInstance == nullptr || m_pComModelInstance->GetModel() == nullptr)
-	{
-		return E_FAIL;
-	}
-
-	{
-		pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
-		pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
-		pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
-	}
-
-	{
-		CB_PER_OBJECT cbPerObject{};
-		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
-		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
-		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))
-		{
-			return E_FAIL;
-		}
-		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
-	}
-
-	auto pModel = m_pComModelInstance->GetModel();
-	if (nullptr == pModel)	return E_FAIL;
-	const uint32_t iNumMeshes = pModel->Get_NumMeshes();
-	for (uint32_t i = 0; i < iNumMeshes; ++i) {
-		const auto& viBuffer = pModel->GetMeshes()[i];
-
-		ID3D11Buffer* vertexBuffers[] = { viBuffer->GetVertexBuffer().Get() };
-		uint32_t strides[] = { viBuffer->GetVertexStride() };
-		uint32_t offsets[] = { 0 };
-
-		pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
-		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
-
-		/*----------- 광윤 추가 -----------*/
-		m_pComModelInstance->Bind_Textures(pContext, i);
-		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
-		/*---------------------------------*/
-
-		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
-	}
-	return S_OK;
-	//------------------------------------------------------------------------------------------------
-}
+//HRESULT CMapMeshObject::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
+//{
+//	// 인스턴싱 ON이면 개별 오브젝트에서 Render하지않는다.
+//	if (CGameInstance::Get().IsInstancingEnabled())
+//		return S_OK;
+//
+//	// ------------------------------------------- 인스턴싱 OFF --------------------------------------
+//	if (m_pComModelInstance == nullptr || m_pComModelInstance->GetModel() == nullptr)
+//	{
+//		return E_FAIL;
+//	}
+//
+//	{
+//		pContext->IASetInputLayout(m_pResVertexShader->GetInputLayout().Get());
+//		pContext->VSSetShader(m_pResVertexShader->GetVertexShader().Get(), nullptr, 0);
+//		pContext->PSSetShader(m_pResPixelShader->GetPixelShader().Get(), nullptr, 0);
+//	}
+//
+//	{
+//		CB_PER_OBJECT cbPerObject{};
+//		cbPerObject.matWorld = *GetTransform().GetCombinedWorldMatrix();
+//		XMStoreFloat4x4(&cbPerObject.matWVP, GetTransform().GetLoadedCombinedWorldMatrix() * ctx.matViewProj);
+//		if (FAILED(m_pComCBufferPerObject->MapDiscard(pContext, &cbPerObject, sizeof(cbPerObject))))
+//		{
+//			return E_FAIL;
+//		}
+//		pContext->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+//		pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_OBJECT), 1, m_pComCBufferPerObject->GetAdressOfBuffer());
+//	}
+//
+//	auto pModel = m_pComModelInstance->GetModel();
+//	if (nullptr == pModel)	return E_FAIL;
+//	const uint32_t iNumMeshes = pModel->Get_NumMeshes();
+//	for (uint32_t i = 0; i < iNumMeshes; ++i) {
+//		const auto& viBuffer = pModel->GetMeshes()[i];
+//
+//		ID3D11Buffer* vertexBuffers[] = { viBuffer->GetVertexBuffer().Get() };
+//		uint32_t strides[] = { viBuffer->GetVertexStride() };
+//		uint32_t offsets[] = { 0 };
+//
+//		pContext->IASetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+//		pContext->IASetIndexBuffer(viBuffer->GetIndexBuffer().Get(), viBuffer->GetIndexFormat(), 0);
+//		pContext->IASetPrimitiveTopology(viBuffer->GetPrimitiveType());
+//
+//		/*----------- 광윤 추가 -----------*/
+//		m_pComModelInstance->Bind_Textures(pContext, i);
+//		m_pComModelInstance->Bind_Materials(pContext, { 1.f, 1.f, 1.f }, 0.f, { 1.f, 1.f, 1.f }, 0.f, 1.f);	// EmissiveColor -> EmissiveIntensity -> Alpha 순
+//		/*---------------------------------*/
+//
+//		pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+//	}
+//	return S_OK;
+//	//------------------------------------------------------------------------------------------------
+//}
 
 /*----------- 광윤 추가 -----------*/
 HRESULT CMapMeshObject::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
@@ -174,7 +174,8 @@ HRESULT CMapMeshObject::Render_Shadow(ID3D11DeviceContext* pContext, const E::RE
 	return S_OK;
 }
 
-bool CMapMeshObject::GetShadowBounds(BoundingBox& OutBounds) const {
+bool CMapMeshObject::GetShadowBounds(BoundingBox& OutBounds) const 
+{
 	return GetOcclusionBounds(OutBounds);
 }
 /*---------------------------------*/
@@ -186,8 +187,7 @@ void CMapMeshObject::UpdateGUI()
 
 bool CMapMeshObject::IsOcclusionCullable() const
 {
-	return m_pComModelInstance != nullptr &&
-			m_pComModelInstance->GetModel() != nullptr;
+	return m_pComModelInstance != nullptr && m_pComModelInstance->GetModel() != nullptr;
 }
 
 bool CMapMeshObject::GetOcclusionBounds(BoundingBox& outBounds) const

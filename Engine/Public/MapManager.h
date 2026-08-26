@@ -32,17 +32,17 @@ public:
 	void Update(_float);
 
 public:
-	// 씬 또는 맵을 교체하기 전에 모든 청크와 진행 중인 스트리밍 결과를 정리한다.
+	// 씬 또는 맵을 교체하기 전에 모든 청크와 진행 중인 스트리밍 결과를 정리
 	void ClearAllChunk();
 
 public:
-	// 맵 메타데이터와 청크 파일 전체의 저장·로드 과정을 조율한다.
+	// 맵 메타데이터와 청크 파일 전체의 저장,로드 과정을 조율
 	HRESULT SaveMap(const std::string& path);
 	HRESULT LoadMap(const std::string& path, _bool clearBeforeLoad = true);
 	HRESULT SaveChunk(const MAPCHUNK_COORD& coord, const std::string& chunkPath);
 
 	HRESULT LoadMapData(const std::string& path);
-	// 저장과 편집 도구에서 사용하는 메인 스레드 동기 청크 로드다.
+	// 저장과 편집 도구에서 사용하는 메인 스레드 동기 청크 로드
 	HRESULT LoadChunk(const MAPCHUNK_COORD& coord);
 	HRESULT UnLoadChunk(const MAPCHUNK_COORD& coord);
 
@@ -50,8 +50,9 @@ public:
 	HRESULT LoadMaterial(const std::string& path);
 	MATERIAL_DESC FindMaterial(const std::string& modelName) const;
 
-	// 모델 태그 → 모델 .bin 파일 경로
-	void SetMapModelResourceIndex(const std::filesystem::path& staticModelRoot, const std::string& resourceGroup, std::unordered_map<std::string, std::filesystem::path> modelPaths);
+	// 모델 태그 -> 모델 .bin 파일 경로
+	void SetMapModelResourceIndex(const std::filesystem::path& staticModelRoot, const std::string& resourceGroup, 
+		std::unordered_map<std::string, std::filesystem::path> modelPaths);
 
 public:
 	void RebuildChunks();
@@ -68,7 +69,7 @@ private:
 	_float3 GetChunkCenter(const MAPCHUNK_COORD& coord);
 	BoundingBox MakeChunkBoundingBox(const MAPCHUNK_COORD& coord);
 	MAPCHUNK_COORD WorldToChunkCoord(const _float3& pos) const;
-	// 월드의 모델 머티리얼을 수집하고 Repository의 값을 런타임 모델에 반영한다.
+	// 월드의 모델 머티리얼을 수집하고 Repository의 값을 런타임 모델에 반영
 	CMapMaterialRepository::MATERIAL_MAP CollectMapMaterials() const;
 	void ApplyStoredMaterialsToLoadedModels() const;
 private:
@@ -79,12 +80,9 @@ private:
 	std::unordered_map<MAPCHUNK_COORD, CMapChunk, tagMapChunkCoordHash> m_Chunks;
 	CMapChunkSerializer m_ChunkSerializer;
 	CMapMaterialRepository m_MaterialRepository;
-	// 청크 모델의 로드 동기화, 참조 수, 지연 해제를 전담한다.
-	CMapModelResourceTracker m_ModelResourceTracker;
-	// 런타임 맵 오브젝트와 저장 데이터 사이의 변환 및 생성을 전담한다.
-	CMapRuntimeObjectFactory m_ObjectFactory;
-	// 카메라 기반 청크 선택과 비동기 로드 결과 적용을 전담한다.
-	CMapChunkStreamer m_ChunkStreamer;
+	CMapModelResourceTracker m_ModelResourceTracker; // 청크 모델의 로드 동기화, 참조 수, 지연 해제를 전담
+	CMapRuntimeObjectFactory m_ObjectFactory; // 런타임 맵 오브젝트와 저장 데이터 사이의 변환 및 생성을 전담
+	CMapChunkStreamer m_ChunkStreamer; // 카메라 기반 청크 선택과 비동기 로드 결과 적용을 전담
 
 #ifdef _DEBUG
 public:

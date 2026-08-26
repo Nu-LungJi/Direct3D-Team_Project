@@ -228,8 +228,10 @@ HRESULT CMapChunkSerializer::LoadLegacyMapFile(const std::filesystem::path& file
 		{
 			loadedObjects.reserve(rootJson["objects"].size());
 			for (const auto& objectJson : rootJson["objects"])
+			{
 				if (auto object = ReadMapMeshObject(objectJson))
 					loadedObjects.push_back(std::move(*object));
+			}
 		}
 
 		outObjects = std::move(loadedObjects);
@@ -401,8 +403,7 @@ std::optional<MAP_DECAL_FILE_DATA> CMapChunkSerializer::ReadDecal(const nlohmann
 	decal.normalThreshold = json.value("normalThreshold", decal.normalThreshold);
 	decal.edgeSoftness = json.value("edgeSoftness", decal.edgeSoftness);
 
-	decal.hasMaterialParameters =
-		json.contains("materialParameters") && json["materialParameters"].is_object();
+	decal.hasMaterialParameters = json.contains("materialParameters") && json["materialParameters"].is_object();
 	if (decal.hasMaterialParameters)
 	{
 		for (const auto& [name, valueJson] : json["materialParameters"].items())
@@ -410,11 +411,17 @@ std::optional<MAP_DECAL_FILE_DATA> CMapChunkSerializer::ReadDecal(const nlohmann
 			MAP_DECAL_PARAMETER_DATA parameter{};
 			parameter.name = name;
 			if (valueJson.is_number())
+			{
 				parameter.values.push_back(valueJson.get<_float>());
+			}
 			else if (valueJson.is_array())
+			{
 				for (const auto& value : valueJson)
+				{
 					if (value.is_number())
 						parameter.values.push_back(value.get<_float>());
+				}
+			}
 			decal.materialParameters.push_back(std::move(parameter));
 		}
 	}
@@ -422,8 +429,7 @@ std::optional<MAP_DECAL_FILE_DATA> CMapChunkSerializer::ReadDecal(const nlohmann
 	{
 		decal.legacyAlbedo = ReadFloat4(json, "albedo", decal.legacyAlbedo);
 		decal.legacyEmissive = ReadFloat3(json, "emissive", decal.legacyEmissive);
-		decal.legacyEmissiveIntensity = json.value(
-			"emissiveIntensity", decal.legacyEmissiveIntensity);
+		decal.legacyEmissiveIntensity = json.value("emissiveIntensity", decal.legacyEmissiveIntensity);
 	}
 
 	if (json.contains("textureOverrides") && json["textureOverrides"].is_array())

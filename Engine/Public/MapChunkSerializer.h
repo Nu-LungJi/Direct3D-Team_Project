@@ -5,7 +5,7 @@
 
 NS_BEGIN(Engine)
 
-// MapMeshObject 하나를 파일에 저장하거나 파일에서 읽을 때 사용하는 순수 데이터다.
+// MapMeshObject 하나를 파일에 저장하거나 파일에서 읽을 때 사용하는 순수 데이터
 struct MAP_MESH_OBJECT_FILE_DATA
 {
 	std::string objectTag;
@@ -21,14 +21,14 @@ struct MAP_MESH_OBJECT_FILE_DATA
 	WIND_DESC windDesc{};
 };
 
-// 데칼의 머티리얼 파라미터 하나를 이름과 값 목록으로 보관한다.
+// 데칼의 머티리얼 파라미터 하나를 이름과 값 목록으로 보관
 struct MAP_DECAL_PARAMETER_DATA
 {
 	std::string name;
 	std::vector<_float> values;
 };
 
-// 데칼 텍스처 슬롯에 덮어쓸 리소스 정보를 보관한다.
+// 데칼 텍스처 슬롯에 덮어쓸 리소스 정보를 보관
 struct MAP_DECAL_TEXTURE_OVERRIDE_DATA
 {
 	UINT slot{};
@@ -37,7 +37,7 @@ struct MAP_DECAL_TEXTURE_OVERRIDE_DATA
 	std::string path;
 };
 
-// DecalVolume 하나를 저장하고 복원하는 데 필요한 파일 데이터다.
+// DecalVolume 하나를 저장하고 복원하는 데 필요한 파일 데이터
 struct MAP_DECAL_FILE_DATA
 {
 	std::string objectTag = "MapDecal";
@@ -60,13 +60,13 @@ struct MAP_DECAL_FILE_DATA
 	std::vector<MAP_DECAL_PARAMETER_DATA> materialParameters;
 	std::vector<MAP_DECAL_TEXTURE_OVERRIDE_DATA> textureOverrides;
 
-	// 구버전 데칼 파일의 고정 파라미터를 읽기 위한 호환 데이터다.
+	// 구버전 데칼 파일의 고정 파라미터를 읽기 위한 호환 데이터
 	_float4 legacyAlbedo{ 1.f, 1.f, 1.f, 1.f };
 	_float3 legacyEmissive{ 1.f, 0.f, 0.f };
 	_float legacyEmissiveIntensity = 1.f;
 };
 
-// map.json에 기록되는 청크 하나의 메타데이터다.
+// map.json에 기록되는 청크 하나의 메타데이터
 struct MAP_CHUNK_METADATA
 {
 	MAPCHUNK_COORD coord{};
@@ -74,7 +74,7 @@ struct MAP_CHUNK_METADATA
 	size_t objectCount{};
 };
 
-// map.json 전체를 런타임 객체와 분리해 표현한다.
+// map.json 전체를 런타임 객체와 분리해 표현
 struct MAP_FILE_DATA
 {
 	int version = 2;
@@ -84,7 +84,7 @@ struct MAP_FILE_DATA
 	std::vector<MAP_DECAL_FILE_DATA> decals;
 };
 
-// 청크 파일 하나의 내용을 표현한다.
+// 청크 파일 하나의 내용을 표현
 struct MAP_CHUNK_FILE_DATA
 {
 	int version = 1;
@@ -93,8 +93,8 @@ struct MAP_CHUNK_FILE_DATA
 	std::vector<MAP_MESH_OBJECT_FILE_DATA> objects;
 };
 
-// 맵과 청크의 JSON 파일 형식만 담당한다.
-// 게임 오브젝트 생성, 리소스 로드, 청크 상태 변경은 수행하지 않는다.
+// 맵과 청크의 JSON 파일 형식만 담당
+// 게임 오브젝트 생성, 리소스 로드, 청크 상태 변경은 수행하지 않는다
 class ENGINE_DLL CMapChunkSerializer final
 {
 public:
@@ -106,7 +106,7 @@ public:
 	HRESULT SaveChunkFile(const std::filesystem::path& filePath, const MAP_CHUNK_FILE_DATA& chunkData) const;
 	HRESULT LoadChunkFile(const std::filesystem::path& filePath, MAP_CHUNK_FILE_DATA& outChunkData) const;
 
-	// 청크 파일로 분리되기 전 TestMap.json의 오브젝트 목록을 읽는다.
+	// 청크 파일로 분리되기 전 TestMap.json의 오브젝트 목록을 읽기
 	HRESULT LoadLegacyMapFile(const std::filesystem::path& filePath, std::vector<MAP_MESH_OBJECT_FILE_DATA>& outObjects) const;
 
 private:
