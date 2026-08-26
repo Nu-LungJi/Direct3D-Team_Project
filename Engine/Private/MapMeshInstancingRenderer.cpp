@@ -213,8 +213,8 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* context, const R
 
 	const uint32_t commandCount = static_cast<uint32_t>(m_DrawCommandIndices.size());
 	const uint32_t availableWorkers = CGameInstance::Get().GetRenderWorkerCount();
-	// 작은 작업의 과도한 분할을 막기 위해 실제 명령 수와 최대 4개 워커로 제한한다.
-	const uint32_t workerCount = std::min({ 4u, availableWorkers, commandCount });
+	// 작은 작업의 과도한 분할을 막기 위해 실제 명령 수와 최대 6개 워커로 제한한다.
+	const uint32_t workerCount = std::min({ 6u, availableWorkers, commandCount });
 	if (workerCount == 0)
 		return S_OK;
 

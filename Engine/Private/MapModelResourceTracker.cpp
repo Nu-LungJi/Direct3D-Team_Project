@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "MapModelResourceTracker.h"
 
+#include "ResModelMaterial.h"
 #include "MapStaticModelLoader.h"
 
 NS_USING(Engine)
@@ -10,10 +11,15 @@ void CMapModelResourceTracker::SetResourceIndex(
 	const std::string& resourceGroup,
 	std::unordered_map<std::string, std::filesystem::path> modelPaths)
 {
-	std::lock_guard<std::mutex> lock(m_ResourceIndexMutex);
-	m_StaticModelRoot = staticModelRoot;
-	m_ResourceGroup = resourceGroup;
-	m_ModelPaths = std::move(modelPaths);
+	{
+		std::lock_guard<std::mutex> lock(m_ResourceIndexMutex);
+		m_StaticModelRoot = staticModelRoot;
+		m_ResourceGroup = resourceGroup;
+		m_ModelPaths = std::move(modelPaths);
+	}
+
+	// 맵 진입 시 한 번 구축하여 스트리밍 워커의 첫 텍스처 검색 비용을 제거한다.
+	CResModelMaterial::WarmUpTextureSearchIndex(staticModelRoot);
 }
 
 HRESULT CMapModelResourceTracker::AcquireChunkResources(
