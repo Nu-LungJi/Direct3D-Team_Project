@@ -83,7 +83,8 @@ void CWorldAnimal::Update(E::_float fTimeDelta)
 
 void CWorldAnimal::FixedUpdate(E::_float fTimeDelta)
 {
-	m_pCharacterMotor->FixedUpdate(fTimeDelta);
+	if(nullptr != m_pCharacterMotor)
+		m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 void CWorldAnimal::LateUpdate(E::_float fTimeDelta)
 {

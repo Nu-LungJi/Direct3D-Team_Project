@@ -56,11 +56,12 @@ public:
 	void						Set_AttTable(ATTMON eType, _float2 fSkillRatio) override;
 	TROLL_SKILL_INFO&			Get_SkillInfo(TROLL_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
 	const _string&				Get_SkillName(TROLL_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
+	void						Destory_Child() override;
 private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);
-
+				
 	void						InitializeEffects();
 	void						Stuck() override;
 private:

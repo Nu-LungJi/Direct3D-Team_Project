@@ -874,6 +874,15 @@ HRESULT CMainAppLoader::Create_ActionNode()
 			}
 			pNpcPlacement->AddMinorNameToNpcPlacement("RUN_SPIDER");
 		}
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "DEFAULT_ANIM", CResJson::Create("./Resources/json/BeHavior/Default_Animation.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED DEFAULT_ANIM JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("DEFAULT_ANIM");
+		}
 	}
 	////서브트리
 	{

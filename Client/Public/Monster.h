@@ -127,7 +127,7 @@ public:
 	void OnTriggerEnter(CGameObject* pObj,const PX_ON_TRIGGER_DATA& info) override;
 public:
 	virtual _bool				Check_Table(PLAYER_SKILL_TYPE eType) { return true; };
-
+	virtual	void				Destory_Child() {};
 	void						Set_Partes(PARTES eType, CHandle Handle) { m_Partes[ETOUI(eType)] = Handle; };
 	const int32_t				Get_CurrentHp() const { return m_iHp; }
 	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }

@@ -202,7 +202,14 @@ void CBTAnimNpc::OnEnter()
 		auto* pSrc = static_cast<CWorldAgent*>(pBT->GetGameObject());
 		if (nullptr == pSrc) return;
 
-		m_iAnimIndex = pSrc->Find_AnimIndex(m_AnimName);
+		auto* pBB = pBT->Get_Blackboard();
+		if (nullptr == pBB) return;
+
+		auto* pAnimName = pBB->Get_Value<_string>(PUBLIC_KEY::ANIMNAME);
+		if (nullptr != pAnimName)
+			m_iAnimIndex = pSrc->Find_AnimIndex(*pAnimName);
+		else
+			m_iAnimIndex = pSrc->Find_AnimIndex(m_AnimName);
 	}
 
 

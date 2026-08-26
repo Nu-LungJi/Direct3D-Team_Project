@@ -54,7 +54,7 @@ HRESULT CWorldNpc::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-	m_iHp = m_iMaxHp = 3555;
+	m_iHp = m_iMaxHp = 10;
 
 	
 

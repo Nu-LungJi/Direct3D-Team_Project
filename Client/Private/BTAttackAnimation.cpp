@@ -124,7 +124,11 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 					}
 					_float fAnimRange = m_fRatio.y - m_fRatio.x;
 					_float t = (m_fDis * fAnimRatio) / (m_fRatio.y - m_fRatio.x);
-					const _float fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
+					_float fMoveSpeed = {}; 
+					if (m_bMoveLerp)
+						fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
+					else  fMoveSpeed = m_Value.fSpeed;
+
 					_vector vMoveDirection{};
 					if (m_eMove == MOVE::RIGHT)
 						vMoveDirection = pTransform->GetState(STATE::RIGHT);
@@ -169,6 +173,7 @@ void CBTAttackAnimation::Update_Gui()
 		BoolButton("TriggerSkill", m_bTrigger);
 		BoolButton("overlabLoop", m_bOverLabLoop);
 		BoolButton("overlabMove", m_bOverLabMove);
+		BoolButton("MoveLerp", m_bMoveLerp);
 		DragFloat("overlabSpeed", m_fOverLabSpeed);
 		DragFloat("RotTime", m_Value.fTime);
 		if (ImGui::Button("Animation"))
@@ -438,8 +443,8 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 	SaveJsonValue(j, "AttRadius", m_fAttRadius);
 	SaveJsonValue(j, "OverlabMove", m_bOverLabMove);
 	SaveJsonValue(j, "TriggerSkill", m_bTrigger);
+	SaveJsonValue(j, "MoveLerp", m_bMoveLerp);
 	
-
 	if (!m_Skills.empty())
 	{
 		uint32_t iMax{};
@@ -468,7 +473,8 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "AttRadius", m_fAttRadius);
 	LoadJsonValue(j, "OverlabMove", m_bOverLabMove);
 	LoadJsonValue(j, "TriggerSkill", m_bTrigger);
-
+	LoadJsonValue(j, "MoveLerp", m_bMoveLerp);
+	
 	uint32_t iMax{};
 	if (LoadJsonValue(j, "NewSkillTableSize", iMax))
 	{

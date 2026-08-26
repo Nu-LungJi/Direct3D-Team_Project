@@ -47,6 +47,7 @@ private:
 	_float2				m_vRatio{}, m_vRotRatio{}, m_vAttRatio{}, m_vOverlabRatio{0.f,0.f};
 	_float				m_fDis{}, m_fTime{}, m_fIntensive{ 0.5f }, m_fAttRadius{ 5.f }, m_fOverLabSpeed{5.f}, m_fCurOverLabSpeed{};
 	_bool				m_bRatioInvert{ false }, m_bActiveSkill{ false }, m_bAttRatio{ false }, m_bOverLabLoop{ false }, m_bOverLabMove{ false }, m_bDir{false};
+	_bool				m_bMoveLerp{true};
 	// KMS 추가
 	_bool				m_bAttackIndicatorTriggered{ false };
 	_bool				m_bTrigger{ false };

@@ -46,7 +46,7 @@ public:
 
 public:
 	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
-
+	void Set_Dead() { m_bDead = true; }
 public:
 	_bool				Weapon_CallBack() { return m_bDissolve; }
 

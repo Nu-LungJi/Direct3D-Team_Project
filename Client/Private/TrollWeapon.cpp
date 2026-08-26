@@ -56,12 +56,9 @@ HRESULT CTrollWeapon::Initialize(void* pArg)
 
 void CTrollWeapon::PriorityUpdate(E::_float fTimeDelta)
 {
-	if (m_bDead)
-	{
+	auto ParentHandle = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle);
+	if(m_bDead)
 		Dead_Parent(fTimeDelta);
-		return;
-	}
-
 	__super::PriorityUpdate(fTimeDelta);
 
 }

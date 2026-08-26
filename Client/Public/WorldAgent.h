@@ -46,6 +46,7 @@ public:
 		_float3 vStartPos{}, vEndPos{};
 		_float fSpeed{};
 		_bool bPhyx{ true };
+		_string AnimName{};
 		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::NPC_BODY),

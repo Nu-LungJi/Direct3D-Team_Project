@@ -26,7 +26,7 @@ void CMon_Dead::Enter(CStateMachine* pStateMachine)
 	if (nullptr == pAnimator) return;
 	if (m_iIndex == -1) return;
 
-
+	pMonster->Destory_Child();
 	pAnimator->Play_Anim(m_iIndex, false, 0.1f);
 }
 

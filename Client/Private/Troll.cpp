@@ -287,6 +287,15 @@ void CTroll::Flag_Check(_float fTimeDelta)
 	if (m_iHp <= 0)
 		m_pFsm->Request_State(MON_STATE::DEAD);
 }
+void CTroll::Destory_Child()
+{
+	auto PartesHandle = m_Partes[ETOUI(PARTES::WEAPON)];
+	
+	auto pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CTrollWeapon>(PartesHandle);
+	if (nullptr != pWeapon)
+		pWeapon->Set_Dead();
+	
+}
 void CTroll::Update_BBToFsm()
 {
 	auto pBB = Get_BlackBoard();

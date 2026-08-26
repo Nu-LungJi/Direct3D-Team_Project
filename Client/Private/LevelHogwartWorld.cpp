@@ -79,7 +79,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 			NpcOption.sLayerTag = "02_Animal";
 			pNpcManager->RegisterNpcOption("Animal", NpcOption);
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Spider",NpcOption.sModelGroupTag, "Model_Resource_Spider");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Cat", NpcOption.sModelGroupTag, "Model_Resource_Cat");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Cat", NpcOption.sModelGroupTag, "Model_Resource_Cat","./Resources/SampleClient/Models/Skeleton/Cat/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Bird_Kestrel", NpcOption.sModelGroupTag, "Model_Resource_Bird_Kestrel", "./Resources/SampleClient/Models/Skeleton/Birds_Kestrel/");
+
+			
 		}
 
 		pNpcManager->SetSpawnCallback([hTarget = *hPlayer](const E::NPC_PLACEMENT_DESC& Placement)
@@ -103,6 +106,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 			Desc.vScale = Placement.vScale;
 			Desc.bDonMove = Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
 			Desc.fSpeed = Placement.fSpeed;
+			Desc.bPhyx = Placement.bPhyx;
+			Desc.AnimName = Placement.strAnimName;
 			const auto hNpc = E::CGameInstance::Get().AddGameObjectToLayer(
 				Placement.sPrototypeGroupTag, Placement.sPrototypeTag, Placement.sLayerTag, &Desc);
 			if (!hNpc)
@@ -149,6 +154,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/Cat.json")))
 		return E_FAIL;
 	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/RunSpider.json")))
+		return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/Birds.json")))
 		return E_FAIL;
 
 	if (FAILED(SpanwWorldAgent()))
@@ -560,6 +567,8 @@ HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer, const _string& P
 		Desc.vRot = Placement.vRotation;
 		Desc.vScale = Placement.vScale;
 		Desc.fSpeed = Placement.fSpeed;
+		Desc.bPhyx = Placement.bPhyx;
+		Desc.AnimName = Placement.strAnimName;
 		Desc.bDonMove = Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
 
 		if (!E::CGameInstance::Get().AddGameObjectToLayer(

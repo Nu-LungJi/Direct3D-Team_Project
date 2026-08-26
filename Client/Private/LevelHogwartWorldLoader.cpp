@@ -510,6 +510,19 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Bird_Kestrel",
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Birds_Kestrel/SK_Birds_Kestrel.bin"))) {
+
+		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			MSG_BOX("HOGWART_WORLD Failed Model_Resource_Bird_Kestrel");
+			return E_FAIL;
+		}
+	}
+	
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Griff, CGriff::Create())))
 	{
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_Griff");
