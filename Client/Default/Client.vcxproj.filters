@@ -1036,6 +1036,9 @@
     <ClInclude Include="..\public\WorldNpc.h">
       <Filter>GameObject\NPC</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\MiniGameNpc.h">
+      <Filter>GameObject\NPC</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\BTNaviMove.h">
       <Filter>GameObject\AI\Action\NPC</Filter>
     </ClInclude>
@@ -1628,6 +1631,9 @@
       <Filter>GameObject\AI\AnimRoot\Anim\NPC</Filter>
     </ClCompile>
     <ClCompile Include="..\private\WorldNpc.cpp">
+      <Filter>GameObject\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MiniGameNpc.cpp">
       <Filter>GameObject\NPC</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTNaviMove.cpp">

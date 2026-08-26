@@ -62,6 +62,9 @@ HRESULT CSpellMiniGame::Initialize(void* pArg)
 	if (FAILED(CGameObject::Initialize(pArg)))
 		return E_FAIL;
 
+	// 월드 TimeScale이 0이어도 미니게임 로직은 실제 시간으로 계속 갱신한다.
+	SetTimeDomain(E::TIME_DOMAIN::UNSCALED);
+
 	if (pArg)
 		m_eMode = static_cast<DESC*>(pArg)->Mode;
 

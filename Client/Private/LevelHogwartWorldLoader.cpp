@@ -34,6 +34,7 @@
 #include "Mon_Spawner.h"
 #include "Mon_State.h"
 #include "WorldNpc.h"
+#include "MiniGameNpc.h"
 #include "Griff.h"
 #include "GriffChild.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
@@ -404,25 +405,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
 	static constexpr NPC_MODEL_ENTRY NpcModels[] =
 	{
-		{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },
-		{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },
-		{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
 		{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
-		{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
-		{ "Model_Resource_NPC_EffieBones", "EffieBones" },
-		{ "Model_Resource_NPC_EleazarFig", "EleazarFig" },
-		{ "Model_Resource_NPC_GladwinMoon", "GladwinMoon" },
-		{ "Model_Resource_NPC_HelenThistlewood", "HelenThistlewood" },
-		{ "Model_Resource_NPC_JasperTrout", "JasperTrout" },
-		{ "Model_Resource_NPC_LeonaPeck", "LeonaPeck" },
-		{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
-		{ "Model_Resource_NPC_NoreenBlainey", "NoreenBlainey" },
-		{ "Model_Resource_NPC_PadraicHaggarty", "PadraicHaggarty" },
-		{ "Model_Resource_NPC_PercivalPippin", "PercivalPippin" },
-		{ "Model_Resource_NPC_PhineasBlack", "PhineasBlack" },
-		{ "Model_Resource_NPC_SironaRyan", "SironaRyan" },
-		{ "Model_Resource_NPC_ThomasBrown", "ThomasBrown" },
-		{ "Model_Resource_NPC_TimothyTeasdale", "TimothyTeasdale" },
 	};
 	for (const auto& Entry : NpcModels)
 	{
@@ -445,6 +428,14 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc, CWorldNpc::Create())))
 	{
 		MSG_BOX("TERRAIN Failed Prototype_GameObject_Npc");
+		return E_FAIL;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
+		CMiniGameNpc::Create())))
+	{
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_MiniGameNpc");
 		return E_FAIL;
 	}
 	return S_OK;

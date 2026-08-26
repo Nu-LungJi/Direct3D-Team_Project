@@ -398,6 +398,7 @@
     <ClInclude Include="..\Public\UI_Structs.h" />
     <ClInclude Include="..\Public\VideoObject.h" />
     <ClInclude Include="..\public\WorldNpc.h" />
+    <ClInclude Include="..\public\MiniGameNpc.h" />
     <ClInclude Include="BTAnimNpc.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
@@ -590,6 +591,7 @@
     <ClCompile Include="..\Private\Mon_Weapon.cpp" />
     <ClCompile Include="..\Private\VideoObject.cpp" />
     <ClCompile Include="..\private\WorldNpc.cpp" />
+    <ClCompile Include="..\private\MiniGameNpc.cpp" />
     <ClCompile Include="BTAnimNpc.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">

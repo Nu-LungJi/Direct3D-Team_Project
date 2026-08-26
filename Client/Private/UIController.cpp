@@ -17,6 +17,7 @@
 
 NS_USING(Client)
 
+
 namespace
 {
 	constexpr std::array<SPELL_TYPE, 20> SPELL_BUTTON_TYPES = {

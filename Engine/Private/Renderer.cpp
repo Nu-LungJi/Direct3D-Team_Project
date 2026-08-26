@@ -1886,7 +1886,8 @@ HRESULT CRenderer::Render_PostProcess() {
 	if (FAILED(Update_PostProcessConstantBuffer())) { Unbind_Resources(); return S_OK; }
 
 	// 잠시 봉인
-	if (FAILED(Render_PostProcess_MotionBlur())){ Unbind_Resources(); return S_OK; }
+	if (m_bMotionBlurEnabled &&
+		FAILED(Render_PostProcess_MotionBlur())) { Unbind_Resources(); return S_OK; }
 
 	if (FAILED(Render_PostProcess_Focusing())) { Unbind_Resources(); return S_OK; }
 
