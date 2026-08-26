@@ -860,7 +860,7 @@ void CGeneralButton::RefreshWandShopSummary()
 	if (auto* styleText = FindTopmostTextBoxByName("WandType"))
 		styleText->SetwText(StringToWUTF8(GetSelectedWandStyleText()));
 	setText("WandTypeText", GetSelectedWandWoodName());
-	setText("AnimalTypeText", GetSelectedWandCoreName());
+	setText("WorldAgentTypeText", GetSelectedWandCoreName());
 	setText("pliabilityText", GetSelectedWandFlexibilityName());
 	setText("WandLengthText", GetSelectedWandLengthText());
 }
@@ -1101,7 +1101,7 @@ void CGeneralButton::ApplyWandSliderHoverVisual(_float amount)
 void CGeneralButton::InitializeWandCoreCard()
 {
 	CUIObject* background = nullptr;
-	CUIObject* animal = nullptr;
+	CUIObject* WorldAgent = nullptr;
 	for (const CHandle childHandle : GetChildren())
 	{
 		auto* child = GetSafeUI(childHandle);
@@ -1117,17 +1117,17 @@ void CGeneralButton::InitializeWandCoreCard()
 		if (childName == "Dragon" || childName == "UniCorn" ||
 			childName == "Pheonix")
 		{
-			animal = child;
+			WorldAgent = child;
 		}
 	}
 
-	if (!background || !animal)
+	if (!background || !WorldAgent)
 		return;
 
 	m_WandCoreBackground = background->GetHandle();
-	m_WandCoreAnimal = animal->GetHandle();
+	m_WandCoreWorldAgent = WorldAgent->GetHandle();
 	m_fWandCoreBackgroundBaseScale = background->GetLocalScaleRatio();
-	m_fWandCoreAnimalBaseScale = animal->GetLocalScaleRatio();
+	m_fWandCoreWorldAgentBaseScale = WorldAgent->GetLocalScaleRatio();
 	m_vWandCoreBaseBrightness.clear();
 	std::function<void(CUIObject*)> collectTextureBrightness =
 		[this, &collectTextureBrightness](CUIObject* ui)
@@ -1149,10 +1149,10 @@ void CGeneralButton::InitializeWandCoreCard()
 	{
 		textureBackground->SetAlphaMaskSource(GetHandle());
 	}
-	if (auto* textureAnimal = E::CGameInstance::Get().
-		GetGameObjectByHandleT<CTextureUI>(animal->GetHandle()))
+	if (auto* textureWorldAgent = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextureUI>(WorldAgent->GetHandle()))
 	{
-		textureAnimal->SetAlphaMaskSource(GetHandle());
+		textureWorldAgent->SetAlphaMaskSource(GetHandle());
 	}
 	m_bWandCoreCardInitialized = true;
 }
@@ -1161,7 +1161,7 @@ void CGeneralButton::PlayWandCoreCardHover(_bool hovered)
 {
 	if (!m_bWandCoreCardInitialized)
 		InitializeWandCoreCard();
-	if (!m_WandCoreBackground || !m_WandCoreAnimal)
+	if (!m_WandCoreBackground || !m_WandCoreWorldAgent)
 		return;
 
 	PlayChildLocalScaleTo(
@@ -1169,9 +1169,9 @@ void CGeneralButton::PlayWandCoreCardHover(_bool hovered)
 		hovered ? 0.95f : m_fWandCoreBackgroundBaseScale,
 		WAND_CORE_HOVER_DURATION);
 	PlayChildLocalScaleTo(
-		*m_WandCoreAnimal,
-		hovered ? m_fWandCoreAnimalBaseScale * 1.06f :
-			m_fWandCoreAnimalBaseScale,
+		*m_WandCoreWorldAgent,
+		hovered ? m_fWandCoreWorldAgentBaseScale * 1.06f :
+			m_fWandCoreWorldAgentBaseScale,
 		WAND_CORE_HOVER_DURATION);
 
 	const _float targetAmount = hovered ? 1.f : 0.f;

@@ -7,6 +7,7 @@
 #include "RagdollEditorGUI.h"
 #include "PhysXCollisionProxyObject.h"
 
+#include <array>
 #include <cassert>
 #include <filesystem>
 
@@ -25,6 +26,8 @@ NS_USING(Engine)
 
 namespace
 {
+	constexpr uint32_t OVERLAP_INLINE_HIT_CAPACITY = 64;
+
 	class CPxSceneQueryFilter final : public PxQueryFilterCallback
 	{
 	public:
@@ -804,11 +807,24 @@ _bool CPhysXManager::SweepMultiple(
 _bool CPhysXManager::Overlap(const PX_OVERLAP_DESC& tDesc, PX_OVERLAP_RESULT& outResult) const
 {
 	outResult = {};
-	std::vector<PX_OVERLAP_RESULT> Results{};
-	if (!OverlapMultiple(tDesc, Results, 1))
+	if (!m_pScene)
 		return false;
 
-	outResult = Results.front();
+	PxGeometryHolder tGeometry{};
+	PxTransform tPose{ PxIdentity };
+	PxQueryFilterData tFilterData{};
+	if (!BuildGeometry(tDesc.tGeometry, tGeometry) || !BuildPose(tDesc.tPose, tPose) ||
+		!BuildQueryFilterData(tDesc.tFilter, true, tFilterData))
+		return false;
+
+	PxOverlapHit Hit{};
+	PxOverlapBuffer tHitBuffer{ &Hit, 1 };
+	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eTOUCH };
+	if (!m_pScene->overlap(tGeometry.any(), tPose, tHitBuffer, tFilterData, &tFilter) ||
+		tHitBuffer.getNbTouches() == 0)
+		return false;
+
+	outResult = MakeOverlapResult(*this, tHitBuffer.getTouch(0));
 	return true;
 }
 
@@ -833,8 +849,19 @@ _bool CPhysXManager::OverlapMultiple(
 		return false;
 
 	const uint32_t iBufferCapacity = iMaxHit + (pOutStatus ? 1u : 0u);
-	std::vector<PxOverlapHit> Hits(iBufferCapacity);
-	PxOverlapBuffer tHitBuffer{ Hits.data(), iBufferCapacity };
+
+	// 현재 반복 쿼리(플레이어 10, 몬스터 32, 미니맵 40)는 스택 버퍼에서 처리한다.
+	// 더 큰 임시 요청만 동적 버퍼로 폴백하여 일반 프레임의 내부 hit-buffer heap churn을 없앤다.
+	std::array<PxOverlapHit, OVERLAP_INLINE_HIT_CAPACITY> InlineHits{};
+	std::vector<PxOverlapHit> OverflowHits{};
+	PxOverlapHit* pHits = InlineHits.data();
+	if (iBufferCapacity > OVERLAP_INLINE_HIT_CAPACITY)
+	{
+		OverflowHits.resize(iBufferCapacity);
+		pHits = OverflowHits.data();
+	}
+
+	PxOverlapBuffer tHitBuffer{ pHits, iBufferCapacity };
 	CPxSceneQueryFilter tFilter{ *this, tDesc.tFilter, PxQueryHitType::eTOUCH };
 	m_pScene->overlap(tGeometry.any(), tPose, tHitBuffer, tFilterData, &tFilter);
 

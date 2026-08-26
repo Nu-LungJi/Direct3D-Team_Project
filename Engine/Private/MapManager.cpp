@@ -33,11 +33,7 @@ CMapManager::~CMapManager() = default;
 
 HRESULT CMapManager::Initialize()
 {
-	if (FAILED(m_ChunkStreamer.Initialize(
-		m_Chunks,
-		m_ChunkSerializer,
-		m_ModelResourceTracker,
-		m_ObjectFactory,
+	if (FAILED(m_ChunkStreamer.Initialize(m_Chunks, m_ChunkSerializer, m_ModelResourceTracker, m_ObjectFactory,
 		[this](const MAPCHUNK_COORD& coord) { return UnLoadChunk(coord); })))
 	{
 		return E_FAIL;
@@ -68,8 +64,7 @@ void CMapManager::ClearAllChunk()
 
 void CMapManager::SetMapModelResourceIndex(const std::filesystem::path& staticModelRoot, const std::string& resourceGroup, std::unordered_map<std::string, std::filesystem::path> modelPaths)
 {
-	m_ModelResourceTracker.SetResourceIndex(
-		staticModelRoot, resourceGroup, std::move(modelPaths));
+	m_ModelResourceTracker.SetResourceIndex(staticModelRoot, resourceGroup, std::move(modelPaths));
 }
 
 HRESULT CMapManager::SaveMap(const std::string& path)
@@ -97,7 +92,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 			chunk.GetSaveState() != EChunkSaveState::Unsaved)
 		{
 			originallyUnloadedChunks.push_back(coord);
-			// 저장 중에는 파일 내용이 필요하므로 청크를 동기식으로 불러온다.
+			// 저장 중에는 파일 내용이 필요하므로 청크를 동기식으로 불러와야
 			if (FAILED(LoadChunk(coord)))
 			{
 				return E_FAIL;
@@ -137,8 +132,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 		{
 			if (auto* decal = CGameInstance::Get().GetGameObjectByHandleT<CDecalVolume>(objectHandle))
 			{
-				mapFileData.decals.push_back(
-					m_ObjectFactory.MakeDecalFileData(*decal, pair.first));
+				mapFileData.decals.push_back(m_ObjectFactory.MakeDecalFileData(*decal, pair.first));
 				continue;
 			}
 
@@ -152,7 +146,9 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 	}
 
 	for (const auto& [modelGroup, model] : requiredModels)
+	{
 		mapFileData.requiredModels.push_back({ modelGroup, model });
+	}
 
 	for (const auto& coord : originallyUnloadedChunks)
 	{
@@ -162,7 +158,7 @@ HRESULT CMapManager::SaveMap(const std::string& path)
 	if (FAILED(m_ChunkSerializer.SaveMapFile(mapDir / "map.json", mapFileData)))
 		return E_FAIL;
 
-	// 런타임에서 수정된 머티리얼도 맵과 함께 저장한다.
+	// 런타임에서 수정된 머티리얼도 맵과 함께 저장
 	SaveMaterial(mapDir.string());
 	return S_OK;
 }
@@ -180,7 +176,7 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 
 	const std::filesystem::path mapDir(path);
 
-	// 저장된 머티리얼을 먼저 복원해 이후 생성되는 모델에 적용할 수 있게 한다.
+	// 저장된 머티리얼을 먼저 복원해 이후 생성되는 모델에 적용할 수 있게 함
 	LoadMaterial(mapDir.string());
 
 	std::filesystem::path mapFilePath = mapDir / "map.json";
@@ -197,8 +193,11 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 		{
 			std::vector<MAPCHUNK_COORD> oldChunkCoords;
 			oldChunkCoords.reserve(m_Chunks.size());
+
 			for (const auto& [coord, chunk] : m_Chunks)
+			{
 				oldChunkCoords.push_back(coord);
+			}
 
 			for (const MAPCHUNK_COORD& coord : oldChunkCoords)
 			{
@@ -232,7 +231,7 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 			chunkCoords.push_back(coord);
 		}
 
-		// 메타데이터만 복원하고 실제 청크 로드는 Streamer가 카메라 위치에 따라 요청한다.
+		// 메타데이터만 복원하고 실제 청크 로드는 Streamer가 카메라 위치에 따라 요청
 		return S_OK;
 	}
 
@@ -243,7 +242,9 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 
 	std::unordered_map<MAPCHUNK_COORD, std::vector<MAP_MESH_OBJECT_FILE_DATA>, tagMapChunkCoordHash> legacyObjectsByChunk;
 	for (auto& object : legacyObjects)
+	{
 		legacyObjectsByChunk[WorldToChunkCoord(object.position)].push_back(std::move(object));
+	}
 
 	for (auto& [coord, objects] : legacyObjectsByChunk)
 	{
@@ -267,8 +268,7 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 			desc.modelResTag = objectDesc.model;
 			desc.windDesc = objectDesc.windDesc;
 
-			auto hObject = CGameInstance::Get().AddGameObjectToLayer(
-				desc.protoGroupTag, desc.prototypeTag, objectDesc.layer, &desc);
+			auto hObject = CGameInstance::Get().AddGameObjectToLayer(desc.protoGroupTag, desc.prototypeTag, objectDesc.layer, &desc);
 			if (!hObject)
 				continue;
 
@@ -283,8 +283,7 @@ HRESULT CMapManager::LoadMap(const std::string& path, _bool clearBeforeLoad)
 		}
 
 		chunk.CompleteLoading(MakeChunkBoundingBox(coord), EChunkSaveState::Saved);
-		if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
-			coord, chunk.GetObjectHandles())))
+		if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(coord, chunk.GetObjectHandles())))
 		{
 			return E_FAIL;
 		}
@@ -321,8 +320,7 @@ HRESULT CMapManager::SaveChunk(const MAPCHUNK_COORD& coord, const std::string& c
 				continue;
 			}
 
-			chunkFileData.objects.push_back(
-				m_ObjectFactory.MakeMapMeshObjectFileData(*pMeshObj, layerName));
+			chunkFileData.objects.push_back(m_ObjectFactory.MakeMapMeshObjectFileData(*pMeshObj, layerName));
 		}
 	}
 
@@ -344,6 +342,7 @@ HRESULT CMapManager::LoadMapData(const std::string& path)
 	m_ModelResourceTracker.QueueAllChunkReleases(m_Chunks);
 	m_Chunks.clear();
 	CGameInstance::Get().DelGameObjectLayer(E::MAPDECALOBJECTLAYER);
+
 	for (const auto& decalData : mapFileData.decals)
 	{
 		if (!m_ObjectFactory.CreateDecal(decalData))
@@ -382,8 +381,7 @@ HRESULT CMapManager::LoadChunk(const MAPCHUNK_COORD& coord)
 	std::filesystem::path chunkPath = std::filesystem::path(m_MapRootPath) / chunk.GetFilePath();
 	if (chunk.GetFilePath().empty())
 	{
-		chunk.SetFilePath((std::filesystem::path("chunks") /
-			m_ChunkSerializer.MakeChunkFileName(coord)).generic_string());
+		chunk.SetFilePath((std::filesystem::path("chunks") / m_ChunkSerializer.MakeChunkFileName(coord)).generic_string());
 		chunkPath = std::filesystem::path(m_MapRootPath) / chunk.GetFilePath();
 	}
 
@@ -408,8 +406,7 @@ HRESULT CMapManager::LoadChunk(const MAPCHUNK_COORD& coord)
 	}
 
 	chunk.CompleteLoading(MakeChunkBoundingBox(coord), EChunkSaveState::Saved);
-	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
-		coord, chunk.GetObjectHandles())))
+	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(coord, chunk.GetObjectHandles())))
 	{
 		UnLoadChunk(coord);
 		return E_FAIL;
@@ -462,18 +459,16 @@ HRESULT CMapManager::UnLoadChunk(const MAPCHUNK_COORD& coord)
 }
 HRESULT CMapManager::SaveMaterial(const std::string& path)
 {
-	return m_MaterialRepository.SaveFile(
-		std::filesystem::path(path) / "Material.json",
-		CollectMapMaterials());
+	return m_MaterialRepository.SaveFile(std::filesystem::path(path) / "Material.json", CollectMapMaterials());
 }
 
 HRESULT CMapManager::LoadMaterial(const std::string& path)
 {
-	if (FAILED(m_MaterialRepository.LoadFile(
-		std::filesystem::path(path) / "Material.json")))
+	if (FAILED(m_MaterialRepository.LoadFile(std::filesystem::path(path) / "Material.json")))
 		return E_FAIL;
 
 	ApplyStoredMaterialsToLoadedModels();
+
 	return S_OK;
 }
 
@@ -490,8 +485,7 @@ CMapMaterialRepository::MATERIAL_MAP CMapManager::CollectMapMaterials() const
 	{
 		for (const auto& objectHandle : objects)
 		{
-			auto* mapObject =
-				CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
+			auto* mapObject = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
 			if (!mapObject)
 				continue;
 
@@ -499,9 +493,7 @@ CMapMaterialRepository::MATERIAL_MAP CMapManager::CollectMapMaterials() const
 			if (modelName.empty() || materials.contains(modelName))
 				continue;
 
-			materials.emplace(
-				modelName,
-				mapObject->GetStaticModelInstance()->GetModel()->GetMaterialDesc());
+			materials.emplace(modelName, mapObject->GetStaticModelInstance()->GetModel()->GetMaterialDesc());
 		}
 	}
 	return materials;
@@ -515,8 +507,7 @@ void CMapManager::ApplyStoredMaterialsToLoadedModels() const
 	{
 		for (const auto& objectHandle : objects)
 		{
-			auto* mapObject =
-				CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
+			auto* mapObject = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(objectHandle);
 			if (!mapObject)
 				continue;
 
@@ -564,7 +555,7 @@ void CMapManager::RebuildChunks()
 	m_Chunks.clear();
 	m_Chunks.reserve(previousChunks.size());
 
-	// 저장 상태와 모델 참조는 유지하되 오브젝트 목록과 옥트리는 현재 월드를 기준으로 다시 만든다.
+	// 저장 상태와 모델 참조는 유지하되 오브젝트 목록과 옥트리는 현재 월드를 기준으로 다시 만듦
 	for (auto& [coord, previousChunk] : previousChunks)
 	{
 		CMapChunk rebuiltChunk{ coord, previousChunk.GetBounds() };
@@ -604,14 +595,13 @@ void CMapManager::RebuildChunks()
 	for (auto& [coord, chunk] : m_Chunks)
 	{
 		const auto previousIter = previousChunks.find(coord);
-		const _bool wasLoaded = previousIter != previousChunks.end()
-			&& previousIter->second.IsLoaded();
+		const _bool wasLoaded = previousIter != previousChunks.end() && previousIter->second.IsLoaded();
+
 		if (!wasLoaded && chunk.GetObjectHandles().empty())
 			continue;
 
 		chunk.CompleteLoading(MakeChunkBoundingBox(coord), chunk.GetSaveState());
-		CGameInstance::Get().RegisterMapMeshResidentChunk(
-			coord, chunk.GetObjectHandles());
+		CGameInstance::Get().RegisterMapMeshResidentChunk(coord, chunk.GetObjectHandles());
 	}
 }
 
@@ -636,8 +626,8 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 	auto& chunk = chunkIter->second;
 	chunk.AddObject(hObject);
 	chunk.CompleteLoading(MakeChunkBoundingBox(coord), EChunkSaveState::Unsaved);
-	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
-		coord, chunk.GetObjectHandles())))
+
+	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(coord, chunk.GetObjectHandles())))
 	{
 		return E_FAIL;
 	}
@@ -651,6 +641,7 @@ HRESULT CMapManager::RegisterMapMeshObject(const CHandle& hObject)
 	{
 		CGameInstance::Get().Notify_StaticShadowSceneChanged(chunk.GetBounds());
 	}
+
 	return S_OK;
 }
 
@@ -663,8 +654,7 @@ HRESULT CMapManager::RefreshMapMeshObject(const CHandle& hObject)
 	mapObject->GetTransform().Update();
 	const MAPCHUNK_COORD newCoord = WorldToChunkCoord(mapObject->GetTransform().GetPosition());
 
-	auto oldChunkIter = std::find_if(
-		m_Chunks.begin(), m_Chunks.end(),
+	auto oldChunkIter = std::find_if(m_Chunks.begin(), m_Chunks.end(), 
 		[&](const auto& entry) { return entry.second.ContainsObject(hObject); });
 
 	if (oldChunkIter != m_Chunks.end() && oldChunkIter->first != newCoord)
@@ -672,8 +662,7 @@ HRESULT CMapManager::RefreshMapMeshObject(const CHandle& hObject)
 		CMapChunk& oldChunk = oldChunkIter->second;
 		oldChunk.RemoveObject(hObject);
 		oldChunk.CompleteLoading(oldChunk.GetBounds(), EChunkSaveState::Unsaved);
-		if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
-			oldChunkIter->first, oldChunk.GetObjectHandles())))
+		if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(oldChunkIter->first, oldChunk.GetObjectHandles())))
 		{
 			return E_FAIL;
 		}
@@ -689,8 +678,7 @@ HRESULT CMapManager::RefreshMapMeshObject(const CHandle& hObject)
 	CMapChunk& newChunk = newChunkIter->second;
 	newChunk.AddObject(hObject);
 	newChunk.CompleteLoading(MakeChunkBoundingBox(newCoord), EChunkSaveState::Unsaved);
-	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
-		newCoord, newChunk.GetObjectHandles())))
+	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(newCoord, newChunk.GetObjectHandles())))
 	{
 		return E_FAIL;
 	}
@@ -698,6 +686,7 @@ HRESULT CMapManager::RefreshMapMeshObject(const CHandle& hObject)
 	BoundingBox changedBounds{};
 	if (mapObject->GetShadowBounds(changedBounds))
 		CGameInstance::Get().Notify_StaticShadowSceneChanged(changedBounds);
+
 	return S_OK;
 }
 
@@ -713,9 +702,9 @@ HRESULT CMapManager::UnregisterMapMeshObject(const CHandle& hObject)
 			continue;
 
 		chunk.CompleteLoading(chunk.GetBounds(), EChunkSaveState::Unsaved);
-		const HRESULT result = CGameInstance::Get().RegisterMapMeshResidentChunk(
-			coord, chunk.GetObjectHandles());
+		const HRESULT result = CGameInstance::Get().RegisterMapMeshResidentChunk(coord, chunk.GetObjectHandles());
 		CGameInstance::Get().Notify_StaticShadowSceneChanged(removedBounds);
+
 		return result;
 	}
 	return E_FAIL;

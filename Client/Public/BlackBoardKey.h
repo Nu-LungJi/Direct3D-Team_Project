@@ -16,7 +16,9 @@ namespace EDG_KEY
 }
 namespace PUBLIC_KEY
 {
+	inline const StringID MONSTATE{ "MonState" };
 	inline const StringID TARGETHANDLE { "TargetHandle" };
+	inline const StringID ANIMNAME{ "AnimationName" };
 }
 namespace NPC_KEY
 {

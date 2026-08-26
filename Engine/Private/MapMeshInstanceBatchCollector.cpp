@@ -3,9 +3,7 @@
 
 NS_USING(Engine)
 
-HRESULT CMapMeshInstanceBatchCollector::AddInstance(
-	const SPtr<CResStaticModel>& model,
-	EMapMeshRenderFeature renderFeature,
+HRESULT CMapMeshInstanceBatchCollector::AddInstance(const SPtr<CResStaticModel>& model, EMapMeshRenderFeature renderFeature, 
 	const MAPMESH_INSTANCE_DATA& instanceData,
 	MAPMESH_OCCLUSION_DATA& occlusionData)
 {
@@ -18,6 +16,7 @@ HRESULT CMapMeshInstanceBatchCollector::AddInstance(
 	occlusionData.instanceIndex = static_cast<uint32_t>(batch.instances.size());
 	batch.instances.push_back(instanceData);
 	batch.occlusionData.push_back(occlusionData);
+
 	return S_OK;
 }
 
@@ -30,6 +29,9 @@ uint32_t CMapMeshInstanceBatchCollector::GetInstanceCount() const
 {
 	uint32_t instanceCount = 0;
 	for (const auto& batchEntry : m_Batches)
+	{
 		instanceCount += static_cast<uint32_t>(batchEntry.second.instances.size());
+	}
+
 	return instanceCount;
 }

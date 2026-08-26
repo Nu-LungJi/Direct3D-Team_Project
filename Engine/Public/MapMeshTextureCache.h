@@ -33,7 +33,7 @@ private:
 	SPtr<CResTexture2D> GetMapMeshTexture(const SPtr<CResStaticModel>& model, uint32_t meshIndex, AI_TEXTURE_TYPE materialType);
 
 private:
-	// 모델별로 각 메시가 사용할 텍스처 세트를 캐싱한다
+	// 모델별로 각 메시가 사용할 텍스처 세트를 캐싱
 	std::unordered_map<SPtr<CResStaticModel>, MODEL_TEXTURE_SETS> m_ModelTextureSets;
 };
 

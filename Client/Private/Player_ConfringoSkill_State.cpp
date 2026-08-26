@@ -43,7 +43,7 @@ void CPlayer_ConfringoSkill_State::Enter(CStateMachine* pStateMachine)
 
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 	m_bCastingCueReached = false;
 	m_bProjectileCueReached = false;
 }
@@ -59,18 +59,18 @@ void CPlayer_ConfringoSkill_State::Update(
 		return;
 	}
 
-	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(
+	m_fAnimationRatio = PlayerAnimationRatioGuard::Sanitize(
 		pPlayer->GetAnimator()->GetPlayAnimRatio());
 	pPlayer->SetCurrentMoveSpeed(0.f);
 
-	if (!m_bCastingCueReached && m_fAnimRatio >= CASTING_EFFECT_RATIO)
+	if (!m_bCastingCueReached && m_fAnimationRatio >= CASTING_EFFECT_RATIO)
 	{
 		m_bCastingCueReached = true;
 		StartCastEffect(*pPlayer);
 	}
 
 	if (!m_bProjectileCueReached &&
-		m_fAnimRatio >= PROJECTILE_RELEASE_RATIO)
+		m_fAnimationRatio >= PROJECTILE_RELEASE_RATIO)
 	{
 		m_bProjectileCueReached = true;
 		if (!FireProjectile(*pPlayer))
@@ -80,12 +80,12 @@ void CPlayer_ConfringoSkill_State::Update(
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
-		if (m_fAnimRatio >= CAST_TO_RECOVERY_RATIO)
+		if (m_fAnimationRatio >= CAST_TO_RECOVERY_RATIO)
 			m_ePhase = PHASE::RECOVERY;
 		break;
 
 	case PHASE::RECOVERY:
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO ||
+		if (m_fAnimationRatio >= RECOVERY_EXIT_RATIO ||
 			pPlayer->GetAnimator()->GetFinish())
 		{
 			RequestLocomotion(pStateMachine);
@@ -109,7 +109,7 @@ void CPlayer_ConfringoSkill_State::Exit(CStateMachine* pStateMachine)
 		ResetSkillControl(*pPlayer);
 
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 	m_bCastingCueReached = false;
 	m_bProjectileCueReached = false;
 }

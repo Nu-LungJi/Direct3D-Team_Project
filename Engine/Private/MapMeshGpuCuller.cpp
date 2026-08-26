@@ -123,6 +123,7 @@ HRESULT CMapMeshGpuCuller::EnsureCapacity(uint32_t instanceCount, uint32_t batch
 	m_InstanceCapacity = newInstanceCapacity;
 	m_BatchCapacity = newBatchCapacity;
 	m_DrawCapacity = newDrawCapacity;
+
 	return S_OK;
 }
 
@@ -250,6 +251,7 @@ HRESULT CMapMeshGpuCuller::BuildVisibleInstancesAndIndirectArgs(
 
 	// 컬링 결과 구조화 버퍼를 IA 단계에서 사용할 인스턴스 버텍스 버퍼로 복사한다.
 	context->CopyResource(m_pVisibleInstanceVertexBuffer.Get(), m_pVisibleInstanceBuffer->GetBuffer().Get());
+
 	return S_OK;
 }
 

@@ -56,10 +56,10 @@ void CPlayer_DescendoSkill_State::Enter(CStateMachine* pStateMachine)
 	// otherwise moves the character controller into the air.
 	SetSkillControl(*pPlayer, true, false, false);
 	pPlayer->SetCurrentMoveSpeed(0.f);
-	pPlayer->SetPlayerCurSKill(PLAYER_SKILL_TYPE::DESCENDO);
+	pPlayer->SetCurrentSkill(PLAYER_SKILL_TYPE::DESCENDO);
 
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 
 	{
 		auto* pWeapon = CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Weapon>(pPlayer->GetWeaponHandle());
@@ -104,14 +104,14 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		return;
 	}
 
-	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
+	m_fAnimationRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
 	pPlayer->SetCurrentMoveSpeed(0.f);
 
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
 	
-		if (m_fAnimRatio >= CAST_START_RATIO)
+		if (m_fAnimationRatio >= CAST_START_RATIO)
 		{
 			m_ePhase = PHASE::ATTACK;
 			if (!PlayRandomTargetAttack(*pPlayer))
@@ -128,7 +128,7 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 			const _float4x4 spawnWorld = pWeapon->GetSpawnWorldMatrix();
 			CGameInstance::Get().SetEffectWorldMatrix(m_iEffectID, spawnWorld);
 		}
-		if (m_fAnimRatio >= CAST_END_RATIO)
+		if (m_fAnimationRatio >= CAST_END_RATIO)
 		{
 		/*	if (!TryApplySkillToTarget(*pPlayer, PLAYER_SKILL_TYPE::DESCENDO))
 			{
@@ -172,7 +172,7 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 			CGameInstance::Get().AddTrailPoint("Lightning_Trail", "Lightning_Trail", pPlayer->GetHandle(), vstart, vend);
 		}
 	
-		if (m_fAnimRatio >= ATTACK_END_RATIO && m_fAnimRatio != 1.f)
+		if (m_fAnimationRatio >= ATTACK_END_RATIO && m_fAnimationRatio != 1.f)
 		{
 			m_ePhase = PHASE::RECOVERY;
 			RequestLocomotion(pStateMachine);
@@ -180,7 +180,7 @@ void CPlayer_DescendoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		break;
 
 	case PHASE::RECOVERY:
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO)
+		if (m_fAnimationRatio >= RECOVERY_EXIT_RATIO)
 			RequestLocomotion(pStateMachine);
 		break;
 	}
@@ -192,7 +192,7 @@ void CPlayer_DescendoSkill_State::Exit(CStateMachine* pStateMachine)
 		ResetSkillControl(*pPlayer);
 
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 }
 
 SPtr<CPlayer_DescendoSkill_State> CPlayer_DescendoSkill_State::Create()

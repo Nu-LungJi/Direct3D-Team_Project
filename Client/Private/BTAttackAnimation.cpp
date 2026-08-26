@@ -7,7 +7,7 @@
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
 #include "ClientEvents.h" 
-#include "NpcMom.h"
+#include "WorldAgent.h"
 NS_USING(Client)
 
 CBTAttackAnimation::CBTAttackAnimation()
@@ -124,7 +124,11 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 					}
 					_float fAnimRange = m_fRatio.y - m_fRatio.x;
 					_float t = (m_fDis * fAnimRatio) / (m_fRatio.y - m_fRatio.x);
-					const _float fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
+					_float fMoveSpeed = {}; 
+					if (m_bMoveLerp)
+						fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
+					else  fMoveSpeed = m_Value.fSpeed;
+
 					_vector vMoveDirection{};
 					if (m_eMove == MOVE::RIGHT)
 						vMoveDirection = pTransform->GetState(STATE::RIGHT);
@@ -169,6 +173,7 @@ void CBTAttackAnimation::Update_Gui()
 		BoolButton("TriggerSkill", m_bTrigger);
 		BoolButton("overlabLoop", m_bOverLabLoop);
 		BoolButton("overlabMove", m_bOverLabMove);
+		BoolButton("MoveLerp", m_bMoveLerp);
 		DragFloat("overlabSpeed", m_fOverLabSpeed);
 		DragFloat("RotTime", m_Value.fTime);
 		if (ImGui::Button("Animation"))
@@ -207,14 +212,7 @@ void CBTAttackAnimation::Update_Gui()
 		}
 		ImGui::TreePop();
 	}
-	if (ImGui::TreeNode("Cam"))
-	{
-		DragFloat("ShakeCamRatio", m_CamInfo.fCamStartRatio);
-		DragFloat("ShakePower", m_CamInfo.fPower,0.1f,0.f,100.f);
-		DragFloat("ShakeTime", m_CamInfo.fTime, 0.1f, 0.f, 100.f);
-		DragFloat("ShakeCnt", m_CamInfo.fCnt, 0.1f, 0.f, 100.f);
-		ImGui::TreePop();
-	}
+	
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1,0,0,1 });
 	if (ImGui::TreeNode("New Skill Table Ver.2"))
 	{
@@ -354,7 +352,7 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 			if (pxOverLapNpcResult.bHit)
 			{
 				//m_fDamage
-				auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CNpcMom>(pxOverLapNpcResult.hGameObject);
+				auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CWorldAgent>(pxOverLapNpcResult.hGameObject);
 				_float MonDamange = pMon->Get_Damage();
 				pTarget->OnQueryHit(MonDamange);
 				m_bAttRatio = true;
@@ -422,22 +420,6 @@ void CBTAttackAnimation::UpdateAttackIndicator(
 	m_bAttackIndicatorTriggered = true;
 }
 
-void CBTAttackAnimation::ShakeCam(_float fRotRatio)
-{
-	if (m_CamInfo.fCamStartRatio == 0.f)
-		return;
-	if (m_bCamShake && fRotRatio > m_CamInfo.fCamStartRatio)
-	{
-		//카메라 쉐킷
-		CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
-			{
-			   m_CamInfo.fPower, // 강도 0 ~ 1
-			   m_CamInfo.fTime, // 지속시간
-			   m_CamInfo.fCnt, // 초당 진동횟수
-			});
-		m_bCamShake = false;
-	}
-}
 void CBTAttackAnimation::Abort()
 {
 	__super::Abort();
@@ -458,15 +440,11 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 	SaveJsonValue(j, "Intensive", m_fIntensive);
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
-	SaveJsonValue(j, "CamShakeRatio", m_CamInfo.fCamStartRatio);
-	SaveJsonValue(j, "CamShakePower", m_CamInfo.fPower);
-	SaveJsonValue(j, "CamShakeTime", m_CamInfo.fTime);
-	SaveJsonValue(j, "CamShakeCnt", m_CamInfo.fCnt);
 	SaveJsonValue(j, "AttRadius", m_fAttRadius);
 	SaveJsonValue(j, "OverlabMove", m_bOverLabMove);
 	SaveJsonValue(j, "TriggerSkill", m_bTrigger);
+	SaveJsonValue(j, "MoveLerp", m_bMoveLerp);
 	
-
 	if (!m_Skills.empty())
 	{
 		uint32_t iMax{};
@@ -492,14 +470,11 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "Intensive", m_fIntensive);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
-	LoadJsonValue(j, "CamShakeRatio", m_CamInfo.fCamStartRatio);
-	LoadJsonValue(j, "CamShakePower", m_CamInfo.fPower);
-	LoadJsonValue(j, "CamShakeTime", m_CamInfo.fTime);
-	LoadJsonValue(j, "CamShakeCnt", m_CamInfo.fCnt);
 	LoadJsonValue(j, "AttRadius", m_fAttRadius);
 	LoadJsonValue(j, "OverlabMove", m_bOverLabMove);
 	LoadJsonValue(j, "TriggerSkill", m_bTrigger);
-
+	LoadJsonValue(j, "MoveLerp", m_bMoveLerp);
+	
 	uint32_t iMax{};
 	if (LoadJsonValue(j, "NewSkillTableSize", iMax))
 	{

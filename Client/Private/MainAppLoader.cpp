@@ -632,6 +632,8 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTAnimNpc", CBTAnimNpc::Create())))
 		return E_FAIL;
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ANIMATION, "BTDirectChase", CBTDirectChase::Create())))
+		return E_FAIL;
 
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecSearch", CBTDecSearch::Create())))
 		return E_FAIL;
@@ -653,7 +655,9 @@ HRESULT CMainAppLoader::Create_ActionNode()
 		return E_FAIL;
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecNpcState", CBTDecNpcState::Create())))
 		return E_FAIL;
-
+	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::DECORATOR, "BTDecWallCrash", CBTDecWallCrash::Create())))
+		return E_FAIL;
+	
 	//-------------------------------------------------Dragon-----------------------------------------------------//
 	if (FAILED(CGameInstance::Get().AddPrototype(NODEGROUP::ACTION, "BTEdgStateFinished", CBTEdgStateFinished::Create())))
 		return E_FAIL;
@@ -860,6 +864,24 @@ HRESULT CMainAppLoader::Create_ActionNode()
 				return E_FAIL;
 			}
 			pNpcPlacement->AddMinorNameToNpcPlacement("CAT_SLEEPING");
+		}
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "RUN_SPIDER", CResJson::Create("./Resources/json/BeHavior/RunSpider.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED RUN_SPIDER JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("RUN_SPIDER");
+		}
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "DEFAULT_ANIM", CResJson::Create("./Resources/json/BeHavior/Default_Animation.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED DEFAULT_ANIM JSON");
+				return E_FAIL;
+			}
+			pNpcPlacement->AddMinorNameToNpcPlacement("DEFAULT_ANIM");
 		}
 	}
 	////서브트리

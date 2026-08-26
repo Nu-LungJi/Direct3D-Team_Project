@@ -167,7 +167,7 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 	const uint32_t logicalThreadCount = std::max(1u, std::thread::hardware_concurrency());
-	const uint32_t renderWorkerCount = std::min(4u, std::max(1u, logicalThreadCount / 2));
+	const uint32_t renderWorkerCount = std::min(6u, std::max(1u, logicalThreadCount / 2));
 	const uint32_t normalWorkerCount = logicalThreadCount > renderWorkerCount + 2 
 		? logicalThreadCount - renderWorkerCount - 2
 		: 1u;
@@ -741,10 +741,11 @@ HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag
 uint32_t CGameInstance::Spawn(
 	const std::string& strJsonPath,
 	const _float4x4& worldMat,
-	const _fvector endPos)
+	const _fvector endPos,
+	_bool bApplyWorldScaleToParticleSize)
 {
-	// [LSY] 콘텐츠에서 파티클 큐 경로만으로 재생하고 Owner ID를 추적할 수 있게 전달한다.
-	return m_pParticleManager->Spawn(strJsonPath, worldMat, endPos);
+	return m_pParticleManager->Spawn(
+		strJsonPath, worldMat, endPos, bApplyWorldScaleToParticleSize);
 }
 
 std::vector<SPAWN_COMMAND>  CGameInstance::Parse_Command(const std::string& strJsonFile)
@@ -757,8 +758,14 @@ const std::vector<SPAWN_COMMAND>* CGameInstance::FindCachedCommandQueue(const st
 	return m_pParticleManager->FindCachedCommandQueue(strJsonPath);
 }
 
-uint32_t CGameInstance::Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos) {
-	return m_pParticleManager->Spawn(templateCommands, worldMat ,endPos);
+uint32_t CGameInstance::Spawn(
+	const std::vector<SPAWN_COMMAND>& templateCommands,
+	const _float4x4& worldMat,
+	_fvector endPos,
+	_bool bApplyWorldScaleToParticleSize)
+{
+	return m_pParticleManager->Spawn(
+		templateCommands, worldMat, endPos, bApplyWorldScaleToParticleSize);
 }
 HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle)
 {
@@ -820,6 +827,10 @@ EFFECT_INSTANCE_ID CGameInstance::PlayEffect(const std::string& sEffectName, con
 
 void CGameInstance::StopEffect(EFFECT_INSTANCE_ID iEffectId) {
 	m_pEffectManager->StopEffect(iEffectId);
+}
+
+void CGameInstance::ChangeEffectColorByOwner(EFFECT_INSTANCE_ID iEffectId, const _float4& vColor) {
+	m_pEffectManager->ChangeColorByOwner(iEffectId, vColor);
 }
 
 void CGameInstance::SetEffectPosition(EFFECT_INSTANCE_ID iEffectId, const _float3& vPosition) {
@@ -1377,6 +1388,7 @@ VOID			CGameInstance::Set_VolumetricCloudOption(const CB_VOLUMECLOUD& _CloudOpti
 }
 
 VOID			CGameInstance::Set_RadialBlurIntensity(const _float _Intensity) { m_pRenderer->Set_RadialBlurIntensity(_Intensity); }
+VOID			CGameInstance::Set_MotionBlurEnabled(_bool bEnabled) { m_pRenderer->Set_MotionBlurEnabled(bEnabled); }
 VOID			CGameInstance::Set_DistortionIntensity(const _float _Intensity) { m_pRenderer->Set_DistortionIntensity(_Intensity); }
 VOID			CGameInstance::Set_ChromaticIntensity(const _float _Intensity) { m_pRenderer->Set_ChromaticIntensity(_Intensity); }
 VOID			CGameInstance::Set_VignetteIntensity(const _float _Intensity) { m_pRenderer->Set_VignetteIntensity(_Intensity); }

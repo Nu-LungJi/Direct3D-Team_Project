@@ -23,6 +23,8 @@ HRESULT CUITex::Initialize(void* pArg)
 
 	if (FAILED(CUIObject::Initialize(pDesc)))
 		return E_FAIL;
+
+	return S_OK;
 }
 
 void CUITex::Update(E::_float fTimeDelta)

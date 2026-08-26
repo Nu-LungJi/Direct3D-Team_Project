@@ -1,12 +1,12 @@
 #pragma once
-#include "Animal.h"
+#include "WorldAgent.h"
 #include "Client_Defines.h"
 
 NS_BEGIN(Client)
-class CGriff final : public CAnimal
+class CGriff final : public CWorldAgent
 {
 public:
-	DECLARE_DERIVED_TYPE(CGriff, CAnimal)
+	DECLARE_DERIVED_TYPE(CGriff, CWorldAgent)
 
 private:
 	CGriff();
@@ -21,7 +21,7 @@ public:
 	void						FixedUpdate(E::_float fTimeDelta) override;
 	void						Update(E::_float fTimeDelta) override;
 	void						LateUpdate(E::_float fTimeDelta) override;
-
+	std::vector<CHandle>&		Get_Neighbor() { return m_ChildHandles; }
 public:
 	void						Set_Gravity(_bool bGravity);
 	void						Set_Child();

@@ -196,7 +196,10 @@ void CSpider_Hit::MoveIntent(CSpider* pSpider, _float3 vDir, _float fSpeed)
 
 HIT_TYPE CSpider_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround, CSpider* pSpider)
 {
-	 
+	PLAYER_SKILL_TYPE eSkillType = eType;
+	if (eSkillType == PLAYER_SKILL_TYPE::DESTORY)
+		eSkillType = PLAYER_SKILL_TYPE::ATTACK;
+
 	switch (eType)
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
@@ -224,7 +227,7 @@ HIT_TYPE CSpider_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGro
 	case PLAYER_SKILL_TYPE::PROTEGO:
 		break;
 
-	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
 		break;
 	case PLAYER_SKILL_TYPE::CONFRIGO:
 		if (m_HitTable.eHitMotion == HIT_MOTION::AIR || m_HitTable.eHitMotion == HIT_MOTION::FALLING)
@@ -237,6 +240,7 @@ HIT_TYPE CSpider_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGro
 	case PLAYER_SKILL_TYPE::BOMBARDA:
 		m_HitTable.eHitMotion = HIT_MOTION::BLOWBACK;
 		return HIT_TYPE::KNOCKBACK;
+
 	}
 
 	return HIT_TYPE::END;

@@ -32,8 +32,8 @@ void CMon_Godae::Enter(CStateMachine* pStateMachine)
 
 void CMon_Godae::Exit(CStateMachine* pStateMachine)
 {
-	auto pSpider = pStateMachine->GetOwner<CSpider>();
-	if (nullptr == pSpider) return;
+	auto pMonster = pStateMachine->GetOwner<CMonster>();
+	if (nullptr == pMonster) return;
 
 
 }

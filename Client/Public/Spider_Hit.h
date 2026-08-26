@@ -4,14 +4,6 @@
 #include "Spider.h"
 NS_BEGIN(Client)
 
-
-typedef struct hitalltable
-{
-	HIT_MOTION eHitMotion{};
-	HIT_TYPE eHitType{};
-	PLAYER_SKILL_TYPE eSkillType{};
-
-}NEW_HIT_TABLE;
 class CSpider_Hit : public CState
 {
 public:

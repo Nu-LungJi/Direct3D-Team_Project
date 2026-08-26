@@ -33,7 +33,7 @@
 #include "Player_Knockdown_State.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
-#include "Player_AcientAttack_State.h"
+#include "Player_AncientAttack_State.h"
 #include "Player_AccioSkill_State.h"
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
@@ -56,6 +56,7 @@
 #include "Player_Broom.h"
 #include "WiggenweldPotion.h"
 #include "PropBarrel.h"
+#include "AccioBall.h"
 #include "Light.h"
 #include "Trail_CPU.h"
 #include "UIController.h"
@@ -64,6 +65,20 @@ NS_USING(Client)
 
 namespace
 {
+	_bool IsPlayerLockOnTargetCandidate(
+		const CGameObject* pObject,
+		const CHandle& hPlayer)
+	{
+		if (!pObject || pObject->GetPendingDestroy())
+			return false;
+
+		if (dynamic_cast<const CSkillTarget*>(pObject))
+			return true;
+
+		const auto* pBall = dynamic_cast<const CAccioBall*>(pObject);
+		return pBall && pBall->CanAcquireControl(hPlayer);
+	}
+
 	_bool IsAncientThrowTargetInCameraView(
 		const _float3& worldPosition,
 		const _matrix& view,
@@ -266,10 +281,13 @@ HRESULT CPlayer::Initialize(void* pArg)
 			"AN_ProfessorSharp_MasterRig_Hu_BM_Wand_Ready_RArmReplace_anm.bin";
 		for (size_t i = 0; i < animations.size(); ++i)
 		{
-			if (animations[i] && animations[i]->GetAnimName() == debugWandReadyAnimation)
+			if (!animations[i])
+				continue;
+
+			const _string_view animationName = animations[i]->GetAnimName();
+			if (animationName == debugWandReadyAnimation)
 			{
 				m_iDebugWandReadyUpperAnim = (int32_t)(i);
-				break;
 			}
 		}
 
@@ -476,8 +494,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		}
 		if (!m_pStateMachine->AddPlayerState(
-			PLAYER_STATE::ACIENTATTACK_SKILL,
-			CPlayer_AcientAttack_State::Create()))
+			PLAYER_STATE::ANCIENT_ATTACK_SKILL,
+			CPlayer_AncientAttack_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -834,7 +852,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 	if (m_pStateMachine &&
-		m_pStateMachine->GetCurrentState() == PLAYER_STATE::ACIENTATTACK_SKILL)
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::ANCIENT_ATTACK_SKILL)
 	{
 		m_bRawMoveInput = false;
 		m_bSprintRequested = false;
@@ -1020,14 +1038,41 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (bCanRequestAttack)
 			m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);
 	}
-	if (m_pStateMachine && CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB))
+	if (m_pStateMachine && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 	{
-		//  가까이 있는거 한번 더 감지 
-		auto ori = m_pComTransform->GetPosition();
-
-
+		const _float3 vPlayerPosition = m_pComTransform->GetPosition();
 		std::vector<PX_OVERLAP_RESULT> results{};
-		if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 25.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
+		auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+
+		// [LSY] 몬스터 검색량은 기존대로 유지하고 아씨오 공만 더 넓은 범위에서 찾는다.
+		const auto AppendTargets = [&](const _float fRadius,
+			const uint32_t iQueryMask, const uint32_t iMaxHits)
+		{
+			PX_OVERLAP_DESC targetOverlapDesc{};
+			targetOverlapDesc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
+			targetOverlapDesc.tGeometry.fRadius = fRadius;
+			targetOverlapDesc.tPose.vPosition = vPlayerPosition;
+			targetOverlapDesc.tFilter.iQueryMask = iQueryMask;
+
+			std::vector<PX_OVERLAP_RESULT> queryResults{};
+			if (pPhysXManager->OverlapMultiple(
+				targetOverlapDesc, queryResults, iMaxHits))
+			{
+				results.insert(
+					results.end(), queryResults.begin(), queryResults.end());
+			}
+		};
+
+		AppendTargets(
+			DEFAULT_TARGET_ACQUIRE_RANGE,
+			ETOUI(COLLISION_LAYER::ENEMY_BODY),
+			TARGET_QUERY_MAX_HITS);
+		AppendTargets(
+			ACCIO_BALL_TARGET_ACQUIRE_RANGE,
+			ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
+			ACCIO_BALL_TARGET_QUERY_MAX_HITS);
+
+		if (!results.empty())
 		{
 			auto* pCamera = CGameInstance::Get().GetActiveCamera("PlayerCamera");
 			CGameObject* pBestTarget = nullptr;
@@ -1043,8 +1088,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 				for (const auto& result : results)
 				{
 					auto* pCandidate = result.pGameObject;
-					if (!pCandidate || pCandidate->GetPendingDestroy() ||
-						nullptr == dynamic_cast<CSkillTarget*>(pCandidate)) // 창준변경
+					if (!IsPlayerLockOnTargetCandidate(pCandidate, GetHandle()))
 						continue;
 
 					_vector vToTarget =
@@ -1086,6 +1130,15 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	else {
 		auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+		if (pTarget && !IsPlayerLockOnTargetCandidate(pTarget, GetHandle()))
+		{
+			// [LSY] 외곽선은 보이지만 경기 규칙상 당길 수 없는 공이
+			// 이전 Target으로 남아 미들클릭을 조용히 막지 않게 한다.
+			m_hPrevAutoTarget = m_hAutoTarget;
+			m_hAutoTarget = CHandle{};
+			m_bDistanceUI = false;
+			pTarget = nullptr;
+		}
 		//  그냥 일상시 타깃 감지
 		if (!pTarget) {
 			auto ori = m_pComTransform->GetPosition();
@@ -1108,12 +1161,45 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (pTarget) {
 			auto ori = m_pComTransform->GetPosition();
 
+			_bool bTargetStillInRange = false;
+			if (auto* pBall = dynamic_cast<CAccioBall*>(pTarget))
+			{
+				// [LSY] 이미 알고 있는 공 하나의 거리 확인에 매 프레임 넓은
+				// WORLD_DYNAMIC Overlap을 반복하지 않고 실제 PhysX 중심을 사용한다.
+				_float3 vBallPosition = pBall->GetTransform().GetPosition();
+				if (pBall->GetRigidBody())
+					vBallPosition = pBall->GetRigidBody()->GetPosition();
 
-			std::vector<PX_OVERLAP_RESULT> results{};
+				const _vector vDistance = XMLoadFloat3(&vBallPosition) -
+					XMLoadFloat3(&ori);
+				bTargetStillInRange = XMVectorGetX(
+					XMVector3LengthSq(vDistance)) <=
+					ACCIO_BALL_TARGET_KEEP_RANGE *
+					ACCIO_BALL_TARGET_KEEP_RANGE;
+			}
+			else
+			{
+				std::vector<PX_OVERLAP_RESULT> results{};
+				PX_OVERLAP_DESC keepTargetOverlapDesc{};
+				keepTargetOverlapDesc.tGeometry.eType =
+					PX_QUERY_GEOMETRY_TYPE::SPHERE;
+				keepTargetOverlapDesc.tGeometry.fRadius =
+					DEFAULT_TARGET_KEEP_RANGE;
+				keepTargetOverlapDesc.tPose.vPosition = ori;
+				keepTargetOverlapDesc.tFilter.iQueryMask =
+					ETOUI(COLLISION_LAYER::ENEMY_BODY);
 
-			const bool bOverlapped =CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 40.f},.tPose = {.vPosition = ori},.tFilter = {.iQueryMask =ETOUI(COLLISION_LAYER::ENEMY_BODY)}},results);
-
-			const bool bTargetStillInRange =bOverlapped &&std::ranges::any_of(results,[this](const PX_OVERLAP_RESULT& result){return result.pGameObject &&result.pGameObject->GetHandle() == m_hAutoTarget;});
+				const _bool bOverlapped = CGameInstance::Get().
+					GetPhysXManager()->OverlapMultiple(
+						keepTargetOverlapDesc, results, TARGET_QUERY_MAX_HITS);
+				bTargetStillInRange = bOverlapped && std::ranges::any_of(
+					results,
+					[this](const PX_OVERLAP_RESULT& result)
+					{
+						return result.pGameObject &&
+							result.pGameObject->GetHandle() == m_hAutoTarget;
+					});
+			}
 
 			if (!bTargetStillInRange)
 			{
@@ -1146,9 +1232,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 	// 타겟 봐야 하는 곳 -----------------------------------------------------------------------------------------------------------
 	if (auto* pOutlineTarget =
-		CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
-		pOutlineTarget && !pOutlineTarget->GetPendingDestroy() &&
-		pOutlineTarget->Get_CurrentHp() > 0)
+		CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+		IsPlayerLockOnTargetCandidate(pOutlineTarget, GetHandle()))
 	{
 		CGameInstance::Get().Apply_OutlineEffect(
 			std::optional<CHandle>{ m_hAutoTarget });
@@ -1156,6 +1241,54 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	else
 	{
 		CGameInstance::Get().Apply_OutlineEffect(std::nullopt);
+	}
+
+	// [LSY] 공 아씨오도 상태 머신을 통해 시작한다. 이후 애니메이션과 연출은
+	// CPlayer_AccioSkill_State가, 고정 물리 힘은 CAccioBall이 담당한다.
+	auto* pAccioBall = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioBall>(m_hAutoTarget);
+	const _bool bObjectAccioHeld = CGameInstance::Get().
+		MousePressing(MOUSEKEYSTATE::MB);
+	const _bool bObjectAccioPressed = CGameInstance::Get().
+		MouseDown(MOUSEKEYSTATE::MB);
+	if (!bObjectAccioHeld)
+		m_hPendingObjectAccioTarget = CHandle{};
+
+	if (m_pStateMachine && !bPointerCapturedByUI && bObjectAccioPressed &&
+		pAccioBall && pAccioBall->CanAcquireControl(GetHandle()))
+	{
+		if (m_pStateMachine->GetCurrentState() == PLAYER_STATE::ACCIO_SKILL)
+		{
+			// [LSY] 같은 아씨오 상태의 해제 연출 때문에 거절되는 재입력만 보존한다.
+			m_hPendingObjectAccioTarget = m_hAutoTarget;
+		}
+		else
+		{
+			m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+		}
+	}
+
+	if (m_hPendingObjectAccioTarget != CHandle{} && m_pStateMachine)
+	{
+		const PLAYER_STATE eCurrentState = m_pStateMachine->GetCurrentState();
+		if (!bObjectAccioHeld || bPointerCapturedByUI ||
+			m_hAutoTarget != m_hPendingObjectAccioTarget)
+		{
+			m_hPendingObjectAccioTarget = CHandle{};
+		}
+		else if (eCurrentState == PLAYER_STATE::LOCOMOTION)
+		{
+			auto* pPendingBall = CGameInstance::Get().
+				GetGameObjectByHandleT<CAccioBall>(m_hPendingObjectAccioTarget);
+			if (pPendingBall && pPendingBall->CanAcquireControl(GetHandle()))
+				m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+			m_hPendingObjectAccioTarget = CHandle{};
+		}
+		else if (eCurrentState != PLAYER_STATE::ACCIO_SKILL)
+		{
+			// [LSY] 피격 등 다른 상태로 끊긴 입력은 나중에 자동 발동하지 않는다.
+			m_hPendingObjectAccioTarget = CHandle{};
+		}
 	}
 
 	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))
@@ -1189,14 +1322,16 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 	if (CGameInstance::Get().KeyDown(DIK_X) &&
-		CPlayer_SkillStateBase::HasValidTarget(*this))
+		CPlayer_SkillStateBase::HasValidTarget(*this) &&
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle) &&
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle)->CanUseFinisher())
 	{
 		if (auto* pUIController =
 			CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
 		{
 			pUIController->AddFinisher(-100.f / 3.f);
 		}
-		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
+		m_pStateMachine->RequestState(PLAYER_STATE::ANCIENT_ATTACK_SKILL);
 	}
 
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_E))
@@ -1206,12 +1341,14 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		{
 			m_hPendingAncientThrowTarget = FindAncientThrowTarget();
 			if (m_hPendingAncientThrowTarget &&
-				!m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL))
+				!m_pStateMachine->RequestState(PLAYER_STATE::ANCIENT_ATTACK_SKILL))
 			{
 				m_hPendingAncientThrowTarget.reset();
 			}
 		}
 	}
+
+	UpdateAncientMagicActiveButtons();
 
 	 // 임시
 	if (m_bCoolTime_Num1 == true) {
@@ -1679,6 +1816,23 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 
 }
 
+void CPlayer::SetDialoguePose(const _float3& vPosition, const _float3& vLookAt)
+{
+	if (m_pComCharacterController)
+		m_pComCharacterController->SetPosition(vPosition);
+
+	GetTransform().SetPosition(vPosition);
+	_vector vTarget = XMLoadFloat3(&vLookAt);
+	vTarget = XMVectorSetY(vTarget, vPosition.y);
+	GetTransform().LookAt(vTarget);
+	GetTransform().Update();
+
+	if (m_pComCharacterMotor)
+		m_pComCharacterMotor->SetVelocity({});
+	if (m_pComMoveIntent)
+		m_pComMoveIntent->ClearMoveIntent();
+}
+
 void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 {
 	if (!m_pComCharacterController ||!m_pComCharacterMotor ||!m_pComMoveIntent ||!m_pStateMachine ||fFixedTimeDelta <= 0.f)
@@ -2048,6 +2202,31 @@ void CPlayer::Update(E::_float fTimeDelta)
 		m_pStateMachine &&
 		!IsRagdollTransitioning())
 		m_pStateMachine->Update(fTimeDelta);
+
+	if (m_pStateMachine)
+	{
+		const PLAYER_STATE currentState = m_pStateMachine->GetCurrentState();
+		if (currentState != m_ePreviousMotionBlurState)
+		{
+			m_ePreviousMotionBlurState = currentState;
+			m_fMotionBlurPulseRemainUnscaled =
+				currentState == PLAYER_STATE::LOCOMOTION
+				? 0.f
+				: MOTION_BLUR_STATE_PULSE_DURATION;
+		}
+		else if (m_fMotionBlurPulseRemainUnscaled > 0.f)
+		{
+			m_fMotionBlurPulseRemainUnscaled = std::max(
+				0.f,
+				m_fMotionBlurPulseRemainUnscaled -
+				CGameInstance::Get().GetUnscaledDelta());
+		}
+
+		CGameInstance::Get().Set_MotionBlurEnabled(
+			MOTION_BLUR_ENABLED &&
+			currentState != PLAYER_STATE::LOCOMOTION &&
+			m_fMotionBlurPulseRemainUnscaled > 0.f);
+	}
 
 	// Turn 시작 당시 활성 상태를 보관했기 때문에 종료 프레임의
 	// 마지막 RootMotionDelta도 빠뜨리지 않고 적용한다.
@@ -3308,6 +3487,46 @@ std::optional<CHandle> CPlayer::FindAncientThrowTarget() const
 	return hBestTarget;
 }
 
+void CPlayer::UpdateAncientMagicActiveButtons()
+{
+	auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+	const _bool bCanRequestAncientMagic = m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() != PLAYER_STATE::ANCIENT_ATTACK_SKILL;
+
+	CHandle monsterTarget{};
+	if (bCanRequestAncientMagic && pUIController && pUIController->CanUseFinisher() &&
+		CPlayer_SkillStateBase::HasValidTarget(*this))
+	{
+		monsterTarget = m_hAutoTarget;
+	}
+
+	CHandle throwTarget{};
+	if (bCanRequestAncientMagic &&
+		CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget))
+	{
+		if (const auto target = FindAncientThrowTarget())
+			throwTarget = *target;
+	}
+
+	auto syncButton = [](
+		CHandle& currentTarget, CHandle nextTarget, _ubyte key)
+	{
+		if (currentTarget == nextTarget)
+			return;
+
+		if (currentTarget != CHandle{})
+			GET_SINGLE(UIManager)->RemoveActiveButton(currentTarget);
+
+		currentTarget = nextTarget;
+		if (currentTarget != CHandle{})
+			GET_SINGLE(UIManager)->CreateActiveButton(currentTarget, key);
+	};
+
+	syncButton(m_hAncientMagicButtonTarget, monsterTarget, DIK_X);
+	syncButton(m_hAncientThrowButtonTarget, throwTarget, DIK_E);
+}
+
 std::optional<CHandle> CPlayer::ConsumeAncientThrowTarget()
 {
 	auto target = m_hPendingAncientThrowTarget;
@@ -3512,6 +3731,10 @@ E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 
 void CPlayer::Free()
 {
+	if (m_hAncientMagicButtonTarget != CHandle{})
+		GET_SINGLE(UIManager)->RemoveActiveButton(m_hAncientMagicButtonTarget, false);
+	if (m_hAncientThrowButtonTarget != CHandle{})
+		GET_SINGLE(UIManager)->RemoveActiveButton(m_hAncientThrowButtonTarget, false);
 	SetLumosActive(false);
 	CAnimationObject::Free();
 }

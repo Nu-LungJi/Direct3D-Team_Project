@@ -6,26 +6,19 @@ NS_BEGIN(Engine)
 class CResStructuredBuffer;
 class CHizBuffer;
 
-// GPU 컬링 컴퓨트 셰이더에 전달하는 프레임 상수
 struct CB_MAPMESH_GPU_CULL
 {
 	_float4x4 matViewProj{};
-	// 투영 경계 계산에 사용하는 현재 렌더 해상도
-	_float2 screenSize{};
-	// 이전 프레임 Hi-Z 텍스처의 원본 해상도
-	_float2 hizSize{};
-	// 이번 Dispatch에서 검사할 전체 인스턴스 수
-	uint32_t instanceCount = 0;
-	// Hi-Z 텍스처에서 사용할 수 있는 밉 레벨 수
-	uint32_t mipCount = 0;
-	// 유효한 이전 Hi-Z가 있을 때만 오클루전 컬링을 활성화
-	uint32_t useHiz = 0;
-	// 깊이 정밀도 오차로 인한 잘못된 컬링을 완화하는 여유값
-	_float hizBias = 0.0005f;
+	_float2 screenSize{}; // 투영 경계 계산에 사용하는 현재 렌더 해상도
+	_float2 hizSize{}; // 이전 프레임 Hi-Z 텍스처의 원본 해상도
+	uint32_t instanceCount = 0; // 이번 Dispatch에서 검사할 전체 인스턴스 수
+	uint32_t mipCount = 0; // Hi-Z 텍스처에서 사용할 수 있는 밉 레벨 수
+	uint32_t useHiz = 0; // 유효한 이전 Hi-Z가 있을 때만 오클루전 컬링을 활성화
+	_float hizBias = 0.0005f; // 깊이 정밀도 오차로 인한 잘못된 컬링을 완화하는 여유값
 };
 
 // CPU에서 받은 맵 메시 인스턴스를 GPU에서 프러스텀·Hi-Z 컬링하고,
-// 가시 인스턴스 버퍼와 DrawIndexedInstancedIndirect 인자 버퍼를 생성한다
+// 가시 인스턴스 버퍼와 DrawIndexedInstancedIndirect 인자 버퍼를 생성
 class ENGINE_DLL CMapMeshGpuCuller : public CEngineBase
 {
 public:
@@ -61,15 +54,9 @@ public:
 
 private:
 	// 필요한 수를 수용하도록 현재 용량을 두 배 단위로 확장해 계산
-	static uint32_t CalculateExpandedCapacity(
-		uint32_t currentCapacity,
-		uint32_t requiredCapacity,
-		uint32_t minimumCapacity);
-	// 요소 수와 용도에 맞는 구조화 버퍼를 생성
-	static SPtr<CResStructuredBuffer> CreateStructuredBuffer(
-		uint32_t elementCount,
-		uint32_t stride,
-		uint32_t bindFlags);
+	static uint32_t CalculateExpandedCapacity(uint32_t currentCapacity, uint32_t requiredCapacity, uint32_t minimumCapacity);
+	// 요소 수와 용도에 맞는 StructuredBuffer 생성
+	static SPtr<CResStructuredBuffer> CreateStructuredBuffer(uint32_t elementCount, uint32_t stride, uint32_t bindFlags);
 
 private:
 	// 재할당 여부를 판단하기 위한 현재 GPU 버퍼별 최대 요소 수

@@ -22,12 +22,11 @@ HRESULT CMapChunkStreamer::Initialize(
 	m_ResourceTracker = &resourceTracker;
 	m_ObjectFactory = &objectFactory;
 	m_UnloadChunkCallback = std::move(unloadChunkCallback);
+
 	return S_OK;
 }
 
-void CMapChunkStreamer::Update(
-	const std::string& mapRootPath,
-	const _float3& chunkSize)
+void CMapChunkStreamer::Update(const std::string& mapRootPath, const _float3& chunkSize)
 {
 	if (!m_Chunks || !m_Serializer || !m_ResourceTracker || !m_ObjectFactory)
 		return;
@@ -40,10 +39,8 @@ void CMapChunkStreamer::Update(
 	if (!camera)
 		return;
 
-	const auto loadChunks = GetChunksAroundCamera(
-		camera, STREAM_LOAD_DIAMETER, chunkSize);
-	const auto retainedChunks = GetChunksAroundCamera(
-		camera, STREAM_UNLOAD_DIAMETER, chunkSize);
+	const auto loadChunks = GetChunksAroundCamera(camera, STREAM_LOAD_DIAMETER, chunkSize);
+	const auto retainedChunks = GetChunksAroundCamera(camera, STREAM_UNLOAD_DIAMETER, chunkSize);
 
 	if (m_IsEnabled && !mapRootPath.empty())
 	{
@@ -57,10 +54,7 @@ void CMapChunkStreamer::InvalidatePendingLoads()
 	m_MapGeneration.fetch_add(1, std::memory_order_acq_rel);
 }
 
-std::vector<MAPCHUNK_COORD> CMapChunkStreamer::GetChunksAroundCamera(
-	const CCameraObject* camera,
-	int64_t diameter,
-	const _float3& chunkSize) const
+std::vector<MAPCHUNK_COORD> CMapChunkStreamer::GetChunksAroundCamera(const CCameraObject* camera, int64_t diameter, const _float3& chunkSize) const
 {
 	std::vector<MAPCHUNK_COORD> chunks;
 	if (!camera || diameter <= 0)
@@ -68,13 +62,13 @@ std::vector<MAPCHUNK_COORD> CMapChunkStreamer::GetChunksAroundCamera(
 
 	const size_t chunkCountPerAxis = static_cast<size_t>(diameter);
 	chunks.reserve(chunkCountPerAxis * chunkCountPerAxis * chunkCountPerAxis);
+
 	const auto& cameraPosition = camera->GetTransform().GetPosition();
 
-	// 짝수 크기 범위가 카메라 청크를 기준으로 한쪽에 치우치지 않도록 시작 좌표를 정한다.
+	// 짝수 크기 범위가 카메라 청크를 기준으로 한쪽에 치우치지 않도록 시작 좌표를 정함
 	const auto getFirstCoord = [diameter](_float position, _float axisChunkSize)
 		{
-			return static_cast<int64_t>(std::floor(
-				position / axisChunkSize - static_cast<_float>(diameter - 1) * 0.5f));
+			return static_cast<int64_t>(std::floor(position / axisChunkSize - static_cast<_float>(diameter - 1) * 0.5f));
 		};
 
 	const MAPCHUNK_COORD firstCoord
@@ -103,9 +97,7 @@ std::vector<MAPCHUNK_COORD> CMapChunkStreamer::GetChunksAroundCamera(
 	return chunks;
 }
 
-MAPCHUNK_COORD CMapChunkStreamer::WorldToChunkCoord(
-	const _float3& position,
-	const _float3& chunkSize) const
+MAPCHUNK_COORD CMapChunkStreamer::WorldToChunkCoord(const _float3& position, const _float3& chunkSize) const
 {
 	return
 	{
@@ -115,9 +107,7 @@ MAPCHUNK_COORD CMapChunkStreamer::WorldToChunkCoord(
 	};
 }
 
-BoundingBox CMapChunkStreamer::MakeChunkBoundingBox(
-	const MAPCHUNK_COORD& coord,
-	const _float3& chunkSize) const
+BoundingBox CMapChunkStreamer::MakeChunkBoundingBox(const MAPCHUNK_COORD& coord, const _float3& chunkSize) const
 {
 	const _float3 center
 	{
@@ -131,16 +121,15 @@ BoundingBox CMapChunkStreamer::MakeChunkBoundingBox(
 		chunkSize.y * 0.5f,
 		chunkSize.z * 0.5f
 	};
+
 	return BoundingBox(center, extents);
 }
 
-void CMapChunkStreamer::UnloadChunksOutsideRange(
-	const std::vector<MAPCHUNK_COORD>& retainedChunks)
+void CMapChunkStreamer::UnloadChunksOutsideRange(const std::vector<MAPCHUNK_COORD>& retainedChunks)
 {
 	const auto isRetained = [&retainedChunks](const MAPCHUNK_COORD& coord)
 		{
-			return std::find(retainedChunks.begin(), retainedChunks.end(), coord)
-				!= retainedChunks.end();
+			return std::find(retainedChunks.begin(), retainedChunks.end(), coord) != retainedChunks.end();
 		};
 
 	for (auto& chunkEntry : *m_Chunks)
@@ -151,10 +140,7 @@ void CMapChunkStreamer::UnloadChunksOutsideRange(
 	}
 }
 
-void CMapChunkStreamer::RequestNeededChunkLoads(
-	const std::vector<MAPCHUNK_COORD>& loadChunks,
-	const std::string& mapRootPath,
-	const _float3& chunkSize)
+void CMapChunkStreamer::RequestNeededChunkLoads(const std::vector<MAPCHUNK_COORD>& loadChunks, const std::string& mapRootPath, const _float3& chunkSize)
 {
 	const uint32_t inFlight = m_AsyncLoadsInFlight.load(std::memory_order_acquire);
 	if (inFlight >= MAX_CONCURRENT_CHUNK_LOADS)
@@ -164,11 +150,8 @@ void CMapChunkStreamer::RequestNeededChunkLoads(
 	std::vector<MAPCHUNK_COORD> prioritizedChunks = loadChunks;
 	if (const auto* camera = CGameInstance::Get().GetActiveCamera())
 	{
-		const MAPCHUNK_COORD cameraCoord = WorldToChunkCoord(
-			camera->GetTransform().GetPosition(), chunkSize);
-		std::sort(
-			prioritizedChunks.begin(),
-			prioritizedChunks.end(),
+		const MAPCHUNK_COORD cameraCoord = WorldToChunkCoord(camera->GetTransform().GetPosition(), chunkSize);
+		std::sort(prioritizedChunks.begin(), prioritizedChunks.end(),
 			[&cameraCoord](const MAPCHUNK_COORD& lhs, const MAPCHUNK_COORD& rhs)
 			{
 				const auto distanceSquared = [&cameraCoord](const MAPCHUNK_COORD& coord)
@@ -196,30 +179,25 @@ void CMapChunkStreamer::RequestNeededChunkLoads(
 	}
 }
 
-HRESULT CMapChunkStreamer::RequestLoadChunkAsync(
-	const MAPCHUNK_COORD& coord,
-	const std::string& mapRootPath)
+HRESULT CMapChunkStreamer::RequestLoadChunkAsync(const MAPCHUNK_COORD& coord, const std::string& mapRootPath)
 {
 	const auto chunkIter = m_Chunks->find(coord);
 	if (chunkIter == m_Chunks->end())
 		return E_FAIL;
 
 	CMapChunk& chunk = chunkIter->second;
-	if (chunk.GetLoadState() == EChunkLoadState::Loaded ||
-		chunk.GetLoadState() == EChunkLoadState::Loading)
+	if (chunk.GetLoadState() == EChunkLoadState::Loaded || chunk.GetLoadState() == EChunkLoadState::Loading)
 		return S_OK;
 
 	if (chunk.GetFilePath().empty())
 	{
-		chunk.SetFilePath((std::filesystem::path("chunks") /
-			m_Serializer->MakeChunkFileName(coord)).generic_string());
+		chunk.SetFilePath((std::filesystem::path("chunks") / m_Serializer->MakeChunkFileName(coord)).generic_string());
 	}
 
-	const std::filesystem::path chunkPath =
-		std::filesystem::path(mapRootPath) / chunk.GetFilePath();
+	const std::filesystem::path chunkPath = std::filesystem::path(mapRootPath) / chunk.GetFilePath();
 	const uint64_t mapGeneration = m_MapGeneration.load(std::memory_order_acquire);
 
-	// 큐 제출 전에 Loading 상태로 바꿔 같은 청크가 중복 요청되는 것을 막는다.
+	// 큐 제출 전에 Loading 상태로 바꿔 같은 청크가 중복 요청되는 것을 막음
 	chunk.BeginLoading();
 	m_AsyncLoadsInFlight.fetch_add(1, std::memory_order_acq_rel);
 
@@ -293,8 +271,8 @@ void CMapChunkStreamer::ProcessLoadedChunkResults(const _float3& chunkSize)
 	while (!m_ApplyQueue.empty())
 	{
 		_bool completed = false;
-		ContinueApplyLoadedChunkResult(
-			*m_ApplyQueue.front(), deadline, chunkSize, completed);
+		ContinueApplyLoadedChunkResult(*m_ApplyQueue.front(), deadline, chunkSize, completed);
+
 		if (completed)
 			m_ApplyQueue.pop_front();
 
@@ -352,8 +330,7 @@ HRESULT CMapChunkStreamer::ContinueApplyLoadedChunkResult(
 	if (!state.initialized)
 	{
 		chunk.BeginLoading();
-		if (FAILED(m_ResourceTracker->CommitPreloadedResources(
-			chunk, state.result.modelResources)))
+		if (FAILED(m_ResourceTracker->CommitPreloadedResources(chunk, state.result.modelResources)))
 		{
 			chunk.CancelLoading();
 			completed = true;
@@ -379,29 +356,25 @@ HRESULT CMapChunkStreamer::ContinueApplyLoadedChunkResult(
 	if (state.nextObjectIndex < state.result.objects.size())
 		return S_OK;
 
-	chunk.CompleteLoading(
-		MakeChunkBoundingBox(state.result.coord, chunkSize),
-		EChunkSaveState::Saved);
-	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(
-		state.result.coord, chunk.GetObjectHandles())))
+	chunk.CompleteLoading(MakeChunkBoundingBox(state.result.coord, chunkSize), EChunkSaveState::Saved);
+	if (FAILED(CGameInstance::Get().RegisterMapMeshResidentChunk(state.result.coord, chunk.GetObjectHandles())))
 	{
 		m_UnloadChunkCallback(state.result.coord);
 		completed = true;
 		return E_FAIL;
 	}
 	completed = true;
+
 	return S_OK;
 }
 
-_bool CMapChunkStreamer::IsChunkInStreamingRange(
-	const MAPCHUNK_COORD& coord,
-	const _float3& chunkSize) const
+_bool CMapChunkStreamer::IsChunkInStreamingRange(const MAPCHUNK_COORD& coord, const _float3& chunkSize) const
 {
 	const auto* camera = CGameInstance::Get().GetActiveCamera();
 	if (!camera)
 		return false;
 
-	const auto loadChunks = GetChunksAroundCamera(
-		camera, STREAM_LOAD_DIAMETER, chunkSize);
+	const auto loadChunks = GetChunksAroundCamera(camera, STREAM_LOAD_DIAMETER, chunkSize);
+
 	return std::find(loadChunks.begin(), loadChunks.end(), coord) != loadChunks.end();
 }

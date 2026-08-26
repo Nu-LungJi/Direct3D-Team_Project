@@ -38,7 +38,7 @@ private:
 	static constexpr _float DASH_DURATION = 0.25f;
 
 	PHASE m_ePhase = PHASE::CAST;
-	_float m_fAnimRatio{};
+	_float m_fAnimationRatio{};
 	_float m_fScaleTime{};
 	_float m_fDashElapsed{};
 	_float3 m_vDashDirection{};
@@ -49,8 +49,8 @@ private:
 	_float3 vNormalScale = { 1.f, 1.f, 1.f };
 	_float3 vSmallScale = { 0.f, 0.f, 0.f };
 
-	_float	m_fDistanceOffeset = 1.6f;
-	_float3	m_vSpwanPos{};
+	_float	m_fDistanceOffset = 1.6f;
+	_float3	m_vSpawnPosition{};
 	_bool    m_bAnimationIndicesCached = false;
 	uint32_t m_iDashBodyEffectID = INVALID_EFFECT_INSTANCE_ID;
 };

@@ -577,21 +577,21 @@
     <Filter Include="GameObject\Manager\MapChunkSerializer">
       <UniqueIdentifier>{e3c66141-a559-4879-897f-c5bdda84e09f}</UniqueIdentifier>
     </Filter>
-	<Filter Include="GameObject\Manager\MapMaterialRepository">
-	  <UniqueIdentifier>{22ee66ec-2e43-4d3a-b5a6-62d54b279c32}</UniqueIdentifier>
-	</Filter>
-	<Filter Include="GameObject\Manager\MapChunkDebugRenderer">
-	  <UniqueIdentifier>{4ebf65be-fdcb-4c75-87d5-87001452b606}</UniqueIdentifier>
-	</Filter>
-	<Filter Include="GameObject\Manager\MapModelResourceTracker">
-	  <UniqueIdentifier>{728d80ef-2586-446b-8cab-87cda6a300c4}</UniqueIdentifier>
-	</Filter>
-	<Filter Include="GameObject\Manager\MapChunkStreamer">
-	  <UniqueIdentifier>{f20d572a-01e0-44de-8b4e-7238457b9419}</UniqueIdentifier>
-	</Filter>
-	<Filter Include="GameObject\Manager\MapRuntimeObjectFactory">
-	  <UniqueIdentifier>{c0f79114-acba-4cf6-950d-b7f6ae012b17}</UniqueIdentifier>
-	</Filter>
+    <Filter Include="GameObject\Manager\MapMaterialRepository">
+      <UniqueIdentifier>{22ee66ec-2e43-4d3a-b5a6-62d54b279c32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Manager\MapChunkDebugRenderer">
+      <UniqueIdentifier>{4ebf65be-fdcb-4c75-87d5-87001452b606}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Manager\MapModelResourceTracker">
+      <UniqueIdentifier>{728d80ef-2586-446b-8cab-87cda6a300c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Manager\MapChunkStreamer">
+      <UniqueIdentifier>{f20d572a-01e0-44de-8b4e-7238457b9419}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Manager\MapRuntimeObjectFactory">
+      <UniqueIdentifier>{c0f79114-acba-4cf6-950d-b7f6ae012b17}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1339,21 +1339,21 @@
     <ClInclude Include="..\Public\MapChunkSerializer.h">
       <Filter>GameObject\Manager\MapChunkSerializer</Filter>
     </ClInclude>
-	<ClInclude Include="..\Public\MapMaterialRepository.h">
-	  <Filter>GameObject\Manager\MapMaterialRepository</Filter>
-	</ClInclude>
-	<ClInclude Include="..\Public\MapChunkDebugRenderer.h">
-	  <Filter>GameObject\Manager\MapChunkDebugRenderer</Filter>
-	</ClInclude>
-	<ClInclude Include="..\Public\MapModelResourceTracker.h">
-	  <Filter>GameObject\Manager\MapModelResourceTracker</Filter>
-	</ClInclude>
-	<ClInclude Include="..\Public\MapChunkStreamer.h">
-	  <Filter>GameObject\Manager\MapChunkStreamer</Filter>
-	</ClInclude>
-	<ClInclude Include="..\Public\MapRuntimeObjectFactory.h">
-	  <Filter>GameObject\Manager\MapRuntimeObjectFactory</Filter>
-	</ClInclude>
+    <ClInclude Include="..\Public\MapMaterialRepository.h">
+      <Filter>GameObject\Manager\MapMaterialRepository</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapChunkDebugRenderer.h">
+      <Filter>GameObject\Manager\MapChunkDebugRenderer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapModelResourceTracker.h">
+      <Filter>GameObject\Manager\MapModelResourceTracker</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapChunkStreamer.h">
+      <Filter>GameObject\Manager\MapChunkStreamer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\MapRuntimeObjectFactory.h">
+      <Filter>GameObject\Manager\MapRuntimeObjectFactory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1722,9 +1722,6 @@
     <ClCompile Include="..\private\Action_Manager.cpp">
       <Filter>Component\BeHavior\Manager</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\OctreeNode.cpp">
-      <Filter>GameObject\Manager\MapChunk\Octree</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\Trail_CPU.cpp">
       <Filter>Particle\Trail</Filter>
     </ClCompile>
@@ -2020,21 +2017,24 @@
     <ClCompile Include="..\Private\MapChunkSerializer.cpp">
       <Filter>GameObject\Manager\MapChunkSerializer</Filter>
     </ClCompile>
-	<ClCompile Include="..\Private\MapMaterialRepository.cpp">
-	  <Filter>GameObject\Manager\MapMaterialRepository</Filter>
-	</ClCompile>
-	<ClCompile Include="..\Private\MapChunkDebugRenderer.cpp">
-	  <Filter>GameObject\Manager\MapChunkDebugRenderer</Filter>
-	</ClCompile>
-	<ClCompile Include="..\Private\MapModelResourceTracker.cpp">
-	  <Filter>GameObject\Manager\MapModelResourceTracker</Filter>
-	</ClCompile>
-	<ClCompile Include="..\Private\MapChunkStreamer.cpp">
-	  <Filter>GameObject\Manager\MapChunkStreamer</Filter>
-	</ClCompile>
-	<ClCompile Include="..\Private\MapRuntimeObjectFactory.cpp">
-	  <Filter>GameObject\Manager\MapRuntimeObjectFactory</Filter>
-	</ClCompile>
+    <ClCompile Include="..\Private\MapMaterialRepository.cpp">
+      <Filter>GameObject\Manager\MapMaterialRepository</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapChunkDebugRenderer.cpp">
+      <Filter>GameObject\Manager\MapChunkDebugRenderer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapModelResourceTracker.cpp">
+      <Filter>GameObject\Manager\MapModelResourceTracker</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapChunkStreamer.cpp">
+      <Filter>GameObject\Manager\MapChunkStreamer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\MapRuntimeObjectFactory.cpp">
+      <Filter>GameObject\Manager\MapRuntimeObjectFactory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\OctreeNode.cpp">
+      <Filter>GameObject\Manager\MapChunk\Octree</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
