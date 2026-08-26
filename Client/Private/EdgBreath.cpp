@@ -50,6 +50,17 @@ void CEdgBreath::FixedUpdate(E::_float fTimeDelta)
 
 	__super::FixedUpdate(fTimeDelta);
 	MoveBreath(fTimeDelta);
+	if (m_bActive && !m_bBlurEnd) {
+		m_fBlurTime += fTimeDelta;
+		if (m_fBlurTime >= 0.3f) {
+			m_fBlurTime = 0.f;
+			m_bBlurEnd = true;
+			CGameInstance::Get().Set_RadialBlurIntensity(0.f);
+		}
+		else {
+			CGameInstance::Get().Set_RadialBlurIntensity(7.f);
+		}
+	}
 }
 
 void CEdgBreath::Update(E::_float fTimeDelta)
@@ -68,6 +79,7 @@ void CEdgBreath::LateUpdate(E::_float fTimeDelta)
 
 void CEdgBreath::Active(EDG_ACSKT_DESC& SkillTable, _vector vOffsetPos)
 {
+	m_bBlurEnd = false;
 	m_eType = SkillTable.eType;
 	auto pSrc = Get_Owner();
 	if (nullptr == pSrc) return;
@@ -243,7 +255,8 @@ void CEdgBreath::MoveBreath(_float fTimeDelta)
 	if (m_fBreathParticleTick >= fBreathSpawnInterval)
 	{
 		m_fBreathParticleTick -= fBreathSpawnInterval;
-		CGameInstance::Get().Spawn("DragonBreath.json", breathWorldData);
+		CGameInstance::Get().Spawn("FinalBreath.json", breathWorldData);
+		//CGameInstance::Get().Spawn("DragonBreath.json", breathWorldData);
 	}
 
 	m_fBreathDis = m_fMaxBreath * tBreath;
@@ -275,13 +288,13 @@ _bool CEdgBreath::MoveSweep(_vector vNextPos, _vector vCurDir, _float fTimeDelta
 	SweepDesc.tFilter = m_pxQueryFilter;
 	SweepDesc.fMaxDistance = m_fBreathDis;
 
-	for (uint32_t i = 0; i < iDebugCnt; ++i)
-	{
-		const _float t = static_cast<_float>(i) / static_cast<_float>(iDebugCnt - 1);
-		_float3 vDebugPos{};
-		XMStoreFloat3(&vDebugPos, XMLoadFloat3(&SweepDesc.tPose.vPosition) + XMLoadFloat3(&vDir) * SweepDesc.fMaxDistance * t);
-		DebugLine(vDebugPos);
-	}
+	//for (uint32_t i = 0; i < iDebugCnt; ++i)
+	//{
+	//	const _float t = static_cast<_float>(i) / static_cast<_float>(iDebugCnt - 1);
+	//	_float3 vDebugPos{};
+	//	XMStoreFloat3(&vDebugPos, XMLoadFloat3(&SweepDesc.tPose.vPosition) + XMLoadFloat3(&vDir) * SweepDesc.fMaxDistance * t);
+	//	DebugLine(vDebugPos);
+	//}
 
 	PX_SWEEP_RESULT SweepResult{};
 	auto pPhysX = CGameInstance::Get().GetPhysXManager();

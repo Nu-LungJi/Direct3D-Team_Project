@@ -384,8 +384,21 @@ void CEdg_Spawn::Play_Anim(CEnderDragon* pDragon, _float fTimeDelta)
 							_float4x4 roarWorldData{};
 							XMStoreFloat4x4(&roarWorldData, roarWorld);
 
-							CGameInstance::Get().Spawn("DragonRoar1.json", roarWorldData);
+							m_iRoarEffectID = CGameInstance::Get().PlayEffect(
+								"DragonRoar",
+								roarWorldData,
+								XMVectorZero(),
+								[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+								{
+									if (effectId != m_iRoarEffectID)
+										return;
 
+									CGameInstance::Get().Set_RadialBlurIntensity(0.f);
+									m_iRoarEffectID = INVALID_EFFECT_INSTANCE_ID;
+								});
+
+							if (m_iRoarEffectID != INVALID_EFFECT_INSTANCE_ID)
+								CGameInstance::Get().Set_RadialBlurIntensity(6.3f);
 							CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
 								.fIntensity = 1.f,
 								.fDuration = 2.5f,
