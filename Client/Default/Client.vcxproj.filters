@@ -193,7 +193,7 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State">
       <UniqueIdentifier>{11e3cf66-d2a5-4428-9b71-48aa0954b883}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AcientAttack_State">
+    <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AncientAttack_State">
       <UniqueIdentifier>{113ba92c-ee4c-4633-a05d-1bd05e0d0412}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State">
@@ -394,9 +394,6 @@
     <Filter Include="GameObject\Player\Player_Potion">
       <UniqueIdentifier>{660a0ade-739e-45b4-ae9b-38f10520e799}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Monster\00.Parents\State">
-      <UniqueIdentifier>{f6a28477-befa-428d-b636-662eef20aab1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\Player\PropBarrel">
       <UniqueIdentifier>{33378d39-0858-4c64-98ef-efffcf08028f}</UniqueIdentifier>
     </Filter>
@@ -411,12 +408,6 @@
     </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_Potion_State">
       <UniqueIdentifier>{b099f08f-a3b6-4d53-b3d4-ca55705c3190}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\NPC">
-      <UniqueIdentifier>{f215cd79-c521-4fac-8859-0d8f4f6e10df}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\NPC\00.Parents">
-      <UniqueIdentifier>{a9cd9686-5757-4795-ac3a-d99fef7f97e7}</UniqueIdentifier>
     </Filter>
     <Filter Include="GameObject\AI\AnimRoot\Anim\NPC">
       <UniqueIdentifier>{9b97b4ce-61a1-42cd-8013-51f0f9c91840}</UniqueIdentifier>
@@ -442,20 +433,41 @@
     <Filter Include="GameObject\AccioActivity\AccioBall">
       <UniqueIdentifier>{f312d994-35e8-4db6-a6d7-b50989c874c4}</UniqueIdentifier>
     </Filter>
-    <Filter Include="GameObject\Animal">
-      <UniqueIdentifier>{9bc5a1a5-0b8b-4612-b43d-83787a43ca32}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\Animal\00.Parents">
-      <UniqueIdentifier>{d9c9eba3-d6ba-4fd5-9369-f70b1f9fc8c3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\Animal\Bird">
-      <UniqueIdentifier>{7f733bde-44f1-4380-b65f-b9869d469e36}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="GameObject\Animal\Bird\Child">
-      <UniqueIdentifier>{42356f40-caa5-4093-87d3-10d9db4ce8f4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="GameObject\AI\Decorator\NPC">
       <UniqueIdentifier>{7b304845-9a6a-49c7-a431-ff56919fa54f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\Troll">
+      <UniqueIdentifier>{c4e0f584-a177-4558-bf8c-7ace3920df78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\Troll\FSM">
+      <UniqueIdentifier>{49dab577-3bd2-431e-88ff-db93170b3214}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\AI\Decorator\Troll">
+      <UniqueIdentifier>{f77ed991-313e-43ec-8dab-841c5b116c79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Monster\02.PublicState">
+      <UniqueIdentifier>{f6a28477-befa-428d-b636-662eef20aab1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Agent">
+      <UniqueIdentifier>{e3ed14e1-2e38-432b-a319-0782e8ef1972}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Agent\NPC">
+      <UniqueIdentifier>{f215cd79-c521-4fac-8859-0d8f4f6e10df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Agent\Animal">
+      <UniqueIdentifier>{9bc5a1a5-0b8b-4612-b43d-83787a43ca32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Agent\Animal\Bird">
+      <UniqueIdentifier>{7f733bde-44f1-4380-b65f-b9869d469e36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Agent\Animal\Bird\Child">
+      <UniqueIdentifier>{42356f40-caa5-4093-87d3-10d9db4ce8f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Agent\00.Parents">
+      <UniqueIdentifier>{a9cd9686-5757-4795-ac3a-d99fef7f97e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Agent\Animal\WolrdAnimal">
+      <UniqueIdentifier>{38724c55-2560-48a3-ac1f-fc3b4460030c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -684,8 +696,8 @@
     <ClInclude Include="..\public\OilBarrel.h">
       <Filter>GameObject\Terrain\OilBarrel</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\Player_AcientAttack_State.h">
-      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AcientAttack_State</Filter>
+    <ClInclude Include="..\Public\Player_AncientAttack_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AncientAttack_State</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Player_AccioSkill_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State</Filter>
@@ -976,7 +988,7 @@
       <Filter>GameObject\Player\Player_Potion</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Mon_Godae.h">
-      <Filter>GameObject\Monster\00.Parents\State</Filter>
+      <Filter>GameObject\Monster\02.PublicState</Filter>
     </ClInclude>
     <ClInclude Include="..\public\Edg_Godae.h">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
@@ -996,9 +1008,6 @@
     <ClInclude Include="..\public\Mon_Spawner.h">
       <Filter>GameObject\Monster\01.Spanwer</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Spider_Dead.h">
-      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
-    </ClInclude>
     <ClInclude Include="..\Public\FlyminiGameController.h">
       <Filter>GameObject\FlyMiniGame</Filter>
     </ClInclude>
@@ -1008,14 +1017,14 @@
     <ClInclude Include="..\Public\Player_Potion_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Potion_State</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\NpcMom.h">
-      <Filter>GameObject\NPC\00.Parents</Filter>
+    <ClInclude Include="..\public\WorldAgent.h">
+      <Filter>GameObject\Agent\00.Parents</Filter>
     </ClInclude>
     <ClInclude Include="BTAnimNpc.h">
       <Filter>GameObject\AI\AnimRoot\Anim\NPC</Filter>
     </ClInclude>
     <ClInclude Include="..\public\WorldNpc.h">
-      <Filter>GameObject\NPC</Filter>
+      <Filter>GameObject\Agent\NPC</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTNaviMove.h">
       <Filter>GameObject\AI\Action\NPC</Filter>
@@ -1080,14 +1089,11 @@
     <ClInclude Include="..\public\AccioActivityPartBase.h">
       <Filter>GameObject\AccioActivity</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\Animal.h">
-      <Filter>GameObject\Animal\00.Parents</Filter>
-    </ClInclude>
     <ClInclude Include="..\public\Griff.h">
-      <Filter>GameObject\Animal\Bird</Filter>
+      <Filter>GameObject\Agent\Animal\Bird</Filter>
     </ClInclude>
     <ClInclude Include="..\public\GriffChild.h">
-      <Filter>GameObject\Animal\Bird\Child</Filter>
+      <Filter>GameObject\Agent\Animal\Bird\Child</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTDecHitPlayer.h">
       <Filter>GameObject\AI\Decorator\NPC</Filter>
@@ -1097,6 +1103,36 @@
     </ClInclude>
     <ClInclude Include="..\public\BTChangeState.h">
       <Filter>GameObject\AI\Action\NPC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Troll.h">
+      <Filter>GameObject\Monster\Troll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Troll_Spawn.h">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Troll_Hit.h">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Troll_Combat.h">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDirectChase.h">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\TrollWeapon.h">
+      <Filter>GameObject\Monster\Troll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\BTDecWallCrash.h">
+      <Filter>GameObject\AI\Decorator\Troll</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Troll_Grogy.h">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\Mon_Dead.h">
+      <Filter>GameObject\Monster\02.PublicState</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\WorldAnimal.h">
+      <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1323,8 +1359,8 @@
     <ClCompile Include="..\Private\Player_DashSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_DashSkill_State</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\Player_AcientAttack_State.cpp">
-      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AcientAttack_State</Filter>
+    <ClCompile Include="..\Private\Player_AncientAttack_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AncientAttack_State</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_AccioSkill_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AccioSkill_State</Filter>
@@ -1554,7 +1590,7 @@
       <Filter>GameObject\Monster\TombGudian\FSM\State</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Mon_Godae.cpp">
-      <Filter>GameObject\Monster\00.Parents\State</Filter>
+      <Filter>GameObject\Monster\02.PublicState</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Edg_Godae.cpp">
       <Filter>GameObject\Monster\EnderDragon\FSM\State</Filter>
@@ -1577,9 +1613,6 @@
     <ClCompile Include="..\private\Mon_Spawner.cpp">
       <Filter>GameObject\Monster\01.Spanwer</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\Spider_Dead.cpp">
-      <Filter>GameObject\Monster\Spider\FSM\State</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\Player_Potion_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Potion_State</Filter>
     </ClCompile>
@@ -1589,14 +1622,14 @@
     <ClCompile Include="..\Private\FlightRing.cpp">
       <Filter>GameObject\FlyMiniGame\FlightRing</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\NpcMom.cpp">
-      <Filter>GameObject\NPC\00.Parents</Filter>
+    <ClCompile Include="..\private\WorldAgent.cpp">
+      <Filter>GameObject\Agent\00.Parents</Filter>
     </ClCompile>
     <ClCompile Include="BTAnimNpc.cpp">
       <Filter>GameObject\AI\AnimRoot\Anim\NPC</Filter>
     </ClCompile>
     <ClCompile Include="..\private\WorldNpc.cpp">
-      <Filter>GameObject\NPC</Filter>
+      <Filter>GameObject\Agent\NPC</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTNaviMove.cpp">
       <Filter>GameObject\AI\Action\NPC</Filter>
@@ -1661,14 +1694,11 @@
     <ClCompile Include="..\private\AccioActivityPartBase.cpp">
       <Filter>GameObject\AccioActivity</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\Animal.cpp">
-      <Filter>GameObject\Animal\00.Parents</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\Griff.cpp">
-      <Filter>GameObject\Animal\Bird</Filter>
+      <Filter>GameObject\Agent\Animal\Bird</Filter>
     </ClCompile>
     <ClCompile Include="..\private\GriffChild.cpp">
-      <Filter>GameObject\Animal\Bird\Child</Filter>
+      <Filter>GameObject\Agent\Animal\Bird\Child</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTDecHitPlayer.cpp">
       <Filter>GameObject\AI\Decorator\NPC</Filter>
@@ -1678,6 +1708,36 @@
     </ClCompile>
     <ClCompile Include="..\private\BTChangeState.cpp">
       <Filter>GameObject\AI\Action\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Troll.cpp">
+      <Filter>GameObject\Monster\Troll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Troll_Spawn.cpp">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Troll_Hit.cpp">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Troll_Combat.cpp">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDirectChase.cpp">
+      <Filter>GameObject\AI\AnimRoot\Anim\Mon</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\TrollWeapon.cpp">
+      <Filter>GameObject\Monster\Troll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\BTDecWallCrash.cpp">
+      <Filter>GameObject\AI\Decorator\Troll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Troll_Grogy.cpp">
+      <Filter>GameObject\Monster\Troll\FSM</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\Mon_Dead.cpp">
+      <Filter>GameObject\Monster\02.PublicState</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\WorldAnimal.cpp">
+      <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

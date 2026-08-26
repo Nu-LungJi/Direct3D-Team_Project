@@ -3,6 +3,7 @@
 #include "ComAnimator.h" 
 #include "ComCharacterMotor.h"
 #include "ComCharacterMoveIntent.h"
+#include "ClientEvents.h"
 NS_USING(Client)
 
 CBTAnimRoot::CBTAnimRoot()
@@ -168,6 +169,14 @@ void CBTAnimRoot::Update_Gui()
 		}
 		ImGui::TreePop();
 	}
+	if (ImGui::TreeNode("Cam"))
+	{
+		DragFloat("ShakeCamRatio", m_CamInfo.fCamStartRatio);
+		DragFloat("ShakePower", m_CamInfo.fPower, 0.1f, 0.f, 100.f);
+		DragFloat("ShakeTime", m_CamInfo.fTime, 0.1f, 0.f, 100.f);
+		DragFloat("ShakeCnt", m_CamInfo.fCnt, 0.1f, 0.f, 100.f);
+		ImGui::TreePop();
+	}
 	if (ImGui::TreeNode("SoundTableHelpme"))
 	{
 		AddSound();
@@ -181,6 +190,22 @@ void CBTAnimRoot::Update_Gui()
 		
 	}
 
+}
+void CBTAnimRoot::ShakeCam(_float fRotRatio)
+{
+	if (m_CamInfo.fCamStartRatio == 0.f)
+		return;
+	if (m_bCamShake && fRotRatio > m_CamInfo.fCamStartRatio)
+	{
+		//카메라 쉐킷
+		CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
+			{
+			   m_CamInfo.fPower, // 강도 0 ~ 1
+			   m_CamInfo.fTime, // 지속시간
+			   m_CamInfo.fCnt, // 초당 진동횟수
+			});
+		m_bCamShake = false;
+	}
 }
 void CBTAnimRoot::Abort()
 {
@@ -217,6 +242,11 @@ nlohmann::json CBTAnimRoot::Save_Node()
 	SaveJsonValue(j, "EarlyRatio", m_fEarlyRatio);
 	SaveJsonValue(j, "ResetAnimTime", m_bResetAnimTime);
 	SaveJsonEnum(j, "SkillType", m_eSkillType);
+	SaveJsonValue(j, "CamShakeRatio", m_CamInfo.fCamStartRatio);
+	SaveJsonValue(j, "CamShakePower", m_CamInfo.fPower);
+	SaveJsonValue(j, "CamShakeTime", m_CamInfo.fTime);
+	SaveJsonValue(j, "CamShakeCnt", m_CamInfo.fCnt);
+
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "SkillRatio", m_fSkillRatio);
 	JsonSaveLoadManager::SaveJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	
@@ -286,6 +316,10 @@ HRESULT CBTAnimRoot::Load_json(const nlohmann::json& j)
 	LoadJsonEnum(j, "SkillType", m_eSkillType);
 	LoadJsonValue(j, "Blend", m_fBlend);
 	LoadJsonValue(j, "ResetAnimTime", m_bResetAnimTime);
+	LoadJsonValue(j, "CamShakeRatio", m_CamInfo.fCamStartRatio);
+	LoadJsonValue(j, "CamShakePower", m_CamInfo.fPower);
+	LoadJsonValue(j, "CamShakeTime", m_CamInfo.fTime);
+	LoadJsonValue(j, "CamShakeCnt", m_CamInfo.fCnt);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "SkillRatio", m_fSkillRatio);
 	JsonSaveLoadManager::LoadJsonTypeFloat2(j, "Ratio_TypeF2", m_fRatio);
 	
@@ -444,10 +478,10 @@ void CBTAnimRoot::OnEnter()
 	auto pBT = Get_ComBT();
 	if (nullptr == pBT) return;
 
-	auto pSrc = static_cast<CMonster*>(pBT->GetGameObject());
+	auto pSrc = pBT->GetGameObject();
 	if (nullptr == pSrc) return;
 
-	auto pAnim = pSrc->Get_Animator();
+	auto pAnim = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
 	if (nullptr == pAnim) return;
 
 	auto& pA = pAnim->GetCurAnimState();

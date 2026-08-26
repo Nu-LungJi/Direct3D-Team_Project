@@ -25,7 +25,7 @@ private:
 	void		Play_Anim(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Play_AnimMoveSpawn(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Effect(CEnderDragon* pDragon, _float fTimeDelta);
-
+	
 private:
 	uint32_t				m_iEffectID{};
 	SOUND_ID				m_iSound{}, m_iSoundHouling{};

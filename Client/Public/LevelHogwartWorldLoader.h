@@ -22,7 +22,7 @@ private:
 	static HRESULT MonsterLoad_InWorker();
 
 	static HRESULT NpcLoad_InWorker();
-	static HRESULT AnimalLoad_InWorker();
+	static HRESULT WorldAgentLoad_InWorker();
 
 	static HRESULT LoadCollsion_InWorker();
 private:

@@ -35,7 +35,7 @@ private:
 	_bool	m_bAnimationIndicesCached = false;
 	int32_t	m_iRevelioAnimation = -1;
 	PHASE	m_ePhase = PHASE::CAST;
-	_float	m_fAnimRatio = 0.f;
+	_float	m_fAnimationRatio = 0.f;
 
 
 	static constexpr _float REVEAL_START_RATIO = 0.3f;

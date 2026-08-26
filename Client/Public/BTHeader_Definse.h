@@ -15,6 +15,8 @@
 #include "BTMonAttType.h" // 몬스터 전용
 #include "BTMonResetTable.h"
 #include "BTCinematic.h"
+#include "BTDirectChase.h"
+#include "BTDecWallCrash.h"
 
 #include "BTDecIsGround.h"
 #include "BTDecHp.h"
@@ -38,3 +40,4 @@
 #include "BTAnimNpc.h"
 #include "BTChangeState.h"
 #include "BTDecNpcState.h"
+

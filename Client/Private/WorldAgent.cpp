@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "NpcMom.h"
+#include "WorldAgent.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
@@ -21,25 +21,28 @@
 
 #include "UIManager.h"
 #include "ComSound.h"
+
+#include "BTBlackBoard.h"
+#include "BlackBoardKey.h"
 NS_USING(Client)
 
-CNpcMom::CNpcMom()
+CWorldAgent::CWorldAgent()
 {
 }
 
 
-CNpcMom::~CNpcMom()
+CWorldAgent::~CWorldAgent()
 {
 	// 구독해제
 	// CGameInstance::Get().EventUnsubscribeAll(GetHandle());
 }
 
-void CNpcMom::UpdateGUI()
+void CWorldAgent::UpdateGUI()
 {
 	__super::UpdateGUI();
 }
 
-HRESULT CNpcMom::InitializePrototype(void* pArg)
+HRESULT CWorldAgent::InitializePrototype(void* pArg)
 {
 	m_pResVertexCPUSkinningInstancedShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelAnim_CPU_Skinning_Instanced");
 	if (!m_pResVertexCPUSkinningInstancedShader || FAILED(m_pResVertexCPUSkinningInstancedShader->Load()))
@@ -61,10 +64,10 @@ HRESULT CNpcMom::InitializePrototype(void* pArg)
 	return S_OK;
 }
 
-HRESULT CNpcMom::Initialize(void* pArg)
+HRESULT CWorldAgent::Initialize(void* pArg)
 {
-	auto NpcDesc = static_cast<NPC_DESC*>(pArg);
-	m_TargetHandle = NpcDesc->TargetHandle;
+	auto WorldAgentDesc = static_cast<WORLD_AGENT_DESC*>(pArg);
+	m_TargetHandle = WorldAgentDesc->TargetHandle;
 
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
@@ -82,40 +85,208 @@ HRESULT CNpcMom::Initialize(void* pArg)
 			return E_FAIL;
 		}
 
+		if (WorldAgentDesc->bPhyx)
+		{
 
-		CGameInstance::Get().EventSubscribe<FAcientMagicStart>(GetHandle(), [=]() { Stuck(); });
+			{
+				CComPxRigidBody::DESC Desc{};
+				Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
+				if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
+					ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComPxRigidBody", &Desc, &m_pComRigidBody)))
+				{
+					MSG_BOX("Create Failed ComPxRigidBody Npc");
+					return E_FAIL;
+				}
+			}
+
+			{
+				CComPxSphereCollider::DESC Desc{};
+				Desc.pComPxRigidBody = m_pComRigidBody;
+				Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+				Desc.bIsTrigger = false;
+				Desc.tFilter = PX_FILTER_DESC{
+					.iLayer = ETOUI(COLLISION_LAYER::ENEMY_HURTBOX),
+					.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
+					//.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
+				};
+				Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 1.2f });
+				if (!Desc.pResMaterial ||
+					FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
+						"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
+				{
+					MSG_BOX("Create Failed ComPxSphereCollider Npc");
+					return E_FAIL;
+				}
+				if (!m_pComSphereCol->SetQueryEnabled(false))
+					return E_FAIL;
+			}
+
+			//피직스
+			{
+				CComPxCharacterController::DESC Desc{};
+				Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+				const _float fHorizontalScale =
+					std::max(std::abs(WorldAgentDesc->vScale.x), std::abs(WorldAgentDesc->vScale.z));
+
+				const _float3 vCenterOffset{
+					WorldAgentDesc->vCCTCenterOffset.x ,
+					WorldAgentDesc->vCCTCenterOffset.y,
+					WorldAgentDesc->vCCTCenterOffset.z };
+				Desc.fHeight = WorldAgentDesc->fCCTHeight;
+				Desc.fRadius = WorldAgentDesc->fCCTRadius * fHorizontalScale;
+				Desc.fStepOffset = WorldAgentDesc->fCCTStepOffset;
+				Desc.vPosition = {
+					WorldAgentDesc->vPos.x + vCenterOffset.x,
+					WorldAgentDesc->vPos.y + vCenterOffset.y,
+					WorldAgentDesc->vPos.z + vCenterOffset.z };
+				Desc.tFilter = WorldAgentDesc->tFilter;
+				if (FAILED(AddComponentFromProto(
+					ES_EngineProtoMajorType::PHYSX,
+					ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,
+					"ComPxCharacterController", &Desc, &m_pCharacterController)))
+				{
+					return E_FAIL;
+				}
+			}
+			//캐릭컨트롤러
+			{
+				CComCharacterMoveIntent::DESC Desc{};
+				if (FAILED(AddComponentFromProto(
+					ES_EngineProtoMajorType::PERMANENT,
+					ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
+					"ComCharacterMoveIntent", &Desc, &m_pMoveIntent)))
+				{
+					return E_FAIL;
+				}
+			}
+			//캐릭 모터
+			{
+				CComCharacterMotor::DESC Desc{};
+				Desc.pMoveIntent = m_pMoveIntent;
+				Desc.pCharacterController = m_pCharacterController;
+				Desc.fGravity = -9.81f;
+				Desc.vControllerCenterOffset = {
+					WorldAgentDesc->vCCTCenterOffset.x * WorldAgentDesc->vScale.x,
+					WorldAgentDesc->vCCTCenterOffset.y * std::abs(WorldAgentDesc->vScale.y),
+					WorldAgentDesc->vCCTCenterOffset.z * WorldAgentDesc->vScale.z };
+				Desc.bUseGravity = true;
+				Desc.bSyncTransform = true;
+				if (FAILED(AddComponentFromProto(
+					ES_EngineProtoMajorType::PERMANENT,
+					ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
+					"ComCharacterMotor", &Desc, &m_pCharacterMotor)))
+				{
+					return E_FAIL;
+				}
+			}
+		}
+
+		{
+			CComBeHavior::BEHAVIOR_DESC Desc{};
+			Desc.OwnerName = "Com_BT";
+			Desc.resBeHaviorMajor = WorldAgentDesc->resBeHaviorMajor;
+			Desc.resBeHaviorMinor = WorldAgentDesc->resBeHaviorMinor;
+			if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
+			{
+				return E_FAIL;
+			};
+		}
+	
+		{
+			CComConstantBuffer::DESC Desc{};
+			Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
+			if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
+			{
+				return E_FAIL;
+			};
+		}
+		{
+			CComModelInstance::DESC Desc{};
+			Desc.sGroupTag = WorldAgentDesc->LevelTag;
+			Desc.sResTag = WorldAgentDesc->ReSourceTag;
+
+			if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
+			{
+				return E_FAIL;
+			};
+		}
+		{
+			CComAnimator::DESC DescAnim{};
+			DescAnim.sComTag = "ComCModelIntance";
+
+			if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Animator", "ComCModelAnimator", &DescAnim, &m_pModelAnimator)))
+			{
+				return E_FAIL;
+			};
+		}
+
+		{
+			CComCollider::DESC Desc{};
+			Desc.eCollType = CollType::Box;
+			Desc.vExtents = { 1.f, 1.f, 1.f };
+			if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComColl", &Desc, &m_pComCollider)))
+			{
+				return E_FAIL;
+			};
+		}
+		m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
+		m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
+		m_pModelAnimator->Play_Anim(0, true);
+
+		GetTransform().SetPosition(XMLoadFloat3(&WorldAgentDesc->vPos));
+		if(nullptr != m_pCharacterController)
+			GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
+		GetTransform().Update();
+
+		auto* pBB = Get_BlackBoard();
+		pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
+		if (!WorldAgentDesc->AnimName.empty())
+		{
+			pBB->Set_Value<_string>(PUBLIC_KEY::ANIMNAME, WorldAgentDesc->AnimName);
+		}
+		CGameInstance::Get().EventSubscribe<FAncientMagicStart>(GetHandle(), [=]() { Stuck(); });
+
 	}
 	return S_OK;
 }
 
-void CNpcMom::Stuck()
+void CWorldAgent::Stuck()
 {
 
 }
 
-void CNpcMom::PriorityUpdate(E::_float fTimeDelta)
+void CWorldAgent::PriorityUpdate(E::_float fTimeDelta)
 {
-	m_pMoveIntent->ClearMoveIntent();
-	m_pMoveIntent->ClearFacingIntent();
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
+		SetPendingDestroy();
+
+	if (nullptr != m_pMoveIntent)
+	{
+		m_pMoveIntent->ClearMoveIntent();
+		m_pMoveIntent->ClearFacingIntent();
+	}
 	__super::PriorityUpdate(fTimeDelta);
-
-	m_pCharacterMotor->SetGravity(-9.8f);
+	if (nullptr != m_pCharacterMotor)
+	{
+		if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DROP) | ETOUI(CBTRoot::BTFLAG::DEAD) | ETOUI(CBTRoot::BTFLAG::DEBRIS)))
+			m_pCharacterMotor->SetUseGravity(true);
+		else m_pCharacterMotor->SetUseGravity(false);
+	}
 	m_pBeHavior->Update(fTimeDelta);
-
+	
 }
 
-void CNpcMom::Update(E::_float fTimeDelta)
+void CWorldAgent::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
-	if (m_pComSound)
+	if (nullptr != m_pComSound)
 		m_pComSound->Update();
 	Update_Animation(fTimeDelta);
 
 	m_pBeHavior->AbortNode();
-	Update_HurtBox();
 }
 
-void CNpcMom::Update_Animation(_float fTimeDelta)
+void CWorldAgent::Update_Animation(_float fTimeDelta)
 {
 	if (m_pComModelInstance->GetModel()->GetAnimations().empty())
 		return;
@@ -137,11 +308,14 @@ void CNpcMom::Update_Animation(_float fTimeDelta)
 	}
 }
 
-void CNpcMom::LateUpdate(E::_float fTimeDelta)
+void CWorldAgent::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
-	const _float3 vControllerPosition = m_pCharacterController->GetPosition();
-	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
+	if (nullptr != m_pCharacterController)
+	{
+		const _float3 vControllerPosition = m_pCharacterController->GetPosition();
+		GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
+	}
 	GetTransform().Update();
 
 	const auto& pModel = m_pComModelInstance->GetModel();
@@ -156,7 +330,7 @@ void CNpcMom::LateUpdate(E::_float fTimeDelta)
 		return;
 	}
 }
-HRESULT CNpcMom::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
+HRESULT CWorldAgent::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx, const E::MODEL_INSTANCE_BATCH& Batch)
 {
 	if (!pContext || !m_pResVertexCPUSkinningInstancedShader || !m_pResPixelShader)
 		return E_FAIL;
@@ -260,7 +434,7 @@ HRESULT CNpcMom::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 	return S_OK;
 
 }
-HRESULT CNpcMom::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances)
+HRESULT CWorldAgent::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std::vector<GPU_ANIM_INSTANCE_DATA>& Instances)
 {
 
 	m_iCurrentInstanceCount = static_cast<uint32_t>(Instances.size());
@@ -307,7 +481,7 @@ HRESULT CNpcMom::Update_InstanceBuffer(ID3D11DeviceContext* pContext, const std:
 	return S_OK;
 
 }
-HRESULT CNpcMom::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
+HRESULT CWorldAgent::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
 {
 	auto pStructuredBuffer = CGameInstance::Get().GetResourceFirst<CResStructuredBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
 
@@ -326,7 +500,7 @@ HRESULT CNpcMom::Bind_InstanceBuffer(ID3D11DeviceContext* pContext)
 }
 
 /*----------- 광윤 추가 -----------*/
-HRESULT CNpcMom::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
+HRESULT CWorldAgent::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) {
 	if (!pContext || !m_pComModelInstance || !m_pComCBufferPerObject)
 		return E_FAIL;
 
@@ -357,7 +531,7 @@ HRESULT CNpcMom::Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CT
 
 	return S_OK;
 }
-bool CNpcMom::GetShadowBounds(BoundingBox& OutBounds) const
+bool CWorldAgent::GetShadowBounds(BoundingBox& OutBounds) const
 {
 	if (!m_pComCollider || !m_pComCollider->Get())	return false;
 
@@ -376,7 +550,7 @@ bool CNpcMom::GetShadowBounds(BoundingBox& OutBounds) const
 	return true;
 }
 /*---------------------------------*/
-_bool CNpcMom::OnQueryHit(int32_t iDamage)
+_bool CWorldAgent::OnQueryHit(int32_t iDamage)
 {
 	if (iDamage <= 0 || m_iHp <= 0)
 		return false;
@@ -387,46 +561,14 @@ _bool CNpcMom::OnQueryHit(int32_t iDamage)
 
 	return true;
 }
-void CNpcMom::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
+void CWorldAgent::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
 {
 	if (nullptr == pObj)
 		return;
 
 }
-_bool CNpcMom::Activate_PendingHit()
-{
-	if (!m_bPending)return false;
 
-	_bool bSameHit = m_bActiveHit &&
-		m_ActiveMonTable.eAttType == m_PendingMonTable.eAttType &&
-		m_ActiveMonTable.eHitType == m_PendingMonTable.eHitType;
-
-
-	m_ActiveMonTable = m_PendingMonTable;
-	m_bActiveHit = true;
-
-	m_PendingMonTable = {};
-	m_bPending = false;
-
-	return true;
-}
-
-void CNpcMom::ReActiveTable()
-{
-	m_PendingMonTable = {};
-	m_bPending = false;
-
-	m_ActiveMonTable = {};
-	m_bActiveHit = false;
-	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::HIT), FLAGTYPE::DEL);
-}
-
-_bool CNpcMom::Is_Grounded()
-{
-	return m_pCharacterController->IsGrounded();
-}
-
-SOUND_ID  CNpcMom::Play_Sound(const MONSOUND& MonSound)
+SOUND_ID  CWorldAgent::Play_Sound(const MONSOUND& MonSound)
 {
 	auto iter = m_SoundTable.find(MonSound.SoundKey);
 
@@ -452,7 +594,7 @@ SOUND_ID  CNpcMom::Play_Sound(const MONSOUND& MonSound)
 	return id;
 }
 
-void CNpcMom::Get_SoundKey(_string& CurSoundName)
+void CWorldAgent::Get_SoundKey(_string& CurSoundName)
 {
 	_string Key = "";
 	if (ImGui::BeginCombo("SoundTable", CurSoundName.c_str()))
@@ -475,7 +617,7 @@ void CNpcMom::Get_SoundKey(_string& CurSoundName)
 	return;
 }
 
-const _float4x4* CNpcMom::Get_CombineBoneMatrix(int32_t iBoneIndex)
+const _float4x4* CWorldAgent::Get_CombineBoneMatrix(int32_t iBoneIndex)
 {
 	if (iBoneIndex >= m_pComModelInstance->Get_CombinedBoneMatrices().size() || iBoneIndex < 0)
 		return nullptr;
@@ -483,22 +625,22 @@ const _float4x4* CNpcMom::Get_CombineBoneMatrix(int32_t iBoneIndex)
 	return &m_pComModelInstance->Get_CombinedBoneMatrices()[iBoneIndex];
 }
 
-CComAnimator* CNpcMom::Get_Animator()
+CComAnimator* CWorldAgent::Get_Animator()
 {
 	return m_pModelAnimator;
 }
 
-CComCharacterMoveIntent* CNpcMom::Get_MoveIntent()
+CComCharacterMoveIntent* CWorldAgent::Get_MoveIntent()
 {
 	return m_pMoveIntent;
 }
 
-CBTBlackBoard* CNpcMom::Get_BlackBoard()
+CBTBlackBoard* CWorldAgent::Get_BlackBoard()
 {
 	if (nullptr == m_pBeHavior) return nullptr;
 	return m_pBeHavior->Get_Blackboard();
 }
-int32_t CNpcMom::Find_AnimIndex(const _string& AnimName)
+int32_t CWorldAgent::Find_AnimIndex(const _string& AnimName)
 {
 	auto pModel = m_pComModelInstance->GetModel();
 	if (nullptr == pModel) return -1;
@@ -514,7 +656,7 @@ int32_t CNpcMom::Find_AnimIndex(const _string& AnimName)
 
 	return -1;
 }
-void CNpcMom::Damaged(PLAYER_SKILL_TYPE eType)
+void CWorldAgent::Damaged(PLAYER_SKILL_TYPE eType)
 {
 	switch (eType)
 	{
@@ -534,7 +676,7 @@ void CNpcMom::Damaged(PLAYER_SKILL_TYPE eType)
 		GET_SINGLE(UIManager)->CreateDamageFont(20, GetHandle(), true);
 		m_iHp -= 20.f;
 		break;
-	case PLAYER_SKILL_TYPE::ACIENT_LIGHTNING:
+	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
 		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
 		m_iHp -= 25.f;
 		break;
@@ -559,62 +701,5 @@ void CNpcMom::Damaged(PLAYER_SKILL_TYPE eType)
 
 	}
 }
-
-void CNpcMom::Update_HurtBox()
-{
-	_bool bHurtBoxUpdated{ false };
-
-	if (m_iColliderBoneIndex >= 0 && m_pComModelInstance)
-	{
-		const auto& CombinedBones = m_pComModelInstance->Get_CombinedBoneMatrices();
-
-		const size_t iBoneIndex =
-			static_cast<size_t>(m_iColliderBoneIndex);
-
-		if (iBoneIndex < CombinedBones.size())
-		{
-			const _matrix HurtBoxWorld =
-				XMLoadFloat4x4(&CombinedBones[iBoneIndex]) *
-				GetTransform().GetLoadedCombinedWorldMatrix();
-
-			_vector vScale{};
-			_vector vRotation{};
-			_vector vTranslation{};
-
-			if (XMMatrixDecompose(
-				&vScale,
-				&vRotation,
-				&vTranslation,
-				HurtBoxWorld))
-			{
-				_float4 vHurtBoxRotation{};
-
-				// 계산한 위치를 멤버에 저장
-				XMStoreFloat3(
-					&m_vHurtBoxPosition,
-					vTranslation);
-
-				XMStoreFloat4(
-					&vHurtBoxRotation,
-					XMQuaternionNormalize(vRotation));
-
-				bHurtBoxUpdated = m_pComRigidBody->SetKinematicTarget(m_vHurtBoxPosition, vHurtBoxRotation);
-			}
-		}
-	}
-
-	if (!bHurtBoxUpdated)
-	{
-		m_vHurtBoxPosition =
-			m_pCharacterController->GetPosition();
-
-		m_pComRigidBody->SetKinematicTarget(
-			m_vHurtBoxPosition,
-			GetTransform().GetQuaternion());
-	}
-}
-
-
-
 
 

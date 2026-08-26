@@ -18,14 +18,6 @@ void CMon_Spawner::UpdateGUI()
 {
 	ImGui::Text(m_bPick == true ? "Pick : TRUE" : "Pick FALSE");
 	
-	if (ImGui::Button("Save SmallSpider"))
-	{
-		nlohmann::json j;
-		JsonSaveLoadManager::SaveJsonTypeFloat3list(j, "SPIDERSPAWN", m_SpawnPos);
-		std::ofstream path("./Resources/json/Spawn/SPIDERSPAWN.json");
-		path << j.dump(4);
-		path.close();
-	}
 	if (ImGui::Button("Save EventSpider"))
 	{
 		nlohmann::json j;
@@ -84,40 +76,6 @@ HRESULT CMon_Spawner::Initialize(void* pArg)
 			m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
 		}
 		
-	}
-	
-	if (Desc->LevelTag != "TERRAIN")
-	{
-		m_SpawnPos.clear();
-		auto pRes = CGameInstance::Get().GetResourceFirst<CResJson>("SPAWNER", "SPIDERSPAWN");
-		if (nullptr == pRes)
-		{
-			MSG_BOX("Load Failed Json To SPIDER SPAWN");
-			return E_FAIL;
-		}
-		auto json = pRes->Get_Json();
-		JsonSaveLoadManager::LoadJsonTypeFloat3list(json, "SPIDERSPAWN", m_SpawnPos);
-		{
-			CSpider::SPIDER_DESC Spider{};
-			Spider.sObjectTag = "Spider";
-			Spider.TargetHandle = Desc->handle;
-			Spider.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-			Spider.ReSourceTag = "Model_Resource_Spider";
-			Spider.resBeHaviorMajor = "BTJSON";
-			Spider.resBeHaviorMinor = "RUNSPIDER";
-			Spider.MonType = MONSTER_TYPE::NORMAL;
-			Spider.vScale = _float3(0.1f, 0.1f, 0.1f);
-			for (auto& iter : m_SpawnPos)
-			{
-				Spider.vPos = iter;
-				Spider.vPatrollStart = iter;
-				Spider.vPatrollEnd = _float3(72.475, -0.696, -108.795);
-				Spider.bSpawn = true;
-				E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider);
-
-			}
-
-		}
 	}
 	return S_OK;
 }

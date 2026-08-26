@@ -64,8 +64,8 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 
 	GPU_ANIM_INSTANCE_DATA InstanceData{};
 	InstanceData.WorldMatrix = WorldMatrix;
-	InstanceData.iAnimIndex = iAnimIndex;
 	InstanceData.iFlags = iFlags;
+	InstanceData.iAnimIndex = iAnimIndex;
 	InstanceData.fTrackPosition = AnimState.fTrackPosition;
 	InstanceData.iRootBoneIndex = pAnimator->GetRootBoneIndex();
 	if (iAnimIndex < pModel->GetAnimations().size() && pModel->GetAnimations()[iAnimIndex])

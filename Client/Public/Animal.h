@@ -43,6 +43,7 @@ public:
 		_float fOffset{};
 		_string resBeHaviorMajor{}, resBeHaviorMinor{};
 		_float3 vStartPos{}, vEndPos{};
+		_float fSpeed;
 		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::NPC_BODY),
@@ -96,8 +97,6 @@ protected:
 	CComPxCharacterController* m_pCharacterController{};
 	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
-	CComPxRigidBody* m_pComRigidBody{};
-	CComPxSphereCollider* m_pComSphereCol{};
 	CComSound* m_pComSound{};
 
 	// Anim

@@ -1,9 +1,11 @@
 
 #pragma once
+
 #include "Client_Defines.h"
 #include "StateMachine.h"
 
 NS_BEGIN(Client)
+
 enum class PLAYER_STATE : uint32_t
 {
 	NONE = 0,
@@ -13,7 +15,7 @@ enum class PLAYER_STATE : uint32_t
 	ATTACK,
 	SKILL_BEGIN,
 	DASH_SKILL,
-	ACIENTATTACK_SKILL,
+	ANCIENT_ATTACK_SKILL,
 	ACCIO_SKILL,
 	DEPULSO_SKILL,
 	DESCENDO_SKILL,
@@ -35,7 +37,6 @@ enum class PLAYER_STATE : uint32_t
 	END,
 };
 
-//FSM 훔쳐버리기
 class CPlayer_StateMachine final : public CStateMachine
 {
 public:
@@ -65,6 +66,7 @@ public:
 	static UPtr<CPlayer_StateMachine> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
 
+
 private:
 	_bool IsRegistered(PLAYER_STATE eState) const;
 	static _bool IsSkillState(PLAYER_STATE eState);
@@ -75,8 +77,6 @@ private:
 	std::unordered_set<uint32_t> m_RegisteredStateIDs{};
 	PLAYER_STATE m_eCurrentState = PLAYER_STATE::NONE;
 	PLAYER_STATE m_eRequestedState = PLAYER_STATE::NONE;
-
-private:
 	void Free() override;
 };
 

@@ -21,9 +21,13 @@ public:
 	EVALUATE						Evaluate(_float fTimeDelta) override;
 	virtual void					Update_Gui() override;
 private:
+	void						Abort() override;
+	void						OnEnter() override;
+	void						OnExit(EVALUATE eResult) override;
+private:
 	_float				m_fDis{10.f};
-	_bool				m_bTrue{ false };
-	BT_USER				m_eUser{BT_USER::MON};
+	_bool				m_bTrue{ false }, m_bRunning{ false };
+	EVALUATE			m_PreEval{ EVALUATE::SUCCESS };
 public:
 	static UPtr<CBTDecSearch> Create();
 	UPtr<CPrototype> Clone(void* pArg)override;

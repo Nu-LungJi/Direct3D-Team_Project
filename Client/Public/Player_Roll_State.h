@@ -38,7 +38,7 @@ private:
 	_float m_fRollMinSpeedScale{ 0.15f };
 	_float m_fLocomotionCancelRatio{ 0.30f };
 	_float m_fRollDirectionResponse{ 3.f };
-	_float m_fPreviousAnimRatio{};
+	_float m_fPreviousAnimationRatio{};
 };
 
 NS_END
