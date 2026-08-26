@@ -167,7 +167,7 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 	const uint32_t logicalThreadCount = std::max(1u, std::thread::hardware_concurrency());
-	const uint32_t renderWorkerCount = std::min(4u, std::max(1u, logicalThreadCount / 2));
+	const uint32_t renderWorkerCount = std::min(6u, std::max(1u, logicalThreadCount / 2));
 	const uint32_t normalWorkerCount = logicalThreadCount > renderWorkerCount + 2 
 		? logicalThreadCount - renderWorkerCount - 2
 		: 1u;

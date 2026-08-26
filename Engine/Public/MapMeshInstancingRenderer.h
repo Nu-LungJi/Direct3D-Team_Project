@@ -14,8 +14,8 @@ class CResSamplerState;
 class CResStaticModel;
 class CResVertexShader;
 
-// 로드된 청크의 정적 인스턴스를 GPU 입력 버퍼에 상주시킨다.
-// 평상시에는 상주 입력을 재사용해 GPU 컬링과 간접 드로우만 수행한다.
+// 로드된 청크의 정적 인스턴스를 GPU 입력 버퍼에 상주
+// 평상시에는 상주 입력을 재사용해 GPU 컬링과 간접 드로우만 수행
 class ENGINE_DLL CMapMeshInstancingRenderer final : public CEngineBase, public IRenderable
 {
 public:
@@ -132,33 +132,17 @@ private:
 	// 배치 전체 크기를 미리 계산해 상주 벡터의 재할당을 줄인다.
 	void ReserveResidentDrawData();
 	// 모델, 렌더 기능 단위 배치 하나를 GPU 컬링 입력과 메시별 Draw 정보로 펼친다
-	HRESULT AppendInstanceBatch(
-		const CMapMeshInstanceBatchCollector::MODEL_RENDER_KEY& key,
-		const MAPMESH_INSTANCE_BATCH& batch,
-		uint32_t& batchIndex);
+	HRESULT AppendInstanceBatch(const CMapMeshInstanceBatchCollector::MODEL_RENDER_KEY& key, const MAPMESH_INSTANCE_BATCH& batch, uint32_t& batchIndex);
 	// 모든 배치를 병합하고 렌더 기능별 실행 순서까지 구성한다
 	HRESULT BuildResidentDrawData(uint32_t& outBatchCount);
 	// GPU 컬링을 실행해 가시 인스턴스 버퍼와 간접 드로우 인자 버퍼를 만든다
-	HRESULT RunGpuCulling(
-		ID3D11DeviceContext* context,
-		const RENDER_CTX& renderContext,
-		uint32_t batchCount,
-		_bool uploadResidentData,
-		DRAW_PACKET& outPacket);
+	HRESULT RunGpuCulling(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, uint32_t batchCount, _bool uploadResidentData, DRAW_PACKET& outPacket);
 	// Immediate Context의 현재 렌더 타깃과 파이프라인 상태를 패킷에 보관한다.
 	HRESULT CapturePipelineState(ID3D11DeviceContext* context, DRAW_PACKET& outPacket) const;
 	// 지정된 Draw 명령 구간을 하나의 Deferred Context에 기록한다
-	HRESULT RecordDrawCommands(
-		ID3D11DeviceContext* context,
-		const DRAW_PACKET& packet,
-		uint32_t commandBegin,
-		uint32_t commandEnd,
-		uint32_t& outDrawCalls);
+	HRESULT RecordDrawCommands(ID3D11DeviceContext* context,const DRAW_PACKET& packet, uint32_t commandBegin, uint32_t commandEnd, uint32_t& outDrawCalls);
 	// 메시별 머티리얼 값을 상수 버퍼에 기록하고 픽셀 셰이더에 바인딩한다
-	static HRESULT BindMapMeshMaterial(
-		ID3D11DeviceContext* context,
-		const SPtr<CResCBuffer>& materialConstantBuffer,
-		const MATERIAL_DESC& materialDesc);
+	static HRESULT BindMapMeshMaterial(ID3D11DeviceContext* context, const SPtr<CResCBuffer>& materialConstantBuffer, const MATERIAL_DESC& materialDesc);
 
 public:
 	// Draw 패킷을 만들고 워커별 명령 목록을 기록한 뒤 GPU에 제출

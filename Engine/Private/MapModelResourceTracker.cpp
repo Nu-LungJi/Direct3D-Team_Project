@@ -1,24 +1,26 @@
 #include "pch.h"
 #include "MapModelResourceTracker.h"
 
+#include "ResModelMaterial.h"
 #include "MapStaticModelLoader.h"
 
 NS_USING(Engine)
 
-void CMapModelResourceTracker::SetResourceIndex(
-	const std::filesystem::path& staticModelRoot,
-	const std::string& resourceGroup,
+void CMapModelResourceTracker::SetResourceIndex(const std::filesystem::path& staticModelRoot, const std::string& resourceGroup, 
 	std::unordered_map<std::string, std::filesystem::path> modelPaths)
 {
-	std::lock_guard<std::mutex> lock(m_ResourceIndexMutex);
-	m_StaticModelRoot = staticModelRoot;
-	m_ResourceGroup = resourceGroup;
-	m_ModelPaths = std::move(modelPaths);
+	{
+		std::lock_guard<std::mutex> lock(m_ResourceIndexMutex);
+		m_StaticModelRoot = staticModelRoot;
+		m_ResourceGroup = resourceGroup;
+		m_ModelPaths = std::move(modelPaths);
+	}
+
+	// 맵 진입 시 한 번 구축하여 스트리밍 워커의 첫 텍스처 검색 비용을 제거
+	CResModelMaterial::WarmUpTextureSearchIndex(staticModelRoot);
 }
 
-HRESULT CMapModelResourceTracker::AcquireChunkResources(
-	CMapChunk& chunk,
-	const std::vector<MAP_MESH_OBJECT_FILE_DATA>& objects)
+HRESULT CMapModelResourceTracker::AcquireChunkResources(CMapChunk& chunk, const std::vector<MAP_MESH_OBJECT_FILE_DATA>& objects)
 {
 	const MODEL_KEY_SET uniqueModels = CollectUniqueModelKeys(objects);
 	auto& chunkResources = chunk.GetModelResources();
@@ -44,9 +46,7 @@ HRESULT CMapModelResourceTracker::AcquireChunkResources(
 	return S_OK;
 }
 
-HRESULT CMapModelResourceTracker::PreloadResources(
-	const std::vector<MAP_MESH_OBJECT_FILE_DATA>& objects,
-	std::vector<MAP_MODEL_RESOURCE_KEY>& outResources)
+HRESULT CMapModelResourceTracker::PreloadResources(const std::vector<MAP_MESH_OBJECT_FILE_DATA>& objects, std::vector<MAP_MODEL_RESOURCE_KEY>& outResources)
 {
 	ZoneScopedN("ChunkResourcePreloadWorker");
 	const MODEL_KEY_SET uniqueModels = CollectUniqueModelKeys(objects);
@@ -68,9 +68,7 @@ HRESULT CMapModelResourceTracker::PreloadResources(
 	return S_OK;
 }
 
-HRESULT CMapModelResourceTracker::CommitPreloadedResources(
-	CMapChunk& chunk,
-	const std::vector<MAP_MODEL_RESOURCE_KEY>& resources)
+HRESULT CMapModelResourceTracker::CommitPreloadedResources(CMapChunk& chunk, const std::vector<MAP_MODEL_RESOURCE_KEY>& resources)
 {
 	for (const auto& key : resources)
 	{
@@ -90,12 +88,10 @@ HRESULT CMapModelResourceTracker::CommitPreloadedResources(
 	return S_OK;
 }
 
-void CMapModelResourceTracker::ReleasePreloadedResources(
-	const std::vector<MAP_MODEL_RESOURCE_KEY>& resources)
+void CMapModelResourceTracker::ReleasePreloadedResources(const std::vector<MAP_MODEL_RESOURCE_KEY>& resources)
 {
 	DecreasePendingReferences(resources);
-	m_DeferredUnusedCandidates.insert(
-		m_DeferredUnusedCandidates.end(), resources.begin(), resources.end());
+	m_DeferredUnusedCandidates.insert(m_DeferredUnusedCandidates.end(), resources.begin(), resources.end());
 }
 
 void CMapModelResourceTracker::QueueChunkRelease(CMapChunk& chunk)
@@ -107,7 +103,9 @@ void CMapModelResourceTracker::QueueChunkRelease(CMapChunk& chunk)
 void CMapModelResourceTracker::QueueAllChunkReleases(CHUNK_MAP& chunks)
 {
 	for (auto& chunkEntry : chunks)
+	{
 		QueueChunkRelease(chunkEntry.second);
+	}
 }
 
 void CMapModelResourceTracker::ProcessDeferredReleases()
@@ -121,7 +119,9 @@ void CMapModelResourceTracker::ProcessDeferredReleases()
 	m_DeferredUnusedCandidates.clear();
 
 	for (const auto& resources : chunkReleases)
+	{
 		DecreaseChunkReferences(resources, unusedCandidates);
+	}
 
 	for (const auto& key : unusedCandidates)
 	{
@@ -152,8 +152,7 @@ void CMapModelResourceTracker::ProcessDeferredReleases()
 	}
 }
 
-CMapModelResourceTracker::MODEL_KEY_SET CMapModelResourceTracker::CollectUniqueModelKeys(
-	const std::vector<MAP_MESH_OBJECT_FILE_DATA>& objects) const
+CMapModelResourceTracker::MODEL_KEY_SET CMapModelResourceTracker::CollectUniqueModelKeys(const std::vector<MAP_MESH_OBJECT_FILE_DATA>& objects) const
 {
 	MODEL_KEY_SET uniqueModels;
 	for (const auto& object : objects)
@@ -170,6 +169,7 @@ HRESULT CMapModelResourceTracker::EnsureResourceLoaded(const MAP_MODEL_RESOURCE_
 	{
 		if (model->GetState() == CResource::STATE::LOADED)
 			return S_OK;
+
 		if (model->GetState() != CResource::STATE::UNLOAD &&
 			model->GetState() != CResource::STATE::LOADFAIL)
 			return E_FAIL;
@@ -200,19 +200,17 @@ HRESULT CMapModelResourceTracker::EnsureResourceLoaded(const MAP_MODEL_RESOURCE_
 		: E_FAIL;
 }
 
-SPtr<std::mutex> CMapModelResourceTracker::GetResourceMutex(
-	const MAP_MODEL_RESOURCE_KEY& key)
+SPtr<std::mutex> CMapModelResourceTracker::GetResourceMutex(const MAP_MODEL_RESOURCE_KEY& key)
 {
 	std::lock_guard<std::mutex> lock(m_ResourceMutexMapMutex);
 	auto& resourceMutex = m_ResourceMutexes[key];
 	if (!resourceMutex)
 		resourceMutex = std::make_shared<std::mutex>();
+
 	return resourceMutex;
 }
 
-void CMapModelResourceTracker::DecreaseChunkReferences(
-	const std::vector<MAP_MODEL_RESOURCE_KEY>& resources,
-	std::vector<MAP_MODEL_RESOURCE_KEY>& outUnusedCandidates)
+void CMapModelResourceTracker::DecreaseChunkReferences(const std::vector<MAP_MODEL_RESOURCE_KEY>& resources, std::vector<MAP_MODEL_RESOURCE_KEY>& outUnusedCandidates)
 {
 	for (const auto& key : resources)
 	{
@@ -231,8 +229,7 @@ void CMapModelResourceTracker::DecreaseChunkReferences(
 	}
 }
 
-void CMapModelResourceTracker::DecreasePendingReferences(
-	const std::vector<MAP_MODEL_RESOURCE_KEY>& resources)
+void CMapModelResourceTracker::DecreasePendingReferences(const std::vector<MAP_MODEL_RESOURCE_KEY>& resources)
 {
 	std::lock_guard<std::mutex> pendingLock(m_PendingReferenceMutex);
 	for (const auto& key : resources)

@@ -18,7 +18,9 @@ HRESULT CMapMaterialRepository::SaveFile(const std::filesystem::path& filePath, 
 		rootJson["Materials"] = nlohmann::ordered_json::object();
 
 		for (const auto& [modelName, material] : materials)
+		{
 			rootJson["Materials"][modelName] = WriteMaterial(material);
+		}
 
 		std::ofstream outFile(filePath);
 		if (!outFile.is_open())
@@ -52,12 +54,15 @@ HRESULT CMapMaterialRepository::LoadFile(const std::filesystem::path& filePath)
 
 		MATERIAL_MAP loadedMaterials;
 		for (const auto& [modelName, materialJson] : rootJson["Materials"].items())
+		{
 			loadedMaterials[modelName] = ReadMaterial(materialJson);
+		}
 
 		{
 			std::unique_lock lock(m_Mutex);
 			m_Materials = std::move(loadedMaterials);
 		}
+
 		return S_OK;
 	}
 	catch (const std::exception&)
@@ -70,6 +75,7 @@ MATERIAL_DESC CMapMaterialRepository::Find(const std::string& modelName) const
 {
 	std::shared_lock lock(m_Mutex);
 	const auto iter = m_Materials.find(modelName);
+
 	return iter != m_Materials.end() ? iter->second : MATERIAL_DESC{};
 }
 

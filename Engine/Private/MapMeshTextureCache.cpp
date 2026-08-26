@@ -40,10 +40,7 @@ const CMapMeshTextureCache::MODEL_TEXTURE_SETS* CMapMeshTextureCache::GetOrCreat
 	return &iter->second;
 }
 
-HRESULT CMapMeshTextureCache::BindTextures(
-	ID3D11DeviceContext* context,
-	const MODEL_TEXTURE_SETS& textureSets,
-	uint32_t meshIndex) const
+HRESULT CMapMeshTextureCache::BindTextures(ID3D11DeviceContext* context, const MODEL_TEXTURE_SETS& textureSets, uint32_t meshIndex) const
 {
 	if (context == nullptr || meshIndex >= textureSets.size())
 		return E_INVALIDARG;
@@ -53,9 +50,11 @@ HRESULT CMapMeshTextureCache::BindTextures(
 	{
 		if (textureSets[meshIndex][i] == nullptr)
 			return E_FAIL;
+
 		shaderResourceViews[i] = textureSets[meshIndex][i]->GetSRV().Get();
 	}
 	context->PSSetShaderResources(0, TEXTURE_COUNT, shaderResourceViews);
+
 	return S_OK;
 }
 

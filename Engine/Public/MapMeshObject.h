@@ -35,7 +35,7 @@ public:
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
-	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	//HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
 	void UpdateGUI() override;
 
 	/*----------- 광윤 추가 -----------*/

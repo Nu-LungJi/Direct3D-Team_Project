@@ -7,9 +7,7 @@
 
 NS_USING(Engine)
 
-MAP_MESH_OBJECT_FILE_DATA CMapRuntimeObjectFactory::MakeMapMeshObjectFileData(
-	const CMapMeshObject& object,
-	const std::string& layerName) const
+MAP_MESH_OBJECT_FILE_DATA CMapRuntimeObjectFactory::MakeMapMeshObjectFileData(const CMapMeshObject& object, const std::string& layerName) const
 {
 	const auto& transform = object.GetTransform();
 
@@ -24,12 +22,11 @@ MAP_MESH_OBJECT_FILE_DATA CMapRuntimeObjectFactory::MakeMapMeshObjectFileData(
 	fileData.rotation = transform.GetQuaternion();
 	fileData.scale = transform.GetScale();
 	fileData.windDesc = object.GetWindDesc();
+
 	return fileData;
 }
 
-std::optional<CHandle> CMapRuntimeObjectFactory::CreateMapMeshObject(
-	const MAP_MESH_OBJECT_FILE_DATA& objectData,
-	_bool updateTransformImmediately) const
+std::optional<CHandle> CMapRuntimeObjectFactory::CreateMapMeshObject(const MAP_MESH_OBJECT_FILE_DATA& objectData, _bool updateTransformImmediately) const
 {
 	CMapMeshObject::MAP_MESH_OBJECT_DESC desc{};
 	desc.sObjectTag = objectData.objectTag;
@@ -39,11 +36,7 @@ std::optional<CHandle> CMapRuntimeObjectFactory::CreateMapMeshObject(
 	desc.modelResTag = objectData.model;
 	desc.windDesc = objectData.windDesc;
 
-	auto handle = CGameInstance::Get().AddGameObjectToLayer(
-		desc.protoGroupTag,
-		desc.prototypeTag,
-		objectData.layer,
-		&desc);
+	auto handle = CGameInstance::Get().AddGameObjectToLayer(desc.protoGroupTag, desc.prototypeTag, objectData.layer, &desc);
 	if (!handle)
 		return std::nullopt;
 
@@ -55,18 +48,17 @@ std::optional<CHandle> CMapRuntimeObjectFactory::CreateMapMeshObject(
 	transform.SetPosition(objectData.position);
 	transform.SetQuaternion(objectData.rotation);
 	transform.SetScale(objectData.scale);
+
 	if (updateTransformImmediately)
 		transform.Update();
+
 	return handle;
 }
 
-MAP_DECAL_FILE_DATA CMapRuntimeObjectFactory::MakeDecalFileData(
-	const CDecalVolume& decal,
-	const std::string& layerName) const
+MAP_DECAL_FILE_DATA CMapRuntimeObjectFactory::MakeDecalFileData(const CDecalVolume& decal, const std::string& layerName) const
 {
 	const auto& transform = decal.GetTransform();
-	const _bool hasMaskOverride = decal.GetMaskTextureGroup().hash != 0 &&
-		decal.GetMaskTextureTag().hash != 0;
+	const _bool hasMaskOverride = decal.GetMaskTextureGroup().hash != 0 && decal.GetMaskTextureTag().hash != 0;
 
 	MAP_DECAL_FILE_DATA fileData{};
 	fileData.objectTag = decal.GetObjectTag();
@@ -95,9 +87,7 @@ MAP_DECAL_FILE_DATA CMapRuntimeObjectFactory::MakeDecalFileData(
 		fileData.materialParameters.push_back(std::move(parameterData));
 	}
 
-	for (UINT slot = CDecalMaterial::TEXTURE_SLOT_BEGIN;
-		slot <= CDecalMaterial::TEXTURE_SLOT_END;
-		++slot)
+	for (UINT slot = CDecalMaterial::TEXTURE_SLOT_BEGIN; slot <= CDecalMaterial::TEXTURE_SLOT_END; ++slot)
 	{
 		const auto& group = decal.GetTextureOverrideGroup(slot);
 		const auto& tag = decal.GetTextureOverrideTag(slot);
@@ -116,32 +106,24 @@ MAP_DECAL_FILE_DATA CMapRuntimeObjectFactory::MakeDecalFileData(
 	return fileData;
 }
 
-std::optional<CHandle> CMapRuntimeObjectFactory::CreateDecal(
-	const MAP_DECAL_FILE_DATA& decalData) const
+std::optional<CHandle> CMapRuntimeObjectFactory::CreateDecal(const MAP_DECAL_FILE_DATA& decalData) const
 {
 	auto& gameInstance = CGameInstance::Get();
-	const std::string textureGroup = decalData.textureGroup.empty()
-		? std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE)
-		: decalData.textureGroup;
+	const std::string textureGroup = decalData.textureGroup.empty() ? std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE) : decalData.textureGroup;
 
-	if (!decalData.textureTag.empty() &&
-		!gameInstance.GetResourceFirst<CResTexture2D>(textureGroup, decalData.textureTag))
+	if (!decalData.textureTag.empty() && !gameInstance.GetResourceFirst<CResTexture2D>(textureGroup, decalData.textureTag))
 	{
 		if (decalData.texturePath.empty())
 			return std::nullopt;
-		auto texture = gameInstance.AddResourceT<CResTexture2D>(
-			textureGroup,
-			decalData.textureTag,
-			CResTexture2D::Create(decalData.texturePath));
+
+		auto texture = gameInstance.AddResourceT<CResTexture2D>(textureGroup, decalData.textureTag, CResTexture2D::Create(decalData.texturePath));
 		if (!texture || FAILED(texture->Load()))
 			return std::nullopt;
 	}
 
 	CDecalVolume::DECAL_VOLUME_DESC desc{};
 	desc.sObjectTag = decalData.objectTag;
-	desc.sMaterialPath = decalData.materialPath.empty()
-		? std::string(CDecalVolume::DEFAULT_MATERIAL_PATH)
-		: decalData.materialPath;
+	desc.sMaterialPath = decalData.materialPath.empty() ? std::string(CDecalVolume::DEFAULT_MATERIAL_PATH) : decalData.materialPath;
 	desc.fOpacity = decalData.opacity;
 	desc.fNormalThreshold = decalData.normalThreshold;
 	desc.fEdgeSoftness = decalData.edgeSoftness;
@@ -151,11 +133,7 @@ std::optional<CHandle> CMapRuntimeObjectFactory::CreateDecal(
 		desc.sMaskTextureTag = decalData.textureTag;
 	}
 
-	auto handle = gameInstance.AddGameObjectToLayer(
-		decalData.protoGroup,
-		decalData.prototype,
-		MAPDECALOBJECTLAYER,
-		&desc);
+	auto handle = gameInstance.AddGameObjectToLayer(decalData.protoGroup, decalData.prototype, MAPDECALOBJECTLAYER, &desc);
 	if (!handle)
 		return std::nullopt;
 
@@ -173,9 +151,7 @@ std::optional<CHandle> CMapRuntimeObjectFactory::CreateDecal(
 	{
 		for (const auto& parameter : decal->GetMaterialParameters())
 		{
-			const auto savedParameter = std::find_if(
-				decalData.materialParameters.begin(),
-				decalData.materialParameters.end(),
+			const auto savedParameter = std::find_if(decalData.materialParameters.begin(), decalData.materialParameters.end(),
 				[&parameter](const MAP_DECAL_PARAMETER_DATA& candidate)
 				{
 					return candidate.name == parameter.name;
@@ -184,8 +160,7 @@ std::optional<CHandle> CMapRuntimeObjectFactory::CreateDecal(
 				continue;
 
 			std::array<_float, 4> values{};
-			const size_t copyCount = std::min<size_t>(
-				parameter.count, savedParameter->values.size());
+			const size_t copyCount = std::min<size_t>(parameter.count, savedParameter->values.size());
 			std::copy_n(savedParameter->values.begin(), copyCount, values.begin());
 			decal->SetMaterialParameter(parameter.name, values.data(), parameter.count);
 		}
@@ -194,8 +169,7 @@ std::optional<CHandle> CMapRuntimeObjectFactory::CreateDecal(
 	{
 		decal->SetMaterialParameter("Albedo", &decalData.legacyAlbedo.x, 4);
 		decal->SetMaterialParameter("Emissive Color", &decalData.legacyEmissive.x, 3);
-		decal->SetMaterialParameter(
-			"Emissive Intensity", &decalData.legacyEmissiveIntensity, 1);
+		decal->SetMaterialParameter("Emissive Intensity", &decalData.legacyEmissiveIntensity, 1);
 	}
 
 	for (const auto& textureData : decalData.textureOverrides)
@@ -207,17 +181,12 @@ std::optional<CHandle> CMapRuntimeObjectFactory::CreateDecal(
 			continue;
 		}
 
-		const std::string group = textureData.group.empty()
-			? std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE)
-			: textureData.group;
+		const std::string group = textureData.group.empty() ? std::string(TAG_RES_GRP_MAP_DECAL_TEXTURE) : textureData.group;
 		if (!gameInstance.GetResourceFirst<CResTexture2D>(group, textureData.tag))
 		{
 			if (textureData.path.empty())
 				continue;
-			auto texture = gameInstance.AddResourceT<CResTexture2D>(
-				group,
-				textureData.tag,
-				CResTexture2D::Create(textureData.path));
+			auto texture = gameInstance.AddResourceT<CResTexture2D>(group, textureData.tag, CResTexture2D::Create(textureData.path));
 			if (!texture || FAILED(texture->Load()))
 				continue;
 		}
