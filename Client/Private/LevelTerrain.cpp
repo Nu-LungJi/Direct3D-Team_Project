@@ -185,8 +185,8 @@ HRESULT CLevelTerrain::Initialize()
 		CMiniGameNpc::DESC Desc{};
 		Desc.sObjectTag = "MiniGameNpc_Test";
 		Desc.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
-		// 터레인 로더에서 실제 SK_NPC_AnneSallow.bin을 읽는 테스트 NPC 리소스.
-		Desc.ReSourceTag = "Model_Resource_NPC_AnneSallow";
+		// 스켈레톤/애니메이션 호환 확인을 위해 플레이어 SK를 사용하는 테스트 NPC.
+		Desc.ReSourceTag = "PLAYER_MODEL_RESROUCE";
 		Desc.BeHaviorTag = "NPC1";
 		Desc.resBeHaviorMajor = "BTJSON";
 		Desc.resBeHaviorMinor = "NPC1";
@@ -196,6 +196,12 @@ HRESULT CLevelTerrain::Initialize()
 		Desc.vEndPos = Desc.vPos;
 		Desc.vRot = { 0.f, 180.f, 0.f };
 		Desc.vScale = { 1.f, 1.f, 1.f };
+		Desc.fCCTHeight = 3.6f;
+		Desc.fCCTRadius = 0.6f;
+		Desc.fCCTStepOffset = 0.1f;
+		// PhysX Capsule의 전체 반높이(height * 0.5 + radius)를 사용해
+		// CCT 바닥이 NPC Transform 원점, 즉 발 위치에 오도록 맞춘다.
+		Desc.vCCTCenterOffset = { 0.f, -2.4f, 0.f };
 		Desc.bDonMove = true;
 		Desc.SpeakerName = "앤 살로우";
 		Desc.InteractionDistance = 3.f;

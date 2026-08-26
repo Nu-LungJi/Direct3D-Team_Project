@@ -163,7 +163,10 @@ HRESULT CMiniGameNpc::Initialize(void* pArg)
 		XMMatrixRotationY(XMConvertToRadians(pDesc->vRot.y)) *
 		XMMatrixRotationZ(XMConvertToRadians(pDesc->vRot.z));
 	GetTransform().SetQuaternion(XMQuaternionRotationMatrix(rotation));
-	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
+	// Keep the render transform on the position requested by the descriptor.
+	// FixedUpdate synchronizes it with (controller center - center offset);
+	// using the physical foot here applies a different offset for the first frame.
+	GetTransform().SetPosition(pDesc->vPos);
 	GetTransform().Update();
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);

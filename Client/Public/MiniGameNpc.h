@@ -112,7 +112,7 @@ private:
 	OUTCOME m_eOutcome{ OUTCOME::SPELL_MINIGAME };
 	_float m_fFadeDuration{ 0.35f };
 	_float m_fFadeHoldDuration{ 0.2f };
-	_float m_fIntroElapsed{};
+	_float m_fIntroElapsed{}; 
 	_float3 m_vPlayerDialogueOffset{ -0.8f, 0.f, 2.2f };
 	_float3 m_vDialogueCameraOffset{ 0.55f, 1.65f, 1.15f };
 	_float m_fDialogueCameraFovY{ 50.f };

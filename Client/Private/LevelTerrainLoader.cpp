@@ -696,12 +696,12 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
 		static constexpr NPC_MODEL_ENTRY NpcModels[] =
 		{
-			// TERRAIN에서는 미니게임 NPC 테스트에 사용하는 AnneSallow만 로드한다.
+			// TERRAIN 단일 NPC 검증용으로 AugustusHill만 로드한다.
 			// NPC 전체 선로드는 각 모델 폴더의 모든 AN_ 클립까지 메모리에 올리므로 비활성화한다.
 			/*{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },
 			{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },*/
-			{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
-			/*{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
+			{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
+			/*{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
 			{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
 			{ "Model_Resource_NPC_EffieBones", "EffieBones" },
 			{ "Model_Resource_NPC_EleazarFig", "EleazarFig" },
@@ -727,7 +727,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			{
 				E::CResModel::DESC Desc{};
 				Desc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) *
-					XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, -1.8f, 0.f);
+					XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, 2.f, 0.f);
 				if (FAILED(res->Load(Desc)))
 				{
 					MSG_BOX("TERRAIN Failed NPC model resource");
