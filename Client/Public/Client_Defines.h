@@ -100,6 +100,7 @@ namespace Client
 		Prototype_GameObject_Troll,
 		Prototype_GameObject_TrollWeapon,
 		Prototype_GameObject_WorldNpc,
+		Prototype_GameObject_MiniGameNpc,
 		Prototype_GameObject_Griff,
 		Prototype_GameObject_GriffChild,
 		Prototype_GameObject_WorldAnimal,
@@ -113,6 +114,8 @@ namespace Client
 		Prototype_GameObject_AccioActivity_BumperB,
 		Prototype_GameObject_AccioActivity_RampLarge,
 		Prototype_GameObject_AccioActivity_LampSmall,
+		Prototype_GameObject_AccioActivity_Npc,
+		Prototype_GameObject_PhysicsDoor,
 	};
 
 	enum class PROTO_COMPONENT

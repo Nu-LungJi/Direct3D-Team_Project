@@ -82,6 +82,9 @@
     <Filter Include="GameObject\Terrain\NvClothCape">
       <UniqueIdentifier>{458c9c2b-bf7b-41e0-9b51-876506f76f81}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Terrain\PhysicsDoor">
+      <UniqueIdentifier>{5d98af71-f748-4978-b0f0-8abce61a15b4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\Camera">
       <UniqueIdentifier>{55124923-21d1-43da-b832-baff07fdefc6}</UniqueIdentifier>
     </Filter>
@@ -397,6 +400,9 @@
     <Filter Include="GameObject\Player\PropBarrel">
       <UniqueIdentifier>{33378d39-0858-4c64-98ef-efffcf08028f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\AccioBall">
+      <UniqueIdentifier>{f312d994-35e8-4db6-a6d7-b50989c874c4}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Monster\01.Spanwer">
       <UniqueIdentifier>{08679333-751b-4ba5-a4c6-39daf5347c9b}</UniqueIdentifier>
     </Filter>
@@ -695,6 +701,9 @@
     </ClInclude>
     <ClInclude Include="..\public\OilBarrel.h">
       <Filter>GameObject\Terrain\OilBarrel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\PhysicsDoor.h">
+      <Filter>GameObject\Terrain\PhysicsDoor</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Player_AncientAttack_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_SkillStateBase\Player_AncientAttack_State</Filter>
@@ -996,6 +1005,30 @@
     <ClInclude Include="..\public\AccioBall.h">
       <Filter>GameObject\AccioActivity\AccioBall</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\AccioBall.h">
+      <Filter>GameObject\Player\AccioBall</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivityPartBase.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_Base.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_Platform.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_BumperA.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_BumperB.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_RampLarge.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_LampSmall.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\PropBarrel.h">
       <Filter>GameObject\Player\PropBarrel</Filter>
     </ClInclude>
@@ -1080,6 +1113,9 @@
     <ClInclude Include="..\public\AccioActivity_LampSmall.h">
       <Filter>GameObject\AccioActivity</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_Npc.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\AccioActivity_Platform.h">
       <Filter>GameObject\AccioActivity</Filter>
     </ClInclude>
@@ -1134,6 +1170,7 @@
     <ClInclude Include="..\public\WorldAnimal.h">
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\MiniGameNpc.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1343,6 +1380,9 @@
     </ClCompile>
     <ClCompile Include="..\private\OilBarrel.cpp">
       <Filter>GameObject\Terrain\OilBarrel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\PhysicsDoor.cpp">
+      <Filter>GameObject\Terrain\PhysicsDoor</Filter>
     </ClCompile>
     <ClCompile Include="..\private\RagdollTest.cpp">
       <Filter>GameObject\Terrain\RagdollTest</Filter>
@@ -1601,6 +1641,30 @@
     <ClCompile Include="..\private\AccioBall.cpp">
       <Filter>GameObject\AccioActivity\AccioBall</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\AccioBall.cpp">
+      <Filter>GameObject\Player\AccioBall</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivityPartBase.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_Base.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_Platform.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_BumperA.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_BumperB.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_RampLarge.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_LampSmall.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\PropBarrel.cpp">
       <Filter>GameObject\Player\PropBarrel</Filter>
     </ClCompile>
@@ -1685,6 +1749,9 @@
     <ClCompile Include="..\private\AccioActivity_LampSmall.cpp">
       <Filter>GameObject\AccioActivity</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_Npc.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\AccioActivity_Platform.cpp">
       <Filter>GameObject\AccioActivity</Filter>
     </ClCompile>
@@ -1739,6 +1806,7 @@
     <ClCompile Include="..\private\WorldAnimal.cpp">
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\MiniGameNpc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">

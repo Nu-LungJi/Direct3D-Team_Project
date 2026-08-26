@@ -251,6 +251,7 @@
     <ClInclude Include="..\public\AccioActivity_BumperB.h" />
     <ClInclude Include="..\public\AccioActivity_RampLarge.h" />
     <ClInclude Include="..\public\AccioActivity_LampSmall.h" />
+    <ClInclude Include="..\public\AccioActivity_Npc.h" />
     <ClInclude Include="..\public\PropBarrel.h" />
     <ClInclude Include="..\public\PropBarrelDebris.h" />
     <ClInclude Include="..\public\SkillTarget.h" />
@@ -329,6 +330,7 @@
     <ClInclude Include="..\public\NvClothCape.h" />
     <ClInclude Include="..\public\OilBarrel.h" />
     <ClInclude Include="..\public\Mon_Dead.h" />
+    <ClInclude Include="..\public\PhysicsDoor.h" />
     <ClInclude Include="..\Public\WiggenweldPotion.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
     <ClInclude Include="..\Public\Player_Knockdown_State.h" />
@@ -405,6 +407,7 @@
     <ClInclude Include="..\Public\VideoObject.h" />
     <ClInclude Include="..\public\WorldAnimal.h" />
     <ClInclude Include="..\public\WorldNpc.h" />
+    <ClInclude Include="..\public\MiniGameNpc.h" />
     <ClInclude Include="BTAnimNpc.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
@@ -460,6 +463,7 @@
     <ClCompile Include="..\private\AccioActivity_BumperB.cpp" />
     <ClCompile Include="..\private\AccioActivity_RampLarge.cpp" />
     <ClCompile Include="..\private\AccioActivity_LampSmall.cpp" />
+    <ClCompile Include="..\private\AccioActivity_Npc.cpp" />
     <ClCompile Include="..\private\PropBarrel.cpp" />
     <ClCompile Include="..\private\PropBarrelDebris.cpp" />
     <ClCompile Include="..\private\SkillTarget.cpp" />
@@ -533,6 +537,7 @@
     <ClCompile Include="..\private\NvClothCape.cpp" />
     <ClCompile Include="..\private\OilBarrel.cpp" />
     <ClCompile Include="..\private\Mon_Dead.cpp" />
+    <ClCompile Include="..\private\PhysicsDoor.cpp" />
     <ClCompile Include="..\Private\WiggenweldPotion.cpp" />
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
     <ClCompile Include="..\Private\Player_Knockdown_State.cpp" />
@@ -604,6 +609,7 @@
     <ClCompile Include="..\Private\VideoObject.cpp" />
     <ClCompile Include="..\private\WorldAnimal.cpp" />
     <ClCompile Include="..\private\WorldNpc.cpp" />
+    <ClCompile Include="..\private\MiniGameNpc.cpp" />
     <ClCompile Include="BTAnimNpc.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">

@@ -42,6 +42,9 @@ private:
 	/*---------------------------------*/
 	HRESULT SpanwWorldAgent();
 	HRESULT SpawnNpcPlacements(CHandle hPlayer, const _string& Path);
+
+
+
 public:
 	static UPtr<CLevelHogwartWorld> Create();
 

@@ -2,6 +2,8 @@
 #include "ComPxJoint.h"
 #include "ComPxCharacterController.h"
 #include "ComPxRigidBody.h"
+#include "DbgLineRender.h"
+#include "GameInstance.h"
 #include "GameObject.h"
 
 #pragma push_macro("new")
@@ -41,12 +43,44 @@ namespace
 			ToJointNormalizedQuat(tFrame.vRotation) };
 	}
 
+	CComPxJoint::FRAME FromJointPxTransform(
+		const PxTransform& tTransform)
+	{
+		CComPxJoint::FRAME tFrame{};
+		tFrame.vPosition = {
+			tTransform.p.x,
+			tTransform.p.y,
+			tTransform.p.z
+		};
+		tFrame.vRotation = {
+			tTransform.q.x,
+			tTransform.q.y,
+			tTransform.q.z,
+			tTransform.q.w
+		};
+		return tFrame;
+	}
+
 	PxJointActorIndex::Enum ToJointPxActorIndex(
 		CComPxJoint::ACTOR eActor)
 	{
 		return eActor == CComPxJoint::ACTOR::A
 			? PxJointActorIndex::eACTOR0
 			: PxJointActorIndex::eACTOR1;
+	}
+
+	_matrix ToJointWorldMatrix(const PxTransform& tTransform)
+	{
+		const _vector vRotation = XMVectorSet(
+			tTransform.q.x,
+			tTransform.q.y,
+			tTransform.q.z,
+			tTransform.q.w);
+		return XMMatrixRotationQuaternion(vRotation) *
+			XMMatrixTranslation(
+				tTransform.p.x,
+				tTransform.p.y,
+				tTransform.p.z);
 	}
 }
 
@@ -198,6 +232,19 @@ _bool CComPxJoint::AttachJoint(PxJoint* pJoint)
 	if (m_pCharacterControllerB)
 		m_pCharacterControllerB->RegisterJoint(this);
 
+	if (CanRelocateWorldAnchoredRigidBody())
+	{
+		CComPxRigidBody* pRigidBody = m_pRigidBodyA;
+		if (!pRigidBody)
+			pRigidBody = m_pRigidBodyB;
+
+		m_vGUIPlacementPosition = pRigidBody->GetPosition();
+		m_vGUIPlacementRotation = pRigidBody->GetRotation();
+		m_vAppliedPlacementPosition = m_vGUIPlacementPosition;
+		m_vAppliedPlacementRotation = m_vGUIPlacementRotation;
+		m_bGUIPlacementInitialized = true;
+	}
+
 	return true;
 }
 
@@ -316,11 +363,163 @@ _bool CComPxJoint::SetLocalFrame(
 		ToJointPxTransform(tFrame));
 
 	if (eActor == ACTOR::A)
+	{
 		m_tLocalFrameA = tFrame;
+		m_tSettings.tLocalFrameA = tFrame;
+	}
 	else
+	{
 		m_tLocalFrameB = tFrame;
+		m_tSettings.tLocalFrameB = tFrame;
+	}
 
 	return true;
+}
+
+_bool CComPxJoint::CanRelocateWorldAnchoredRigidBody() const
+{
+	if (!m_pJoint || m_pCharacterControllerA || m_pCharacterControllerB)
+		return false;
+
+	const _bool bWorldA = m_pRigidBodyA == nullptr;
+	const _bool bWorldB = m_pRigidBodyB == nullptr;
+	return (bWorldA && m_pRigidBodyB) ||
+		(bWorldB && m_pRigidBodyA);
+}
+
+_bool CComPxJoint::RelocateWorldAnchoredRigidBody(
+	const _float3& vPosition,
+	const _float4& vRotation)
+{
+	if (!CanRelocateWorldAnchoredRigidBody())
+		return false;
+
+	CComPxRigidBody* pRigidBody = m_pRigidBodyA;
+	ACTOR eWorldActor = ACTOR::B;
+	const FRAME* pRigidBodyLocalFrame = &m_tLocalFrameA;
+	FRAME tPreviousWorldFrame = m_tLocalFrameB;
+	if (!pRigidBody)
+	{
+		pRigidBody = m_pRigidBodyB;
+		eWorldActor = ACTOR::A;
+		pRigidBodyLocalFrame = &m_tLocalFrameB;
+		tPreviousWorldFrame = m_tLocalFrameA;
+	}
+
+	const _float3 vPreviousPosition = pRigidBody->GetPosition();
+	const _float4 vPreviousRotation = pRigidBody->GetRotation();
+
+	const PxTransform tNewRigidBodyPose{
+		PxVec3{ vPosition.x, vPosition.y, vPosition.z },
+		ToJointNormalizedQuat(vRotation)
+	};
+	const FRAME tNewWorldFrame = FromJointPxTransform(
+		tNewRigidBodyPose *
+		ToJointPxTransform(*pRigidBodyLocalFrame));
+	const _float4 vNormalizedRotation{
+		tNewRigidBodyPose.q.x,
+		tNewRigidBodyPose.q.y,
+		tNewRigidBodyPose.q.z,
+		tNewRigidBodyPose.q.w
+	};
+
+	const _bool bWasEnabled = IsEnabled();
+	if (bWasEnabled && !SetEnabled(false))
+		return false;
+
+	_bool bSucceeded = pRigidBody->SetPose(
+		vPosition,
+		vNormalizedRotation);
+	if (bSucceeded)
+		bSucceeded = SetLocalFrame(eWorldActor, tNewWorldFrame);
+	if (bSucceeded && !pRigidBody->IsKinematic())
+		bSucceeded = pRigidBody->SetLinearVelocity({});
+	if (bSucceeded && !pRigidBody->IsKinematic())
+		bSucceeded = pRigidBody->SetAngularVelocity({});
+
+	if (!bSucceeded)
+	{
+		pRigidBody->SetPose(vPreviousPosition, vPreviousRotation);
+		SetLocalFrame(eWorldActor, tPreviousWorldFrame);
+	}
+
+	if (bWasEnabled && !SetEnabled(true))
+		bSucceeded = false;
+	if (bSucceeded && !pRigidBody->IsKinematic())
+		bSucceeded = pRigidBody->WakeUp();
+	if (bSucceeded)
+	{
+		m_vAppliedPlacementPosition = vPosition;
+		m_vAppliedPlacementRotation = vNormalizedRotation;
+		m_vGUIPlacementPosition = m_vAppliedPlacementPosition;
+		m_vGUIPlacementRotation = m_vAppliedPlacementRotation;
+	}
+
+	return bSucceeded;
+}
+
+_bool CComPxJoint::ResetWorldAnchoredRigidBodyToPlacement()
+{
+	if (!m_bGUIPlacementInitialized)
+		return false;
+
+	return RelocateWorldAnchoredRigidBody(
+		m_vAppliedPlacementPosition,
+		m_vAppliedPlacementRotation);
+}
+
+_bool CComPxJoint::SetWorldAnchoredRigidBodyLocalFrame(
+	const FRAME& tRigidBodyLocalFrame)
+{
+	if (!CanRelocateWorldAnchoredRigidBody())
+		return false;
+
+	CComPxRigidBody* pRigidBody = m_pRigidBodyA;
+	ACTOR eRigidBodyActor = ACTOR::A;
+	ACTOR eWorldActor = ACTOR::B;
+	FRAME tPreviousRigidBodyFrame = m_tLocalFrameA;
+	FRAME tPreviousWorldFrame = m_tLocalFrameB;
+	if (!pRigidBody)
+	{
+		pRigidBody = m_pRigidBodyB;
+		eRigidBodyActor = ACTOR::B;
+		eWorldActor = ACTOR::A;
+		tPreviousRigidBodyFrame = m_tLocalFrameB;
+		tPreviousWorldFrame = m_tLocalFrameA;
+	}
+
+	const PxTransform tWorldFrame =
+		pRigidBody->GetActor()->getGlobalPose() *
+		ToJointPxTransform(tRigidBodyLocalFrame);
+	const FRAME tMatchingWorldFrame =
+		FromJointPxTransform(tWorldFrame);
+
+	const _bool bWasEnabled = IsEnabled();
+	if (bWasEnabled && !SetEnabled(false))
+		return false;
+
+	_bool bSucceeded = SetLocalFrame(
+		eRigidBodyActor,
+		tRigidBodyLocalFrame);
+	if (bSucceeded)
+	{
+		bSucceeded = SetLocalFrame(
+			eWorldActor,
+			tMatchingWorldFrame);
+	}
+
+	if (!bSucceeded)
+	{
+		SetLocalFrame(eRigidBodyActor, tPreviousRigidBodyFrame);
+		SetLocalFrame(eWorldActor, tPreviousWorldFrame);
+	}
+
+	if (bWasEnabled && !SetEnabled(true))
+		bSucceeded = false;
+	if (bSucceeded && !pRigidBody->IsKinematic())
+		bSucceeded = pRigidBody->WakeUp();
+
+	return bSucceeded;
 }
 
 _bool CComPxJoint::SetInverseMassScale(
@@ -416,6 +615,148 @@ void CComPxJoint::UpdateGUI()
 		if (bChanged)
 			SetBreakForce(fBreakForce, fBreakTorque);
 	}
+
+	if (CanRelocateWorldAnchoredRigidBody())
+	{
+		FRAME tRigidBodyLocalFrame = m_pRigidBodyA
+			? m_tLocalFrameA
+			: m_tLocalFrameB;
+
+		ImGui::Separator();
+		ImGui::TextUnformatted("Joint Anchor On RigidBody");
+		_bool bAnchorChanged = ImGui::DragFloat3(
+			"Anchor Local Position",
+			&tRigidBodyLocalFrame.vPosition.x,
+			0.01f);
+		bAnchorChanged |= ImGui::DragFloat4(
+			"Anchor Local Rotation (Quaternion)",
+			&tRigidBodyLocalFrame.vRotation.x,
+			0.01f);
+		if (bAnchorChanged)
+		{
+			SetWorldAnchoredRigidBodyLocalFrame(
+				tRigidBodyLocalFrame);
+		}
+
+		if (!m_bGUIPlacementInitialized)
+		{
+			CComPxRigidBody* pRigidBody = m_pRigidBodyA;
+			if (!pRigidBody)
+				pRigidBody = m_pRigidBodyB;
+
+			m_vGUIPlacementPosition = pRigidBody->GetPosition();
+			m_vGUIPlacementRotation = pRigidBody->GetRotation();
+			m_vAppliedPlacementPosition = m_vGUIPlacementPosition;
+			m_vAppliedPlacementRotation = m_vGUIPlacementRotation;
+			m_bGUIPlacementInitialized = true;
+		}
+
+		ImGui::Separator();
+		ImGui::TextUnformatted("World-Anchored Joint Placement");
+		_bool bPlacementChanged = ImGui::DragFloat3(
+			"Placement Position",
+			&m_vGUIPlacementPosition.x,
+			0.1f);
+		bPlacementChanged |= ImGui::DragFloat4(
+			"Placement Rotation (Quaternion)",
+			&m_vGUIPlacementRotation.x,
+			0.01f);
+
+		if (bPlacementChanged)
+		{
+			RelocateWorldAnchoredRigidBody(
+				m_vGUIPlacementPosition,
+				m_vGUIPlacementRotation);
+		}
+
+		if (ImGui::Button("Read Actor Pose"))
+		{
+			CComPxRigidBody* pRigidBody = m_pRigidBodyA;
+			if (!pRigidBody)
+				pRigidBody = m_pRigidBodyB;
+
+			m_vGUIPlacementPosition = pRigidBody->GetPosition();
+			m_vGUIPlacementRotation = pRigidBody->GetRotation();
+		}
+	}
+
+	ImGui::Separator();
+	ImGui::Checkbox(
+		"Debug Joint Frames",
+		&m_bDebugDrawJointFrames);
+	if (m_bDebugDrawJointFrames)
+	{
+		ImGui::SameLine();
+		ImGui::Checkbox(
+			"Joint Depth Test",
+			&m_bDebugDrawDepthTest);
+		ImGui::DragFloat(
+			"Joint Frame Scale",
+			&m_fDebugJointFrameScale,
+			0.01f,
+			0.05f,
+			5.f,
+			"%.2f");
+		DrawDebugJointFrames();
+	}
+}
+
+void CComPxJoint::DrawDebugJointFrames() const
+{
+	if (!m_pJoint)
+		return;
+
+	CDbgLineRender* pDebug =
+		CGameInstance::Get().GetDbgLineRender();
+	if (!pDebug)
+		return;
+
+	const PxRigidActor* pActorA = GetActorA();
+	const PxRigidActor* pActorB = GetActorB();
+	const PxTransform tLocalFrameA = m_pJoint->getLocalPose(
+		PxJointActorIndex::eACTOR0);
+	const PxTransform tLocalFrameB = m_pJoint->getLocalPose(
+		PxJointActorIndex::eACTOR1);
+	const PxTransform tWorldFrameA = pActorA
+		? pActorA->getGlobalPose() * tLocalFrameA
+		: tLocalFrameA;
+	const PxTransform tWorldFrameB = pActorB
+		? pActorB->getGlobalPose() * tLocalFrameB
+		: tLocalFrameB;
+
+	const _float3 vAnchorA{
+		tWorldFrameA.p.x,
+		tWorldFrameA.p.y,
+		tWorldFrameA.p.z
+	};
+	const _float3 vAnchorB{
+		tWorldFrameB.p.x,
+		tWorldFrameB.p.y,
+		tWorldFrameB.p.z
+	};
+
+	const _float4 vPreviousColor = pDebug->GetColor();
+	const DBG_LINE_DEPTH_MODE ePreviousDepth = pDebug->GetDepthMode();
+	pDebug->SetDepthTest(m_bDebugDrawDepthTest);
+	pDebug->AddLine(
+		vAnchorA,
+		vAnchorB,
+		{ 1.f, 0.f, 1.f, 1.f });
+
+	pDebug->SetColor({ 1.f, 0.25f, 0.1f, 1.f });
+	pDebug->AddCross(vAnchorA, m_fDebugJointFrameScale * 0.2f);
+	pDebug->AddAxis(
+		m_fDebugJointFrameScale,
+		ToJointWorldMatrix(tWorldFrameA));
+
+	pDebug->SetColor({ 0.1f, 0.75f, 1.f, 1.f });
+	pDebug->AddCross(vAnchorB, m_fDebugJointFrameScale * 0.2f);
+	pDebug->AddAxis(
+		m_fDebugJointFrameScale,
+		ToJointWorldMatrix(tWorldFrameB));
+
+	pDebug->SetColor(vPreviousColor);
+	pDebug->SetDepthMode(ePreviousDepth);
 }
 
 void CComPxJoint::ReleaseJoint()

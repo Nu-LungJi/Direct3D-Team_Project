@@ -115,7 +115,7 @@ private:
 protected:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
-	CComBeHavior* m_pBeHavior;
+	CComBeHavior* m_pBeHavior{};
 	CComPxCharacterController* m_pCharacterController{};
 	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};

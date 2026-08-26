@@ -387,6 +387,8 @@ void CBossTMB::Dead()
 		if (m_pModelAnimator->GetFinish())
 		{
 			SetPendingDestroyCascade();
+			GET_SINGLE(UIManager)->CreateFadeInSceneChange(0.f, 2.f,LEVEL::HOGWART_WORLD);
+
 		}
 	}
 }

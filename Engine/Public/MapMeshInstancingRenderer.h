@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine_Base.h"
 #include "IRenderable.h"
+#include "MapChunk.h"
 #include "MapMeshInstanceBatchCollector.h"
 #include "MapMeshTextureCache.h"
 
@@ -13,8 +14,8 @@ class CResSamplerState;
 class CResStaticModel;
 class CResVertexShader;
 
-// 맵 오브젝트가 제출한 인스턴스를 프레임 단위로 병합하고,
-// GPU 컬링과 간접 드로우 명령 생성을 거쳐 실제 렌더링까지 담당
+// 로드된 청크의 정적 인스턴스를 GPU 입력 버퍼에 상주
+// 평상시에는 상주 입력을 재사용해 GPU 컬링과 간접 드로우만 수행
 class ENGINE_DLL CMapMeshInstancingRenderer final : public CEngineBase, public IRenderable
 {
 public:
@@ -31,27 +32,35 @@ private:
 public:
 	// 인스턴싱이 활성화되어 있으면 자신을 맵 메시 렌더 그룹에 등록
 	void Update();
-	// 프레임 통계를 확정하고 이번 프레임에 수집·생성한 임시 데이터를 비운다
+	// 프레임 통계를 확정한다. 상주 인스턴스와 Draw 데이터는 유지한다.
 	void FrameEnd();
 	// 모든 모델의 메시별 텍스처 캐시를 제거
 	void ClearTextureCache();
 	// 스트리밍 등으로 해제되는 특정 모델의 텍스처 캐시만 제거
 	void EraseTextureCache(const SPtr<CResStaticModel>& model);
+	// 청크의 현재 오브젝트를 정적 인스턴스 데이터로 변환해 상주 목록에 등록한다.
+	HRESULT RegisterResidentChunk(const MAPCHUNK_COORD& coord, const std::vector<CHandle>& objectHandles);
+	// 언로드되는 청크의 상주 데이터를 제거하고 다음 렌더 시 GPU 입력 재구성을 예약한다.
+	void UnregisterResidentChunk(const MAPCHUNK_COORD& coord);
+	// 맵 교체 시 모든 청크의 상주 데이터와 Draw 데이터를 비운다.
+	void ClearResidentChunks();
 
 public:
 	// 인스턴싱 상태와 직전 프레임 통계를 디버그 UI에 제공
 	_bool IsInstancingEnabled() const { return m_bInstancingEnabled; }
-	// 인스턴싱 활성 상태를 변경하고 기존 프레임 배치를 정리
+	// 인스턴싱 활성 상태를 변경한다. 맵 메시는 상주 인스턴싱 사용을 전제로 한다.
 	void SetInstancingEnabled(_bool enabled);
 	const INSTANCING_STATS& GetInstancingStats() const { return m_PreviousFrameStats; }
 	_bool IsDebugBoundsEnabled() const { return m_bDebugBoundsEnabled; }
 	void SetDebugBoundsEnabled(_bool enabled) { m_bDebugBoundsEnabled = enabled; }
 
 private:
-	// 현재 수집 결과를 통계에 반영한 뒤 다음 프레임을 위해 배치를 비운다
+	// 현재 상주 배치와 이번 프레임 Draw 통계를 확정한다.
 	void FinalizeFrameBatches();
-	// PrepareDrawPacket에서 만든 프레임 한정 CPU 데이터를 비운다
-	void ClearFrameDrawData();
+	// 상주 목록이 변경됐을 때 기존 모델별 배치와 Draw 데이터를 다시 만든다.
+	HRESULT RebuildResidentDrawData();
+	// 청크 변경 시 다시 만들 CPU 상주 Draw 데이터를 비운다.
+	void ClearResidentDrawData();
 	// 렌더러가 소유한 수집 데이터, 캐시, GPU 컬링 처리기를 모두 해제
 	void ReleaseInstancingResources();
 
@@ -70,6 +79,15 @@ private:
 		uint32_t meshIndex = 0;
 		// 가시 인스턴스 버퍼에서 이 배치가 시작되는 인스턴스 단위 오프셋
 		uint32_t instanceOffset = 0;
+	};
+
+	// MapMeshObject에서 한 번 추출해 청크가 언로드될 때까지 재사용하는 렌더 데이터다.
+	struct RESIDENT_INSTANCE
+	{
+		SPtr<CResStaticModel> model{};
+		EMapMeshRenderFeature renderFeature{};
+		MAPMESH_INSTANCE_DATA instanceData{};
+		MAPMESH_OCCLUSION_DATA occlusionData{};
 	};
 
 	// Deferred Context 워커가 Draw 명령을 기록하는 동안 필요한 리소스와
@@ -111,57 +129,44 @@ private:
 	HRESULT PrepareDrawPacket(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, DRAW_PACKET& outPacket);
 	// Draw에 공통으로 필요한 셰이더, 샘플러, 상수 버퍼를 조회
 	HRESULT ResolveDrawResources(DRAW_PACKET& outPacket) const;
-	// 배치 전체 크기를 미리 계산해 프레임 벡터의 재할당을 줄인다
-	void ReserveFrameDrawData();
+	// 배치 전체 크기를 미리 계산해 상주 벡터의 재할당을 줄인다.
+	void ReserveResidentDrawData();
 	// 모델, 렌더 기능 단위 배치 하나를 GPU 컬링 입력과 메시별 Draw 정보로 펼친다
-	HRESULT AppendInstanceBatch(
-		const CMapMeshInstanceBatchCollector::MODEL_RENDER_KEY& key,
-		const MAPMESH_INSTANCE_BATCH& batch,
-		uint32_t& batchIndex);
+	HRESULT AppendInstanceBatch(const CMapMeshInstanceBatchCollector::MODEL_RENDER_KEY& key, const MAPMESH_INSTANCE_BATCH& batch, uint32_t& batchIndex);
 	// 모든 배치를 병합하고 렌더 기능별 실행 순서까지 구성한다
-	HRESULT BuildFrameDrawData(uint32_t& outBatchCount);
+	HRESULT BuildResidentDrawData(uint32_t& outBatchCount);
 	// GPU 컬링을 실행해 가시 인스턴스 버퍼와 간접 드로우 인자 버퍼를 만든다
-	HRESULT RunGpuCulling(
-		ID3D11DeviceContext* context,
-		const RENDER_CTX& renderContext,
-		uint32_t batchCount,
-		DRAW_PACKET& outPacket);
+	HRESULT RunGpuCulling(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, uint32_t batchCount, _bool uploadResidentData, DRAW_PACKET& outPacket);
 	// Immediate Context의 현재 렌더 타깃과 파이프라인 상태를 패킷에 보관한다.
 	HRESULT CapturePipelineState(ID3D11DeviceContext* context, DRAW_PACKET& outPacket) const;
 	// 지정된 Draw 명령 구간을 하나의 Deferred Context에 기록한다
-	HRESULT RecordDrawCommands(
-		ID3D11DeviceContext* context,
-		const DRAW_PACKET& packet,
-		uint32_t commandBegin,
-		uint32_t commandEnd,
-		uint32_t& outDrawCalls);
+	HRESULT RecordDrawCommands(ID3D11DeviceContext* context,const DRAW_PACKET& packet, uint32_t commandBegin, uint32_t commandEnd, uint32_t& outDrawCalls);
 	// 메시별 머티리얼 값을 상수 버퍼에 기록하고 픽셀 셰이더에 바인딩한다
-	static HRESULT BindMapMeshMaterial(
-		ID3D11DeviceContext* context,
-		const SPtr<CResCBuffer>& materialConstantBuffer,
-		const MATERIAL_DESC& materialDesc);
+	static HRESULT BindMapMeshMaterial(ID3D11DeviceContext* context, const SPtr<CResCBuffer>& materialConstantBuffer, const MATERIAL_DESC& materialDesc);
 
 public:
-	// MapMeshObject 하나의 인스턴스 정보와 컬링 정보를 현재 프레임 배치에 제출
-	HRESULT PushMapObjectInstance(const SPtr<CResStaticModel>& model, EMapMeshRenderFeature renderFeature, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData);
 	// Draw 패킷을 만들고 워커별 명령 목록을 기록한 뒤 GPU에 제출
 	HRESULT Render(ID3D11DeviceContext* context, const RENDER_CTX& renderContext) override;
 	// 이 렌더러가 기본 렌더 패스에서만 실행됨을 알린다
 	bool HasRenderPass(RENDERPASS renderPass) const override;
 
 private:
-	// LateUpdate에서 제출되는 인스턴스를 모델·렌더 기능별로 모은다
+	// 현재 로드된 청크의 정적 인스턴스를 모델·렌더 기능별로 모은다.
 	CMapMeshInstanceBatchCollector m_InstanceBatchCollector;
+	// 청크 변경이 없는 프레임에는 이 데이터를 다시 만들거나 GPU에 보내지 않는다.
+	std::unordered_map<MAPCHUNK_COORD, std::vector<RESIDENT_INSTANCE>, tagMapChunkCoordHash> m_ResidentChunks;
 	// 모델의 메시별 텍스처 조회 결과를 프레임 사이에 재사용
 	CMapMeshTextureCache m_TextureCache;
 	// 프러스텀,오클루전 컬링과 간접 드로우 버퍼 생성을 담당
 	UPtr<CMapMeshGpuCuller> m_pGpuCuller;
 
-	// 매 프레임 GPU 컬링 입력으로 병합되는 임시 데이터다
+	// 청크 변경 시에만 다시 병합하고 GPU에 업로드하는 상주 입력 데이터다.
 	// 세 배열은 같은 인스턴스 인덱스를 공유함
-	std::vector<MAPMESH_INSTANCE_DATA> m_FrameInstances;
-	std::vector<MAPMESH_OCCLUSION_DATA> m_FrameOcclusionData;
-	std::vector<MAPMESH_CULL_META> m_FrameCullMetadata;
+	std::vector<MAPMESH_INSTANCE_DATA> m_ResidentInstances;
+	std::vector<MAPMESH_OCCLUSION_DATA> m_ResidentOcclusionData;
+	std::vector<MAPMESH_CULL_META> m_ResidentCullMetadata;
+	uint32_t m_ResidentBatchCount = 0;
+	_bool m_IsResidentSceneDirty = true;
 
 	// 각 Draw가 참조하는 GPU 컬링 배치 인덱스
 	std::vector<uint32_t> m_BatchIndexByDraw;

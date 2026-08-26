@@ -999,26 +999,19 @@ void CPropBarrel::LateUpdate(_float fTimeDelta)
 		return;
 	}
 
-	const auto& pModel = m_pComModelInstance->GetModel();
-	if (!pModel->HasLocalBounds())
-		return;
+	CGameInstance::Get().Add_Instance(
+		m_pComModelInstance,
+		*GetTransform().GetCombinedWorldMatrix());
+}
 
-	MAPMESH_INSTANCE_DATA instanceData{};
-	XMStoreFloat4x4(
-		&instanceData.world,
-		GetTransform().GetLoadedCombinedWorldMatrix());
-
-	BoundingBox worldBounds{};
-	pModel->GetLocalBounds().Transform(
-		worldBounds,
-		GetTransform().GetLoadedCombinedWorldMatrix());
-
-	MAPMESH_OCCLUSION_DATA occlusionData{};
-	occlusionData.worldCenter = worldBounds.Center;
-	occlusionData.worldExtents = worldBounds.Extents;
-
-	CGameInstance::Get().PushMapObjectInstance(
-		pModel, instanceData, occlusionData);
+HRESULT CPropBarrel::Render_Instanced(
+	ID3D11DeviceContext* pContext,
+	const RENDER_CTX&,
+	const MODEL_INSTANCE_BATCH& batch)
+{
+	return m_pComModelInstance
+		? m_pComModelInstance->RenderDynamicInstances(pContext, batch)
+		: E_FAIL;
 }
 
 HRESULT CPropBarrel::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)

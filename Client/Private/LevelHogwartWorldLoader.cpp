@@ -34,6 +34,7 @@
 #include "Mon_Spawner.h"
 #include "Mon_State.h"
 #include "WorldNpc.h"
+#include "MiniGameNpc.h"
 #include "Griff.h"
 #include "GriffChild.h"
 #include "Troll.h"
@@ -91,8 +92,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			}
 			if(FAILED(MonsterLoad_InWorker()))
 				return false;
-			if (FAILED(NpcLoad_InWorker()))
-				return false;
+			//if (FAILED(NpcLoad_InWorker()))
+			//	return false;
 			if (FAILED(WorldAgentLoad_InWorker()))
 				return false;
 
@@ -438,9 +439,6 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
 	static constexpr NPC_MODEL_ENTRY NpcModels[] =
 	{
-		{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },
-		{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },
-		{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
 		{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
 		{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
 		{ "Model_Resource_NPC_EffieBones", "EffieBones" },
@@ -480,6 +478,14 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc, CWorldNpc::Create())))
 	{
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_Npc");
+		return E_FAIL;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
+		CMiniGameNpc::Create())))
+	{
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_MiniGameNpc");
 		return E_FAIL;
 	}
 	return S_OK;

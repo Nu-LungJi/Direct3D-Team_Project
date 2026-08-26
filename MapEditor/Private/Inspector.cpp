@@ -91,30 +91,36 @@ namespace
 		return changed;
 	}
 
-	void DrawSelectedTransform(E::CComTransform& transform)
+	_bool DrawSelectedTransform(E::CComTransform& transform)
 	{
 		E::_float3 position = transform.GetPosition();
 		E::_float3 rotation = transform.GetRotationEuler();
 		E::_float3 scale = transform.GetScale();
+		_bool changed = false;
 
 		if (DrawVec3Control("Position", position, E::_float3{ 0.f, 0.f, 0.f }, 0.1f))
 		{
 			transform.SetPosition(position);
+			changed = true;
 		}
 		if (DrawVec3Control("Rotation", rotation, E::_float3{ 0.f, 0.f, 0.f }, 0.5f))
 		{
 			transform.SetRotationEuler(rotation);
+			changed = true;
 		}
 		if (DrawVec3Control("Scale", scale, E::_float3{ 1.f, 1.f, 1.f }, 0.1f))
 		{
 			transform.SetScale(scale);
+			changed = true;
 		}
 
 		transform.Update();
+		return changed;
 	}
 
-	void DrawMapMeshObjectInspector(E::CMapMeshObject& mapMeshObject)
+	_bool DrawMapMeshObjectInspector(E::CMapMeshObject& mapMeshObject)
 	{
+		_bool residentDataChanged = false;
 		ImGui::TextUnformatted("Model");
 		ImGui::SameLine(82.f);
 		ImGui::Text("%s / %s", mapMeshObject.GetModelResourceGroup().c_str(), mapMeshObject.GetModelResourceTag().c_str());
@@ -130,7 +136,8 @@ namespace
 
 				if (ImGui::Selectable(item.label.c_str(), bSelected))
 				{
-					mapMeshObject.SetModelResource(item.groupName, item.resourceName);
+					residentDataChanged |= SUCCEEDED(
+						mapMeshObject.SetModelResource(item.groupName, item.resourceName));
 				}
 
 				if (bSelected)
@@ -178,6 +185,7 @@ namespace
 		{
 			windDesc.type = static_cast<E::EWindType>(windType);
 			mapMeshObject.SetWindDesc(windDesc);
+			residentDataChanged = true;
 		}
 
 		/*----------- 광윤 추가 -----------*/
@@ -195,9 +203,13 @@ namespace
 		Matchanged |= ImGui::ColorEdit3("EmissiveColor", (_float*)&matDesc.m_fEmissiveColor);
 		Matchanged |= ImGui::DragFloat("Emissive", &matDesc.m_fEmissiveIntensity, 0.01f, 0.f, 10.f, "%.3f");
 
-		if (Matchanged) MapStaticMesh->SetMaterialDesc(matDesc);
+		if (Matchanged)
+		{
+			MapStaticMesh->SetMaterialDesc(matDesc);
+			residentDataChanged = true;
+		}
 		/*---------------------------------*/
-
+		return residentDataChanged;
 	}
 }
 	void DrawDecalVolumeInspector(E::CDecalVolume& decal)
@@ -342,17 +354,22 @@ void CInspector::UpdateGUI(E::_float fTimeDelta)
 	ImGui::SameLine(82.f);
 	ImGui::Text("%zu : %u", pSelectedHandle->GetIndex(), pSelectedHandle->GetGeneration());
 
+	_bool transformChanged = false;
 	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
 	{
-		DrawSelectedTransform(pSelectedObject->GetTransform());
+		transformChanged = DrawSelectedTransform(pSelectedObject->GetTransform());
 	}
 
 	if (auto* pMapMeshObject = E::CGameInstance::Get().GetGameObjectByHandleT<E::CMapMeshObject>(*pSelectedHandle))
 	{
+		_bool residentDataChanged = false;
 		if (ImGui::CollapsingHeader("MapMeshObject", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			DrawMapMeshObjectInspector(*pMapMeshObject);
+			residentDataChanged = DrawMapMeshObjectInspector(*pMapMeshObject);
 		}
+
+		if (transformChanged || residentDataChanged)
+			E::CGameInstance::Get().RefreshMapMeshObjectInMapChunk(*pSelectedHandle);
 	}
 
 	if (auto* decal = E::CGameInstance::Get().GetGameObjectByHandleT<E::CDecalVolume>(*pSelectedHandle))
