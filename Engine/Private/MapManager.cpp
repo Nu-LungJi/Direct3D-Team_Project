@@ -18,9 +18,9 @@ namespace
 
 	_bool IsSameChunkSize(const _float3& lhs, const _float3& rhs)
 	{
-		return std::fabs(lhs.x - rhs.x) 
-			&& std::fabs(lhs.y - rhs.y)
-			&& std::fabs(lhs.z - rhs.z);
+		return std::fabs(lhs.x - rhs.x) <= FLT_EPSILON
+			&& std::fabs(lhs.y - rhs.y) <= FLT_EPSILON
+			&& std::fabs(lhs.z - rhs.z) <= FLT_EPSILON;
 	}
 
 }

@@ -732,7 +732,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			{ "Model_Resource_NPC_ThomasBrown", "ThomasBrown" },
 			{ "Model_Resource_NPC_TimothyTeasdale", "TimothyTeasdale" },*/
 		};
-		for (const auto& Entry : NpcModels)
+		/*for (const auto& Entry : NpcModels)
 		{
 			const _string ModelPath = "./Resources/SampleClient/Models/Skeleton/NPC_" + _string(Entry.pCharacter) +
 				"/SK_NPC_" + Entry.pCharacter + ".bin";
@@ -748,7 +748,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 					return E_FAIL;
 				}
 			}
-		}
+		}*/
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");

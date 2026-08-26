@@ -138,10 +138,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	if (FAILED(SpawnMonster(*hPlayer)))
 		return E_FAIL;
-	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnIdle.json")))
-		return E_FAIL;
-	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnWalk.json")))
-		return E_FAIL;
+	//if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnIdle.json")))
+	//	return E_FAIL;
+	//if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnWalk.json")))
+	//	return E_FAIL;
 	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/Cat.json")))
 		return E_FAIL;
 	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/RunSpider.json")))

@@ -1005,16 +1005,30 @@
     <ClInclude Include="..\public\AccioBall.h">
       <Filter>GameObject\AccioActivity\AccioBall</Filter>
     </ClInclude>
-	<ClInclude Include="..\public\AccioBall.h">
-	  <Filter>GameObject\Player\AccioBall</Filter>
-	</ClInclude>
-	<ClInclude Include="..\public\AccioActivityPartBase.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_Base.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_Platform.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_BumperA.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_BumperB.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_RampLarge.h"><Filter>GameObject\Player</Filter></ClInclude>
-	<ClInclude Include="..\public\AccioActivity_LampSmall.h"><Filter>GameObject\Player</Filter></ClInclude>
+    <ClInclude Include="..\public\AccioBall.h">
+      <Filter>GameObject\Player\AccioBall</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivityPartBase.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_Base.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_Platform.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_BumperA.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_BumperB.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_RampLarge.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_LampSmall.h">
+      <Filter>GameObject\Player</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\PropBarrel.h">
       <Filter>GameObject\Player\PropBarrel</Filter>
     </ClInclude>
@@ -1044,9 +1058,6 @@
     </ClInclude>
     <ClInclude Include="..\public\WorldNpc.h">
       <Filter>GameObject\Agent\NPC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\public\MiniGameNpc.h">
-      <Filter>GameObject\NPC</Filter>
     </ClInclude>
     <ClInclude Include="..\public\BTNaviMove.h">
       <Filter>GameObject\AI\Action\NPC</Filter>
@@ -1159,6 +1170,7 @@
     <ClInclude Include="..\public\WorldAnimal.h">
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\MiniGameNpc.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1629,16 +1641,30 @@
     <ClCompile Include="..\private\AccioBall.cpp">
       <Filter>GameObject\AccioActivity\AccioBall</Filter>
     </ClCompile>
-	<ClCompile Include="..\private\AccioBall.cpp">
-	  <Filter>GameObject\Player\AccioBall</Filter>
-	</ClCompile>
-	<ClCompile Include="..\private\AccioActivityPartBase.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_Base.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_Platform.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_BumperA.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_BumperB.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_RampLarge.cpp"><Filter>GameObject\Player</Filter></ClCompile>
-	<ClCompile Include="..\private\AccioActivity_LampSmall.cpp"><Filter>GameObject\Player</Filter></ClCompile>
+    <ClCompile Include="..\private\AccioBall.cpp">
+      <Filter>GameObject\Player\AccioBall</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivityPartBase.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_Base.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_Platform.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_BumperA.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_BumperB.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_RampLarge.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_LampSmall.cpp">
+      <Filter>GameObject\Player</Filter>
+    </ClCompile>
     <ClCompile Include="..\private\PropBarrel.cpp">
       <Filter>GameObject\Player\PropBarrel</Filter>
     </ClCompile>
@@ -1668,9 +1694,6 @@
     </ClCompile>
     <ClCompile Include="..\private\WorldNpc.cpp">
       <Filter>GameObject\Agent\NPC</Filter>
-    </ClCompile>
-    <ClCompile Include="..\private\MiniGameNpc.cpp">
-      <Filter>GameObject\NPC</Filter>
     </ClCompile>
     <ClCompile Include="..\private\BTNaviMove.cpp">
       <Filter>GameObject\AI\Action\NPC</Filter>
@@ -1783,6 +1806,7 @@
     <ClCompile Include="..\private\WorldAnimal.cpp">
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClCompile>
+    <ClCompile Include="..\private\MiniGameNpc.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">

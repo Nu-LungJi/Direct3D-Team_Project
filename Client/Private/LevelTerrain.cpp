@@ -195,6 +195,8 @@ HRESULT CLevelTerrain::Initialize()
 
 	// 미니게임 NPC 근접 상호작용 테스트용 배치.
 	// 플레이어 시작점(5, 100, 5)의 카메라 정면(+Z) 2.5m 위치다.
+	
+	if(false)
 	{
 		CMiniGameNpc::DESC Desc{};
 		Desc.sObjectTag = "MiniGameNpc_Test";

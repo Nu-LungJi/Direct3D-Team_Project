@@ -92,8 +92,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			}
 			if(FAILED(MonsterLoad_InWorker()))
 				return false;
-			if (FAILED(NpcLoad_InWorker()))
-				return false;
+			//if (FAILED(NpcLoad_InWorker()))
+			//	return false;
 			if (FAILED(WorldAgentLoad_InWorker()))
 				return false;
 
