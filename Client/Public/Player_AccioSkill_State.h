@@ -5,11 +5,14 @@
 
 NS_BEGIN(Client)
 
+class CAccioBall;
+class CPlayer;
 
 class CPlayer_AccioSkill_State final : public CPlayer_SkillStateBase
 {
 public:
-	enum class ACCIOSTATE {
+	enum class ACCIOSTATE
+	{
 		MONSTER,
 		OBJECT,
 		END
@@ -31,6 +34,18 @@ public:
 
 private:
 	void CacheAnimationIndices(const CPlayer& player);
+	_bool EnterObjectAccio(CPlayer& player, CAccioBall& ball);
+	void UpdateObjectAccio(CStateMachine* pStateMachine, CPlayer& player,
+		_float fTimeDelta);
+	void UpdateObjectAnimation(CPlayer& player, CAccioBall* pBall,
+		_bool bPullRequested);
+	void UpdateObjectPullEffect(CPlayer& player, CAccioBall* pBall,
+		_float fTimeDelta, _bool bPullRequested);
+	void UpdateObjectGrabEffect(CAccioBall* pBall, _float fTimeDelta,
+		_bool bPullRequested);
+	void ReleaseObjectControl(CPlayer& player);
+	void StopObjectEffects();
+	void ResetObjectState();
 private:
 	enum class PHASE
 	{
@@ -56,7 +71,26 @@ private:
 	static constexpr _float RECOVERY_EXIT_RATIO = 0.3f;
 	_float	m_fAnimationRatio = 0.f;
 	_bool	m_bPulling = true;
-	uint32_t m_iAccioEffectID = INVALID_EFFECT_INSTANCE_ID;
+	EFFECT_INSTANCE_ID m_iAccioEffectID{ INVALID_EFFECT_INSTANCE_ID };
+
+	// [LSY] 공 아씨오는 같은 상태 안에서 별도 수명으로 관리한다.
+	CHandle m_hObjectBall{};
+	EFFECT_INSTANCE_ID m_iObjectPullEffectID{ INVALID_EFFECT_INSTANCE_ID };
+	EFFECT_INSTANCE_ID m_iObjectGrabEffectID{ INVALID_EFFECT_INSTANCE_ID };
+	_float m_fObjectPullBlend{};
+	_float m_fObjectGrabBlend{};
+	_bool m_bObjectAnimationPlaying{};
+	_bool m_bObjectAnimationHeld{};
+	_bool m_bObjectAnimationReleasing{};
+	_bool m_bObjectFacingActive{};
+
+	static constexpr _float OBJECT_FACING_TURN_SPEED = 720.f;
+	static constexpr _float OBJECT_PULL_HOLD_RATIO = 0.45f;
+	static constexpr _float OBJECT_PULL_FADE_IN_TIME = 0.1f;
+	static constexpr _float OBJECT_PULL_FADE_OUT_TIME = 0.35f;
+	static constexpr _float OBJECT_GRAB_FADE_IN_TIME = 0.25f;
+	static constexpr _float OBJECT_GRAB_FADE_OUT_TIME = 0.5f;
+	static constexpr _float OBJECT_GRAB_MAX_ALPHA = 0.5882353f;
 
 };
 

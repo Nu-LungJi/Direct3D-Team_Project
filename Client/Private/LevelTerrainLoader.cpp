@@ -5,6 +5,7 @@
 #include "Terrain.h"
 #include "Client_Resources.h"
 #include "OilBarrel.h"
+#include "PhysicsDoor.h"
 #include "WiggenweldPotion.h"
 #include "TestPathPlaybackObject.h"
 #include "LuaTestObject.h"
@@ -62,6 +63,7 @@
 #include "AccioActivity_BumperB.h"
 #include "AccioActivity_RampLarge.h"
 #include "AccioActivity_LampSmall.h"
+#include "AccioActivity_Npc.h"
 
 NS_USING(Client)
 
@@ -165,7 +167,10 @@ std::future<bool> CLevelTerrainLoader::Load()
 						CAccioActivity_RampLarge::Create())) ||
 					FAILED(CGameInstance::Get().AddPrototype(
 						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_LampSmall,
-						CAccioActivity_LampSmall::Create())))
+						CAccioActivity_LampSmall::Create())) ||
+					FAILED(CGameInstance::Get().AddPrototype(
+						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Npc,
+						CAccioActivity_Npc::Create())))
 					return false;
 			}
 
@@ -189,6 +194,15 @@ std::future<bool> CLevelTerrainLoader::Load()
 					MSG_BOX("TERRAIN Failed Prototype_GameObject_OilBarrel");
 					return false;
 				}
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_PhysicsDoor,
+				CPhysicsDoor::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_PhysicsDoor");
+				return false;
 			}
 
 

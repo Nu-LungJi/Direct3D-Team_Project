@@ -342,8 +342,18 @@ private:
 #endif
 
 private:
+	// [LSY] 몬스터 락온 거리와 무관하게 아씨오 공을 더 먼 거리에서 선택하고 유지한다.
+	static constexpr _float DEFAULT_TARGET_ACQUIRE_RANGE = 25.f;
+	static constexpr _float DEFAULT_TARGET_KEEP_RANGE = 40.f;
+	static constexpr _float ACCIO_BALL_TARGET_ACQUIRE_RANGE = 60.f;
+	static constexpr _float ACCIO_BALL_TARGET_KEEP_RANGE = 80.f;
+	static constexpr uint32_t TARGET_QUERY_MAX_HITS = 32;
+	static constexpr uint32_t ACCIO_BALL_TARGET_QUERY_MAX_HITS = 128;
+
 	CHandle m_hAutoTarget{};
 	CHandle m_hPrevAutoTarget{};
+	// [LSY] 공 아씨오 해제 연출 중 다시 누른 입력만 다음 Locomotion까지 보존한다.
+	CHandle m_hPendingObjectAccioTarget{};
 	CHandle m_hMonsterHPUITarget{};
 	std::optional<CHandle> m_hPendingAncientThrowTarget{};
 	CHandle m_hAncientMagicButtonTarget{};
