@@ -406,6 +406,8 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	static constexpr NPC_MODEL_ENTRY NpcModels[] =
 	{
 		{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
+		{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
+		{ "Model_Resource_NPC_PercivalPippin", "PercivalPippin" },
 	};
 	for (const auto& Entry : NpcModels)
 	{

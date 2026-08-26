@@ -421,8 +421,6 @@ HRESULT CMonster::Render_Instanced_GPU(ID3D11DeviceContext* pContext, const E::R
 		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
 		skinningConstants.iVertexCount = mesh->GetNumVertices();
 		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
-		skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
-		skinningConstants.iMorphVertexCount = mesh->GetNumVertices();
 
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
