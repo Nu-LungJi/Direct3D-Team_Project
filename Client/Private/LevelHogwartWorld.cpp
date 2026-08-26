@@ -71,7 +71,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 		};
 		for (const auto& Option : NpcSkeletons)
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, Option.pName, NpcOption.sModelGroupTag, Option.pTag);
-	
+		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_MirabelGarlick", NpcOption.sModelGroupTag, "Model_Resource_NPC_MirabelGarlick","./Resources/SampleClient/Models/Skeleton/NPC_MirabelGarlick/" );
+
 
 		pNpcManager->RegisterBehaviorOption("World NPC", "BTJSON", "NPC1");
 		{
