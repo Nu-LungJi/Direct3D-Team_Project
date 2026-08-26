@@ -281,7 +281,7 @@ HRESULT CLevelTerrain::Initialize()
 			{ "Gladwin Moon", "Model_Resource_NPC_GladwinMoon" }, { "Helen Thistlewood", "Model_Resource_NPC_HelenThistlewood" },
 			{ "Jasper Trout", "Model_Resource_NPC_JasperTrout" }, { "Leona Peck", "Model_Resource_NPC_LeonaPeck" },
 			{ "Leopold Babcocke", "Model_Resource_NPC_LeopoldBabcocke" }, { "Noreen Blainey", "Model_Resource_NPC_NoreenBlainey" },
-			{ "Padraic Haggarty", "Model_Resource_NPC_PadraicHaggarty" }, { "Percival Pippin", "Model_Resource_NPC_PercivalPippin" },
+			{ "Padraic Haggarty", "Model_Resource_NPC_PadraicHaggarty" },
 			{ "Phineas Black", "Model_Resource_NPC_PhineasBlack" }, { "Sirona Ryan", "Model_Resource_NPC_SironaRyan" },
 			{ "Thomas Brown", "Model_Resource_NPC_ThomasBrown" }, { "Timothy Teasdale", "Model_Resource_NPC_TimothyTeasdale" },
 		};

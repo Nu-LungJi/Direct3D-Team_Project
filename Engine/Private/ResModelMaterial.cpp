@@ -225,6 +225,12 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 					texPath = ddsPath;
 				}
 
+				// 일부 캐릭터 모델에는 원본 머티리얼이 참조하지만 배포 리소스에는
+				// 포함되지 않은 선택 텍스처가 있다. 비어 있는 슬롯은 렌더링 시
+				// 기본 텍스처로 대체되므로 모델 전체 로딩을 실패시키지 않는다.
+				if (!std::filesystem::exists(texPath))
+					continue;
+
 				const _string texturePath = texPath.string();
 				std::lock_guard<std::mutex> textureLoadLock(GetTextureLoadMutex(texturePath));
 				_bool isCreated = false;

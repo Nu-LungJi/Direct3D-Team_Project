@@ -710,13 +710,13 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
 		static constexpr NPC_MODEL_ENTRY NpcModels[] =
 		{
-			// TERRAIN NPC 검증용으로 AugustusHill, CrispinDunn, PercivalPippin을 로드한다.
+			// TERRAIN NPC 검증용으로 검증 완료된 남성 NPC 모델만 로드한다.
 			// NPC 전체 선로드는 각 모델 폴더의 모든 AN_ 클립까지 메모리에 올리므로 비활성화한다.
-			/*{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },
-			{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },*/
+			/*{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },*/
+			{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },
 			{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
 			{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
-			{ "Model_Resource_NPC_PercivalPippin", "PercivalPippin" },
+			{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
 			/*{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
 			{ "Model_Resource_NPC_EffieBones", "EffieBones" },
 			{ "Model_Resource_NPC_EleazarFig", "EleazarFig" },
@@ -724,7 +724,6 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			{ "Model_Resource_NPC_HelenThistlewood", "HelenThistlewood" },
 			{ "Model_Resource_NPC_JasperTrout", "JasperTrout" },
 			{ "Model_Resource_NPC_LeonaPeck", "LeonaPeck" },
-			{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
 			{ "Model_Resource_NPC_NoreenBlainey", "NoreenBlainey" },
 			{ "Model_Resource_NPC_PadraicHaggarty", "PadraicHaggarty" },
 			{ "Model_Resource_NPC_PhineasBlack", "PhineasBlack" },

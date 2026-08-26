@@ -92,8 +92,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			}
 			if(FAILED(MonsterLoad_InWorker()))
 				return false;
-			//if (FAILED(NpcLoad_InWorker()))
-			//	return false;
+			if (FAILED(NpcLoad_InWorker()))
+				return false;
 			if (FAILED(WorldAgentLoad_InWorker()))
 				return false;
 
@@ -439,9 +439,10 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
 	static constexpr NPC_MODEL_ENTRY NpcModels[] =
 	{
+		{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },
 		{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
 		{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
-		{ "Model_Resource_NPC_PercivalPippin", "PercivalPippin" },
+		{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
 	};
 	for (const auto& Entry : NpcModels)
 	{

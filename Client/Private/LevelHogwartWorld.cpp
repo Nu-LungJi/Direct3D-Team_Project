@@ -91,7 +91,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 			Desc.resBeHaviorMajor = Placement.sBehaviorMajorTag;
 			Desc.resBeHaviorMinor = Placement.sBehaviorMinorTag;
 			Desc.vPos = Placement.vPosition;
-			Desc.vStartPos = Placement.vPatrolStartPosition;
+			Desc.vStartPos = Placement.vPatrolStartPosition; 
 			Desc.vEndPos = Placement.vPatrolEndPosition;
 			Desc.vRot = Placement.vRotation;
 			Desc.vScale = Placement.vScale;
@@ -138,10 +138,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	if (FAILED(SpawnMonster(*hPlayer)))
 		return E_FAIL;
-	//if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnIdle.json")))
-	//	return E_FAIL;
-	//if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnWalk.json")))
-	//	return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnIdle.json")))
+		return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnWalk.json")))
+		return E_FAIL;
 	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/Cat.json")))
 		return E_FAIL;
 	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/RunSpider.json")))
