@@ -189,8 +189,8 @@ HRESULT CResStaticModelMesh::LoadAssimp(std::string name,uint32_t materialIndex,
 
 HRESULT CResStaticModelMesh::Ready_NonAnimMesh(_char* pPoint, _fmatrix PreTransformMatrix)
 {
-    auto vertexes = std::make_shared<std::vector<VTXMESH>>();
-    auto indices = std::make_shared<std::vector<uint32_t>>();
+    std::vector<VTXMESH> vertexes{};
+    std::vector<uint32_t> indices{};
 
     uint32_t nameLen = *(uint32_t*)pPoint;
     pPoint += sizeof(uint32_t);
@@ -208,8 +208,12 @@ HRESULT CResStaticModelMesh::Ready_NonAnimMesh(_char* pPoint, _fmatrix PreTransf
     pPoint += sizeof(uint32_t);
 
 
+	XMFLOAT3 storedMinPos{};
+	memcpy(&storedMinPos, pPoint, sizeof(XMFLOAT3));
 	pPoint += sizeof(XMFLOAT3);
 
+	XMFLOAT3 storedMaxPos{};
+	memcpy(&storedMaxPos, pPoint, sizeof(XMFLOAT3));
 	pPoint += sizeof(XMFLOAT3);
 
 	uint32_t vCount = *(uint32_t*)pPoint;
@@ -218,45 +222,52 @@ HRESULT CResStaticModelMesh::Ready_NonAnimMesh(_char* pPoint, _fmatrix PreTransf
 	uint32_t iCount = *(uint32_t*)pPoint;
 	pPoint += sizeof(uint32_t);
 
-    vertexes->resize(vCount);
-    memcpy(vertexes->data(), pPoint, sizeof(VTXMESH) * vCount);
+    vertexes.resize(vCount);
+    memcpy(vertexes.data(), pPoint, sizeof(VTXMESH) * vCount);
     pPoint += sizeof(VTXMESH) * vCount;
 
 
-    indices->resize(iCount);
-    memcpy(indices->data(), pPoint, sizeof(uint32_t) * iCount);
+    indices.resize(iCount);
+    memcpy(indices.data(), pPoint, sizeof(uint32_t) * iCount);
     pPoint += sizeof(uint32_t) * iCount;
 
     m_iMaterialIndex = materialIndex;
     //m_iNumVertexBuffers = 1;
     m_iNumVertices = vCount;
 
-    m_iNumIndices = (UINT)indices->size();
+    m_iNumIndices = static_cast<UINT>(indices.size());
     m_iIndexStride = sizeof(uint32_t);
     m_eIndexFormat = DXGI_FORMAT_R32_UINT;
     m_ePrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-	m_vMinPos = { FLT_MAX, FLT_MAX, FLT_MAX };
-	m_vMaxPos = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+	if (XMMatrixIsIdentity(PreTransformMatrix))
+	{
+		// 맵 정적 모델은 항등 PreTransform을 사용한다. 바이너리에 저장된 Bounds를
+		// 그대로 사용하면 모든 정점을 다시 변환하고 검사하는 비용을 피할 수 있다.
+		m_vMinPos = storedMinPos;
+		m_vMaxPos = storedMaxPos;
+	}
+	else
+	{
+		m_vMinPos = { FLT_MAX, FLT_MAX, FLT_MAX };
+		m_vMaxPos = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
 
-    for (size_t i = 0; i < m_iNumVertices; i++)
-    {
+		for (VTXMESH& vertex : vertexes)
+		{
+			XMStoreFloat3(&vertex.vPosition,
+				XMVector3TransformCoord(XMLoadFloat3(&vertex.vPosition), PreTransformMatrix));
 
-        XMStoreFloat3(&(*vertexes)[i].vPosition, XMVector3TransformCoord(XMLoadFloat3(&(*vertexes)[i].vPosition), PreTransformMatrix));
+			m_vMinPos.x = std::min(m_vMinPos.x, vertex.vPosition.x);
+			m_vMinPos.y = std::min(m_vMinPos.y, vertex.vPosition.y);
+			m_vMinPos.z = std::min(m_vMinPos.z, vertex.vPosition.z);
+			m_vMaxPos.x = std::max(m_vMaxPos.x, vertex.vPosition.x);
+			m_vMaxPos.y = std::max(m_vMaxPos.y, vertex.vPosition.y);
+			m_vMaxPos.z = std::max(m_vMaxPos.z, vertex.vPosition.z);
 
-		m_vMinPos.x = std::min(m_vMinPos.x, (*vertexes)[i].vPosition.x);
-		m_vMinPos.y = std::min(m_vMinPos.y, (*vertexes)[i].vPosition.y);
-		m_vMinPos.z = std::min(m_vMinPos.z, (*vertexes)[i].vPosition.z);
-
-		m_vMaxPos.x = std::max(m_vMaxPos.x, (*vertexes)[i].vPosition.x);
-		m_vMaxPos.y = std::max(m_vMaxPos.y, (*vertexes)[i].vPosition.y);
-		m_vMaxPos.z = std::max(m_vMaxPos.z, (*vertexes)[i].vPosition.z);
-
-        XMStoreFloat3(&(*vertexes)[i].vNormal, XMVector3TransformNormal(XMLoadFloat3(&(*vertexes)[i].vNormal), PreTransformMatrix));
-
-
-        //----------------------- 더 추가 할 예정 ----------------------------------------------------------------------------------
-    }
+			XMStoreFloat3(&vertex.vNormal,
+				XMVector3TransformNormal(XMLoadFloat3(&vertex.vNormal), PreTransformMatrix));
+		}
+	}
 
     //-------------------------------------------------------------------
     m_iVertexStride = sizeof(VTXMESH);
@@ -271,7 +282,7 @@ HRESULT CResStaticModelMesh::Ready_NonAnimMesh(_char* pPoint, _fmatrix PreTransf
 
 
     D3D11_SUBRESOURCE_DATA          VertexInitialData{};
-    VertexInitialData.pSysMem = vertexes->data();
+    VertexInitialData.pSysMem = vertexes.data();
 
     if (FAILED(CreateVertexBuffer(VertexBufferDesc, &VertexInitialData)))
     {
@@ -295,7 +306,7 @@ HRESULT CResStaticModelMesh::Ready_NonAnimMesh(_char* pPoint, _fmatrix PreTransf
 
 
     D3D11_SUBRESOURCE_DATA          IndexInitialData{};
-    IndexInitialData.pSysMem = indices->data();
+    IndexInitialData.pSysMem = indices.data();
 
 
     if (FAILED(CreateIndexBuffer(IndexBufferDesc, &IndexInitialData)))

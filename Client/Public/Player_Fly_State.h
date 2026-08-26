@@ -84,6 +84,10 @@ private:
 	_float m_fTurboAnimationSpeedThreshold{ 24.f };
 	_float m_fFacingTurnSpeed{ 150.f };
 
+
+	_float m_fBloomLimit{ 5.0f };
+	_float m_fCurBlurIntensity{ 0.0f };
+
 };
 
 NS_END

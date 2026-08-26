@@ -28,8 +28,8 @@ private:
 	void			MoveBreath(_float fTimeDelta);
 	_bool			MoveSweep(_vector vNextPos,_vector vCurDir, _float fTimeDelta);
 private:
-	_float			m_fBreathTick{}, m_fBreathDis{}, m_fMaxBreath{}, m_fBreathParticleTick{}, m_fGroundParticleTick{};
-	_bool			m_bGround{ false };
+	_float			m_fBreathTick{}, m_fBreathDis{}, m_fMaxBreath{}, m_fBreathParticleTick{}, m_fGroundParticleTick{}, m_fBlurTime{};
+	_bool			m_bGround{ false }, m_bBlurEnd{false};
 	SOUND_ID		m_iBreathSoundID{ INVALID_SOUND_ID };
 public:
 	static E::UPtr<CEdgBreath> Create();

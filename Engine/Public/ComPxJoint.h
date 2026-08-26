@@ -79,6 +79,17 @@ public:
 	_bool SetBreakForce(_float fForce, _float fTorque);
 	_bool GetBreakForce(_float& fOutForce, _float& fOutTorque) const;
 	_bool SetLocalFrame(ACTOR eActor, const FRAME& tFrame);
+
+	// [LSY] 한쪽이 월드인 Joint의 강체와 월드 Anchor를 함께 옮긴다.
+	// RigidBody만 이동하면 Constraint가 기존 Anchor로 되돌리므로 배치 편집 시 이 API를 사용한다.
+	_bool CanRelocateWorldAnchoredRigidBody() const;
+	_bool RelocateWorldAnchoredRigidBody(
+		const _float3& vPosition,
+		const _float4& vRotation);
+	_bool ResetWorldAnchoredRigidBodyToPlacement();
+	_bool SetWorldAnchoredRigidBodyLocalFrame(
+		const FRAME& tRigidBodyLocalFrame);
+
 	_bool SetInverseMassScale(ACTOR eActor, _float fScale);
 	_bool SetInverseInertiaScale(ACTOR eActor, _float fScale);
 
@@ -98,6 +109,7 @@ protected:
 	const FRAME& GetLocalFrameB() const { return m_tLocalFrameB; }
 
 private:
+	void DrawDebugJointFrames() const;
 	void ReleaseJoint();
 	void OnRigidBodyReleased(CComPxRigidBody* pRigidBody);
 	void OnCharacterControllerReleased(
@@ -113,6 +125,14 @@ private:
 	FRAME m_tLocalFrameB{};
 	DESC m_tSettings{};
 	PX_JOINT_USER_DATA m_tUserData{};
+	_float3 m_vGUIPlacementPosition{};
+	_float4 m_vGUIPlacementRotation{ 0.f, 0.f, 0.f, 1.f };
+	_float3 m_vAppliedPlacementPosition{};
+	_float4 m_vAppliedPlacementRotation{ 0.f, 0.f, 0.f, 1.f };
+	_bool m_bGUIPlacementInitialized{};
+	_bool m_bDebugDrawJointFrames{ true };
+	_bool m_bDebugDrawDepthTest{};
+	_float m_fDebugJointFrameScale{ 0.5f };
 
 protected:
 	void Free() override;

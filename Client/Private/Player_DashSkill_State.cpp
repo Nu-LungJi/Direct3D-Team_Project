@@ -200,10 +200,10 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 			_vector lastSpawnPos = XMVectorSet(m_vSpawnPosition.x, m_vSpawnPosition.y, m_vSpawnPosition.z, 1.f);
 			_float distance = XMVectorGetX(
 				XMVector3Length(pos - lastSpawnPos));
-			_float3 vstart, vend;
-			vstart = _float3(fpos.x, fpos.y + 2.5f, fpos.z);
-			vend = _float3(fpos.x, fpos.y - 2.5f, fpos.z);
-			CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU", pPlayer->GetHandle(), vstart, vend);
+			//_float3 vstart, vend;
+			//vstart = _float3(fpos.x, fpos.y + 2.5f, fpos.z);
+			//vend = _float3(fpos.x, fpos.y - 2.5f, fpos.z);
+			//CGameInstance::Get().AddTrailPoint("PlayerDashTrail1_CPU", "PlayerDashTrail1_CPU", pPlayer->GetHandle(), vstart, vend);
 			_float3 deltaPos;
 			XMStoreFloat3(&deltaPos, lastSpawnPos - pos);
 			if (distance > m_fDistanceOffset) {

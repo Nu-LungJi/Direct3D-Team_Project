@@ -1114,10 +1114,10 @@ VOID CLightManager::Build_StaticShadowCasterList(std::optional<CHandle> _LightHa
 
 	for (const auto& [Coord, Chunk] : MapChunks)
 	{
-		if (Chunk.loadState != EChunkLoadState::Loaded) continue;
+		if (!Chunk.IsLoaded()) continue;
 
-		if (CullLight && Chunk.octreeNode) {
-			BoundingBox ChunkBounds = Chunk.octreeNode->GetCullingBoundingBox();
+		if (CullLight && Chunk.GetOctree()) {
+			BoundingBox ChunkBounds = Chunk.GetOctree()->GetCullingBoundingBox();
 
 			ChunkBounds.Extents.x += ShadowCullPadding;
 			ChunkBounds.Extents.y += ShadowCullPadding;
@@ -1126,7 +1126,7 @@ VOID CLightManager::Build_StaticShadowCasterList(std::optional<CHandle> _LightHa
 			if (!LightOBJ->Intersects_ShadowBounds(ChunkBounds))	continue;
 		}
 
-		for (const auto& ObjectHandle : Chunk.hObjects) {
+		for (const auto& ObjectHandle : Chunk.GetObjectHandles()) {
 			CMapMeshObject* pMapObject = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(ObjectHandle);
 			if (nullptr == pMapObject)	continue;
 

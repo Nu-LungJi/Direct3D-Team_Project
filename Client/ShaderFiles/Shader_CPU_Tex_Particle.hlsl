@@ -524,14 +524,14 @@ PS_OUT PSPortal(VS_OUT In)
 {
 	PS_OUT Out = (PS_OUT) 0;
 
-	float2 flowUV1 = In.vTexcoord + float2(g_fAccumulationTime * 0.04f, -g_fAccumulationTime * 0.03f);
-	float2 flowUV2 = In.vTexcoord * 1.4f + float2(-g_fAccumulationTime * 0.025f, g_fAccumulationTime * 0.035f);
+	float2 flowUV1 = In.vTexcoord + float2(g_fAccumulationTime * 1.34f, -g_fAccumulationTime * 1.33f);
+	float2 flowUV2 = In.vTexcoord * 1.4f + float2(-g_fAccumulationTime * 1.325f, g_fAccumulationTime * 1.335f);
 
 	float2 flow1 = g_DistortionTexture.Sample(LinearWrap, flowUV1).rg * 2.0f - 1.0f;
 	float2 flow2 = g_DistortionTexture.Sample(LinearWrap, flowUV2).rg * 2.0f - 1.0f;
 	float2 flowDirection = (flow1 + flow2 * 0.5f) / 1.5f;
 
-	float flowStrength = 1.06f; 
+	float flowStrength = 2.06f; 
 	float2 distortedUV = In.vTexcoord + flowDirection * flowStrength;
 
 	float4 colorTex = g_DiffuseTexture.Sample(LinearWrap, distortedUV);
@@ -635,5 +635,33 @@ PS_OUT PSAttackIndicator(VS_OUT In)
 	clip(finalAlpha - 0.01f);
 
 	Out.vDiffuse = float4(finalColor, finalAlpha);
+	return Out;
+}
+PS_OUT PSSteam8x8(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+   
+	float ratio = saturate(In.life / max(In.maxLife, 0.0001f));
+   
+	float4 texColor = g_DiffuseTexture.Sample(LinearWrap, float2(In.vTexcoord.x, In.vTexcoord.y + ratio * 0.001f));
+    
+	if (all(texColor.rgb <= 0.03f))
+		discard;
+	float4 lerpedEmissive = lerp(In.vEmissive, In.vEndEmissive, ratio);
+   
+	float4 vFinalColor = texColor * In.vColor;
+	clip(vFinalColor.a - 0.02f);
+   
+	float2 edgeFadeUV = In.vTexcoord + ratio * 0.01f;
+	float edgeMask = smoothstep(0.0f, 0.15f, edgeFadeUV.x) * smoothstep(1.0f, 0.85f, edgeFadeUV.x) *
+                 smoothstep(0.0f, 0.15f, edgeFadeUV.y) * smoothstep(1.0f, 0.85f, edgeFadeUV.y);
+   
+	float3 FinalColor = vFinalColor.rgb + lerpedEmissive.rgb * lerpedEmissive.a;
+   
+	float fadeIn = smoothstep(0.f, 0.2f, ratio);
+	float fadeOut = 1.f - smoothstep(0.45f, 1.f, ratio);
+	float lifeFade = fadeIn * fadeOut;
+   
+	Out.vDiffuse = float4(FinalColor, vFinalColor.a * (lifeFade));
 	return Out;
 }

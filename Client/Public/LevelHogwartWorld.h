@@ -40,8 +40,11 @@ private:
 	HRESULT Initialize_VolumetricFog();
 	HRESULT Initialize_EnviromentLight();
 	/*---------------------------------*/
-	HRESULT SpanwAnimal();
+	HRESULT SpanwWorldAgent();
 	HRESULT SpawnNpcPlacements(CHandle hPlayer, const _string& Path);
+
+
+
 public:
 	static UPtr<CLevelHogwartWorld> Create();
 

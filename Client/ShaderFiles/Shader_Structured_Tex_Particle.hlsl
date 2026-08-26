@@ -362,3 +362,388 @@ PS_OUT PSRanrokSmokeWispy(VS_OUT In)
 	Out.vDiffuse = float4(finalColor, finalAlpha);
 	return Out;
 }
+PS_OUT PSDashWisp(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float ageRatio = saturate(
+		In.life / max(In.maxLife, 0.0001f));
+
+	// 처음에는 서서히 나타나고 마지막에는 사라진다.
+	float fadeIn = smoothstep(0.f, 0.08f, ageRatio);
+	float fadeOut = 1.f - smoothstep(0.58f, 1.f, ageRatio);
+	float lifeFade = fadeIn * fadeOut;
+
+	float2 uv = In.vTexcoord;
+
+	// 서로 다른 방향으로 움직이는 노이즈 두 장
+	float2 noiseUV1 =
+		uv * 1.4f +
+		float2(
+			g_fTime * 1.47f,
+			g_fTime * 1.71f);
+
+	float2 noiseUV2 =
+		uv * 2.6f +
+		float2(
+			-g_fTime * 1.49f,
+			g_fTime * 1.35f);
+
+	float2 distortion1 =
+		g_DistortionTexture.Sample(
+			LinearWrap, noiseUV1).rg * 2.f - 1.f;
+
+	float2 distortion2 =
+		g_NoiseTexture.Sample(
+			LinearWrap, noiseUV2).rg * 2.f - 1.f;
+
+	// X 왜곡을 크게 해서 좌우로 흐느적거리게 한다.
+	float2 distortion =
+		distortion1 * float2(0.345f, 0.318f) +
+		distortion2 * float2(0.322f, 0.312f);
+
+	// 수명이 지날수록 조금 더 흐트러진다.
+	float2 distortedUV =
+		uv + distortion * lerp(0.65f, 1.35f, ageRatio);
+
+	float3 diffuseTexture =
+		g_DiffuseTexture.Sample(
+			LinearClamp, distortedUV).rgb;
+
+	float luminance = dot(
+		diffuseTexture,
+		float3(0.299f, 0.587f, 0.114f));
+
+	// 어두운 배경은 제거하고 희미한 수증기는 유지한다.
+	float bodyMask =
+		smoothstep(0.008f, 0.22f, luminance);
+
+	bodyMask = pow(saturate(bodyMask), 0.72f);
+
+	float breakupNoise =
+		g_NoiseTexture.Sample(
+			LinearWrap,
+			uv * 1.8f +
+			float2(
+				-g_fTime * 0.035f,
+				g_fTime * 0.06f)).b;
+
+	float breakupMask =
+		lerp(0.72f, 1.f, breakupNoise);
+
+	float density =
+		bodyMask *
+		breakupMask *
+		lifeFade;
+
+	// 텍스처 사각형 테두리가 보이지 않도록 처리
+	float edgeFade =
+		smoothstep(0.f, 0.04f, uv.x) *
+		(1.f - smoothstep(0.96f, 1.f, uv.x)) *
+		smoothstep(0.f, 0.04f, uv.y) *
+		(1.f - smoothstep(0.96f, 1.f, uv.y));
+
+	density *= edgeFade;
+
+	float brightMask =
+		smoothstep(0.35f, 0.85f, bodyMask);
+
+	float4 emissive =
+		lerp(
+			In.vEmissive,
+			In.vEndEmissive,
+			ageRatio);
+
+	float3 vaporColor =
+		In.vColor.rgb *
+		lerp(0.45f, 1.f, bodyMask);
+
+	// 밝은 결에만 약한 이미시브
+	float3 emissiveColor =
+		emissive.rgb *
+		emissive.a *
+		brightMask *
+		0.18f;
+
+	float3 finalColor =
+		vaporColor +
+		emissiveColor;
+	float finalAlpha =
+	saturate(density * In.vColor.a * 0.5f);
+
+	clip(finalAlpha - 0.002f);
+
+	Out.vDiffuse =
+		float4(finalColor, finalAlpha);
+
+	return Out;
+}
+PS_OUT PSBreathFireWisp(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float ageRatio = saturate(
+		1.f - In.life / max(In.maxLife, 0.0001f));
+
+	float fadeIn =
+		smoothstep(0.f, 0.06f, ageRatio);
+
+	float fadeOut =
+		1.f - smoothstep(0.62f, 1.f, ageRatio);
+
+	float lifeFade = fadeIn * fadeOut;
+
+	float2 uv = In.vTexcoord;
+
+	float2 distortionUV1 =
+		uv * float2(1.3f, 1.8f) +
+		float2(
+			g_fTime * 0.09f,
+			-g_fTime * 0.32f);
+
+	float2 distortionUV2 =
+		uv * float2(2.7f, 3.4f) +
+		float2(
+			-g_fTime * 0.15f,
+			g_fTime * 0.21f);
+
+	float2 distortion1 =
+		g_DistortionTexture.Sample(
+			LinearWrap, distortionUV1).rg * 2.f - 1.f;
+
+	float2 distortion2 =
+		g_NoiseTexture.Sample(
+			LinearWrap, distortionUV2).rg * 2.f - 1.f;
+
+	float2 distortion =
+		distortion1 * float2(0.045f, 0.012f) +
+		distortion2 * float2(0.018f, 0.008f);
+
+	float2 distortedUV =
+		uv + distortion * lerp(0.6f, 1.3f, ageRatio);
+
+	float4 fireTexture =
+		g_DiffuseTexture.Sample(
+			LinearClamp, distortedUV);
+
+	// 이 텍스처는 정상적인 알파 채널을 가지고 있다.
+	float shapeMask =
+		pow(saturate(fireTexture.a), 0.72f);
+
+	float fireLuminance =
+		dot(
+			fireTexture.rgb,
+			float3(0.299f, 0.587f, 0.114f));
+
+	float detailMask =
+		smoothstep(0.04f, 0.5f, fireLuminance);
+
+	float breakupNoise =
+		g_NoiseTexture.Sample(
+			LinearWrap,
+			uv * float2(1.6f, 2.8f) +
+			float2(
+				g_fTime * 0.04f,
+				-g_fTime * 0.24f)).r;
+
+	float breakupMask =
+		lerp(0.55f, 1.f, breakupNoise);
+
+	float edgeFade =
+		smoothstep(0.f, 0.08f, uv.x) *
+		(1.f - smoothstep(0.92f, 1.f, uv.x)) *
+		smoothstep(0.f, 0.06f, uv.y) *
+		(1.f - smoothstep(0.94f, 1.f, uv.y));
+
+	float finalMask =
+		shapeMask *
+		breakupMask *
+		edgeFade *
+		lifeFade;
+
+	float coreMask =
+		smoothstep(0.35f, 0.82f, detailMask * shapeMask);
+
+	float4 emissive =
+		lerp(
+			In.vEmissive,
+			In.vEndEmissive,
+			ageRatio);
+
+	// 텍스처의 원래 주황색과 인스턴스의 붉은색을 혼합한다.
+	float3 fireTint =
+		lerp(
+			In.vColor.rgb,
+			fireTexture.rgb,
+			0.42f);
+
+	float3 bodyColor =
+		fireTint *
+		lerp(0.25f, 1.f, detailMask) *
+		finalMask;
+
+	float3 emissiveColor =
+		emissive.rgb *
+		emissive.a *
+		coreMask *
+		1.2f;
+
+	float3 finalColor =
+		bodyColor + emissiveColor;
+
+	float finalAlpha =
+		saturate(
+			finalMask *
+			In.vColor.a *
+			0.85f);
+
+	clip(finalAlpha - 0.002f);
+
+	Out.vDiffuse =
+		float4(finalColor, finalAlpha);
+
+	return Out;
+}
+
+PS_OUT PSBreathWispySmoke(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+	float ageRatio = saturate(
+		1.f - In.life / max(In.maxLife, 0.0001f));
+
+	float fadeIn =
+		smoothstep(0.f, 0.12f, ageRatio);
+
+	float fadeOut =
+		1.f - smoothstep(0.55f, 1.f, ageRatio);
+
+	float lifeFade = fadeIn * fadeOut;
+
+	// 현재 플립북 프레임 내부의 로컬 UV를 복원한다.
+	float2 atlasCount = float2(
+		max(g_iFlipbookColumns, 1u),
+		max(g_iFlipbookRows, 1u));
+
+	float2 atlasPosition =
+		In.vTexcoord * atlasCount;
+
+	float2 cellIndex =
+		floor(atlasPosition - 0.0001f);
+
+	cellIndex = clamp(
+		cellIndex,
+		float2(0.f, 0.f),
+		atlasCount - 1.f);
+
+	float2 localUV =
+		saturate(atlasPosition - cellIndex);
+
+	float2 noiseUV1 =
+		localUV * 1.4f +
+		float2(
+			g_fTime * 0.035f,
+			-g_fTime * 0.07f);
+
+	float2 noiseUV2 =
+		localUV * 2.6f +
+		float2(
+			-g_fTime * 0.055f,
+			g_fTime * 0.045f);
+
+	float2 distortion1 =
+		g_DistortionTexture.Sample(
+			LinearWrap, noiseUV1).rg * 2.f - 1.f;
+
+	float2 distortion2 =
+		g_NoiseTexture.Sample(
+			LinearWrap, noiseUV2).rg * 2.f - 1.f;
+
+	float2 distortion =
+		distortion1 * 0.035f +
+		distortion2 * 0.016f;
+
+	float2 distortedLocalUV =
+		clamp(
+			localUV +
+			distortion * lerp(0.5f, 1.25f, ageRatio),
+			0.015f,
+			0.985f);
+
+	// 왜곡 후에도 현재 프레임 셀 내부만 샘플링한다.
+	float2 smokeUV =
+		(cellIndex + distortedLocalUV) /
+		atlasCount;
+
+	float3 smokeTexture =
+		g_DiffuseTexture.Sample(
+			LinearClamp, smokeUV).rgb;
+
+	// 이 텍스처의 알파는 전체가 1이므로 RGB 밝기로 마스크를 만든다.
+	float smokeLuminance =
+		dot(
+			smokeTexture,
+			float3(0.299f, 0.587f, 0.114f));
+
+	float smokeMask =
+		smoothstep(0.025f, 0.38f, smokeLuminance);
+
+	smokeMask =
+		pow(saturate(smokeMask), 0.78f);
+
+	float breakupNoise =
+		g_NoiseTexture.Sample(
+			LinearWrap,
+			localUV * 1.7f +
+			float2(
+				-g_fTime * 0.025f,
+				g_fTime * 0.06f)).r;
+
+	float breakupMask =
+		lerp(0.62f, 1.f, breakupNoise);
+
+	float edgeFade =
+		smoothstep(0.f, 0.07f, localUV.x) *
+		(1.f - smoothstep(0.93f, 1.f, localUV.x)) *
+		smoothstep(0.f, 0.07f, localUV.y) *
+		(1.f - smoothstep(0.93f, 1.f, localUV.y));
+
+	float finalMask =
+		smokeMask *
+		breakupMask *
+		edgeFade *
+		lifeFade;
+
+	float4 emissive =
+		lerp(
+			In.vEmissive,
+			In.vEndEmissive,
+			ageRatio);
+
+	float3 smokeColor =
+		In.vColor.rgb *
+		lerp(0.45f, 1.f, smokeMask);
+
+	// 연기는 거의 발광시키지 않는다.
+	float3 emissiveColor =
+		emissive.rgb *
+		emissive.a *
+		smokeMask *
+		0.08f;
+
+	float3 finalColor =
+		smokeColor + emissiveColor;
+
+	float finalAlpha =
+		saturate(
+			finalMask *
+			In.vColor.a *
+			0.7f);
+
+	clip(finalAlpha - 0.001f);
+
+	Out.vDiffuse =
+		float4(finalColor, finalAlpha);
+
+	return Out;
+}

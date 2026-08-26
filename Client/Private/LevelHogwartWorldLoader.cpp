@@ -37,6 +37,9 @@
 #include "MiniGameNpc.h"
 #include "Griff.h"
 #include "GriffChild.h"
+#include "Troll.h"
+#include "TrollWeapon.h"
+#include "WorldAnimal.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
@@ -89,9 +92,9 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			}
 			if(FAILED(MonsterLoad_InWorker()))
 				return false;
-			if (FAILED(NpcLoad_InWorker()))
-				return false;
-			if (FAILED(AnimalLoad_InWorker()))
+			//if (FAILED(NpcLoad_InWorker()))
+			//	return false;
+			if (FAILED(WorldAgentLoad_InWorker()))
 				return false;
 
 			if (FAILED(LoadCollsion_InWorker()))
@@ -365,15 +368,45 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 
 			if (FAILED(res->Load(pDesc)))
 			{
-				MSG_BOX("TERRAIN Failed Model_Resource_Spider");
+				MSG_BOX("HOGWART_WORLD Failed Model_Resource_Spider");
 				return E_FAIL;
 			}
 		}
-		if (auto res = CGameInstance::Get().AddResource("SPAWNER", "SPIDERSPAWN", CResJson::Create("./Resources/json/Spawn/SPIDERSPAWN.json")))
+
+		//트롤
 		{
-			if (FAILED(res->Load()))
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Troll",
+				CResModel::Create("./Resources/SampleClient/Models/Skeleton/Troll/SK_Troll.bin"))) {
+
+				E::CResModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(4.f, 4.f, 4.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("HOGWART_WORLD Failed Model_Resource_Troll");
+					return E_FAIL;
+				}
+			}
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::HOGWART_WORLD, "Model_Resource_TrollWeapon",
+				CResStaticModel::Create("./Resources/SampleClient/Models/Static/TrollWeapon/SM_TrollWeapon.bin"))) {
+
+				E::CResStaticModel::DESC pDesc{};
+				pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f);
+
+				if (FAILED(res->Load(pDesc)))
+				{
+					MSG_BOX("HOGWART_WORLD Failed Model_Resource_TrollWeapon");
+					return E_FAIL;
+				}
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_TrollWeapon, CTrollWeapon::Create())))
 			{
-				MSG_BOX("LOAD FAILED EDGWAYPT SPAWNER JSON");
+				MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_TrollWeapon");
+				return E_FAIL;
+			}
+			if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, CTroll::Create())))
+			{
+				MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_Troll");
 				return E_FAIL;
 			}
 		}
@@ -387,14 +420,15 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
 		{
-			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");
+			MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_Spider");
 			return E_FAIL;
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_MonSpawner, CMon_Spawner::Create())))
 		{
-			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spawner");
+			MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_Spawner");
 			return E_FAIL;
 		}
+
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
 
 	}
@@ -429,7 +463,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc, CWorldNpc::Create())))
 	{
-		MSG_BOX("TERRAIN Failed Prototype_GameObject_Npc");
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_Npc");
 		return E_FAIL;
 	}
 	if (FAILED(E::CGameInstance::Get().AddPrototype(
@@ -443,7 +477,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorldLoader::AnimalLoad_InWorker()
+HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 {
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Griff",
 		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Griff/SK_Griff.bin"))) {
@@ -453,7 +487,7 @@ HRESULT CLevelHogwartWorldLoader::AnimalLoad_InWorker()
 
 		if (FAILED(res->Load(pDesc)))
 		{
-			MSG_BOX("TERRAIN Failed Model_Resource_Griff");
+			MSG_BOX("HOGWART_WORLD Failed Model_Resource_Griff");
 			return E_FAIL;
 		}
 	}
@@ -465,20 +499,39 @@ HRESULT CLevelHogwartWorldLoader::AnimalLoad_InWorker()
 
 		if (FAILED(res->Load(pDesc)))
 		{
-			MSG_BOX("TERRAIN Failed Model_Resource_Cat");
+			MSG_BOX("HOGWART_WORLD Failed Model_Resource_Cat");
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Bird_Kestrel",
+		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Birds_Kestrel/SK_Birds_Kestrel.bin"))) {
+
+		E::CResModel::DESC pDesc{};
+		pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
+
+		if (FAILED(res->Load(pDesc)))
+		{
+			MSG_BOX("HOGWART_WORLD Failed Model_Resource_Bird_Kestrel");
+			return E_FAIL;
+		}
+	}
+	
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Griff, CGriff::Create())))
 	{
-		MSG_BOX("TERRAIN Failed Prototype_GameObject_Griff");
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_Griff");
 		return E_FAIL;
 	}
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_GriffChild, CGriffChild::Create())))
 	{
-		MSG_BOX("TERRAIN Failed Prototype_GameObject_GriffChild");
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_GriffChild");
 		return E_FAIL;
 	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldAnimal, CWorldAnimal::Create())))
+	{
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_WorldWorldAgent");
+		return E_FAIL;
+	}
+	return S_OK;
 }
 HRESULT CLevelHogwartWorldLoader::LoadCollsion_InWorker()
 {	

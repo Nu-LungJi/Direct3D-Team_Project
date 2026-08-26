@@ -1,7 +1,6 @@
 #pragma once
 #include "Client_Defines.h"
 #include "Mon_State.h"
-#include "Spider.h"
 NS_BEGIN(Client)
 
 class CMon_Godae : public CState

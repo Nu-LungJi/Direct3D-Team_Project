@@ -56,12 +56,32 @@ void CSMain(uint id : SV_DispatchThreadID)
 		return;
 
     p.life -= g_fTimeDelta;
-    if ((p.iBehaviorType & BEHAVIOR_GRAVITY) != 0 && (p.iBehaviorType & BEHAVIOR_ORBIT) == 0)
+    if ((p.iBehaviorType & BEHAVIOR_GRAVITY) != 0 &&
+		(p.iBehaviorType & (BEHAVIOR_ORBIT | BEHAVIOR_SPIRAL)) == 0)
     {
         const float kGravity = -9.8f;
         p.velocity.y += kGravity * g_fTimeDelta; 
     }
-	if ((p.iBehaviorType & BEHAVIOR_ORBIT) != 0)
+	if ((p.iBehaviorType & BEHAVIOR_SPIRAL) != 0)
+	{
+		float axisLengthSq = dot(p.roationAxis, p.roationAxis);
+		if (axisLengthSq > 0.000001f)
+		{
+			float3 axis = normalize(p.roationAxis);
+			float3 offset = p.position - p.originalPosition;
+			float angle = p.fRotationSpeed * g_fTimeDelta;
+			float sine = sin(angle);
+			float cosine = cos(angle);
+			float3 rotatedOffset =
+				offset * cosine +
+				cross(axis, offset) * sine +
+				axis * dot(axis, offset) * (1.f - cosine);
+
+			p.originalPosition += p.velocity * g_fTimeDelta;
+			p.position = p.originalPosition + rotatedOffset;
+		}
+	}
+	else if ((p.iBehaviorType & BEHAVIOR_ORBIT) != 0)
 	{
 		float axisLengthSq = dot(p.roationAxis, p.roationAxis);
 		float3 offset = p.position - p.originalPosition;
@@ -115,7 +135,7 @@ void CSMain(uint id : SV_DispatchThreadID)
         if (p.loop == 1)
         {
             p.life = p.maxLife;
-			if ((p.iBehaviorType & BEHAVIOR_ORBIT) == 0)
+			if ((p.iBehaviorType & (BEHAVIOR_ORBIT | BEHAVIOR_SPIRAL)) == 0)
 			{
 				p.position = p.originalPosition;
 				p.velocity = p.originalVelocity;

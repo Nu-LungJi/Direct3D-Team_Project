@@ -272,7 +272,7 @@ void CNpcPlacementManager::RegisterNpcOption(const _string& sDisplayName, const 
 
 void CNpcPlacementManager::RegisterNpcSkeletonOption(
 	const _string& sPrototypeTag, const _string& sDisplayName,
-	const _string& sModelGroupTag, const _string& sModelResourceTag)
+	const _string& sModelGroupTag, const _string& sModelResourceTag, const _string& sAnimResourcePath)
 {
 	if (sPrototypeTag.empty() || sDisplayName.empty() || sModelGroupTag.empty() || sModelResourceTag.empty())
 		return;
@@ -281,7 +281,8 @@ void CNpcPlacementManager::RegisterNpcSkeletonOption(
 	{
 		return Option.sPrototypeTag == sPrototypeTag && Option.sDisplayName == sDisplayName;
 	});
-	NPC_SKELETON_OPTION Option{ sPrototypeTag, sDisplayName, sModelGroupTag, sModelResourceTag };
+
+	NPC_SKELETON_OPTION Option{ sPrototypeTag, sDisplayName, sModelGroupTag, sModelResourceTag,RegistAnimPath(sAnimResourcePath)};
 	if (Iter != m_NpcSkeletonOptions.end())
 		*Iter = std::move(Option);
 	else
@@ -492,6 +493,30 @@ void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t 
 		}
 		ImGui::EndPopup();
 	}
+	
+	const auto Iter = std::ranges::find_if(m_NpcSkeletonOptions, [&](const NPC_SKELETON_OPTION& Option)
+		{
+			return Option.sPrototypeTag == Desc.sPrototypeTag && Option.sDisplayName == sSelectedSkeleton;
+		});
+	if (Iter != m_NpcSkeletonOptions.end())
+	{
+		if (ImGui::BeginCombo("Anim Name", Desc.strAnimName.c_str()))
+		{
+			for (auto& Anim : Iter->sAnimPath)
+			{
+				_bool bSelect = Anim == Desc.strAnimName;
+				
+				if (ImGui::Selectable(Anim.c_str(), &bSelect))
+				{
+					Desc.strAnimName = Anim;
+				}
+				if (bSelect)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+	}
+	
 	int32_t iRuntimeType = static_cast<int32_t>(Desc.eRuntimeType);
 	if (ImGui::Combo(
 		"Runtime Type",
@@ -514,6 +539,8 @@ void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t 
 	if (ImGui::Button("CamPosTo Patrol End")) 
 		Desc.vPatrolEndPosition = vCamPos;
 	ImGui::DragFloat("Speed", &Desc.fSpeed, 0.1f); ImGui::SameLine();
+	if (ImGui::Button(Desc.bPhyx == true ? "Use Phyx : TRUE" : "Use Phyx : FALSE"))
+		Desc.bPhyx = !Desc.bPhyx;
 
 	ImGui::Checkbox("Cast Shadow", &Desc.bCastShadow);
 	ImGui::DragFloat("Visible Distance", &Desc.fVisibleDistance, 1.f, 0.f, 100000.f);
@@ -591,6 +618,26 @@ uint64_t CNpcPlacementManager::AllocatePlacementId()
 		[&](const NPC_PLACEMENT_DESC& Desc) { return Desc.iPlacementId == m_iNextPlacementId; }))
 		++m_iNextPlacementId;
 	return m_iNextPlacementId++;
+}
+
+std::vector<_string> CNpcPlacementManager::RegistAnimPath(const _string& sAnimPath)
+{
+	std::vector<_string> AnimLists{};
+	if (sAnimPath.empty())
+		return AnimLists;
+
+	for (auto& iter : std::filesystem::directory_iterator(sAnimPath))
+	{
+		_string AnimName = iter.path().filename().string();
+		auto Anim = AnimName.find("AN_", 0);
+
+		if (Anim != std::string::npos)
+		{
+			AnimLists.push_back(AnimName);
+		}
+	}
+
+	return AnimLists;
 }
 
 UPtr<CNpcPlacementManager> CNpcPlacementManager::Create()

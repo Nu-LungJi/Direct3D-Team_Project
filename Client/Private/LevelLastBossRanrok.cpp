@@ -89,6 +89,7 @@ HRESULT CLevelLastBossRanrok::Initialize()
 
 	SubscribePlayerDeath(*hPlayer);
 
+	GET_SINGLE(UIManager)->CreateFadeOut(2.f, 2.f);
 
 	return S_OK;
 }

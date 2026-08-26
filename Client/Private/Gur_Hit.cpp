@@ -180,8 +180,11 @@ void CGur_Hit::MoveIntent(CTmbGurdian* pTmb, _float3 vDir, _float fSpeed)
 
 HIT_TYPE CGur_Hit::Reactive_TableMotion(PLAYER_SKILL_TYPE eType, _bool bIsGround, CTmbGurdian* pTmb)
 {
-	
-	switch (eType)
+	PLAYER_SKILL_TYPE eSkillType = eType;
+	if (eSkillType == PLAYER_SKILL_TYPE::DESTORY)
+		eSkillType = PLAYER_SKILL_TYPE::ATTACK;
+
+	switch (eSkillType)
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
 		if (m_HitTable.eHitMotion == HIT_MOTION::LAND)

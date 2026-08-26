@@ -268,7 +268,105 @@ std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeIrregularRing(const SIrreg
 
 std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeSpiral(const SSpiralParam& param)
 {
-	return std::vector<PARTICLE_SPAWN_DATA>();
+	std::vector<PARTICLE_SPAWN_DATA> spawnList(param.iCount);
+	if (0u == param.iCount)
+		return spawnList;
+
+	const uint32_t iStrandCount = std::clamp(param.iStrandCount, 1u, param.iCount);
+	const _float fAngleStep = XMConvertToRadians(param.fAngleStepDeg);
+	const _float fAngleJitter = XMConvertToRadians(std::max(0.f, param.fAngleJitterDegree));
+	const _float fRadiusJitter = std::max(0.f, param.fRadiusJitter);
+	const _float fLifeMin = std::min(param.fLifeMin, param.fLifeMax);
+	const _float fLifeMax = std::max(param.fLifeMin, param.fLifeMax);
+	const _float fSpeedMin = std::min(param.fForwardSpeedMin, param.fForwardSpeedMax);
+	const _float fSpeedMax = std::max(param.fForwardSpeedMin, param.fForwardSpeedMax);
+	const _float fStartPhase = param.bRandomTrajectory
+		? Randf(0.f, XM_2PI)
+		: XMConvertToRadians(param.fStartAngleDegree);
+
+	auto RandRange = [](_float fMin, _float fMax)
+		{
+			return Randf(std::min(fMin, fMax), std::max(fMin, fMax));
+		};
+
+	for (uint32_t i = 0; i < param.iCount; ++i)
+	{
+		PARTICLE_SPAWN_DATA& spawn = spawnList[i];
+		const uint32_t iStrandIndex = i % iStrandCount;
+		const uint32_t iStepIndex = i / iStrandCount;
+		const _float fStep = static_cast<_float>(iStepIndex);
+		const _float fStrandPhase = XM_2PI *
+			(static_cast<_float>(iStrandIndex) / static_cast<_float>(iStrandCount));
+		const _float fCurrentAngleJitter = param.bRandomTrajectory
+			? Randf(-fAngleJitter, fAngleJitter)
+			: 0.f;
+		const _float fAngle =
+			fStartPhase + fStrandPhase + fStep * fAngleStep +
+			fCurrentAngleJitter;
+		const _float fCos = cosf(fAngle);
+		const _float fSin = sinf(fAngle);
+		const _float fCurrentRadiusJitter = param.bRandomTrajectory
+			? Randf(-fRadiusJitter, fRadiusJitter)
+			: 0.f;
+		const _float fRadius = std::max(0.f,
+			param.fRadius + param.fRadiusGrowthPerStep * fStep +
+			fCurrentRadiusJitter);
+
+		spawn.position = _float3(
+			param.vCenter.x + fCos * fRadius,
+			param.vCenter.y + fSin * fRadius,
+			param.vCenter.z + param.fForwardOffsetPerStep * fStep);
+
+		const _float fForwardSpeed = param.bRandomTrajectory
+			? Randf(fSpeedMin, fSpeedMax)
+			: (fSpeedMin + fSpeedMax) * 0.5f;
+		const _float fTangentialSpeed = param.bRandomTrajectory
+			? param.fTangentialSpeed * Randf(0.8f, 1.2f)
+			: param.fTangentialSpeed;
+		spawn.velocity = _float3(0.f, 0.f, fForwardSpeed);
+
+		spawn.life = Randf(fLifeMin, fLifeMax);
+		spawn.spawnDelay = param.fSpawnDelay +
+			fStep * std::max(0.f, param.fSpawnInterval);
+		spawn.fSize = param.bRandomSize
+			? _float3(
+				RandRange(param.fSizeMin.x, param.fSizeMax.x),
+				RandRange(param.fSizeMin.y, param.fSizeMax.y),
+				RandRange(param.fSizeMin.z, param.fSizeMax.z))
+			: param.fSize;
+		spawn.fEndSize = param.fEndSize;
+		spawn.color = param.color;
+		spawn.emissive = _float4(
+			param.emissive.x, param.emissive.y, param.emissive.z,
+			param.startIntensity);
+		spawn.endEmissive = _float4(
+			param.endEmissive.x, param.endEmissive.y, param.endEmissive.z,
+			param.endIntensity);
+		spawn.originalEmissive = spawn.emissive;
+		spawn.iBehaviorType = param.iBehaviorType | BEHAVIOR_SPIRAL;
+		spawn.originalPosition = _float3(
+			param.vCenter.x,
+			param.vCenter.y,
+			param.vCenter.z + param.fForwardOffsetPerStep * fStep);
+		spawn.originalVelocity = spawn.velocity;
+		spawn.rotationAxis = _float3(0.f, 0.f, 1.f);
+		spawn.fRotationSpeed = fRadius > 0.001f
+			? fTangentialSpeed / fRadius
+			: 0.f;
+		spawn.rotation = param.bRandomRot
+			? _float4(
+				XMConvertToRadians(RandRange(param.vMinRot.x, param.vMaxRot.x)),
+				XMConvertToRadians(RandRange(param.vMinRot.y, param.vMaxRot.y)),
+				XMConvertToRadians(RandRange(param.vMinRot.z, param.vMaxRot.z)),
+				0.f)
+			: _float4(
+				XMConvertToRadians(param.vRotation.x),
+				XMConvertToRadians(param.vRotation.y),
+				XMConvertToRadians(param.vRotation.z),
+				0.f);
+	}
+
+	return spawnList;
 }
 std::vector<PARTICLE_SPAWN_DATA> ParticlePattern::MakeStraightGround(const SStraightGroundParam& param)
 {

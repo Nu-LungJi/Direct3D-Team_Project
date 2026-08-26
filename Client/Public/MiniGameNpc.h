@@ -1,11 +1,11 @@
 #pragma once
-#include "NpcMom.h"
+#include "WorldAgent.h"
 
 NS_BEGIN(Client)
 
 // 대화를 끝낸 뒤 스펠 미니게임을 시작하는 전용 NPC.
 // ExpressionAnim에는 현재 NPC 모델에 실제로 존재하는 애니메이션 클립 이름을 넣는다.
-class CMiniGameNpc final : public CNpcMom
+class CMiniGameNpc final : public CWorldAgent
 {
 public:
 	enum class STATE
@@ -31,7 +31,7 @@ public:
 		_bool LoopExpression{ true };
 	};
 
-	struct DESC : public NPC_DESC
+	struct DESC : public WORLD_AGENT_DESC
 	{
 		_string SpeakerName{ "NPC" };
 		std::vector<DIALOGUE_LINE> Dialogue{};
@@ -53,7 +53,7 @@ public:
 	};
 
 public:
-	DECLARE_DERIVED_TYPE(CMiniGameNpc, CNpcMom)
+	DECLARE_DERIVED_TYPE(CMiniGameNpc, CWorldAgent)
 
 private:
 	CMiniGameNpc() = default;

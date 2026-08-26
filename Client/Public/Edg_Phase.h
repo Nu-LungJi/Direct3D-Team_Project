@@ -28,7 +28,7 @@ private:
 	_bool		MovePhase3(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Befor_Action2(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Before_Action5(CEnderDragon* pDragon, _float fTimeDelta);
-	void		After_Action2(CEnderDragon* pDragon, _float fTimeDelta);
+	_bool		After_Action2(CEnderDragon* pDragon, _float fTimeDelta);
 
 	void		Phase_Before_Action(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Phase_Change_Action(CEnderDragon* pDragon, _float fTimeDelta);
@@ -37,7 +37,7 @@ private:
 	
 	void		Effect_All(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Effect_Single(CEnderDragon* pDragon, const _string& strName);
-
+	void		Cinematic_SmokeMove(CEnderDragon* pDragon,_float3 vOffset);
 	void		End(CEnderDragon_State* pStateMachine, CBTBlackBoard* pBlackBoard);
 private:
 	DRAGON_PHASE			m_ePhase{};

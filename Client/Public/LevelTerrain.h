@@ -20,6 +20,15 @@ public:
 public:
 	void Picking();
 private:
+	struct ACCIO_ACTIVITY_SET_DESC
+	{
+		// [LSY] 모든 세트 구성요소는 이 기준점과 Yaw를 공유한다.
+		_float3 vOrigin{ 27.f, 5.f, 100.f };
+		_float fYawDegrees{};
+		// [LSY] 실제 경기장과 떨어져 있는 개별 파츠 확인용 샘플 배치 여부다.
+		_bool bSpawnDetachedPartSamples{ true };
+	};
+
 	void		Resources();
 	void		Objects();
 	void		BeHaviors();
@@ -32,15 +41,14 @@ private:
 	HRESULT InitializeCamerasAndLighting(
 		const std::optional<CHandle>& hPlayer);
 	HRESULT InitializePathPlaybackTests();
+	HRESULT InitializePhysicsDoorTest();
 	HRESULT InitializeTombBossBulletTest(CHandle hPlayer);
 	HRESULT SpawnConfringoBulletTest();
 	HRESULT InitializeOilBarrelPool();
 	HRESULT InitializeAccioActivityTest();
-	HRESULT SpawnAccioBalls();
-	HRESULT SpawnAccioActivityObjects();
+	HRESULT SpawnAccioActivitySet(const ACCIO_ACTIVITY_SET_DESC& desc);
 	void UpdateAccioActivityTestGUI();
 	void ResetAccioBalls();
-	void DrawSelectedAccioBallDebug();
 	_bool PushSelectedAccioBallTowardPlayer();
 	void ApplyAccioBallMotionTuning();
 	_float3 MakePropBarrelSpawnPosition() const;
@@ -65,14 +73,23 @@ private:
 	_bool m_bCreatePlayScreenUI{ false };
 	CHandle m_hPlayer{};
 	CHandle m_hPropBarrel{};
+	CHandle m_hPhysicsDoor{};
+	_float m_fPhysicsDoorTestTorque{ 800.f };
 	_float3 m_vPropBarrelSpawnPosition{ 20.f, 5.f, 20.f };
+	CHandle m_hAccioActivityBase{};
+	CHandle m_hAccioActivityNpc{};
 	std::array<CHandle, 6> m_hAccioBalls{};
+	_float3 m_vAccioActivitySetOrigin{ 27.f, 5.f, 100.f };
+	_float m_fAccioActivitySetYawDegrees{ 18.f };
 	int32_t m_iSelectedAccioBall{};
 	_float m_fAccioBallPushTorque{ 20.f };
-	_float m_fAccioBallSelectedMass{ 3.f };
-	_float m_fAccioBallIdleMass{ 1.f };
-	_float m_fAccioBallLinearDamping{ 0.4f };
-	_float m_fAccioBallAngularDamping{ 0.8f };
+	_float m_fAccioBallMaxRollAngularSpeed{ 6.f };
+	_float m_fAccioBallMaxPullAcceleration{ 32.f };
+	_float m_fAccioBallMaxPullLinearSpeed{ 20.f };
+	_float m_fAccioBallPullSlowRadius{ 4.f };
+	_float m_fAccioBallMass{ 5.f };
+	_float m_fAccioBallLinearDamping{ 0.6f };
+	_float m_fAccioBallAngularDamping{ 0.7f };
 	_float m_fTombBossBulletSpawnYawDegrees{};
 	_float m_fConfringoBulletSpeed{ 35.f };
 	_float m_fConfringoBulletLifeTime{ 5.f };

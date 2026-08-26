@@ -114,6 +114,7 @@ public:
     virtual HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
     virtual HRESULT Spawn(uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData) override;
 	virtual void ClearByOwner(uint32_t ownerID) override;
+	virtual void SetColorByOwner(uint32_t ownerId, const _float4& color) override;
 
 	void SetBeamPositions(uint32_t beamIndex, const _float4& start, const _float4& end);
 	void SetBeamPositionsByOwner(uint32_t ownerId,const _float3& start,const _float3& end);

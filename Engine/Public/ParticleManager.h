@@ -82,14 +82,21 @@ public:
     HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
         uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData, 
         _bool bLoop = false, _float fSpawnInterval = 0.1f);
-	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos);
+	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat,
+		const _fvector endPos,
+		_bool bApplyWorldScaleToParticleSize = false);
+	uint32_t Spawn(const std::string& strJsonPath, const _matrix& worldMat,
+		const _fvector endPos,
+		_bool bApplyWorldScaleToParticleSize = false);
 
 	
 
 	//실제 스폰 함수
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
 	const std::vector<SPAWN_COMMAND>* FindCachedCommandQueue(const std::string& strJsonPath) const;
-	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos);
+	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands,
+		const _float4x4& worldMat, _fvector endPos,
+		_bool bApplyWorldScaleToParticleSize = false);
 
 
 

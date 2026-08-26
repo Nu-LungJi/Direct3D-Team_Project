@@ -179,6 +179,12 @@ void CCinematicEditor::UpdateGUI()
 			m_ePreviewReturnMode;
 		Options.fReturnBlendDuration =
 			m_fPreviewReturnBlendDuration;
+		if (m_bPreviewLookAtTarget && m_PreviewTargetHandle.has_value())
+		{
+			Options.LookAtTargetHandle = m_PreviewTargetHandle;
+			Options.vLookAtTargetLocalOffset =
+				m_vPreviewLookAtTargetLocalOffset;
+		}
 
 		HRESULT hr = E_INVALIDARG;
 		if (HasTargetLocalShot())
@@ -224,6 +230,17 @@ void CCinematicEditor::UpdateGUI()
 		m_pEditingAsset->GetDuration());
 
 	DrawPreviewTargetSelector();
+	ImGui::Checkbox("Look At Preview Target", &m_bPreviewLookAtTarget);
+	if (m_bPreviewLookAtTarget)
+	{
+		ImGui::DragFloat3(
+			"Look At Local Offset",
+			&m_vPreviewLookAtTargetLocalOffset.x,
+			0.01f,
+			-100.f,
+			100.f,
+			"%.2f");
+	}
 
 	static const _char* StartModeNames[] = {
 		"Immediate",

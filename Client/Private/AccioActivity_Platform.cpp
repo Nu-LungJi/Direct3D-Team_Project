@@ -25,6 +25,23 @@ StringID CAccioActivity_Platform::GetModelResourceTag() const
 	return "Static_AccioActivity_Platform_Resource";
 }
 
+_bool CAccioActivity_Platform::GetNpcMoveAreaWorldOBB(
+	BoundingOrientedBox& outArea) const
+{
+	if (!m_pComPxNpcMoveAreaTrigger)
+		return false;
+
+	const BoundingOrientedBox localArea{
+		m_pComPxNpcMoveAreaTrigger->GetLocalPosition(),
+		m_pComPxNpcMoveAreaTrigger->GetHalfExtents(),
+		m_pComPxNpcMoveAreaTrigger->GetLocalRotation()
+	};
+	localArea.Transform(
+		outArea,
+		GetTransform().GetLoadedCombinedWorldMatrix());
+	return true;
+}
+
 HRESULT CAccioActivity_Platform::InitializePlatformPhysics(const DESC& desc)
 {
 	{
@@ -96,6 +113,35 @@ HRESULT CAccioActivity_Platform::InitializePlatformPhysics(const DESC& desc)
 		XMStoreFloat4(&localRotation, XMQuaternionRotationRollPitchYaw(
 			rotation.x, rotation.y, rotation.z));
 		if (!m_pComPxWedgeCollider->SetLocalRotation(localRotation))
+			return E_FAIL;
+	}
+
+	{
+		// [LSY] NPC가 플랫폼 위에서 이동할 수 있는 범위를 저작하기 위한 Trigger다.
+		// Object Manager의 NpcMoveAreaTrigger 컴포넌트 GUI에서 크기와 로컬 자세를 조절한다.
+		const auto& moveArea = desc.NpcMoveAreaTrigger;
+		CComPxBoxCollider::DESC colliderDesc{};
+		colliderDesc.pComPxRigidBody = m_pComPxRigidBody;
+		colliderDesc.pResMaterial = material;
+		colliderDesc.pResBoxGeo = CResPhysXBoxGeometry::CreateAndLoad({
+			.vHalfExtents = moveArea.vHalfExtents });
+		colliderDesc.vLocalOffset = moveArea.vLocalOffset;
+		colliderDesc.tFilter = desc.tNpcMoveAreaTriggerFilter;
+		colliderDesc.bIsTrigger = true;
+		colliderDesc.iShapeSubIndex = NPC_MOVE_AREA_SHAPE_SUB_INDEX;
+		if (!colliderDesc.pResBoxGeo || FAILED(AddComponentFromProto(
+			"PHYSX", "Prototype_Component_ComPxBoxCollider",
+			"NpcMoveAreaTrigger", &colliderDesc, &m_pComPxNpcMoveAreaTrigger)))
+		{
+			return E_FAIL;
+		}
+
+		_float4 localRotation{};
+		XMStoreFloat4(&localRotation, XMQuaternionRotationRollPitchYaw(
+			moveArea.vLocalRotation.x,
+			moveArea.vLocalRotation.y,
+			moveArea.vLocalRotation.z));
+		if (!m_pComPxNpcMoveAreaTrigger->SetLocalRotation(localRotation))
 			return E_FAIL;
 	}
 
