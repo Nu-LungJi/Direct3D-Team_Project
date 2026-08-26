@@ -108,10 +108,14 @@ private:
 	size_t m_iDialogueIndex{};
 	CHandle m_hInteractionPlayer{};
 	std::optional<CHandle> m_hDialogueFade{};
+	std::optional<CHandle> m_hMoveFade{};
 	STATE m_eState{ STATE::IDLE };
 	OUTCOME m_eOutcome{ OUTCOME::SPELL_MINIGAME };
 	_float m_fFadeDuration{ 0.35f };
 	_float m_fFadeHoldDuration{ 0.2f };
+	_float m_fMoveFadeInDuration{ 2.f };
+	_float m_fMoveFadeOutDelay{ 3.f };
+	_float m_fMoveFadeOutDuration{ 1.f };
 	_float m_fIntroElapsed{}; 
 	_float3 m_vPlayerDialogueOffset{ -0.8f, 0.f, 2.2f };
 	_float3 m_vDialogueCameraOffset{ 0.55f, 1.65f, 1.15f };
