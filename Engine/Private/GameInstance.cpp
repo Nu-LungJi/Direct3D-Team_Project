@@ -1377,6 +1377,7 @@ VOID			CGameInstance::Set_VolumetricCloudOption(const CB_VOLUMECLOUD& _CloudOpti
 }
 
 VOID			CGameInstance::Set_RadialBlurIntensity(const _float _Intensity) { m_pRenderer->Set_RadialBlurIntensity(_Intensity); }
+VOID			CGameInstance::Set_MotionBlurEnabled(_bool bEnabled) { m_pRenderer->Set_MotionBlurEnabled(bEnabled); }
 VOID			CGameInstance::Set_DistortionIntensity(const _float _Intensity) { m_pRenderer->Set_DistortionIntensity(_Intensity); }
 VOID			CGameInstance::Set_ChromaticIntensity(const _float _Intensity) { m_pRenderer->Set_ChromaticIntensity(_Intensity); }
 VOID			CGameInstance::Set_VignetteIntensity(const _float _Intensity) { m_pRenderer->Set_VignetteIntensity(_Intensity); }

@@ -58,16 +58,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 		struct NPC_SKELETON_OPTION { const char* pName; const char* pTag; };
 		static constexpr NPC_SKELETON_OPTION NpcSkeletons[] =
 		{
-			{ "Aesop Sharp", "Model_Resource_NPC_VictorRookwood" },
-			{ "Albie Weekes", "Model_Resource_NPC_AlbieWeekes" }, { "Anne Sallow", "Model_Resource_NPC_AnneSallow" },
-			{ "Augustus Hill", "Model_Resource_NPC_AugustusHill" }, { "Crispin Dunn", "Model_Resource_NPC_CrispinDunn" },
-			{ "Effie Bones", "Model_Resource_NPC_EffieBones" }, { "Eleazar Fig", "Model_Resource_NPC_EleazarFig" },
-			{ "Gladwin Moon", "Model_Resource_NPC_GladwinMoon" }, { "Helen Thistlewood", "Model_Resource_NPC_HelenThistlewood" },
-			{ "Jasper Trout", "Model_Resource_NPC_JasperTrout" }, { "Leona Peck", "Model_Resource_NPC_LeonaPeck" },
-			{ "Leopold Babcocke", "Model_Resource_NPC_LeopoldBabcocke" }, { "Noreen Blainey", "Model_Resource_NPC_NoreenBlainey" },
-			{ "Padraic Haggarty", "Model_Resource_NPC_PadraicHaggarty" }, { "Percival Pippin", "Model_Resource_NPC_PercivalPippin" },
-			{ "Phineas Black", "Model_Resource_NPC_PhineasBlack" }, { "Sirona Ryan", "Model_Resource_NPC_SironaRyan" },
-			{ "Thomas Brown", "Model_Resource_NPC_ThomasBrown" }, { "Timothy Teasdale", "Model_Resource_NPC_TimothyTeasdale" },
+			{ "Augustus Hill (Single NPC Test)", "Model_Resource_NPC_AugustusHill" },
 		};
 		for (const auto& Option : NpcSkeletons)
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, Option.pName, NpcOption.sModelGroupTag, Option.pTag);

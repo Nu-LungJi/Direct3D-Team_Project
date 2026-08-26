@@ -1683,6 +1683,23 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 
 }
 
+void CPlayer::SetDialoguePose(const _float3& vPosition, const _float3& vLookAt)
+{
+	if (m_pComCharacterController)
+		m_pComCharacterController->SetPosition(vPosition);
+
+	GetTransform().SetPosition(vPosition);
+	_vector vTarget = XMLoadFloat3(&vLookAt);
+	vTarget = XMVectorSetY(vTarget, vPosition.y);
+	GetTransform().LookAt(vTarget);
+	GetTransform().Update();
+
+	if (m_pComCharacterMotor)
+		m_pComCharacterMotor->SetVelocity({});
+	if (m_pComMoveIntent)
+		m_pComMoveIntent->ClearMoveIntent();
+}
+
 void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 {
 	if (!m_pComCharacterController ||!m_pComCharacterMotor ||!m_pComMoveIntent ||!m_pStateMachine ||fFixedTimeDelta <= 0.f)
@@ -2052,6 +2069,31 @@ void CPlayer::Update(E::_float fTimeDelta)
 		m_pStateMachine &&
 		!IsRagdollTransitioning())
 		m_pStateMachine->Update(fTimeDelta);
+
+	if (m_pStateMachine)
+	{
+		const PLAYER_STATE currentState = m_pStateMachine->GetCurrentState();
+		if (currentState != m_ePreviousMotionBlurState)
+		{
+			m_ePreviousMotionBlurState = currentState;
+			m_fMotionBlurPulseRemainUnscaled =
+				currentState == PLAYER_STATE::LOCOMOTION
+				? 0.f
+				: MOTION_BLUR_STATE_PULSE_DURATION;
+		}
+		else if (m_fMotionBlurPulseRemainUnscaled > 0.f)
+		{
+			m_fMotionBlurPulseRemainUnscaled = std::max(
+				0.f,
+				m_fMotionBlurPulseRemainUnscaled -
+				CGameInstance::Get().GetUnscaledDelta());
+		}
+
+		CGameInstance::Get().Set_MotionBlurEnabled(
+			MOTION_BLUR_ENABLED &&
+			currentState != PLAYER_STATE::LOCOMOTION &&
+			m_fMotionBlurPulseRemainUnscaled > 0.f);
+	}
 
 	// Turn 시작 당시 활성 상태를 보관했기 때문에 종료 프레임의
 	// 마지막 RootMotionDelta도 빠뜨리지 않고 적용한다.

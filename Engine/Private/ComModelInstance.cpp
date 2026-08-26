@@ -247,22 +247,32 @@ HRESULT CComModelInstance::ChangeModel(const StringID& sGroupTag, const StringID
         return E_FAIL;
     }
 
-    m_pModel = pModel;
-    return S_OK;
+	m_pModel = pModel;
+	return S_OK;
 }
 
 // 모델의 단일 텍스쳐 반환
 SPtr<CResTexture2D> CComModelInstance::Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex) {
-    auto Materials = m_pModel->GetMaterials();
-    auto Mesh = m_pModel->GetMeshes();
-    auto Textures = Materials[Mesh[iMeshIndex]->Get_MaterialIndex()]->GetTextures();
+	if (!m_pModel)
+		return nullptr;
 
-    if (Textures[eMaterialType].size() == 0)
-    {
-		return nullptr;// Textures[1].front();
-    }
+	const auto& meshes = m_pModel->GetMeshes();
+	const auto& materials = m_pModel->GetMaterials();
+	if (iMeshIndex >= meshes.size() || !meshes[iMeshIndex])
+		return nullptr;
 
-    return Textures[eMaterialType][iTextureIndex];
+	const uint32_t materialIndex = meshes[iMeshIndex]->Get_MaterialIndex();
+	if (materialIndex >= materials.size() || !materials[materialIndex])
+		return nullptr;
+
+	auto* textures = materials[materialIndex]->GetTextures();
+	const size_t textureType = static_cast<size_t>(eMaterialType);
+	if (!textures || textureType >= materials[materialIndex]->GetMaterialSize())
+		return nullptr;
+	if (iTextureIndex >= textures[textureType].size())
+		return nullptr;
+
+	return textures[textureType][iTextureIndex];
 }
 
 UPtr<CComModelInstance> CComModelInstance::Create()

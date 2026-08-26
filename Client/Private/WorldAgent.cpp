@@ -50,7 +50,7 @@ HRESULT CWorldAgent::InitializePrototype(void* pArg)
 		return E_FAIL;
 	}
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelAnim");
-	if (FAILED(m_pResPixelShader->Load()))
+	if (!m_pResPixelShader || FAILED(m_pResPixelShader->Load()))
 	{
 		return E_FAIL;
 	}
@@ -396,10 +396,17 @@ HRESULT CWorldAgent::Render_Instanced(ID3D11DeviceContext* pContext, const E::RE
 	pContext->VSSetShaderResources(7, 1, &cpuBonePaletteSRV);
 	pContext->VSSetShaderResources(8, 1, &skinBonesSRV);
 
-	for (uint32_t iMeshIndex = 0; iMeshIndex < pModel->Get_NumMeshes(); ++iMeshIndex)
+	const auto& meshes = pModel->GetMeshes();
+	const auto& materials = pModel->GetMaterials();
+	const uint32_t meshCount = std::min<uint32_t>(
+		pModel->Get_NumMeshes(), static_cast<uint32_t>(meshes.size()));
+	for (uint32_t iMeshIndex = 0; iMeshIndex < meshCount; ++iMeshIndex)
 	{
-		const auto& mesh = pModel->GetMeshes()[iMeshIndex];
+		const auto& mesh = meshes[iMeshIndex];
 		if (!mesh)
+			continue;
+		const uint32_t materialIndex = mesh->Get_MaterialIndex();
+		if (materialIndex >= materials.size() || !materials[materialIndex])
 			continue;
 
 		const auto& skinRange = pModel->Get_GPUMeshSkinRange(iMeshIndex);
