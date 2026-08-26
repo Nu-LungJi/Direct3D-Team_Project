@@ -32,6 +32,8 @@ CMiniGameNpc::~CMiniGameNpc()
 	SyncInteractionPrompt(false);
 	if (m_hDialogueFade)
 		GET_SINGLE(UIManager)->DeleteUIRecursive(*m_hDialogueFade);
+	if (m_hMoveFade)
+		GET_SINGLE(UIManager)->DeleteUIRecursive(*m_hMoveFade);
 	EndMiniGameWorldPause();
 }
 
@@ -465,6 +467,14 @@ void CMiniGameNpc::ExecuteOutcome()
 {
 	if (m_eOutcome == OUTCOME::MOVE_TO_DESTINATION)
 	{
+		const auto fadeRoots = GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
+		if (!fadeRoots.empty())
+		{
+			m_hMoveFade = fadeRoots.front();
+			GET_SINGLE(UIManager)->PlayFadeIn(
+				*m_hMoveFade, 0.f, m_fMoveFadeInDuration);
+		}
+
 		m_bMovingToDestination = true;
 		m_eState = STATE::MOVING;
 		return;
@@ -537,6 +547,16 @@ void CMiniGameNpc::UpdateMoveOutcome()
 	{
 		m_bMovingToDestination = false;
 		m_eState = STATE::IDLE;
+
+		if (m_hMoveFade)
+		{
+			GET_SINGLE(UIManager)->PlayFadeOutDelete(
+				*m_hMoveFade,
+				m_fMoveFadeOutDelay,
+				m_fMoveFadeOutDuration);
+			m_hMoveFade.reset();
+		}
+
 		return;
 	}
 	_float3 direction{};

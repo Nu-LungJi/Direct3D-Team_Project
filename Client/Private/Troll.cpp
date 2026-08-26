@@ -150,6 +150,7 @@ void CTroll::PriorityUpdate(E::_float fTimeDelta)
 	if (m_bEndGame)
 	{
 		SetPendingDestroy();
+		GET_SINGLE(UIManager)->CreateFadeInSceneChange(3.f, 2.f, LEVEL::LAST_BOSS_RANROK);
 		return;
 	}
 	Flag_Check(fTimeDelta);

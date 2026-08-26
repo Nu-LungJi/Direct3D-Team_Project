@@ -291,7 +291,7 @@ HRESULT CMonster::Initialize(void* pArg)
 		GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 		GetTransform().Update();
 		m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
-		m_pModelAnimator->Play_Anim(0, false);
+		//m_pModelAnimator->Play_Anim(0, false);
 	}
 	return S_OK;
 }
