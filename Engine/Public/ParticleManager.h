@@ -85,6 +85,9 @@ public:
 	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat,
 		const _fvector endPos,
 		_bool bApplyWorldScaleToParticleSize = false);
+	uint32_t Spawn(const std::string& strJsonPath, const _matrix& worldMat,
+		const _fvector endPos,
+		_bool bApplyWorldScaleToParticleSize = false);
 
 	
 

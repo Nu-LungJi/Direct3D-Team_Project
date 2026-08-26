@@ -453,6 +453,9 @@ public:
 	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat,
 		const _fvector endPos = XMVectorZero(),
 		_bool bApplyWorldScaleToParticleSize = false);
+	uint32_t Spawn(const std::string& strJsonPath, const _matrix& worldMat,
+		const _fvector endPos = XMVectorZero(),
+		_bool bApplyWorldScaleToParticleSize = false);
 	HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<class CParticle> particle);
 
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
