@@ -130,7 +130,7 @@ HRESULT CComStaticModelInstance::RenderDynamicInstances(
 	auto vertexShader = gameInstance.GetResourceFirst<CResVertexShader>(
 		TAG_RES_GRP_PERMANENT_SHADER, "VS_StaticModelDynamicInstanced");
 	auto pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
+		TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER);
 	auto sampler = gameInstance.GetResourceFirst<CResSamplerState>(
 		TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
 	auto instanceBuffer = gameInstance.GetResourceFirst<CResStructuredBuffer>(

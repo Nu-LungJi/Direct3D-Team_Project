@@ -84,6 +84,8 @@ public:
         _bool bLoop = false, _float fSpawnInterval = 0.1f);
 	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos);
 
+	uint32_t Spawn(const std::string& strJsonPath, const _matrix& worldMat, const _fvector endPos);
+
 	
 
 	//실제 스폰 함수

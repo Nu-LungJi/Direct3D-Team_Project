@@ -49,17 +49,7 @@ static const float2		PoissonDisk_FourTab[4] =
 {	
 	float2(-0.326, -0.406), float2(-0.840, 0.074), float2(-0.696, 0.457), float2(-0.203, 0.621)
 };
-static const float2 RandomRotationCS[8] =
-{
-	float2(1.00000000f, 0.00000000f),
-    float2(0.70710678f, 0.70710678f),
-    float2(0.00000000f, 1.00000000f),
-    float2(-0.70710678f, 0.70710678f),
-    float2(-1.00000000f, 0.00000000f),
-    float2(-0.70710678f, -0.70710678f),
-    float2(0.00000000f, -1.0000000f),
-    float2(0.70710678f, -0.70710678f)
-};
+
 
 cbuffer CB_EFFECT_LIGHT : register(b11)
 {
@@ -76,56 +66,6 @@ cbuffer CB_CSM : register(b12)
 	float2 ShadowBias;
 };
 
-uint Hash_ShadowPixel(uint2 PixelPos)
-{
-	uint Hash = PixelPos.x * 0x8DA6B343u;
-	Hash ^= PixelPos.y * 0xD8163841u;
-
-	Hash ^= Hash >> 16;
-	Hash *= 0x7FEB352Du;
-	Hash ^= Hash >> 15;
-
-	return Hash;
-}
-
-float2x2 Get_RandomNoise(uint2 _PixelPos)
-{
-	uint RotationIndex = Hash_ShadowPixel(_PixelPos) & 7u;
-
-	float2 CosSin = RandomRotationCS[RotationIndex];
-
-	return float2x2(CosSin.x, -CosSin.y, CosSin.y, CosSin.x);
-}
-
-float DistributionGGX(float3 N, float3 H, float _Roughness)
-{
-    float R = _Roughness * _Roughness;
-    float R2 = R * R;
-    
-    float NDH = max(0.f, dot(N, H));
-    
-    float Num = R2;
-    float Denom = ((NDH * NDH) * (R2 - 1.0) + 1.0);
-    Denom = PI * Denom * Denom;
-	
-    return Num / max(0.000001f, Denom);
-}
-float VisibilitySmithJointGGX(float NDY, float NDL, float _Roughness)
-{
-    float R = _Roughness * _Roughness;
-    float R2 = R * R;
-    
-    float lambdaV = NDL * sqrt(max((-NDY * R2 + NDY) * NDY + R2, 0.001f));
-    float lambdaL = NDY * sqrt(max((-NDL * R2 + NDL) * NDL + R2, 0.001f));
-    
-    float Denom = lambdaV + lambdaL;
-    return Denom > 0.0f ? 0.5f / Denom : 0.0f;
-}
-float3 FresnelSchlick(float CTH, float3 MBR)
-{
-    float ClampCTH = clamp(CTH, 0.0f, 1.0f);
-    return MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
-}
 float MergeShadowMap(int _ShadowSlot, float2 _SamplerUV, float _CurrentPixelDepth)
 {
 	return DynamicShadowMaps.SampleCmpLevelZero(ShadowSampler, float3(_SamplerUV, _ShadowSlot), _CurrentPixelDepth);

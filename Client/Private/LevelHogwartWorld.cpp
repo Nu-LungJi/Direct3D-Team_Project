@@ -142,6 +142,9 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	if (FAILED(Initialize_EnviromentLight()))
 		return E_FAIL;
+	if (FAILED(Initialize_LoopEffect()))
+		return E_FAIL;
+
 
 	{
 		CWaterWheel::DESC desc{};
@@ -621,6 +624,12 @@ HRESULT CLevelHogwartWorld::Initialize_EnviromentLight() {
 
 	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
 
+
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorld::Initialize_LoopEffect(){
+	CGameInstance::Get().Spawn("CGY_HogwartSteam.json", XMMatrixTranslation(106.42f, -7.87f, -212.875f));
 
 	return S_OK;
 }

@@ -40,6 +40,7 @@ private:
 	/*----------- 광윤 추가 -----------*/
 	HRESULT Initialize_VolumetricFog();
 	HRESULT Initialize_EnviromentLight();
+	HRESULT Initialize_LoopEffect();
 	/*---------------------------------*/
 	HRESULT SpanwAnimal();
 	HRESULT SpawnNpcPlacements(CHandle hPlayer, const _string& Path);

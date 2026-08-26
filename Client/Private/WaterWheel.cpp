@@ -27,7 +27,7 @@ HRESULT CWaterWheel::InitializePrototype(void* pArg) {
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
 	if (!m_pResVertexShader || FAILED(m_pResVertexShader->Load()))	return E_FAIL;
 	
-	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
+	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER);
 	if (!m_pResPixelShader || FAILED(m_pResPixelShader->Load()))	return E_FAIL;
 
 	return S_OK;
@@ -107,9 +107,7 @@ void CWaterWheel::LateUpdate(E::_float fTimeDelta) {
 	OcclusionData.worldCenter = WorldBounds.Center;
 	OcclusionData.worldExtents = WorldBounds.Extents;
 
-	CGameInstance::Get().PushMapObjectInstance(pModel, InstanceData, OcclusionData);
-
-	CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND_MAPMESH, this);
 }
 
 HRESULT CWaterWheel::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) {

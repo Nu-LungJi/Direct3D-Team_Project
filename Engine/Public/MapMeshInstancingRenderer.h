@@ -128,7 +128,8 @@ private:
 	// 수집된 배치로부터 이번 프레임의 완성된 Draw 패킷을 만든다
 	HRESULT PrepareDrawPacket(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, DRAW_PACKET& outPacket);
 	// Draw에 공통으로 필요한 셰이더, 샘플러, 상수 버퍼를 조회
-	HRESULT ResolveDrawResources(DRAW_PACKET& outPacket) const;
+	
+	HRESULT ResolveDrawResources(const RENDER_CTX& renderContext, DRAW_PACKET& outPacket) const;
 	// 배치 전체 크기를 미리 계산해 상주 벡터의 재할당을 줄인다.
 	void ReserveResidentDrawData();
 	// 모델, 렌더 기능 단위 배치 하나를 GPU 컬링 입력과 메시별 Draw 정보로 펼친다
@@ -146,10 +147,11 @@ private:
 		_bool uploadResidentData,
 		DRAW_PACKET& outPacket);
 	// Immediate Context의 현재 렌더 타깃과 파이프라인 상태를 패킷에 보관한다.
-	HRESULT CapturePipelineState(ID3D11DeviceContext* context, DRAW_PACKET& outPacket) const;
+	HRESULT CapturePipelineState(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, DRAW_PACKET& outPacket) const;
 	// 지정된 Draw 명령 구간을 하나의 Deferred Context에 기록한다
 	HRESULT RecordDrawCommands(
-		ID3D11DeviceContext* context,
+		ID3D11DeviceContext* context, 
+		const RENDER_CTX& renderContext,
 		const DRAW_PACKET& packet,
 		uint32_t commandBegin,
 		uint32_t commandEnd,
@@ -165,6 +167,10 @@ public:
 	HRESULT Render(ID3D11DeviceContext* context, const RENDER_CTX& renderContext) override;
 	// 이 렌더러가 기본 렌더 패스에서만 실행됨을 알린다
 	bool HasRenderPass(RENDERPASS renderPass) const override;
+
+	/*----------- 광윤 추가 -----------*/
+
+	/*---------------------------------*/
 
 private:
 	// 현재 로드된 청크의 정적 인스턴스를 모델·렌더 기능별로 모은다.

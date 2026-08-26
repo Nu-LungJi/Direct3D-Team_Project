@@ -216,7 +216,7 @@ HRESULT CRenderer::InitializeBackBuffer()
 	if (nullptr == m_pBackBufferTexture)	{ MSG_BOX("Invalid : m_pBackBufferTexture");    return E_FAIL; }
 
 	// m_pRasterizer Setting - BackCull
-	m_pRasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	m_pRasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
 	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 
 	return S_OK;
@@ -290,7 +290,7 @@ HRESULT CRenderer::InitializeTargetPBR()
 	{
 		if (nullptr == m_pResVertexShader)	return E_FAIL;
 	}
-	if (m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim"))
+	if (m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER))
 	{
 		if (nullptr == m_pResPixelShader)	return E_FAIL;
 	}
@@ -1223,7 +1223,7 @@ HRESULT CRenderer::Render_NonAlpha() {
 
 		if (FAILED(RenderLight())) { Unbind_Resources(); return S_OK; }
 
-		if (FAILED(RenderMapMesh())) { Unbind_Resources(); return S_OK; }
+		if (FAILED(RenderMapMesh(RENDERGROUP::NONBLEND_MAPMESH))) { Unbind_Resources(); return S_OK; }
 	}
 
 	Unbind_Resources();
@@ -1274,7 +1274,7 @@ HRESULT CRenderer::Render_Decal()
 			Unbind_Resources();
 			m_pContext->OMSetBlendState(noBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 			m_pContext->OMSetDepthStencilState(depthDisabled->GetDepthStencilState().Get(), 0);
-			m_pContext->RSSetState(backCull->GetRasterizerState().Get());
+			m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 		};
 
 	auto* activeCamera = gameInstance.GetActiveCamera();
@@ -1371,11 +1371,6 @@ HRESULT CRenderer::Render_HBAO() {
 
 HRESULT CRenderer::Render_Lighting() {
 	ZoneScopedN("Render_Lighting");
-	{
-		// Default Texture - Dissolve HBAO
-		SPtr<CResTexture2D> WhiteResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE");
-		m_pContext->PSSetShaderResources(5, 1, WhiteResource->GetSRV().GetAddressOf());
-	}
 
 	{
 		ComPtr<ID3D11ShaderResourceView> SRVList[] = {
@@ -1403,8 +1398,7 @@ HRESULT CRenderer::Render_Lighting() {
 
 		m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
 	}
-
-	return S_OK;
+	
 }
 
 HRESULT CRenderer::Render_Alpha() {
@@ -1429,6 +1423,15 @@ HRESULT CRenderer::Render_Alpha() {
 		m_pContext->IASetInputLayout(m_pBlendVertexShader->GetInputLayout().Get());
 		m_pContext->VSSetShader(m_pBlendVertexShader->GetVertexShader().Get(), nullptr, 0);
 		m_pContext->PSSetShader(m_pBlendPixelShader->GetPixelShader().Get(), nullptr, 0);
+
+		
+		ComPtr<ID3D11ShaderResourceView> SRVList[] = {
+			m_pResDynTexTargetHBAO->GetSRV(),
+			nullptr,
+			m_pSRVIrradianceMap.Get(),
+			m_pSRVPreFilteredMap.Get(),
+			m_pSRVBRDFLookUpMap.Get()
+		};
 	}
 	{
 		auto pGameCam = CGameInstance::Get().GetActiveCamera();
@@ -1443,6 +1446,8 @@ HRESULT CRenderer::Render_Alpha() {
 		if (FAILED(RenderSkybox())) { Unbind_Resources(); return S_OK; }
 
 		if (FAILED(RenderCollider())) { Unbind_Resources(); return S_OK; }
+
+		if (FAILED(RenderMapMesh(RENDERGROUP::BLEND_MAPMESH))) { Unbind_Resources(); return S_OK; }
 	}
 
 	Unbind_Resources();
@@ -2452,9 +2457,11 @@ HRESULT CRenderer::RenderNonBlend_Instanced() {
 
 }
 
-HRESULT CRenderer::RenderMapMesh()
+HRESULT CRenderer::RenderMapMesh(RENDERGROUP _Group)
 {
 	ZoneScopedN("RenderMapMesh");
+
+	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 
 	auto& gameInstance = CGameInstance::Get();
 	const auto stencilWrite = gameInstance.GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_MAPMESH_DECAL_WRITE");
@@ -2466,8 +2473,10 @@ HRESULT CRenderer::RenderMapMesh()
 	m_pContext->OMGetDepthStencilState(previousDepthState.GetAddressOf(), &previousStencilRef);
 	m_pContext->OMSetDepthStencilState(stencilWrite->GetDepthStencilState().Get(), STENCIL_MASK::DECAL_RECEIVER);
 
+	m_pRenderContext.pass = _Group == RENDERGROUP::NONBLEND_MAPMESH ? RENDERPASS::NONBLEND : RENDERPASS::BLEND;
+
 	HRESULT result = S_OK;
-	for (auto* renderObject : m_pRenderObject[ETOUI(RENDERGROUP::MAPMESH)])
+	for (auto* renderObject : m_pRenderObject[ETOUI(_Group)])
 	{
 		if (!renderObject || !renderObject->HasRenderPass(m_pRenderContext.pass))
 			continue;
@@ -2478,6 +2487,8 @@ HRESULT CRenderer::RenderMapMesh()
 			break;
 		}
 	}
+
+	m_pRenderContext.pass = RENDERPASS::DEFAULT;
 
 	m_pContext->OMSetDepthStencilState(previousDepthState.Get(), previousStencilRef);
 
@@ -2501,6 +2512,26 @@ HRESULT CRenderer::RenderBlend()
 
 	{
 		E::CGameInstance::Get().Render3DFont();
+	}
+
+	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+	m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
+	return S_OK;
+}
+
+HRESULT CRenderer::RenderBlendMapMesh(){
+	ZoneScopedN("RenderBlendMapMesh");
+
+	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+	m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
+	for (auto& pRenderObject : m_pRenderObject[ETOUI(RENDERGROUP::BLEND_MAPMESH)])
+	{
+		if (pRenderObject->HasRenderPass(m_pRenderContext.pass))
+		{
+			pRenderObject->Render(m_pContext.Get(), m_pRenderContext);
+		}
 	}
 
 	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
@@ -2547,7 +2578,7 @@ HRESULT CRenderer::RenderEffect()
 			pRenderObject->Render(m_pContext.Get(), m_pRenderContext);
 		}
 	}
-
+	
 	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
 	m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 

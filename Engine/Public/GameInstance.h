@@ -451,6 +451,9 @@ public:
 		uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 		_bool bLoop, _float fSpawnInterval);
 	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos = XMVectorZero());
+	uint32_t Spawn(const std::string& strJsonPath, const _matrix& worldMat, const _fvector endPos = XMVectorZero());
+
+
 	HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<class CParticle> particle);
 
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);

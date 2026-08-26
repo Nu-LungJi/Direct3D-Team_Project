@@ -76,8 +76,9 @@ HRESULT CMapMeshInstancingRenderer::Initialize()
 void CMapMeshInstancingRenderer::Update()
 {
 	// 인스턴싱이 활성화된 프레임에만 렌더 큐에 등록한다.
-	if (m_bInstancingEnabled)
-		CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
+	if (m_bInstancingEnabled) {
+		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND_MAPMESH, this);
+	}
 
 	// 디버그 표시가 켜진 경우에만 상주 바운드를 순회한다.
 	if (!m_bDebugBoundsEnabled)
@@ -210,7 +211,7 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* context, const R
 		return E_FAIL;
 	if (!packet.isReady)
 		return S_OK;
-
+	
 	const uint32_t commandCount = static_cast<uint32_t>(m_DrawCommandIndices.size());
 	const uint32_t availableWorkers = CGameInstance::Get().GetRenderWorkerCount();
 	// 작은 작업의 과도한 분할을 막기 위해 실제 명령 수와 최대 4개 워커로 제한한다.
@@ -235,11 +236,11 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* context, const R
 		commandListFutures.push_back(
 			CGameInstance::Get().RenderWorkerEnqueueWithFuture(
 				taskName,
-				[this, packet, commandBegin, commandEnd](ID3D11DeviceContext* deferredContext)
+				[this, renderContext, packet, commandBegin, commandEnd](ID3D11DeviceContext* deferredContext)
 				{
 					DRAW_COMMAND_LIST_RESULT result{};
 					result.result = RecordDrawCommands(
-						deferredContext, packet,
+						deferredContext, renderContext, packet,
 						commandBegin, commandEnd, result.drawCalls);
 
 					if (FAILED(result.result))
@@ -304,7 +305,7 @@ HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(
 		m_IsResidentSceneDirty = false;
 		return S_OK;
 	}
-	if (FAILED(ResolveDrawResources(outPacket)))
+	if (FAILED(ResolveDrawResources(renderContext, outPacket)))
 		return E_FAIL;
 
 	if (FAILED(RunGpuCulling(
@@ -312,7 +313,7 @@ HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(
 		uploadResidentData, outPacket)))
 		return E_FAIL;
 	m_IsResidentSceneDirty = false;
-	if (FAILED(CapturePipelineState(context, outPacket)))
+	if (FAILED(CapturePipelineState(context, renderContext, outPacket)))
 		return E_FAIL;
 
 	outPacket.isReady = true;
@@ -346,7 +347,7 @@ HRESULT CMapMeshInstancingRenderer::RebuildResidentDrawData()
 	return BuildResidentDrawData(m_ResidentBatchCount);
 }
 
-HRESULT CMapMeshInstancingRenderer::ResolveDrawResources(DRAW_PACKET& outPacket) const
+HRESULT CMapMeshInstancingRenderer::ResolveDrawResources(const RENDER_CTX& renderContext, DRAW_PACKET& outPacket) const
 {
 	ZoneScopedN("MapMeshResolveDrawResources");
 	auto& gameInstance = CGameInstance::Get();
@@ -355,8 +356,15 @@ HRESULT CMapMeshInstancingRenderer::ResolveDrawResources(DRAW_PACKET& outPacket)
 		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced");
 	outPacket.vertexFoliageShader = gameInstance.GetResourceFirst<CResVertexShader>(
 		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced_Foliage");
-	outPacket.pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim_Instanced");
+	if (renderContext.pass == RENDERPASS::NONBLEND) {
+		outPacket.pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(
+			TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER);
+	}
+	else {
+		outPacket.pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(
+			TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_BLENDSHADER);
+	}
+	
 	outPacket.sampler = gameInstance.GetResourceFirst<CResSamplerState>(
 		TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
 	outPacket.materialConstantBuffer = gameInstance.GetResourceFirst<CResCBuffer>(
@@ -499,13 +507,19 @@ HRESULT CMapMeshInstancingRenderer::RunGpuCulling(
 
 HRESULT CMapMeshInstancingRenderer::CapturePipelineState(
 	ID3D11DeviceContext* context,
+	const RENDER_CTX& renderContext,
 	DRAW_PACKET& outPacket) const
 {
 	ZoneScopedN("MapMeshCapturePipelineState");
+
+	_bool IsNonBlendPass = renderContext.pass == RENDERPASS::NONBLEND;
+
+	uint32_t RenderTargetCount = IsNonBlendPass ? DRAW_PACKET::RENDER_TARGET_COUNT : 1;
 	ID3D11RenderTargetView* renderTargets[DRAW_PACKET::RENDER_TARGET_COUNT]{};
+
 	ID3D11DepthStencilView* depthStencilView = nullptr;
-	context->OMGetRenderTargets(DRAW_PACKET::RENDER_TARGET_COUNT, renderTargets, &depthStencilView);
-	for (uint32_t i = 0; i < DRAW_PACKET::RENDER_TARGET_COUNT; ++i)
+	context->OMGetRenderTargets(RenderTargetCount, renderTargets, &depthStencilView);
+	for (uint32_t i = 0; i < RenderTargetCount; ++i)
 		outPacket.renderTargets[i].Attach(renderTargets[i]);
 	outPacket.depthStencilView.Attach(depthStencilView);
 
@@ -534,10 +548,15 @@ HRESULT CMapMeshInstancingRenderer::CapturePipelineState(
 	context->PSGetShaderResources(13, 1, &noiseShaderResourceView);
 	outPacket.noiseShaderResourceView.Attach(noiseShaderResourceView);
 
+	// NonBlend 인 경우 : Diffuse, Normal, SMRO, Emissive 4개 전체 필요
+	// Blend 인 경우 : Diffuse Render Target만 필요
+	_bool IsAllRenderTargetsValid = IsNonBlendPass ?
+		(std::ranges::any_of(outPacket.renderTargets, [](const auto& renderTarget) { return renderTarget == nullptr; }))	
+		: outPacket.renderTargets[0] == nullptr;
+
 	if (!outPacket.depthStencilView || !outPacket.depthStencilState ||
 		!outPacket.perPassConstantBuffer || !outPacket.noiseShaderResourceView ||
-		std::ranges::any_of(outPacket.renderTargets,
-			[](const auto& renderTarget) { return renderTarget == nullptr; }))
+		IsAllRenderTargetsValid)
 	{
 		return E_FAIL;
 	}
@@ -545,7 +564,8 @@ HRESULT CMapMeshInstancingRenderer::CapturePipelineState(
 }
 
 HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
-	ID3D11DeviceContext* context,
+	ID3D11DeviceContext* context, 
+	const RENDER_CTX& renderContext,
 	const DRAW_PACKET& packet,
 	uint32_t commandBegin,
 	uint32_t commandEnd,
@@ -599,20 +619,32 @@ HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
 			return E_FAIL;
 
 		const auto& item = m_DrawItems[drawIndex];
+
+		
 		if (!currentFeature || *currentFeature != item.renderFeature)
 		{
 			const SPtr<CResVertexShader>* vertexShader = nullptr;
-			switch (item.renderFeature)
-			{
-			case EMapMeshRenderFeature::Static:
+			if		(item.renderFeature == EMapMeshRenderFeature::Static && renderContext.pass == RENDERPASS::NONBLEND) {
 				vertexShader = &packet.vertexStaticShader;
-				break;
-			case EMapMeshRenderFeature::Foliage:
-				vertexShader = &packet.vertexFoliageShader;
-				break;
-			default:
-				return E_FAIL;
 			}
+			else if (item.renderFeature == EMapMeshRenderFeature::Foliage && renderContext.pass == RENDERPASS::NONBLEND) {
+				vertexShader = &packet.vertexFoliageShader;
+			}
+			else {
+				continue;
+			}
+
+			//switch (item.renderFeature)
+			//{
+			//case EMapMeshRenderFeature::Static:
+			//	vertexShader = &packet.vertexStaticShader;
+			//	break;
+			//case EMapMeshRenderFeature::Foliage:
+			//	vertexShader = &packet.vertexFoliageShader;
+			//	break;
+			//default:
+			//	return E_FAIL;
+			//}
 
 			context->IASetInputLayout((*vertexShader)->GetInputLayout().Get());
 			context->VSSetShader((*vertexShader)->GetVertexShader().Get(), nullptr, 0);
@@ -643,7 +675,7 @@ HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
 
 bool CMapMeshInstancingRenderer::HasRenderPass(RENDERPASS renderPass) const
 {
-	return renderPass == RENDERPASS::DEFAULT;
+	return (renderPass == RENDERPASS::DEFAULT) || (renderPass == RENDERPASS::NONBLEND) || (renderPass == RENDERPASS::BLEND);
 }
 
 void CMapMeshInstancingRenderer::SetInstancingEnabled(_bool enabled)

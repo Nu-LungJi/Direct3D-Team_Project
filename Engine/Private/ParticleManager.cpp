@@ -3383,6 +3383,18 @@ uint32_t CParticleManager::Spawn(const std::string& strJsonPath,
 	return Spawn(*pCommands, worldMat, endPos);
 }
 
+uint32_t CParticleManager::Spawn(const std::string& strJsonPath, const _matrix& worldMat, const _fvector endPos)
+{
+	const auto* pCommands = FindCachedCommandQueue(strJsonPath);
+	if (nullptr == pCommands || pCommands->empty())
+		return INVALID_PARTICLE_OWNER_ID;
+
+	_float4x4 mat;
+	XMStoreFloat4x4(&mat, worldMat);
+	return Spawn(*pCommands, mat, endPos);
+}
+
+
 // 1) 순수 파싱: matWorld 관여 없음, 로컬값 그대로
 std::vector<SPAWN_COMMAND> CParticleManager::Parse_Command(const std::string& strJsonPath)
 {

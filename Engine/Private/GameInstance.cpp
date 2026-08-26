@@ -747,6 +747,15 @@ uint32_t CGameInstance::Spawn(
 	return m_pParticleManager->Spawn(strJsonPath, worldMat, endPos);
 }
 
+uint32_t CGameInstance::Spawn(
+	const std::string& strJsonPath,
+	const _matrix& worldMat,
+	const _fvector endPos)
+{
+	// [LSY] 콘텐츠에서 파티클 큐 경로만으로 재생하고 Owner ID를 추적할 수 있게 전달한다.
+	return m_pParticleManager->Spawn(strJsonPath, worldMat, endPos);
+}
+
 std::vector<SPAWN_COMMAND>  CGameInstance::Parse_Command(const std::string& strJsonFile)
 {
 	return m_pParticleManager->Parse_Command(strJsonFile);

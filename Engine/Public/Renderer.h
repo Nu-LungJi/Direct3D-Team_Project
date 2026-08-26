@@ -68,8 +68,9 @@ private:		// Render Object
 	HRESULT		RenderPriority();
 	HRESULT		RenderNonBlend();
 	HRESULT		RenderNonBlend_Instanced();
-	HRESULT		RenderMapMesh();
+	HRESULT		RenderMapMesh(RENDERGROUP _Group);
 	HRESULT		RenderBlend();
+	HRESULT		RenderBlendMapMesh();
 	HRESULT		RenderLight();
 	HRESULT		RenderSkybox();
 	HRESULT		RenderEffect();
