@@ -602,14 +602,7 @@ HRESULT CLevelTerrain::InitializePhysicsDoorTest()
 {
 	CPhysicsDoor::DESC desc{};
 	desc.sObjectTag = "D6_PhysicsDoor";
-	// Terrain 플레이어 시작점 근처에서 문 하단이 지면 높이 100에 닿는다.
-	desc.vInitialPosition = { 10.f, 102.5f, 10.f };
-	desc.vHalfExtents = { 1.5f, 2.5f, 0.15f };
-	desc.fMass = 25.f;
-	desc.fAngularDamping = 3.f;
-	desc.fLowerLimitDegrees = -110.f;
-	desc.fUpperLimitDegrees = 110.f;
-	desc.eHingeSide = CPhysicsDoor::HINGE_SIDE::LEFT;
+	desc.vInitialPosition = { 22.f, 6.f, 10.f };
 
 	const auto hDoor = CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::TERRAIN,
@@ -619,9 +612,8 @@ HRESULT CLevelTerrain::InitializePhysicsDoorTest()
 	if (!hDoor)
 		return E_FAIL;
 
-	m_hPhysicsDoor = *hDoor;
 	const auto* pDoor = CGameInstance::Get()
-		.GetGameObjectByHandleT<CPhysicsDoor>(m_hPhysicsDoor);
+		.GetGameObjectByHandleT<CPhysicsDoor>(*hDoor);
 	return pDoor && pDoor->IsHingeReady()
 		? S_OK
 		: E_FAIL;
@@ -1654,40 +1646,6 @@ void CLevelTerrain::UpdateGUI()
 {
 	ImGui::Begin("Terrain");
 	UpdateAccioActivityTestGUI();
-	if (ImGui::CollapsingHeader("D6 Physics Door Test"))
-	{
-		auto* pDoor = CGameInstance::Get()
-			.GetGameObjectByHandleT<CPhysicsDoor>(m_hPhysicsDoor);
-		if (!pDoor || pDoor->GetPendingDestroy())
-		{
-			ImGui::TextDisabled("Door is not available.");
-		}
-		else
-		{
-			ImGui::Text(
-				"Hinge: %s | Angle: %.2f deg",
-				pDoor->IsHingeReady() ? "Ready" : "Failed",
-				pDoor->GetOpeningAngleDegrees());
-			ImGui::DragFloat(
-				"Door Test Torque",
-				&m_fPhysicsDoorTestTorque,
-				10.f,
-				0.f,
-				10000.f,
-				"%.0f");
-
-			if (ImGui::Button("Door Push +"))
-				pDoor->ApplyOpeningTorque(m_fPhysicsDoorTestTorque);
-			ImGui::SameLine();
-			if (ImGui::Button("Door Push -"))
-				pDoor->ApplyOpeningTorque(-m_fPhysicsDoorTestTorque);
-			ImGui::SameLine();
-			if (ImGui::Button("Door Reset"))
-				pDoor->ResetDoor();
-		}
-
-		ImGui::Separator();
-	}
 	if (ImGui::CollapsingHeader("Prop Barrel Test"))
 	{
 		auto* pPropBarrel = CGameInstance::Get()
@@ -2096,6 +2054,8 @@ std::optional<CHandle> CLevelTerrain::SpawnPlayer()
 		.iSimulationMask = PX_ALL_LAYERS,
 		.iQueryMask =
 			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::DOOR_DYNAMIC) |
+			ETOUI(COLLISION_LAYER::DOOR_HINGE_BLOCKER) |
 			ETOUI(COLLISION_LAYER::ENEMY_BODY)
 	};
 	return  E::CGameInstance::Get().AddGameObjectToLayer(

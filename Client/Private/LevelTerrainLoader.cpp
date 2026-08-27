@@ -196,13 +196,33 @@ std::future<bool> CLevelTerrainLoader::Load()
 				}
 			}
 
-			if (FAILED(E::CGameInstance::Get().AddPrototype(
-				LEVEL::TERRAIN,
-				PROTO_GAMEOBJECT::Prototype_GameObject_PhysicsDoor,
-				CPhysicsDoor::Create())))
+			// [LSY] D6 물리 문의 모델 원점을 문짝 중심으로 옮기고
+			// 원본 센티미터 단위를 엔진 월드 단위로 변환한다.
 			{
-				MSG_BOX("TERRAIN Failed Prototype_GameObject_PhysicsDoor");
-				return false;
+				auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+					LEVEL::TERRAIN,
+					"Static_PhysicsDoor_Resource",
+					CResStaticModel::Create(
+						"./Resources/SampleClient/Models/Static/LCJ_ObjecMap/"
+						"SM_BP_Door_Template64_1295.bin"));
+				if (!resource)
+					return false;
+
+				CResStaticModel::DESC desc{};
+				desc.PreTransformMatrix =
+					XMMatrixScaling(0.03f, 0.03f, 0.03f) *
+					XMMatrixTranslation(-1.875f, -3.73479f, 0.031791f);
+				if (FAILED(resource->Load(desc)))
+					return false;
+
+				if (FAILED(CGameInstance::Get().AddPrototype(
+					LEVEL::TERRAIN,
+					PROTO_GAMEOBJECT::Prototype_GameObject_PhysicsDoor,
+					CPhysicsDoor::Create())))
+				{
+					MSG_BOX("TERRAIN Failed Prototype_GameObject_PhysicsDoor");
+					return false;
+				}
 			}
 
 

@@ -73,8 +73,6 @@ private:
 	_bool m_bCreatePlayScreenUI{ false };
 	CHandle m_hPlayer{};
 	CHandle m_hPropBarrel{};
-	CHandle m_hPhysicsDoor{};
-	_float m_fPhysicsDoorTestTorque{ 800.f };
 	_float3 m_vPropBarrelSpawnPosition{ 20.f, 5.f, 20.f };
 	CHandle m_hAccioActivityBase{};
 	CHandle m_hAccioActivityNpc{};

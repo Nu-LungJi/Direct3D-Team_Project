@@ -97,6 +97,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_Locomotion_State">
       <UniqueIdentifier>{232233f9-be49-49ae-b9af-884605ffdcad}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_DoorPush_State">
+      <UniqueIdentifier>{b292b704-1291-4488-a906-e51abf324554}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_Roll_State">
       <UniqueIdentifier>{9a4caa44-f46e-447a-8a58-58c13ec27b7d}</UniqueIdentifier>
     </Filter>
@@ -566,6 +569,9 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_Locomotion_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Locomotion_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_DoorPush_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_DoorPush_State</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Player_Roll_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Roll_State</Filter>
@@ -1248,6 +1254,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Locomotion_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_DoorPush_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_DoorPush_State</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_Roll_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Roll_State</Filter>

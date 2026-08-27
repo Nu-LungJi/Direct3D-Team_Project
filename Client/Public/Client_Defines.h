@@ -40,6 +40,8 @@ namespace Client
 		PLAYER_HURTBOX = 1u << 17,	// 적 공격에 피격되는 플레이어의 부위별 판정
 		ENEMY_HURTBOX = 1u << 18,	// 플레이어 공격에 피격되는 적의 부위별 판정
 		WORLD_STATIC_WALL = 1u << 19,	// 벽
+		DOOR_DYNAMIC = 1u << 20,	// D6 등으로 움직이는 문짝
+		DOOR_HINGE_BLOCKER = 1u << 21,	// 문과 벽 사이 힌지 영역의 CCT 접근 차단용
 	};
 
 

@@ -364,6 +364,7 @@
     <ClInclude Include="..\Public\Player_RevelioSkill_State.h" />
     <ClInclude Include="..\Public\Player_LumosSkill_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
+    <ClInclude Include="..\Public\Player_DoorPush_State.h" />
     <ClInclude Include="..\Public\Player_Jump_State.h" />
     <ClInclude Include="..\Public\Player_Bombarda_Bullet.h" />
     <ClInclude Include="..\Public\Player_Confringo_Bullet.h" />
@@ -569,6 +570,7 @@
     <ClCompile Include="..\Private\Player_RevelioSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_LumosSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
+    <ClCompile Include="..\Private\Player_DoorPush_State.cpp" />
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
     <ClCompile Include="..\Private\Player_Bombarda_Bullet.cpp" />
     <ClCompile Include="..\Private\Player_Confringo_Bullet.cpp" />
