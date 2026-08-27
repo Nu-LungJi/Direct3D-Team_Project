@@ -68,7 +68,7 @@ private:		// Render Object
 	HRESULT		RenderPriority();
 	HRESULT		RenderNonBlend();
 	HRESULT		RenderNonBlend_Instanced();
-	HRESULT		RenderMapMesh(RENDERGROUP _Group);
+	HRESULT		RenderMapMesh();
 	HRESULT		RenderBlend();
 	HRESULT		RenderBlendMapMesh();
 	HRESULT		RenderLight();
@@ -118,6 +118,9 @@ public:			// PostProcess Effect Function
 	
 private:		// Unbind Shader Resource / Shader / UAV / Render Target
 	VOID		Unbind_Resources();
+
+	VOID		Convert_Rasterizer_NoCull();
+	VOID		Convert_Rasterizer_BackCull();
 
 public:			// Shader Resource Generator
 	TEXTURE3D	Generate_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight, uint32_t _TexDepth);

@@ -973,6 +973,20 @@ VOID	CRenderer::Unbind_Resources() {
 	m_pContext->CSSetShader(nullptr, nullptr, 0);
 }
 
+VOID CRenderer::Convert_Rasterizer_NoCull() {
+	const auto NoCullRasterizer		= CGameInstance::Get().GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	if (!NoCullRasterizer)	return;
+
+	m_pContext->RSSetState(NoCullRasterizer->GetRasterizerState().Get());
+}
+
+VOID CRenderer::Convert_Rasterizer_BackCull() {
+	const auto BackCullRasterizer	= CGameInstance::Get().GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	if (!BackCullRasterizer)	return;
+
+	m_pContext->RSSetState(BackCullRasterizer->GetRasterizerState().Get());
+}
+
 HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 	auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
 	D3D11_MAPPED_SUBRESOURCE mappedSubResource;
@@ -1223,7 +1237,7 @@ HRESULT CRenderer::Render_NonAlpha() {
 
 		if (FAILED(RenderLight())) { Unbind_Resources(); return S_OK; }
 
-		if (FAILED(RenderMapMesh(RENDERGROUP::NONBLEND_MAPMESH))) { Unbind_Resources(); return S_OK; }
+		if (FAILED(RenderMapMesh())) { Unbind_Resources(); return S_OK; }
 	}
 
 	Unbind_Resources();
@@ -1446,8 +1460,6 @@ HRESULT CRenderer::Render_Alpha() {
 		if (FAILED(RenderSkybox())) { Unbind_Resources(); return S_OK; }
 
 		if (FAILED(RenderCollider())) { Unbind_Resources(); return S_OK; }
-
-		if (FAILED(RenderMapMesh(RENDERGROUP::BLEND_MAPMESH))) { Unbind_Resources(); return S_OK; }
 	}
 
 	Unbind_Resources();
@@ -2457,26 +2469,24 @@ HRESULT CRenderer::RenderNonBlend_Instanced() {
 
 }
 
-HRESULT CRenderer::RenderMapMesh(RENDERGROUP _Group)
+HRESULT CRenderer::RenderMapMesh()
 {
 	ZoneScopedN("RenderMapMesh");
-
-	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 
 	auto& gameInstance = CGameInstance::Get();
 	const auto stencilWrite = gameInstance.GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_MAPMESH_DECAL_WRITE");
 	if (!stencilWrite)
 		return E_FAIL;
 
+	Convert_Rasterizer_NoCull();
+
 	ComPtr<ID3D11DepthStencilState> previousDepthState{};
 	UINT previousStencilRef = 0;
 	m_pContext->OMGetDepthStencilState(previousDepthState.GetAddressOf(), &previousStencilRef);
 	m_pContext->OMSetDepthStencilState(stencilWrite->GetDepthStencilState().Get(), STENCIL_MASK::DECAL_RECEIVER);
 
-	m_pRenderContext.pass = _Group == RENDERGROUP::NONBLEND_MAPMESH ? RENDERPASS::NONBLEND : RENDERPASS::BLEND;
-
 	HRESULT result = S_OK;
-	for (auto* renderObject : m_pRenderObject[ETOUI(_Group)])
+	for (auto* renderObject : m_pRenderObject[ETOUI(RENDERGROUP::NONBLEND_MAPMESH)])
 	{
 		if (!renderObject || !renderObject->HasRenderPass(m_pRenderContext.pass))
 			continue;

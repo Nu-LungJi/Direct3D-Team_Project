@@ -629,7 +629,8 @@ HRESULT CLevelHogwartWorld::Initialize_EnviromentLight() {
 }
 
 HRESULT CLevelHogwartWorld::Initialize_LoopEffect(){
-	CGameInstance::Get().Spawn("CGY_HogwartSteam.json", XMMatrixTranslation(106.42f, -7.87f, -212.875f));
+
+	CGameInstance::Get().Spawn("CGY_HogwartSteam.json", XMMatrixTranslation(106.42f, -7.5f, -212.875f) * XMMatrixScaling(2.5f, 2.5f, 2.5f), _vector{}, true);
 
 	return S_OK;
 }

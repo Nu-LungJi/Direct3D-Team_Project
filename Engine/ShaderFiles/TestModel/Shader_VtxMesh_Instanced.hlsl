@@ -117,6 +117,8 @@ struct PS_IN
     float2 vTexcoord    : TEXCOORD0;
     float4 vWorldPos    : TEXCOORD1;
     float4 vProjPos     : TEXCOORD2;
+	
+	bool isFrontFace : SV_IsFrontFace;
 };
 
 struct PS_OUT_NONBLEND
@@ -139,9 +141,10 @@ PS_OUT_NONBLEND PSMain_NonBlend(PS_IN IN)
     float4 fDiffuse     = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord) * float4(AlbedoColor, 1.f);
     
     //if (fDiffuse.a == 0.0f) discard;
-	clip(fDiffuse.a - 0.25f);
+	clip(fDiffuse.a - 0.3f);
 	
 	float3 fNormal = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
+	if (!IN.isFrontFace) fNormal = -fNormal;
 
 	float4 fMRO         = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);
     
@@ -149,6 +152,8 @@ PS_OUT_NONBLEND PSMain_NonBlend(PS_IN IN)
     float fFinalRoughness   = fMRO.g * RoughnessIntensity;
     float fFinalAO          = fMRO.b * AmbientIntensity;
 	float fFinalAlpha		= fMRO.a * ObjectAlpha;
+	
+	clip(fFinalAlpha - 0.001f);	
 
     float3 fEmissive = g_EmissiveTexture.Sample(LinearWrap, IN.vTexcoord).r * EmissiveColor * EmissiveIntensity;
     
