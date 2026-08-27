@@ -413,6 +413,7 @@
     <ClInclude Include="..\public\AnimatedWorldObject.h" />
     <ClInclude Include="..\public\WorldNpc.h" />
     <ClInclude Include="..\public\InteractiveNpc.h" />
+    <ClInclude Include="..\public\ShopNpc.h" />
     <ClInclude Include="BTAnimNpc.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
@@ -620,6 +621,7 @@
     <ClCompile Include="..\private\AnimatedWorldObject.cpp" />
     <ClCompile Include="..\private\WorldNpc.cpp" />
     <ClCompile Include="..\private\InteractiveNpc.cpp" />
+    <ClCompile Include="..\private\ShopNpc.cpp" />
     <ClCompile Include="BTAnimNpc.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">

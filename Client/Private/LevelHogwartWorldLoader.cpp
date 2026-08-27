@@ -36,6 +36,7 @@
 #include "Mon_State.h"
 #include "WorldNpc.h"
 #include "InteractiveNpc.h"
+#include "ShopNpc.h"
 #include "Griff.h"
 #include "GriffChild.h"
 #include "Troll.h"
@@ -500,6 +501,14 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		CInteractiveNpc::Create())))
 	{
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_MiniGameNpc");
+		return E_FAIL;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_ShopNpc,
+		CShopNpc::Create())))
+	{
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_ShopNpc");
 		return E_FAIL;
 	}
 	return S_OK;

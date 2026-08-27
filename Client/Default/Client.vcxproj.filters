@@ -1200,6 +1200,9 @@
     <ClInclude Include="..\public\InteractiveNpc.h">
       <Filter>GameObject\InteractNpc</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\ShopNpc.h">
+      <Filter>GameObject\InteractNpc</Filter>
+    </ClInclude>
     <ClInclude Include="..\public\AnimatedWorldObject.h">
       <Filter>GameObject\AnimationWorldObject</Filter>
     </ClInclude>
@@ -1851,6 +1854,9 @@
       <Filter>GameObject\Monster\02.PublicState</Filter>
     </ClCompile>
     <ClCompile Include="..\private\InteractiveNpc.cpp">
+      <Filter>GameObject\InteractNpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\ShopNpc.cpp">
       <Filter>GameObject\InteractNpc</Filter>
     </ClCompile>
     <ClCompile Include="..\private\AnimatedWorldObject.cpp">

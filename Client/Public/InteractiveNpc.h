@@ -7,7 +7,7 @@ NS_BEGIN(Client)
 
 // 플레이어와 대화하고, 대화 결과에 따라 이동하거나 미니게임을 시작하는 상호작용 NPC.
 // ExpressionAnim에는 현재 NPC 모델에 실제로 존재하는 애니메이션 클립 이름을 넣는다.
-class CInteractiveNpc final : public CWorldAgent
+class CInteractiveNpc : public CWorldAgent
 {
 public:
 	enum class STATE
@@ -83,7 +83,7 @@ public:
 public:
 	DECLARE_DERIVED_TYPE(CInteractiveNpc, CWorldAgent)
 
-private:
+protected:
 	// 프로토타입 및 복제 생성에서만 객체를 만들 수 있도록 생성자를 제한한다.
 	CInteractiveNpc() = default;
 	// 남아 있는 상호작용 UI, 페이드 UI와 시간 정지 요청을 정리한다.
@@ -115,6 +115,10 @@ public:
 	static E::UPtr<CInteractiveNpc> Create();
 	// 전달된 설명자로 실제 상호작용 NPC 인스턴스를 복제한다.
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
+protected:
+	// 상점 전용 NPC가 실제 상점 UI 종류와 배치를 결정할 수 있는 확장 지점.
+	virtual void OpenShop();
 
 private:
 	// 이름으로 표정 또는 대화 애니메이션을 재생한다.

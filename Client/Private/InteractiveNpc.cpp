@@ -322,8 +322,7 @@ void CInteractiveNpc::ExecuteDialogueAction(DIALOGUE_ACTION action)
 			FinishDialogue();
 		break;
 	case DIALOGUE_ACTION::OPEN_SHOP:
-		// 상점 ui open
-
+		OpenShop();
 		FinishDialogue();
 		break;
 
@@ -336,6 +335,11 @@ void CInteractiveNpc::ExecuteDialogueAction(DIALOGUE_ACTION action)
 		FinishDialogue();
 		break;
 	}
+}
+
+void CInteractiveNpc::OpenShop()
+{
+	GET_SINGLE(UIManager)->OpenWandShop();
 }
 
 

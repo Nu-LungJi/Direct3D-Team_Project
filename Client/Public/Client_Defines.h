@@ -104,6 +104,7 @@ namespace Client
 		Prototype_GameObject_TrollWeapon,
 		Prototype_GameObject_WorldNpc,
 		Prototype_GameObject_MiniGameNpc,
+		Prototype_GameObject_ShopNpc,
 		Prototype_GameObject_Griff,
 		Prototype_GameObject_GriffChild,
 		Prototype_GameObject_WorldAnimal,
