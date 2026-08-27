@@ -7,7 +7,7 @@
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
 #include "ClientEvents.h" 
-#include "NpcMom.h"
+#include "WorldAgent.h"
 NS_USING(Client)
 
 CBTAttackAnimation::CBTAttackAnimation()
@@ -92,6 +92,8 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 				Gravity();
 				Play_Sound(fTimeDelta);
 				_bool bFinished = pAnimator->GetFinish();
+				// KMS 추가
+				UpdateAttackIndicator(pOwner, pTarget, fAnimRatio);
 				Att(pOwner, pTransform, pTarget, fAnimRatio,fTimeDelta);
 				EventFlagToRatio(fAnimRatio);
 				ShakeCam(fAnimRatio);
@@ -122,7 +124,11 @@ EVALUATE CBTAttackAnimation::Evaluate(_float fTimeDelta)
 					}
 					_float fAnimRange = m_fRatio.y - m_fRatio.x;
 					_float t = (m_fDis * fAnimRatio) / (m_fRatio.y - m_fRatio.x);
-					const _float fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
+					_float fMoveSpeed = {}; 
+					if (m_bMoveLerp)
+						fMoveSpeed = t * fAnimRange * m_Value.fSpeed;
+					else  fMoveSpeed = m_Value.fSpeed;
+
 					_vector vMoveDirection{};
 					if (m_eMove == MOVE::RIGHT)
 						vMoveDirection = pTransform->GetState(STATE::RIGHT);
@@ -167,6 +173,7 @@ void CBTAttackAnimation::Update_Gui()
 		BoolButton("TriggerSkill", m_bTrigger);
 		BoolButton("overlabLoop", m_bOverLabLoop);
 		BoolButton("overlabMove", m_bOverLabMove);
+		BoolButton("MoveLerp", m_bMoveLerp);
 		DragFloat("overlabSpeed", m_fOverLabSpeed);
 		DragFloat("RotTime", m_Value.fTime);
 		if (ImGui::Button("Animation"))
@@ -205,14 +212,7 @@ void CBTAttackAnimation::Update_Gui()
 		}
 		ImGui::TreePop();
 	}
-	if (ImGui::TreeNode("Cam"))
-	{
-		DragFloat("ShakeCamRatio", m_CamInfo.fCamStartRatio);
-		DragFloat("ShakePower", m_CamInfo.fPower,0.1f,0.f,100.f);
-		DragFloat("ShakeTime", m_CamInfo.fTime, 0.1f, 0.f, 100.f);
-		DragFloat("ShakeCnt", m_CamInfo.fCnt, 0.1f, 0.f, 100.f);
-		ImGui::TreePop();
-	}
+	
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1,0,0,1 });
 	if (ImGui::TreeNode("New Skill Table Ver.2"))
 	{
@@ -352,7 +352,7 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 			if (pxOverLapNpcResult.bHit)
 			{
 				//m_fDamage
-				auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CNpcMom>(pxOverLapNpcResult.hGameObject);
+				auto pTarget = CGameInstance::Get().GetGameObjectByHandleT<CWorldAgent>(pxOverLapNpcResult.hGameObject);
 				_float MonDamange = pMon->Get_Damage();
 				pTarget->OnQueryHit(MonDamange);
 				m_bAttRatio = true;
@@ -362,22 +362,64 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 	
 
 }
-void CBTAttackAnimation::ShakeCam(_float fRotRatio)
+
+// KMS 추가
+void CBTAttackAnimation::UpdateAttackIndicator(
+	CMonster* pMonster,
+	CGameObject* pTarget,
+	_float fAnimRatio)
 {
-	if (m_CamInfo.fCamStartRatio == 0.f)
+	if (m_bAttackIndicatorTriggered || !pMonster || !pTarget ||
+		pMonster->GetPendingDestroy() || pMonster->Get_CurrentHp() <= 0)
 		return;
-	if (m_bCamShake && fRotRatio > m_CamInfo.fCamStartRatio)
+
+	auto* pPlayer = Cast<CPlayer>(pTarget);
+	if (!pPlayer || pPlayer->GetPendingDestroy() || pPlayer->GetCurrentHp() <= 0)
+		return;
+
+	// 근접 공격은 실제 오버랩 판정 시작 비율을 사용한다.
+	// 오버랩이 없는 투사체/스킬형 공격은 첫 스킬 생성 비율을 사용한다.
+	_float fImpactRatio = 1.f;
+	_bool bHasImpactRatio = false;
+	if (m_vOverlabRatio.y > m_vOverlabRatio.x && m_vOverlabRatio.y > 0.f)
 	{
-		//카메라 쉐킷
-		CGameInstance::Get().EventPublish(FRequestPlayerCameraShake
-			{
-			   m_CamInfo.fPower, // 강도 0 ~ 1
-			   m_CamInfo.fTime, // 지속시간
-			   m_CamInfo.fCnt, // 초당 진동횟수
-			});
-		m_bCamShake = false;
+		fImpactRatio = std::clamp(m_vOverlabRatio.x, 0.f, 1.f);
+		bHasImpactRatio = true;
 	}
+	else
+	{
+		for (const auto& Skill : m_Skills)
+		{
+			if (Skill.eSkill == ATTMON::END)
+				continue;
+			fImpactRatio = std::min(fImpactRatio, std::clamp(Skill.fRatio, 0.f, 1.f));
+			bHasImpactRatio = true;
+		}
+
+		// KMS 추가: 보스의 기존 BT 데이터는 NewSkillTable 대신
+		// BTAnimRoot의 SkillType/SkillRatio만 사용하는 공격이 많다.
+		if (!bHasImpactRatio && m_eSkillType != ATTMON::END)
+		{
+			fImpactRatio = std::clamp(m_fSkillRatio.x, 0.f, 1.f);
+			bHasImpactRatio = true;
+		}
+	}
+
+	if (!bHasImpactRatio)
+		return;
+
+	const _float fWarningRatio = std::max(0.f,
+		fImpactRatio - ATTACK_INDICATOR_LEAD_RATIO);
+	const _bool bImmediateAttack = fImpactRatio <= FLT_EPSILON;
+	if (fAnimRatio < fWarningRatio ||
+		(!bImmediateAttack && fAnimRatio >= fImpactRatio))
+		return;
+
+	pPlayer->RequestAttackIndicator(
+		pMonster->Get_Damage() >= DODGE_ONLY_DAMAGE_THRESHOLD);
+	m_bAttackIndicatorTriggered = true;
 }
+
 void CBTAttackAnimation::Abort()
 {
 	__super::Abort();
@@ -398,15 +440,11 @@ nlohmann::json CBTAttackAnimation::Save_Node()
 	SaveJsonValue(j, "Intensive", m_fIntensive);
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
-	SaveJsonValue(j, "CamShakeRatio", m_CamInfo.fCamStartRatio);
-	SaveJsonValue(j, "CamShakePower", m_CamInfo.fPower);
-	SaveJsonValue(j, "CamShakeTime", m_CamInfo.fTime);
-	SaveJsonValue(j, "CamShakeCnt", m_CamInfo.fCnt);
 	SaveJsonValue(j, "AttRadius", m_fAttRadius);
 	SaveJsonValue(j, "OverlabMove", m_bOverLabMove);
 	SaveJsonValue(j, "TriggerSkill", m_bTrigger);
+	SaveJsonValue(j, "MoveLerp", m_bMoveLerp);
 	
-
 	if (!m_Skills.empty())
 	{
 		uint32_t iMax{};
@@ -432,14 +470,11 @@ HRESULT CBTAttackAnimation::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "Intensive", m_fIntensive);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
-	LoadJsonValue(j, "CamShakeRatio", m_CamInfo.fCamStartRatio);
-	LoadJsonValue(j, "CamShakePower", m_CamInfo.fPower);
-	LoadJsonValue(j, "CamShakeTime", m_CamInfo.fTime);
-	LoadJsonValue(j, "CamShakeCnt", m_CamInfo.fCnt);
 	LoadJsonValue(j, "AttRadius", m_fAttRadius);
 	LoadJsonValue(j, "OverlabMove", m_bOverLabMove);
 	LoadJsonValue(j, "TriggerSkill", m_bTrigger);
-
+	LoadJsonValue(j, "MoveLerp", m_bMoveLerp);
+	
 	uint32_t iMax{};
 	if (LoadJsonValue(j, "NewSkillTableSize", iMax))
 	{
@@ -461,6 +496,8 @@ void CBTAttackAnimation::OnEnter()
 	m_bDir = false;
 	__super::OnEnter();
 	m_bAttRatio = m_bActiveSkill = false;
+	// KMS 추가
+	m_bAttackIndicatorTriggered = false;
 	m_bCamShake = true;
 	m_fTime = 0.f;
 	m_fCurOverLabSpeed = m_fAttRadius;

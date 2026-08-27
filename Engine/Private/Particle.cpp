@@ -142,7 +142,7 @@ void CParticle::TransformPendingOwner(uint32_t ownerId, const _float4x4& deltaMa
 		XMStoreFloat3(&data.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&data.originalPosition), deltaMatrix));
 		XMStoreFloat3(&data.velocity, XMVector3Rotate(XMLoadFloat3(&data.velocity), deltaRotation));
 		XMStoreFloat3(&data.originalVelocity, XMVector3Rotate(XMLoadFloat3(&data.originalVelocity), deltaRotation));
-		if ((data.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0)
+		if ((data.iBehaviorType & (CParticle::BEHAVIOR_ORBIT | CParticle::BEHAVIOR_SPIRAL)) != 0)
 			XMStoreFloat3(&data.rotationAxis, XMVector3Rotate(XMLoadFloat3(&data.rotationAxis), deltaRotation));
 
 		data.rotation.x = std::remainder(data.rotation.x + fDeltaPitch, XM_2PI);

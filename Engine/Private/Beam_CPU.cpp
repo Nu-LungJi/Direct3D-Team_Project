@@ -814,6 +814,30 @@ void CBeam_CPU::ClearByOwner(uint32_t ownerId)
 
 	BuildBeamGeometry();
 }
+
+void CBeam_CPU::SetColorByOwner(uint32_t ownerId, const _float4& color)
+{
+	_bool bChanged = false;
+	for (BEAM_INSTANCE& beam : m_vecBeams)
+	{
+		if (!beam.bActive || beam.ownerId != ownerId)
+			continue;
+		if (beam.vColor.x == color.x &&
+			beam.vColor.y == color.y &&
+			beam.vColor.z == color.z &&
+			beam.vColor.w == color.w)
+		{
+			continue;
+		}
+
+		beam.vColor = color;
+		bChanged = true;
+	}
+
+	if (bChanged)
+		BuildBeamGeometry();
+}
+
 void CBeam_CPU::SetBeamPositions(
 	uint32_t beamIndex,
 	const _float4& start,

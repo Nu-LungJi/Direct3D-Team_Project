@@ -18,6 +18,7 @@
 #include "ComPxCharacterController.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
+#include "ComFootIK.h"
 #include "PlayerRagdollController.h"
 #include "Player_Stupefy_Bullet.h"
 #include "PlayerThirdPersonCamera.h"
@@ -32,7 +33,7 @@
 #include "Player_Knockdown_State.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "Player_DashSkill_State.h"
-#include "Player_AcientAttack_State.h"
+#include "Player_AncientAttack_State.h"
 #include "Player_AccioSkill_State.h"
 #include "Player_DepulsoSkill_State.h"
 #include "Player_DescendoSkill_State.h"
@@ -55,6 +56,7 @@
 #include "Player_Broom.h"
 #include "WiggenweldPotion.h"
 #include "PropBarrel.h"
+#include "AccioBall.h"
 #include "Light.h"
 #include "Trail_CPU.h"
 #include "UIController.h"
@@ -63,6 +65,20 @@ NS_USING(Client)
 
 namespace
 {
+	_bool IsPlayerLockOnTargetCandidate(
+		const CGameObject* pObject,
+		const CHandle& hPlayer)
+	{
+		if (!pObject || pObject->GetPendingDestroy())
+			return false;
+
+		if (dynamic_cast<const CSkillTarget*>(pObject))
+			return true;
+
+		const auto* pBall = dynamic_cast<const CAccioBall*>(pObject);
+		return pBall && pBall->CanAcquireControl(hPlayer);
+	}
+
 	_bool IsAncientThrowTargetInCameraView(
 		const _float3& worldPosition,
 		const _matrix& view,
@@ -172,6 +188,8 @@ CPlayer::CPlayer(const CPlayer& Prototype)
 
 CPlayer::~CPlayer()
 {
+	if (m_iAttackIndicatorParticleOwner != INVALID_PARTICLE_OWNER_ID)
+		CGameInstance::Get().ClearParticleOwner(m_iAttackIndicatorParticleOwner);
 }
 
 
@@ -238,6 +256,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 			m_pComModelInstance->GetModel()->Get_BoneIndex("LeftFoot");
 		m_iRightFootBoneIndex =
 			m_pComModelInstance->GetModel()->Get_BoneIndex("RightFoot");
+		m_iAttackIndicatorHeadBoneIndex =
+			m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_FX_Head_Centre");
 	}
 
 	{
@@ -261,13 +281,51 @@ HRESULT CPlayer::Initialize(void* pArg)
 			"AN_ProfessorSharp_MasterRig_Hu_BM_Wand_Ready_RArmReplace_anm.bin";
 		for (size_t i = 0; i < animations.size(); ++i)
 		{
-			if (animations[i] && animations[i]->GetAnimName() == debugWandReadyAnimation)
+			if (!animations[i])
+				continue;
+
+			const _string_view animationName = animations[i]->GetAnimName();
+			if (animationName == debugWandReadyAnimation)
 			{
 				m_iDebugWandReadyUpperAnim = (int32_t)(i);
-				break;
 			}
 		}
 
+	}
+	{
+		CComFootIK::DESC Desc{};
+		Desc.tLeftLeg = {
+			.sUpperLeg = "LeftUpLeg",
+			.sLowerLeg = "LeftLeg",
+			.sFoot = "SKT_FX_LeftFootSocket",
+			.sToe = "LeftToeBase" };
+		Desc.tRightLeg = {
+			.sUpperLeg = "RightUpLeg",
+			.sLowerLeg = "RightLeg",
+			.sFoot = "SKT_FX_RightFootSocket",
+			.sToe = "RightToeBase" };
+		Desc.sPelvisBone = "Hips";
+		Desc.fTraceStartHeight = 0.35f;
+		Desc.fTraceDistance = 0.8f;
+		Desc.fFootHeight = 0.03f;
+		Desc.fBlendSpeed = 6.6f;
+		Desc.fMaxStepHeight = 0.56f;
+		Desc.fMaxExtensionRatio = 0.9812f;
+		Desc.fMaxFootSlopeDegrees = 45.f;
+		Desc.fMaxPelvisDrop = 0.4f;
+		Desc.fPelvisBlendSpeed = 8.f;
+		Desc.fLiftReleaseSpeed = 0.15f;
+
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoComponent::Prototype_Component_ComFootIK,
+			"ComFootIK", &Desc, &m_pComFootIK)))
+		{
+			return E_FAIL;
+		}
+
+		if (!m_pComFootIK->BindModel(*m_pComModelInstance))
+			DEBUG_LOG("[PlayerFootIK] One or more configured leg bones were not found.\n");
 	}
 
 	{
@@ -436,8 +494,8 @@ HRESULT CPlayer::Initialize(void* pArg)
 			return E_FAIL;
 		}
 		if (!m_pStateMachine->AddPlayerState(
-			PLAYER_STATE::ACIENTATTACK_SKILL,
-			CPlayer_AcientAttack_State::Create()))
+			PLAYER_STATE::ANCIENT_ATTACK_SKILL,
+			CPlayer_AncientAttack_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -673,6 +731,29 @@ _bool CPlayer::IsRagdollTransitioning() const
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (m_iAttackIndicatorParticleOwner != INVALID_PARTICLE_OWNER_ID)
+	{
+		m_fAttackIndicatorRemainTime = std::max(
+			0.f, m_fAttackIndicatorRemainTime - fTimeDelta);
+
+		const _float3 vHeadPosition = GetAttackIndicatorPosition();
+		const _float3 vDelta{
+			vHeadPosition.x - m_vAttackIndicatorPosition.x,
+			vHeadPosition.y - m_vAttackIndicatorPosition.y,
+			vHeadPosition.z - m_vAttackIndicatorPosition.z };
+		CGameInstance::Get().TranslateOwner(
+			m_iAttackIndicatorParticleOwner, vDelta);
+		m_vAttackIndicatorPosition = vHeadPosition;
+
+		if (m_fAttackIndicatorRemainTime <= 0.f || m_iHp <= 0)
+		{
+			CGameInstance::Get().ClearParticleOwner(
+				m_iAttackIndicatorParticleOwner);
+			m_iAttackIndicatorParticleOwner = INVALID_PARTICLE_OWNER_ID;
+			m_bAttackIndicatorDodgeOnly = false;
+		}
+	}
+
 	if (m_bProtegoActive)
 	{
 		m_fProtegoRemainTime = std::max(0.f, m_fProtegoRemainTime - fTimeDelta);
@@ -771,7 +852,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 	if (m_pStateMachine &&
-		m_pStateMachine->GetCurrentState() == PLAYER_STATE::ACIENTATTACK_SKILL)
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::ANCIENT_ATTACK_SKILL)
 	{
 		m_bRawMoveInput = false;
 		m_bSprintRequested = false;
@@ -919,9 +1000,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (m_pStateMachine &&
 		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
 		m_iHp > 0 && !m_bFlyRequested &&
+		!CGameInstance::Get().KeyPressing(DIK_LSHIFT) &&
+		CGameInstance::Get().KeyDown(DIK_R))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::REVELIO_SKILL);
+	}
+
+	if (m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
+		m_iHp > 0 && !m_bFlyRequested &&
 		CGameInstance::Get().KeyDown(DIK_G))
 	{
-		m_pStateMachine->RequestState(PLAYER_STATE::POTION);
+		TryUsePotion();
 	}
 
 	// 프로테고가 실제 공격을 막은 뒤에도 Q를 유지하고 있을 때만
@@ -937,7 +1027,13 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			m_bStupefyCounterRequested = false;
 	}
 
-	if (m_pStateMachine &&CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	const _bool bPointerCapturedByUI =
+		ImGui::GetIO().WantCaptureMouse ||
+		GET_SINGLE(UIManager)->IsPointerOverInteractiveUI();
+
+	if (m_pStateMachine &&
+		!bPointerCapturedByUI &&
+		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		const PLAYER_STATE eCurrentState =m_pStateMachine->GetCurrentState();
 		const _bool bCanRequestAttack =
@@ -951,14 +1047,41 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (bCanRequestAttack)
 			m_pStateMachine->RequestState(PLAYER_STATE::ATTACK);
 	}
-	if (m_pStateMachine && CGameInstance::Get().MousePressing(MOUSEKEYSTATE::RB))
+	if (m_pStateMachine && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::RB))
 	{
-		//  가까이 있는거 한번 더 감지 
-		auto ori = m_pComTransform->GetPosition();
-
-
+		const _float3 vPlayerPosition = m_pComTransform->GetPosition();
 		std::vector<PX_OVERLAP_RESULT> results{};
-		if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 25.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
+		auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+
+		// [LSY] 몬스터 검색량은 기존대로 유지하고 아씨오 공만 더 넓은 범위에서 찾는다.
+		const auto AppendTargets = [&](const _float fRadius,
+			const uint32_t iQueryMask, const uint32_t iMaxHits)
+		{
+			PX_OVERLAP_DESC targetOverlapDesc{};
+			targetOverlapDesc.tGeometry.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE;
+			targetOverlapDesc.tGeometry.fRadius = fRadius;
+			targetOverlapDesc.tPose.vPosition = vPlayerPosition;
+			targetOverlapDesc.tFilter.iQueryMask = iQueryMask;
+
+			std::vector<PX_OVERLAP_RESULT> queryResults{};
+			if (pPhysXManager->OverlapMultiple(
+				targetOverlapDesc, queryResults, iMaxHits))
+			{
+				results.insert(
+					results.end(), queryResults.begin(), queryResults.end());
+			}
+		};
+
+		AppendTargets(
+			DEFAULT_TARGET_ACQUIRE_RANGE,
+			ETOUI(COLLISION_LAYER::ENEMY_BODY),
+			TARGET_QUERY_MAX_HITS);
+		AppendTargets(
+			ACCIO_BALL_TARGET_ACQUIRE_RANGE,
+			ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
+			ACCIO_BALL_TARGET_QUERY_MAX_HITS);
+
+		if (!results.empty())
 		{
 			auto* pCamera = CGameInstance::Get().GetActiveCamera("PlayerCamera");
 			CGameObject* pBestTarget = nullptr;
@@ -974,8 +1097,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 				for (const auto& result : results)
 				{
 					auto* pCandidate = result.pGameObject;
-					if (!pCandidate || pCandidate->GetPendingDestroy() ||
-						nullptr == dynamic_cast<CSkillTarget*>(pCandidate)) // 창준변경
+					if (!IsPlayerLockOnTargetCandidate(pCandidate, GetHandle()))
 						continue;
 
 					_vector vToTarget =
@@ -1017,6 +1139,15 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	else {
 		auto* pUIController = CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
 		CGameObject* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+		if (pTarget && !IsPlayerLockOnTargetCandidate(pTarget, GetHandle()))
+		{
+			// [LSY] 외곽선은 보이지만 경기 규칙상 당길 수 없는 공이
+			// 이전 Target으로 남아 미들클릭을 조용히 막지 않게 한다.
+			m_hPrevAutoTarget = m_hAutoTarget;
+			m_hAutoTarget = CHandle{};
+			m_bDistanceUI = false;
+			pTarget = nullptr;
+		}
 		//  그냥 일상시 타깃 감지
 		if (!pTarget) {
 			auto ori = m_pComTransform->GetPosition();
@@ -1039,12 +1170,45 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		if (pTarget) {
 			auto ori = m_pComTransform->GetPosition();
 
+			_bool bTargetStillInRange = false;
+			if (auto* pBall = dynamic_cast<CAccioBall*>(pTarget))
+			{
+				// [LSY] 이미 알고 있는 공 하나의 거리 확인에 매 프레임 넓은
+				// WORLD_DYNAMIC Overlap을 반복하지 않고 실제 PhysX 중심을 사용한다.
+				_float3 vBallPosition = pBall->GetTransform().GetPosition();
+				if (pBall->GetRigidBody())
+					vBallPosition = pBall->GetRigidBody()->GetPosition();
 
-			std::vector<PX_OVERLAP_RESULT> results{};
+				const _vector vDistance = XMLoadFloat3(&vBallPosition) -
+					XMLoadFloat3(&ori);
+				bTargetStillInRange = XMVectorGetX(
+					XMVector3LengthSq(vDistance)) <=
+					ACCIO_BALL_TARGET_KEEP_RANGE *
+					ACCIO_BALL_TARGET_KEEP_RANGE;
+			}
+			else
+			{
+				std::vector<PX_OVERLAP_RESULT> results{};
+				PX_OVERLAP_DESC keepTargetOverlapDesc{};
+				keepTargetOverlapDesc.tGeometry.eType =
+					PX_QUERY_GEOMETRY_TYPE::SPHERE;
+				keepTargetOverlapDesc.tGeometry.fRadius =
+					DEFAULT_TARGET_KEEP_RANGE;
+				keepTargetOverlapDesc.tPose.vPosition = ori;
+				keepTargetOverlapDesc.tFilter.iQueryMask =
+					ETOUI(COLLISION_LAYER::ENEMY_BODY);
 
-			const bool bOverlapped =CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 40.f},.tPose = {.vPosition = ori},.tFilter = {.iQueryMask =ETOUI(COLLISION_LAYER::ENEMY_BODY)}},results);
-
-			const bool bTargetStillInRange =bOverlapped &&std::ranges::any_of(results,[this](const PX_OVERLAP_RESULT& result){return result.pGameObject &&result.pGameObject->GetHandle() == m_hAutoTarget;});
+				const _bool bOverlapped = CGameInstance::Get().
+					GetPhysXManager()->OverlapMultiple(
+						keepTargetOverlapDesc, results, TARGET_QUERY_MAX_HITS);
+				bTargetStillInRange = bOverlapped && std::ranges::any_of(
+					results,
+					[this](const PX_OVERLAP_RESULT& result)
+					{
+						return result.pGameObject &&
+							result.pGameObject->GetHandle() == m_hAutoTarget;
+					});
+			}
 
 			if (!bTargetStillInRange)
 			{
@@ -1077,8 +1241,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 	// 타겟 봐야 하는 곳 -----------------------------------------------------------------------------------------------------------
 	if (auto* pOutlineTarget =
-		CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
-		pOutlineTarget && !pOutlineTarget->GetPendingDestroy())
+		CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
+		IsPlayerLockOnTargetCandidate(pOutlineTarget, GetHandle()))
 	{
 		CGameInstance::Get().Apply_OutlineEffect(
 			std::optional<CHandle>{ m_hAutoTarget });
@@ -1086,6 +1250,54 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	else
 	{
 		CGameInstance::Get().Apply_OutlineEffect(std::nullopt);
+	}
+
+	// [LSY] 공 아씨오도 상태 머신을 통해 시작한다. 이후 애니메이션과 연출은
+	// CPlayer_AccioSkill_State가, 고정 물리 힘은 CAccioBall이 담당한다.
+	auto* pAccioBall = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioBall>(m_hAutoTarget);
+	const _bool bObjectAccioHeld = CGameInstance::Get().
+		MousePressing(MOUSEKEYSTATE::MB);
+	const _bool bObjectAccioPressed = CGameInstance::Get().
+		MouseDown(MOUSEKEYSTATE::MB);
+	if (!bObjectAccioHeld)
+		m_hPendingObjectAccioTarget = CHandle{};
+
+	if (m_pStateMachine && !bPointerCapturedByUI && bObjectAccioPressed &&
+		pAccioBall && pAccioBall->CanAcquireControl(GetHandle()))
+	{
+		if (m_pStateMachine->GetCurrentState() == PLAYER_STATE::ACCIO_SKILL)
+		{
+			// [LSY] 같은 아씨오 상태의 해제 연출 때문에 거절되는 재입력만 보존한다.
+			m_hPendingObjectAccioTarget = m_hAutoTarget;
+		}
+		else
+		{
+			m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+		}
+	}
+
+	if (m_hPendingObjectAccioTarget != CHandle{} && m_pStateMachine)
+	{
+		const PLAYER_STATE eCurrentState = m_pStateMachine->GetCurrentState();
+		if (!bObjectAccioHeld || bPointerCapturedByUI ||
+			m_hAutoTarget != m_hPendingObjectAccioTarget)
+		{
+			m_hPendingObjectAccioTarget = CHandle{};
+		}
+		else if (eCurrentState == PLAYER_STATE::LOCOMOTION)
+		{
+			auto* pPendingBall = CGameInstance::Get().
+				GetGameObjectByHandleT<CAccioBall>(m_hPendingObjectAccioTarget);
+			if (pPendingBall && pPendingBall->CanAcquireControl(GetHandle()))
+				m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL);
+			m_hPendingObjectAccioTarget = CHandle{};
+		}
+		else if (eCurrentState != PLAYER_STATE::ACCIO_SKILL)
+		{
+			// [LSY] 피격 등 다른 상태로 끊긴 입력은 나중에 자동 발동하지 않는다.
+			m_hPendingObjectAccioTarget = CHandle{};
+		}
 	}
 
 	if (CGameInstance::Get().KeyDown(DIK_LCONTROL))
@@ -1119,14 +1331,16 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 	if (CGameInstance::Get().KeyDown(DIK_X) &&
-		CPlayer_SkillStateBase::HasValidTarget(*this))
+		CPlayer_SkillStateBase::HasValidTarget(*this) &&
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle) &&
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle)->CanUseFinisher())
 	{
 		if (auto* pUIController =
 			CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
 		{
 			pUIController->AddFinisher(-100.f / 3.f);
 		}
-		m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL);
+		m_pStateMachine->RequestState(PLAYER_STATE::ANCIENT_ATTACK_SKILL);
 	}
 
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_E))
@@ -1136,97 +1350,26 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		{
 			m_hPendingAncientThrowTarget = FindAncientThrowTarget();
 			if (m_hPendingAncientThrowTarget &&
-				!m_pStateMachine->RequestState(PLAYER_STATE::ACIENTATTACK_SKILL))
+				!m_pStateMachine->RequestState(PLAYER_STATE::ANCIENT_ATTACK_SKILL))
 			{
 				m_hPendingAncientThrowTarget.reset();
 			}
 		}
 	}
 
-	 // 임시
-	if (m_bCoolTime_Num1 == true) {
-		if (m_fCoolTime_Num1 > 3.f) {
-			m_bCoolTime_Num1 = false;
-			m_fCoolTime_Num1 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num1 += fTimeDelta;
-		}
-	}
-	if (m_bCoolTime_Num2 == true) {
-		if (m_fCoolTime_Num2 > 3.f) {
-			m_bCoolTime_Num2 = false;
-			m_fCoolTime_Num2 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num2 += fTimeDelta;
-		}
-	}
-	if (m_bCoolTime_Num3 == true) {
-		if (m_fCoolTime_Num3 > 3.f) {
-			m_bCoolTime_Num3 = false;
-			m_fCoolTime_Num3 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num3 += fTimeDelta;
-		}
-	}
-	if (m_bCoolTime_Num4 == true) {
-		if (m_fCoolTime_Num4 > 3.f) {
-			m_bCoolTime_Num4 = false;
-			m_fCoolTime_Num4 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num4 += fTimeDelta;
-		}
-	}
-
+	UpdateAncientMagicActiveButtons();
+	UpdateSkillSlotCooldowns(fTimeDelta);
 
 	if (!m_bFlyRequested) {
-		if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {
-			//if (TryUseSkillSlot(1))
-			if (m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL))
-				m_bCoolTime_Num1 = true;
-		}
-
-		if (CGameInstance::Get().KeyDown(DIK_2) && !m_bCoolTime_Num2)
-		{
-			//if (TryUseSkillSlot(2))
-			if (m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL))
-				m_bCoolTime_Num2 = true;
-		}
-		if (CGameInstance::Get().KeyDown(DIK_3) && !m_bCoolTime_Num3)
-		{
-			//if (TryUseSkillSlot(3))
-			if (m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL))
-				m_bCoolTime_Num3 = true;
-		}
-
-		if (CGameInstance::Get().KeyDown(DIK_4) && !m_bCoolTime_Num4) {
-			if (m_pStateMachine->RequestState(PLAYER_STATE::REPAIRO_SKILL))
-				m_bCoolTime_Num4 = true;
-		}
-
-		// [LSY] 스킬 슬롯에서 CONFRINGO를 연결하기 전까지 5번 키로 직접 테스트한다.
-		if (CGameInstance::Get().KeyDown(DIK_5))
-			m_pStateMachine->RequestState(PLAYER_STATE::CONFRINGO_SKILL);
-
-		// 봄바르다 애니메이션 및 이펙트 큐 타이밍 확인용 임시 입력.
-		if (CGameInstance::Get().KeyDown(DIK_6))
-			m_pStateMachine->RequestState(PLAYER_STATE::BOMBARDA_SKILL);
-
-		// 변신 스킬 상태와 캐스팅 애니메이션 확인용 임시 입력.
-		if (CGameInstance::Get().KeyDown(DIK_7))
-			m_pStateMachine->RequestState(PLAYER_STATE::TRANSFORMATION_SKILL);
+		if (CGameInstance::Get().KeyDown(DIK_1)) TryUseSkillSlot(1);
+		else if (CGameInstance::Get().KeyDown(DIK_2)) TryUseSkillSlot(2);
+		else if (CGameInstance::Get().KeyDown(DIK_3)) TryUseSkillSlot(3);
+		else if (CGameInstance::Get().KeyDown(DIK_4)) TryUseSkillSlot(4);
 
 		// L 키는 빌드 구성과 무관한 정식 루모스 토글 입력이다.
 		// Lumos 상태가 현재 활성 여부에 따라 Start/Hold 또는 Stop을 선택한다.
 		if (CGameInstance::Get().KeyDown(DIK_L))
 			m_pStateMachine->RequestState(PLAYER_STATE::LUMOS_SKILL);
-
-		// [LSY] 아바다 케다브라 애니메이션과 이펙트 연결 확인용 임시 입력.
-		if (CGameInstance::Get().KeyDown(DIK_U))
-			m_pStateMachine->RequestState(PLAYER_STATE::AVADA_KEDAVRA_SKILL);
 
 	}
 	
@@ -1317,7 +1460,10 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 {
 	auto* pUIController =
 		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
-	if (!pUIController || !m_pStateMachine)
+	if (!pUIController || !m_pStateMachine ||
+		iSlotNumber < 1u || iSlotNumber > m_SkillSlotCooldowns.size())
+		return false;
+	if (m_SkillSlotCooldowns[iSlotNumber - 1u] > 0.f)
 		return false;
 
 	const SPELL_TYPE eSpellType = static_cast<SPELL_TYPE>(
@@ -1335,6 +1481,18 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 
 	case SPELL_TYPE::DESENDO:
 		eSkillState = PLAYER_STATE::DESCENDO_SKILL;
+		break;
+	case SPELL_TYPE::BOMBARDA:
+		eSkillState = PLAYER_STATE::BOMBARDA_SKILL;
+		break;
+	case SPELL_TYPE::TRANSFORMATION:
+		eSkillState = PLAYER_STATE::TRANSFORMATION_SKILL;
+		break;
+	case SPELL_TYPE::CONFRINGO:
+		eSkillState = PLAYER_STATE::CONFRINGO_SKILL;
+		break;
+	case SPELL_TYPE::AVADAKEDAVRA:
+		eSkillState = PLAYER_STATE::AVADA_KEDAVRA_SKILL;
 		break;
 
 	case SPELL_TYPE::REPARO:
@@ -1354,7 +1512,36 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 		return false;
 
 	if (eSpellType != SPELL_TYPE::LUMOS)
+	{
+		m_SkillSlotCooldowns[iSlotNumber - 1u] = SKILL_SLOT_COOLDOWN;
 		pUIController->UseSpell(iSlotNumber);
+	}
+	return true;
+}
+
+void CPlayer::UpdateSkillSlotCooldowns(_float fTimeDelta)
+{
+	for (auto& fCooldown : m_SkillSlotCooldowns)
+		fCooldown = std::max(0.f, fCooldown - std::max(0.f, fTimeDelta));
+}
+
+_bool CPlayer::TryUsePotion()
+{
+	auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+	if (!pUIController || !m_pStateMachine ||
+		!m_pStateMachine->RequestState(PLAYER_STATE::POTION))
+		return false;
+
+	pUIController->UsePotion();
+	CGameInstance::Get().GetSoundManager()->Play2D(
+		"./Resources/SampleClient/Sound/UI/Potion.wav", SOUND_PLAY_DESC{
+		.sBusID = SOUND_BUS::UI,
+		.fVolume = 1.f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = false
+	});
 	return true;
 }
 
@@ -1607,6 +1794,26 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 	UpdateStandingGameObjectDebugLog();
 #endif
 
+}
+
+void CPlayer::SetDialoguePose(const _float3& vPosition, const _float3& vLookAt)
+{
+	// Warp through the motor so vPosition is treated as the GameObject origin.
+	// Setting the CCT center directly here makes the next FixedUpdate subtract
+	// the controller center offset and shifts the player vertically.
+	if (m_pComMoveIntent)
+		m_pComMoveIntent->RequestWarp(vPosition);
+
+	GetTransform().SetPosition(vPosition);
+	_vector vTarget = XMLoadFloat3(&vLookAt);
+	vTarget = XMVectorSetY(vTarget, vPosition.y);
+	GetTransform().LookAt(vTarget);
+	GetTransform().Update();
+
+	if (m_pComCharacterMotor)
+		m_pComCharacterMotor->SetVelocity({});
+	if (m_pComMoveIntent)
+		m_pComMoveIntent->ClearMoveIntent();
 }
 
 void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
@@ -1979,12 +2186,53 @@ void CPlayer::Update(E::_float fTimeDelta)
 		!IsRagdollTransitioning())
 		m_pStateMachine->Update(fTimeDelta);
 
+	if (m_pStateMachine)
+	{
+		const PLAYER_STATE currentState = m_pStateMachine->GetCurrentState();
+		if (currentState != m_ePreviousMotionBlurState)
+		{
+			m_ePreviousMotionBlurState = currentState;
+			m_fMotionBlurPulseRemainUnscaled =
+				currentState == PLAYER_STATE::LOCOMOTION
+				? 0.f
+				: MOTION_BLUR_STATE_PULSE_DURATION;
+		}
+		else if (m_fMotionBlurPulseRemainUnscaled > 0.f)
+		{
+			m_fMotionBlurPulseRemainUnscaled = std::max(
+				0.f,
+				m_fMotionBlurPulseRemainUnscaled -
+				CGameInstance::Get().GetUnscaledDelta());
+		}
+
+		CGameInstance::Get().Set_MotionBlurEnabled(
+			MOTION_BLUR_ENABLED &&
+			currentState != PLAYER_STATE::LOCOMOTION &&
+			m_fMotionBlurPulseRemainUnscaled > 0.f);
+	}
+
 	// Turn 시작 당시 활성 상태를 보관했기 때문에 종료 프레임의
 	// 마지막 RootMotionDelta도 빠뜨리지 않고 적용한다.
 	if (bApplyRootMotionTranslation &&
 		m_pComMoveIntent &&
 		!IsRagdollTransitioning())
 	{
+		// 프로테고 반동 중 반격 애니메이션의 루트 모션이 공격자 쪽으로
+		// 플레이어를 끌고 가지 않도록, 반동 반대 방향 성분만 제거한다.
+		if (m_fProtegoRecoilRemainTime > 0.f)
+		{
+			_vector vRootMotion = XMLoadFloat3(&vRootMotionWorldDisplacement);
+			const _vector vRecoilDirection =
+				XMLoadFloat3(&m_vProtegoRecoilDirection);
+			const _float fTowardAttacker = XMVectorGetX(
+				XMVector3Dot(vRootMotion, vRecoilDirection));
+			if (fTowardAttacker < 0.f)
+			{
+				vRootMotion -= vRecoilDirection * fTowardAttacker;
+				XMStoreFloat3(
+					&vRootMotionWorldDisplacement, vRootMotion);
+			}
+		}
 		m_pComMoveIntent->AddExternalDisplacement(
 			vRootMotionWorldDisplacement);
 	}
@@ -2298,8 +2546,6 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
 		skinningConstants.iVertexCount = mesh->GetNumVertices();
 		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
-		skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
-		skinningConstants.iMorphVertexCount = mesh->GetNumVertices();
 
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
@@ -2308,10 +2554,6 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
 		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
-		ID3D11ShaderResourceView* morphSRV = nullptr;
-		if (const auto& morphBuffer = mesh->GetMorphDeltaBuffer())
-			morphSRV = morphBuffer->GetSRV().Get();
-		pContext->VSSetShaderResources(9, 1, &morphSRV);
 		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 		const UINT stride = mesh->GetVertexStride();
 		const UINT offset = 0;
@@ -2456,6 +2698,64 @@ HRESULT CPlayer::Hit_Player_HurtBox(CGameObject* pAttacker, const PX_ON_COLLISIO
 	default:
 		return S_FALSE;
 	}
+}
+
+void CPlayer::RequestAttackIndicator(_bool bDodgeOnly)
+{
+	if (m_iHp <= 0 || GetPendingDestroy())
+		return;
+
+	if (m_iAttackIndicatorParticleOwner != INVALID_PARTICLE_OWNER_ID)
+	{
+		// 이미 빨간 경고가 떠 있거나 같은 노란 경고가 재요청되면 중복 생성하지 않는다.
+		if (m_bAttackIndicatorDodgeOnly || !bDodgeOnly)
+			return;
+
+		// 노란 경고 도중 더 위험한 공격이 들어오면 빨간 경고 하나로 교체한다.
+		CGameInstance::Get().ClearParticleOwner(
+			m_iAttackIndicatorParticleOwner);
+		m_iAttackIndicatorParticleOwner = INVALID_PARTICLE_OWNER_ID;
+	}
+
+	m_vAttackIndicatorPosition = GetAttackIndicatorPosition();
+
+	_float4x4 IndicatorWorld{};
+	XMStoreFloat4x4(&IndicatorWorld, XMMatrixTranslation(
+		m_vAttackIndicatorPosition.x,
+		m_vAttackIndicatorPosition.y,
+		m_vAttackIndicatorPosition.z));
+
+	m_iAttackIndicatorParticleOwner = CGameInstance::Get().Spawn(
+		bDodgeOnly ? "IndicatorRed.json" : "IndicatorYellow.json",
+		IndicatorWorld);
+	if (m_iAttackIndicatorParticleOwner == INVALID_PARTICLE_OWNER_ID)
+		return;
+
+	m_bAttackIndicatorDodgeOnly = bDodgeOnly;
+	m_fAttackIndicatorRemainTime = ATTACK_INDICATOR_DURATION;
+}
+
+_float3 CPlayer::GetAttackIndicatorPosition() const
+{
+	if (m_pComModelInstance && m_iAttackIndicatorHeadBoneIndex >= 0)
+	{
+		const auto& CombinedBones =
+			m_pComModelInstance->Get_CombinedBoneMatrices();
+		if (static_cast<size_t>(m_iAttackIndicatorHeadBoneIndex) <
+			CombinedBones.size())
+		{
+			const _matrix HeadWorld = XMLoadFloat4x4(
+				&CombinedBones[static_cast<size_t>(
+					m_iAttackIndicatorHeadBoneIndex)]) *
+				GetTransform().GetLoadedCombinedWorldMatrix();
+			_float3 vHeadPosition{};
+			XMStoreFloat3(&vHeadPosition, HeadWorld.r[3]);
+			return vHeadPosition;
+		}
+	}
+
+	// 모델 또는 본 데이터가 아직 준비되지 않은 프레임만 루트 위치를 사용한다.
+	return GetTransform().GetPosition();
 }
 
 _bool CPlayer::OnQueryHit(CGameObject* pAttacker,const PX_OVERLAP_RESULT& tHit,int32_t iDamage,const _float3& vHitPosition)
@@ -2604,10 +2904,11 @@ void CPlayer::TriggerProtegoHit(
 {
 	const _bool bHeavyReaction =
 		iDamage >= PROTEGO_HEAVY_DAMAGE_THRESHOLD;
+
 	CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
-		.fIntensity = bHeavyReaction ? 0.55f : 0.3f,
-		.fDuration = bHeavyReaction ? 0.3f : 0.18f,
-		.fFrequency = bHeavyReaction ? 34.f : 28.f });
+		.fIntensity = bHeavyReaction ? 0.95f : 0.7f,
+		.fDuration = bHeavyReaction ? 0.18f : 0.12f,
+		.fFrequency = bHeavyReaction ? 46.f : 40.f });
 
 	_float3 vShieldCenter = GetTransform().GetPosition();
 	vShieldCenter.y += 1.f;
@@ -2640,9 +2941,9 @@ void CPlayer::TriggerProtegoHit(
 			},
 			SOUND_PLAY_DESC{
 				.sBusID = SOUND_BUS::SFX,
-				.fVolume = 1.5f,
-				.fPitch = 1.f,
-				.iPriority = 86,
+				.fVolume = bHeavyReaction ? 2.8f : 2.3f,
+				.fPitch = bHeavyReaction ? 0.88f : 1.05f,
+				.iPriority = 100,
 				.bLoop = false
 			});
 	}
@@ -2764,10 +3065,10 @@ _bool CPlayer::ConsumeProtegoReaction(
 	return true;
 }
 
-void CPlayer::StartProtegoRecoil(const _float3& vHitPosition)
+void CPlayer::StartProtegoRecoil(const _float3& vAttackPosition)
 {
 	_vector vPushDirection = GetTransform().GetState(STATE::POSITION) -
-		XMLoadFloat3(&vHitPosition);
+		XMLoadFloat3(&vAttackPosition);
 	vPushDirection = XMVectorSetY(vPushDirection, 0.f);
 	if (XMVectorGetX(XMVector3LengthSq(vPushDirection)) <= FLT_EPSILON)
 		vPushDirection = -XMVectorSetY(GetTransform().GetState(STATE::LOOK), 0.f);
@@ -3163,6 +3464,46 @@ std::optional<CHandle> CPlayer::FindAncientThrowTarget() const
 	return hBestTarget;
 }
 
+void CPlayer::UpdateAncientMagicActiveButtons()
+{
+	auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+	const _bool bCanRequestAncientMagic = m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() != PLAYER_STATE::ANCIENT_ATTACK_SKILL;
+
+	CHandle monsterTarget{};
+	if (bCanRequestAncientMagic && pUIController && pUIController->CanUseFinisher() &&
+		CPlayer_SkillStateBase::HasValidTarget(*this))
+	{
+		monsterTarget = m_hAutoTarget;
+	}
+
+	CHandle throwTarget{};
+	if (bCanRequestAncientMagic &&
+		CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget))
+	{
+		if (const auto target = FindAncientThrowTarget())
+			throwTarget = *target;
+	}
+
+	auto syncButton = [](
+		CHandle& currentTarget, CHandle nextTarget, _ubyte key)
+	{
+		if (currentTarget == nextTarget)
+			return;
+
+		if (currentTarget != CHandle{})
+			GET_SINGLE(UIManager)->RemoveActiveButton(currentTarget);
+
+		currentTarget = nextTarget;
+		if (currentTarget != CHandle{})
+			GET_SINGLE(UIManager)->CreateActiveButton(currentTarget, key);
+	};
+
+	syncButton(m_hAncientMagicButtonTarget, monsterTarget, DIK_X);
+	syncButton(m_hAncientThrowButtonTarget, throwTarget, DIK_E);
+}
+
 std::optional<CHandle> CPlayer::ConsumeAncientThrowTarget()
 {
 	auto target = m_hPendingAncientThrowTarget;
@@ -3367,6 +3708,10 @@ E::UPtr<E::CPrototype> CPlayer::Clone(void* pArg)
 
 void CPlayer::Free()
 {
+	if (m_hAncientMagicButtonTarget != CHandle{})
+		GET_SINGLE(UIManager)->RemoveActiveButton(m_hAncientMagicButtonTarget, false);
+	if (m_hAncientThrowButtonTarget != CHandle{})
+		GET_SINGLE(UIManager)->RemoveActiveButton(m_hAncientThrowButtonTarget, false);
 	SetLumosActive(false);
 	CAnimationObject::Free();
 }

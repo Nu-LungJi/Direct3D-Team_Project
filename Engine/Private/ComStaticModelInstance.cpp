@@ -4,6 +4,10 @@
 #include "ResStaticModelMesh.h"
 #include "ResModelMaterial.h"
 #include "ResModel.h"
+#include "ResStructuredBuffer.h"
+#include "ResVertexShader.h"
+#include "ResPixelShader.h"
+#include "ResSamplerState.h"
 NS_USING(Engine)
 
 void CComStaticModelInstance::UpdateGUI()
@@ -113,6 +117,101 @@ VOID CComStaticModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, _flo
 		pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);
 	}
 	pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::MATERIAL), 1, MaterialConstantBuffer->GetCBuffer().GetAddressOf());
+}
+
+HRESULT CComStaticModelInstance::RenderDynamicInstances(
+	ID3D11DeviceContext* context,
+	const MODEL_INSTANCE_BATCH& batch)
+{
+	if (context == nullptr || m_pModel == nullptr || batch.Instances.empty())
+		return E_INVALIDARG;
+
+	auto& gameInstance = CGameInstance::Get();
+	auto vertexShader = gameInstance.GetResourceFirst<CResVertexShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, "VS_StaticModelDynamicInstanced");
+	auto pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
+	auto sampler = gameInstance.GetResourceFirst<CResSamplerState>(
+		TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
+	auto instanceBuffer = gameInstance.GetResourceFirst<CResStructuredBuffer>(
+		TAG_RES_GRP_PERMANENT_BUFFER, "SBUFFER_ANIMAITON");
+	if (!vertexShader || !pixelShader || !sampler || !instanceBuffer)
+		return E_FAIL;
+
+	const auto& gpuInstanceBuffer = instanceBuffer->GetBuffer();
+	if (!gpuInstanceBuffer)
+		return E_FAIL;
+
+	D3D11_BUFFER_DESC instanceBufferDesc{};
+	gpuInstanceBuffer->GetDesc(&instanceBufferDesc);
+	const size_t maxInstancesPerDraw =
+		instanceBufferDesc.ByteWidth / sizeof(GPU_ANIM_INSTANCE_DATA);
+	if (maxInstancesPerDraw == 0)
+		return E_FAIL;
+
+	ID3D11ShaderResourceView* nullInstanceSRV = nullptr;
+	ID3D11ShaderResourceView* instanceSRV = instanceBuffer->GetSRV().Get();
+	if (instanceSRV == nullptr)
+		return E_FAIL;
+
+	context->IASetInputLayout(vertexShader->GetInputLayout().Get());
+	context->VSSetShader(vertexShader->GetVertexShader().Get(), nullptr, 0);
+	context->PSSetShader(pixelShader->GetPixelShader().Get(), nullptr, 0);
+	context->PSSetSamplers(0, 1, sampler->GetSamplerState().GetAddressOf());
+
+	const MATERIAL_DESC& material = m_pModel->GetMaterialDesc();
+	// GPU 공용 버퍼의 실제 용량만큼 나눠 그린다.
+	// 호출자가 제출하는 전체 배치 크기에는 별도의 개수 제한을 두지 않는다.
+	for (size_t instanceOffset = 0;
+		 instanceOffset < batch.Instances.size();
+		 instanceOffset += maxInstancesPerDraw)
+	{
+		const uint32_t drawInstanceCount = static_cast<uint32_t>(
+			std::min(maxInstancesPerDraw, batch.Instances.size() - instanceOffset));
+
+		// 같은 버퍼를 갱신하기 전에 이전 Draw의 VS SRV 바인딩을 해제한다.
+		context->VSSetShaderResources(6, 1, &nullInstanceSRV);
+		if (FAILED(instanceBuffer->UpdateData(
+			batch.Instances.data() + instanceOffset,
+			drawInstanceCount * static_cast<uint32_t>(sizeof(GPU_ANIM_INSTANCE_DATA)))))
+		{
+			return E_FAIL;
+		}
+
+		context->VSSetShaderResources(6, 1, &instanceSRV);
+		for (uint32_t meshIndex = 0; meshIndex < m_pModel->Get_NumMeshes(); ++meshIndex)
+		{
+			const auto& mesh = m_pModel->GetMeshes()[meshIndex];
+			if (mesh == nullptr)
+				continue;
+
+			ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
+			const uint32_t stride = mesh->GetVertexStride();
+			const uint32_t offset = 0;
+			context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+			context->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+			context->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+
+			Bind_Textures(context, meshIndex);
+			Bind_Materials(
+				context,
+				material.m_fEmissiveColor,
+				material.m_fEmissiveIntensity,
+				{ 1.f, 1.f, 1.f },
+				0.f,
+				material.m_fObjectAlpha,
+				material.m_fNormalIntensity,
+				material.m_fMetallicIntensity,
+				material.m_fRoughnessIntensity,
+				material.m_fAmbientIntensity);
+
+			context->DrawIndexedInstanced(
+				mesh->GetNumIndices(), drawInstanceCount, 0, 0, 0);
+		}
+	}
+
+	context->VSSetShaderResources(6, 1, &nullInstanceSRV);
+	return S_OK;
 }
 
 

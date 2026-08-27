@@ -203,12 +203,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\public\Animal.h" />
     <ClInclude Include="..\Public\BackGround.h" />
+    <ClInclude Include="..\public\BTChangeState.h" />
     <ClInclude Include="..\public\BTDecEdgPatroll.h" />
     <ClInclude Include="..\Public\BlackBoardKey.h" />
     <ClInclude Include="..\public\BTDecEdgPhase.h" />
     <ClInclude Include="..\public\BTDecEdgState.h" />
+    <ClInclude Include="..\public\BTDecHitPlayer.h" />
+    <ClInclude Include="..\public\BTDecNpcState.h" />
+    <ClInclude Include="..\public\BTDecWallCrash.h" />
+    <ClInclude Include="..\public\BTDirectChase.h" />
     <ClInclude Include="..\public\BTEdgStateFinished.h" />
     <ClInclude Include="..\public\BTNaviMove.h" />
     <ClInclude Include="..\public\Coin.h" />
@@ -237,7 +241,7 @@
     <ClInclude Include="..\public\LevelLastBossRanrokLoader.h" />
     <ClInclude Include="..\public\Mon_Godae.h" />
     <ClInclude Include="..\public\Mon_Spawner.h" />
-    <ClInclude Include="..\public\NpcMom.h" />
+    <ClInclude Include="..\public\WorldAgent.h" />
     <ClInclude Include="..\Public\Player_Fly_State.h" />
     <ClInclude Include="..\public\AccioBall.h" />
     <ClInclude Include="..\public\AccioActivityPartBase.h" />
@@ -247,6 +251,7 @@
     <ClInclude Include="..\public\AccioActivity_BumperB.h" />
     <ClInclude Include="..\public\AccioActivity_RampLarge.h" />
     <ClInclude Include="..\public\AccioActivity_LampSmall.h" />
+    <ClInclude Include="..\public\AccioActivity_Npc.h" />
     <ClInclude Include="..\public\PropBarrel.h" />
     <ClInclude Include="..\public\PropBarrelDebris.h" />
     <ClInclude Include="..\public\SkillTarget.h" />
@@ -282,6 +287,12 @@
     <ClInclude Include="..\Public\BTTurnSlow.h" />
     <ClInclude Include="..\Public\Button.h" />
     <ClInclude Include="..\Public\GeneralButton.h" />
+    <ClInclude Include="..\public\Troll.h" />
+    <ClInclude Include="..\public\TrollWeapon.h" />
+    <ClInclude Include="..\public\Troll_Combat.h" />
+    <ClInclude Include="..\public\Troll_Grogy.h" />
+    <ClInclude Include="..\public\Troll_Hit.h" />
+    <ClInclude Include="..\public\Troll_Spawn.h" />
     <ClInclude Include="..\Public\WandShop.h" />
     <ClInclude Include="..\Public\ClientEvents.h" />
     <ClInclude Include="..\Public\Client_Defines.h" />
@@ -318,7 +329,8 @@
     <ClInclude Include="..\public\MyMagicSquareStepController.h" />
     <ClInclude Include="..\public\NvClothCape.h" />
     <ClInclude Include="..\public\OilBarrel.h" />
-    <ClInclude Include="..\public\Spider_Dead.h" />
+    <ClInclude Include="..\public\Mon_Dead.h" />
+    <ClInclude Include="..\public\PhysicsDoor.h" />
     <ClInclude Include="..\Public\WiggenweldPotion.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
     <ClInclude Include="..\Public\Player_Knockdown_State.h" />
@@ -344,7 +356,7 @@
     <ClInclude Include="..\Public\Player_BombardaSkill_State.h" />
     <ClInclude Include="..\Public\Player_TransformationSkill_State.h" />
     <ClInclude Include="..\Public\Player_ConfringoSkill_State.h" />
-    <ClInclude Include="..\Public\Player_AcientAttack_State.h" />
+    <ClInclude Include="..\Public\Player_AncientAttack_State.h" />
     <ClInclude Include="..\Public\Player_Attack_State.h" />
     <ClInclude Include="..\Public\Player_DashSkill_State.h" />
     <ClInclude Include="..\Public\Player_DepulsoSkill_State.h" />
@@ -393,7 +405,9 @@
     <ClInclude Include="..\Public\Mon_Weapon.h" />
     <ClInclude Include="..\Public\UI_Structs.h" />
     <ClInclude Include="..\Public\VideoObject.h" />
+    <ClInclude Include="..\public\WorldAnimal.h" />
     <ClInclude Include="..\public\WorldNpc.h" />
+    <ClInclude Include="..\public\InteractiveNpc.h" />
     <ClInclude Include="BTAnimNpc.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
@@ -402,8 +416,12 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\private\Animal.cpp" />
     <ClCompile Include="..\Private\BackGround.cpp" />
+    <ClCompile Include="..\private\BTChangeState.cpp" />
+    <ClCompile Include="..\private\BTDecHitPlayer.cpp" />
+    <ClCompile Include="..\private\BTDecNpcState.cpp" />
+    <ClCompile Include="..\private\BTDecWallCrash.cpp" />
+    <ClCompile Include="..\private\BTDirectChase.cpp" />
     <ClCompile Include="..\private\BTNaviMove.cpp" />
     <ClCompile Include="..\private\Coin.cpp" />
     <ClCompile Include="..\private\Edg_Godae.cpp" />
@@ -435,7 +453,7 @@
     <ClCompile Include="..\private\EnderDragon_State.cpp" />
     <ClCompile Include="..\private\Mon_Godae.cpp" />
     <ClCompile Include="..\private\Mon_Spawner.cpp" />
-    <ClCompile Include="..\private\NpcMom.cpp" />
+    <ClCompile Include="..\private\WorldAgent.cpp" />
     <ClCompile Include="..\Private\Player_Fly_State.cpp" />
     <ClCompile Include="..\private\AccioBall.cpp" />
     <ClCompile Include="..\private\AccioActivityPartBase.cpp" />
@@ -445,6 +463,7 @@
     <ClCompile Include="..\private\AccioActivity_BumperB.cpp" />
     <ClCompile Include="..\private\AccioActivity_RampLarge.cpp" />
     <ClCompile Include="..\private\AccioActivity_LampSmall.cpp" />
+    <ClCompile Include="..\private\AccioActivity_Npc.cpp" />
     <ClCompile Include="..\private\PropBarrel.cpp" />
     <ClCompile Include="..\private\PropBarrelDebris.cpp" />
     <ClCompile Include="..\private\SkillTarget.cpp" />
@@ -480,6 +499,12 @@
     <ClCompile Include="..\Private\CinematicEditor.cpp" />
     <ClCompile Include="..\Private\Button.cpp" />
     <ClCompile Include="..\Private\GeneralButton.cpp" />
+    <ClCompile Include="..\private\Troll.cpp" />
+    <ClCompile Include="..\private\TrollWeapon.cpp" />
+    <ClCompile Include="..\private\Troll_Combat.cpp" />
+    <ClCompile Include="..\private\Troll_Grogy.cpp" />
+    <ClCompile Include="..\private\Troll_Hit.cpp" />
+    <ClCompile Include="..\private\Troll_Spawn.cpp" />
     <ClCompile Include="..\Private\WandShop.cpp" />
     <ClCompile Include="..\Private\Cursor.cpp" />
     <ClCompile Include="..\private\DebugPlayer.cpp" />
@@ -511,7 +536,8 @@
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\private\NvClothCape.cpp" />
     <ClCompile Include="..\private\OilBarrel.cpp" />
-    <ClCompile Include="..\private\Spider_Dead.cpp" />
+    <ClCompile Include="..\private\Mon_Dead.cpp" />
+    <ClCompile Include="..\private\PhysicsDoor.cpp" />
     <ClCompile Include="..\Private\WiggenweldPotion.cpp" />
     <ClCompile Include="..\Private\Player_Hit_State.cpp" />
     <ClCompile Include="..\Private\Player_Knockdown_State.cpp" />
@@ -535,7 +561,7 @@
     <ClCompile Include="..\Private\Player_BombardaSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_TransformationSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_ConfringoSkill_State.cpp" />
-    <ClCompile Include="..\Private\Player_AcientAttack_State.cpp" />
+    <ClCompile Include="..\Private\Player_AncientAttack_State.cpp" />
     <ClCompile Include="..\Private\Player_Attack_State.cpp" />
     <ClCompile Include="..\Private\Player_DashSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_DepulsoSkill_State.cpp" />
@@ -581,7 +607,9 @@
     <ClCompile Include="..\private\TriggerCRW_ToBoss.cpp" />
     <ClCompile Include="..\Private\Mon_Weapon.cpp" />
     <ClCompile Include="..\Private\VideoObject.cpp" />
+    <ClCompile Include="..\private\WorldAnimal.cpp" />
     <ClCompile Include="..\private\WorldNpc.cpp" />
+    <ClCompile Include="..\private\InteractiveNpc.cpp" />
     <ClCompile Include="BTAnimNpc.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">

@@ -178,7 +178,14 @@ void CParticleManager::UpdateGUI()
 	static float fStraightEndTime	= 0.12f;
 	static float fHoldEndTime		= 0.3f;
 	static float fFadeEndTime		= 0.15f;
-	ImGui::Begin("SaveResourcesAsJson");
+	const _bool bShowResourceAuthoring = ImGui::Begin("SaveResourcesAsJson");
+	if (bShowResourceAuthoring)
+	{
+		auto ClearFailedThumbnailCache = [this]()
+			{
+				std::erase_if(m_TextureThumbnailCache,
+					[](const auto& entry) { return !entry.second; });
+			};
 
 
 
@@ -370,6 +377,9 @@ void CParticleManager::UpdateGUI()
 		bool bRescanDistortionClicked = ImGui::Button("Rescan Distortion Folder");
 		if (!bDistortionScannedForMesh || bRescanDistortionClicked)
 		{
+			if (bRescanDistortionClicked)
+				ClearFailedThumbnailCache();
+
 			distortionFileListForMesh = ScanTextureFolder(kTextureFolders[2]); 
 			bDistortionScannedForMesh = true;
 		}
@@ -399,6 +409,9 @@ void CParticleManager::UpdateGUI()
 		bool bRescanNoiseClicked = ImGui::Button("Rescan Noise Folder");
 		if (!bNoiseScannedForMesh || bRescanNoiseClicked)
 		{
+			if (bRescanNoiseClicked)
+				ClearFailedThumbnailCache();
+
 			noiseFileListForMesh = ScanTextureFolder(kTextureFolders[3]);
 			bNoiseScannedForMesh = true;
 		}
@@ -425,6 +438,9 @@ void CParticleManager::UpdateGUI()
 		bool bRescanAnyClicked = ImGui::Button("Rescan AnyTexture Folder");
 		if (!bAnyTextureScannedForMesh || bRescanAnyClicked)
 		{
+			if (bRescanAnyClicked)
+				ClearFailedThumbnailCache();
+
 			AnyFileListForMesh = ScanTextureFolder(kTextureFolders[4]);
 			bAnyTextureScannedForMesh = true;
 		}
@@ -463,6 +479,8 @@ void CParticleManager::UpdateGUI()
 
 		if (ImGui::Button("Rescan Texture Folder"))
 		{
+			ClearFailedThumbnailCache();
+
 			for (int s = 0; s < 5; ++s)
 				textureFileList[s] = ScanTextureFolder(kTextureFolders[s]);
 		}
@@ -848,15 +866,18 @@ void CParticleManager::UpdateGUI()
 		ImGui::TextDisabled("Save Json (조건을 먼저 충족하세요)");
 	}
 
-	if (!m_sLastResultMsg.empty())
-	{
-		ImGui::TextColored(m_bLastResultSuccess ? ImVec4(0.3f, 1.f, 0.3f, 1.f) : ImVec4(1.f, 0.3f, 0.3f, 1.f),
-			"%s", m_sLastResultMsg.c_str());
+		if (!m_sLastResultMsg.empty())
+		{
+			ImGui::TextColored(m_bLastResultSuccess ? ImVec4(0.3f, 1.f, 0.3f, 1.f) : ImVec4(1.f, 0.3f, 0.3f, 1.f),
+				"%s", m_sLastResultMsg.c_str());
+		}
 	}
 	ImGui::End();
 
 
-	ImGui::Begin("CParticleManager");
+	const _bool bShowParticleManager = ImGui::Begin("CParticleManager");
+	if (bShowParticleManager)
+	{
 
 
 
@@ -1751,10 +1772,11 @@ void CParticleManager::UpdateGUI()
 			? ("Queue Load Success! (" + std::to_string(m_vecCommandQueue.size()))
 			: "Queue Load Failed!";
 	}
-	if (!m_sLastResultMsg.empty())
-	{
-		ImGui::TextColored(m_bLastResultSuccess ? ImVec4(0.3f, 1.f, 0.3f, 1.f) : ImVec4(1.f, 0.3f, 0.3f, 1.f),
-			"%s", m_sLastResultMsg.c_str());
+		if (!m_sLastResultMsg.empty())
+		{
+			ImGui::TextColored(m_bLastResultSuccess ? ImVec4(0.3f, 1.f, 0.3f, 1.f) : ImVec4(1.f, 0.3f, 0.3f, 1.f),
+				"%s", m_sLastResultMsg.c_str());
+		}
 	}
 	ImGui::End();
 }
@@ -2879,16 +2901,33 @@ ID3D11ShaderResourceView* CParticleManager::GetOrLoadTextureThumbnail(const std:
 		return it->second.Get();
 
 	ComPtr<ID3D11ShaderResourceView> pSRV;
-	HRESULT hr = DirectX::CreateWICTextureFromFile(
-		CGameInstance::Get().GetGraphicDevice().Get(),
-		CGameInstance::Get().GetGraphicDeviceContext().Get(),
-		std::wstring(fullPath.begin(), fullPath.end()).c_str(),
-		nullptr, pSRV.GetAddressOf());
+	const std::filesystem::path texturePath{ fullPath };
+	const std::wstring widePath = texturePath.wstring();
+	const std::string extension = texturePath.extension().string();
+	HRESULT hr = E_FAIL;
+
+	if (_stricmp(extension.c_str(), ".dds") == 0)
+	{
+		hr = DirectX::CreateDDSTextureFromFile(
+			CGameInstance::Get().GetGraphicDevice().Get(),
+			widePath.c_str(), nullptr, pSRV.GetAddressOf());
+	}
+	else
+	{
+		hr = DirectX::CreateWICTextureFromFile(
+			CGameInstance::Get().GetGraphicDevice().Get(),
+			CGameInstance::Get().GetGraphicDeviceContext().Get(),
+			widePath.c_str(), nullptr, pSRV.GetAddressOf());
+	}
 
 	if (FAILED(hr) || !pSRV)
+	{
+		// [LSY] 실패 결과도 보관해 지원하지 않는 파일을 매 프레임 다시 읽지 않는다.
+		m_TextureThumbnailCache.emplace(fullPath, ComPtr<ID3D11ShaderResourceView>{});
 		return nullptr;
+	}
 
-	m_TextureThumbnailCache[fullPath] = pSRV;
+	m_TextureThumbnailCache.emplace(fullPath, pSRV);
 	return pSRV.Get();
 }
 HRESULT CParticleManager::SaveCommandQueue(const std::string& strJsonPath)
@@ -3333,15 +3372,30 @@ HRESULT CParticleManager::LoadParticlePresets(const std::string& strJsonPath)
 
 
 
-// 3) 예전 호출부(strJsonPath로 바로 부르던 곳) 호환용 오버로드 - 필요하면 유지
-uint32_t CParticleManager::Spawn(const std::string& strJsonPath,
-	const _float4x4& worldMat, _fvector endPos)
+uint32_t CParticleManager::Spawn(
+	const std::string& strJsonPath,
+	const _float4x4& worldMat,
+	_fvector endPos,
+	_bool bApplyWorldScaleToParticleSize)
 {
 	const auto* pCommands = FindCachedCommandQueue(strJsonPath);
 	if (nullptr == pCommands || pCommands->empty())
 		return INVALID_PARTICLE_OWNER_ID;
 
-	return Spawn(*pCommands, worldMat, endPos);
+	return Spawn(
+		*pCommands, worldMat, endPos, bApplyWorldScaleToParticleSize);
+}
+
+uint32_t CParticleManager::Spawn(const std::string& strJsonPath, const _matrix& worldMat, 
+	const _fvector endPos, _bool bApplyWorldScaleToParticleSize)
+{
+	const auto* pCommands = FindCachedCommandQueue(strJsonPath);
+	if (nullptr == pCommands || pCommands->empty())
+		return INVALID_PARTICLE_OWNER_ID;
+	_float4x4 mat;
+	XMStoreFloat4x4(&mat, worldMat);
+	return Spawn(
+		*pCommands, mat, endPos, bApplyWorldScaleToParticleSize);
 }
 
 // 1) 순수 파싱: matWorld 관여 없음, 로컬값 그대로
@@ -3533,8 +3587,11 @@ const std::vector<SPAWN_COMMAND>* CParticleManager::FindCachedCommandQueue(const
 	return iter != m_ParsedCommandCache.end() ? &iter->second : nullptr;
 }
 
-uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateCommands,
-	const _float4x4& worldMat, _fvector endPos)
+uint32_t CParticleManager::Spawn(
+	const std::vector<SPAWN_COMMAND>& templateCommands,
+	const _float4x4& worldMat,
+	_fvector endPos,
+	_bool bApplyWorldScaleToParticleSize)
 {
 	XMMATRIX matWorld = XMLoadFloat4x4(&worldMat);
 
@@ -3547,6 +3604,30 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 		return (uint32_t)E_FAIL;
 	}
 
+	XMVECTOR vWorldScale{};
+	XMVECTOR vWorldRotation{};
+	XMVECTOR vWorldTranslation{};
+	const _bool bWorldDecomposed = XMMatrixDecompose(
+		&vWorldScale,
+		&vWorldRotation,
+		&vWorldTranslation,
+		matWorld);
+
+	_float3 vParticleSizeScale{ 1.f, 1.f, 1.f };
+	if (bWorldDecomposed)
+	{
+		if (bApplyWorldScaleToParticleSize)
+			XMStoreFloat3(&vParticleSizeScale, XMVectorAbs(vWorldScale));
+		vWorldRotation = XMQuaternionNormalize(vWorldRotation);
+	}
+
+	const auto ApplyWorldScaleToSize = [&vParticleSizeScale](_float3& vSize)
+	{
+		vSize.x *= vParticleSizeScale.x;
+		vSize.y *= vParticleSizeScale.y;
+		vSize.z *= vParticleSizeScale.z;
+	};
+
 	std::vector<SPAWN_COMMAND> localQueue;
 	localQueue.reserve(templateCommands.size());
 
@@ -3554,13 +3635,9 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 	{
 		SPAWN_COMMAND cmd = srcCmd; // 복사본에만 변환, 원본(호출자가 들고 있는 벡터)은 그대로
 		cmd.ownerId = m_iNextOwnerId;
-		if (cmd.bInheritWorldRotation)
+		if (cmd.bInheritWorldRotation && bWorldDecomposed)
 		{
-			XMVECTOR worldScale{};
-			XMVECTOR worldRotation{};
-			XMVECTOR worldTranslation{};
-			if (XMMatrixDecompose(&worldScale, &worldRotation, &worldTranslation, matWorld))
-				XMStoreFloat4(&cmd.inheritedWorldRotation, XMQuaternionNormalize(worldRotation));
+			XMStoreFloat4(&cmd.inheritedWorldRotation, vWorldRotation);
 		}
 
 		switch (cmd.sGroupTag_KindTag)
@@ -3596,7 +3673,12 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 			XMStoreFloat3(&velT, XMVector3TransformNormal(XMLoadFloat3(&p.velocity), matWorld));
 			p.velocity = velT;
 
-		
+			ApplyWorldScaleToSize(p.fSize);
+			ApplyWorldScaleToSize(p.fEndSize);
+			ApplyWorldScaleToSize(p.startSizeMin);
+			ApplyWorldScaleToSize(p.startSizeMax);
+			ApplyWorldScaleToSize(p.endSizeMin);
+			ApplyWorldScaleToSize(p.endSizeMax);
 
 			// rotMin/rotMax는 변환하지 않음
 			break;
@@ -3631,10 +3713,14 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 
 			for (PARTICLE_SPAWN_DATA& spawnData : spawnList)
 			{
-				const _bool bOrbit = (spawnData.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0;
+				const _bool bOrbitalMotion =
+					(spawnData.iBehaviorType &
+						(CParticle::BEHAVIOR_ORBIT | CParticle::BEHAVIOR_SPIRAL)) != 0;
 				XMStoreFloat3(&spawnData.position, XMVector3TransformCoord(XMLoadFloat3(&spawnData.position), matWorld));
 				XMStoreFloat3(&spawnData.velocity, XMVector3TransformNormal(XMLoadFloat3(&spawnData.velocity), matWorld));
-				if (bOrbit)
+				ApplyWorldScaleToSize(spawnData.fSize);
+				ApplyWorldScaleToSize(spawnData.fEndSize);
+				if (bOrbitalMotion)
 				{
 					XMStoreFloat3(&spawnData.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&spawnData.originalPosition), matWorld));
 					_vector vOrbitAxis = XMVector3TransformNormal(XMLoadFloat3(&spawnData.rotationAxis), matWorld);
@@ -3643,7 +3729,7 @@ uint32_t CParticleManager::Spawn(const std::vector<SPAWN_COMMAND>& templateComma
 				}
 				if (cmd.bInheritWorldRotation)
 					spawnData.rotation = ComposeParticleRotation(spawnData.rotation, cmd.inheritedWorldRotation);
-				if (!bOrbit)
+				if (!bOrbitalMotion)
 					spawnData.originalPosition = spawnData.position;
 				spawnData.originalVelocity = spawnData.velocity;
 			}

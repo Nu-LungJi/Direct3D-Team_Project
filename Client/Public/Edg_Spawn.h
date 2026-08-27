@@ -25,12 +25,13 @@ private:
 	void		Play_Anim(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Play_AnimMoveSpawn(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Effect(CEnderDragon* pDragon, _float fTimeDelta);
-
+	
 private:
-	uint32_t				m_iEffectID{};
+	uint32_t				m_iEffectID{}, m_iRoarEffectID{};
 	SOUND_ID				m_iSound{}, m_iSoundHouling{};
 	_bool					m_bNext{}, m_bSound{ false }, m_bSoundH{ false }, m_bEffectStop{ false };
 	_float					m_fTick{}, m_fSpawnTick{}, m_fAngle{};
+
 	_float3					m_vNextDir{}, m_vLastDir{};
 	EDG_SPAWN_NUMBER		m_eSpawn{EDG_SPAWN_NUMBER::FIRST};
 

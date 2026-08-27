@@ -51,7 +51,7 @@ void CPlayer_RepairoSkill_State::Enter(CStateMachine* pStateMachine)
 	pAnimator->Play_Anim(m_iRepairoStartAnimation, false, 0.2f);
 
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 	trailEnd = false;
 }
 
@@ -92,7 +92,7 @@ void CPlayer_RepairoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		return;
 	}
 
-	m_fAnimRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
+	m_fAnimationRatio = PlayerAnimationRatioGuard::Sanitize(pAnimator->GetPlayAnimRatio());
 	pPlayer->SetCurrentMoveSpeed(0.f);
 
 	{
@@ -114,14 +114,14 @@ void CPlayer_RepairoSkill_State::Update(CStateMachine* pStateMachine, _float)
 	switch (m_ePhase)
 	{
 	case PHASE::CAST:
-		if (m_fAnimRatio >= PHASE_EXIT_RATIO || pAnimator->GetFinish())
+		if (m_fAnimationRatio >= PHASE_EXIT_RATIO || pAnimator->GetFinish())
 		{
 
 			_float4x4 mat;
 			XMStoreFloat4x4(&mat, pPlayer->GetTransform().GetLoadedWorldMatrix());
 			CGameInstance::Get().Spawn("RepairoParticle.json", mat);
 			m_ePhase = PHASE::REPAIRO;
-			m_fAnimRatio = 0.f;
+			m_fAnimationRatio = 0.f;
 			pAnimator->Play_Anim(m_iRepairoLoopAnimation, false, 0.15f);
 			// TODO: 탐색 범위 판정 및 오브젝트 강조 연출 호출
 
@@ -131,17 +131,17 @@ void CPlayer_RepairoSkill_State::Update(CStateMachine* pStateMachine, _float)
 		break;
 
 	case PHASE::REPAIRO:
-		if (m_fAnimRatio >= PHASE_EXIT_RATIO || pAnimator->GetFinish())
+		if (m_fAnimationRatio >= PHASE_EXIT_RATIO || pAnimator->GetFinish())
 		{
 			m_ePhase = PHASE::RECOVERY;
-			m_fAnimRatio = 0.f;
+			m_fAnimationRatio = 0.f;
 			pAnimator->Play_Anim(m_iRepairoEndAnimation, false, 0.15f);
 		}
 		break;
 
 	case PHASE::RECOVERY:
 
-		if (m_fAnimRatio >= RECOVERY_EXIT_RATIO || pAnimator->GetFinish()) {
+		if (m_fAnimationRatio >= RECOVERY_EXIT_RATIO || pAnimator->GetFinish()) {
 			trailEnd = true;
 			RequestLocomotion(pStateMachine);
 		}
@@ -156,7 +156,7 @@ void CPlayer_RepairoSkill_State::Exit(CStateMachine* pStateMachine)
 		ResetSkillControl(*pPlayer);
 
 	m_ePhase = PHASE::CAST;
-	m_fAnimRatio = 0.f;
+	m_fAnimationRatio = 0.f;
 }
 
 SPtr<CPlayer_RepairoSkill_State> CPlayer_RepairoSkill_State::Create()

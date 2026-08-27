@@ -64,6 +64,7 @@ class CNpcPlacementManager;
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
 	friend Singleton<CGameInstance>;
+	friend class CGameObject;
 private:
 	CGameInstance();
 	~CGameInstance();
@@ -238,6 +239,10 @@ public:
 #pragma endregion
 
 #pragma region GAMEOBJECT_MANAGER
+private:
+	// CGameObject::SetPendingDestroy가 외부에 Manager를 노출하지 않고 삭제 큐에 진입하기 위한 내부 통로다.
+	void QueuePendingGameObjectDestroy(const CHandle& hObject);
+
 public:
 	void GameObjectAllReset();
 	size_t GameObjectResetLayers(std::span<const std::string_view> layerNames);
@@ -271,12 +276,7 @@ public:
 		return m_pGameObjectManager->DelLayer(MagicEnumToStringView(std::forward<TLayer>(sLayerName)));
 	}
 
-	//std::optional<CHandle> GetFreeHandle() const;
-
 	inline CGameObject* GetGameObjectByHandle(const CHandle& handle);
-	_bool SetGameObjectParent(
-		const CHandle& hChild,
-		const std::optional<CHandle>& hParent = std::nullopt);
 	template<typename T>
 	T* GetGameObjectByHandleT(const CHandle& handle)
 	{
@@ -358,6 +358,20 @@ public:
 	const CB_VLFOG	Get_VolumetricFogOption();
 	VOID			Set_VolumetricFogOption(const CB_VLFOG& _FogOption);
 
+	const CB_VOLUMECLOUD	Get_VolumetricCloudOption();
+	VOID			Set_VolumetricCloudOption(const CB_VOLUMECLOUD& _CloudOption);
+
+	VOID			Set_RadialBlurIntensity(const _float _Intensity);
+	VOID			Set_MotionBlurEnabled(_bool bEnabled);
+	VOID			Set_DistortionIntensity(const _float _Intensity);
+	VOID			Set_ChromaticIntensity(const _float _Intensity);
+	VOID			Set_VignetteIntensity(const _float _Intensity);
+
+	const _float&	Get_RadialBlurIntensity();
+	const _float&	Get_DistortionIntensity();
+	const _float&	Get_ChromaticIntensity();
+	const _float&	Get_VignetteIntensity();
+
 #pragma endregion
 
 
@@ -437,13 +451,21 @@ public:
 	HRESULT Spawn(const StringID& sGroupTag, const StringID& sTypeTag,
 		uint32_t count, const PARTICLE_SPAWN_DATA* pSpawnData,
 		_bool bLoop, _float fSpawnInterval);
-	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat, const _fvector endPos = XMVectorZero());
+	uint32_t Spawn(const std::string& strJsonPath, const _float4x4& worldMat,
+		const _fvector endPos = XMVectorZero(),
+		_bool bApplyWorldScaleToParticleSize = false);
+	uint32_t Spawn(const std::string& strJsonPath, const _matrix& worldMat,
+		const _fvector endPos = XMVectorZero(),
+		_bool bApplyWorldScaleToParticleSize = false);
 	HRESULT Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<class CParticle> particle);
 
 	HRESULT LoadParticlePresets(const std::string& strJsonPath);
 	std::vector<SPAWN_COMMAND> Parse_Command(const std::string& strJsonPath);
 	const std::vector<SPAWN_COMMAND>* FindCachedCommandQueue(const std::string& strJsonPath) const;
-	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos = XMVectorSet(0,0,0,1));
+	uint32_t Spawn(const std::vector<SPAWN_COMMAND>& templateCommands,
+		const _float4x4& worldMat,
+		_fvector endPos = XMVectorSet(0.f, 0.f, 0.f, 1.f),
+		_bool bApplyWorldScaleToParticleSize = false);
 	CParticle* GetParticle(const StringID& sGroupTag, const StringID& sTypeTag);
 	std::vector<std::string> Load_FilePath_ByExtension(const std::filesystem::path& _FolderPath, std::string_view _Extension);
 	HRESULT Load_ParticleJsonPackage(const std::vector<std::string>& _FilePathPackage);
@@ -464,6 +486,7 @@ public:
 		_fvector vEndPosition = XMVectorZero(), EFFECT_FINISHED_CALLBACK onFinsihed = {});
 
 	void StopEffect(EFFECT_INSTANCE_ID iEffectId);
+	void ChangeEffectColorByOwner(EFFECT_INSTANCE_ID iEffectId, const _float4& vColor);
 
 	void SetEffectPosition(EFFECT_INSTANCE_ID iEffectId,const _float3& vPosition);
 
@@ -483,14 +506,16 @@ public:
 	HRESULT UnLoadMapChunk(const MAPCHUNK_COORD& coord);
 	void RebuildMapChunks();
 	HRESULT RegisterMapMeshObjectToMapChunk(const CHandle& hObject);
+	HRESULT RefreshMapMeshObjectInMapChunk(const CHandle& hObject);
+	HRESULT UnregisterMapMeshObjectFromMapChunk(const CHandle& hObject);
 	std::vector<CHandle> CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const;
-	const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& GetMapChunks() const;
+	const std::unordered_map<MAPCHUNK_COORD, CMapChunk, tagMapChunkCoordHash>& GetMapChunks() const;
 	const _float3& GetMapChunkSize() const;
 	void SetMapChunkStreaming(_bool enable);
 	_bool IsMapChunkStreaming() const;
 
 	/*----------- 광윤 추가 -----------*/
-	const MATERIAL_DESC FindMaterial(const std::string& ModelName);
+	MATERIAL_DESC FindMaterial(const std::string& modelName);
 	/*---------------------------------*/
 #ifdef _DEBUG
 	void SetDebugDrawMapChunk(_bool draw);
@@ -551,7 +576,9 @@ public:
 #pragma endregion
 
 #pragma region MAPMESH_INSTANCE_RENDER
-	HRESULT PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData, EMapMeshRenderFeature renderFeature = EMapMeshRenderFeature::Static);
+	HRESULT RegisterMapMeshResidentChunk(const MAPCHUNK_COORD& coord, const std::vector<CHandle>& objectHandles);
+	void UnregisterMapMeshResidentChunk(const MAPCHUNK_COORD& coord);
+	void ClearMapMeshResidentChunks();
 	// 인스턴싱 On/Off , 드로우 콜 GUI
 	_bool IsInstancingEnabled();
 	void SetInstancingEnabled(_bool bEnabled);

@@ -72,7 +72,14 @@ std::future<bool> CLevelLastBossRanrokLoader::Load()
 			{
 				return false;
 			}
-
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("RanrokMove")))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("RanrokRoar")))
+			{
+				return false;
+			}
 			if (FAILED(LoadPlayer_InWorker()))
 			{
 				return false;

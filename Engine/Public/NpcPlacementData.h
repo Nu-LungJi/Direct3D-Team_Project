@@ -37,7 +37,9 @@ struct NPC_PLACEMENT_DESC final : public ISerializable
 	uint32_t iCrowdCount{ 1 };
 	_float fCrowdRadius{ 1.f };
 	uint32_t iRandomSeed{};
-
+	_float	 fSpeed{3.f};
+	_bool    bPhyx{ true };
+	_string  strAnimName{};
 	void Serialize(ISerializer& serializer) const override
 	{
 		WRITE_ALL(serializer, iPlacementId, sPrototypeGroupTag, sPrototypeTag, sLayerTag,
@@ -45,7 +47,7 @@ struct NPC_PLACEMENT_DESC final : public ISerializable
 			sBehaviorMajorTag, sBehaviorMinorTag, vPosition, vRotation, vScale,
 			vPatrolStartPosition, vPatrolEndPosition,
 			eRuntimeType, bCastShadow, fVisibleDistance, fAnimationUpdateDistance,
-			fAIUpdateDistance, iCrowdCount, fCrowdRadius, iRandomSeed);
+			fAIUpdateDistance, iCrowdCount, fCrowdRadius, iRandomSeed,fSpeed, bPhyx, strAnimName);
 	}
 
 	void Deserialize(IDeserializer& deserializer) override
@@ -55,7 +57,7 @@ struct NPC_PLACEMENT_DESC final : public ISerializable
 			sBehaviorMajorTag, sBehaviorMinorTag, vPosition, vRotation, vScale,
 			vPatrolStartPosition, vPatrolEndPosition,
 			eRuntimeType, bCastShadow, fVisibleDistance, fAnimationUpdateDistance,
-			fAIUpdateDistance, iCrowdCount, fCrowdRadius, iRandomSeed);
+			fAIUpdateDistance, iCrowdCount, fCrowdRadius, iRandomSeed,fSpeed, bPhyx, strAnimName);
 	}
 };
 

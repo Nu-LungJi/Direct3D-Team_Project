@@ -2,7 +2,7 @@
 #include "BTNaviMove.h"
 #include "ComTransform.h" 
 #include "ComCharacterMoveIntent.h"
-#include "NpcMom.h"
+#include "WorldAgent.h"
 #include "BTBlackBoard.h"
 #include "BlackBoardKey.h"
 #include "NavMeshManager.h"
@@ -40,7 +40,9 @@ nlohmann::json CBTNaviMove::Save_Node()
 {
 	nlohmann::json j = __super::Save_Node();
 	SaveJsonEnum(j, "MOVE", m_eMove);
+	SaveJsonValue(j, "Loop", m_bLoop);
 
+	SaveJsonValue(j, "BBValue", m_bBBValue);
 	return j;
 }
 
@@ -48,6 +50,9 @@ HRESULT CBTNaviMove::Load_json(const nlohmann::json& j)
 {
 	__super::Load_json(j);
 	LoadJsonEnum(j, "MOVE", m_eMove);
+	LoadJsonValue(j, "Loop", m_bLoop);
+
+	LoadJsonValue(j, "BBValue", m_bBBValue);
 	return S_OK;
 }
 
@@ -85,7 +90,9 @@ EVALUATE CBTNaviMove::Evaluate(_float fTimeDelta)
 	if (m_iNaviPathIndex >= m_NaviPath.size())
 	{
 		// 다음 진입에는 반대편으로 이동
-		m_bMoveToEnd = !m_bMoveToEnd;
+		if(m_bLoop)
+			m_bMoveToEnd = !m_bMoveToEnd;
+		
 		return m_eDebug = EVALUATE::SUCCESS;
 	}
 
@@ -140,7 +147,7 @@ EVALUATE CBTNaviMove::Evaluate(_float fTimeDelta)
 		XMVector3Normalize(pOwner->GetTransform().GetState(STATE::LOOK)), vCurrentPos,
 		std::max(1.f, m_Value.fSpeed * 0.4f));
 
-	if (false)
+	if (bSweep && m_bLoop)
 	{
 		//뭐 부딪히면 45도 돌리고
 		_vector vAvoidDir = XMVector3Normalize(XMVector3TransformNormal(vMoveDirection, XMMatrixRotationY(
@@ -201,6 +208,12 @@ void CBTNaviMove::Update_Gui()
 {
 	ImGui::Text("Speed");
 	ImGui::DragFloat("##Speed", &m_Value.fSpeed, 0.1f, 0.f, 100.f);
+
+	if (ImGui::Button(m_bLoop == true ? "Loop : TRUE" : "Loop : FALSE"))
+		m_bLoop = !m_bLoop;
+
+	if (ImGui::Button(m_bBBValue == true ? "BBValue : TRUE" : "BBValue : FALSE"))
+		m_bBBValue = !m_bBBValue;
 }
 
 void CBTNaviMove::Abort()
@@ -223,20 +236,45 @@ void CBTNaviMove::OnEnter()
 	auto* pOwner = pBT->GetGameObject();
 
 	if (nullptr == pBB || nullptr == pOwner) return;
-	auto* pvStart = pBB->Get_Value<_float3>(NPC_KEY::STARTPOS);
-	auto* pvEnd = pBB->Get_Value<_float3>(NPC_KEY::ENDPOS);
-
-	if (nullptr == pvStart || nullptr == pvEnd) 	return;
 
 	auto* pNavMesh = CGameInstance::Get().GetNavMeshManager();
 	if (nullptr == pNavMesh) return;
 
 	// 시작 위치는 지정된 Start가 아니라 현재 NPC 위치를 사용
 	_float3 vCurrentPosition = pOwner->GetTransform().GetPosition();
-	_float3& vDestination = m_bMoveToEnd ? *pvEnd : *pvStart;
+	
+	
+	if (m_bLoop)
+	{
+		auto* pvStart = pBB->Get_Value<_float3>(NPC_KEY::STARTPOS);
+		auto* pvEnd = pBB->Get_Value<_float3>(NPC_KEY::ENDPOS);
 
-	pNavMesh->FindPathCenter(vCurrentPosition, vDestination, m_NaviPath);
+		if (nullptr == pvStart || nullptr == pvEnd) 	return;
+		_float3& vDestination = m_bMoveToEnd ? *pvEnd : *pvStart;
+		pNavMesh->FindPathCenter(vCurrentPosition, vDestination, m_NaviPath);
+	}
+	else
+	{
+		auto* pBB = pBT->Get_Blackboard();
+		if (pBB)
+		{
+			auto* pTargetHandle = pBB->Get_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE);
+			if (pTargetHandle)
+			{
+				auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(*pTargetHandle);
+				if (pTarget)
+				{
+					auto& TargetTransform = pTarget->GetTransform();
+					pNavMesh->FindPathCenter(vCurrentPosition, TargetTransform.GetPosition(), m_NaviPath);
+				}
+				
+			}
+			
+		}
+	}
+		
 	XMStoreFloat3(&m_vLastDir, pOwner->GetTransform().GetState(STATE::LOOK));
+	BBValue(pBB);
 }
 void CBTNaviMove::OnExit(EVALUATE eResult)
 {
@@ -244,6 +282,15 @@ void CBTNaviMove::OnExit(EVALUATE eResult)
 
 	m_NaviPath.clear();
 	m_iNaviPathIndex = 0;
+}
+void CBTNaviMove::BBValue(CBTBlackBoard* pBB)
+{
+	if (!m_bBBValue)
+		return;
+
+	auto* pSpeed = pBB->Get_Value<_float>(NPC_KEY::SPEED);
+	if (nullptr == pSpeed) return;
+	m_Value.fSpeed = *pSpeed;
 }
 _bool CBTNaviMove::Sweep(_vector vNextDir, _vector vCurDir, _float3 vCurPos, _float fDist)
 {

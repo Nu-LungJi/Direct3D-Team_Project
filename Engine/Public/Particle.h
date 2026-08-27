@@ -30,6 +30,7 @@ public:
 		BEHAVIOR_FADEOUT				= 1 << 13,
 		BEHAVIOR_FADEOUT_LATE			= 1 << 14,
 		BEHAVIOR_ORBIT					= 1 << 15,
+		BEHAVIOR_SPIRAL					= 1 << 16,
 	};
 
 protected:

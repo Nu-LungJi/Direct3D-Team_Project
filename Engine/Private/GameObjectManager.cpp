@@ -3,7 +3,6 @@
 #include "GameInstance.h"
 #include "GameObject.h"
 //#include "Helper.h"
-#include "MyTreeNode.h"
 
 NS_USING(Engine)
 
@@ -25,6 +24,27 @@ void CGameObjectManager::UpdateGUI()
 	ImGui::Checkbox(
 		"Tracy Detailed Object Profiling",
 		&m_bTracyDetailedObjectProfiling);
+
+	if (ImGui::TreeNodeEx(
+		"Managed Update Loop Counts",
+		ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		// 마지막 update view 재구축 때 마스크로 분류된 후보 수다.
+		// PendingDestroy/ManagedUpdateEnabled는 dispatch 직전에 거르므로 실제 호출 횟수와는 다를 수 있다.
+		const size_t iRegisteredObjectCount = std::count_if(
+			m_Objects.begin(),
+			m_Objects.end(),
+			[](const CSlot<CGameObject>& Slot)
+			{
+				return Slot.IsOccupied();
+			});
+		ImGui::Text("Priority Update: %zu / %zu", m_PriorityUpdateObjects.size(), iRegisteredObjectCount);
+		ImGui::Text("Fixed Update: %zu / %zu", m_FixedUpdateObjects.size(), iRegisteredObjectCount);
+		ImGui::Text("Update: %zu / %zu", m_UpdateObjects.size(), iRegisteredObjectCount);
+		ImGui::Text("Late Update: %zu / %zu", m_LateUpdateObjects.size(), iRegisteredObjectCount);
+		ImGui::TextDisabled("Configured loop candidates / registered objects");
+		ImGui::TreePop();
+	}
 	ImGui::Separator();
 
 	std::vector<uint32_t> vecFreeSlotReferences(m_Objects.size(), 0);
@@ -234,6 +254,8 @@ void CGameObjectManager::UpdateGUI()
 
 	if (ImGui::TreeNode(sLayersLabel.c_str()))
 	{
+		std::optional<std::string> sLayerToDelete{};
+
 		ImGui::Checkbox("Enable Search Input##Layers", &m_bGUIEnableSearchInput);
 		ImGui::SetNextItemWidth(-1);
 		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !m_bGUIEnableSearchInput);
@@ -278,7 +300,7 @@ void CGameObjectManager::UpdateGUI()
 				}
 			}
 
-			if (bLayerFilterActive && iMatchedItemCount == 0)
+			if (bLayerFilterActive && iMatchedItemCount == 0 && !bLayerNameMatched)
 				continue;
 
 			std::string sLayerLabel = sLayerName + " (";
@@ -293,7 +315,16 @@ void CGameObjectManager::UpdateGUI()
 			}
 			sLayerLabel += ")###Layer_" + sLayerName;
 
-			if (ImGui::TreeNode(sLayerLabel.c_str()))
+			ImGui::PushID(sLayerName.c_str());
+			if (ImGui::SmallButton("Delete Layer"))
+			{
+				sLayerToDelete = sLayerName;
+			}
+			ImGui::PopID();
+			ImGui::SameLine();
+			const bool bLayerOpened = ImGui::TreeNode(sLayerLabel.c_str());
+
+			if (bLayerOpened)
 			{
 				for (const auto& handle : vecHandles)
 				{
@@ -344,30 +375,10 @@ void CGameObjectManager::UpdateGUI()
 			}
 		}
 
-		ImGui::TreePop();
-	}
-
-	if (ImGui::TreeNode("Tree"))
-	{
-		ImGui::Checkbox("Enable Search Input##Tree", &m_bGUIEnableSearchInput);
-		ImGui::SetNextItemWidth(-1);
-		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, !m_bGUIEnableSearchInput);
-		ImGui::PushStyleVar(
-			ImGuiStyleVar_Alpha,
-			m_bGUIEnableSearchInput ? ImGui::GetStyle().Alpha :
-			ImGui::GetStyle().Alpha * 0.5f);
-		ImGui::InputTextWithHint(
-			"##search",
-			"Search...",
-			m_GUISearchFilter,
-			sizeof(m_GUISearchFilter));
-		ImGui::PopStyleVar();
-		ImGui::PopItemFlag();
-		ImGui::Separator();
-
-		for (const auto& rootHandle : m_TreePreparation)
+		// 레이어 컨테이너를 순회하는 동안에는 삭제하지 않고, GUI 그리기가 끝난 뒤 처리한다.
+		if (sLayerToDelete)
 		{
-			UpdateGUIDrawTreeNode(rootHandle);
+			DelLayer(*sLayerToDelete);
 		}
 
 		ImGui::TreePop();
@@ -432,143 +443,90 @@ std::string CGameObjectManager::GetInvalidLayerHandleDebugText(const CHandle& ha
 	return sText;
 }
 
-bool CGameObjectManager::MatchesFilter(CGameObject* pObj) const
-{
-	if (!m_bGUIEnableSearchInput || m_GUISearchFilter[0] == '\0')
-		return true;
-
-	const std::string label = GetGameObjectDebugLabel(pObj);
-
-	std::string labelLower = label;
-	std::string filterLower = m_GUISearchFilter;
-	std::transform(labelLower.begin(), labelLower.end(), labelLower.begin(), ::tolower);
-	std::transform(filterLower.begin(), filterLower.end(), filterLower.begin(), ::tolower);
-
-	if (labelLower.find(filterLower) != std::string::npos)
-		return true;
-
-	for (const auto& pChild : pObj->GetChildrenNode())
-	{
-		if (MatchesFilter(pChild))
-			return true;
-	}
-
-	return false;
-}
-
-void CGameObjectManager::UpdateGUIDrawTreeNode(CGameObject* pObj)
-{
-	const CHandle handle = pObj->GetHandle();
-	std::string label = GetGameObjectDebugLabel(pObj);
-	label += "###TreeObject_" + std::to_string(handle.GetIndex()) + "_" +
-		std::to_string(handle.GetGeneration());
-
-	if (m_bGUIEnableSearchInput &&
-		m_GUISearchFilter[0] != '\0' && !MatchesFilter(pObj))
-		return;
-
-	const bool bManagedUpdateDisabled = !pObj->IsManagedUpdateEnabled();
-	if (bManagedUpdateDisabled)
-		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
-
-	const bool bObjectOpened = ImGui::TreeNode(label.c_str());
-
-	if (bManagedUpdateDisabled)
-		ImGui::PopStyleColor();
-
-	if (bObjectOpened)
-	{
-		pObj->UpdateGUI();
-
-		if (!pObj->GetChildrenNode().empty())
-		{
-			if (ImGui::TreeNode("Childrens"))
-			{
-				for (const auto& pChild : pObj->GetChildrenNode())
-				{
-					UpdateGUIDrawTreeNode(pChild);
-				}
-
-				ImGui::TreePop();
-			}
-		}
-
-		ImGui::TreePop();
-	}
-}
-
 void CGameObjectManager::FrameStart()
 {
 	ZoneScopedN("CGameObjectManager_FrameStart");
 
-	if (!m_bTreeReBuild)
+	// 객체 추가·삭제로 등록 목록이 바뀐 경우에만 단계별 view를 갱신한다.
+	if (!m_bUpdateViewsDirty)
 	{
 		return;
 	}
 
 	{
-		ZoneScopedN("CGameObjectManager_RebuildTree");
+		ZoneScopedN("CGameObjectManager_RebuildUpdateViews");
 
-		m_TreePreparation.clear();
+		m_PriorityUpdateObjects.clear();
+		m_FixedUpdateObjects.clear();
+		m_UpdateObjects.clear();
+		m_LateUpdateObjects.clear();
+
+		constexpr uint8_t iPriorityMask =
+			static_cast<uint8_t>(GAMEOBJECT_UPDATE_LOOP::PRIORITY);
+		constexpr uint8_t iFixedMask =
+			static_cast<uint8_t>(GAMEOBJECT_UPDATE_LOOP::FIXED);
+		constexpr uint8_t iUpdateMask =
+			static_cast<uint8_t>(GAMEOBJECT_UPDATE_LOOP::UPDATE);
+		constexpr uint8_t iLateMask =
+			static_cast<uint8_t>(GAMEOBJECT_UPDATE_LOOP::LATE);
+
+		// 정렬된 레이어와 레이어 내부 Handle 순서를 유지하면서 각 단계의 비소유 포인터 view를 만든다.
+		// 이후 hot loop는 전체 객체의 마스크를 매번 검사하거나 빈 가상 함수를 호출하지 않는다.
 		for (const auto& [_, Layer] : m_Layers)
 		{
-			for (const auto& handle : Layer)
+			for (const CHandle& hObject : Layer)
 			{
-				if (auto* pObj = GetGameObjectByHandle(handle))
-				{
-					if (!pObj->GetParentNode())
-					{
-						m_TreePreparation.push_back(pObj);
-					}
-				}
-			}
-		}
+				CGameObject* pObject = GetGameObjectByHandle(hObject);
+				if (pObject == nullptr)
+					continue;
 
-		m_Tree.clear();
-		for (const auto& pRootObj : m_TreePreparation)
-		{
-			MyTreeDFS(pRootObj, [&](auto pObj) {m_Tree.push_back(pObj); }, &m_DFSReserved);
+				const uint8_t iUpdateLoopMask =
+					static_cast<uint8_t>(pObject->GetUpdateLoopMask());
+
+				if ((iUpdateLoopMask & iPriorityMask) != 0)
+					m_PriorityUpdateObjects.push_back(pObject);
+				if ((iUpdateLoopMask & iFixedMask) != 0)
+					m_FixedUpdateObjects.push_back(pObject);
+				if ((iUpdateLoopMask & iUpdateMask) != 0)
+					m_UpdateObjects.push_back(pObject);
+				if ((iUpdateLoopMask & iLateMask) != 0)
+					m_LateUpdateObjects.push_back(pObject);
+			}
 		}
 	}
 
-	m_bTreeReBuild = false;
+	m_bUpdateViewsDirty = false;
 }
 
 void CGameObjectManager::FrameEnd()
 {
 	ZoneScopedN("CGameObjectManager_FrameEnd");
+
+	// 파괴/레이어 리셋 요청이 없는 일반 프레임은 컨테이너를 전혀 순회하지 않는다.
+	if (!m_bBatchResetPending && m_PendingDestroyHandles.empty())
+		return;
+
 	const _bool bProcessBatchReset = m_bBatchResetPending;
 	std::unordered_set<std::string> resetTargetLayers{};
 	if (bProcessBatchReset)
 	{
-		// [LSY] 이번 FrameEnd에서 처리할 요청을 분리해 이후 새로 들어오는 요청과 섞이지 않게 한다.
+		// 이번 FrameEnd가 책임질 레이어 이름을 떼어낸다.
+		// 파괴 중 새 reset 요청이 들어오면 새 집합에 쌓여 다음 FrameEnd에서 레이어 컨테이너까지 정리된다.
 		m_bBatchResetPending = false;
 		resetTargetLayers = std::move(m_PendingResetTargetLayers);
 		m_PendingResetTargetLayers.clear();
 	}
 
-	_bool bAnyObjectDestroyed{};
-	if (bProcessBatchReset)
-	{
-		ZoneScopedN("CGameObjectManager_DestroyAllPendingObjects");
-		bAnyObjectDestroyed = DestroyAllPendingObjects();
-	}
-	else
-	{
-		ZoneScopedN("CGameObjectManager_DestroyPendingObjectsInTree");
-		bAnyObjectDestroyed = DestroyPendingObjectsInTree();
-	}
+	// 실제 슬롯 파괴와 각 레이어의 Handle 제거는 모든 update 단계가 끝난 이 시점에만 수행한다.
+	const _bool bAnyObjectDestroyed = DestroyQueuedPendingObjects();
 
 	if (bAnyObjectDestroyed)
 	{
-		m_bTreeReBuild = true;
+		// 단계별 view에는 비소유 raw pointer가 있으므로 다음 FrameStart 전에 반드시 다시 만든다.
+		m_bUpdateViewsDirty = true;
 	}
 
-	if (bAnyObjectDestroyed || bProcessBatchReset)
-	{
-		RemoveInvalidLayerHandles();
-	}
-
+	// 일반 개별 파괴는 빈 레이어 이름을 유지한다. 명시적 reset/del 대상 레이어만 비었을 때 제거한다.
 	if (bProcessBatchReset &&
 		RemoveEmptyResetTargetLayers(resetTargetLayers))
 	{
@@ -576,28 +534,41 @@ void CGameObjectManager::FrameEnd()
 	}
 }
 
-std::optional<CHandle> CGameObjectManager::GetFreeHandle() 
+std::optional<CHandle> CGameObjectManager::AllocateHandleSlot()
 {
+	// slot index를 공유하는 병렬 메타데이터는 항상 m_Objects와 같은 길이여야 한다.
+	assert(m_Objects.size() == m_ObjectLayerLocations.size());
+	assert(m_Objects.size() == m_PendingLayerRemoveGenerationKeys.size());
+
 	CHandle objectHandle{};
 	if (m_FreeSlots.empty())
 	{
+		// 새 slot을 만들 때 위치 캐시와 삭제 표식도 같은 인덱스로 동시에 확장한다.
 		size_t idx = m_Objects.size();
 		uint32_t gen = 0;
 
 		objectHandle = CHandle{ idx, gen };
 		m_Objects.push_back({});
+		m_ObjectLayerLocations.push_back({});
+		m_PendingLayerRemoveGenerationKeys.push_back(0);
 		//m_FreeSlots.push_back(idx);
 	}
 	else
 	{
+		// CSlot::Reset이 증가시킨 현재 generation으로 Handle을 만들고 이전 사용의 scratch를 지운다.
 		size_t emptyIdx = m_FreeSlots.back();
 		m_FreeSlots.pop_back();
 
 		size_t idx = emptyIdx;
 		uint32_t gen = m_Objects[emptyIdx].GetGeneration();
 
+		m_ObjectLayerLocations[emptyIdx] = {};
+		m_PendingLayerRemoveGenerationKeys[emptyIdx] = 0;
 		objectHandle = CHandle{ idx, gen };
 	}
+
+	assert(m_Objects.size() == m_ObjectLayerLocations.size());
+	assert(m_Objects.size() == m_PendingLayerRemoveGenerationKeys.size());
 	return objectHandle;
 }
 
@@ -611,7 +582,7 @@ std::optional<CHandle> CGameObjectManager::AddGameObjectToLayer(const StringID& 
 		bTracyConnected);
 
 	auto pDesc = static_cast<CGameObject::GAMEOBJECT_DESC*>(pArg);
-	auto allocHandle = GetFreeHandle();
+	auto allocHandle = AllocateHandleSlot();
 	if (!allocHandle)
 	{
 		return std::nullopt;
@@ -647,77 +618,42 @@ std::optional<CHandle> CGameObjectManager::AddGameObjectToLayer(const StringID& 
 	auto lookupIter = m_LookupLayers.find(sLayerName);
 	if (lookupIter == m_LookupLayers.end())
 	{
+		// 새 레이어 추가는 외부 vector 정렬을 일으키므로 모든 layer index 위치표를 다시 만든다.
 		m_Layers.push_back({ std::string{sLayerName}, {objHandle} });
 		SortLayer();
 	}
 	else
 	{
-		m_Layers[lookupIter->second].second.push_back(objHandle);
+		// 기존 레이어의 뒤에 추가되는 경우에는 새 객체 한 개의 위치만 O(1)로 기록한다.
+		const size_t iLayerIndex = lookupIter->second;
+		auto& LayerHandles = m_Layers[iLayerIndex].second;
+		const size_t iHandleIndex = LayerHandles.size();
+		LayerHandles.push_back(objHandle);
+		SetObjectLayerLocation(objHandle, iLayerIndex, iHandleIndex);
 	}
 
-	m_bTreeReBuild = true;
+	// 복사 생성자/Initialize 중에도 삭제가 예약될 수 있다. 그 시점에는 아직 slot 등록 전이므로
+	// 유효한 실제 Handle 요청이 큐에 없을 수 있어 등록 완료 후 정확한 Handle을 한 번 보장한다.
+	if (pRegisteredObject->GetPendingDestroy() &&
+		std::find(
+			m_PendingDestroyHandles.begin(),
+			m_PendingDestroyHandles.end(),
+			objHandle) == m_PendingDestroyHandles.end())
+	{
+		QueuePendingDestroy(objHandle);
+	}
 
-	// [LSY] 슬롯과 레이어 등록을 모두 마친 뒤 호출하여, 객체가 자기 Handle과 레이어를 안전하게 조회할 수 있게 한다.
+	m_bUpdateViewsDirty = true;
+
+	// 슬롯과 레이어 등록을 모두 마친 뒤 호출하여, 객체가 자기 Handle과 레이어를 안전하게 조회할 수 있게 한다.
 	pRegisteredObject->OnRegisteredToManager();
 
 	return objHandle;
 }
-
-
-std::optional<CHandle> CGameObjectManager::GetHandleByGameObject(CGameObject* pObj) const
-{
-	uint32_t i{};
-	for (i = 0; i < m_Objects.size(); ++i)
-	{
-		if (m_Objects[i].Get() == pObj)
-		{
-			break;
-		}
-	}
-
-	if (i == m_Objects.size() - 1)
-	{
-		return std::nullopt;
-	}
-
-	return CHandle{ i, m_Objects[i].GetGeneration() };
-}
-
-_bool CGameObjectManager::SetGameObjectParent(
-	const CHandle& hChild,
-	const std::optional<CHandle>& hParent)
-{
-	CGameObject* pChild = GetGameObjectByHandle(hChild);
-	if (!pChild || pChild->GetPendingDestroy())
-		return false;
-
-	CGameObject* pParent = nullptr;
-	if (hParent)
-	{
-		pParent = GetGameObjectByHandle(*hParent);
-		if (!pParent || pParent->GetPendingDestroy() || pParent == pChild)
-			return false;
-
-		// [LSY] 새 부모의 상위 경로에 자식이 있으면 순환 트리가 되므로 거부한다.
-		for (CGameObject* pNode = pParent;
-			pNode;
-			pNode = pNode->GetParentNode())
-		{
-			if (pNode == pChild)
-				return false;
-		}
-	}
-
-	if (pChild->GetParentNode() == pParent)
-		return true;
-
-	pChild->SetParentNode(pParent);
-	m_bTreeReBuild = true;
-	return true;
-}
-
 void CGameObjectManager::SortLayer()
 {
+	// 레이어 이름 정렬은 바깥 vector의 index를 바꾸므로 lookup과 모든 slot 위치표를 함께 재구축한다.
+	// 레이어 내부 Handle의 상대 순서는 유지하고, 남아 있을 수 있는 stale Handle만 방어적으로 제거한다.
 	std::sort(m_Layers.begin(), m_Layers.end(),
 		[](const std::pair<std::string, std::vector<CHandle>>& a,
 			const std::pair<std::string, std::vector<CHandle>>& b) {
@@ -726,11 +662,180 @@ void CGameObjectManager::SortLayer()
 
 	m_LookupLayers.clear();
 	m_LookupLayers.reserve(m_Layers.size());
+	std::fill(
+		m_ObjectLayerLocations.begin(),
+		m_ObjectLayerLocations.end(),
+		OBJECT_LAYER_LOCATION{});
 
-	for (size_t i = 0; i < m_Layers.size(); ++i)
+	for (size_t iLayerIndex = 0;
+		iLayerIndex < m_Layers.size();
+		++iLayerIndex)
 	{
-		m_LookupLayers.emplace(m_Layers[i].first, i);
+		auto& [sLayerName, LayerHandles] = m_Layers[iLayerIndex];
+		std::erase_if(
+			LayerHandles,
+			[this](const CHandle& hObject)
+			{
+				return GetGameObjectByHandle(hObject) == nullptr;
+			});
+		m_LookupLayers.emplace(sLayerName, iLayerIndex);
+
+		for (size_t iHandleIndex = 0;
+			iHandleIndex < LayerHandles.size();
+			++iHandleIndex)
+		{
+			SetObjectLayerLocation(
+				LayerHandles[iHandleIndex],
+				iLayerIndex,
+				iHandleIndex);
+		}
 	}
+}
+
+void CGameObjectManager::SetObjectLayerLocation(
+	const CHandle& hObject,
+	size_t iLayerIndex,
+	size_t iHandleIndex)
+{
+	// slot index로 직접 접근하되 generation도 함께 저장하여 같은 slot의 이전 객체와 구분한다.
+	if (hObject.GetIndex() >= m_ObjectLayerLocations.size())
+		return;
+
+	m_ObjectLayerLocations[hObject.GetIndex()] = {
+		iLayerIndex,
+		iHandleIndex,
+		hObject.GetGeneration()
+	};
+}
+
+_bool CGameObjectManager::FindObjectLayerIndex(
+	const CHandle& hObject,
+	size_t& iOutLayerIndex) const
+{
+	// 정상 경로는 slot index 한 번으로 위치를 얻고, 외부/내부 index와 실제 Handle까지 검증한다.
+	if (hObject.GetIndex() < m_ObjectLayerLocations.size())
+	{
+		const auto& Location =
+			m_ObjectLayerLocations[hObject.GetIndex()];
+		if (Location.Matches(hObject) &&
+			Location.iLayerIndex < m_Layers.size())
+		{
+			const auto& LayerHandles =
+				m_Layers[Location.iLayerIndex].second;
+			if (Location.iHandleIndex < LayerHandles.size() &&
+				LayerHandles[Location.iHandleIndex] == hObject)
+			{
+				iOutLayerIndex = Location.iLayerIndex;
+				return true;
+			}
+		}
+	}
+
+	// 위치표가 어긋난 경우에만 삭제를 놓치지 않도록 전체 레이어를 fallback 탐색한다.
+	// 찾은 레이어는 이어지는 안정 압축 후 생존 Handle을 재색인하면서 위치표도 복구된다.
+	for (size_t iLayerIndex = 0;
+		iLayerIndex < m_Layers.size();
+		++iLayerIndex)
+	{
+		const auto& LayerHandles = m_Layers[iLayerIndex].second;
+		const auto Iter = std::find(
+			LayerHandles.begin(),
+			LayerHandles.end(),
+			hObject);
+		if (Iter == LayerHandles.end())
+			continue;
+
+		iOutLayerIndex = iLayerIndex;
+		return true;
+	}
+
+	return false;
+}
+
+void CGameObjectManager::RemovePendingObjectsFromLayers()
+{
+	// 정상 삭제 비용을 모든 레이어 전체 스캔이 아니라
+	// 삭제 요청 수 + 영향받은 레이어들의 Handle 수 합으로 제한하는 배치 정리 단계다.
+	m_AffectedLayerIndices.clear();
+	m_AffectedLayerIndices.reserve(m_ProcessingDestroyHandles.size());
+
+	// 1) 삭제할 Handle의 정확한 generation을 slot marker에 기록하고 영향 레이어만 수집한다.
+	for (const CHandle& hObject : m_ProcessingDestroyHandles)
+	{
+		size_t iLayerIndex{};
+		if (!FindObjectLayerIndex(
+			hObject,
+			iLayerIndex))
+			continue;
+
+		m_PendingLayerRemoveGenerationKeys[hObject.GetIndex()] =
+			static_cast<uint64_t>(hObject.GetGeneration()) + 1;
+		m_AffectedLayerIndices.push_back(iLayerIndex);
+	}
+
+	// 2) 같은 레이어에서 여러 객체가 삭제돼도 해당 레이어를 이번 묶음에서 한 번만 순회한다.
+	std::sort(
+		m_AffectedLayerIndices.begin(),
+		m_AffectedLayerIndices.end());
+	m_AffectedLayerIndices.erase(
+		std::unique(
+			m_AffectedLayerIndices.begin(),
+			m_AffectedLayerIndices.end()),
+		m_AffectedLayerIndices.end());
+
+	// 3) swap-pop을 쓰지 않고 안정 압축하여 front()/rbegin() 사용처가 보는 기존 삽입 순서를 보존한다.
+	for (const size_t iLayerIndex : m_AffectedLayerIndices)
+	{
+		if (iLayerIndex >= m_Layers.size())
+			continue;
+
+		auto& LayerHandles = m_Layers[iLayerIndex].second;
+		std::erase_if(
+			LayerHandles,
+			[this](const CHandle& hObject)
+			{
+				if (hObject.GetIndex() >=
+					m_PendingLayerRemoveGenerationKeys.size() ||
+					hObject.GetIndex() >= m_ObjectLayerLocations.size() ||
+					m_PendingLayerRemoveGenerationKeys[hObject.GetIndex()] !=
+						static_cast<uint64_t>(hObject.GetGeneration()) + 1)
+				{
+					return false;
+				}
+
+				m_ObjectLayerLocations[hObject.GetIndex()] = {};
+				return true;
+			});
+
+		// 4) 압축으로 내부 index가 이동한 모든 생존 Handle의 위치 캐시를 다시 기록한다.
+		for (size_t iHandleIndex = 0;
+			iHandleIndex < LayerHandles.size();
+			++iHandleIndex)
+		{
+			SetObjectLayerLocation(
+				LayerHandles[iHandleIndex],
+				iLayerIndex,
+				iHandleIndex);
+		}
+	}
+
+	// marker는 이번 묶음에만 유효하므로 처리한 generation만 0으로 되돌린다.
+	for (const CHandle& hObject : m_ProcessingDestroyHandles)
+	{
+		if (hObject.GetIndex() >=
+			m_PendingLayerRemoveGenerationKeys.size())
+			continue;
+
+		auto& iGenerationKey = m_PendingLayerRemoveGenerationKeys[
+			hObject.GetIndex()];
+		if (iGenerationKey ==
+			static_cast<uint64_t>(hObject.GetGeneration()) + 1)
+		{
+			iGenerationKey = 0;
+		}
+	}
+
+	m_AffectedLayerIndices.clear();
 }
 
 const std::vector<CHandle>* CGameObjectManager::GetLayer(std::string_view sLayerName) const
@@ -759,23 +864,35 @@ const std::vector<CHandle>* CGameObjectManager::GetLayer(std::string_view sLayer
 
 void CGameObjectManager::DelLayer(std::string_view sLayerName)
 {
-	auto iter = m_LookupLayers.find(sLayerName);
-	if (iter == m_LookupLayers.end())
-	{
+	const auto LayerIter = m_LookupLayers.find(sLayerName);
+	if (LayerIter == m_LookupLayers.end())
 		return;
-	}
-	for (const auto& handle : m_Layers[iter->second].second)
-	{
-		if (auto pObj = GetGameObjectByHandle(handle))
-		{
-			pObj->SetPendingDestroy();
-		}
-	}
-	m_Layers[iter->second].second.clear();
+	const size_t iLayerIndex = LayerIter->second;
 
-	SortLayer();
+	// 슬롯 파괴는 FrameEnd로 미루되 레이어에서는 즉시 분리한다.
+	// MapManager처럼 DelLayer 직후 같은 호출 스택에서 새 데이터를 구성·저장하는 사용처가
+	// PendingDestroy 상태인 이전 객체를 다시 읽지 않도록 기존 동기식 논리 삭제 의미를 유지한다.
+	const std::array<std::string_view, 1> layerNames{ sLayerName };
+	RequestResetByLayers(layerNames, RESET_LAYER_MODE::INCLUDE_ONLY);
+
+	auto& LayerHandles = m_Layers[iLayerIndex].second;
+	for (const CHandle& hObject : LayerHandles)
+	{
+		if (CGameObject* pObject = GetGameObjectByHandle(hObject))
+			pObject->CommitPendingDestroy();
+
+		if (hObject.GetIndex() >= m_ObjectLayerLocations.size())
+			continue;
+
+		auto& Location = m_ObjectLayerLocations[hObject.GetIndex()];
+		if (Location.Matches(hObject))
+			Location = {};
+	}
+	LayerHandles.clear();
 }
 
+// 아래 네 dispatch는 FrameStart에서 마스크로 이미 필터링된 view만 순회한다.
+// PendingDestroy/ManagedUpdateEnabled와 TimeDomain은 프레임 중 바뀔 수 있어 호출 직전에 판정한다.
 void CGameObjectManager::FixedUpdate(
 	_float fScaledDelta,
 	_float fUnscaledDelta)
@@ -784,7 +901,7 @@ void CGameObjectManager::FixedUpdate(
 	const _bool bTraceObjects =
 		m_bTracyDetailedObjectProfiling && TracyIsConnected;
 
-	for (auto& pObj : m_Tree)
+	for (CGameObject* pObj : m_FixedUpdateObjects)
 	{
 		if (!pObj->GetPendingDestroy() &&
 			pObj->IsManagedUpdateEnabled())
@@ -813,7 +930,7 @@ void CGameObjectManager::PriorityUpdate(
 	const _bool bTraceObjects =
 		m_bTracyDetailedObjectProfiling && TracyIsConnected;
 
-	for (auto& pObj : m_Tree)
+	for (CGameObject* pObj : m_PriorityUpdateObjects)
 	{
 		if (!pObj->GetPendingDestroy() &&
 			pObj->IsManagedUpdateEnabled())
@@ -842,7 +959,7 @@ void CGameObjectManager::Update(
 	const _bool bTraceObjects =
 		m_bTracyDetailedObjectProfiling && TracyIsConnected;
 
-	for (auto& pObj : m_Tree)
+	for (CGameObject* pObj : m_UpdateObjects)
 	{
 		if (!pObj->GetPendingDestroy() &&
 			pObj->IsManagedUpdateEnabled())
@@ -871,7 +988,7 @@ void CGameObjectManager::LateUpdate(
 	const _bool bTraceObjects =
 		m_bTracyDetailedObjectProfiling && TracyIsConnected;
 
-	for (auto& pObj : m_Tree)
+	for (CGameObject* pObj : m_LateUpdateObjects)
 	{
 		if (!pObj->GetPendingDestroy() &&
 			pObj->IsManagedUpdateEnabled())
@@ -894,9 +1011,15 @@ void CGameObjectManager::LateUpdate(
 
 HRESULT CGameObjectManager::Initialize()
 {
-	m_DFSReserved.reserve(100);
-	m_TreePreparation.reserve(100);
-	m_Tree.reserve(100);
+	m_PriorityUpdateObjects.reserve(100);
+	m_FixedUpdateObjects.reserve(100);
+	m_UpdateObjects.reserve(100);
+	m_LateUpdateObjects.reserve(100);
+	m_PendingDestroyHandles.reserve(100);
+	m_ProcessingDestroyHandles.reserve(100);
+	m_ObjectLayerLocations.reserve(100);
+	m_PendingLayerRemoveGenerationKeys.reserve(100);
+	m_AffectedLayerIndices.reserve(100);
 	return S_OK;
 }
 
@@ -911,10 +1034,9 @@ UPtr<CGameObjectManager> CGameObjectManager::Create()
 	return pInstance;
 }
 
-// 이거 먼저 호출해주어야함
-// 왜냐면 매니저가 지워지면서 오브젝트들지워주는데
-// 지우는 과정에서 매니저 호출하는데 매니저가 없어서 크래시남
-// 그래서 지우기 전에 먼저 이거 호출
+// 즉시 해제하지 않고 모든 객체를 PendingDestroy로 예약한다.
+// 엔진 종료 시에도 Manager가 살아 있는 상태에서 이어서 FrameEnd를 호출해야
+// 객체 소멸자의 Manager 재진입과 추가 삭제 요청을 안전하게 끝낼 수 있다.
 void CGameObjectManager::AllReset()
 {
 	RequestResetByLayers({}, RESET_LAYER_MODE::EXCLUDE);
@@ -938,11 +1060,11 @@ size_t CGameObjectManager::RequestResetByLayers(
 {
 	ZoneScopedN("CGameObjectManager_RequestResetByLayers");
 
-	// [LSY] 전달받은 레이어와 그 레이어가 소유한 유효 오브젝트 슬롯을 빠르게 판별하기 위한 표식이다.
+	// 전달받은 레이어와 그 레이어가 소유한 유효 오브젝트 슬롯을 빠르게 판별하기 위한 표식이다.
 	std::vector<uint8_t> matchedSlots(m_Objects.size(), 0);
 	std::vector<uint8_t> matchedLayers(m_Layers.size(), 0);
 
-	// [LSY] 존재하는 레이어만 찾고, 세대까지 유효한 핸들의 슬롯만 제거 후보로 표시한다.
+	// 존재하는 레이어만 찾고, 세대까지 유효한 Handle의 slot만 제거 후보로 표시한다.
 	for (const std::string_view layerName : layerNames)
 	{
 		const auto layerIter = m_LookupLayers.find(layerName);
@@ -962,7 +1084,8 @@ size_t CGameObjectManager::RequestResetByLayers(
 		}
 	}
 
-	// [LSY] FrameEnd에서 비어 있을 때 제거할 실제 리셋 대상 레이어 이름을 보관한다.
+	// FrameEnd에서 비어 있을 때 제거할 실제 reset 대상 레이어 이름을 누적한다.
+	// 객체가 0개인 레이어도 DelLayer 요청이라면 제거해야 하므로 이름 자체를 별도로 기억한다.
 	_bool bHasResetTargetLayer = false;
 	for (size_t i = 0; i < m_Layers.size(); ++i)
 	{
@@ -978,7 +1101,7 @@ size_t CGameObjectManager::RequestResetByLayers(
 		}
 	}
 
-	// [LSY] 모드에 따라 선택된 오브젝트를 실제 삭제하지 않고 PendingDestroy 상태로 예약한다.
+	// 모드에 따라 선택된 객체를 실제 삭제하지 않고 PendingDestroy 상태로 예약한다.
 	size_t resetObjectCount{};
 	for (size_t i = 0; i < m_Objects.size(); ++i)
 	{
@@ -998,103 +1121,98 @@ size_t CGameObjectManager::RequestResetByLayers(
 		++resetObjectCount;
 	}
 
-	if (resetObjectCount > 0)
-	{
-		// [LSY] 런타임 업데이트 중 순회하고 있을 수 있는 기존 트리는 즉시 비우지 않는다.
-		// PendingDestroy 오브젝트는 후속 업데이트에서 제외하고, FrameEnd 삭제 후 다음 FrameStart에 재구성한다.
-		m_bTreeReBuild = true;
-	}
-
 	if (resetObjectCount > 0 || bHasResetTargetLayer)
 	{
+		// 여러 reset 요청은 FrameEnd 전까지 합쳐진다. 빈 대상 레이어만 있는 요청도 여기서 처리한다.
 		m_bBatchResetPending = true;
 	}
 
 	return resetObjectCount;
 }
 
-_bool CGameObjectManager::DestroyAllPendingObjects()
+void CGameObjectManager::QueuePendingDestroy(const CHandle& hObject)
 {
-	ZoneScopedN("CGameObjectManager_DestroyAllPendingObjectsInternal");
+	// enqueue는 선형 중복 검색 없이 O(1) append만 한다. 일반 중복은 GameObject의 상태 guard가 막고,
+	// 취소·stale generation·드문 중복 요청은 FrameEnd의 Handle 검증이 안전하게 걸러낸다.
+	m_PendingDestroyHandles.push_back(hObject);
+}
+
+_bool CGameObjectManager::DestroyQueuedPendingObjects()
+{
+	ZoneScopedN("CGameObjectManager_DestroyQueuedPendingObjects");
+
 	const _bool bTracyConnected =
 		m_bTracyDetailedObjectProfiling && TracyIsConnected;
 	_bool bAnyObjectDestroyed = false;
 
-	for (auto& slot : m_Objects)
+	// 소멸자가 새 삭제를 예약하면 Pending 큐에 들어가며 다음 wave에서 같은 FrameEnd 안에 계속 drain한다.
+	while (!m_PendingDestroyHandles.empty())
 	{
-		if (!slot.IsOccupied())
-			continue;
+		// 현재 wave를 snapshot으로 떼어내 순회 중 새 enqueue가 vector를 무효화하지 않게 한다.
+		m_ProcessingDestroyHandles.clear();
+		m_ProcessingDestroyHandles.swap(m_PendingDestroyHandles);
 
-		CGameObject* pObject = slot.Get();
-		if (!pObject->GetPendingDestroy())
-			continue;
+		// stale generation과 취소된 요청은 이 wave에서 제거한다.
+		// 남은 Handle의 상대 순서는 기존 요청 순서 그대로 유지한다.
+		std::erase_if(
+			m_ProcessingDestroyHandles,
+			[this](const CHandle& hObject)
+			{
+				const CGameObject* pObject = GetGameObjectByHandle(hObject);
+				return pObject == nullptr || !pObject->GetPendingDestroy();
+			});
 
-		ZoneNamedN(tObjectZone, "GameObject_Destroy", bTracyConnected);
-		if (bTracyConnected)
+		// 소멸자를 호출하기 전에 레이어에서 이번 wave의 Handle을 먼저 안정 압축한다.
+		// 이후 객체 Reset과 레이어 상태가 갈라지지 않도록 이 지점부터 삭제 배치는 확정된다.
+		RemovePendingObjectsFromLayers();
+
+		for (const CHandle& hObject : m_ProcessingDestroyHandles)
 		{
-			const std::string sDebugLabel = GetGameObjectDebugLabel(pObject);
-			ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
-		}
+			CGameObject* pObject = GetGameObjectByHandle(hObject);
+			// 이 배치에 들어온 순간 삭제는 확정됐다. 레이어 제거 뒤에는
+			// 소멸자 재진입으로 PendingDestroy가 바뀌어도 취소하지 않는다.
+			if (!pObject)
+				continue;
 
-		const CHandle hObject = pObject->GetHandle();
-		slot.Reset();
-		m_FreeSlots.push_back(hObject.GetIndex());
-		bAnyObjectDestroyed = true;
+			ZoneNamedN(tObjectZone, "GameObject_Destroy", bTracyConnected);
+			if (bTracyConnected)
+			{
+				const std::string sDebugLabel = GetGameObjectDebugLabel(pObject);
+				ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
+			}
+
+			// Reset은 객체를 소멸시키고 slot generation을 증가시킨다.
+			// 그 뒤에만 free list에 넣으므로 같은 wave의 중복/구세대 Handle은 다시 파괴할 수 없다.
+			m_Objects[hObject.GetIndex()].Reset();
+			m_FreeSlots.push_back(hObject.GetIndex());
+			bAnyObjectDestroyed = true;
+		}
 	}
+
+	m_ProcessingDestroyHandles.clear();
 
 	return bAnyObjectDestroyed;
-}
-
-_bool CGameObjectManager::DestroyPendingObjectsInTree()
-{
-	const _bool bTracyConnected =
-		m_bTracyDetailedObjectProfiling && TracyIsConnected;
-	_bool bAnyObjectDestroyed = false;
-
-	for (auto iter = m_Tree.rbegin(); iter != m_Tree.rend(); ++iter)
-	{
-		CGameObject* pObject = *iter;
-		if (!pObject->GetPendingDestroy())
-			continue;
-
-		ZoneNamedN(tObjectZone, "GameObject_Destroy", bTracyConnected);
-		if (bTracyConnected)
-		{
-			const std::string sDebugLabel = GetGameObjectDebugLabel(pObject);
-			ZoneNameV(tObjectZone, sDebugLabel.data(), sDebugLabel.size());
-		}
-
-		const CHandle hObject = pObject->GetHandle();
-		m_Objects[hObject.GetIndex()].Reset();
-		m_FreeSlots.push_back(hObject.GetIndex());
-		bAnyObjectDestroyed = true;
-	}
-
-	return bAnyObjectDestroyed;
-}
-
-void CGameObjectManager::RemoveInvalidLayerHandles()
-{
-	ZoneScopedN("CGameObjectManager_RemoveInvalidLayerHandles");
-
-	for (auto& [_, handles] : m_Layers)
-	{
-		std::erase_if(handles, [this](const CHandle& handle)
-		{
-			return GetGameObjectByHandle(handle) == nullptr;
-		});
-	}
 }
 
 _bool CGameObjectManager::RemoveEmptyResetTargetLayers(
 	const std::unordered_set<std::string>& resetTargetLayers)
 {
+	// 일반 삭제로 우연히 빈 레이어는 유지하고, 이번에 명시적으로 reset/del을 요청한 레이어만 제거한다.
+	// stale Handle은 레이어 삭제를 막지 않으며, 소멸 중 추가됐거나 삭제가 취소된 유효 객체가 하나라도 있으면 보존한다.
 	const size_t removedLayerCount = std::erase_if(
 		m_Layers,
-		[&resetTargetLayers](const auto& layer)
+		[this, &resetTargetLayers](const auto& layer)
 		{
-			return layer.second.empty() &&
-				resetTargetLayers.contains(layer.first);
+			if (!resetTargetLayers.contains(layer.first))
+				return false;
+
+			return std::none_of(
+				layer.second.begin(),
+				layer.second.end(),
+				[this](const CHandle& hObject)
+				{
+					return GetGameObjectByHandle(hObject) != nullptr;
+				});
 		});
 
 	return removedLayerCount > 0;

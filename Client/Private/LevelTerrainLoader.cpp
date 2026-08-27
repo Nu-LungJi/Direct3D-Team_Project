@@ -5,6 +5,7 @@
 #include "Terrain.h"
 #include "Client_Resources.h"
 #include "OilBarrel.h"
+#include "PhysicsDoor.h"
 #include "WiggenweldPotion.h"
 #include "TestPathPlaybackObject.h"
 #include "LuaTestObject.h"
@@ -37,6 +38,7 @@
 #include "Mon_State.h"
 #include "Spider.h"
 #include "WorldNpc.h"
+#include "InteractiveNpc.h"
 // UI
 #include "UIController.h"
 #include "EffectUI.h"
@@ -61,6 +63,7 @@
 #include "AccioActivity_BumperB.h"
 #include "AccioActivity_RampLarge.h"
 #include "AccioActivity_LampSmall.h"
+#include "AccioActivity_Npc.h"
 
 NS_USING(Client)
 
@@ -69,6 +72,10 @@ std::future<bool> CLevelTerrainLoader::Load()
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_TERRAIN", []()
 		{
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
 			{
 				return false;
 			}
@@ -164,7 +171,10 @@ std::future<bool> CLevelTerrainLoader::Load()
 						CAccioActivity_RampLarge::Create())) ||
 					FAILED(CGameInstance::Get().AddPrototype(
 						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_LampSmall,
-						CAccioActivity_LampSmall::Create())))
+						CAccioActivity_LampSmall::Create())) ||
+					FAILED(CGameInstance::Get().AddPrototype(
+						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Npc,
+						CAccioActivity_Npc::Create())))
 					return false;
 			}
 
@@ -188,6 +198,15 @@ std::future<bool> CLevelTerrainLoader::Load()
 					MSG_BOX("TERRAIN Failed Prototype_GameObject_OilBarrel");
 					return false;
 				}
+			}
+
+			if (FAILED(E::CGameInstance::Get().AddPrototype(
+				LEVEL::TERRAIN,
+				PROTO_GAMEOBJECT::Prototype_GameObject_PhysicsDoor,
+				CPhysicsDoor::Create())))
+			{
+				MSG_BOX("TERRAIN Failed Prototype_GameObject_PhysicsDoor");
+				return false;
 			}
 
 
@@ -692,19 +711,47 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 				return E_FAIL;
 			}
 		}
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(
-			LEVEL::TERRAIN,
-			"Model_Resource_NPC_VictorRookwood",
-			CResModel::Create("./Resources/SampleClient/Models/Skeleton/NPC_VictorRookwood/SK_NPC_VictorRookwood.bin")))
+		struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
+		static constexpr NPC_MODEL_ENTRY NpcModels[] =
 		{
-			E::CResModel::DESC Desc{};
-			Desc.PreTransformMatrix = XMMatrixRotationY(XMConvertToRadians(180.f));
-			if (FAILED(res->Load(Desc)))
+			// TERRAIN NPC 검증용으로 검증 완료된 남성 NPC 모델만 로드한다.
+			// NPC 전체 선로드는 각 모델 폴더의 모든 AN_ 클립까지 메모리에 올리므로 비활성화한다.
+			/*{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },*/
+			{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },
+			{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
+			{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
+			{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
+			/*{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
+			{ "Model_Resource_NPC_EffieBones", "EffieBones" },
+			{ "Model_Resource_NPC_EleazarFig", "EleazarFig" },
+			{ "Model_Resource_NPC_GladwinMoon", "GladwinMoon" },
+			{ "Model_Resource_NPC_HelenThistlewood", "HelenThistlewood" },
+			{ "Model_Resource_NPC_JasperTrout", "JasperTrout" },
+			{ "Model_Resource_NPC_LeonaPeck", "LeonaPeck" },
+			{ "Model_Resource_NPC_NoreenBlainey", "NoreenBlainey" },
+			{ "Model_Resource_NPC_PadraicHaggarty", "PadraicHaggarty" },
+			{ "Model_Resource_NPC_PhineasBlack", "PhineasBlack" },
+			{ "Model_Resource_NPC_SironaRyan", "SironaRyan" },
+			{ "Model_Resource_NPC_ThomasBrown", "ThomasBrown" },
+			{ "Model_Resource_NPC_TimothyTeasdale", "TimothyTeasdale" },*/
+		};
+		/*for (const auto& Entry : NpcModels)
+		{
+			const _string ModelPath = "./Resources/SampleClient/Models/Skeleton/NPC_" + _string(Entry.pCharacter) +
+				"/SK_NPC_" + Entry.pCharacter + ".bin";
+			if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(
+				LEVEL::TERRAIN, Entry.pTag, CResModel::Create(ModelPath)))
 			{
-				MSG_BOX("TERRAIN Failed Model_Resource_NPC_VictorRookwood");
-				return E_FAIL;
+				E::CResModel::DESC Desc{};
+				Desc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) *
+					XMMatrixRotationY(XMConvertToRadians(180.f)) * XMMatrixTranslation(0.f, 2.f, 0.f);
+				if (FAILED(res->Load(Desc)))
+				{
+					MSG_BOX("TERRAIN Failed NPC model resource");
+					return E_FAIL;
+				}
 			}
-		}
+		}*/
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");
@@ -716,6 +763,14 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 			CWorldNpc::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_WorldNpc");
+			return E_FAIL;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(
+			LEVEL::TERRAIN,
+			PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
+			CInteractiveNpc::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_MiniGameNpc");
 			return E_FAIL;
 		}
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
@@ -730,6 +785,15 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 	//Coin
 	{
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Coin, CCoin::Create())))
+		{
+			MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
+			return E_FAIL;
+		}
+	}
+
+	//PX_COLLISION_PROXY_PROTOTYPE_GROUP
+	{
+		if (FAILED(E::CGameInstance::Get().AddPrototype(PX_COLLISION_PROXY_PROTOTYPE_GROUP, PROTO_GAMEOBJECT::Prototype_GameObject_Coin, CCoin::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
 			return E_FAIL;

@@ -7,10 +7,11 @@
 #include "ComCharacterMotor.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComModelInstance.h"
-#include "CameraObject.h"
+#include "PlayerThirdPersonCamera.h"
 #include "PlayerAnimationRatioGuard.h"
 #include "ResModel.h"
 #include "ResModelAnim.h"
+#include "UIManager.h"
 
 NS_USING(Client)
 
@@ -31,7 +32,7 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
 	m_bMagicBulletFired = false;
-	m_fPreviousAnimRatio = 0.f;
+	m_fPreviousAnimationRatio = 0.f;
 
 	auto* animator = player->GetAnimator();
 	if (!animator)
@@ -41,6 +42,14 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 	}
 	if (animator->HasUpperAnimation())
 		animator->Stop_UpperAnim(0.08f);
+	if (auto* pCamera = dynamic_cast<CPlayerThirdPersonCamera*>(
+		CGameInstance::Get().GetActiveCamera());
+		pCamera && pCamera->BeginDistanceOverride(
+			ATTACK_CAMERA_DISTANCE_OFFSET,
+			ATTACK_CAMERA_BLEND_IN_RESPONSE))
+	{
+		m_hDistanceOverrideCamera = pCamera->GetHandle();
+	}
 
 	player->SetCurrentMoveSpeed(0.f);
 	player->SetMovementLocked(true);
@@ -57,7 +66,7 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 
 	pTarget = CGameInstance::Get().GetGameObjectByHandle(player->GetTargetHandle());
 	
-	player->SetPlayerCurSKill(PLAYER_SKILL_TYPE::ATTACK);
+	player->SetCurrentSkill(PLAYER_SKILL_TYPE::ATTACK);
 }
 
 void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
@@ -65,6 +74,16 @@ void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
 	auto* player = pStateMachine ? pStateMachine->GetOwner<CPlayer>() : nullptr;
 	if (!player)
 		return;
+	if (m_hDistanceOverrideCamera)
+	{
+		if (auto* pCamera = CGameInstance::Get().GetGameObjectByHandleT<
+			CPlayerThirdPersonCamera>(*m_hDistanceOverrideCamera))
+		{
+			pCamera->EndDistanceOverride(
+				ATTACK_CAMERA_BLEND_OUT_RESPONSE);
+		}
+		m_hDistanceOverrideCamera.reset();
+	}
 
 	player->SetMovementLocked(false);
 	player->SetRootMotionTranslationActive(false);
@@ -73,7 +92,7 @@ void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
 	m_bAttackQueued = false;
 	m_bPlayingHeavy = false;
 	m_bMagicBulletFired = false;
-	m_fPreviousAnimRatio = 0.f;
+	m_fPreviousAnimationRatio = 0.f;
 }
 
 void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
@@ -95,8 +114,8 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 
 
-	const _float fPreviousAnimRatio = m_fPreviousAnimRatio;
-	const _float fAnimRatio =
+	const _float fPreviousAnimationRatio = m_fPreviousAnimationRatio;
+	const _float fAnimationRatio =
 		PlayerAnimationRatioGuard::Sanitize(
 			animator->GetPlayAnimRatio());
 
@@ -106,15 +125,15 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 		: LIGHT_MAGIC_BULLET_FIRE_RATIO;
 
 	if (!m_bMagicBulletFired &&
-		fPreviousAnimRatio < fMagicBulletFireRatio &&
-		fAnimRatio >= fMagicBulletFireRatio)
+		fPreviousAnimationRatio < fMagicBulletFireRatio &&
+		fAnimationRatio >= fMagicBulletFireRatio)
 	{
 		player->Attack_Magic_Bullet();
 		m_bMagicBulletFired = true;
 	}
 
 
-	if (fAnimRatio >= MOVE_CANCEL_START_RATIO &&player->HasRawMoveInput()) {
+	if (fAnimationRatio >= MOVE_CANCEL_START_RATIO &&player->HasRawMoveInput()) {
 		m_bAttackQueued = false;
 		playerStateMachine->RequestState(PLAYER_STATE::LOCOMOTION);
 		return;
@@ -123,19 +142,25 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 
 	const _bool bInComboInputWindow =
 		PlayerAnimationRatioGuard::Intersects(
-			fPreviousAnimRatio,
-			fAnimRatio,
+			fPreviousAnimationRatio,
+			fAnimationRatio,
 			COMBO_INPUT_START_RATIO,
 			COMBO_INPUT_END_RATIO);
 
-	if (bInComboInputWindow && CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
+	const _bool bPointerCapturedByUI =
+		ImGui::GetIO().WantCaptureMouse ||
+		GET_SINGLE(UIManager)->IsPointerOverInteractiveUI();
+
+	if (bInComboInputWindow &&
+		!bPointerCapturedByUI &&
+		CGameInstance::Get().MouseDown(MOUSEKEYSTATE::LB))
 	{
 		m_bAttackQueued = true;
 	}
 
-	m_fPreviousAnimRatio = fAnimRatio;
+	m_fPreviousAnimationRatio = fAnimationRatio;
 	 
-	if (m_bAttackQueued && fAnimRatio >= COMBO_LINK_RATIO)
+	if (m_bAttackQueued && fAnimationRatio >= COMBO_LINK_RATIO)
 	{
 		m_bAttackQueued = false;
 		++m_iComboCount;
@@ -210,7 +235,7 @@ _bool CPlayer_Attack_State::PlayParryCounterAttack(
 	m_bParryCounterSpeedRestored = false;
 	m_bPlayingHeavy = true;
 	m_bMagicBulletFired = false;
-	m_fPreviousAnimRatio = 0.f;
+	m_fPreviousAnimationRatio = 0.f;
 	player.SetRootMotionTranslationActive(true);
 	player.SetRootMotionRotationActive(true);
 	pAnimator->Play_Anim(iAnimation, false, ATTACK_BLEND_DURATION);
@@ -334,7 +359,7 @@ _bool CPlayer_Attack_State::PlayDirectionalAttack(CPlayer& player,_bool bHeavy)
 
 	m_bPlayingHeavy = bHeavy;
 	m_bMagicBulletFired = false;
-	m_fPreviousAnimRatio = 0.f;
+	m_fPreviousAnimationRatio = 0.f;
 	// 왼쪽으로 90도 도는 애만 이상함 RootMotion이
 	player.SetRootMotionTranslationActive(eDirection != ATTACK_DIRECTION::LFT_90);
 	player.SetRootMotionRotationActive(bHeavy || eDirection != ATTACK_DIRECTION::FWD);

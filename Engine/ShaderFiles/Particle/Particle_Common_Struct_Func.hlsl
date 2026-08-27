@@ -14,6 +14,7 @@
 #define BEHAVIOR_EXTRALIGHTNING (1u << 11)
 #define BEHAVIOR_KEEPROTATE (1u << 12)
 #define BEHAVIOR_ORBIT (1u << 15)
+#define BEHAVIOR_SPIRAL (1u << 16)
 
 struct SPAWN_DATA
 {

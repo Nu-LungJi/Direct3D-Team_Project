@@ -22,7 +22,9 @@ private:
 	static HRESULT MonsterLoad_InWorker();
 
 	static HRESULT NpcLoad_InWorker();
-	static HRESULT AnimalLoad_InWorker();
+	static HRESULT WorldAgentLoad_InWorker();
+
+	static HRESULT LoadCollsion_InWorker();
 private:
 	constexpr static LEVEL CURR_LEVEL = LEVEL::HOGWART_WORLD;
 };

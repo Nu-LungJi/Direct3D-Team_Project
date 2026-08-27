@@ -20,6 +20,8 @@
 #include "UIController.h"
 #include "UIManager.h"
 #include "Player.h"
+#include "BTBlackBoard.h"
+#include "BlackBoardKey.h"
 NS_USING(Client)
 
 CBossTMB::CBossTMB()
@@ -49,147 +51,11 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
 	if (FAILED(__super::Initialize(pArg)))
 	{
+		MSG_BOX("Create Failed TombBoss");
 		return E_FAIL;
 	}
 	m_iHp = m_iMaxHp = 500;
 
-	{
-		CComPxCharacterController::DESC Desc{};
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		const _float fHorizontalScale =
-			std::max(std::abs(MonDesc->vScale.x), std::abs(MonDesc->vScale.z));
-		const _float fVerticalScale = std::abs(MonDesc->vScale.y);
-		const _float3 vCenterOffset{
-			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
-			MonDesc->vCCTCenterOffset.y * fVerticalScale,
-			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
-		Desc.fHeight = MonDesc->fCCTHeight * fVerticalScale;
-		Desc.fRadius = MonDesc->fCCTRadius * fHorizontalScale;
-		Desc.fStepOffset = MonDesc->fCCTStepOffset;
-		Desc.vPosition = {
-			MonDesc->vPos.x + vCenterOffset.x,
-			MonDesc->vPos.y + vCenterOffset.y,
-			MonDesc->vPos.z + vCenterOffset.z };
-		Desc.tFilter = MonDesc->tFilter;
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,
-			"ComPxCharacterController", &Desc, &m_pCharacterController)))
-		{
-			return E_FAIL;
-		}
-	}
-	{
-		CComPxRigidBody::DESC Desc{};
-		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
-		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody, "ComPxRigidBody", &Desc, &m_pComRigidBody)))
-		{
-			MSG_BOX("Create Failed ComPxRigidBody TombGurdian");
-			return E_FAIL;
-		}
-	}
-
-	{
-		CComPxSphereCollider::DESC Desc{};
-		Desc.pComPxRigidBody = m_pComRigidBody;
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.bIsTrigger = false;
-		Desc.tFilter = PX_FILTER_DESC{
-			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_HURTBOX),
-			.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
-			//.iQueryMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE),
-		};
-		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 1.2f });
-		if (!Desc.pResMaterial ||
-			FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
-				"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
-		{
-			MSG_BOX("Create Failed ComPxSphereCollider TmbGurdian");
-			return E_FAIL;
-		}
-		if (!m_pComSphereCol->SetQueryEnabled(false))
-			return E_FAIL;
-	}
-	{
-		CComCharacterMoveIntent::DESC Desc{};
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
-			"ComCharacterMoveIntent", &Desc, &m_pMoveIntent)))
-		{
-			return E_FAIL;
-		}
-	}
-
-	{
-		CComCharacterMotor::DESC Desc{};
-		Desc.pMoveIntent = m_pMoveIntent;
-		Desc.pCharacterController = m_pCharacterController;
-		Desc.fGravity = -9.81f;
-		Desc.vControllerCenterOffset = {
-			MonDesc->vCCTCenterOffset.x * MonDesc->vScale.x,
-			MonDesc->vCCTCenterOffset.y * std::abs(MonDesc->vScale.y),
-			MonDesc->vCCTCenterOffset.z * MonDesc->vScale.z };
-		Desc.bUseGravity = true;
-		Desc.bSyncTransform = true;
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
-			"ComCharacterMotor", &Desc, &m_pCharacterMotor)))
-		{
-			return E_FAIL;
-		}
-	}
-
-	CComBeHavior::BEHAVIOR_DESC Desc{};
-	Desc.OwnerName = "Com_BT";
-	Desc.LoadPath = MonDesc->BeHaviorTag;
-	Desc.resBeHaviorMajor = MonDesc->resBeHaviorMajor;
-	Desc.resBeHaviorMinor = MonDesc->resBeHaviorMinor;
-	if (FAILED(AddComponentFromProto("BEHAVIOR", "Prototype_Component_BeHavior", "Com_BT", &Desc, &m_pBeHavior)))
-	{
-		return E_FAIL;
-	};
-	{
-		CComConstantBuffer::DESC Desc{};
-		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ConstantBuffer", "ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
-		{
-			return E_FAIL;
-		};
-	}
-
-	{
-		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = MonDesc->LevelTag;
-		Desc.sResTag = MonDesc->ReSourceTag;
-
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
-		{
-			return E_FAIL;
-		};
-	}
-
-	{
-		CComAnimator::DESC DescAnim{};
-		DescAnim.sComTag = "ComCModelIntance";
-
-		if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_Animator", "ComCModelAnimator", &DescAnim, &m_pModelAnimator)))
-		{
-			return E_FAIL;
-		};
-	}
-
-	{
-		CComCollider::DESC Desc{};
-		Desc.eCollType = CollType::Box;
-		Desc.vExtents = { 1.f, 1.f, 1.f };
-		if (FAILED(AddComponentFromProto("COLLIDER", "Prototype_Component_Collider", "ComColl", &Desc, &m_pComCollider)))
-		{
-			return E_FAIL;
-		};
-	}
 	CMon_Weapon::WEAPON_DESC WeaponDesc{};
 	if (MonDesc->WeaponResourceName != "")
 	{
@@ -227,13 +93,11 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::BALL)] = "BossRingAttack";
 	m_EffectNames[ETOUI(BOSSTOMB_SKILL::DEAD)] = "Boss_Dead";
 
-	GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
-	GetTransform().Update();
+
 
 	m_pComTransform->SetRotation(XMVectorSet(MonDesc->vRot.x, MonDesc->vRot.y, MonDesc->vRot.z, 0.f), MonDesc->fAngle);
 	m_pComTransform->SetScale(XMVectorSet(MonDesc->vScale.x, MonDesc->vScale.y, MonDesc->vScale.z, 0));
-	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
-	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
+
 
 
 	m_eMonType = MONSTER_TYPE::BOSS;
@@ -246,6 +110,9 @@ HRESULT CBossTMB::Initialize(void* pArg)
 	AdditionalLightHandle = CGameInstance::Get().Allocate_EffectLight(GetTransform().GetLoadedPostion(), 500.f, { 0.47f, 1.f, 1.f }, 15.f, 20.f, 99999.f, { 0.f, 0.f, 0.f });
 	/*---------------------------------*/
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("Spine1");
+
+	auto* pBB = Get_BlackBoard();
+	pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
 	return S_OK;
 }
 
@@ -520,6 +387,8 @@ void CBossTMB::Dead()
 		if (m_pModelAnimator->GetFinish())
 		{
 			SetPendingDestroyCascade();
+			GET_SINGLE(UIManager)->CreateFadeInSceneChange(0.f, 2.f,LEVEL::HOGWART_WORLD);
+
 		}
 	}
 }

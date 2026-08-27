@@ -167,7 +167,7 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	}
 
 	const uint32_t logicalThreadCount = std::max(1u, std::thread::hardware_concurrency());
-	const uint32_t renderWorkerCount = std::min(4u, std::max(1u, logicalThreadCount / 2));
+	const uint32_t renderWorkerCount = std::min(6u, std::max(1u, logicalThreadCount / 2));
 	const uint32_t normalWorkerCount = logicalThreadCount > renderWorkerCount + 2 
 		? logicalThreadCount - renderWorkerCount - 2
 		: 1u;
@@ -741,10 +741,11 @@ HRESULT CGameInstance::Spawn(const StringID& sGroupTag, const StringID& sTypeTag
 uint32_t CGameInstance::Spawn(
 	const std::string& strJsonPath,
 	const _float4x4& worldMat,
-	const _fvector endPos)
+	const _fvector endPos,
+	_bool bApplyWorldScaleToParticleSize)
 {
-	// [LSY] 콘텐츠에서 파티클 큐 경로만으로 재생하고 Owner ID를 추적할 수 있게 전달한다.
-	return m_pParticleManager->Spawn(strJsonPath, worldMat, endPos);
+	return m_pParticleManager->Spawn(
+		strJsonPath, worldMat, endPos, bApplyWorldScaleToParticleSize);
 }
 
 std::vector<SPAWN_COMMAND>  CGameInstance::Parse_Command(const std::string& strJsonFile)
@@ -757,8 +758,14 @@ const std::vector<SPAWN_COMMAND>* CGameInstance::FindCachedCommandQueue(const st
 	return m_pParticleManager->FindCachedCommandQueue(strJsonPath);
 }
 
-uint32_t CGameInstance::Spawn(const std::vector<SPAWN_COMMAND>& templateCommands, const _float4x4& worldMat, _fvector endPos) {
-	return m_pParticleManager->Spawn(templateCommands, worldMat ,endPos);
+uint32_t CGameInstance::Spawn(
+	const std::vector<SPAWN_COMMAND>& templateCommands,
+	const _float4x4& worldMat,
+	_fvector endPos,
+	_bool bApplyWorldScaleToParticleSize)
+{
+	return m_pParticleManager->Spawn(
+		templateCommands, worldMat, endPos, bApplyWorldScaleToParticleSize);
 }
 HRESULT CGameInstance::Add_Particle(const StringID& sGroupTag, const StringID& sTypeTag, UPtr<CParticle> particle)
 {
@@ -820,6 +827,10 @@ EFFECT_INSTANCE_ID CGameInstance::PlayEffect(const std::string& sEffectName, con
 
 void CGameInstance::StopEffect(EFFECT_INSTANCE_ID iEffectId) {
 	m_pEffectManager->StopEffect(iEffectId);
+}
+
+void CGameInstance::ChangeEffectColorByOwner(EFFECT_INSTANCE_ID iEffectId, const _float4& vColor) {
+	m_pEffectManager->ChangeColorByOwner(iEffectId, vColor);
 }
 
 void CGameInstance::SetEffectPosition(EFFECT_INSTANCE_ID iEffectId, const _float3& vPosition) {
@@ -1165,6 +1176,16 @@ std::vector<StringID> CGameInstance::GetPrototypeGroupTags() const
 
 
 #pragma region GAMEOBJECT_MANAGER
+void CGameInstance::QueuePendingGameObjectDestroy(const CHandle& hObject)
+{
+	// GameObject가 Manager 구현을 직접 노출받지 않도록 두 클래스 사이의 private bridge만 제공한다.
+	// 엔진 종료 중 Manager가 이미 해제된 경우에는 요청을 무시한다.
+	if (m_pGameObjectManager)
+	{
+		m_pGameObjectManager->QueuePendingDestroy(hObject);
+	}
+}
+
 void CGameInstance::GameObjectAllReset()
 {
 	m_pGameObjectManager->AllReset();
@@ -1185,13 +1206,6 @@ size_t CGameInstance::GameObjectAllResetExceptLayers(
 inline CGameObject* CGameInstance::GetGameObjectByHandle(const CHandle& handle)
 {
 	return m_pGameObjectManager->GetGameObjectByHandle(handle);
-}
-
-_bool CGameInstance::SetGameObjectParent(
-	const CHandle& hChild,
-	const std::optional<CHandle>& hParent)
-{
-	return m_pGameObjectManager->SetGameObjectParent(hChild, hParent);
 }
 
 const std::vector<std::pair<std::string, std::vector<CHandle>>>& CGameInstance::GetGameObjectLayers() const
@@ -1366,6 +1380,23 @@ const CB_VLFOG	CGameInstance::Get_VolumetricFogOption() {
 VOID			CGameInstance::Set_VolumetricFogOption(const CB_VLFOG& _FogOption) {
 	m_pRenderer->Set_VolumetricFogOption(_FogOption);
 }
+const CB_VOLUMECLOUD	CGameInstance::Get_VolumetricCloudOption() {
+	return m_pRenderer->Get_VolumetricCloudOption();
+}
+VOID			CGameInstance::Set_VolumetricCloudOption(const CB_VOLUMECLOUD& _CloudOption) {
+	m_pRenderer->Set_VolumetricCloudOption(_CloudOption);
+}
+
+VOID			CGameInstance::Set_RadialBlurIntensity(const _float _Intensity) { m_pRenderer->Set_RadialBlurIntensity(_Intensity); }
+VOID			CGameInstance::Set_MotionBlurEnabled(_bool bEnabled) { m_pRenderer->Set_MotionBlurEnabled(bEnabled); }
+VOID			CGameInstance::Set_DistortionIntensity(const _float _Intensity) { m_pRenderer->Set_DistortionIntensity(_Intensity); }
+VOID			CGameInstance::Set_ChromaticIntensity(const _float _Intensity) { m_pRenderer->Set_ChromaticIntensity(_Intensity); }
+VOID			CGameInstance::Set_VignetteIntensity(const _float _Intensity) { m_pRenderer->Set_VignetteIntensity(_Intensity); }
+
+const _float&	CGameInstance::Get_RadialBlurIntensity() { return m_pRenderer->Get_RadialBlurIntensity(); }
+const _float&	CGameInstance::Get_DistortionIntensity() { return m_pRenderer->Get_DistortionIntensity(); }
+const _float&	CGameInstance::Get_ChromaticIntensity() { return m_pRenderer->Get_ChromaticIntensity(); }
+const _float&	CGameInstance::Get_VignetteIntensity() { return m_pRenderer->Get_VignetteIntensity(); }
 
 #pragma endregion
 
@@ -1424,11 +1455,21 @@ HRESULT CGameInstance::RegisterMapMeshObjectToMapChunk(const CHandle& hObject)
 {
 	return m_pMapManager->RegisterMapMeshObject(hObject);
 }
+
+HRESULT CGameInstance::RefreshMapMeshObjectInMapChunk(const CHandle& hObject)
+{
+	return m_pMapManager->RefreshMapMeshObject(hObject);
+}
+
+HRESULT CGameInstance::UnregisterMapMeshObjectFromMapChunk(const CHandle& hObject)
+{
+	return m_pMapManager->UnregisterMapMeshObject(hObject);
+}
 std::vector<CHandle> CGameInstance::CollectMapMeshPickCandidates(FXMVECTOR rayOrigin, FXMVECTOR rayDirection) const
 {
 	return m_pMapManager->CollectMapMeshPickCandidates(rayOrigin, rayDirection);
 }
-const std::unordered_map<MAPCHUNK_COORD, MAPCHUNK, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
+const std::unordered_map<MAPCHUNK_COORD, CMapChunk, tagMapChunkCoordHash>& CGameInstance::GetMapChunks() const
 {
 	return m_pMapManager->GetChunks();
 }
@@ -1446,8 +1487,9 @@ _bool CGameInstance::IsMapChunkStreaming() const
 }
 
 /*----------- 광윤 추가 -----------*/
-const MATERIAL_DESC CGameInstance::FindMaterial(const std::string& ModelName) {
-	return m_pMapManager->FindMaterial(ModelName);
+MATERIAL_DESC CGameInstance::FindMaterial(const std::string& modelName)
+{
+	return m_pMapManager->FindMaterial(modelName);
 }
 /*---------------------------------*/
 
@@ -1630,9 +1672,23 @@ _bool	CGameInstance::Has_ActiveDynamicShadowBatch() {
 #pragma endregion
 
 #pragma region MAPMESH_INSTANCE_RENDER
-HRESULT CGameInstance::PushMapObjectInstance(const SPtr<CResStaticModel>& pModel, const MAPMESH_INSTANCE_DATA& instanceData, MAPMESH_OCCLUSION_DATA& occlusionData, EMapMeshRenderFeature renderFeature)
+HRESULT CGameInstance::RegisterMapMeshResidentChunk(
+	const MAPCHUNK_COORD& coord,
+	const std::vector<CHandle>& objectHandles)
 {
-	return m_pMapMeshInstancingRenderer->PushMapObjectInstance(pModel, renderFeature, instanceData, occlusionData);
+	return m_pMapMeshInstancingRenderer
+		? m_pMapMeshInstancingRenderer->RegisterResidentChunk(coord, objectHandles)
+		: E_FAIL;
+}
+void CGameInstance::UnregisterMapMeshResidentChunk(const MAPCHUNK_COORD& coord)
+{
+	if (m_pMapMeshInstancingRenderer)
+		m_pMapMeshInstancingRenderer->UnregisterResidentChunk(coord);
+}
+void CGameInstance::ClearMapMeshResidentChunks()
+{
+	if (m_pMapMeshInstancingRenderer)
+		m_pMapMeshInstancingRenderer->ClearResidentChunks();
 }
 // 인스턴싱 On/Off , 드로우 콜 GUI
 _bool CGameInstance::IsInstancingEnabled()

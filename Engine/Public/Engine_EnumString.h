@@ -19,7 +19,8 @@ namespace Engine
 		Prototype_Component_ComCharacterMoveIntent,
 		Prototype_Component_ComCharacterMotor,
 		Prototype_Component_ComSound,
-		Prototype_Component_ComPathPlayback
+		Prototype_Component_ComPathPlayback,
+		Prototype_Component_ComFootIK
 	};
 
 	enum class ES_EngineProtoPhysXComponent

@@ -166,7 +166,7 @@ private:
     uint32_t m_iPackedColor{ 0xFF000000u };
     DBG_LINE_DEPTH_MODE m_eDepthMode{ DBG_LINE_DEPTH_MODE::DISABLED };
 
-    const uint32_t m_iVertexCnt{ 1000000 };
+    const uint32_t m_iVertexCnt{ 3000000 };
 
     SPtr<CResDynamicVIBuffer> m_pDbgBuffer{};
     SPtr<CResVertexShader> m_pDbgVShader{};

@@ -46,6 +46,8 @@ private:
 	std::optional<size_t> m_SelectedShotIndex{};
 	std::optional<size_t> m_SelectedKeyframeIndex{};
 	std::optional<E::CHandle> m_PreviewTargetHandle{};
+	_bool m_bPreviewLookAtTarget{ false };
+	_float3 m_vPreviewLookAtTargetLocalOffset{};
 	ImGuizmo::OPERATION m_GizmoOperation{ ImGuizmo::TRANSLATE };
 	_float m_fFrustumDisplaySize{ 1.25f };
 	E::ECinematicStartMode m_ePreviewStartMode{

@@ -25,11 +25,10 @@ NS_END
 
 
 NS_BEGIN(Client)
-
-class CNpcMom : public CAnimationObject, public CSkillTarget
+class CWorldAgent : public CAnimationObject, public CSkillTarget
 {
 public:
-	DECLARE_DERIVED_TYPE(CNpcMom, CAnimationObject)
+	DECLARE_DERIVED_TYPE(CWorldAgent, CAnimationObject)
 public:
 	typedef struct tagnpcdesc : CAnimationObject::GAMEOBJECT_DESC
 	{
@@ -42,27 +41,31 @@ public:
 		_float fCCTRadius{ 0.45f };
 		_float fCCTStepOffset{ 0.4f };
 		_float3 vCCTCenterOffset{ 0.f, 1.5f, 0.f };
-
+		NPCACTION eAnimAction;
 		_string resBeHaviorMajor{}, resBeHaviorMinor{};
 		_float3 vStartPos{}, vEndPos{};
+		_float fSpeed{};
+		_bool bPhyx{ true };
+		_string AnimName{};
 		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::NPC_BODY),
 			.iSimulationMask = PX_ALL_LAYERS,
 			// [LSY] 캐릭터 CCT끼리는 충돌하되 전투용 HurtBox는 이동 Query에서 제외한다.
 			.iQueryMask =
-				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+
 				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
 				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 				ETOUI(COLLISION_LAYER::PLAYER_BODY) |
 				ETOUI(COLLISION_LAYER::ENEMY_BODY)
 		};
 
 
-	}NPC_DESC;
+	}WORLD_AGENT_DESC;
 protected:
-	CNpcMom();
-	~CNpcMom() override;
+	CWorldAgent();
+	~CWorldAgent() override;
 
 public:
 	void UpdateGUI();
@@ -89,18 +92,9 @@ public:
 
 	const int32_t				Get_CurrentHp() const { return m_iHp; }
 	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }
-	virtual const _float		Get_Damage() { return 0.f; }
-
-	virtual _bool				Activate_PendingHit();
-	const MON_HIT_INFO			Get_ActiveHitInfo()const { return m_ActiveMonTable; }
-	const MON_HIT_INFO			Get_PendingHitInfo() const { return m_PendingMonTable; }
-	_bool						Is_PendingHit() { return m_bPending; }
-	_bool						Is_ActiveHit() { return m_bActiveHit; }
 	void						ReActiveTable();
-	_bool						Is_Grounded();
 
 	CGameObject* Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
-
 	SOUND_ID 					Play_Sound(const MONSOUND& MonSound);
 	void						Get_SoundKey(_string& CursoundName);
 	const _float4x4*			Get_CombineBoneMatrix(int32_t iBoneIndex);
@@ -114,23 +108,14 @@ public:
 	void						Set_EndGame() { m_bEndGame = true; }
 protected:
 	virtual	void				Damaged(PLAYER_SKILL_TYPE eType);
-	void						Update_HurtBox();
 	virtual void				Stuck();
-	
 private:
 	void						Update_Animation(_float fTimeDelta);
-	// 민수 추가 ----------------------------------------------------------
-public:
-	const _float3& GetHurtBoxPosition() const { return m_vHurtBoxPosition; }
 
-
-protected:
-	_float3 m_vHurtBoxPosition{};
-	// 민수 추가 ----------------------------------------------------------
 protected:
 	CComModelInstance* m_pComModelInstance{};
 	CComAnimator* m_pModelAnimator{};
-	CComBeHavior* m_pBeHavior;
+	CComBeHavior* m_pBeHavior{};
 	CComPxCharacterController* m_pCharacterController{};
 	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
@@ -150,16 +135,10 @@ protected:
 	
 	uint32_t							m_iCurrentInstanceCount{};
 	_float								m_fDissolve{};
-	int32_t								m_iHp{}, m_iMaxHp{}, m_iColliderBoneIndex{}, m_iEventBoneIndex{ -1 };
+	int32_t								m_iHp{}, m_iMaxHp{},m_iCurAnimIndex{-1};
 	_bool								m_bRootMotionTranslationActive{ false }, m_bRootMotionRotationActive{ false };
 	_float								m_fRootMotionTranslationScale{ 1.f };
-	_string								m_SocketName{};
 
-	_bool								m_bPending{ false };
-	MON_HIT_INFO						m_PendingMonTable{};
-
-	_bool								m_bActiveHit{ false };
-	MON_HIT_INFO						m_ActiveMonTable{};
 	_bool								m_bEndGame{false};
 	CHandle								m_TargetHandle{};
 	std::unordered_map<_string, std::vector<_string>> m_SoundTable;

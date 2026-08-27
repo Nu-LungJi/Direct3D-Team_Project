@@ -38,6 +38,7 @@ void CEdg_Spawn::Enter(CStateMachine* pStateMachine)
 	if (nullptr == pDragon)
 		return;
 
+
 	pDragon->Set_WingParticlesEnabled(false);
 	pDragon->Set_StateFinished(false);
 	
@@ -53,6 +54,7 @@ void CEdg_Spawn::Enter(CStateMachine* pStateMachine)
 	
 	pDragon->Get_Animator()->Play_Anim(0);
 	pDragon->Set_HideOnBush(true);
+
 }
 
 void CEdg_Spawn::Exit(CStateMachine* pStateMachine)
@@ -99,9 +101,6 @@ void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	auto pBB = pDragon->Get_BlackBoard();
 	if (nullptr == pBB) return;
 
-	//이거 뺴야지 나중에
-	//if (false == pDragon->Is_StateFinished()) return;
-	//카메라랑 샤바샤바 하고 전환
 
 	switch (m_eSpawn)
 	{
@@ -136,7 +135,6 @@ void CEdg_Spawn::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 		pDragonFsm->Request_State(MON_STATE::COMBAT);
 		break;
 	}
-	//pDragonFsm->Request_State(MON_STATE::COMBAT);
 }
 
 void CEdg_Spawn::SpawnSkill(CEnderDragon* pDragon, const _string& strName)
@@ -293,6 +291,7 @@ void CEdg_Spawn::Effect(CEnderDragon* pDragon, _float fTimeDelta)
 	}
 }
 
+
 void CEdg_Spawn::Play_Anim(CEnderDragon* pDragon, _float fTimeDelta)
 {
 	auto pAnimator = pDragon->Get_Animator();
@@ -340,7 +339,7 @@ void CEdg_Spawn::Play_Anim(CEnderDragon* pDragon, _float fTimeDelta)
 		
 
 		if (m_Anims[ETOUI(m_eSpawn)].size() == 1)
-		{
+		{//이게뭐람
 			if (!m_bSoundH && pAnimator->GetPlayAnimRatio() >= 0.4f)
 			{
 				if (!m_bSoundH)
@@ -382,8 +381,21 @@ void CEdg_Spawn::Play_Anim(CEnderDragon* pDragon, _float fTimeDelta)
 							_float4x4 roarWorldData{};
 							XMStoreFloat4x4(&roarWorldData, roarWorld);
 
-							CGameInstance::Get().Spawn("DragonRoar1.json", roarWorldData);
+							m_iRoarEffectID = CGameInstance::Get().PlayEffect(
+								"DragonRoar",
+								roarWorldData,
+								XMVectorZero(),
+								[this](EFFECT_INSTANCE_ID effectId, EFFECT_FINISH_REASON reason)
+								{
+									if (effectId != m_iRoarEffectID)
+										return;
 
+									CGameInstance::Get().Set_RadialBlurIntensity(0.f);
+									m_iRoarEffectID = INVALID_EFFECT_INSTANCE_ID;
+								});
+
+							if (m_iRoarEffectID != INVALID_EFFECT_INSTANCE_ID)
+								CGameInstance::Get().Set_RadialBlurIntensity(6.3f);
 							CGameInstance::Get().EventPublish(FRequestPlayerCameraShake{
 								.fIntensity = 1.f,
 								.fDuration = 2.5f,

@@ -50,6 +50,7 @@ public:
 	// ********* Finisher
 	void AddFinisher(_float amountFill); // 필살기 게이지
 	void SetFinisher(_float amountFill);
+	_bool CanUseFinisher() const { return m_FinisherAmount >= 100.f / 3.f; }
 
 	// ********* SpellSlot
 	void SetSpellType(uint32_t SlotNumber, uint32_t SpellType); 

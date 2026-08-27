@@ -83,20 +83,19 @@ void CAccioActivityPartBase::LateUpdate(_float)
 		return;
 	}
 
-	MAPMESH_INSTANCE_DATA instanceData{};
-	XMStoreFloat4x4(&instanceData.world, GetTransform().GetLoadedCombinedWorldMatrix());
+	CGameInstance::Get().Add_Instance(
+		m_pComModelInstance,
+		*GetTransform().GetCombinedWorldMatrix());
+}
 
-	BoundingBox worldBounds{};
-	if (!GetOcclusionBounds(worldBounds))
-		return;
-
-	MAPMESH_OCCLUSION_DATA occlusionData{};
-	occlusionData.worldCenter = worldBounds.Center;
-	occlusionData.worldExtents = worldBounds.Extents;
-
-	CGameInstance::Get().PushMapObjectInstance(
-		m_pComModelInstance->GetModel(), instanceData, occlusionData,
-		EMapMeshRenderFeature::Static);
+HRESULT CAccioActivityPartBase::Render_Instanced(
+	ID3D11DeviceContext* pContext,
+	const RENDER_CTX&,
+	const MODEL_INSTANCE_BATCH& batch)
+{
+	return m_pComModelInstance
+		? m_pComModelInstance->RenderDynamicInstances(pContext, batch)
+		: E_FAIL;
 }
 
 HRESULT CAccioActivityPartBase::Render(

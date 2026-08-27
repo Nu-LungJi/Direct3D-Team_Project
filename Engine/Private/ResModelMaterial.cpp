@@ -1,98 +1,147 @@
 #include "pch.h"
 #include "ResModelMaterial.h"
 #include "ResTexture2D.h"
+#include <array>
 #include <fstream>
 #include <mutex>
 #include <unordered_map>
 
 NS_USING(Engine)
 
-namespace
+std::mutex& CResModelMaterial::GetTextureLoadMutex(const std::string& texturePath)
 {
-	std::string LowerPathString(const std::filesystem::path& path)
+	constexpr size_t TEXTURE_LOAD_LOCK_COUNT = 64;
+	static std::array<std::mutex, TEXTURE_LOAD_LOCK_COUNT> textureLoadLocks{};
+	return textureLoadLocks[std::hash<std::string>{}(texturePath) % TEXTURE_LOAD_LOCK_COUNT];
+}
+
+std::mutex& CResModelMaterial::GetTextureIndexMutex()
+{
+	static std::mutex textureIndexMutex{};
+	return textureIndexMutex;
+}
+
+CResModelMaterial::TEXTURE_ROOT_INDEXES& CResModelMaterial::GetTextureRootIndexes()
+{
+	static TEXTURE_ROOT_INDEXES textureRootIndexes{};
+	return textureRootIndexes;
+}
+
+std::string CResModelMaterial::LowerPathString(const std::filesystem::path& path)
+{
+	std::string value = path.lexically_normal().generic_string();
+	std::transform(value.begin(), value.end(), value.begin(),
+		[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+	return value;
+}
+
+std::filesystem::path CResModelMaterial::FindTextureRoot(const std::filesystem::path& modelPath)
+{
+	std::filesystem::path result{};
+	for (const auto& part : modelPath.parent_path())
 	{
-		std::string value = path.string();
-		std::transform(value.begin(), value.end(), value.begin(),
-			[](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
-		return value;
+		if (_stricmp(part.string().c_str(), "Models") == 0)
+		{
+			result /= "Textures";
+			return result;
+		}
+		result /= part;
+	}
+	return {};
+}
+
+CResModelMaterial::TEXTURE_PATH_INDEX CResModelMaterial::BuildTexturePathIndex(const std::filesystem::path& textureRoot)
+{
+	TEXTURE_PATH_INDEX index{};
+	std::error_code ec{};
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(
+		textureRoot, std::filesystem::directory_options::skip_permission_denied, ec))
+	{
+		if (ec)
+			break;
+		if (!entry.is_regular_file(ec))
+			continue;
+		index[LowerPathString(entry.path().filename())].push_back(entry.path());
+	}
+	return index;
+}
+
+void CResModelMaterial::WarmUpTextureSearchIndex(
+	const std::filesystem::path& modelRoot)
+{
+	const std::filesystem::path textureRoot = FindTextureRoot(modelRoot / "placeholder.bin");
+	if (textureRoot.empty())
+		return;
+
+	const std::string rootKey = LowerPathString(textureRoot);
+	{
+		std::lock_guard<std::mutex> lock(GetTextureIndexMutex());
+		if (GetTextureRootIndexes().contains(rootKey))
+			return;
 	}
 
-	std::filesystem::path FindTextureRoot(const std::filesystem::path& modelPath)
+	// 디렉터리 순회는 락 밖에서 수행하여 이미 생성된 다른 루트의 조회를 막지 않는다.
+	TEXTURE_PATH_INDEX newIndex = BuildTexturePathIndex(textureRoot);
+	std::lock_guard<std::mutex> lock(GetTextureIndexMutex());
+	GetTextureRootIndexes().try_emplace(rootKey, std::move(newIndex));
+}
+
+std::filesystem::path CResModelMaterial::ResolveModelTexture(
+	const std::filesystem::path& modelPath,
+	const std::filesystem::path& preferredDirectory,
+	const std::string& file,
+	const std::string& extension)
+{
+	const auto existingIn = [&](const std::filesystem::path& directory)
 	{
-		std::filesystem::path result{};
-		for (const auto& part : modelPath.parent_path())
-		{
-			if (_stricmp(part.string().c_str(), "Models") == 0)
-			{
-				result /= "Textures";
-				return result;
-			}
-			result /= part;
-		}
-		return {};
-	}
+		std::filesystem::path original = directory / (file + extension);
+		std::filesystem::path dds = original;
+		dds.replace_extension(".dds");
+		if (std::filesystem::exists(dds)) return dds;
+		if (std::filesystem::exists(original)) return original;
+		return std::filesystem::path{};
+ 	};
+	if (auto found = existingIn(preferredDirectory); !found.empty())
+		return found;
 
-	std::filesystem::path ResolveModelTexture(
-		const std::filesystem::path& modelPath,
-		const std::filesystem::path& preferredDirectory,
-		const std::string& file, const std::string& extension)
+	const std::filesystem::path textureRoot = FindTextureRoot(modelPath);
+	if (textureRoot.empty())
+		return preferredDirectory / (file + extension);
+
+	const std::string rootKey = LowerPathString(textureRoot);
+	// 일반 모델 로드가 선행된 경우에도 기존 동작을 유지한다.
+	// 스트리밍 맵에서는 SetResourceIndex 시점에 이미 생성되어 즉시 반환한다.
+	WarmUpTextureSearchIndex(modelPath.parent_path());
+
+	std::filesystem::path desired = file + extension;
+	desired.replace_extension(".dds");
+	std::lock_guard<std::mutex> lock(GetTextureIndexMutex());
+	const auto rootIter = GetTextureRootIndexes().find(rootKey);
+	if (rootIter == GetTextureRootIndexes().end())
+		return preferredDirectory / desired.filename();
+
+	auto candidates = rootIter->second.find(LowerPathString(desired.filename()));
+	if (candidates == rootIter->second.end())
 	{
-		const auto ExistingIn = [&](const std::filesystem::path& directory)
-			{
-				std::filesystem::path original = directory / (file + extension);
-				std::filesystem::path dds = original;
-				dds.replace_extension(".dds");
-				if (std::filesystem::exists(dds)) return dds;
-				if (std::filesystem::exists(original)) return original;
-				return std::filesystem::path{};
-			};
-		if (auto found = ExistingIn(preferredDirectory); !found.empty()) return found;
-
-		const std::filesystem::path textureRoot = FindTextureRoot(modelPath);
-		if (textureRoot.empty()) return preferredDirectory / (file + extension);
-		std::filesystem::path desired = file + extension;
-		desired.replace_extension(".dds");
-
-		using INDEX = std::unordered_map<std::string, std::vector<std::filesystem::path>>;
-		static std::mutex indexMutex{};
-		static std::unordered_map<std::string, INDEX> indexes{};
-		std::scoped_lock lock(indexMutex);
-		const std::string rootKey = LowerPathString(textureRoot);
-		auto [indexIt, inserted] = indexes.try_emplace(rootKey);
-		if (inserted)
-		{
-			std::error_code ec{};
-			for (const auto& entry : std::filesystem::recursive_directory_iterator(
-				textureRoot, std::filesystem::directory_options::skip_permission_denied, ec))
-			{
-				if (ec) break;
-				if (!entry.is_regular_file(ec)) continue;
-				indexIt->second[LowerPathString(entry.path().filename())].push_back(entry.path());
-			}
-		}
-
-		auto candidates = indexIt->second.find(LowerPathString(desired.filename()));
-		if (candidates == indexIt->second.end())
-		{
-			std::filesystem::path originalName = file + extension;
-			candidates = indexIt->second.find(LowerPathString(originalName.filename()));
-		}
-		if (candidates == indexIt->second.end() || candidates->second.empty())
-			return preferredDirectory / desired.filename();
-
-		std::string modelName = modelPath.stem().string();
-		if (modelName.rfind("SM_", 0) == 0 || modelName.rfind("SK_", 0) == 0)
-			modelName = modelName.substr(3);
-		const auto exactModelFolder = std::find_if(candidates->second.begin(), candidates->second.end(),
-			[&](const auto& candidate)
-			{
-				return _stricmp(candidate.parent_path().filename().string().c_str(),
-					modelName.c_str()) == 0;
-			});
-		if (exactModelFolder != candidates->second.end()) return *exactModelFolder;
-		std::sort(candidates->second.begin(), candidates->second.end());
-		return candidates->second.front();
+		const std::filesystem::path originalName = file + extension;
+		candidates = rootIter->second.find(LowerPathString(originalName.filename()));
 	}
+	if (candidates == rootIter->second.end() || candidates->second.empty())
+		return preferredDirectory / desired.filename();
+
+	std::string modelName = modelPath.stem().string();
+	if (modelName.rfind("SM_", 0) == 0 || modelName.rfind("SK_", 0) == 0)
+		modelName = modelName.substr(3);
+	const auto exactModelFolder = std::find_if(
+		candidates->second.begin(), candidates->second.end(),
+		[&](const auto& candidate)
+		{
+			return _stricmp(candidate.parent_path().filename().string().c_str(),
+				modelName.c_str()) == 0;
+		});
+	if (exactModelFolder != candidates->second.end())
+		return *exactModelFolder;
+	return *std::min_element(candidates->second.begin(), candidates->second.end());
 }
 
 CResModelMaterial::CResModelMaterial(const _string& sPath)
@@ -176,7 +225,14 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 					texPath = ddsPath;
 				}
 
+				// 일부 캐릭터 모델에는 원본 머티리얼이 참조하지만 배포 리소스에는
+				// 포함되지 않은 선택 텍스처가 있다. 비어 있는 슬롯은 렌더링 시
+				// 기본 텍스처로 대체되므로 모델 전체 로딩을 실패시키지 않는다.
+				if (!std::filesystem::exists(texPath))
+					continue;
+
 				const _string texturePath = texPath.string();
+				std::lock_guard<std::mutex> textureLoadLock(GetTextureLoadMutex(texturePath));
 				_bool isCreated = false;
 				auto resTex = CGameInstance::Get().GetOrCreateResourceByPath<CResTexture2D>(
 					texturePath,
@@ -279,6 +335,7 @@ HRESULT CResModelMaterial::LoadAssimp(aiMaterial* material, uint32_t materialNum
 
 
 			const _string resolvedTexturePath = texPath.string();
+			std::lock_guard<std::mutex> textureLoadLock(GetTextureLoadMutex(resolvedTexturePath));
 			_bool isCreated = false;
 			auto resTex = CGameInstance::Get().GetOrCreateResourceByPath<CResTexture2D>(
 				resolvedTexturePath,

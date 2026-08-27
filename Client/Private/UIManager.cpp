@@ -1914,6 +1914,11 @@ void UIManager::CreateActiveButton(CHandle handle, _ubyte KeyType)
 		resourceTag = "TEX_UI_T_cbi_Keyboard_F";
 		inputKey = DIK_F;
 	}
+	else if (KeyType == static_cast<_ubyte>(ACTIVE_BUTTON_KEY::X) || KeyType == DIK_X)
+	{
+		resourceTag = "TEX_UI_T_cbi_Keyboard_X";
+		inputKey = DIK_X;
+	}
 	else
 	{
 		return;
@@ -1999,10 +2004,13 @@ void UIManager::UpdateActiveButtons()
 
 	CHandle nearestE{};
 	CHandle nearestF{};
+	CHandle nearestX{};
 	_bool foundNearestE{};
 	_bool foundNearestF{};
+	_bool foundNearestX{};
 	_float nearestEDistanceSq = FLT_MAX;
 	_float nearestFDistanceSq = FLT_MAX;
+	_float nearestXDistanceSq = FLT_MAX;
 
 	for (auto iter = m_ActiveButtons.begin(); iter != m_ActiveButtons.end();)
 	{
@@ -2069,6 +2077,12 @@ void UIManager::UpdateActiveButtons()
 				nearestF = iter->TargetHandle;
 				foundNearestF = true;
 			}
+			else if (iter->KeyType == DIK_X && distanceSq < nearestXDistanceSq)
+			{
+				nearestXDistanceSq = distanceSq;
+				nearestX = iter->TargetHandle;
+				foundNearestX = true;
+			}
 		}
 
 		++iter;
@@ -2080,6 +2094,8 @@ void UIManager::UpdateActiveButtons()
 		RemoveActiveButton(nearestE);
 	if (foundNearestF && E::CGameInstance::Get().KeyDown(DIK_F))
 		RemoveActiveButton(nearestF);
+	if (foundNearestX && E::CGameInstance::Get().KeyDown(DIK_X))
+		RemoveActiveButton(nearestX);
 }
 
 void UIManager::AddDialoguePopup(
@@ -2936,6 +2952,33 @@ std::optional<CHandle> UIManager::RootUIPicking()
 	}
 
 	return targetHandle;
+}
+
+_bool UIManager::IsPointerOverInteractiveUI()
+{
+	const auto IsInteractiveHit = [this](const auto& Self, CHandle hUI) -> _bool
+	{
+		auto* pUI = E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(hUI);
+		if (!pUI || !pUI->GetActive() || !pUI->GetVisible() || pUI->GetWorldSpace())
+			return false;
+
+		// 버튼인 자식 UI까지 검사해야 전체 화면 HUD 루트가 입력을 가로채지 않는다.
+		for (const CHandle hChild : pUI->GetChildren())
+		{
+			if (Self(Self, hChild))
+				return true;
+		}
+
+		return pUI->HasInteractiveButton() &&
+			PtInRect(pUI->GetUIInfo(), pUI->GetScaleRatio());
+	};
+
+	for (const CHandle hRoot : rootUIHandles)
+	{
+		if (IsInteractiveHit(IsInteractiveHit, hRoot))
+			return true;
+	}
+	return false;
 }
 
 _bool UIManager::PtInRect(const UI_INFO& selectInfo, _float scaleRatio)

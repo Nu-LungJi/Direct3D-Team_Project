@@ -40,9 +40,10 @@ public:
 		_float fCCTRadius{ 0.45f };
 		_float fCCTStepOffset{ 0.4f };
 		_float3 vCCTCenterOffset{ 0.f, 1.5f, 0.f };
-
+		_float fOffset{};
 		_string resBeHaviorMajor{}, resBeHaviorMinor{};
 		_float3 vStartPos{}, vEndPos{};
+		_float fSpeed;
 		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::NPC_BODY),
@@ -96,8 +97,6 @@ protected:
 	CComPxCharacterController* m_pCharacterController{};
 	CComCharacterMoveIntent* m_pMoveIntent{};
 	CComCharacterMotor* m_pCharacterMotor{};
-	CComPxRigidBody* m_pComRigidBody{};
-	CComPxSphereCollider* m_pComSphereCol{};
 	CComSound* m_pComSound{};
 
 	// Anim

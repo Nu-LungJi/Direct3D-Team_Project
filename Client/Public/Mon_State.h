@@ -7,16 +7,24 @@
 NS_BEGIN(Client)
 enum class HIT_TYPE { NORMAL, LAUNCH, KNOCKBACK, SLAM, GODAE,FIRE, END };
 enum class HIT_MOTION { NORMAL, LAND, AIR, GROUND, GODAE, BLOWBACK, GROUND_SLAM, FALLING, REBOUND, AIR_LAND, END };
-
+enum class MON_DEF_STATE {IDLE, RUN, END};
 enum class HIT_STEP { START, LOOP, END };
 typedef struct stredganimfsm
 {
 	int32_t iAnimIndex{};
 	_float	fBlend{};
-	const _string	  SkillName{};
+	_string	  SkillName{};
 	_float			  fSkillRatio{ 0.f };
 	_bool			  bSkill{ false };
+	_bool			  bLoop{ false };
 }MON_ANIM_FSM;
+typedef struct hitalltable
+{
+	HIT_MOTION eHitMotion{};
+	HIT_TYPE eHitType{};
+	PLAYER_SKILL_TYPE eSkillType{};
+
+}NEW_HIT_TABLE;
 #define MON_STATE_M  \
 X(NONE)\
 X(SPAWN)            \

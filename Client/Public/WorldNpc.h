@@ -1,14 +1,13 @@
 #pragma once
-#include "NpcMom.h"
+#include "WorldAgent.h"
 #include "Client_Defines.h"
 
 
 NS_BEGIN(Client)
-
-class CWorldNpc final : public CNpcMom
+class CWorldNpc final : public CWorldAgent
 {
 public:
-	DECLARE_DERIVED_TYPE(CWorldNpc, CNpcMom)
+	DECLARE_DERIVED_TYPE(CWorldNpc, CWorldAgent)
 
 private:
 	CWorldNpc();
@@ -24,7 +23,8 @@ public:
 	void						Update(E::_float fTimeDelta) override;
 	void						LateUpdate(E::_float fTimeDelta) override;
 	HRESULT						Ready_Fsm(const _string& LevelTag);
-	void						Ready_BBKeyValue(NPC_DESC* pDesc);
+	void						Ready_BBKeyValue(WORLD_AGENT_DESC* pDesc);
+	int32_t						Find_AnimIndex(const _string& AnimName);
 
 public:
 	void						Set_Gravity(_bool bGravity);

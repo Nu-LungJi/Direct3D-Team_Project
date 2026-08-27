@@ -54,12 +54,12 @@ public:
 	_bool HasSpawnCallback() const { return static_cast<_bool>(m_SpawnCallback); }
 	void RegisterNpcOption(const _string& sDisplayName, const NPC_PLACEMENT_DESC& Desc);
 	void RegisterNpcSkeletonOption(const _string& sPrototypeTag, const _string& sDisplayName,
-		const _string& sModelGroupTag, const _string& sModelResourceTag);
+		const _string& sModelGroupTag, const _string& sModelResourceTag, const _string& sAnimResourcePath = {});
 	void RegisterBehaviorOption(const _string& sDisplayName,
 		const _string& sBehaviorMajorTag, const _string& sBehaviorMinorTag);
 	void ClearNpcOptions();
 	void SetPickingQueryMask(uint32_t iQueryMask) { m_iPickingQueryMask = iQueryMask; }
-
+	void AddMinorNameToNpcPlacement(const _string& strName) { m_ResMinorNames.push_back(strName); }
 	NPC_PLACEMENT_RESULT Spawn(uint64_t iPlacementId);
 	const std::vector<NPC_PLACEMENT_RESULT>& SpawnAll();
 	HRESULT Save(const _string& sFilePath) const;
@@ -82,7 +82,7 @@ private:
 	NPC_PLACEMENT_RESULT SpawnPlacement(const NPC_PLACEMENT_DESC& Desc) const;
 	_string ValidatePlacement(const NPC_PLACEMENT_DESC& Desc) const;
 	uint64_t AllocatePlacementId();
-
+	std::vector<_string> RegistAnimPath(const _string& sAnimPath);
 private:
 	std::vector<NPC_PLACEMENT_DESC> m_Placements{};
 	std::vector<NPC_PLACEMENT_RESULT> m_LastResults{};
@@ -93,6 +93,7 @@ private:
 		_string sDisplayName{};
 		_string sModelGroupTag{};
 		_string sModelResourceTag{};
+		std::vector<_string> sAnimPath{};
 	};
 	std::vector<NPC_SKELETON_OPTION> m_NpcSkeletonOptions{};
 	struct BEHAVIOR_OPTION
@@ -109,6 +110,7 @@ private:
 	_string m_sFileStatus{};
 	_bool m_bPlacementPicking{};
 	_bool m_bSpawnOnPick{ true };
+	std::vector<_string>		m_ResMinorNames;
 	uint32_t m_iPickingQueryMask{ PX_ALL_LAYERS };
 	FILE_CONFIRM_ACTION m_eFileConfirmAction{ FILE_CONFIRM_ACTION::NONE };
 

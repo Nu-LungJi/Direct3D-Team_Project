@@ -65,6 +65,7 @@ private:
 	std::string m_ModelFolderLoadStatus{};
 	float m_fWholeMapScale = 0.3f;
 	E::_float3 m_vWholeMapOrigin{};
+	E::_float3 m_vWholeMapRotationDegrees{};
 private:
 	std::vector<ResourceViewItem> m_Items{};
 	std::vector<size_t> m_FilteredItemIndices{};

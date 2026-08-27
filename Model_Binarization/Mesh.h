@@ -23,7 +23,6 @@ public:
 	std::shared_ptr<std::vector<VTXMESH>> m_vertices;
 	std::shared_ptr<std::vector<VTXANIMMESH>> m_animvertices;
 	std::shared_ptr<std::vector<uint32_t>> m_indices;
-	std::vector<MORPHTARGETDATA> m_MorphTargets;
 
 	uint32_t		m_iNumBones = {}; /* 이 메시가 이용하는 뼈의 갯수. */
 

@@ -403,16 +403,32 @@ HRESULT CComPxRagdoll::BuildRuntimeJoints()
 			tJointDesc);
 		pJoint->setTwistLimit(tTwistLimit);
 
-		PxJointLimitCone tSwingLimit{
-			XMConvertToRadians(
-				tJointDesc.fSwingYDegrees),
-			XMConvertToRadians(
-				tJointDesc.fSwingZDegrees)
-		};
-		ApplyAngularLimitResponse(
-			tSwingLimit,
-			tJointDesc);
-		pJoint->setSwingLimit(tSwingLimit);
+		const _bool bSwingYLimited =
+			tJointDesc.eSwingYMotion ==
+				PX_RAGDOLL_D6_MOTION::LIMITED;
+		const _bool bSwingZLimited =
+			tJointDesc.eSwingZMotion ==
+				PX_RAGDOLL_D6_MOTION::LIMITED;
+		if (bSwingYLimited || bSwingZLimited)
+		{
+			// PhysX는 Cone을 설정할 때 사용하지 않는 축의 각도까지
+			// (0, PI) 범위로 검사하므로 유효한 더미 각도를 사용한다.
+			constexpr _float UNUSED_SWING_LIMIT_DEGREES = 45.f;
+			PxJointLimitCone tSwingLimit{
+				XMConvertToRadians(
+					bSwingYLimited
+						? tJointDesc.fSwingYDegrees
+						: UNUSED_SWING_LIMIT_DEGREES),
+				XMConvertToRadians(
+					bSwingZLimited
+						? tJointDesc.fSwingZDegrees
+						: UNUSED_SWING_LIMIT_DEGREES)
+			};
+			ApplyAngularLimitResponse(
+				tSwingLimit,
+				tJointDesc);
+			pJoint->setSwingLimit(tSwingLimit);
+		}
 
 		pJoint->setBreakForce(
 			tJointDesc.fBreakForce,

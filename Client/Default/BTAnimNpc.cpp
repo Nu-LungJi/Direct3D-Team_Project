@@ -2,7 +2,7 @@
 #include "BTAnimNpc.h"
 #include "ComAnimator.h" 
 #include "ComCharacterMoveIntent.h"
-#include "NpcMom.h"
+#include "WorldAgent.h"
 #include "Player.h"
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
@@ -41,11 +41,12 @@ EVALUATE CBTAnimNpc::Evaluate(_float fTimeDelta)
 	auto pBT = Get_ComBT();
 	if (nullptr == pBT) return m_eDebug = EVALUATE::FAILED;
 	
-	auto pOwner = static_cast<CNpcMom*>(pBT->GetGameObject());
+	auto pOwner = static_cast<CWorldAgent*>(pBT->GetGameObject());
 	if(nullptr == pOwner) return m_eDebug = EVALUATE::FAILED;
 		
 	auto pTarget = pOwner->Get_Target();
-	if(nullptr == pTarget) return m_eDebug = EVALUATE::FAILED;
+	auto pBB = pOwner->Get_BlackBoard();
+	if(nullptr == pTarget || nullptr == pBB) return m_eDebug = EVALUATE::FAILED;
 
 	_vector vDestPos = pTarget->GetTransform().GetState(STATE::POSITION);
 	auto pAnimator = (Get_Component<CComAnimator>(m_Handle, "ComCModelAnimator"));
@@ -53,11 +54,12 @@ EVALUATE CBTAnimNpc::Evaluate(_float fTimeDelta)
 	auto pMoveIntent = Get_Component<CComCharacterMoveIntent>(m_Handle, "ComCharacterMoveIntent");
 	
 	if (pTransform == nullptr || pAnimator == nullptr || pMoveIntent == nullptr ||
-		-1 == m_Value.iAnimIndex)
+		-1 == m_iAnimIndex)
 		return m_eDebug = EVALUATE::FAILED;
+	
 	_vector vSrcPos = pTransform->GetState(STATE::POSITION);
 	pAnimator->SetPlay(true);
-	pAnimator->Play_Anim(m_Value.iAnimIndex, m_bLoop, m_fBlend);
+	pAnimator->Play_Anim(m_iAnimIndex, m_bLoop, m_fBlend);
 	if (m_bStart)
 	{
 		m_fDis = XMVectorGetX(XMVector3Length(vDestPos - vSrcPos));
@@ -116,7 +118,7 @@ EVALUATE CBTAnimNpc::Evaluate(_float fTimeDelta)
 void CBTAnimNpc::Update_Gui()
 {
 	__super::Update_Gui();
-	if (ImGui::TreeNode("Attanim"))
+	if (ImGui::TreeNode("Anim"))
 	{
 		DragFloat("Move Speed", m_Value.fSpeed);
 		DragFloat("RotTime", m_Value.fTime);
@@ -132,7 +134,8 @@ void CBTAnimNpc::Update_Gui()
 			if (-1 != iIndex)
 			{
 				m_bPopup = false;
-				m_Value.iAnimIndex = iIndex;
+				m_AnimName = CGameInstance::Get().GetAnimName(iIndex, Get_Handle());
+
 			}
 			ImGui::PopStyleColor();
 		}
@@ -169,8 +172,8 @@ nlohmann::json CBTAnimNpc::Save_Node()
 	nlohmann::json j = __super::Save_Node();
 	SaveJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	SaveJsonEnum(j, "MOVE", m_eMove);
-
-
+	JsonSaveLoadManager::SaveJsonTypeString(j, "AnimName", m_AnimName);
+	
 	return j;
 }
 HRESULT CBTAnimNpc::Load_json(const nlohmann::json& j)
@@ -178,6 +181,8 @@ HRESULT CBTAnimNpc::Load_json(const nlohmann::json& j)
 	__super::Load_json(j);
 	LoadJsonValue(j, "MoveSpeed", m_Value.fSpeed);
 	LoadJsonEnum(j, "MOVE", m_eMove);
+	JsonSaveLoadManager::LoadJsonTypeString(j, "AnimName", m_AnimName);
+	
 
 	return S_OK;
 }
@@ -188,7 +193,24 @@ void CBTAnimNpc::OnEnter()
 	__super::OnEnter();
 	m_fTime = 0.f;
 
+	
+	if (m_iAnimIndex == -1)
+	{
+		auto* pBT = Get_ComBT();
+		if (nullptr == pBT) return;
 
+		auto* pSrc = static_cast<CWorldAgent*>(pBT->GetGameObject());
+		if (nullptr == pSrc) return;
+
+		auto* pBB = pBT->Get_Blackboard();
+		if (nullptr == pBB) return;
+
+		auto* pAnimName = pBB->Get_Value<_string>(PUBLIC_KEY::ANIMNAME);
+		if (nullptr != pAnimName)
+			m_iAnimIndex = pSrc->Find_AnimIndex(*pAnimName);
+		else
+			m_iAnimIndex = pSrc->Find_AnimIndex(m_AnimName);
+	}
 
 
 }

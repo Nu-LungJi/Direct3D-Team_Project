@@ -195,7 +195,7 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 			if (p.loop)
 			{
 				p.life = 0.f;
-				if ((p.iBehaviorType & CParticle::BEHAVIOR_ORBIT) == 0)
+				if ((p.iBehaviorType & (CParticle::BEHAVIOR_ORBIT | CParticle::BEHAVIOR_SPIRAL)) == 0)
 				{
 					p.vPosition = p.originalPosition;
 					p.vVelocity = p.originalVelocity;
@@ -214,7 +214,7 @@ void CParticle_CPU::Simulate(E::_float fTimeDelta)
 		float ageRatio = std::clamp(p.life / p.fMaxLife, 0.f, 1.f);
 
 		UpdateBehavior(p, fTimeDelta);
-		if ((p.iBehaviorType & CParticle::BEHAVIOR_ORBIT) == 0)
+		if ((p.iBehaviorType & (CParticle::BEHAVIOR_ORBIT | CParticle::BEHAVIOR_SPIRAL)) == 0)
 			XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.vPosition) + XMLoadFloat3(&p.vVelocity) * fTimeDelta);
 
 		if (m_vecInstancedData.size() >= m_iNumElements)
@@ -324,6 +324,7 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 	const bool hasCircleToWave = (p.iBehaviorType & BEHAVIOR_CIRCLE_TO_WAVE) != 0;
 	const bool hasGravity = (p.iBehaviorType & BEHAVIOR_GRAVITY) != 0;
 	const bool hasOrbit = (p.iBehaviorType & BEHAVIOR_ORBIT) != 0;
+	const bool hasSpiral = (p.iBehaviorType & BEHAVIOR_SPIRAL) != 0;
 	if (hasCircleToWave)
 	{
 		const uint32_t particleIndex = static_cast<uint32_t>(&p - m_Particles.data());
@@ -413,7 +414,7 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 			finalVelocity = patternVelocity + ringVelocity + chaosVelocity * chaosT + planeNormal * (depthVelocity * chaosT);
 		XMStoreFloat3(&p.vVelocity, finalVelocity);
 	}
-	if (hasGravity && !hasOrbit)
+	if (hasGravity && !hasOrbit && !hasSpiral)
 	{
 		constexpr float gravity = -9.8f;
 		if (hasCircleToWave)
@@ -448,7 +449,10 @@ void CParticle_CPU::UpdateBehavior(PARTICLE_CPU_DATA& p, E::_float fTimeDelta)
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_KEEPROTATE) != 0) {
 		KeepRotate(p, fTimeDelta);
 	}
-	if ((p.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0) {
+	if ((p.iBehaviorType & CParticle::BEHAVIOR_SPIRAL) != 0) {
+		Spiral(p, fTimeDelta);
+	}
+	else if ((p.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0) {
 		Orbit(p, fTimeDelta);
 	}
 	if ((p.iBehaviorType & CParticle::BEHAVIOR_FADEOUT_LATE) != 0) {
@@ -540,6 +544,25 @@ void CParticle_CPU::Orbit(PARTICLE_CPU_DATA& p, _float fTimeDelta)
 	vAxis = XMVector3Normalize(vAxis);
 	const _vector vOrbitRotation = XMQuaternionRotationAxis(vAxis, p.fRotationSpeed * fTimeDelta);
 	XMStoreFloat3(&p.vPosition, XMLoadFloat3(&p.originalPosition) + XMVector3Rotate(vOffset, vOrbitRotation));
+}
+
+void CParticle_CPU::Spiral(PARTICLE_CPU_DATA& p, _float fTimeDelta)
+{
+	_vector vAxis = XMLoadFloat3(&p.roationAxis);
+	if (XMVectorGetX(XMVector3LengthSq(vAxis)) <= 0.000001f)
+		return;
+
+	vAxis = XMVector3Normalize(vAxis);
+	const _vector vCenter = XMLoadFloat3(&p.originalPosition);
+	const _vector vOffset = XMLoadFloat3(&p.vPosition) - vCenter;
+	const _vector vSpiralRotation = XMQuaternionRotationAxis(
+		vAxis, p.fRotationSpeed * fTimeDelta);
+	const _vector vNextCenter =
+		vCenter + XMLoadFloat3(&p.vVelocity) * fTimeDelta;
+
+	XMStoreFloat3(&p.originalPosition, vNextCenter);
+	XMStoreFloat3(&p.vPosition,
+		vNextCenter + XMVector3Rotate(vOffset, vSpiralRotation));
 }
 
 void CParticle_CPU::Lightning(PARTICLE_CPU_DATA& p, _float fTimeDelta){
@@ -1116,7 +1139,7 @@ void CParticle_CPU::TransformOwner(uint32_t ownerId, const _float4x4& deltaMatri
 		XMStoreFloat3(&particle.originalPosition, XMVector3TransformCoord(XMLoadFloat3(&particle.originalPosition), deltaMatrix));
 		XMStoreFloat3(&particle.vVelocity, XMVector3Rotate(XMLoadFloat3(&particle.vVelocity), deltaRotation));
 		XMStoreFloat3(&particle.originalVelocity, XMVector3Rotate(XMLoadFloat3(&particle.originalVelocity), deltaRotation));
-		if ((particle.iBehaviorType & CParticle::BEHAVIOR_ORBIT) != 0)
+		if ((particle.iBehaviorType & (CParticle::BEHAVIOR_ORBIT | CParticle::BEHAVIOR_SPIRAL)) != 0)
 			XMStoreFloat3(&particle.roationAxis, XMVector3Rotate(XMLoadFloat3(&particle.roationAxis), deltaRotation));
 
 		particle.rotation.x = std::remainder(particle.rotation.x + fDeltaPitch, XM_2PI);

@@ -251,6 +251,7 @@
     <ClInclude Include="..\Public\CinematicTypes.h" />
     <ClInclude Include="..\public\ComPxCharacterController.h" />
     <ClInclude Include="..\Public\ComCharacterMoveIntent.h" />
+    <ClInclude Include="..\Public\ComFootIK.h" />
     <ClInclude Include="..\Public\ComCharacterMotor.h" />
     <ClInclude Include="..\Public\ComSound.h" />
     <ClInclude Include="..\Public\ComSocket.h" />
@@ -304,9 +305,11 @@
     <ClInclude Include="..\Public\EventManager.h" />
     <ClInclude Include="..\Public\Engine_ParticleDefines.h" />
     <ClInclude Include="..\Public\HizBuffer.h" />
+    <ClInclude Include="..\Public\MapMeshInstanceBatchCollector.h" />
     <ClInclude Include="..\Public\MapMeshGpuCuller.h" />
     <ClInclude Include="..\Public\ButtonComponent.h" />
     <ClInclude Include="..\Public\MapMeshInstancingRenderer.h" />
+    <ClInclude Include="..\Public\MapMeshTextureCache.h" />
     <ClInclude Include="..\Public\Model_Instance_Manager.h" />
     <ClInclude Include="..\public\GameInstanceInitLoader.h" />
     <ClInclude Include="..\public\LuaScriptInstance.h" />
@@ -369,6 +372,13 @@
     <ClInclude Include="..\Public\Level.h" />
     <ClInclude Include="..\Public\LevelManager.h" />
     <ClInclude Include="..\Public\ComModelInstance.h" />
+	<ClInclude Include="..\Public\MapChunk.h" />
+	<ClInclude Include="..\Public\MapChunkDebugRenderer.h" />
+	<ClInclude Include="..\Public\MapChunkSerializer.h" />
+	<ClInclude Include="..\Public\MapChunkStreamer.h" />
+	<ClInclude Include="..\Public\MapMaterialRepository.h" />
+	<ClInclude Include="..\Public\MapModelResourceTracker.h" />
+	<ClInclude Include="..\Public\MapRuntimeObjectFactory.h" />
     <ClInclude Include="..\Public\MapManager.h" />
     <ClInclude Include="..\Public\MapStaticModelLoader.h" />
     <ClInclude Include="..\Public\MapMeshObject.h" />
@@ -380,7 +390,6 @@
     <ClInclude Include="..\Public\LightPlacementData.h" />
     <ClInclude Include="..\Public\LightPlacementEditor.h" />
     <ClInclude Include="..\Public\LightPlacementObject.h" />
-    <ClInclude Include="..\Public\MyTreeNode.h" />
     <ClInclude Include="..\public\NodeEditor.h" />
     <ClInclude Include="..\Public\OctreeNode.h" />
     <ClInclude Include="..\Public\Particle.h" />
@@ -603,6 +612,7 @@
     <ClCompile Include="..\Private\CinematicSystem.cpp" />
     <ClCompile Include="..\private\ComPxCharacterController.cpp" />
     <ClCompile Include="..\Private\ComCharacterMoveIntent.cpp" />
+    <ClCompile Include="..\Private\ComFootIK.cpp" />
     <ClCompile Include="..\Private\ComCharacterMotor.cpp" />
     <ClCompile Include="..\Private\ComSound.cpp" />
     <ClCompile Include="..\Private\ComSocket.cpp" />
@@ -664,9 +674,11 @@
     <ClCompile Include="..\Private\EventManager.cpp" />
     <ClCompile Include="..\Private\HizBuffer.cpp" />
     <ClCompile Include="..\Private\HizOcclusionCuller.cpp" />
+    <ClCompile Include="..\Private\MapMeshInstanceBatchCollector.cpp" />
     <ClCompile Include="..\Private\MapMeshGpuCuller.cpp" />
     <ClCompile Include="..\Private\ButtonComponent.cpp" />
     <ClCompile Include="..\Private\MapMeshInstancingRenderer.cpp" />
+    <ClCompile Include="..\Private\MapMeshTextureCache.cpp" />
     <ClCompile Include="..\Private\Model_Instance_Manager.cpp" />
     <ClCompile Include="..\private\GameInstanceInitLoader.cpp" />
     <ClCompile Include="..\private\LuaScriptInstance.cpp" />
@@ -713,6 +725,13 @@
     <ClCompile Include="..\Private\LightManager.cpp" />
     <ClCompile Include="..\Private\LightPlacementEditor.cpp" />
     <ClCompile Include="..\Private\LightPlacementObject.cpp" />
+	<ClCompile Include="..\Private\MapChunk.cpp" />
+	<ClCompile Include="..\Private\MapChunkDebugRenderer.cpp" />
+	<ClCompile Include="..\Private\MapChunkSerializer.cpp" />
+	<ClCompile Include="..\Private\MapChunkStreamer.cpp" />
+	<ClCompile Include="..\Private\MapMaterialRepository.cpp" />
+	<ClCompile Include="..\Private\MapModelResourceTracker.cpp" />
+	<ClCompile Include="..\Private\MapRuntimeObjectFactory.cpp" />
     <ClCompile Include="..\Private\MapManager.cpp" />
     <ClCompile Include="..\Private\MapMeshObject.cpp" />
     <ClCompile Include="..\Private\Terrain.cpp" />
@@ -827,6 +846,9 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\RayMarching\PS_Volumetric.hlsl" />
+    <FxCompile Include="..\ShaderFiles\RayMarching\VS_Volumetric.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Terrain\Shader_Terrain.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -926,6 +948,7 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_DynamicInstanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced_Foliage.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_NonInstanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxPartObject.hlsl" />
