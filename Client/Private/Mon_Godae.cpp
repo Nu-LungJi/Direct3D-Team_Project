@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Mon_Godae.h"
+#include "Monster.h"
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
 #include "ComCharacterMoveIntent.h"

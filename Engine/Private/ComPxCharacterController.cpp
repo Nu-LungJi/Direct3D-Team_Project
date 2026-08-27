@@ -61,6 +61,15 @@ namespace Engine
 
 			return tResult;
 		}
+
+		_bool HasCCTBehaviorFlag(
+			PX_CCT_BEHAVIOR eBehavior,
+			PX_CCT_BEHAVIOR eFlag)
+		{
+			return (static_cast<uint8_t>(eBehavior) &
+				static_cast<uint8_t>(eFlag)) != 0;
+		}
+
 	}
 
 	struct CComPxCharacterController::Impl :
@@ -74,11 +83,120 @@ namespace Engine
 	{
 		CComPxCharacterController* pOwner = nullptr;
 		physx::PxControllerCollisionFlags collisionFlags{};
+		_bool bPreventUpwardProjection{};
+		_bool bConstrainHorizontalToInput{};
+		_bool bApplyingDirectionalCorrection{};
 
-		
+		void BeginMove()
+		{
+			bPreventUpwardProjection = false;
+			bConstrainHorizontalToInput = false;
+			bApplyingDirectionalCorrection = false;
+		}
+
+		void AccumulateBehavior(PX_CCT_BEHAVIOR eBehavior)
+		{
+			if (HasCCTBehaviorFlag(
+				eBehavior,
+				PX_CCT_BEHAVIOR::PREVENT_UPWARD_PROJECTION))
+			{
+				bPreventUpwardProjection = true;
+			}
+			if (HasCCTBehaviorFlag(
+				eBehavior,
+				PX_CCT_BEHAVIOR::CONSTRAIN_HORIZONTAL_TO_INPUT))
+			{
+				bConstrainHorizontalToInput = true;
+			}
+		}
+
+		physx::PxControllerCollisionFlags RemoveUnrequestedHorizontalDisplacement(
+			physx::PxController& controller,
+			const physx::PxExtendedVec3& vPositionBeforeMove,
+			const XMFLOAT3& vRequestedDisplacement,
+			_float fMinDistance,
+			_float fTimeStep,
+			const physx::PxFilterData& tMoveFilter)
+		{
+			physx::PxControllerCollisionFlags correctionFlags{};
+			if (!bConstrainHorizontalToInput)
+				return correctionFlags;
+
+			const physx::PxExtendedVec3 vPositionAfterMove =
+				controller.getPosition();
+			const double fActualX =
+				vPositionAfterMove.x - vPositionBeforeMove.x;
+			const double fActualZ =
+				vPositionAfterMove.z - vPositionBeforeMove.z;
+			const double fRequestedHorizontalLengthSq =
+				static_cast<double>(vRequestedDisplacement.x) *
+				vRequestedDisplacement.x +
+				static_cast<double>(vRequestedDisplacement.z) *
+				vRequestedDisplacement.z;
+			double fLateralX = fActualX;
+			double fLateralZ = fActualZ;
+
+			if (fRequestedHorizontalLengthSq > 1e-10)
+			{
+				const double fRequestedHorizontalLength =
+					sqrt(fRequestedHorizontalLengthSq);
+				const double fDirectionX =
+					vRequestedDisplacement.x / fRequestedHorizontalLength;
+				const double fDirectionZ =
+					vRequestedDisplacement.z / fRequestedHorizontalLength;
+				const double fForwardDistance =
+					fActualX * fDirectionX + fActualZ * fDirectionZ;
+				fLateralX -= fDirectionX * fForwardDistance;
+				fLateralZ -= fDirectionZ * fForwardDistance;
+			}
+
+			const double fLateralLengthSq =
+				fLateralX * fLateralX + fLateralZ * fLateralZ;
+			if (fLateralLengthSq <= 1e-10)
+				return correctionFlags;
+
+			bApplyingDirectionalCorrection = true;
+			correctionFlags = controller.move(
+				physx::PxVec3{
+					static_cast<float>(-fLateralX),
+					0.f,
+					static_cast<float>(-fLateralZ) },
+				fMinDistance,
+				fTimeStep,
+				physx::PxControllerFilters(
+					&tMoveFilter,
+					this,
+					this));
+			bApplyingDirectionalCorrection = false;
+			return correctionFlags;
+		}
+
+		void ClampUnrequestedUpwardDisplacement(
+			physx::PxController& controller,
+			const physx::PxExtendedVec3& vPositionBeforeMove,
+			const XMFLOAT3& vRequestedDisplacement) const
+		{
+			if (!bPreventUpwardProjection)
+				return;
+
+			physx::PxExtendedVec3 vCorrectedPosition =
+				controller.getPosition();
+			const double fRequestedUpwardDisplacement =
+				std::max(0.f, vRequestedDisplacement.y);
+			const double fMaximumAllowedY =
+				vPositionBeforeMove.y + fRequestedUpwardDisplacement;
+			if (vCorrectedPosition.y <= fMaximumAllowedY)
+				return;
+
+			vCorrectedPosition.y = fMaximumAllowedY;
+			controller.setPosition(vCorrectedPosition);
+		}
+
 		void onShapeHit(const physx::PxControllerShapeHit& hit) override
 		{
 			if (!pOwner || !pOwner->GetGameObject())
+				return;
+			if (bApplyingDirectionalCorrection)
 				return;
 
 			auto* pManager = CGameInstance::Get().GetPhysXManager();
@@ -86,8 +204,16 @@ namespace Engine
 				return;
 
 			CHandle hOther{};
+			CGameObject* pOtherGameObject =
+				pManager->FindGameObject(hit.actor);
 			if (const auto userData = pManager->FindActorUserData(hit.actor))
 				hOther = userData->hGameObject;
+
+			const PX_CCT_BEHAVIOR eBehavior =
+				pOwner->GetGameObject()->GetCCTShapeBehavior(
+					pOtherGameObject);
+			AccumulateBehavior(eBehavior);
+
 			PX_CCT_HIT_DATA tHit = ConvertHitData(hit, nullptr);
 			FillOtherShapeData(*pManager, hit.shape, hOther, tHit);
 
@@ -98,6 +224,8 @@ namespace Engine
 		void onControllerHit(const physx::PxControllersHit& hit) override
 		{
 			if (!pOwner || !pOwner->GetGameObject())
+				return;
+			if (bApplyingDirectionalCorrection)
 				return;
 
 			auto* pManager = CGameInstance::Get().GetPhysXManager();
@@ -120,6 +248,8 @@ namespace Engine
 		void onObstacleHit(const physx::PxControllerObstacleHit& hit) override
 		{
 			if (!pOwner || !pOwner->GetGameObject())
+				return;
+			if (bApplyingDirectionalCorrection)
 				return;
 
 			PX_CCT_OBSTACLE_HIT_DATA tResult{};
@@ -152,6 +282,11 @@ namespace Engine
 			const PX_CCT_BEHAVIOR eBehavior = pOwnerObject
 				? pOwnerObject->GetCCTShapeBehavior(pGameObject)
 				: PX_CCT_BEHAVIOR::CAN_RIDE;
+
+			// [LSY] Hit Report가 발생하지 않는 겹침 복구 경로에서도 Shape 정책은
+			// 조회되므로, 이번 move에 적용할 엔진 확장 정책을 여기서도 기록한다.
+			AccumulateBehavior(eBehavior);
+
 			return ConvertBehavior(eBehavior);
 		}
 
@@ -428,6 +563,10 @@ PX_CCT_COLLISION_FLAG CComPxCharacterController::Move(const XMFLOAT3& vDisplacem
 	if (!m_pController || !m_pImpl)
 		return PX_CCT_COLLISION_FLAG::NONE;
 
+	const PxExtendedVec3 vPositionBeforeMove =
+		m_pController->getPosition();
+	m_pImpl->BeginMove();
+
 	PxVec3 disp(vDisplacement.x, vDisplacement.y, vDisplacement.z);
 	PxFilterData tMoveFilter{};
 	tMoveFilter.word0 = m_tFilter.iQueryMask;
@@ -441,6 +580,41 @@ PX_CCT_COLLISION_FLAG CComPxCharacterController::Move(const XMFLOAT3& vDisplacem
 			m_pImpl.get(),
 			m_pImpl.get())
 	);
+
+	// [LSY] 회전 문이 입력에 없던 횡이동을 추가했으면 반대 방향 CCT Sweep으로
+	// 제거한다. 강제 위치 설정이 아니므로 다른 Shape가 막으면 안전하게 정지한다.
+	m_pImpl->collisionFlags |=
+		m_pImpl->RemoveUnrequestedHorizontalDisplacement(
+			*m_pController,
+			vPositionBeforeMove,
+			vDisplacement,
+			fMinDistance,
+			fTimeStep,
+			tMoveFilter);
+
+	// [LSY] HitReport가 없는 단순 Standing 접촉도 같은 정책을 적용한다.
+	if (!m_pImpl->bPreventUpwardProjection)
+	{
+		PxControllerState tState{};
+		m_pController->getState(tState);
+		auto* pManager = CGameInstance::Get().GetPhysXManager();
+		CGameObject* pStandingObject = pManager && tState.touchedActor
+			? pManager->FindGameObject(tState.touchedActor)
+			: nullptr;
+		CGameObject* pOwnerObject = GetGameObject();
+		if (pOwnerObject && pStandingObject)
+		{
+			m_pImpl->bPreventUpwardProjection = HasCCTBehaviorFlag(
+				pOwnerObject->GetCCTShapeBehavior(pStandingObject),
+				PX_CCT_BEHAVIOR::PREVENT_UPWARD_PROJECTION);
+		}
+	}
+
+	// [LSY] 사용자가 요청한 상승은 보존하고 충돌 투영이 추가한 상승만 제거한다.
+	m_pImpl->ClampUnrequestedUpwardDisplacement(
+		*m_pController,
+		vPositionBeforeMove,
+		vDisplacement);
 
 	uint8_t iResult{};
 	if (m_pImpl->collisionFlags.isSet(PxControllerCollisionFlag::eCOLLISION_SIDES))

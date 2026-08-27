@@ -339,13 +339,6 @@ void CAccioBall::OnSleep()
 	m_fAutoSleepElapsed = 0.f;
 }
 
-_bool CAccioBall::ApplyImpulse(const _float3& vImpulse)
-{
-	m_bSettled = false;
-	m_fAutoSleepElapsed = 0.f;
-	return m_pComPxRigidBody && m_pComPxRigidBody->AddImpulse(vImpulse);
-}
-
 _bool CAccioBall::ApplyTorque(const _float3& vTorque)
 {
 	m_bSettled = false;
@@ -544,10 +537,20 @@ _bool CAccioBall::SetMotionTuning(
 	_float fLinearDamping,
 	_float fAngularDamping)
 {
-	return m_pComPxRigidBody &&
-		m_pComPxRigidBody->SetMass(std::max(fMass, 0.001f)) &&
-		m_pComPxRigidBody->SetLinearDamping(std::max(fLinearDamping, 0.f)) &&
-		m_pComPxRigidBody->SetAngularDamping(std::max(fAngularDamping, 0.f));
+	if (!m_pComPxRigidBody)
+		return false;
+
+	const _bool bMassUpdated = m_pComPxRigidBody->SetMass(
+		std::max(fMass, 0.001f));
+	const _bool bLinearDampingUpdated =
+		m_pComPxRigidBody->SetLinearDamping(
+			std::max(fLinearDamping, 0.f));
+	const _bool bAngularDampingUpdated =
+		m_pComPxRigidBody->SetAngularDamping(
+			std::max(fAngularDamping, 0.f));
+	return bMassUpdated &&
+		bLinearDampingUpdated &&
+		bAngularDampingUpdated;
 }
 
 _bool CAccioBall::ResetToInitialPose()

@@ -252,7 +252,8 @@
     <ClInclude Include="..\public\AccioActivity_BumperB.h" />
     <ClInclude Include="..\public\AccioActivity_RampLarge.h" />
     <ClInclude Include="..\public\AccioActivity_LampSmall.h" />
-    <ClInclude Include="..\public\AccioActivity_Npc.h" />
+    <ClInclude Include="..\public\AccioActivity_NpcController.h" />
+    <ClInclude Include="..\public\AccioActivity_NpcCharacter.h" />
     <ClInclude Include="..\public\PropBarrel.h" />
     <ClInclude Include="..\public\PropBarrelDebris.h" />
     <ClInclude Include="..\public\SkillTarget.h" />
@@ -366,6 +367,7 @@
     <ClInclude Include="..\Public\Player_RevelioSkill_State.h" />
     <ClInclude Include="..\Public\Player_LumosSkill_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
+    <ClInclude Include="..\Public\Player_DoorPush_State.h" />
     <ClInclude Include="..\Public\Player_Jump_State.h" />
     <ClInclude Include="..\Public\Player_Bombarda_Bullet.h" />
     <ClInclude Include="..\Public\Player_Confringo_Bullet.h" />
@@ -466,7 +468,8 @@
     <ClCompile Include="..\private\AccioActivity_BumperB.cpp" />
     <ClCompile Include="..\private\AccioActivity_RampLarge.cpp" />
     <ClCompile Include="..\private\AccioActivity_LampSmall.cpp" />
-    <ClCompile Include="..\private\AccioActivity_Npc.cpp" />
+    <ClCompile Include="..\private\AccioActivity_NpcController.cpp" />
+    <ClCompile Include="..\private\AccioActivity_NpcCharacter.cpp" />
     <ClCompile Include="..\private\PropBarrel.cpp" />
     <ClCompile Include="..\private\PropBarrelDebris.cpp" />
     <ClCompile Include="..\private\SkillTarget.cpp" />
@@ -573,6 +576,7 @@
     <ClCompile Include="..\Private\Player_RevelioSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_LumosSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
+    <ClCompile Include="..\Private\Player_DoorPush_State.cpp" />
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
     <ClCompile Include="..\Private\Player_Bombarda_Bullet.cpp" />
     <ClCompile Include="..\Private\Player_Confringo_Bullet.cpp" />

@@ -57,7 +57,6 @@ private:
 public:
 	static UPtr<CAccioActivity_Platform> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
-	CComPxBoxCollider* GetNpcMoveAreaTrigger() const { return m_pComPxNpcMoveAreaTrigger; }
 	_bool GetNpcMoveAreaWorldOBB(BoundingOrientedBox& outArea) const;
 
 protected:

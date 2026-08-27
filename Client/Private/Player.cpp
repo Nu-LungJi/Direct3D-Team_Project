@@ -29,6 +29,7 @@
 #include "Player_Jump_State.h"
 #include "Player_Roll_State.h"
 #include "Player_Attack_State.h"
+#include "Player_DoorPush_State.h"
 #include "Player_Hit_State.h"
 #include "Player_Knockdown_State.h"
 #include "PlayerAnimationRatioGuard.h"
@@ -57,6 +58,7 @@
 #include "WiggenweldPotion.h"
 #include "PropBarrel.h"
 #include "AccioBall.h"
+#include "PhysicsDoor.h"
 #include "Light.h"
 #include "Trail_CPU.h"
 #include "UIController.h"
@@ -65,6 +67,8 @@ NS_USING(Client)
 
 namespace
 {
+	constexpr _float DOOR_PUSH_CONTACT_GRACE_TIME = 0.15f;
+
 	_bool IsPlayerLockOnTargetCandidate(
 		const CGameObject* pObject,
 		const CHandle& hPlayer)
@@ -384,7 +388,9 @@ HRESULT CPlayer::Initialize(void* pArg)
 		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::PLAYER_SHAPE_HURTBOX);
 		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX);
 		Desc.tFilter.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
-		Desc.tFilter.iSimulationMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
+		Desc.tFilter.iSimulationMask =
+			ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE) |
+			ETOUI(COLLISION_LAYER::TRIGGER);
 		Desc.tFilter.iNotifyFlags =
 			PX_NOTIFY_TOUCH_FOUND |
 			PX_NOTIFY_CONTACT_POINTS;
@@ -472,6 +478,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::ATTACK,
 			CPlayer_Attack_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::DOOR_PUSH,
+			CPlayer_DoorPush_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -2104,11 +2116,9 @@ void CPlayer::PrepareLocomotionResume()
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
-	{
-
-
-	}
-
+	m_fDoorPushContactRemainTime = std::max(
+		0.f,
+		m_fDoorPushContactRemainTime - fTimeDelta);
 
 	if (nullptr == CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
 	{
@@ -3518,6 +3528,40 @@ void CPlayer::OnWake()
 void CPlayer::OnSleep()
 {
 	int x = 0;
+}
+
+void CPlayer::OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit)
+{
+	if (!tHit.pGameObject || !tHit.pGameObject->Is<CPhysicsDoor>())
+		return;
+
+	auto* pDoor = static_cast<CPhysicsDoor*>(tHit.pGameObject);
+	if (!pDoor->ApplyCCTPush(tHit))
+		return;
+
+	// [LSY] CCT 콜백에서 애니메이션을 매번 재생하지 않는다. 접촉만 갱신하고
+	// 상태 전환은 다음 PriorityUpdate에서 한 번 처리한다.
+	m_fDoorPushContactRemainTime = DOOR_PUSH_CONTACT_GRACE_TIME;
+	if (m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION)
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::DOOR_PUSH);
+	}
+}
+
+PX_CCT_BEHAVIOR CPlayer::GetCCTShapeBehavior(
+	CGameObject* pGameObject) const
+{
+	if (pGameObject && pGameObject->Is<CPhysicsDoor>())
+	{
+		// [LSY] 문은 이동 발판이 아니며, 회전 중 캡슐 아래로 파고들어
+		// 발생하는 비의도성 상승 및 입력에 없던 측면 이동을 허용하지 않는다.
+		return static_cast<PX_CCT_BEHAVIOR>(
+			static_cast<uint8_t>(PX_CCT_BEHAVIOR::PREVENT_UPWARD_PROJECTION) |
+			static_cast<uint8_t>(PX_CCT_BEHAVIOR::CONSTRAIN_HORIZONTAL_TO_INPUT));
+	}
+
+	return CGameObject::GetCCTShapeBehavior(pGameObject);
 }
 
 void CPlayer::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)
