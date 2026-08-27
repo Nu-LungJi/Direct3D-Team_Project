@@ -68,6 +68,7 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 {
 	auto WorldAgentDesc = static_cast<WORLD_AGENT_DESC*>(pArg);
 	m_TargetHandle = WorldAgentDesc->TargetHandle;
+	m_bFreezeAnimation = WorldAgentDesc->bFreezeAnimation;
 
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
@@ -232,6 +233,12 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 		m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 		m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 		m_pModelAnimator->Play_Anim(0, true);
+		if (m_bFreezeAnimation)
+		{
+			// Placement 미리보기는 첫 애니메이션의 첫 프레임을 평가한 자세로 고정한다.
+			m_pModelAnimator->Update(0.f);
+			m_pModelAnimator->SetPlay(false);
+		}
 
 		GetTransform().SetPosition(XMLoadFloat3(&WorldAgentDesc->vPos));
 		if(nullptr != m_pCharacterController)
@@ -288,6 +295,9 @@ void CWorldAgent::Update(E::_float fTimeDelta)
 
 void CWorldAgent::Update_Animation(_float fTimeDelta)
 {
+	if (m_bFreezeAnimation)
+		return;
+
 	if (m_pComModelInstance->GetModel()->GetAnimations().empty())
 		return;
 

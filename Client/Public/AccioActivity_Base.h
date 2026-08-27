@@ -41,6 +41,7 @@ public:
 
 	struct DESC : public CAccioActivityPartBase::DESC
 	{
+		_bool bNpcStartsFirst{ false };
 		std::array<ACCIO_ACTIVITY_BOX_COLLIDER_DESC, 4> BoxColliders{
 			ACCIO_ACTIVITY_BOX_COLLIDER_DESC{
 				.vHalfExtents = { 11.75f, 1.f, 0.45f },
@@ -124,9 +125,6 @@ public:
 	uint32_t GetCurrentRound() const { return m_iCurrentRound; }
 	_bool RegisterBall(const CHandle& hBall);
 	std::optional<CHandle> FindControllableBall(const CHandle& hController) const;
-	std::optional<CHandle> FindHighestScoringBall(
-		PARTICIPANT eParticipant,
-		_bool bSettledOnly = true) const;
 	std::vector<CHandle> FindScoringBalls(
 		PARTICIPANT eParticipant,
 		int32_t iMinimumScore,
@@ -138,10 +136,6 @@ public:
 		const _float3& vPathDirection,
 		_float fMovingBallRadius,
 		_float fMaximumPathDistance = FLT_MAX) const;
-	_bool CanPushBallOutsidePlayArea(
-		const CAccioBall& ball,
-		const _float3& vPushDirection,
-		_float fMaxDistanceToEdge) const;
 	std::optional<_float> GetDistanceToPlayAreaEdge(
 		const CAccioBall& ball,
 		const _float3& vPushDirection) const;
@@ -225,6 +219,7 @@ private:
 	CHandle m_hNpc{};
 	CHandle m_hActiveBall{};
 	MATCH_STATE m_eMatchState{ MATCH_STATE::READY };
+	_bool m_bNpcStartsFirst{ false };
 	uint32_t m_iCurrentRound{};
 	uint32_t m_iMaxRounds{ 3u };
 	int32_t m_iBlueScore{};

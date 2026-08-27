@@ -1119,7 +1119,10 @@
     <ClInclude Include="..\public\AccioActivity_LampSmall.h">
       <Filter>GameObject\AccioActivity</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\AccioActivity_Npc.h">
+    <ClInclude Include="..\public\AccioActivity_NpcController.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_NpcCharacter.h">
       <Filter>GameObject\AccioActivity</Filter>
     </ClInclude>
     <ClInclude Include="..\public\AccioActivity_Platform.h">
@@ -1758,7 +1761,10 @@
     <ClCompile Include="..\private\AccioActivity_LampSmall.cpp">
       <Filter>GameObject\AccioActivity</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\AccioActivity_Npc.cpp">
+    <ClCompile Include="..\private\AccioActivity_NpcController.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_NpcCharacter.cpp">
       <Filter>GameObject\AccioActivity</Filter>
     </ClCompile>
     <ClCompile Include="..\private\AccioActivity_Platform.cpp">

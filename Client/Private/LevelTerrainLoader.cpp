@@ -63,7 +63,8 @@
 #include "AccioActivity_BumperB.h"
 #include "AccioActivity_RampLarge.h"
 #include "AccioActivity_LampSmall.h"
-#include "AccioActivity_Npc.h"
+#include "AccioActivity_NpcController.h"
+#include "AccioActivity_NpcCharacter.h"
 
 NS_USING(Client)
 
@@ -150,6 +151,29 @@ std::future<bool> CLevelTerrainLoader::Load()
 						return false;
 				}
 
+				// [LSY] 학생 모델과 동일한 Skeleton에서 변환된 전용 애니메이션만 사용한다.
+				// 다른 여성 모델의 공용 Clip은 본 매핑과 루트 축 차이로 자세가 깨질 수 있다.
+				if (auto studentModel = CGameInstance::Get().AddResourceT<CResModel>(
+					LEVEL::TERRAIN,
+					"ACCIO_ACTIVITY_STUDENT_MODEL_RESOURCE",
+					CResModel::Create(
+						"./Resources/SampleClient/Models/Skeleton/"
+						"ElegantStudent_PrettyGirl2_RigCorrectedFinal/"
+						"SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin")))
+				{
+					CResModel::DESC desc{};
+					desc.PreTransformMatrix =
+						XMMatrixScaling(3.f, 3.f, 3.f) *
+						XMMatrixRotationY(XMConvertToRadians(180.f)) *
+						XMMatrixTranslation(0.f, -1.8f, 0.f);
+					if (FAILED(studentModel->Load(desc)))
+						return false;
+				}
+				else
+				{
+					return false;
+				}
+
 				if (FAILED(CGameInstance::Get().AddPrototype(
 					LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Base,
 					CAccioActivity_Base::Create())) ||
@@ -169,8 +193,11 @@ std::future<bool> CLevelTerrainLoader::Load()
 						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_LampSmall,
 						CAccioActivity_LampSmall::Create())) ||
 					FAILED(CGameInstance::Get().AddPrototype(
-						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Npc,
-						CAccioActivity_Npc::Create())))
+						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_NpcController,
+						CAccioActivity_NpcController::Create())) ||
+					FAILED(CGameInstance::Get().AddPrototype(
+						LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_NpcCharacter,
+						CAccioActivity_NpcCharacter::Create())))
 					return false;
 			}
 
@@ -730,29 +757,10 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
 		static constexpr NPC_MODEL_ENTRY NpcModels[] =
 		{
-			// TERRAIN 단일 NPC 검증용으로 AugustusHill만 로드한다.
-			// NPC 전체 선로드는 각 모델 폴더의 모든 AN_ 클립까지 메모리에 올리므로 비활성화한다.
-			/*{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },
-			{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },*/
-			{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
-			/*{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
-			{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
-			{ "Model_Resource_NPC_EffieBones", "EffieBones" },
-			{ "Model_Resource_NPC_EleazarFig", "EleazarFig" },
-			{ "Model_Resource_NPC_GladwinMoon", "GladwinMoon" },
-			{ "Model_Resource_NPC_HelenThistlewood", "HelenThistlewood" },
-			{ "Model_Resource_NPC_JasperTrout", "JasperTrout" },
-			{ "Model_Resource_NPC_LeonaPeck", "LeonaPeck" },
-			{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
-			{ "Model_Resource_NPC_NoreenBlainey", "NoreenBlainey" },
-			{ "Model_Resource_NPC_PadraicHaggarty", "PadraicHaggarty" },
-			{ "Model_Resource_NPC_PercivalPippin", "PercivalPippin" },
-			{ "Model_Resource_NPC_PhineasBlack", "PhineasBlack" },
-			{ "Model_Resource_NPC_SironaRyan", "SironaRyan" },
-			{ "Model_Resource_NPC_ThomasBrown", "ThomasBrown" },
-			{ "Model_Resource_NPC_TimothyTeasdale", "TimothyTeasdale" },*/
+			// TERRAIN Victor Rookwood 단일 검증용. 불필요한 NPC 애니메이션 선로드를 막는다.
+			{ "Model_Resource_NPC_ViectorRookwood_lsy", "ViectorRookwood_lsy" },
 		};
-		/*for (const auto& Entry : NpcModels)
+		for (const auto& Entry : NpcModels)
 		{
 			const _string ModelPath = "./Resources/SampleClient/Models/Skeleton/NPC_" + _string(Entry.pCharacter) +
 				"/SK_NPC_" + Entry.pCharacter + ".bin";
@@ -768,7 +776,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 					return E_FAIL;
 				}
 			}
-		}*/
+		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, CSpider::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_Spider");

@@ -52,7 +52,8 @@
 #include "AccioActivity_BumperB.h"
 #include "AccioActivity_RampLarge.h"
 #include "AccioActivity_LampSmall.h"
-#include "AccioActivity_Npc.h"
+#include "AccioActivity_NpcController.h"
+#include "AccioActivity_NpcCharacter.h"
 NS_USING(Client)
 
 CLevelTerrain::CLevelTerrain()
@@ -192,6 +193,13 @@ HRESULT CLevelTerrain::Initialize()
 			CAccioActivity_Base::PARTICIPANT::PLAYER,
 			m_hPlayer);
 	}
+	if (auto* pNpcController = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_NpcController>(
+			m_hAccioActivityNpcController))
+	{
+		// [LSY] 세트가 플레이어보다 먼저 생성되므로 상호작용 대상도 등록 직후 전달한다.
+		pNpcController->SetInteractionPlayerHandle(m_hPlayer);
+	}
 
 	// 미니게임 NPC 근접 상호작용 테스트용 배치.
 	// 플레이어 시작점(5, 100, 5)의 카메라 정면(+Z) 2.5m 위치다.
@@ -263,30 +271,14 @@ HRESULT CLevelTerrain::Initialize()
 		WorldNpcOption.sPrototypeTag = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc);
 		WorldNpcOption.sLayerTag = "02_Npc";
 		WorldNpcOption.sModelGroupTag = MagicEnumToStringView(LEVEL::TERRAIN);
-		WorldNpcOption.sModelResourceTag = "Model_Resource_Spider";
+		WorldNpcOption.sModelResourceTag = "Model_Resource_NPC_ViectorRookwood_lsy";
 		WorldNpcOption.sBehaviorMajorTag = "BTJSON";
 		WorldNpcOption.sBehaviorMinorTag = "NPC1";
 		WorldNpcOption.eRuntimeType = E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
 		pNpcManager->RegisterNpcOption("World NPC", WorldNpcOption);
 		pNpcManager->RegisterNpcSkeletonOption(
-			WorldNpcOption.sPrototypeTag, "Spider Skeleton",
+			WorldNpcOption.sPrototypeTag, "Victor Rookwood (lsy)",
 			WorldNpcOption.sModelGroupTag, WorldNpcOption.sModelResourceTag);
-		struct NPC_SKELETON_OPTION { const char* pName; const char* pTag; };
-		static constexpr NPC_SKELETON_OPTION NpcSkeletons[] =
-		{
-			{ "Aesop Sharp", "Model_Resource_NPC_VictorRookwood" },
-			{ "Albie Weekes", "Model_Resource_NPC_AlbieWeekes" }, { "Anne Sallow", "Model_Resource_NPC_AnneSallow" },
-			{ "Augustus Hill", "Model_Resource_NPC_AugustusHill" }, { "Crispin Dunn", "Model_Resource_NPC_CrispinDunn" },
-			{ "Effie Bones", "Model_Resource_NPC_EffieBones" }, { "Eleazar Fig", "Model_Resource_NPC_EleazarFig" },
-			{ "Gladwin Moon", "Model_Resource_NPC_GladwinMoon" }, { "Helen Thistlewood", "Model_Resource_NPC_HelenThistlewood" },
-			{ "Jasper Trout", "Model_Resource_NPC_JasperTrout" }, { "Leona Peck", "Model_Resource_NPC_LeonaPeck" },
-			{ "Leopold Babcocke", "Model_Resource_NPC_LeopoldBabcocke" }, { "Noreen Blainey", "Model_Resource_NPC_NoreenBlainey" },
-			{ "Padraic Haggarty", "Model_Resource_NPC_PadraicHaggarty" }, { "Percival Pippin", "Model_Resource_NPC_PercivalPippin" },
-			{ "Phineas Black", "Model_Resource_NPC_PhineasBlack" }, { "Sirona Ryan", "Model_Resource_NPC_SironaRyan" },
-			{ "Thomas Brown", "Model_Resource_NPC_ThomasBrown" }, { "Timothy Teasdale", "Model_Resource_NPC_TimothyTeasdale" },
-		};
-		for (const auto& Option : NpcSkeletons)
-			pNpcManager->RegisterNpcSkeletonOption(WorldNpcOption.sPrototypeTag, Option.pName, WorldNpcOption.sModelGroupTag, Option.pTag);
 		pNpcManager->RegisterBehaviorOption("Spider", "BTJSON", "SPIDER");
 		pNpcManager->RegisterBehaviorOption("Run Spider", "BTJSON", "RUNSPIDER");
 		pNpcManager->RegisterBehaviorOption("World NPC", "BTJSON", "NPC1");
@@ -328,6 +320,7 @@ HRESULT CLevelTerrain::Initialize()
 				Desc.vRot = Placement.vRotation;
 				Desc.vScale = Placement.vScale;
 				Desc.bDonMove = Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
+				Desc.bFreezeAnimation = true;
 				hNpc = E::CGameInstance::Get().AddGameObjectToLayer(
 					Placement.sPrototypeGroupTag, Placement.sPrototypeTag, Placement.sLayerTag, &Desc);
 			}
@@ -1238,7 +1231,7 @@ HRESULT CLevelTerrain::SpawnAccioActivitySet(
 	};
 
 	std::vector<CHandle> spawnedHandles{};
-	spawnedHandles.reserve(13);
+	spawnedHandles.reserve(15);
 	const auto rollbackSpawnedObjects = [&spawnedHandles]()
 	{
 		for (auto iter = spawnedHandles.rbegin();
@@ -1353,37 +1346,126 @@ HRESULT CLevelTerrain::SpawnAccioActivitySet(
 		}
 	}
 
-	CAccioActivity_Npc::DESC npcDesc{};
-	npcDesc.sObjectTag = "AccioActivity_Npc";
-	npcDesc.hActivity = *hBase;
-	npcDesc.hPlatform = *hPlatform;
-	// [LSY] NPC의 X는 이동 영역 중앙에, Y는 실제 플랫폼 상판에 맞춘다.
-	// Z는 경기장을 바라보는 기준으로 뒤쪽 경계 안에 배치한다.
-	const _float fNpcRestLocalZ =
-		platformDesc.NpcMoveAreaTrigger.vLocalOffset.z -
+	CAccioActivity_NpcCharacter::DESC npcCharacterDesc{};
+	CAccioActivity_NpcController::DESC npcControllerDesc{};
+	npcControllerDesc.sObjectTag = "AccioActivity_NpcController";
+	npcControllerDesc.hActivity = *hBase;
+	npcControllerDesc.hPlatform = *hPlatform;
+	npcControllerDesc.hInteractionPlayer = m_hPlayer;
+	npcControllerDesc.SpeakerName = "호그와트 학생";
+	npcControllerDesc.fInteractionDistance = 10.f;
+	npcControllerDesc.Dialogue =
+	{
+		{
+			"준비됐어? 아씨오로 공을 끌어 점수를 겨뤄 보자.",
+			{},
+			true
+		},
+		{
+			"높은 점수 구역에 공을 멈추면 이겨. 네가 먼저 시작해.",
+			{},
+			true
+		}
+	};
+	npcControllerDesc.PlayerWinDialogue =
+	{
+		{
+			"잘했어. 이번 승부는 네가 이겼네.",
+			{},
+			true
+		},
+		{
+			"다음에는 내가 이길 거야.",
+			{},
+			true
+		}
+	};
+	npcControllerDesc.NpcWinDialogue =
+	{
+		{
+			"이번 승부는 내가 이겼네.",
+			{},
+			true
+		},
+		{
+			"다시 도전하고 싶으면 언제든 말해.",
+			{},
+			true
+		}
+	};
+	npcControllerDesc.DrawDialogue =
+	{
+		{
+			"무승부네. 꽤 좋은 승부였어.",
+			{},
+			true
+		}
+	};
+	// [LSY] 매치 전 NPC는 플랫폼 오른쪽 끝에서 조금 안쪽에 서서 왼쪽을 바라본다.
+	// Y는 플랫폼 상판보다 조금 위에 생성해 CCT가 최초 프레임에 관통하지 않게 한다.
+	constexpr _float fNpcSpawnClearance = 0.5f;
+	const _float fCCTBottomFromObjectOrigin =
+		npcCharacterDesc.vCCTCenterOffset.y -
+		(npcCharacterDesc.fCCTHeight * 0.5f + npcCharacterDesc.fCCTRadius);
+	const _float fNpcSideLocalX =
+		platformDesc.NpcMoveAreaTrigger.vLocalOffset.x +
 		std::max(
-			platformDesc.NpcMoveAreaTrigger.vHalfExtents.z -
-			npcDesc.fMoveAreaMargin,
+			platformDesc.NpcMoveAreaTrigger.vHalfExtents.x -
+				npcControllerDesc.fMoveAreaMargin -
+				npcControllerDesc.fSideStandbyInset,
 			0.f);
 	const _float3 vNpcLocalPosition{
-		platformDesc.NpcMoveAreaTrigger.vLocalOffset.x,
+		fNpcSideLocalX,
 		platformDesc.BoxCollider.vLocalOffset.y +
-		platformDesc.BoxCollider.vHalfExtents.y + 0.05f,
-		fNpcRestLocalZ
+		platformDesc.BoxCollider.vHalfExtents.y +
+		fNpcSpawnClearance - fCCTBottomFromObjectOrigin,
+		platformDesc.NpcMoveAreaTrigger.vLocalOffset.z
 	};
-	npcDesc.vInitialPosition = makeWorldPosition(vNpcLocalPosition);
-	npcDesc.vInitialRotation = vSetRotation;
-	const auto hNpc = CGameInstance::Get().AddGameObjectToLayer(
+	npcControllerDesc.vInitialPosition = makeWorldPosition(vNpcLocalPosition);
+	npcControllerDesc.vInitialRotation = {
+		vSetRotation.x,
+		vSetRotation.y - 90.f,
+		vSetRotation.z
+	};
+
+	npcCharacterDesc.sObjectTag = "AccioActivity_NpcCharacter";
+	npcCharacterDesc.sResourceGroup = _string{ MagicEnumToStringView(LEVEL::TERRAIN) };
+	npcCharacterDesc.sModelResourceTag = "ACCIO_ACTIVITY_STUDENT_MODEL_RESOURCE";
+	npcCharacterDesc.vInitialPosition = npcControllerDesc.vInitialPosition;
+	npcCharacterDesc.vInitialRotation = npcControllerDesc.vInitialRotation;
+	const auto hNpcCharacter = CGameInstance::Get().AddGameObjectToLayer(
 		LEVEL::TERRAIN,
-		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Npc,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_NpcCharacter,
 		"02_Npc",
-		&npcDesc);
-	if (!hNpc)
+		&npcCharacterDesc);
+	if (!hNpcCharacter)
 	{
 		rollbackSpawnedObjects();
 		return E_FAIL;
 	}
-	spawnedHandles.push_back(*hNpc);
+	spawnedHandles.push_back(*hNpcCharacter);
+	auto* pNpcCharacter = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_NpcCharacter>(*hNpcCharacter);
+	if (!pNpcCharacter || pNpcCharacter->GetWeaponHandle() == CHandle{})
+	{
+		rollbackSpawnedObjects();
+		return E_FAIL;
+	}
+	// [LSY] 학생이 등록 직후 만든 완드도 세트 롤백 대상에 포함한다.
+	spawnedHandles.push_back(pNpcCharacter->GetWeaponHandle());
+	npcControllerDesc.hNpcCharacter = *hNpcCharacter;
+
+	const auto hNpcController = CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::TERRAIN,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_NpcController,
+		"02_Npc",
+		&npcControllerDesc);
+	if (!hNpcController)
+	{
+		rollbackSpawnedObjects();
+		return E_FAIL;
+	}
+	spawnedHandles.push_back(*hNpcController);
 
 	struct ACCIO_ACTIVITY_PART_PLACEMENT
 	{
@@ -1426,7 +1508,7 @@ HRESULT CLevelTerrain::SpawnAccioActivitySet(
 
 	// [LSY] 모든 구성요소가 성공한 뒤에만 Level이 사용할 대표 Handle을 확정한다.
 	m_hAccioActivityBase = *hBase;
-	m_hAccioActivityNpc = *hNpc;
+	m_hAccioActivityNpcController = *hNpcController;
 	m_hAccioBalls = ballHandles;
 	ApplyAccioBallMotionTuning();
 
@@ -1435,6 +1517,12 @@ HRESULT CLevelTerrain::SpawnAccioActivitySet(
 		pAccioActivityBase->SetParticipantHandle(
 			CAccioActivity_Base::PARTICIPANT::PLAYER,
 			m_hPlayer);
+		if (auto* pNpcController = CGameInstance::Get().
+			GetGameObjectByHandleT<CAccioActivity_NpcController>(
+				*hNpcController))
+		{
+			pNpcController->SetInteractionPlayerHandle(m_hPlayer);
+		}
 	}
 
 	return S_OK;
