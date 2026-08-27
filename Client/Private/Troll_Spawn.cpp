@@ -38,7 +38,15 @@ void CTroll_Spawn::Enter(CStateMachine* pStateMachine)
 	m_vEndPos = _float3(300.263f, 36.808f, 100.997f);
 	XMStoreFloat3(&m_vFirstLook,
 	XMVector3Normalize(XMLoadFloat3(&m_vEndPos) - XMLoadFloat3(&m_vStartPos)));
-	
+
+	FCinematicPlayOptions option{};
+	option.eStartMode = ECinematicStartMode::Immediate;
+	option.fStartBlendDuration = 0.f;
+	option.eReturnMode = ECinematicReturnMode::Blend;
+	option.fReturnBlendDuration = 1.5f;
+	option.LookAtTargetHandle = pTroll->GetHandle();/*트롤핸들(optional)*/;
+
+	CGameInstance::Get().PlayCinematic("TrollDoljin", pTroll->GetHandle(), option);
 }
 _bool CTroll_Spawn::Play_Anim(CTroll* pTroll, _float fTimeDelta, uint32_t iIndex)
 {

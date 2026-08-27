@@ -92,14 +92,17 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			}
 			if(FAILED(MonsterLoad_InWorker()))
 				return false;
-			//if (FAILED(NpcLoad_InWorker()))
-			//	return false;
+			if (FAILED(NpcLoad_InWorker()))
+				return false;
 			if (FAILED(WorldAgentLoad_InWorker()))
 				return false;
 
 			if (FAILED(LoadCollsion_InWorker()))
 				return false;
-
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("TrollDoljin")))
+			{
+				return false;
+			}
 			return SUCCEEDED(LoadPlayerResources());
 		});
 }
@@ -354,6 +357,7 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 		{
 			return false;
 		}
+		
 	}
 	return true;
 }
@@ -430,7 +434,15 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 		}
 
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
-
+		
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "TROLL", CResJson::Create("./Resources/json/BeHavior/Troll.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED TROLL JSON");
+				return E_FAIL;
+			}
+		}
 	}
 }
 
@@ -456,6 +468,8 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		{ "Model_Resource_NPC_ThomasBrown", "ThomasBrown" },
 		{ "Model_Resource_NPC_TimothyTeasdale", "TimothyTeasdale" },
 		{ "Model_Resource_NPC_MirabelGarlick", "MirabelGarlick" },
+		{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
+		{ "Model_Resource_NPC_AdelaideOakes", "AdelaideOakes" },
 	};
 	for (const auto& Entry : NpcModels)
 	{

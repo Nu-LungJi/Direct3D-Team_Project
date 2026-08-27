@@ -62,9 +62,11 @@ HRESULT CLevelHogwartWorld::Initialize()
 		};
 		for (const auto& Option : NpcSkeletons)
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, Option.pName, NpcOption.sModelGroupTag, Option.pTag);
-		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_MirabelGarlick", NpcOption.sModelGroupTag, "Model_Resource_NPC_MirabelGarlick","./Resources/SampleClient/Models/Skeleton/NPC_MirabelGarlick/" );
+		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_MirabelGarlick", NpcOption.sModelGroupTag, "Model_Resource_NPC_MirabelGarlick","./Resources/SampleClient/Models/Skeleton/NPC_MirabelGarlick/" );
+		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_AnneSallow", NpcOption.sModelGroupTag, "Model_Resource_NPC_AnneSallow", "./Resources/SampleClient/Models/Skeleton/NPC_AnneSallow/");
+		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_AdelaideOakes", NpcOption.sModelGroupTag, "Model_Resource_NPC_AdelaideOakes", "./Resources/SampleClient/Models/Skeleton/NPC_AdelaideOakes/");
 
-
+		
 		pNpcManager->RegisterBehaviorOption("World NPC", "BTJSON", "NPC1");
 		{
 			NpcOption.sPrototypeTag = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldAnimal);
@@ -493,14 +495,16 @@ HRESULT CLevelHogwartWorld::SpawnMonster(std::optional<CHandle> hPlayer)
 	Troll.ReSourceTag = "Model_Resource_Troll";
 	Troll.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_TrollWeapon);
 	Troll.WeaponResourceName = "Model_Resource_TrollWeapon";
-	//Troll.resBeHaviorMajor = "BTJSON";
-	//Troll.resBeHaviorMinor = "ENDERDRAGON";
+	Troll.resBeHaviorMajor = "BTJSON";
+	Troll.resBeHaviorMinor = "TROLL";
 	Troll.MonType = MONSTER_TYPE::BOSS;
 
 	if (!CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, "02.Troll", &Troll))
 	{
 		return E_FAIL;
 	}
+
+
 }
 HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 {

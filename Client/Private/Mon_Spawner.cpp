@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Mon_Spawner.h"
 #include "Spider.h"
+#include "Troll.h"
 NS_USING(Client)
 CMon_Spawner::CMon_Spawner()
 {
@@ -89,6 +90,36 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 			auto pSrc = CGameInstance::Get().GetGameObjectByHandleT<CSpider>(iter);
 			if (nullptr != pSrc)
 				pSrc->Set_Spawn(true);
+
+		}
+	}
+	if (!m_bTroll)
+	{
+		if (m_Monsters.empty())
+		{
+			CTroll::TROLL_DESC Troll{};
+			Troll.sObjectTag = "Troll";
+			Troll.TargetHandle = m_Handle;
+			Troll.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+			Troll.vPos = _float3(260.353f, 40.679f, 138.799f);
+			Troll.ReSourceTag = "Model_Resource_Troll";
+			Troll.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_TrollWeapon);
+			Troll.WeaponResourceName = "Model_Resource_TrollWeapon";
+			Troll.resBeHaviorMajor = "BTJSON";
+			Troll.resBeHaviorMinor = "TROLL";
+			Troll.MonType = MONSTER_TYPE::BOSS;
+			CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, "02.Troll", &Troll);
+			
+			m_bTroll = true;
+		}
+		for (auto iter = m_Monsters.begin(); iter != m_Monsters.end();)
+		{
+			if (nullptr == CGameInstance::Get().GetGameObjectByHandle(*iter))
+			{
+				iter = m_Monsters.erase(iter);
+				continue;
+			}
+			++iter;
 
 		}
 	}

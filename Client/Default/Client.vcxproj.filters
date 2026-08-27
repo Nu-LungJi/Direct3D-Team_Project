@@ -1171,6 +1171,9 @@
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClInclude>
     <ClInclude Include="..\public\MiniGameNpc.h" />
+    <ClInclude Include="..\public\MON_Default.h">
+      <Filter>GameObject\Monster\02.PublicState</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1807,6 +1810,9 @@
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClCompile>
     <ClCompile Include="..\private\MiniGameNpc.cpp" />
+    <ClCompile Include="..\private\MON_Default.cpp">
+      <Filter>GameObject\Monster\02.PublicState</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">
