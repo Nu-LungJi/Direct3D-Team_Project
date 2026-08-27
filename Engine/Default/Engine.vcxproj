@@ -972,7 +972,10 @@
     <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\UI\RaceStartFlagWave.hlsl" />
+	<FxCompile Include="..\ShaderFiles\UI\RaceStartFlagWave.hlsl" />
+	<FxCompile Include="..\ShaderFiles\UI\ScoreAura.hlsl">
+	  <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+	</FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\SpellPathProgress.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\TwoTone.hlsl" />

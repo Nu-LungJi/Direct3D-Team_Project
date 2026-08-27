@@ -1781,7 +1781,8 @@ void UIManager::CreateFadeIn(float delay, float playtime)
 	PlayOnlyFadeIn(hBG, delay, playtime);
 }
 
-void UIManager::CreateFadeOut(float delay, float playtime)
+void UIManager::CreateFadeOut(float delay, float playtime,
+	std::function<void()> onComplete)
 {
 	CHandle hBG{};
 	if (m_hScreenFade && GetSafeUI(*m_hScreenFade))
@@ -1800,7 +1801,7 @@ void UIManager::CreateFadeOut(float delay, float playtime)
 
 	if (auto* pBG = GetSafeUI(hBG))
 		pBG->GetTweenCom()->ClearTweens();
-	PlayFadeOutDelete(hBG, delay, playtime);
+	PlayFadeOutDelete(hBG, delay, playtime, std::move(onComplete));
 }
 
 void UIManager::CreateFadeInSceneChange(float delay, float playtime, LEVEL level)
@@ -3801,7 +3802,8 @@ void UIManager::DeleteUIRecursive(std::optional<CHandle> targetHandle)
 	return;
 }
 
-void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
+void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay,
+	float playtime, std::function<void()> onComplete)
 {
 	CUIObject* pBtn = SafeGetOBJ(pHandle);
 	auto pTween = pBtn->GetTweenCom();
@@ -3813,11 +3815,13 @@ void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
 	pTween->PlayTween(alpha, 0.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
-		}, [this, pHandle]() {
+		}, [this, pHandle, onComplete = std::move(onComplete)]() {
 			if (auto pObj = GetSafeUI(pHandle))
 				DeleteUIRecursive(pHandle);
 			if (m_hScreenFade && *m_hScreenFade == pHandle)
 				m_hScreenFade.reset();
+			if (onComplete)
+				onComplete();
 			}, EEaseType::EaseOutQuad, delay);
 }
 

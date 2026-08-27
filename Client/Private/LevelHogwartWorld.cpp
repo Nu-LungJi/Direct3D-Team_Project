@@ -328,11 +328,12 @@ HRESULT CLevelHogwartWorld::Initialize()
 			// auto* pPlayer = E::CGameInstance::Get().
 			//	GetGameObjectByHandleT<CPlayer>(hDialoguePlayer);
 
-			//
-			return 0u;
-		};
+				//
+			}; 
 		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
-		Desc.MoveDestination = {{303.512f, 44.703f, 85.749f}};
+		Desc.MoveDestination = {
+			{ 1895.461f, 35.9f, 267.991f  }
+		};
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
 
@@ -351,15 +352,15 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.resBeHaviorMajor = "BTJSON";
 		Desc.resBeHaviorMinor = "NPC1";
 		Desc.TargetHandle = *hPlayer;
-		Desc.vPos = {303.512f, 44.703f, 85.749f};
+		Desc.vPos = { 1895.461f, 35.9f, 268.991f };
 		Desc.vStartPos = Desc.vPos;
-		Desc.vRot = {0.f, 38.342f, 0.f};
-		Desc.vScale = {1.f, 1.f, 1.f};
+		Desc.vRot = {/*33.5f*/0.f, 24.5f, 0.f };
+		Desc.vScale = { 1.f, 1.f, 1.f };
 		Desc.fCCTHeight = 3.6f;
 		Desc.fCCTRadius = 0.6f;
 		Desc.fCCTStepOffset = 0.1f;
-		Desc.vCCTCenterOffset = {0.f, 1.f, 0.f};
-		Desc.bPhyx = true;
+		Desc.vCCTCenterOffset = { 0.f, 1.f, 0.f };
+		Desc.bPhyx = false;
 		Desc.bDonMove = true;
 		Desc.SpeakerName = "미니게임";
 		Desc.InteractionDistance = 3.f;
@@ -373,12 +374,22 @@ HRESULT CLevelHogwartWorld::Initialize()
 						  {{"네!", 1, CInteractiveNpc::DIALOGUE_ACTION::CONTINUE_DIALOGUE},
 						   {"다른 용무가 있습니다.", 3, CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE}}},
 
-						 // 1
-						 {"그렇구나! 두 가지 종목이 있는데 어떤 것부터 시작해 볼래?",
-						  "",
-						  true,
-						  {{"소환사의 코트", 2, CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME},
-						   {"부릉 브룸", 2, CInteractiveNpc::DIALOGUE_ACTION::START_COIN_MINIGAME}}},
+			// 1
+			{
+				"그렇구나! 두 가지 종목이 있는데 어떤 것부터 시작해 볼래?",
+				"",
+				true,
+				{
+					{
+						"소환사의 코트", 2,
+						CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME
+					},
+					{
+						"부릉! 브룸!", 2,
+						CInteractiveNpc::DIALOGUE_ACTION::START_COIN_MINIGAME
+					}
+				}
+			},
 
 						 // 2
 						 {"행운을 빌어.", "", true},

@@ -51,10 +51,6 @@ HRESULT CInteractiveNpc::Initialize(void* pArg)
 
 	m_iHp = m_iMaxHp = 3555;
 
-	if (!m_pComRigidBody || !m_pComSphereCol || !m_pCharacterController ||
-		!m_pMoveIntent || !m_pCharacterMotor || !m_pComModelInstance ||
-		!m_pModelAnimator)
-		return E_FAIL;
 
 	const _matrix rotation =
 		XMMatrixRotationX(XMConvertToRadians(pDesc->vRot.x)) *
@@ -66,8 +62,7 @@ HRESULT CInteractiveNpc::Initialize(void* pArg)
 	GetTransform().Update();
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
-	m_pComSphereCol->SetQueryEnabled(true);
-	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+
 	m_eState = STATE::IDLE;
 
 	m_SpeakerName = pDesc->SpeakerName;
@@ -587,7 +582,20 @@ void CInteractiveNpc::UpdateMoveOutcome()
 	}
 
 	EndDialogueCamera();
-	GET_SINGLE(UIManager)->CreateFadeOut(0.f, m_fMoveFadeOutDuration);
+	if (m_eActiveMiniGame == ACTIVE_MINIGAME::COIN)
+	{
+		GET_SINGLE(UIManager)->CreateFadeOut(
+			0.f, m_fMoveFadeOutDuration,
+			[]()
+			{
+				GET_SINGLE(UIManager)->StartRaceMiniGame();
+			});
+	}
+	else
+	{
+		GET_SINGLE(UIManager)->CreateFadeOut(
+			0.f, m_fMoveFadeOutDuration);
+	}
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fMoveFadeOutDuration);
 	m_bMovingToDestination = false;
