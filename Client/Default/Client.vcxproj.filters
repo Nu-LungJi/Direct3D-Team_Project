@@ -475,6 +475,9 @@
     <Filter Include="GameObject\Agent\Animal\WolrdAnimal">
       <UniqueIdentifier>{38724c55-2560-48a3-ac1f-fc3b4460030c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\InteractNpc">
+      <UniqueIdentifier>{a058c676-cc04-45cd-b1af-f02cdea958b8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -1170,7 +1173,9 @@
     <ClInclude Include="..\public\WorldAnimal.h">
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\MiniGameNpc.h" />
+    <ClInclude Include="..\public\InteractiveNpc.h">
+      <Filter>GameObject\InteractNpc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1806,7 +1811,9 @@
     <ClCompile Include="..\private\WorldAnimal.cpp">
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\MiniGameNpc.cpp" />
+    <ClCompile Include="..\private\InteractiveNpc.cpp">
+      <Filter>GameObject\InteractNpc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">

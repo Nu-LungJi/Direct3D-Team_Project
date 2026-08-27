@@ -14,6 +14,7 @@
 #include "Mon_Spawner.h"
 #include "WorldNpc.h"
 #include "WorldAgent.h"
+#include "InteractiveNpc.h"
 #include "Griff.h"
 #include "NpcPlacementData.h"
 #include "NpcPlacementManager.h"
@@ -122,6 +123,48 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	if (FAILED(SpawnTerrain(*hPlayer)))
 		return E_FAIL;
+
+	{
+		CInteractiveNpc::DESC Desc{};
+		Desc.sObjectTag = "Hogsmeade_MiniGameNpc_Professor";
+		Desc.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+		Desc.ReSourceTag = "PLAYER_MODEL_RESROUCE";
+		Desc.BeHaviorTag = "NPC1";
+		Desc.resBeHaviorMajor = "BTJSON";
+		Desc.resBeHaviorMinor = "NPC1";
+		Desc.TargetHandle = *hPlayer;
+		Desc.vPos = { 203.512f, 44.703f, 85.749f };
+		Desc.vStartPos = Desc.vPos;
+		Desc.vRot = { 0.f, 38.342f, 0.f };
+		Desc.vScale = { 1.f, 1.f, 1.f };
+		Desc.fCCTHeight = 3.6f;
+		Desc.fCCTRadius = 0.6f;
+		Desc.fCCTStepOffset = 0.1f;
+		Desc.vCCTCenterOffset = { 0.f, 1.f, 0.f };
+		Desc.bPhyx = true;
+		Desc.bDonMove = true;
+		Desc.SpeakerName = "교수";
+		Desc.InteractionDistance = 3.f;
+		Desc.Repeatable = true;
+		Desc.IdleExpressionAnim =
+			"AN_ProfessorSharp_MasterRig_Hu_HUD_Idle_Casual_Loop_anm.bin";
+		Desc.Dialogue = {
+			{ "마침 잘 왔군. 잠시 나와 함께 가지.", "", true },
+			{ "이쪽으로 이동하겠다. 따라오게.", "", true }
+		};
+		Desc.Outcome = CInteractiveNpc::OUTCOME::MOVE_TO_DESTINATION;
+		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
+		Desc.MoveDestination = { 206.614f, 44.703f, 89.671f };
+		Desc.MoveSpeed = 2.f;
+		Desc.MoveStopDistance = 0.2f;
+
+		if (!gameInstance.AddGameObjectToLayer(
+			LEVEL::HOGWART_WORLD,
+			PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
+			"02_Npc",
+			&Desc))
+			return E_FAIL;
+	}
 
 	if (FAILED(SpawnFlyCamera()) ||
 		FAILED(SpawnUICamera()) ||

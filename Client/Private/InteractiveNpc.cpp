@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "MiniGameNpc.h"
+#include "InteractiveNpc.h"
 #include "ComAnimator.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
@@ -16,7 +16,6 @@
 #include "SpellMiniGame.h"
 #include "UIManager.h"
 #include "Player.h"
-#include "CinematicAsset.h"
 #include "CinematicTypes.h"
 
 NS_USING(Client)
@@ -24,10 +23,10 @@ NS_USING(Client)
 namespace
 {
 	const StringID MINIGAME_NPC_TIME_SCALE_TAG{ "MiniGameNpc_WorldPause" };
-	const StringID MINIGAME_NPC_DIALOGUE_CINEMATIC{ "MiniGameNpcDialogue" };
 }
 
-CMiniGameNpc::~CMiniGameNpc()
+
+CInteractiveNpc::~CInteractiveNpc()
 {
 	SyncInteractionPrompt(false);
 	if (m_hDialogueFade)
@@ -37,12 +36,12 @@ CMiniGameNpc::~CMiniGameNpc()
 	EndMiniGameWorldPause();
 }
 
-HRESULT CMiniGameNpc::InitializePrototype(void* pArg)
+HRESULT CInteractiveNpc::InitializePrototype(void* pArg)
 {
 	return __super::InitializePrototype(pArg);
 }
 
-HRESULT CMiniGameNpc::Initialize(void* pArg)
+HRESULT CInteractiveNpc::Initialize(void* pArg)
 {
 	if (!pArg)
 		return E_INVALIDARG;
@@ -52,127 +51,24 @@ HRESULT CMiniGameNpc::Initialize(void* pArg)
 		return E_FAIL;
 
 	m_iHp = m_iMaxHp = 3555;
-	{
-		CComPxRigidBody::DESC Desc{};
-		Desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
-		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody,
-			"ComPxRigidBody", &Desc, &m_pComRigidBody)))
-			return E_FAIL;
-	}
-	{
-		CComPxSphereCollider::DESC Desc{};
-		Desc.pComPxRigidBody = m_pComRigidBody;
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		Desc.bIsTrigger = false;
-		Desc.tFilter = PX_FILTER_DESC{
-			.iLayer = ETOUI(COLLISION_LAYER::ENEMY_HURTBOX),
-			.iSimulationMask = ETOUI(COLLISION_LAYER::PLAYER_PROJECTILE) };
-		Desc.pResSphereGeo = CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = 1.2f });
-		if (!Desc.pResMaterial || FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
-			"ComPxSphereCollider", &Desc, &m_pComSphereCol)))
-			return E_FAIL;
-		if (!m_pComSphereCol->SetQueryEnabled(false))
-			return E_FAIL;
-	}
-	{
-		CComPxCharacterController::DESC Desc{};
-		Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
-		const _float horizontalScale =
-			std::max(std::abs(pDesc->vScale.x), std::abs(pDesc->vScale.z));
-		const _float verticalScale = std::abs(pDesc->vScale.y);
-		const _float3 centerOffset{
-			pDesc->vCCTCenterOffset.x * pDesc->vScale.x,
-			pDesc->vCCTCenterOffset.y * verticalScale,
-			pDesc->vCCTCenterOffset.z * pDesc->vScale.z };
-		Desc.fHeight = pDesc->fCCTHeight * verticalScale;
-		Desc.fRadius = pDesc->fCCTRadius * horizontalScale;
-		Desc.fStepOffset = pDesc->fCCTStepOffset;
-		Desc.vPosition = {
-			pDesc->vPos.x + centerOffset.x,
-			pDesc->vPos.y + centerOffset.y,
-			pDesc->vPos.z + centerOffset.z };
-		Desc.tFilter = pDesc->tFilter;
-		if (!Desc.pResMaterial || FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PHYSX,
-			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxCharacterController,
-			"ComPxCharacterController", &Desc, &m_pCharacterController)))
-			return E_FAIL;
-	}
-	{
-		CComCharacterMoveIntent::DESC Desc{};
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMoveIntent,
-			"ComCharacterMoveIntent", &Desc, &m_pMoveIntent)))
-			return E_FAIL;
-	}
-	{
-		CComCharacterMotor::DESC Desc{};
-		Desc.pMoveIntent = m_pMoveIntent;
-		Desc.pCharacterController = m_pCharacterController;
-		Desc.fGravity = -9.81f;
-		Desc.vControllerCenterOffset = {
-			pDesc->vCCTCenterOffset.x * pDesc->vScale.x,
-			pDesc->vCCTCenterOffset.y * std::abs(pDesc->vScale.y),
-			pDesc->vCCTCenterOffset.z * pDesc->vScale.z };
-		Desc.bUseGravity = true;
-		Desc.bSyncTransform = true;
-		if (FAILED(AddComponentFromProto(
-			ES_EngineProtoMajorType::PERMANENT,
-			ES_EngineProtoComponent::Prototype_Component_ComCharacterMotor,
-			"ComCharacterMotor", &Desc, &m_pCharacterMotor)))
-			return E_FAIL;
-	}
-	{
-		CComConstantBuffer::DESC Desc{};
-		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
-		if (FAILED(AddComponentFromProto(
-			"PERMANENT", "Prototype_Component_ConstantBuffer",
-			"ComCBufferPerObject", &Desc, &m_pComCBufferPerObject)))
-			return E_FAIL;
-	}
-	{
-		CComModelInstance::DESC Desc{};
-		Desc.sGroupTag = pDesc->LevelTag;
-		Desc.sResTag = pDesc->ReSourceTag;
-		if (FAILED(AddComponentFromProto(
-			"PERMANENT", "Prototype_Component_ModelInstance",
-			"ComCModelIntance", &Desc, &m_pComModelInstance)))
-			return E_FAIL;
-	}
-	{
-		CComAnimator::DESC Desc{};
-		Desc.sComTag = "ComCModelIntance";
-		if (FAILED(AddComponentFromProto(
-			"PERMANENT", "Prototype_Component_Animator",
-			"ComCModelAnimator", &Desc, &m_pModelAnimator)))
-			return E_FAIL;
-	}
-	{
-		CComCollider::DESC Desc{};
-		Desc.eCollType = CollType::Box;
-		Desc.vExtents = { 1.f, 1.f, 1.f };
-		if (FAILED(AddComponentFromProto(
-			"COLLIDER", "Prototype_Component_Collider", "ComColl", &Desc, &m_pComCollider)))
-			return E_FAIL;
-	}
+
+	if (!m_pComRigidBody || !m_pComSphereCol || !m_pCharacterController ||
+		!m_pMoveIntent || !m_pCharacterMotor || !m_pComModelInstance ||
+		!m_pModelAnimator)
+		return E_FAIL;
 
 	const _matrix rotation =
 		XMMatrixRotationX(XMConvertToRadians(pDesc->vRot.x)) *
 		XMMatrixRotationY(XMConvertToRadians(pDesc->vRot.y)) *
 		XMMatrixRotationZ(XMConvertToRadians(pDesc->vRot.z));
 	GetTransform().SetQuaternion(XMQuaternionRotationMatrix(rotation));
-	// Keep the render transform on the position requested by the descriptor.
-	// FixedUpdate synchronizes it with (controller center - center offset);
-	// using the physical foot here applies a different offset for the first frame.
+
 	GetTransform().SetPosition(pDesc->vPos);
 	GetTransform().Update();
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 	m_pComSphereCol->SetQueryEnabled(true);
+	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	m_eState = STATE::IDLE;
 
 	m_SpeakerName = pDesc->SpeakerName;
@@ -185,8 +81,7 @@ HRESULT CMiniGameNpc::Initialize(void* pArg)
 	m_fFadeDuration = std::max(0.05f, pDesc->FadeDuration);
 	m_fFadeHoldDuration = std::max(0.f, pDesc->FadeHoldDuration);
 	m_vPlayerDialogueOffset = pDesc->PlayerDialogueOffset;
-	m_vDialogueCameraOffset = pDesc->DialogueCameraOffset;
-	m_fDialogueCameraFovY = pDesc->DialogueCameraFovY;
+	m_DialogueCinematicName = pDesc->DialogueCinematicName;
 	m_vMoveDestination = pDesc->MoveDestination;
 	m_fMoveSpeed = std::max(0.1f, pDesc->MoveSpeed);
 	m_fMoveStopDistance = std::max(0.05f, pDesc->MoveStopDistance);
@@ -196,13 +91,14 @@ HRESULT CMiniGameNpc::Initialize(void* pArg)
 	return S_OK;
 }
 
-void CMiniGameNpc::FixedUpdate(E::_float fTimeDelta)
+void CInteractiveNpc::FixedUpdate(E::_float fTimeDelta)
 {
 	if (m_pCharacterMotor)
 		m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 
-void CMiniGameNpc::Update(E::_float fTimeDelta)
+
+void CInteractiveNpc::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
 	UpdateDialogueIntro(fTimeDelta);
@@ -217,7 +113,8 @@ void CMiniGameNpc::Update(E::_float fTimeDelta)
 	// 거리 판정이 달라져도 다음 대사가 막히지 않아야 한다.
 	const _bool canAdvanceDialogue = m_bTalking &&
 		m_eState == STATE::TALKING;
-	SyncInteractionPrompt(canStartDialogue || canAdvanceDialogue);
+
+	SyncInteractionPrompt(canStartDialogue);
 
 	if ((canStartDialogue || canAdvanceDialogue) &&
 		E::CGameInstance::Get().KeyDown(DIK_F))
@@ -232,7 +129,8 @@ void CMiniGameNpc::Update(E::_float fTimeDelta)
 	}
 }
 
-void CMiniGameNpc::BeginDialogue()
+
+void CInteractiveNpc::BeginDialogue()
 {
 	if (m_bTalking || m_Dialogue.empty() || (m_bCompleted && !m_bRepeatable))
 		return;
@@ -256,7 +154,7 @@ void CMiniGameNpc::BeginDialogue()
 	}
 }
 
-void CMiniGameNpc::UpdateDialogueIntro(_float fTimeDelta)
+void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 {
 	if (m_eConversationPhase != CONVERSATION_PHASE::FADING_OUT &&
 		m_eConversationPhase != CONVERSATION_PHASE::HOLDING_BLACK &&
@@ -269,22 +167,17 @@ void CMiniGameNpc::UpdateDialogueIntro(_float fTimeDelta)
 		if (m_fIntroElapsed < m_fFadeDuration)
 			return;
 		m_fIntroElapsed = 0.f;
-		m_eConversationPhase = CONVERSATION_PHASE::HOLDING_BLACK;
-		return;
-	}
 
-	if (m_eConversationPhase == CONVERSATION_PHASE::HOLDING_BLACK)
-	{
-		if (m_fIntroElapsed < m_fFadeHoldDuration)
-			return;
-		m_fIntroElapsed = 0.f;
 		BeginDialogueCamera();
 		if (m_hDialogueFade)
 		{
+		
 			GET_SINGLE(UIManager)->PlayFadeOutDelete(
-				*m_hDialogueFade, 0.f, m_fFadeDuration);
+				*m_hDialogueFade, m_fFadeHoldDuration, m_fFadeDuration);
 			m_hDialogueFade.reset();
 		}
+
+		m_fIntroElapsed = -m_fFadeHoldDuration;
 		m_eConversationPhase = CONVERSATION_PHASE::FADING_IN;
 		return;
 	}
@@ -294,7 +187,8 @@ void CMiniGameNpc::UpdateDialogueIntro(_float fTimeDelta)
 	ShowFirstDialogueLine();
 }
 
-void CMiniGameNpc::ShowFirstDialogueLine()
+
+void CInteractiveNpc::ShowFirstDialogueLine()
 {
 	m_fIntroElapsed = 0.f;
 	m_eConversationPhase = CONVERSATION_PHASE::TALKING;
@@ -304,7 +198,7 @@ void CMiniGameNpc::ShowFirstDialogueLine()
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_SpeakerName, line.Text);
 }
 
-void CMiniGameNpc::AdvanceDialogue()
+void CInteractiveNpc::AdvanceDialogue()
 {
 	if (!m_bTalking || m_eConversationPhase != CONVERSATION_PHASE::TALKING)
 		return;
@@ -321,7 +215,8 @@ void CMiniGameNpc::AdvanceDialogue()
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_SpeakerName, line.Text);
 }
 
-void CMiniGameNpc::CancelDialogue()
+
+void CInteractiveNpc::CancelDialogue()
 {
 	m_bTalking = false;
 	m_iDialogueIndex = 0u;
@@ -338,19 +233,21 @@ void CMiniGameNpc::CancelDialogue()
 	m_eState = STATE::IDLE;
 }
 
-void CMiniGameNpc::FinishDialogue()
+
+void CInteractiveNpc::FinishDialogue()
 {
 	m_bTalking = false;
 	m_bCompleted = true;
 	SetExpression(m_IdleExpressionAnim, true);
 	m_eConversationPhase = CONVERSATION_PHASE::IDLE;
 
-	// 스펠 미니게임 동안에는 대화 구도와 플레이어 잠금을 그대로 유지한다.
-	// 미니게임 생성에 실패한 경우에만 즉시 원래 화면으로 복구한다.
-	if (m_eOutcome == OUTCOME::SPELL_MINIGAME)
+	// 플레이어 이동과 스펠 미니게임 결과에서는 대화 구도와 입력 잠금을
+	// 유지한다. 각 결과가 화면 전환을 마친 뒤 직접 복구한다.
+	if (m_eOutcome == OUTCOME::MOVE_TO_DESTINATION ||
+		m_eOutcome == OUTCOME::SPELL_MINIGAME)
 	{
 		ExecuteOutcome();
-		if (m_eState == STATE::MINIGAME)
+		if (m_eState == STATE::MOVING || m_eState == STATE::MINIGAME)
 			return;
 	}
 
@@ -358,11 +255,10 @@ void CMiniGameNpc::FinishDialogue()
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
 	m_eState = STATE::IDLE;
-	if (m_eOutcome != OUTCOME::SPELL_MINIGAME)
-		ExecuteOutcome();
 }
 
-void CMiniGameNpc::BeginDialogueCamera()
+
+void CInteractiveNpc::BeginDialogueCamera()
 {
 	auto& gameInstance = E::CGameInstance::Get();
 	auto* pPlayer = gameInstance.GetGameObjectByHandleT<CPlayer>(m_hInteractionPlayer);
@@ -393,51 +289,7 @@ void CMiniGameNpc::BeginDialogueCamera()
 	XMStoreFloat3(&npcLookAt, npcPosition + up * 1.35f);
 	pPlayer->SetDialoguePose(dialoguePlayerPosition, npcLookAt);
 
-	const _vector target = up * 1.45f;
-	const _vector localPlayerPosition =
-		XMVectorSet(m_vPlayerDialogueOffset.x, m_vPlayerDialogueOffset.y,
-			m_vPlayerDialogueOffset.z, 1.f);
-	_vector localNpcToPlayer = XMVectorSetY(localPlayerPosition, 0.f);
-	if (XMVectorGetX(XMVector3LengthSq(localNpcToPlayer)) <= FLT_EPSILON)
-		localNpcToPlayer = XMVectorSet(0.f, 0.f, 1.f, 0.f);
-	else
-		localNpcToPlayer = XMVector3Normalize(localNpcToPlayer);
-	const _vector localShoulderRight = XMVector3Normalize(
-		XMVector3Cross(up, localNpcToPlayer));
-	const _vector cameraPosition = localPlayerPosition +
-		localShoulderRight * m_vDialogueCameraOffset.x +
-		up * m_vDialogueCameraOffset.y +
-		localNpcToPlayer * m_vDialogueCameraOffset.z;
-	const _vector look = XMVector3Normalize(target - cameraPosition);
-	const _vector right = XMVector3Normalize(XMVector3Cross(up, look));
-	const _vector cameraUp = XMVector3Normalize(XMVector3Cross(look, right));
-	_matrix cameraWorld = XMMatrixIdentity();
-	cameraWorld.r[0] = right;
-	cameraWorld.r[1] = cameraUp;
-	cameraWorld.r[2] = look;
-	_float3 position{};
-	_float4 rotation{};
-	XMStoreFloat3(&position, cameraPosition);
-	XMStoreFloat4(&rotation, XMQuaternionRotationMatrix(cameraWorld));
-
-	E::FCinematicAssetData data{};
-	data.CinematicID = MINIGAME_NPC_DIALOGUE_CINEMATIC;
-	data.CameraTrack.TrackID = StringID{ "MiniGameNpcDialogueTrack" };
-	E::FCinematicCameraShot shot{};
-	shot.ShotID = StringID{ "NpcOverShoulder" };
-	shot.eCoordinateSpace = E::ECinematicCoordinateSpace::TargetLocal;
-	shot.eBindingMode = E::ECinematicBindingMode::Live;
-	E::FCinematicCameraKeyframe first{};
-	first.vPosition = position;
-	first.vRotation = rotation;
-	first.fFovY = m_fDialogueCameraFovY;
-	E::FCinematicCameraKeyframe last = first;
-	last.fTime = 600.f;
-	shot.Keyframes = { first, last };
-	data.CameraTrack.Shots.push_back(std::move(shot));
-
-	auto cinematic = E::CCinematicAsset::Create(data);
-	if (!cinematic || FAILED(gameInstance.RegistCinematicAsset(cinematic)))
+	if (m_DialogueCinematicName.empty())
 		return;
 
 	E::FCinematicPlayOptions options{};
@@ -445,10 +297,11 @@ void CMiniGameNpc::BeginDialogueCamera()
 	options.eReturnMode = E::ECinematicReturnMode::Immediate;
 	m_bDialogueCinematicPlaying =
 		gameInstance.PlayCinematic(
-			MINIGAME_NPC_DIALOGUE_CINEMATIC, GetHandle(), options) == S_OK;
+			StringID{ m_DialogueCinematicName }, GetHandle(), options) == S_OK;
 }
 
-void CMiniGameNpc::EndDialogueCamera()
+
+void CInteractiveNpc::EndDialogueCamera()
 {
 	if (!m_bDialogueCinematicPlaying)
 		return;
@@ -457,13 +310,15 @@ void CMiniGameNpc::EndDialogueCamera()
 	m_bDialogueCinematicPlaying = false;
 }
 
-void CMiniGameNpc::SetPlayerMovementLocked(_bool locked)
+
+void CInteractiveNpc::SetPlayerMovementLocked(_bool locked)
 {
 	if (auto* pPlayer = E::CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(m_hInteractionPlayer))
 		pPlayer->SetMovementLocked(locked);
 }
 
-void CMiniGameNpc::ExecuteOutcome()
+
+void CInteractiveNpc::ExecuteOutcome()
 {
 	if (m_eOutcome == OUTCOME::MOVE_TO_DESTINATION)
 	{
@@ -476,6 +331,7 @@ void CMiniGameNpc::ExecuteOutcome()
 		}
 
 		m_bMovingToDestination = true;
+		m_fMoveOutcomeElapsed = 0.f;
 		m_eState = STATE::MOVING;
 		return;
 	}
@@ -492,7 +348,8 @@ void CMiniGameNpc::ExecuteOutcome()
 			}
 }
 
-void CMiniGameNpc::BeginMiniGameWorldPause()
+
+void CInteractiveNpc::BeginMiniGameWorldPause()
 {
 	E::TIME_SCALE_REQUEST_DESC Desc{};
 	Desc.fTargetScale = 0.f;
@@ -503,7 +360,7 @@ void CMiniGameNpc::BeginMiniGameWorldPause()
 	m_bOwnsWorldPause = E::CGameInstance::Get().BeginTimeScale(Desc);
 }
 
-void CMiniGameNpc::UpdateMiniGameWorldPause()
+void CInteractiveNpc::UpdateMiniGameWorldPause()
 {
 	if (m_eState != STATE::MINIGAME)
 		return;
@@ -516,7 +373,8 @@ void CMiniGameNpc::UpdateMiniGameWorldPause()
 	m_eState = STATE::IDLE;
 }
 
-void CMiniGameNpc::EndMiniGameWorldPause()
+
+void CInteractiveNpc::EndMiniGameWorldPause()
 {
 	if (!m_bOwnsWorldPause)
 		return;
@@ -526,7 +384,8 @@ void CMiniGameNpc::EndMiniGameWorldPause()
 	m_bOwnsWorldPause = false;
 }
 
-_bool CMiniGameNpc::IsSpellMiniGameRunning() const
+
+_bool CInteractiveNpc::IsSpellMiniGameRunning() const
 {
 	auto& gameInstance = E::CGameInstance::Get();
 	for (const auto& [layerTag, handles] : gameInstance.GetGameObjectLayers())
@@ -536,36 +395,38 @@ _bool CMiniGameNpc::IsSpellMiniGameRunning() const
 	return false;
 }
 
-void CMiniGameNpc::UpdateMoveOutcome()
+
+void CInteractiveNpc::UpdateMoveOutcome()
 {
-	if (!m_bMovingToDestination || !m_pMoveIntent)
+	if (!m_bMovingToDestination)
 		return;
-	const _float3 position = GetTransform().GetPosition();
-	const _vector delta = XMLoadFloat3(&m_vMoveDestination) - XMLoadFloat3(&position);
-	const _float distance = XMVectorGetX(XMVector3Length(delta));
-	if (distance <= m_fMoveStopDistance)
+
+	m_fMoveOutcomeElapsed += E::CGameInstance::Get().GetUnscaledDelta();
+	if (m_fMoveOutcomeElapsed < m_fMoveFadeInDuration)
+		return;
+
+	auto& gameInstance = E::CGameInstance::Get();
+	if (auto* pPlayer = gameInstance.GetGameObjectByHandleT<CPlayer>(m_hInteractionPlayer))
 	{
-		m_bMovingToDestination = false;
-		m_eState = STATE::IDLE;
-
-		if (m_hMoveFade)
-		{
-			GET_SINGLE(UIManager)->PlayFadeOutDelete(
-				*m_hMoveFade,
-				m_fMoveFadeOutDelay,
-				m_fMoveFadeOutDuration);
-			m_hMoveFade.reset();
-		}
-
-		return;
+		_float3 lookAt = GetTransform().GetPosition();
+		lookAt.y = m_vMoveDestination.y;
+		pPlayer->SetDialoguePose(m_vMoveDestination, lookAt);
 	}
-	_float3 direction{};
-	XMStoreFloat3(&direction, XMVector3Normalize(delta));
-	m_pMoveIntent->SetMoveIntent(direction, m_fMoveSpeed);
-	m_pMoveIntent->SetFacingIntent(direction, 180.f);
+
+	EndDialogueCamera();
+	if (m_hMoveFade)
+	{
+		GET_SINGLE(UIManager)->PlayFadeOutDelete(
+			*m_hMoveFade, 0.f, m_fMoveFadeOutDuration);
+		m_hMoveFade.reset();
+	}
+	SetPlayerMovementLocked(false);
+	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fMoveFadeOutDuration);
+	m_bMovingToDestination = false;
+	m_eState = STATE::IDLE;
 }
 
-void CMiniGameNpc::SetExpression(const _string& animName, _bool loop)
+void CInteractiveNpc::SetExpression(const _string& animName, _bool loop)
 {
 	if (animName.empty() || !m_pModelAnimator)
 		return;
@@ -575,7 +436,8 @@ void CMiniGameNpc::SetExpression(const _string& animName, _bool loop)
 		m_pModelAnimator->Play_Anim(animIndex, loop);
 }
 
-_bool CMiniGameNpc::IsPlayerInRange()
+
+_bool CInteractiveNpc::IsPlayerInRange()
 {
 	ResolvePlayerHandle();
 	auto* pPlayer = E::CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(
@@ -592,7 +454,8 @@ _bool CMiniGameNpc::IsPlayerInRange()
 		m_fInteractionDistance * m_fInteractionDistance;
 }
 
-void CMiniGameNpc::ResolvePlayerHandle()
+
+void CInteractiveNpc::ResolvePlayerHandle()
 {
 	auto& gameInstance = E::CGameInstance::Get();
 	if (gameInstance.GetGameObjectByHandleT<CPlayer>(m_hInteractionPlayer))
@@ -613,7 +476,8 @@ void CMiniGameNpc::ResolvePlayerHandle()
 	}
 }
 
-void CMiniGameNpc::SyncInteractionPrompt(_bool show)
+// 대화 시작용 F 상호작용 UI를 생성하거나 제거한다.
+void CInteractiveNpc::SyncInteractionPrompt(_bool show)
 {
 	if (m_bPromptVisible == show)
 		return;
@@ -625,23 +489,25 @@ void CMiniGameNpc::SyncInteractionPrompt(_bool show)
 		GET_SINGLE(UIManager)->RemoveActiveButton(GetHandle());
 }
 
-E::UPtr<CMiniGameNpc> CMiniGameNpc::Create()
+// 상호작용 NPC의 프로토타입 객체를 생성한다.
+E::UPtr<CInteractiveNpc> CInteractiveNpc::Create()
 {
-	auto pInstance = E::ToUPtr(new CMiniGameNpc{});
+	auto pInstance = E::ToUPtr(new CInteractiveNpc{});
 	if (FAILED(pInstance->InitializePrototype()))
 	{
-		MSG_BOX("Failed to Created : CMiniGameNpc");
+		MSG_BOX("Failed to Created : CInteractiveNpc");
 		return nullptr;
 	}
 	return pInstance;
 }
 
-E::UPtr<E::CPrototype> CMiniGameNpc::Clone(void* pArg)
+// 설명자를 적용해 실제 상호작용 NPC 인스턴스를 복제한다.
+E::UPtr<E::CPrototype> CInteractiveNpc::Clone(void* pArg)
 {
-	auto pInstance = E::ToUPtr(new CMiniGameNpc{ *this });
+	auto pInstance = E::ToUPtr(new CInteractiveNpc{ *this });
 	if (FAILED(pInstance->Initialize(pArg)))
 	{
-		MSG_BOX("Failed to Cloned : CMiniGameNpc");
+		MSG_BOX("Failed to Cloned : CInteractiveNpc");
 		return nullptr;
 	}
 	return pInstance;

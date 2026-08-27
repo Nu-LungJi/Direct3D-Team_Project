@@ -38,7 +38,7 @@
 #include "Mon_State.h"
 #include "Spider.h"
 #include "WorldNpc.h"
-#include "MiniGameNpc.h"
+#include "InteractiveNpc.h"
 // UI
 #include "UIController.h"
 #include "EffectUI.h"
@@ -72,6 +72,10 @@ std::future<bool> CLevelTerrainLoader::Load()
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_TERRAIN", []()
 		{
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
 			{
 				return false;
 			}
@@ -764,7 +768,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		if (FAILED(E::CGameInstance::Get().AddPrototype(
 			LEVEL::TERRAIN,
 			PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
-			CMiniGameNpc::Create())))
+			CInteractiveNpc::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_MiniGameNpc");
 			return E_FAIL;

@@ -34,7 +34,7 @@
 #include "Mon_Spawner.h"
 #include "Mon_State.h"
 #include "WorldNpc.h"
-#include "MiniGameNpc.h"
+#include "InteractiveNpc.h"
 #include "Griff.h"
 #include "GriffChild.h"
 #include "Troll.h"
@@ -60,6 +60,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
 				return false;
 
 			if (auto texture = E::CGameInstance::Get().AddResource(
@@ -470,7 +472,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	if (FAILED(E::CGameInstance::Get().AddPrototype(
 		LEVEL::HOGWART_WORLD,
 		PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
-		CMiniGameNpc::Create())))
+		CInteractiveNpc::Create())))
 	{
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_MiniGameNpc");
 		return E_FAIL;

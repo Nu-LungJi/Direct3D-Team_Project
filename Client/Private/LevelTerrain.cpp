@@ -32,7 +32,7 @@
 #include "BossTMB.h"
 #include "Spider.h"
 #include "WorldNpc.h"
-#include "MiniGameNpc.h"
+#include "InteractiveNpc.h"
 #include "TmbGurdian.h"
 #include "LightPlacementObject.h"
 #include "StarBurst.h"
@@ -198,7 +198,7 @@ HRESULT CLevelTerrain::Initialize()
 	
 	if(false)
 	{
-		CMiniGameNpc::DESC Desc{};
+		CInteractiveNpc::DESC Desc{};
 		Desc.sObjectTag = "MiniGameNpc_Test";
 		Desc.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
 		// 스켈레톤/애니메이션 호환 확인을 위해 플레이어 SK를 사용하는 테스트 NPC.
