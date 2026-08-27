@@ -54,20 +54,16 @@ HRESULT CLevelHogwartWorld::Initialize()
 		NpcOption.sPrototypeTag = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc);
 		NpcOption.sLayerTag = "02_Npc";
 		NpcOption.sModelGroupTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-		NpcOption.sModelResourceTag = "Model_Resource_Spider";
+		NpcOption.sModelResourceTag = "Model_Resource_NPC_VictorRookwood";
 		NpcOption.sBehaviorMajorTag = "BTJSON";
 		NpcOption.sBehaviorMinorTag = "NPC1";
 		pNpcManager->RegisterNpcOption("World NPC", NpcOption);
-		struct NPC_SKELETON_OPTION { const char* pName; const char* pTag; };
-		static constexpr NPC_SKELETON_OPTION NpcSkeletons[] =
-		{
-			{ "Augustus Hill (Single NPC Test)", "Model_Resource_NPC_AugustusHill" },
-		};
-		for (const auto& Option : NpcSkeletons)
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, Option.pName, NpcOption.sModelGroupTag, Option.pTag);
-		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_MirabelGarlick", NpcOption.sModelGroupTag, "Model_Resource_NPC_MirabelGarlick","./Resources/SampleClient/Models/Skeleton/NPC_MirabelGarlick/" );
-		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_AnneSallow", NpcOption.sModelGroupTag, "Model_Resource_NPC_AnneSallow", "./Resources/SampleClient/Models/Skeleton/NPC_AnneSallow/");
-		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_AdelaideOakes", NpcOption.sModelGroupTag, "Model_Resource_NPC_AdelaideOakes", "./Resources/SampleClient/Models/Skeleton/NPC_AdelaideOakes/");
+		pNpcManager->RegisterNpcSkeletonOption(
+			NpcOption.sPrototypeTag,
+			"Victor Rookwood",
+			NpcOption.sModelGroupTag,
+			"Model_Resource_NPC_VictorRookwood",
+			"./Resources/SampleClient/Models/Skeleton/NPC_ViectorRookwood_lsy/");
 
 		
 		pNpcManager->RegisterBehaviorOption("World NPC", "BTJSON", "NPC1");
@@ -164,8 +160,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 						"네!",std::numeric_limits<size_t>::max(),CInteractiveNpc::DIALOGUE_ACTION::NONE,
 						[]() -> size_t
 						{
-							const uint32_t coinCount = 20; // 실제 코인 값으로 교체
-
+							uint32_t coinCount = GET_SINGLE(UIManager)->GetRaceMiniGameCoinCount();
+							
 							if (coinCount >= 20)
 								return 5;
 
@@ -195,7 +191,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 				{
 					{
 						"좋아요!", 3,
-						CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME
+						CInteractiveNpc::DIALOGUE_ACTION::MOVE_TO_DESTINATION
 					},
 					{
 						"다른 용무가 있습니다.", 4,
@@ -239,13 +235,18 @@ HRESULT CLevelHogwartWorld::Initialize()
 				// 만약 플레이어가 이미 지팡이를 샀으면
 				// 대화 6번으로 
 				// 아직 안샀으면 0번으로 
+				if (isPurchaseWand)
+				{
+					return 6;
 
-
+				}
+				else {
+					return 0;
+				}
 				//auto* pPlayer = E::CGameInstance::Get().
 				//	GetGameObjectByHandleT<CPlayer>(hDialoguePlayer);
 
 				//
-				return 0u;
 			};
 		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
 		Desc.MoveDestination = {

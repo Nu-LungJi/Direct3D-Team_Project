@@ -32,10 +32,6 @@ CInteractiveNpc::~CInteractiveNpc()
 	if (m_bTalking)
 		GET_SINGLE(UIManager)->ClearChoiceUI(false);
 	SyncInteractionPrompt(false);
-	if (m_hDialogueFade)
-		GET_SINGLE(UIManager)->DeleteUIRecursive(*m_hDialogueFade);
-	if (m_hMoveFade)
-		GET_SINGLE(UIManager)->DeleteUIRecursive(*m_hMoveFade);
 	EndMiniGameWorldPause();
 }
 
@@ -154,14 +150,8 @@ void CInteractiveNpc::BeginDialogue()
 	m_fIntroElapsed = 0.f;
 	// 현재 표시 중인 메인 HUD 상태를 보관한 뒤 대화 연출 동안 숨긴다.
 	GET_SINGLE(UIManager)->PlayFadeOutAll2DUI(0.f, m_fFadeDuration);
-	// 같은 BlackBG를 FadeIn/FadeOut 양쪽에서 사용해야 암전이 정상 해제된다.
-	const auto fadeRoots = GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
-	if (!fadeRoots.empty())
-	{
-		m_hDialogueFade = fadeRoots.front();
-		GET_SINGLE(UIManager)->PlayFadeIn(
-			*m_hDialogueFade, 0.f, m_fFadeDuration);
-	}
+	// BlackBG의 생성과 재사용은 UIManager가 관리한다.
+	GET_SINGLE(UIManager)->CreateFadeIn(0.f, m_fFadeDuration);
 }
 
 void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
@@ -179,13 +169,8 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 		m_fIntroElapsed = 0.f;
 
 		BeginDialogueCamera();
-		if (m_hDialogueFade)
-		{
-		
-			GET_SINGLE(UIManager)->PlayFadeOutDelete(
-				*m_hDialogueFade, m_fFadeHoldDuration, m_fFadeDuration);
-			m_hDialogueFade.reset();
-		}
+		GET_SINGLE(UIManager)->CreateFadeOut(
+			m_fFadeHoldDuration, m_fFadeDuration);
 
 		m_fIntroElapsed = -m_fFadeHoldDuration;
 		m_eConversationPhase = CONVERSATION_PHASE::FADING_IN;
@@ -361,11 +346,6 @@ void CInteractiveNpc::CancelDialogue()
 	m_iDialogueIndex = 0u;
 	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
 	SetExpression(m_IdleExpressionAnim, true);
-	if (m_hDialogueFade)
-	{
-		GET_SINGLE(UIManager)->DeleteUIRecursive(*m_hDialogueFade);
-		m_hDialogueFade.reset();
-	}
 	EndDialogueCamera();
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
@@ -461,13 +441,7 @@ _bool CInteractiveNpc::StartMoveToDestination(size_t destinationIndex)
 
 	m_vMoveDestination = m_MoveDestinations[destinationIndex];
 
-	const auto fadeRoots = GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
-	if (!fadeRoots.empty())
-	{
-		m_hMoveFade = fadeRoots.front();
-		GET_SINGLE(UIManager)->PlayFadeIn(
-			*m_hMoveFade, 0.f, m_fMoveFadeInDuration);
-	}
+	GET_SINGLE(UIManager)->CreateFadeIn(0.f, m_fMoveFadeInDuration);
 
 	m_bMovingToDestination = true;
 	m_fMoveOutcomeElapsed = 0.f;
@@ -609,12 +583,7 @@ void CInteractiveNpc::UpdateMoveOutcome()
 	}
 
 	EndDialogueCamera();
-	if (m_hMoveFade)
-	{
-		GET_SINGLE(UIManager)->PlayFadeOutDelete(
-			*m_hMoveFade, 0.f, m_fMoveFadeOutDuration);
-		m_hMoveFade.reset();
-	}
+	GET_SINGLE(UIManager)->CreateFadeOut(0.f, m_fMoveFadeOutDuration);
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fMoveFadeOutDuration);
 	m_bMovingToDestination = false;

@@ -1759,13 +1759,47 @@ std::function<void(std::string text)> UIManager::GetFunc(const std::string& func
 
 void UIManager::CreateFadeIn(float delay, float playtime)
 {
-	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
+	CHandle hBG{};
+	if (m_hScreenFade && GetSafeUI(*m_hScreenFade))
+	{
+		hBG = *m_hScreenFade;
+	}
+	else
+	{
+		auto roots = LoadPrefab("BlackBG");
+		if (roots.empty())
+			return;
+
+		hBG = roots.front();
+		m_hScreenFade = hBG;
+		if (auto* pBG = GetSafeUI(hBG))
+			pBG->SetAlpha(0.f);
+	}
+
+	if (auto* pBG = GetSafeUI(hBG))
+		pBG->GetTweenCom()->ClearTweens();
 	PlayOnlyFadeIn(hBG, delay, playtime);
 }
 
 void UIManager::CreateFadeOut(float delay, float playtime)
 {
-	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
+	CHandle hBG{};
+	if (m_hScreenFade && GetSafeUI(*m_hScreenFade))
+	{
+		hBG = *m_hScreenFade;
+	}
+	else
+	{
+		auto roots = LoadPrefab("BlackBG");
+		if (roots.empty())
+			return;
+
+		hBG = roots.front();
+		m_hScreenFade = hBG;
+	}
+
+	if (auto* pBG = GetSafeUI(hBG))
+		pBG->GetTweenCom()->ClearTweens();
 	PlayFadeOutDelete(hBG, delay, playtime);
 }
 
@@ -3779,8 +3813,11 @@ void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
 	pTween->PlayTween(alpha, 0.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
-		}, [pHandle]() {
-			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+		}, [this, pHandle]() {
+			if (auto pObj = GetSafeUI(pHandle))
+				DeleteUIRecursive(pHandle);
+			if (m_hScreenFade && *m_hScreenFade == pHandle)
+				m_hScreenFade.reset();
 			}, EEaseType::EaseOutQuad, delay);
 }
 
@@ -3850,10 +3887,9 @@ void UIManager::PlayOnlyFadeIn(CHandle pHandle, float delay, float playtime)
 
 	pBtn->SetInputLcok(true);
 
-	_float Alpah = pBtn->GetAlpha();
-	_float scaleRatio = pBtn->GetScaleRatio();
+	const _float alpha = pBtn->GetAlpha();
 
-	pTween->PlayTween(0.f, 1.f, playtime,
+	pTween->PlayTween(alpha, 1.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
 		}, nullptr, EEaseType::EaseOutQuad, delay);

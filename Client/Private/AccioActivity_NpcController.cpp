@@ -479,13 +479,8 @@ void CAccioActivity_NpcController::BeginDialogueSequence(
 	// [LSY] 현재 HUD를 숨긴 뒤 동일한 BlackBG를 이용해 대화 카메라 전환을 가린다.
 	GET_SINGLE(UIManager)->PlayFadeOutAll2DUI(
 		0.f, m_fDialogueFadeDuration);
-	const auto fadeRoots = GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
-	if (!fadeRoots.empty())
-	{
-		m_hDialogueFade = fadeRoots.front();
-		GET_SINGLE(UIManager)->PlayFadeIn(
-			*m_hDialogueFade, 0.f, m_fDialogueFadeDuration);
-	}
+	GET_SINGLE(UIManager)->CreateFadeIn(
+		0.f, m_fDialogueFadeDuration);
 }
 
 void CAccioActivity_NpcController::BeginMatchEndDialogue(
@@ -533,12 +528,8 @@ void CAccioActivity_NpcController::UpdateDialogueIntro(_float fTimeDelta)
 
 		m_fDialogueIntroElapsed = 0.f;
 		BeginDialogueCamera();
-		if (m_hDialogueFade)
-		{
-			GET_SINGLE(UIManager)->PlayFadeOutDelete(
-				*m_hDialogueFade, 0.f, m_fDialogueFadeDuration);
-			m_hDialogueFade.reset();
-		}
+		GET_SINGLE(UIManager)->CreateFadeOut(
+			0.f, m_fDialogueFadeDuration);
 		m_eConversationPhase = CONVERSATION_PHASE::FADING_IN;
 		return;
 	}
@@ -596,11 +587,6 @@ void CAccioActivity_NpcController::CancelDialogue()
 
 	if (auto* pNpcCharacter = GetNpcCharacter())
 		pNpcCharacter->SetAction(CAccioActivity_NpcCharacter::ACTION::IDLE);
-	if (m_hDialogueFade)
-	{
-		GET_SINGLE(UIManager)->DeleteUIRecursive(*m_hDialogueFade);
-		m_hDialogueFade.reset();
-	}
 	EndDialogueCamera();
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
@@ -1970,11 +1956,6 @@ UPtr<CPrototype> CAccioActivity_NpcController::Clone(void* pArg)
 void CAccioActivity_NpcController::Free()
 {
 	SyncInteractionPrompt(false);
-	if (m_hDialogueFade)
-	{
-		GET_SINGLE(UIManager)->DeleteUIRecursive(*m_hDialogueFade);
-		m_hDialogueFade.reset();
-	}
 	EndDialogueCamera();
 	SetPlayerMovementLocked(false);
 	StopAccioEffects();
