@@ -54,20 +54,16 @@ HRESULT CLevelHogwartWorld::Initialize()
 		NpcOption.sPrototypeTag = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc);
 		NpcOption.sLayerTag = "02_Npc";
 		NpcOption.sModelGroupTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-		NpcOption.sModelResourceTag = "Model_Resource_Spider";
+		NpcOption.sModelResourceTag = "Model_Resource_NPC_VictorRookwood";
 		NpcOption.sBehaviorMajorTag = "BTJSON";
 		NpcOption.sBehaviorMinorTag = "NPC1";
 		pNpcManager->RegisterNpcOption("World NPC", NpcOption);
-		struct NPC_SKELETON_OPTION { const char* pName; const char* pTag; };
-		static constexpr NPC_SKELETON_OPTION NpcSkeletons[] =
-		{
-			{ "Augustus Hill (Single NPC Test)", "Model_Resource_NPC_AugustusHill" },
-		};
-		for (const auto& Option : NpcSkeletons)
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, Option.pName, NpcOption.sModelGroupTag, Option.pTag);
-		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_MirabelGarlick", NpcOption.sModelGroupTag, "Model_Resource_NPC_MirabelGarlick","./Resources/SampleClient/Models/Skeleton/NPC_MirabelGarlick/" );
-		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_AnneSallow", NpcOption.sModelGroupTag, "Model_Resource_NPC_AnneSallow", "./Resources/SampleClient/Models/Skeleton/NPC_AnneSallow/");
-		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_AdelaideOakes", NpcOption.sModelGroupTag, "Model_Resource_NPC_AdelaideOakes", "./Resources/SampleClient/Models/Skeleton/NPC_AdelaideOakes/");
+		pNpcManager->RegisterNpcSkeletonOption(
+			NpcOption.sPrototypeTag,
+			"Victor Rookwood",
+			NpcOption.sModelGroupTag,
+			"Model_Resource_NPC_VictorRookwood",
+			"./Resources/SampleClient/Models/Skeleton/NPC_ViectorRookwood_lsy/");
 
 		
 		pNpcManager->RegisterBehaviorOption("World NPC", "BTJSON", "NPC1");
