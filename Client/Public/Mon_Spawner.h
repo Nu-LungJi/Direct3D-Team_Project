@@ -37,7 +37,7 @@ private:
 	_string						m_LeveTag{};
 	std::list<_float3>			m_SpawnPos;
 	CHandle						m_Handle{};
-	_bool						m_bPick{ false };
+	_bool						m_bPick{ false }, m_bTroll{ false };
 public:
 	static E::UPtr<CMon_Spawner> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

@@ -44,9 +44,6 @@ public:
 	SPtr<CResStructuredBuffer> GetSkinningInputBuffer() const;
 	SPtr<CResStructuredBuffer> GetSkinnedVertexBuffer() const;
 	HRESULT EnsureSkinnedVertexBuffer(uint32_t iInstanceCapacity);
-	uint32_t GetMorphTargetCount() const { return static_cast<uint32_t>(m_MorphTargetNames.size()); }
-	SPtr<CResStructuredBuffer> GetMorphDeltaBuffer() const { return m_pMorphDeltaBuffer; }
-	const std::vector<_string>& GetMorphTargetNames() const { return m_MorphTargetNames; }
 
 private:
 
@@ -66,8 +63,6 @@ private:
 	SPtr<CResStructuredBuffer> m_pSkinningInputBuffer{};
 	SPtr<CResStructuredBuffer> m_pSkinnedVertexBuffer{};
 	uint32_t m_iSkinnedVertexInstanceCapacity = 0;
-	std::vector<_string> m_MorphTargetNames{};
-	SPtr<CResStructuredBuffer> m_pMorphDeltaBuffer{};
 
 
 public:

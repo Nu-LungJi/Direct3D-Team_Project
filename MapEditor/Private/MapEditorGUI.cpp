@@ -529,12 +529,21 @@ void CMapEditorGUI::RenderGizmo()
 					E::_float4x4 transformed{};
 					XMStoreFloat4x4(&transformed, XMLoadFloat4x4(&startWorld) * groupDelta);
 					ApplyMatrixToTransform(object->GetTransform(), transformed);
+
+					/*----------- 광윤 추가 -----------*/	// 실시간 이동량 반영
+					E::CGameInstance::Get().RefreshMapMeshObjectInMapChunk(handle);
+					/*---------------------------------*/
 				}
 			}
 		}
 		else
 		{
 			ApplyMatrixToTransform(pSelectedObject->GetTransform(), gizmoMatrix);
+
+			/*----------- 광윤 추가 -----------*/	// 실시간 이동량 반영
+			if (const auto* handle = GetSelectedHandle())
+				E::CGameInstance::Get().RefreshMapMeshObjectInMapChunk(*handle);
+			/*---------------------------------*/
 		}
 	}
 

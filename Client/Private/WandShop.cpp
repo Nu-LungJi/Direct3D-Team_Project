@@ -206,6 +206,7 @@ void CWandShop::Update(UIManager& manager, _float fTimeDelta)
 void CWandShop::CompletePurchase(UIManager& manager)
 {
 	// The selected wand model replacement can be connected here later.
+	static bool isPurchaseWand = true;
 	Close(manager);
 }
 

@@ -90,10 +90,17 @@ void CUIController::Update(E::_float fTimeDelta)
 {
 	BindMiniMap();
 	ApplyPendingQuestUIGroups();
+	UpdateRookwoodQuestProgression();
+	UpdateRookwoodSecondBattleCompletion();
+	UpdateRookwoodThirdBattleCompletion();
+	UpdateRookwoodBridgeProgression();
+	UpdateRookwoodPortalProgression();
 
-	// Temporary wand-shop entry for UI debugging.
+	// 전체 레이스 미니게임 흐름 확인용 디버그 입력.
 	if (E::CGameInstance::Get().KeyDown(DIK_F3))
-		GET_SINGLE(UIManager)->OpenWandShop();
+	{
+		GET_SINGLE(UIManager)->StartRaceMiniGame();
+	}
 
 	// World-space RTT wand-shop debug entry.
 	if (E::CGameInstance::Get().KeyDown(DIK_F4))
@@ -122,12 +129,42 @@ void CUIController::Update(E::_float fTimeDelta)
 		}
 	}
 
+	// 대화 선택 UI와 콜백 연결 확인용 디버그 입력.
+	if (E::CGameInstance::Get().KeyDown(DIK_F5))
+	{
+		const CHandle controllerHandle = GetHandle();
+		GET_SINGLE(UIManager)->PlayFadeOutAll2DUI(0.f, 0.25f);
+		GET_SINGLE(UIManager)->CreateChoiceUI(
+			{
+				"스펠 미니게임 1 시작",
+				"레이스 미니게임 시작"
+			},
+			[controllerHandle](size_t choiceIndex)
+			{
+				GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.2f, 0.3f);
+
+				if (choiceIndex == 0u)
+				{
+					if (auto* controller = E::CGameInstance::Get().
+						GetGameObjectByHandleT<CUIController>(controllerHandle))
+					{
+						controller->StartSpellMiniGame(false);
+					}
+				}
+				else if (choiceIndex == 1u)
+				{
+					GET_SINGLE(UIManager)->StartRaceMiniGame();
+				}
+			});
+	}
+
 	if (m_hSpellMiniGame && !E::CGameInstance::Get().
 		GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
 	{
 		m_hSpellMiniGame = std::nullopt;
 		FadeOutSpellMiniGameBackground();
 		FadeInPotionCountAfterSpellMiniGame();
+		FadeInQuestAfterSpellMiniGame();
 		E::CGameInstance::Get().SetMouseFix(true);
 		if (m_Cursor)
 		{
@@ -337,6 +374,7 @@ _bool CUIController::StartSpellMiniGame(_bool secondGame)
 		}
 	}
 	FadeOutPotionCountForSpellMiniGame();
+	FadeOutQuestForSpellMiniGame();
 	E::CGameInstance::Get().SetMouseFix(false);
 	if (m_Cursor)
 	{
@@ -360,6 +398,7 @@ void CUIController::StopSpellMiniGame()
 	m_hSpellMiniGame = std::nullopt;
 	FadeOutSpellMiniGameBackground();
 	FadeInPotionCountAfterSpellMiniGame();
+	FadeInQuestAfterSpellMiniGame();
 	E::CGameInstance::Get().SetMouseFix(true);
 	if (m_Cursor)
 	{
@@ -432,6 +471,56 @@ void CUIController::FadeInPotionCountAfterSpellMiniGame()
 		[potionCount](_float currentAlpha)
 		{
 			potionCount->SetAlpha(currentAlpha);
+		},
+		nullptr,
+		EEaseType::EaseOutQuad);
+}
+
+void CUIController::FadeOutQuestForSpellMiniGame()
+{
+	GET_SINGLE(UIManager)->FadeOutQuest(0.3f);
+
+	if (!m_hQuestRoot)
+		return;
+
+	const CHandle questHandle = *m_hQuestRoot;
+	auto* questRoot = SafeGetOBJ(questHandle);
+	if (!questRoot || !questRoot->GetTweenCom())
+		return;
+
+	questRoot->GetTweenCom()->ClearTweens();
+	const _float startAlpha = questRoot->GetAlpha();
+	questRoot->GetTweenCom()->PlayTween(
+		startAlpha, 0.f, 0.3f,
+		[questHandle](_float currentAlpha)
+		{
+			if (auto* quest = GetSafeUI(questHandle))
+				quest->SetAlpha(currentAlpha);
+		},
+		nullptr,
+		EEaseType::EaseOutQuad);
+}
+
+void CUIController::FadeInQuestAfterSpellMiniGame()
+{
+	GET_SINGLE(UIManager)->FadeInQuest(0.5f);
+
+	if (!m_hQuestRoot)
+		return;
+
+	const CHandle questHandle = *m_hQuestRoot;
+	auto* questRoot = SafeGetOBJ(questHandle);
+	if (!questRoot || !questRoot->GetTweenCom())
+		return;
+
+	questRoot->GetTweenCom()->ClearTweens();
+	const _float startAlpha = questRoot->GetAlpha();
+	questRoot->GetTweenCom()->PlayTween(
+		startAlpha, 1.f, 0.5f,
+		[questHandle](_float currentAlpha)
+		{
+			if (auto* quest = GetSafeUI(questHandle))
+				quest->SetAlpha(currentAlpha);
 		},
 		nullptr,
 		EEaseType::EaseOutQuad);
@@ -564,10 +653,16 @@ std::string CUIController::GetQuestDisplayText(QUEST_UI_GROUP group) const
 	{
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_01:
 		return "퍼시벌 랙햄의 시험을 완료하기";
+	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_TRIAL_02:
+		return "퍼시벌 랙햄의 시험을 완료하기";
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_02:
 		return "두 번째 전투 구역으로 이동하기";
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_03:
 		return "세 번째 전투 구역으로 이동하기";
+	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE:
+		return "퍼시벌 랙햄의 시험을 완료하기";
+	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_PORTAL:
+		return "퍼시벌 랙햄의 시험을 완료하기";
 	default:
 		return {};
 	}
@@ -757,8 +852,358 @@ void CUIController::ApplyPendingQuestUIGroups()
 	}
 }
 
+void CUIController::UpdateRookwoodQuestProgression()
+{
+	if (m_bRookwoodSecondApproachReached ||
+		E::CGameInstance::Get().GetCurrentLevelID() !=
+			ETOUI(LEVEL::CHARLES_ROOKWOOD))
+	{
+		return;
+	}
+
+	const size_t moveGroupIndex = static_cast<size_t>(
+		QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_TRIAL_02);
+	if (moveGroupIndex >= m_QuestUIGroupStates.size() ||
+		!m_QuestUIGroupStates[moveGroupIndex])
+	{
+		return;
+	}
+
+	CPlayer* player = nullptr;
+	if (const auto* playerLayer =
+		E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
+	{
+		for (const CHandle handle : *playerLayer)
+		{
+			player = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CPlayer>(handle);
+			if (player)
+				break;
+		}
+	}
+	if (!player)
+		return;
+
+	constexpr _float3 approachPosition{
+		-253.683f, -223.682f, -54.548f
+	};
+	constexpr _float arrivalRadius = 12.f;
+	const _float3 playerPosition = player->GetTransform().GetPosition();
+	const _float deltaX = playerPosition.x - approachPosition.x;
+	const _float deltaZ = playerPosition.z - approachPosition.z;
+	if (deltaX * deltaX + deltaZ * deltaZ >
+		arrivalRadius * arrivalRadius)
+	{
+		return;
+	}
+
+	m_bRookwoodSecondApproachReached = true;
+	SetQuestUIGroupActive(
+		QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_TRIAL_02,
+		false, {}, true, false);
+	SetQuestUIGroupActive(
+		QUEST_UI_GROUP::ROOKWOOD_TRIAL_02,
+		true,
+		"퍼시벌 랙햄의 시험을 완료하기",
+		true, false);
+}
+
+void CUIController::UpdateRookwoodSecondBattleCompletion()
+{
+	if (m_bRookwoodSecondBattleCompleted ||
+		E::CGameInstance::Get().GetCurrentLevelID() !=
+			ETOUI(LEVEL::CHARLES_ROOKWOOD))
+	{
+		return;
+	}
+
+	const size_t groupIndex = static_cast<size_t>(
+		QUEST_UI_GROUP::ROOKWOOD_TRIAL_02);
+	if (groupIndex >= m_QuestUIGroupStates.size() ||
+		!m_QuestUIGroupStates[groupIndex] ||
+		m_QuestUIGroupTexts[groupIndex] !=
+			"경비병들을 쓰러트리기")
+	{
+		return;
+	}
+
+	// 전투 트리거가 몬스터를 레이어에 완전히 추가한 다음 프레임에
+	// 실제 두 번째 구역 몬스터 두 마리의 핸들을 확보한다.
+	if (m_RookwoodSecondBattleMonsters.empty())
+	{
+		const auto* monsterLayer = E::CGameInstance::Get().
+			GetGameObjectLayer("02_TmbGurdian");
+		if (!monsterLayer)
+			return;
+
+		constexpr _float3 battleCenter{
+			-252.469f, -224.784f, -109.236f
+		};
+		constexpr _float collectRadius = 40.f;
+		for (const CHandle handle : *monsterLayer)
+		{
+			auto* monster = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CMonster>(handle);
+			if (!monster || monster->Get_CurrentHp() <= 0)
+				continue;
+
+			const _float3 position = monster->GetTransform().GetPosition();
+			const _float deltaX = position.x - battleCenter.x;
+			const _float deltaZ = position.z - battleCenter.z;
+			if (deltaX * deltaX + deltaZ * deltaZ >
+				collectRadius * collectRadius)
+			{
+				continue;
+			}
+
+			m_RookwoodSecondBattleMonsters.push_back(handle);
+		}
+
+		if (m_RookwoodSecondBattleMonsters.size() < 2)
+		{
+			m_RookwoodSecondBattleMonsters.clear();
+			return;
+		}
+	}
+
+	const _bool allMonstersDefeated = std::all_of(
+		m_RookwoodSecondBattleMonsters.begin(),
+		m_RookwoodSecondBattleMonsters.end(),
+		[](CHandle handle)
+		{
+			auto* monster = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CMonster>(handle);
+			if (!monster || monster->GetPendingDestroy() ||
+				monster->Get_CurrentHp() <= 0)
+			{
+				return true;
+			}
+
+			// 경비병은 낭떠러지로 떨어져도 HP/DEAD 플래그가 바뀌지 않고
+			// 중력 상태로 계속 남는다. 두 번째 전투 바닥(-230 부근)보다
+			// 충분히 아래로 떨어졌다면 전투 목표에서는 처치로 판정한다.
+			constexpr _float fallDefeatY = -245.f;
+			return monster->GetTransform().GetPosition().y < fallDefeatY;
+		});
+	if (!allMonstersDefeated)
+		return;
+
+	m_bRookwoodSecondBattleCompleted = true;
+	GET_SINGLE(UIManager)->CreateOrChangeQuest(
+		"퍼시벌 랙햄의 시험을 완료하기");
+	SetQuestUIGroupActive(
+		QUEST_UI_GROUP::ROOKWOOD_TRIAL_02,
+		false, {}, true, false);
+	SetQuestUIGroupActive(
+		QUEST_UI_GROUP::ROOKWOOD_TRIAL_03,
+		true,
+		"퍼시벌 랙햄의 시험을 완료하기",
+		true, false);
+}
+
+void CUIController::UpdateRookwoodThirdBattleCompletion()
+{
+	if (m_bRookwoodThirdBattleCompleted ||
+		E::CGameInstance::Get().GetCurrentLevelID() !=
+			ETOUI(LEVEL::CHARLES_ROOKWOOD))
+	{
+		return;
+	}
+
+	const size_t groupIndex = static_cast<size_t>(
+		QUEST_UI_GROUP::ROOKWOOD_TRIAL_03);
+	if (groupIndex >= m_QuestUIGroupStates.size() ||
+		!m_QuestUIGroupStates[groupIndex] ||
+		m_QuestUIGroupTexts[groupIndex] !=
+			"엘리트 경비병들을 쓰러트리기")
+	{
+		return;
+	}
+
+	// 세 번째 구역에는 레벨 진입 시 엘리트 두 마리가 미리 배치된다.
+	// 타입 getter에 의존하지 않고 전투 중심에서 가까운 두 몬스터를
+	// 추적해 일반 사망, 삭제, 낙사 모두 같은 완료 조건으로 처리한다.
+	if (m_RookwoodThirdBattleMonsters.empty())
+	{
+		const auto* monsterLayer = E::CGameInstance::Get().
+			GetGameObjectLayer("02_TmbGurdian");
+		if (!monsterLayer)
+			return;
+
+		constexpr _float3 battleCenter{
+			-254.361f, -223.280f, -209.996f
+		};
+		constexpr _float collectRadius = 45.f;
+		std::vector<std::pair<_float, CHandle>> candidates{};
+		for (const CHandle handle : *monsterLayer)
+		{
+			auto* monster = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CMonster>(handle);
+			if (!monster || monster->GetPendingDestroy() ||
+				monster->Get_CurrentHp() <= 0)
+			{
+				continue;
+			}
+
+			const _float3 position = monster->GetTransform().GetPosition();
+			const _float deltaX = position.x - battleCenter.x;
+			const _float deltaZ = position.z - battleCenter.z;
+			const _float distanceSq = deltaX * deltaX + deltaZ * deltaZ;
+			if (distanceSq <= collectRadius * collectRadius)
+				candidates.emplace_back(distanceSq, handle);
+		}
+
+		if (candidates.size() < 2)
+			return;
+
+		std::sort(candidates.begin(), candidates.end(),
+			[](const auto& lhs, const auto& rhs)
+			{
+				return lhs.first < rhs.first;
+			});
+		m_RookwoodThirdBattleMonsters.push_back(candidates[0].second);
+		m_RookwoodThirdBattleMonsters.push_back(candidates[1].second);
+	}
+
+	const _bool allMonstersDefeated = std::all_of(
+		m_RookwoodThirdBattleMonsters.begin(),
+		m_RookwoodThirdBattleMonsters.end(),
+		[](CHandle handle)
+		{
+			auto* monster = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CMonster>(handle);
+			if (!monster || monster->GetPendingDestroy() ||
+				monster->Get_CurrentHp() <= 0)
+			{
+				return true;
+			}
+
+			constexpr _float fallDefeatY = -245.f;
+			return monster->GetTransform().GetPosition().y < fallDefeatY;
+		});
+	if (!allMonstersDefeated)
+		return;
+
+	m_bRookwoodThirdBattleCompleted = true;
+	GET_SINGLE(UIManager)->CreateOrChangeQuest(
+		"퍼시벌 랙햄의 시험을 완료하기");
+	SetQuestUIGroupActive(
+		QUEST_UI_GROUP::ROOKWOOD_TRIAL_03,
+		false, {}, true, false);
+	SetQuestUIGroupActive(
+		QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE,
+		true,
+		"퍼시벌 랙햄의 시험을 완료하기",
+		true, false);
+}
+
+void CUIController::UpdateRookwoodBridgeProgression()
+{
+	if (m_bRookwoodBridgeApproachReached ||
+		E::CGameInstance::Get().GetCurrentLevelID() !=
+			ETOUI(LEVEL::CHARLES_ROOKWOOD))
+	{
+		return;
+	}
+
+	const size_t groupIndex = static_cast<size_t>(
+		QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE);
+	if (groupIndex >= m_QuestUIGroupStates.size() ||
+		!m_QuestUIGroupStates[groupIndex])
+	{
+		return;
+	}
+
+	CPlayer* player = nullptr;
+	if (const auto* playerLayer =
+		E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
+	{
+		for (const CHandle handle : *playerLayer)
+		{
+			player = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CPlayer>(handle);
+			if (player)
+				break;
+		}
+	}
+	if (!player)
+		return;
+
+	constexpr _float3 bridgePosition{
+		-252.617f, -239.471f, -378.125f
+	};
+	constexpr _float arrivalRadius = 12.f;
+	const _float3 playerPosition = player->GetTransform().GetPosition();
+	const _float deltaX = playerPosition.x - bridgePosition.x;
+	const _float deltaZ = playerPosition.z - bridgePosition.z;
+	if (deltaX * deltaX + deltaZ * deltaZ >
+		arrivalRadius * arrivalRadius)
+	{
+		return;
+	}
+
+	m_bRookwoodBridgeApproachReached = true;
+	GET_SINGLE(UIManager)->CreateOrChangeQuest("다리 복구하기");
+	SetQuestUIGroupActive(
+		QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE,
+		true, "다리 복구하기", false, false);
+}
+
+void CUIController::UpdateRookwoodPortalProgression()
+{
+	if (m_bRookwoodPortalApproachReached ||
+		E::CGameInstance::Get().GetCurrentLevelID() !=
+			ETOUI(LEVEL::CHARLES_ROOKWOOD))
+	{
+		return;
+	}
+
+	const size_t groupIndex = static_cast<size_t>(
+		QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_PORTAL);
+	if (groupIndex >= m_QuestUIGroupStates.size() ||
+		!m_QuestUIGroupStates[groupIndex])
+	{
+		return;
+	}
+
+	CPlayer* player = nullptr;
+	if (const auto* playerLayer =
+		E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
+	{
+		for (const CHandle handle : *playerLayer)
+		{
+			player = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CPlayer>(handle);
+			if (player)
+				break;
+		}
+	}
+	if (!player)
+		return;
+
+	constexpr _float3 portalPosition{
+		-253.258f, -236.414f, -582.386f
+	};
+	constexpr _float arrivalRadius = 12.f;
+	const _float3 playerPosition = player->GetTransform().GetPosition();
+	const _float deltaX = playerPosition.x - portalPosition.x;
+	const _float deltaZ = playerPosition.z - portalPosition.z;
+	if (deltaX * deltaX + deltaZ * deltaZ >
+		arrivalRadius * arrivalRadius)
+	{
+		return;
+	}
+
+	m_bRookwoodPortalApproachReached = true;
+	GET_SINGLE(UIManager)->CreateOrChangeQuest("미지의 포탈에 빠지기");
+	SetQuestUIGroupActive(
+		QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_PORTAL,
+		true, "미지의 포탈에 빠지기", false, false);
+}
+
 void CUIController::CreateSpellType()
 {
+	GET_SINGLE(UIManager)->FadeOutQuest(0.3f);
 	/********스펠슬롯**********/
 	m_SpellBTNs = GET_SINGLE(UIManager)->LoadPrefab("OnlySpellBTN");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[0]))->SetResTag("TEX_UI_T_spellmeter_ArrestoMomentum_Overlay");
@@ -879,6 +1324,7 @@ void CUIController::DeleteSpellType()
 
 	E::CGameInstance::Get().SetMouseFix(true);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
+	GET_SINGLE(UIManager)->FadeInQuest(0.5f);
 
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/SpellClose.wav", SOUND_PLAY_DESC{
 	.sBusID = SOUND_BUS::UI,
@@ -1277,7 +1723,7 @@ void CUIController::CreateMonsterHP()
 			if (std::string_view(pUI->GetName()) == "MonsterName")
 			{
 				if (auto* pTextBox = dynamic_cast<CTextBox*>(pUI))
-					pTextBox->SetwText(L"가시등 거비");
+					pTextBox->SetwText(L"가시등 거미");
 			}
 
 			for (const CHandle childHandle : pUI->GetChildren())

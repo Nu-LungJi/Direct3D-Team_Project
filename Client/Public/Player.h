@@ -28,11 +28,13 @@ NS_BEGIN(Client)
 enum class PLAYER_STATE : uint32_t;
 class CPlayer_StateMachine;
 class CPlayerRagdollController;
+class CPlayer_DoorPush_State;
 
 class CPlayer final : public CAnimationObject
 {
 public:
 	DECLARE_DERIVED_TYPE(CPlayer, CAnimationObject)
+	friend class CPlayer_DoorPush_State;
 
 public:
 	enum class PLAYER_COLLISIONS : uint32_t
@@ -65,6 +67,8 @@ public:
 				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
 				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
 				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+				ETOUI(COLLISION_LAYER::DOOR_DYNAMIC) |
+				ETOUI(COLLISION_LAYER::DOOR_HINGE_BLOCKER) |
 				ETOUI(COLLISION_LAYER::NPC_BODY) |
 				ETOUI(COLLISION_LAYER::ENEMY_BODY)
 		};
@@ -106,6 +110,10 @@ public:
 	const _float3& GetKnockdownAttackPosition() const { return m_vKnockdownAttackPosition; }
 private:
 	void HandleDeath();
+	_bool HasActiveDoorPushContact() const
+	{
+		return m_fDoorPushContactRemainTime > 0.f;
+	}
 	_float3 GetAttackIndicatorPosition() const;
 	void TriggerProtegoHit(const _float3& vHitPosition, int32_t iDamage = 0,
 		const _float3* pAttackPosition = nullptr);
@@ -139,6 +147,9 @@ private:
 public:
 	void OnWake() override;
 	void OnSleep() override;
+	void OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit) override;
+	PX_CCT_BEHAVIOR GetCCTShapeBehavior(
+		CGameObject* pGameObject) const override;
 	void OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
 	void OnCollisionExit(CGameObject* pObj, const PX_ON_COLLISION_DATA& info) override;
 	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
@@ -169,6 +180,8 @@ public:
 	_bool StartWiggenweldPotionUse();
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
+	_bool TryUsePotion();
+	void UpdateSkillSlotCooldowns(_float fTimeDelta);
 	std::optional<CHandle> ConsumeAncientThrowTarget();
 	void SetLumosActive(_bool bActive);
 	void SetLumosHoldAnimationIndex(int32_t iAnimation) { m_iLumosHoldAnimation = iAnimation; }
@@ -221,6 +234,8 @@ private:
 
 	SPtr<CResCBuffer> m_pResSkinMeshCBuffer{};
 	CHandle m_Partes[ETOUI(PARTES::END)]{};
+	// [LSY] Fixed CCT Hit와 렌더 프레임 상태 갱신 사이를 연결하는 접촉 유예시간이다.
+	_float m_fDoorPushContactRemainTime{};
 
 	CComConstantBuffer* m_pComCBufferPerObject{};
 	CComSocket* m_pSocket{};
@@ -312,7 +327,7 @@ private:
 	_float m_fParryCounterRemainTime{};
 	PLAYER_STATE m_ePreviousMotionBlurState{ static_cast<PLAYER_STATE>(0) };
 	_float m_fMotionBlurPulseRemainUnscaled{};
-	static constexpr _bool MOTION_BLUR_ENABLED = false;
+	static constexpr _bool MOTION_BLUR_ENABLED = true;
 	static constexpr _float MOTION_BLUR_STATE_PULSE_DURATION = 0.12f;
 	_float m_fProtegoRecoilRemainTime{};
 	_float3 m_vProtegoRecoilDirection{};
@@ -411,17 +426,9 @@ private:
 
 	_float m_fControlHoldTime{};
 	_bool m_bDashTriggered{};
+	static constexpr _float SKILL_SLOT_COOLDOWN = 5.f;
+	std::array<_float, 4> m_SkillSlotCooldowns{};
 
-
-private:
-	_float m_fCoolTime_Num1{};
-	_bool m_bCoolTime_Num1{};
-	_float m_fCoolTime_Num2{};
-	_bool m_bCoolTime_Num2{};
-	_float m_fCoolTime_Num3{};
-	_bool m_bCoolTime_Num3{};
-	_float m_fCoolTime_Num4{};
-	_bool m_bCoolTime_Num4{};
 
 private:
 	void DelayFinish(_float fTimeDelta);

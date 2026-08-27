@@ -12,7 +12,14 @@ NS_USING(Engine)
 CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice{ pDevice }, m_pContext{ pContext }
 {
 }
-CRenderer::~CRenderer() {}
+CRenderer::~CRenderer()
+{
+	if (m_pTracyGpuContext != nullptr)
+	{
+		TracyD3D11Destroy(m_pTracyGpuContext);
+		m_pTracyGpuContext = nullptr;
+	}
+}
 
 VOID	CRenderer::UpdateGUI()
 {
@@ -28,6 +35,9 @@ VOID	CRenderer::Update(_float fTimeDelta) {
 
 HRESULT CRenderer::Initialize()
 {
+	m_pTracyGpuContext = TracyD3D11Context(m_pDevice.Get(), m_pContext.Get());
+	TracyD3D11ContextName(m_pTracyGpuContext, "D3D11 Main Context", 18);
+
 	if (FAILED(InitializeShaderResource()))     return E_FAIL;
 
 	if (FAILED(InitializeBackBuffer()))         return E_FAIL;
@@ -216,7 +226,7 @@ HRESULT CRenderer::InitializeBackBuffer()
 	if (nullptr == m_pBackBufferTexture)	{ MSG_BOX("Invalid : m_pBackBufferTexture");    return E_FAIL; }
 
 	// m_pRasterizer Setting - BackCull
-	m_pRasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	m_pRasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
 	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 
 	return S_OK;
@@ -290,7 +300,7 @@ HRESULT CRenderer::InitializeTargetPBR()
 	{
 		if (nullptr == m_pResVertexShader)	return E_FAIL;
 	}
-	if (m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim"))
+	if (m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER))
 	{
 		if (nullptr == m_pResPixelShader)	return E_FAIL;
 	}
@@ -447,7 +457,7 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 		return E_FAIL;
 	}
 
-	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/cumulus.dds", nullptr, m_pWeatherMapTexture.GetAddressOf()))) {
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/WeatherMap.dds", nullptr, m_pWeatherMapTexture.GetAddressOf()))) {
 		MSG_BOX("Cannot Create WeatherMap Texture File.");
 		return E_FAIL;
 	}
@@ -457,6 +467,15 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 		return E_FAIL;
 	}
 	
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/BaseNoise.dds", nullptr, m_pBaseVolumeTexture.GetAddressOf()))) {
+		MSG_BOX("Cannot Create Cloud BaseNoise File.");
+		return E_FAIL;
+	}
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/DetailNoise.dds", nullptr, m_pDetailVolumeTexture.GetAddressOf()))) {
+		MSG_BOX("Cannot Create Cloud DetailNoise File.");
+		return E_FAIL;
+	}
+
 	if (m_pVolumetricFroxelCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FROXEL", E::CResCBuffer::Create())) {
 		if (FAILED(m_pVolumetricFroxelCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_FROXEL) })))    return E_FAIL;
 	}
@@ -964,6 +983,20 @@ VOID	CRenderer::Unbind_Resources() {
 	m_pContext->CSSetShader(nullptr, nullptr, 0);
 }
 
+VOID CRenderer::Convert_Rasterizer_NoCull() {
+	const auto NoCullRasterizer		= CGameInstance::Get().GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	if (!NoCullRasterizer)	return;
+
+	m_pContext->RSSetState(NoCullRasterizer->GetRasterizerState().Get());
+}
+
+VOID CRenderer::Convert_Rasterizer_BackCull() {
+	const auto BackCullRasterizer	= CGameInstance::Get().GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	if (!BackCullRasterizer)	return;
+
+	m_pContext->RSSetState(BackCullRasterizer->GetRasterizerState().Get());
+}
+
 HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 	auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
 	D3D11_MAPPED_SUBRESOURCE mappedSubResource;
@@ -1033,6 +1066,9 @@ HRESULT CRenderer::Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveC
 #pragma region  RENDERING
 HRESULT CRenderer::Draw() {
 	ZoneScopedN("Renderer : Draw");
+	// Resolve the previous frame's timestamp queries before opening this frame's GPU zone.
+	TracyD3D11Collect(m_pTracyGpuContext);
+	TracyD3D11Zone(m_pTracyGpuContext, "Renderer Frame");
 
 	// m_pRasterizer Setting - BackCull
 	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
@@ -1117,6 +1153,7 @@ VOID CRenderer::FrameEnd()
 
 HRESULT CRenderer::Render_Shadow() {
 	if (!m_bApplyShadow)	return S_OK;
+	TracyD3D11Zone(m_pTracyGpuContext, "Shadow");
 
 	if (FAILED(CGameInstance::Get().Capture_ShadowMap()))
 	{
@@ -1129,6 +1166,7 @@ HRESULT CRenderer::Render_Shadow() {
 
 HRESULT CRenderer::Render_DepthMap() {
 	ZoneScopedN("Render_DepthMap");
+	TracyD3D11Zone(m_pTracyGpuContext, "Depth Map");
 	{
 		{
 			ID3D11DepthStencilState* pDSS = nullptr;
@@ -1167,6 +1205,7 @@ HRESULT CRenderer::Render_DepthMap() {
 
 HRESULT CRenderer::Render_NonAlpha() {
 	ZoneScopedN("Render_NonAlpha");
+	TracyD3D11Zone(m_pTracyGpuContext, "Opaque GBuffer");
 	{
 		ID3D11RenderTargetView* pRTVs[4] = {
 			m_pResDynTexTargetDiffuse->GetRTV().Get(),
@@ -1182,7 +1221,14 @@ HRESULT CRenderer::Render_NonAlpha() {
 
 		// Default Texture - Dissolve Noise
 		SPtr<CResTexture2D> NoiseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE");
-		m_pContext->PSSetShaderResources(13, 1, NoiseTexture->GetSRV().GetAddressOf());
+		// 기존 모델 셰이더는 t13, 공용 NonBlend 셰이더는 t14에서 노이즈를 읽는다.
+		// 두 슬롯에 함께 제공하여 기존 렌더 경로의 동작을 유지한다.
+		ID3D11ShaderResourceView* pNoiseSRVs[2] =
+		{
+			NoiseTexture->GetSRV().Get(),
+			NoiseTexture->GetSRV().Get()
+		};
+		m_pContext->PSSetShaderResources(13, 2, pNoiseSRVs);
 
 		_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
 		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&clearColor));
@@ -1225,6 +1271,7 @@ HRESULT CRenderer::Render_NonAlpha() {
 HRESULT CRenderer::Render_Decal()
 {
 	ZoneScopedN("Render_Decal");
+	TracyD3D11Zone(m_pTracyGpuContext, "Decal");
 
 	auto& decals = m_pRenderObject[ETOUI(RENDERGROUP::DECAL)];
 	if (decals.empty())
@@ -1265,7 +1312,7 @@ HRESULT CRenderer::Render_Decal()
 			Unbind_Resources();
 			m_pContext->OMSetBlendState(noBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 			m_pContext->OMSetDepthStencilState(depthDisabled->GetDepthStencilState().Get(), 0);
-			m_pContext->RSSetState(backCull->GetRasterizerState().Get());
+			m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 		};
 
 	auto* activeCamera = gameInstance.GetActiveCamera();
@@ -1296,6 +1343,7 @@ HRESULT CRenderer::Render_Decal()
 
 HRESULT CRenderer::Render_HBAO() {
 	ZoneScopedN("Render_HBAO");
+	TracyD3D11Zone(m_pTracyGpuContext, "HBAO");
 	ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };
 	m_pContext->OMSetRenderTargets(4, pRTVs, nullptr);
 
@@ -1362,11 +1410,6 @@ HRESULT CRenderer::Render_HBAO() {
 
 HRESULT CRenderer::Render_Lighting() {
 	ZoneScopedN("Render_Lighting");
-	{
-		// Default Texture - Dissolve HBAO
-		SPtr<CResTexture2D> WhiteResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE");
-		m_pContext->PSSetShaderResources(5, 1, WhiteResource->GetSRV().GetAddressOf());
-	}
 
 	{
 		ComPtr<ID3D11ShaderResourceView> SRVList[] = {
@@ -1394,14 +1437,14 @@ HRESULT CRenderer::Render_Lighting() {
 
 		m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
 	}
-
-	return S_OK;
+	
 }
 
 HRESULT CRenderer::Render_Alpha() {
 	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 
 	ZoneScopedN("Render_Alpha");
+	TracyD3D11Zone(m_pTracyGpuContext, "Transparent");
 	{
 		m_pContext->CopyResource(
 			m_pResDynTexTargetPBR->GetTexture().Get(),
@@ -1420,6 +1463,15 @@ HRESULT CRenderer::Render_Alpha() {
 		m_pContext->IASetInputLayout(m_pBlendVertexShader->GetInputLayout().Get());
 		m_pContext->VSSetShader(m_pBlendVertexShader->GetVertexShader().Get(), nullptr, 0);
 		m_pContext->PSSetShader(m_pBlendPixelShader->GetPixelShader().Get(), nullptr, 0);
+
+		
+		ComPtr<ID3D11ShaderResourceView> SRVList[] = {
+			m_pResDynTexTargetHBAO->GetSRV(),
+			nullptr,
+			m_pSRVIrradianceMap.Get(),
+			m_pSRVPreFilteredMap.Get(),
+			m_pSRVBRDFLookUpMap.Get()
+		};
 	}
 	{
 		auto pGameCam = CGameInstance::Get().GetActiveCamera();
@@ -1450,6 +1502,7 @@ HRESULT CRenderer::Render_Alpha() {
 HRESULT CRenderer::Render_Effect()
 {
 	ZoneScopedN("Render_Effect");
+	TracyD3D11Zone(m_pTracyGpuContext, "Effect");
 	{
 		m_pContext->CopyResource(
 			m_pResDynTexTargetEffect->GetTexture().Get(),
@@ -1492,6 +1545,7 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 	if (m_bApplyVolumetricFog == false && m_bApplyVolumetricCloud == false) return S_OK;
 
 	ZoneScopedN("Render_VolumetricEffect");
+	TracyD3D11Zone(m_pTracyGpuContext, "Volumetric");
 
 	if (FAILED(Update_VolumetricConstantBuffer())) { Unbind_Resources(); return S_OK; }
 
@@ -1628,17 +1682,15 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer() {
 			D3D11_MAPPED_SUBRESOURCE MRES{};
 			if (SUCCEEDED(m_pContext->Map(m_pVolumetricVFogCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 			{
-				CB_VLFOG cbVLFog = m_pFogInfo;
-
 				if (auto LightHandle = CGameInstance::Get().Get_MainDirectionalLightData().m_pLightHandle) {
 					if (auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value()))
-						cbVLFog.g_fFogLightDirection = LightOBJ->Get_LightDirection();
+						m_pFogInfo.g_fFogLightDirection = LightOBJ->Get_LightDirection();
 					else
-						cbVLFog.g_fFogLightDirection = _float3(0.f, 0.f, 0.f);
+						m_pFogInfo.g_fFogLightDirection = _float3(0.f, 0.f, 0.f);
 				}
 
-				cbVLFog.g_fFogTime = std::fmod(m_fTimeAccumulation, 4096.f);
-				memcpy(MRES.pData, &cbVLFog, sizeof(CB_VLFOG));
+				m_pFogInfo.g_fFogTime = std::fmod(m_fTimeAccumulation, 4096.f);
+				memcpy(MRES.pData, &m_pFogInfo, sizeof(CB_VLFOG));
 				m_pContext->Unmap(m_pVolumetricVFogCBuffer->GetCBuffer().Get(), 0);
 			}
 			m_pContext->PSSetConstantBuffers(11, 1, m_pVolumetricVFogCBuffer->GetCBuffer().GetAddressOf());
@@ -1684,16 +1736,17 @@ HRESULT CRenderer::Render_VolumetricCloud() {
 	{
 		m_pContext->CSSetShader(m_pVolumetricCloudCS->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11ShaderResourceView* pSRVs[7] = {
+		ID3D11ShaderResourceView* pSRVs[8] = {
 			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
 			nullptr,
-			m_pVolumeTexture.Get(),
+			m_pBaseVolumeTexture.Get(),
+			m_pDetailVolumeTexture.Get(),
 			m_pResDynTexTargetDepth->GetSRV().Get(),
 			m_pWeatherMapTexture.Get(),
 			m_pBlueNoiseTexture.Get(),
 			m_pCloudCurlNoiseTexture.Get()
 		};
-		m_pContext->CSSetShaderResources(0, 7, pSRVs);
+		m_pContext->CSSetShaderResources(0, 8, pSRVs);
 
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVolumetricCloudTex->GetUAV().Get() };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
@@ -1882,6 +1935,7 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 
 HRESULT CRenderer::Render_PostProcess() {
 	if (m_bApplyFilter == false) return S_OK;
+	TracyD3D11Zone(m_pTracyGpuContext, "Post Process");
 
 	if (FAILED(Update_PostProcessConstantBuffer())) { Unbind_Resources(); return S_OK; }
 
@@ -2198,6 +2252,7 @@ HRESULT CRenderer::Render_UI3D() {
 	ZoneScopedN("Render_UserInterface3D");
 	if (!m_bUI3DPanelActive)
 		return S_OK;
+	TracyD3D11Zone(m_pTracyGpuContext, "UI 3D");
 
 	ComPtr<ID3D11SamplerState> previousLinearClamp;
 	m_pContext->PSGetSamplers(1, 1, previousLinearClamp.GetAddressOf());
@@ -2351,6 +2406,7 @@ HRESULT CRenderer::Render_UserInterface() {
 	m_pRenderContext.eye = pUICame->GetTransform().GetLoadedPostion();
 
 	ZoneScopedN("Render_UserInterface");
+	TracyD3D11Zone(m_pTracyGpuContext, "UI");
 	{
 		{
 			m_pContext->CopyResource(
@@ -2407,6 +2463,7 @@ HRESULT CRenderer::Render_UserInterface() {
 HRESULT CRenderer::Render_FullScreen()
 {
 	ZoneScopedN("DrawFullscreen");
+	TracyD3D11Zone(m_pTracyGpuContext, "Final Fullscreen");
 	ID3D11RenderTargetView* pBackBufferRTVs[1] = { m_pBackBufferRTV.Get() };
 	m_pContext->OMSetRenderTargets(1, pBackBufferRTVs, nullptr);
 
@@ -2507,13 +2564,15 @@ HRESULT CRenderer::RenderMapMesh()
 	if (!stencilWrite)
 		return E_FAIL;
 
+	Convert_Rasterizer_NoCull();
+
 	ComPtr<ID3D11DepthStencilState> previousDepthState{};
 	UINT previousStencilRef = 0;
 	m_pContext->OMGetDepthStencilState(previousDepthState.GetAddressOf(), &previousStencilRef);
 	m_pContext->OMSetDepthStencilState(stencilWrite->GetDepthStencilState().Get(), STENCIL_MASK::DECAL_RECEIVER);
 
 	HRESULT result = S_OK;
-	for (auto* renderObject : m_pRenderObject[ETOUI(RENDERGROUP::MAPMESH)])
+	for (auto* renderObject : m_pRenderObject[ETOUI(RENDERGROUP::NONBLEND_MAPMESH)])
 	{
 		if (!renderObject || !renderObject->HasRenderPass(m_pRenderContext.pass))
 			continue;
@@ -2524,6 +2583,8 @@ HRESULT CRenderer::RenderMapMesh()
 			break;
 		}
 	}
+
+	m_pRenderContext.pass = RENDERPASS::DEFAULT;
 
 	m_pContext->OMSetDepthStencilState(previousDepthState.Get(), previousStencilRef);
 
@@ -2547,6 +2608,26 @@ HRESULT CRenderer::RenderBlend()
 
 	{
 		E::CGameInstance::Get().Render3DFont();
+	}
+
+	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+	m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
+	return S_OK;
+}
+
+HRESULT CRenderer::RenderBlendMapMesh(){
+	ZoneScopedN("RenderBlendMapMesh");
+
+	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+	m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
+	for (auto& pRenderObject : m_pRenderObject[ETOUI(RENDERGROUP::BLEND_MAPMESH)])
+	{
+		if (pRenderObject->HasRenderPass(m_pRenderContext.pass))
+		{
+			pRenderObject->Render(m_pContext.Get(), m_pRenderContext);
+		}
 	}
 
 	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
@@ -2593,7 +2674,7 @@ HRESULT CRenderer::RenderEffect()
 			pRenderObject->Render(m_pContext.Get(), m_pRenderContext);
 		}
 	}
-
+	
 	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
 	m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 
@@ -3039,6 +3120,7 @@ HRESULT CRenderer::Render_Debugging() {
 	if (CGameInstance::Get().KeyDown(DIK_F7))	m_bRenderDebugScreen = !m_bRenderDebugScreen;
 
 	if (!m_bRenderDebugScreen) return S_OK;
+	TracyD3D11Zone(m_pTracyGpuContext, "Debug Overlay");
 
 	auto ActiveCam = CGameInstance::Get().GetActiveCamera();
 
@@ -3357,6 +3439,7 @@ HRESULT CRenderer::InitializeHizBuffer()
 HRESULT CRenderer::BuildCurrentHizBuffer()
 {
 	ZoneScopedN("BuildCurrentHizBuffer");
+	TracyD3D11Zone(m_pTracyGpuContext, "Hi-Z Build");
 	if (m_pCurrentHizBuffer == nullptr || m_pResDynTexTargetDepth == nullptr)
 		return E_FAIL;
 

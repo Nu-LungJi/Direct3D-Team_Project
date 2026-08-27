@@ -60,6 +60,7 @@ class CComPxD6Joint;
 class CPathPlaybackEditor;
 class CResModelAnim;
 class CNpcPlacementManager;
+class CAnimatedObjectPlacementManager;
 
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
@@ -236,6 +237,7 @@ public:
 #pragma region NPC_PLACEMENT_MANAGER
 public:
 	CNpcPlacementManager* GetNpcPlacementManager() const { return m_pNpcPlacementManager.get(); }
+	CAnimatedObjectPlacementManager* GetAnimatedObjectPlacementManager() const { return m_pAnimatedObjectPlacementManager.get(); }
 #pragma endregion
 
 #pragma region GAMEOBJECT_MANAGER
@@ -771,6 +773,7 @@ private:
 	UPtr<CEffectManager> m_pEffectManager{};
 	UPtr<CPathPlaybackEditor> m_pPathPlaybackEditor{};
 	UPtr<CNpcPlacementManager> m_pNpcPlacementManager{};
+	UPtr<CAnimatedObjectPlacementManager> m_pAnimatedObjectPlacementManager{};
 };
 
 template<typename TLayer>

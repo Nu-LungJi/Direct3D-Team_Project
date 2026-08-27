@@ -15,6 +15,7 @@
 #include "Player_Stupefy_Bullet.h"
 #include "NvClothCape.h"
 #include "ResNvClothMesh.h"
+#include "WaterWheel.h"
 
 #include "UIController.h"
 #include "EffectUI.h"
@@ -34,7 +35,7 @@
 #include "Mon_Spawner.h"
 #include "Mon_State.h"
 #include "WorldNpc.h"
-#include "MiniGameNpc.h"
+#include "InteractiveNpc.h"
 #include "Griff.h"
 #include "GriffChild.h"
 #include "Troll.h"
@@ -60,6 +61,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
 				return false;
 
 			if (auto texture = E::CGameInstance::Get().AddResource(
@@ -90,14 +93,26 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			{
 				return false;
 			}
+
 			if(FAILED(MonsterLoad_InWorker()))
 				return false;
-			//if (FAILED(NpcLoad_InWorker()))
-			//	return false;
+			if (FAILED(NpcLoad_InWorker()))
+				return false;
 			if (FAILED(WorldAgentLoad_InWorker()))
 				return false;
 
 			if (FAILED(LoadCollsion_InWorker()))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("TrollDoljin")))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("SpiderSpawn")))
+			{
+				return false;
+			}
+
+			if (FAILED(LoadHogsmeade_ExtraAsset()))
 				return false;
 
 			return SUCCEEDED(LoadPlayerResources());
@@ -298,7 +313,8 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
 				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
-				"./Resources/SampleClient/Textures/UI/UITexture/WandShop"
+				"./Resources/SampleClient/Textures/UI/UITexture/WandShop",
+				"./Resources/SampleClient/Textures/UI/UITexture/MiniGame"
 			};
 
 			for (const auto& targetDir : targetDirectories)
@@ -354,6 +370,7 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 		{
 			return false;
 		}
+		
 	}
 	return true;
 }
@@ -430,7 +447,15 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 		}
 
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
-
+		
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "TROLL", CResJson::Create("./Resources/json/BeHavior/Troll.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED TROLL JSON");
+				return E_FAIL;
+			}
+		}
 	}
 }
 
@@ -439,7 +464,9 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
 	static constexpr NPC_MODEL_ENTRY NpcModels[] =
 	{
-		{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
+		// NpcSpawnIdle/NpcSpawnWalk에서 실제 사용하는 NPC만 선로드한다.
+		// 리소스 폴더의 Viector 오타는 런타임 태그와 분리해 여기서만 보정한다.
+		{ "Model_Resource_NPC_VictorRookwood", "ViectorRookwood_lsy" },
 	};
 	for (const auto& Entry : NpcModels)
 	{
@@ -467,7 +494,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	if (FAILED(E::CGameInstance::Get().AddPrototype(
 		LEVEL::HOGWART_WORLD,
 		PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
-		CMiniGameNpc::Create())))
+		CInteractiveNpc::Create())))
 	{
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_MiniGameNpc");
 		return E_FAIL;
@@ -537,6 +564,30 @@ HRESULT CLevelHogwartWorldLoader::LoadCollsion_InWorker()
 	{
 		MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
 		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorldLoader::LoadHogsmeade_ExtraAsset(){
+
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::HOGWART_WORLD, "Static_WaterWheel_Resource",
+			CResStaticModel::Create("./Resources/SampleClient/Models/Static/Hogsmeade_ExtraAsset/SM_CGY_WaterWheel.bin"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("HOGWART_WORLD Failed Static_WaterWheel Resource");
+				//return false;
+			}
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WaterWheel, CWaterWheel::Create())))
+		{
+			MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_WaterWheel");
+			return E_FAIL;
+		}
 	}
 	return S_OK;
 }

@@ -8,6 +8,7 @@
 #include "ComBeHavior.h"
 #include "GameInstance.h"
 #include "ComCollider.h"
+#include "CollBox.h"
 #include "ComPxCharacterController.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
@@ -19,6 +20,7 @@
 #include "TrollWeapon.h"
 //FSM
 #include "Mon_State.h"
+#include "MON_Default.h"
 //BB
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
@@ -63,6 +65,17 @@ HRESULT CTroll::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
+
+	// 트롤은 기본 몬스터 컬링 박스보다 메시가 훨씬 크므로 몸 전체와
+	// 위로 솟는 애니메이션까지 포함하도록 로컬 박스를 넉넉하게 잡는다.
+	if (m_pComCollider && m_pComCollider->Get() &&
+		m_pComCollider->Get()->GetCollType() == CollType::Box)
+	{
+		static_cast<CCollBox*>(m_pComCollider->Get())->SetLocalBoundingBox(
+			{ 0.f, 2.f, 0.f },
+			{ 4.f, 6.f, 4.f });
+	}
+
 	m_iHp = m_iMaxHp = 300;
 
 	CTrollWeapon::TROLL_WEAPON_DESC WeaponDesc{};
@@ -100,7 +113,7 @@ HRESULT CTroll::Initialize(void* pArg)
 	ReadySound();
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	m_pComSphereCol->SetQueryEnabled(true);
-	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_targetSocket");
+	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Chest");
 	return S_OK;
 }
 void CTroll::ReadySound()
@@ -122,8 +135,9 @@ HRESULT CTroll::Ready_Fsm(const _string& LevelTag)
 	if (false == m_pFsm->Add_State(MON_STATE::GODAE, CMon_Godae::Create("AN_SK_Troll_ArmoredTroll_CMB_Master_LOD0_Skeleton_Trl_Cmbt_Idle_01_anm.bin", this))) return E_FAIL;
 
 	if (false == m_pFsm->Add_State(MON_STATE::DEAD, CMon_Dead::Create("AN_SK_Troll_ArmoredTroll_CMB_Master_LOD0_Skeleton_Trl_Rct_KnckDn_Bck_anm.bin", this))) return E_FAIL;
+	if (false == m_pFsm->Add_State(MON_STATE::NOTHING, CMon_Default::Create())) return E_FAIL;
 
-	if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
+	if (false == m_pFsm->Initialize_State(MON_STATE::NOTHING)) return E_FAIL;
 
 
 	return S_OK;
@@ -134,10 +148,16 @@ HRESULT CTroll::Ready_Skill(const _string& LevelTag)
 		return E_FAIL;
 
 	m_MonSkillLists[ATTMON::SLOT0] = ETOUI(TROLL_SKILL::DOLJIN);
+	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(TROLL_SKILL::SMASH);
 	//////////////////////파티클 넣는곳/////////////////////////
 	m_EffectNames[ETOUI(TROLL_SKILL::DOLJIN)] = "Doljin";
+	m_EffectNames[ETOUI(TROLL_SKILL::SMASH)] = "Smash";
 	////////////////////////////////////////////////////////////
 
+	int32_t iBone{};
+	iBone = m_pComModelInstance->GetModel()->Get_BoneIndex("prop_two_hand_carry");
+	m_SkillHandle[ETOUI(TROLL_SKILL::SMASH)] = TROLL_SKILL_INFO{.iBoneIndex = iBone,.NameTag = "Smash"};
+	
 	return S_OK;
 }
 void CTroll::Ready_BBKeyValue()
@@ -147,9 +167,19 @@ void CTroll::Ready_BBKeyValue()
 }
 void CTroll::PriorityUpdate(E::_float fTimeDelta)
 {
+	if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_F2))
+	{
+		m_pFsm->Request_State(MON_STATE::SPAWN);
+	}
+	if (nullptr != m_pFsm)
+	{
+		if(m_pFsm->GetCurState() == MON_STATE::NOTHING)
+			m_pFsm->Request_State(MON_STATE::SPAWN);
+	}
 	if (m_bEndGame)
 	{
 		SetPendingDestroy();
+		GET_SINGLE(UIManager)->CreateFadeInSceneChange(3.f, 2.f, LEVEL::LAST_BOSS_RANROK);
 		return;
 	}
 	Flag_Check(fTimeDelta);

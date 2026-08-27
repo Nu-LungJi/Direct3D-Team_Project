@@ -23,7 +23,7 @@ HRESULT CAccioActivityPartBase::InitializePrototype(void*)
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(
 		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
+		TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER);
 	if (!m_pResVertexShader || !m_pResPixelShader ||
 		FAILED(m_pResVertexShader->Load()) || FAILED(m_pResPixelShader->Load()))
 	{
@@ -79,7 +79,7 @@ void CAccioActivityPartBase::LateUpdate(_float)
 
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
-		CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
+		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND_MAPMESH, this);
 		return;
 	}
 

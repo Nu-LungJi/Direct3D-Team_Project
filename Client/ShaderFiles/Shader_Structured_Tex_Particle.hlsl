@@ -747,3 +747,81 @@ PS_OUT PSBreathWispySmoke(VS_OUT In)
 
 	return Out;
 }
+PS_OUT PSFire(VS_OUT In)
+{
+	PS_OUT Out = (PS_OUT) 0;
+
+
+	float ageRatio = saturate(
+		In.life / max(In.maxLife, 0.0001f));
+	// VS에서 Flipbook 프레임 UV가 적용된 상태
+	float2 uv = In.vTexcoord;
+
+	float4 fireTexture =
+		g_DiffuseTexture.Sample(LinearClamp, uv);
+
+	float fireMask = dot(
+		fireTexture.rgb,
+		float3(0.299f, 0.587f, 0.114f));
+
+	// 8×8 Flipbook 셀 내부 좌표
+	float2 localUV = frac(uv * float2(8.f, 8.f));
+
+	float2 noiseUV =
+		localUV * float2(1.3f, 2.1f) +
+		float2(
+			-g_fTime * 0.12f,
+			-g_fTime * 0.65f);
+
+	float noise =
+		g_NoiseTexture.Sample(LinearWrap, noiseUV).r;
+
+	// 불꽃 밝기가 고정적으로 반복되지 않게 변화
+	fireMask *= lerp(0.72f, 1.15f, noise);
+	fireMask = saturate(fireMask);
+
+	float bodyMask = smoothstep(0.03f, 0.28f, fireMask);
+	float hotMask = smoothstep(0.38f, 0.88f, fireMask);
+	float coreMask = smoothstep(0.72f, 0.97f, fireMask);
+
+	// 바깥쪽 적색 → 주황색 → 중심부 황백색
+	float3 outerColor = float3(0.95f, 0.035f, 0.002f);
+	float3 middleColor = float3(1.f, 0.28f, 0.01f);
+	float3 coreColor = float3(1.f, 0.88f, 0.32f);
+
+	float3 fireColor = lerp(outerColor, middleColor, hotMask);
+	fireColor = lerp(fireColor, coreColor, coreMask);
+
+	// 인스턴스 컬러로 전체 색조 조절
+	fireColor *= max(In.vColor.rgb, 0.05f);
+
+	float4 emissive =
+		lerp(In.vEmissive, In.vEndEmissive, ageRatio);
+
+	float3 baseColor =
+		fireColor * bodyMask;
+
+	float3 emissiveColor =
+		fireColor *
+		emissive.rgb *
+		emissive.a *
+		hotMask;
+
+	float fadeIn = smoothstep(0.f, 0.08f, ageRatio);
+	float fadeOut =
+		1.f - smoothstep(0.72f, 1.f, ageRatio);
+
+	float finalAlpha =
+		bodyMask *
+		In.vColor.a *
+		fadeIn *
+		fadeOut;
+
+	clip(finalAlpha - 0.01f);
+
+	Out.vDiffuse = float4(
+		baseColor + emissiveColor,
+		finalAlpha);
+
+	return Out;
+}

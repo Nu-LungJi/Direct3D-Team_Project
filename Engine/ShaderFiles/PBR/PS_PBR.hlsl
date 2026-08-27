@@ -47,38 +47,6 @@ struct PS_OUT
     vector Diffuse : SV_TARGET0;
 };
 
-float DistributionGGX(float3 N, float3 H, float _Roughness)
-{
-    float R = _Roughness * _Roughness;
-    float R2 = R * R;
-    
-    float NDH = max(0.f, dot(N, H));
-    float NDH2 = NDH * NDH;
-    
-    float Num = R2;
-    float Denom = ((NDH * NDH) * (R2 - 1.0) + 1.0);
-    Denom = PI * Denom * Denom;
-	
-    return Num / max(0.000001f, Denom);
-}
-float VisibilitySmithJointGGX(float NDY, float NDL, float _Roughness)
-{
-    float R = _Roughness * _Roughness;
-    float R2 = R * R;
-    
-    float lambdaV = NDL * sqrt(max((-NDY * R2 + NDY) * NDY + R2, 0.001f));
-    float lambdaL = NDY * sqrt(max((-NDL * R2 + NDL) * NDL + R2, 0.001f));
-    
-    float Denom = lambdaV + lambdaL;
-    return Denom > 0.0f ? 0.5f / Denom : 0.0f;
-}
-float3 FresnelSchlick(float CTH, float3 MBR)
-{
-    float ClampCTH = clamp(CTH, 0.0f, 1.0f);
-    return MBR + (1.0 - MBR) * pow(clamp(1.0 - ClampCTH, 0.0, 1.0), 5.0);
-}
-
-
 float3 Compute_EnviromentLight(float3 N, float3 V, float3 albedo, float _Roughness, float _Metallic, float3 MBR)
 {
     float NDV = max(dot(N, V), 0.0);

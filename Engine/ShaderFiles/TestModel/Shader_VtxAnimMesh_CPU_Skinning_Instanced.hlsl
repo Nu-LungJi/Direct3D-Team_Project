@@ -11,16 +11,6 @@ struct GPU_ANIM_INSTANCE_DATA
     float fPrevTrackPosition;
     float fBlendWeight;
     uint bBlending;
-    uint4 vMorphIndices;
-    float4 vMorphWeights;
-};
-
-struct GPU_MORPH_VERTEX_DELTA
-{
-    float4 vPositionDelta;
-    float4 vNormalDelta;
-    float4 vTangentDelta;
-    float4 vBinormalDelta;
 };
 
 struct GPU_SKIN_BONE_DESC
@@ -52,6 +42,7 @@ struct VS_OUT
     float2 vTexcoord : TEXCOORD0;
     float4 vWorldPos : TEXCOORD1;
     float4 vProjPos : TEXCOORD2;
+	nointerpolation float fDissolveIntensity : TEXCOORD3;
 };
 
 StructuredBuffer<GPU_ANIM_INSTANCE_DATA> gInstances : register(t6);
@@ -61,7 +52,6 @@ StructuredBuffer<float4x4> gCPUCombinedBoneMatrices : register(t7);
 
 // GPU-only 경로와 동일한 mesh-local bone -> skeleton bone 매핑.
 StructuredBuffer<GPU_SKIN_BONE_DESC> gSkinBones : register(t8);
-StructuredBuffer<GPU_MORPH_VERTEX_DELTA> gMorphDeltas : register(t9);
 
 cbuffer CB_CPU_SKINNING_MESH : register(b5)
 {
@@ -69,39 +59,10 @@ cbuffer CB_CPU_SKINNING_MESH : register(b5)
     uint gVertexCount;
     uint gSkinBoneCount;
     uint gBonePaletteStride;
-    uint gMorphTargetCount;
-    uint gMorphVertexCount;
-    uint2 gMorphPadding;
 };
 
-void ApplyMorph(inout VS_IN input, uint vertexId, uint instanceId)
+VS_OUT VSMain(VS_IN input, uint instanceId : SV_InstanceID)
 {
-    if (gMorphTargetCount == 0 || vertexId >= gMorphVertexCount)
-        return;
-
-    const GPU_ANIM_INSTANCE_DATA instance = gInstances[instanceId];
-    [unroll]
-    for (uint slot = 0; slot < 4; ++slot)
-    {
-        const float weight = instance.vMorphWeights[slot];
-        const uint targetIndex = instance.vMorphIndices[slot];
-        if (abs(weight) <= 1.e-4f || targetIndex >= gMorphTargetCount)
-            continue;
-
-        const GPU_MORPH_VERTEX_DELTA delta =
-            gMorphDeltas[targetIndex * gMorphVertexCount + vertexId];
-        input.vPosition += delta.vPositionDelta.xyz * weight;
-        input.vNormal += delta.vNormalDelta.xyz * weight;
-        input.vTangent += delta.vTangentDelta.xyz * weight;
-        input.vBinormal += delta.vBinormalDelta.xyz * weight;
-    }
-}
-
-VS_OUT VSMain(VS_IN input, uint instanceId : SV_InstanceID, uint vertexId : SV_VertexID)
-{
-    // Morph is evaluated in model-local space. Skinning consumes this modified
-    // local vertex below, so the bone transform cannot overwrite the expression.
-    ApplyMorph(input, vertexId, instanceId);
     const uint instanceBoneOffset = instanceId * 512;
 
     const float weightW = 1.f -(input.vBlendWeights.x + input.vBlendWeights.y + input.vBlendWeights.z);
@@ -136,5 +97,6 @@ VS_OUT VSMain(VS_IN input, uint instanceId : SV_InstanceID, uint vertexId : SV_V
     output.vTexcoord = input.vTexcoord;
     output.vWorldPos = worldPosition;
     output.vProjPos = output.vPosition;
+	output.fDissolveIntensity = asfloat(gInstances[instanceId].iFlags);
     return output;
 }

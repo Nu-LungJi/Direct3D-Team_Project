@@ -29,6 +29,7 @@
 #include "Player_Jump_State.h"
 #include "Player_Roll_State.h"
 #include "Player_Attack_State.h"
+#include "Player_DoorPush_State.h"
 #include "Player_Hit_State.h"
 #include "Player_Knockdown_State.h"
 #include "PlayerAnimationRatioGuard.h"
@@ -57,6 +58,7 @@
 #include "WiggenweldPotion.h"
 #include "PropBarrel.h"
 #include "AccioBall.h"
+#include "PhysicsDoor.h"
 #include "Light.h"
 #include "Trail_CPU.h"
 #include "UIController.h"
@@ -65,11 +67,17 @@ NS_USING(Client)
 
 namespace
 {
+	constexpr _float DOOR_PUSH_CONTACT_GRACE_TIME = 0.15f;
+
 	_bool IsPlayerLockOnTargetCandidate(
 		const CGameObject* pObject,
 		const CHandle& hPlayer)
 	{
 		if (!pObject || pObject->GetPendingDestroy())
+			return false;
+
+		if (const auto* pMonster = dynamic_cast<const CMonster*>(pObject);
+			pMonster && (!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0))
 			return false;
 
 		if (dynamic_cast<const CSkillTarget*>(pObject))
@@ -384,7 +392,9 @@ HRESULT CPlayer::Initialize(void* pArg)
 		Desc.iShapeSubIndex = ETOUI(PLAYER_COLLISIONS::PLAYER_SHAPE_HURTBOX);
 		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX);
 		Desc.tFilter.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
-		Desc.tFilter.iSimulationMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
+		Desc.tFilter.iSimulationMask =
+			ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE) |
+			ETOUI(COLLISION_LAYER::TRIGGER);
 		Desc.tFilter.iNotifyFlags =
 			PX_NOTIFY_TOUCH_FOUND |
 			PX_NOTIFY_CONTACT_POINTS;
@@ -472,6 +482,12 @@ HRESULT CPlayer::Initialize(void* pArg)
 		if (!m_pStateMachine->AddPlayerState(
 			PLAYER_STATE::ATTACK,
 			CPlayer_Attack_State::Create()))
+		{
+			return E_FAIL;
+		}
+		if (!m_pStateMachine->AddPlayerState(
+			PLAYER_STATE::DOOR_PUSH,
+			CPlayer_DoorPush_State::Create()))
 		{
 			return E_FAIL;
 		}
@@ -1000,9 +1016,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (m_pStateMachine &&
 		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
 		m_iHp > 0 && !m_bFlyRequested &&
+		!CGameInstance::Get().KeyPressing(DIK_LSHIFT) &&
+		CGameInstance::Get().KeyDown(DIK_R))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::REVELIO_SKILL);
+	}
+
+	if (m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
+		m_iHp > 0 && !m_bFlyRequested &&
 		CGameInstance::Get().KeyDown(DIK_G))
 	{
-		m_pStateMachine->RequestState(PLAYER_STATE::POTION);
+		TryUsePotion();
 	}
 
 	// 프로테고가 실제 공격을 막은 뒤에도 Q를 유지하고 있을 때만
@@ -1148,12 +1173,22 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 40.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
 
-				const auto& result = results.front();
-				const CHandle hDetectedTarget = result.pGameObject->GetHandle();
-
-				if (!(hDetectedTarget == m_hAutoTarget)) {
-					m_hPrevAutoTarget = m_hAutoTarget;
-					m_hAutoTarget = hDetectedTarget;
+				const auto targetIter = std::ranges::find_if(
+					results,
+					[this](const PX_OVERLAP_RESULT& result)
+					{
+						return IsPlayerLockOnTargetCandidate(
+							result.pGameObject, GetHandle());
+					});
+				if (targetIter != results.end())
+				{
+					const CHandle hDetectedTarget =
+						targetIter->pGameObject->GetHandle();
+					if (!(hDetectedTarget == m_hAutoTarget))
+					{
+						m_hPrevAutoTarget = m_hAutoTarget;
+						m_hAutoTarget = hDetectedTarget;
+					}
 				}
 			}
 		}
@@ -1209,6 +1244,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		
 			}
 		}
+	}
+
+	// 죽은 몬스터는 거리 판정이나 다음 프레임의 탐색을 기다리지 않고
+	// 즉시 타겟, 외곽선, HP UI에서 해제한다.
+	if (auto* pTargetMonster =
+		CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
+		pTargetMonster &&
+		(!pTargetMonster->Is_Spawn() || pTargetMonster->Get_CurrentHp() <= 0))
+	{
+		m_hPrevAutoTarget = m_hAutoTarget;
+		m_hAutoTarget = CHandle{};
+		m_hPendingObjectAccioTarget = CHandle{};
+		m_bDistanceUI = false;
 	}
 
 	// 충돌/타겟 판정은 그대로 두고, 감지 상태가 바뀌는 순간에만 UI를 토글한다.
@@ -1349,91 +1397,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 	UpdateAncientMagicActiveButtons();
-
-	 // 임시
-	if (m_bCoolTime_Num1 == true) {
-		if (m_fCoolTime_Num1 > 3.f) {
-			m_bCoolTime_Num1 = false;
-			m_fCoolTime_Num1 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num1 += fTimeDelta;
-		}
-	}
-	if (m_bCoolTime_Num2 == true) {
-		if (m_fCoolTime_Num2 > 3.f) {
-			m_bCoolTime_Num2 = false;
-			m_fCoolTime_Num2 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num2 += fTimeDelta;
-		}
-	}
-	if (m_bCoolTime_Num3 == true) {
-		if (m_fCoolTime_Num3 > 3.f) {
-			m_bCoolTime_Num3 = false;
-			m_fCoolTime_Num3 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num3 += fTimeDelta;
-		}
-	}
-	if (m_bCoolTime_Num4 == true) {
-		if (m_fCoolTime_Num4 > 3.f) {
-			m_bCoolTime_Num4 = false;
-			m_fCoolTime_Num4 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num4 += fTimeDelta;
-		}
-	}
-
+	UpdateSkillSlotCooldowns(fTimeDelta);
 
 	if (!m_bFlyRequested) {
-		if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {
-			//if (TryUseSkillSlot(1))
-			if (m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL))
-				m_bCoolTime_Num1 = true;
-		}
-
-		if (CGameInstance::Get().KeyDown(DIK_2) && !m_bCoolTime_Num2)
-		{
-			//if (TryUseSkillSlot(2))
-			if (m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL))
-				m_bCoolTime_Num2 = true;
-		}
-		if (CGameInstance::Get().KeyDown(DIK_3) && !m_bCoolTime_Num3)
-		{
-			//if (TryUseSkillSlot(3))
-			if (m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL))
-				m_bCoolTime_Num3 = true;
-		}
-
-		if (CGameInstance::Get().KeyDown(DIK_4) && !m_bCoolTime_Num4) {
-			if (m_pStateMachine->RequestState(PLAYER_STATE::REPAIRO_SKILL))
-				m_bCoolTime_Num4 = true;
-		}
-
-		// [LSY] 스킬 슬롯에서 CONFRINGO를 연결하기 전까지 5번 키로 직접 테스트한다.
-		if (CGameInstance::Get().KeyDown(DIK_5))
-			m_pStateMachine->RequestState(PLAYER_STATE::CONFRINGO_SKILL);
-
-		// 봄바르다 애니메이션 및 이펙트 큐 타이밍 확인용 임시 입력.
-		if (CGameInstance::Get().KeyDown(DIK_6))
-			m_pStateMachine->RequestState(PLAYER_STATE::BOMBARDA_SKILL);
-
-		// 변신 스킬 상태와 캐스팅 애니메이션 확인용 임시 입력.
-		if (CGameInstance::Get().KeyDown(DIK_7))
-			m_pStateMachine->RequestState(PLAYER_STATE::TRANSFORMATION_SKILL);
+		if (CGameInstance::Get().KeyDown(DIK_1)) TryUseSkillSlot(1);
+		else if (CGameInstance::Get().KeyDown(DIK_2)) TryUseSkillSlot(2);
+		else if (CGameInstance::Get().KeyDown(DIK_3)) TryUseSkillSlot(3);
+		else if (CGameInstance::Get().KeyDown(DIK_4)) TryUseSkillSlot(4);
 
 		// L 키는 빌드 구성과 무관한 정식 루모스 토글 입력이다.
 		// Lumos 상태가 현재 활성 여부에 따라 Start/Hold 또는 Stop을 선택한다.
 		if (CGameInstance::Get().KeyDown(DIK_L))
 			m_pStateMachine->RequestState(PLAYER_STATE::LUMOS_SKILL);
-
-		// [LSY] 아바다 케다브라 애니메이션과 이펙트 연결 확인용 임시 입력.
-		if (CGameInstance::Get().KeyDown(DIK_U))
-			m_pStateMachine->RequestState(PLAYER_STATE::AVADA_KEDAVRA_SKILL);
 
 	}
 	
@@ -1524,7 +1499,10 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 {
 	auto* pUIController =
 		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
-	if (!pUIController || !m_pStateMachine)
+	if (!pUIController || !m_pStateMachine ||
+		iSlotNumber < 1u || iSlotNumber > m_SkillSlotCooldowns.size())
+		return false;
+	if (m_SkillSlotCooldowns[iSlotNumber - 1u] > 0.f)
 		return false;
 
 	const SPELL_TYPE eSpellType = static_cast<SPELL_TYPE>(
@@ -1542,6 +1520,18 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 
 	case SPELL_TYPE::DESENDO:
 		eSkillState = PLAYER_STATE::DESCENDO_SKILL;
+		break;
+	case SPELL_TYPE::BOMBARDA:
+		eSkillState = PLAYER_STATE::BOMBARDA_SKILL;
+		break;
+	case SPELL_TYPE::TRANSFORMATION:
+		eSkillState = PLAYER_STATE::TRANSFORMATION_SKILL;
+		break;
+	case SPELL_TYPE::CONFRINGO:
+		eSkillState = PLAYER_STATE::CONFRINGO_SKILL;
+		break;
+	case SPELL_TYPE::AVADAKEDAVRA:
+		eSkillState = PLAYER_STATE::AVADA_KEDAVRA_SKILL;
 		break;
 
 	case SPELL_TYPE::REPARO:
@@ -1561,7 +1551,36 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 		return false;
 
 	if (eSpellType != SPELL_TYPE::LUMOS)
+	{
+		m_SkillSlotCooldowns[iSlotNumber - 1u] = SKILL_SLOT_COOLDOWN;
 		pUIController->UseSpell(iSlotNumber);
+	}
+	return true;
+}
+
+void CPlayer::UpdateSkillSlotCooldowns(_float fTimeDelta)
+{
+	for (auto& fCooldown : m_SkillSlotCooldowns)
+		fCooldown = std::max(0.f, fCooldown - std::max(0.f, fTimeDelta));
+}
+
+_bool CPlayer::TryUsePotion()
+{
+	auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+	if (!pUIController || !m_pStateMachine ||
+		!m_pStateMachine->RequestState(PLAYER_STATE::POTION))
+		return false;
+
+	pUIController->UsePotion();
+	CGameInstance::Get().GetSoundManager()->Play2D(
+		"./Resources/SampleClient/Sound/UI/Potion.wav", SOUND_PLAY_DESC{
+		.sBusID = SOUND_BUS::UI,
+		.fVolume = 1.f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = false
+	});
 	return true;
 }
 
@@ -1818,8 +1837,11 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 
 void CPlayer::SetDialoguePose(const _float3& vPosition, const _float3& vLookAt)
 {
-	if (m_pComCharacterController)
-		m_pComCharacterController->SetPosition(vPosition);
+	// Warp through the motor so vPosition is treated as the GameObject origin.
+	// Setting the CCT center directly here makes the next FixedUpdate subtract
+	// the controller center offset and shifts the player vertically.
+	if (m_pComMoveIntent)
+		m_pComMoveIntent->RequestWarp(vPosition);
 
 	GetTransform().SetPosition(vPosition);
 	_vector vTarget = XMLoadFloat3(&vLookAt);
@@ -2121,11 +2143,9 @@ void CPlayer::PrepareLocomotionResume()
 void CPlayer::Update(E::_float fTimeDelta)
 {
 	ZoneScopedN("Update TestModel");
-	{
-
-
-	}
-
+	m_fDoorPushContactRemainTime = std::max(
+		0.f,
+		m_fDoorPushContactRemainTime - fTimeDelta);
 
 	if (nullptr == CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
 	{
@@ -2563,8 +2583,6 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
 		skinningConstants.iVertexCount = mesh->GetNumVertices();
 		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
-		skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
-		skinningConstants.iMorphVertexCount = mesh->GetNumVertices();
 
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
@@ -2573,10 +2591,6 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
 		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
-		ID3D11ShaderResourceView* morphSRV = nullptr;
-		if (const auto& morphBuffer = mesh->GetMorphDeltaBuffer())
-			morphSRV = morphBuffer->GetSRV().Get();
-		pContext->VSSetShaderResources(9, 1, &morphSRV);
 		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 		const UINT stride = mesh->GetVertexStride();
 		const UINT offset = 0;
@@ -3541,6 +3555,40 @@ void CPlayer::OnWake()
 void CPlayer::OnSleep()
 {
 	int x = 0;
+}
+
+void CPlayer::OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit)
+{
+	if (!tHit.pGameObject || !tHit.pGameObject->Is<CPhysicsDoor>())
+		return;
+
+	auto* pDoor = static_cast<CPhysicsDoor*>(tHit.pGameObject);
+	if (!pDoor->ApplyCCTPush(tHit))
+		return;
+
+	// [LSY] CCT 콜백에서 애니메이션을 매번 재생하지 않는다. 접촉만 갱신하고
+	// 상태 전환은 다음 PriorityUpdate에서 한 번 처리한다.
+	m_fDoorPushContactRemainTime = DOOR_PUSH_CONTACT_GRACE_TIME;
+	if (m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION)
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::DOOR_PUSH);
+	}
+}
+
+PX_CCT_BEHAVIOR CPlayer::GetCCTShapeBehavior(
+	CGameObject* pGameObject) const
+{
+	if (pGameObject && pGameObject->Is<CPhysicsDoor>())
+	{
+		// [LSY] 문은 이동 발판이 아니며, 회전 중 캡슐 아래로 파고들어
+		// 발생하는 비의도성 상승 및 입력에 없던 측면 이동을 허용하지 않는다.
+		return static_cast<PX_CCT_BEHAVIOR>(
+			static_cast<uint8_t>(PX_CCT_BEHAVIOR::PREVENT_UPWARD_PROJECTION) |
+			static_cast<uint8_t>(PX_CCT_BEHAVIOR::CONSTRAIN_HORIZONTAL_TO_INPUT));
+	}
+
+	return CGameObject::GetCCTShapeBehavior(pGameObject);
 }
 
 void CPlayer::OnCollisionEnter(CGameObject* pObj, const PX_ON_COLLISION_DATA& info)

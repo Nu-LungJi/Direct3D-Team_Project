@@ -28,7 +28,7 @@ HRESULT CAccioBall::InitializePrototype(void*)
 	m_pResVertexShader = CGameInstance::Get().GetResourceFirst<CResVertexShader>(
 		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim");
 	m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
+		TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER);
 	if (!m_pResVertexShader || !m_pResPixelShader ||
 		FAILED(m_pResVertexShader->Load()) || FAILED(m_pResPixelShader->Load()))
 	{
@@ -230,7 +230,7 @@ void CAccioBall::LateUpdate(_float)
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
 		// [LSY] 인스턴싱 비활성화 시에도 MapMesh의 스텐실 정책을 유지한다.
-		CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
+		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND_MAPMESH, this);
 		return;
 	}
 
@@ -337,13 +337,6 @@ void CAccioBall::OnSleep()
 {
 	m_bSettled = true;
 	m_fAutoSleepElapsed = 0.f;
-}
-
-_bool CAccioBall::ApplyImpulse(const _float3& vImpulse)
-{
-	m_bSettled = false;
-	m_fAutoSleepElapsed = 0.f;
-	return m_pComPxRigidBody && m_pComPxRigidBody->AddImpulse(vImpulse);
 }
 
 _bool CAccioBall::ApplyTorque(const _float3& vTorque)
@@ -544,10 +537,20 @@ _bool CAccioBall::SetMotionTuning(
 	_float fLinearDamping,
 	_float fAngularDamping)
 {
-	return m_pComPxRigidBody &&
-		m_pComPxRigidBody->SetMass(std::max(fMass, 0.001f)) &&
-		m_pComPxRigidBody->SetLinearDamping(std::max(fLinearDamping, 0.f)) &&
-		m_pComPxRigidBody->SetAngularDamping(std::max(fAngularDamping, 0.f));
+	if (!m_pComPxRigidBody)
+		return false;
+
+	const _bool bMassUpdated = m_pComPxRigidBody->SetMass(
+		std::max(fMass, 0.001f));
+	const _bool bLinearDampingUpdated =
+		m_pComPxRigidBody->SetLinearDamping(
+			std::max(fLinearDamping, 0.f));
+	const _bool bAngularDampingUpdated =
+		m_pComPxRigidBody->SetAngularDamping(
+			std::max(fAngularDamping, 0.f));
+	return bMassUpdated &&
+		bLinearDampingUpdated &&
+		bAngularDampingUpdated;
 }
 
 _bool CAccioBall::ResetToInitialPose()

@@ -33,6 +33,8 @@ void CPlayer_Locomotion_State::Enter(CStateMachine* pStateMachine)
 	player->SetMovementLocked(false);
 	player->SetRootMotionRotationActive(false);
 	player->SetRootMotionTranslationActive(false);
+	if (auto* pMotor = player->GetCharacterMotor())
+		pMotor->SetUseGravity(true);
 
 	CacheAnimationIndices(*player);
 

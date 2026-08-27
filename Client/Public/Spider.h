@@ -23,7 +23,6 @@ public:
 	{
 		_float3 vPatrollStart{};
 		_float3 vPatrollEnd{};
-		_bool bSpawn{false};
 
 	}SPIDER_DESC;
 
@@ -47,7 +46,6 @@ public:
 public:
 	_string						Get_SkillName(ATTMON SkillNode)override;
 
-	void						Set_Spawn(_bool bS) { m_bSpawn = bS; }
 	void						Set_StateFinished(_bool bFinished);
 	void						Set_Break(_bool bHit) { m_bIsBreak = bHit; }
 
@@ -63,12 +61,12 @@ private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);
-
+	void						Stuck() override;
 private:
 	class CMon_State* m_pFsm{ nullptr };
 
 	_string			m_EffectNames[ETOUI(SPIDER_SKILL::END)];
-	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false }, m_bSpawn{ true };
+	_bool			m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bDebug{ false };
 	_float						m_fTick{};
 	_string						m_WayName{};
 	std::list<_float3>			m_DebugPoint;

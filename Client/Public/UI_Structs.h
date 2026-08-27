@@ -114,5 +114,22 @@ struct NPC_SPEECH_BUBBLE_INFO
 	_bool FadingOut{};
 };
 
+struct DIALOGUE_CHOICE_UI_INFO
+{
+	CHandle RootHandle{};
+	CHandle FrameUHandle{};
+	CHandle FrameDHandle{};
+	CHandle FadeHandle{};
+	CHandle TextHandle{};
+	_float2 BaseRootPosition{};
+	_float2 BaseFrameULocalPosition{};
+	_float2 BaseFrameDLocalPosition{};
+	_float2 BaseFadeLocalPosition{};
+	_float RootScaleRatio{ 1.f };
+	_float SelectedFrameUAlphaRatio{ 1.f };
+	_float SelectedFrameDAlphaRatio{ 1.f };
+	_float SelectedFadeAlphaRatio{ 0.5f };
+};
+
 NS_END
 

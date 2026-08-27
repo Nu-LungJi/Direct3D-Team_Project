@@ -9,17 +9,6 @@ class CResModelChanel;
 class ENGINE_DLL CResModelAnim final : public CResource
 {
 public:
-	struct MORPH_KEY
-	{
-		_float fTrackPosition{};
-		std::vector<uint32_t> TargetIndices{};
-		std::vector<_float> Weights{};
-	};
-	struct MORPH_CHANNEL
-	{
-		_string sMeshName{};
-		std::vector<MORPH_KEY> Keys{};
-	};
 	DECLARE_DERIVED_TYPE(CResModelAnim, CResource)
 public:
 	typedef struct tagDesc {
@@ -49,9 +38,6 @@ public:
 	uint32_t	GetNumChannel() const { return m_iNumChannels; };
 	const std::vector<SPtr<CResModelChanel>>& GetChannels() const { return m_Channels; }
 	CResModelChanel* GetChannelByBoneIndex(uint32_t iBoneIndex) const;
-	_bool SampleMorphWeights(_float fTrackPosition,
-		DirectX::XMUINT4& outIndices, _float4& outWeights) const;
-	_bool HasMorphCurves() const { return !m_MorphChannels.empty(); }
 
 private:
 	// 런 타임 도중만 가지는 주소
@@ -68,7 +54,6 @@ private:
 	std::vector<SPtr<CResModelChanel>>	m_Channels;
 
 	std::vector<SPtr<CResModelChanel>>	m_ChannelsByBone;
-	std::vector<MORPH_CHANNEL> m_MorphChannels{};
 	_float3								m_vRootDelta;
 
 public:

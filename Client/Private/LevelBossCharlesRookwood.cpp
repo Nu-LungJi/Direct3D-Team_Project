@@ -109,6 +109,70 @@ void CLevelBossCharlesRookwood::Update(E::_float fTimeDelta)
 		}
 	}
 
+	if (m_bCreatePlayScreenUI && !m_bBossQuestCreated)
+	{
+		m_bBossQuestCreated = true;
+		GET_SINGLE(UIManager)->CreateOrChangeQuest(
+			"퍼시벌 랙햄의 시험을 완료하기");
+	}
+
+	// TombBossIntro는 행동 트리에서 비동기로 재생된다. 첫 보스 시네마틱의
+	// 실제 재생 상태를 추적하여 컷신 전체 구간 동안만 2D UI를 숨긴다.
+	if (!m_bBossIntroFinished)
+	{
+		const _bool cinematicPlaying =
+			CGameInstance::Get().IsCinematicPlaying();
+		if (cinematicPlaying && !m_bBossIntroPlaying)
+		{
+			m_bBossIntroPlaying = true;
+			GET_SINGLE(UIManager)->PlayFadeOutAll2DUI(0.f, 0.35f);
+		}
+		else if (!cinematicPlaying && m_bBossIntroPlaying)
+		{
+			m_bBossIntroPlaying = false;
+			m_bBossIntroFinished = true;
+			GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, 0.35f);
+			GET_SINGLE(UIManager)->CreateOrChangeQuest(
+				"펜시브 쓰러트리기");
+
+			if (const auto controllerHandle =
+				GET_SINGLE(UIManager)->GetUIController())
+			{
+				if (auto* controller = CGameInstance::Get().
+					GetGameObjectByHandleT<CUIController>(*controllerHandle))
+				{
+					controller->SetQuestUIGroupActive(
+						QUEST_UI_GROUP::BOSS_CHARLES_ROOKWOOD,
+						true, "펜시브 쓰러트리기", true, false);
+				}
+			}
+		}
+	}
+
+	if (m_bBossIntroFinished && !m_bBossDefeated && m_hBoss)
+	{
+		auto* boss = CGameInstance::Get().
+			GetGameObjectByHandleT<CBossTMB>(*m_hBoss);
+		if (!boss || boss->GetPendingDestroy() || boss->Get_CurrentHp() <= 0)
+		{
+			m_bBossDefeated = true;
+			GET_SINGLE(UIManager)->CreateOrChangeQuest(
+				"호그스미스로 돌아가기");
+
+			if (const auto controllerHandle =
+				GET_SINGLE(UIManager)->GetUIController())
+			{
+				if (auto* controller = CGameInstance::Get().
+					GetGameObjectByHandleT<CUIController>(*controllerHandle))
+				{
+					controller->SetQuestUIGroupActive(
+						QUEST_UI_GROUP::BOSS_CHARLES_ROOKWOOD,
+						false, {}, true, false);
+				}
+			}
+		}
+	}
+
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 }
 
@@ -480,6 +544,8 @@ HRESULT CLevelBossCharlesRookwood::SpawnMonster(std::optional<CHandle> hPlayer)
 			MSG_BOX("Create BossTmb Failed in Rookwood");
 			return E_FAIL;
 		}
+
+		m_hBoss = *BossTmb;
 	}
 
 	return S_OK;

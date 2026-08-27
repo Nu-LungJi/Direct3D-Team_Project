@@ -239,6 +239,7 @@
     <ClInclude Include="..\public\Gur_Spawn.h" />
     <ClInclude Include="..\public\LevelLastBossRanrok.h" />
     <ClInclude Include="..\public\LevelLastBossRanrokLoader.h" />
+    <ClInclude Include="..\public\MON_Default.h" />
     <ClInclude Include="..\public\Mon_Godae.h" />
     <ClInclude Include="..\public\Mon_Spawner.h" />
     <ClInclude Include="..\public\WorldAgent.h" />
@@ -251,7 +252,8 @@
     <ClInclude Include="..\public\AccioActivity_BumperB.h" />
     <ClInclude Include="..\public\AccioActivity_RampLarge.h" />
     <ClInclude Include="..\public\AccioActivity_LampSmall.h" />
-    <ClInclude Include="..\public\AccioActivity_Npc.h" />
+    <ClInclude Include="..\public\AccioActivity_NpcController.h" />
+    <ClInclude Include="..\public\AccioActivity_NpcCharacter.h" />
     <ClInclude Include="..\public\PropBarrel.h" />
     <ClInclude Include="..\public\PropBarrelDebris.h" />
     <ClInclude Include="..\public\SkillTarget.h" />
@@ -331,6 +333,7 @@
     <ClInclude Include="..\public\OilBarrel.h" />
     <ClInclude Include="..\public\Mon_Dead.h" />
     <ClInclude Include="..\public\PhysicsDoor.h" />
+    <ClInclude Include="..\Public\WaterWheel.h" />
     <ClInclude Include="..\Public\WiggenweldPotion.h" />
     <ClInclude Include="..\Public\Player_Hit_State.h" />
     <ClInclude Include="..\Public\Player_Knockdown_State.h" />
@@ -364,6 +367,7 @@
     <ClInclude Include="..\Public\Player_RevelioSkill_State.h" />
     <ClInclude Include="..\Public\Player_LumosSkill_State.h" />
     <ClInclude Include="..\Public\Player_Locomotion_State.h" />
+    <ClInclude Include="..\Public\Player_DoorPush_State.h" />
     <ClInclude Include="..\Public\Player_Jump_State.h" />
     <ClInclude Include="..\Public\Player_Bombarda_Bullet.h" />
     <ClInclude Include="..\Public\Player_Confringo_Bullet.h" />
@@ -407,7 +411,7 @@
     <ClInclude Include="..\Public\VideoObject.h" />
     <ClInclude Include="..\public\WorldAnimal.h" />
     <ClInclude Include="..\public\WorldNpc.h" />
-    <ClInclude Include="..\public\MiniGameNpc.h" />
+    <ClInclude Include="..\public\InteractiveNpc.h" />
     <ClInclude Include="BTAnimNpc.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
@@ -451,6 +455,7 @@
     <ClCompile Include="..\private\Edg_Spawn.cpp" />
     <ClCompile Include="..\private\EnderDragon.cpp" />
     <ClCompile Include="..\private\EnderDragon_State.cpp" />
+    <ClCompile Include="..\private\MON_Default.cpp" />
     <ClCompile Include="..\private\Mon_Godae.cpp" />
     <ClCompile Include="..\private\Mon_Spawner.cpp" />
     <ClCompile Include="..\private\WorldAgent.cpp" />
@@ -463,7 +468,8 @@
     <ClCompile Include="..\private\AccioActivity_BumperB.cpp" />
     <ClCompile Include="..\private\AccioActivity_RampLarge.cpp" />
     <ClCompile Include="..\private\AccioActivity_LampSmall.cpp" />
-    <ClCompile Include="..\private\AccioActivity_Npc.cpp" />
+    <ClCompile Include="..\private\AccioActivity_NpcController.cpp" />
+    <ClCompile Include="..\private\AccioActivity_NpcCharacter.cpp" />
     <ClCompile Include="..\private\PropBarrel.cpp" />
     <ClCompile Include="..\private\PropBarrelDebris.cpp" />
     <ClCompile Include="..\private\SkillTarget.cpp" />
@@ -536,6 +542,7 @@
     <ClCompile Include="..\private\MyMagicSquareStepController.cpp" />
     <ClCompile Include="..\private\NvClothCape.cpp" />
     <ClCompile Include="..\private\OilBarrel.cpp" />
+    <ClCompile Include="..\Private\WaterWheel.cpp" />
     <ClCompile Include="..\private\Mon_Dead.cpp" />
     <ClCompile Include="..\private\PhysicsDoor.cpp" />
     <ClCompile Include="..\Private\WiggenweldPotion.cpp" />
@@ -569,6 +576,7 @@
     <ClCompile Include="..\Private\Player_RevelioSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_LumosSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp" />
+    <ClCompile Include="..\Private\Player_DoorPush_State.cpp" />
     <ClCompile Include="..\Private\Player_Jump_State.cpp" />
     <ClCompile Include="..\Private\Player_Bombarda_Bullet.cpp" />
     <ClCompile Include="..\Private\Player_Confringo_Bullet.cpp" />
@@ -609,7 +617,7 @@
     <ClCompile Include="..\Private\VideoObject.cpp" />
     <ClCompile Include="..\private\WorldAnimal.cpp" />
     <ClCompile Include="..\private\WorldNpc.cpp" />
-    <ClCompile Include="..\private\MiniGameNpc.cpp" />
+    <ClCompile Include="..\private\InteractiveNpc.cpp" />
     <ClCompile Include="BTAnimNpc.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">

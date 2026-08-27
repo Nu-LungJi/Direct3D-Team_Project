@@ -43,6 +43,9 @@ public:
 	// 기본 추적 거리를 유지하면서 연출용 거리 오프셋만 임시 적용한다.
 	_bool BeginDistanceOverride(_float fDistanceOffset, _float fResponse);
 	void EndDistanceOverride(_float fRestoreResponse);
+	// 전투 연출 중 카메라 위치만 위로 들어 올린다.
+	_bool BeginHeightOverride(_float fHeightOffset, _float fResponse);
+	void EndHeightOverride(_float fRestoreResponse);
 private:
 	// 타겟 -> 카메라 방향으로 SphereSweep
 	_bool PlayerToCameraSphereSweep(const _float3& PlayerPosition, const _float3& CameraPosition, _float fCollisionRadius, _float3& OutCameraPosition) const;
@@ -72,6 +75,10 @@ private:
 	_float m_fDistanceOverrideOffset{};
 	_float m_fDistanceOverrideResponse{ 8.f };
 	_bool m_bDistanceOverrideActive{};
+	_float m_fHeightOverrideOffset{};
+	_float m_fCurrentHeightOverrideOffset{};
+	_float m_fHeightOverrideResponse{ 8.f };
+	_bool m_bHeightOverrideActive{};
 	_float m_fMinPitch{ -20.f };
 	_float m_fMaxPitch{ 65.f };
 	_float m_fMouseSensitivity{ 10.f };
