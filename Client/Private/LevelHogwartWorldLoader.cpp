@@ -484,6 +484,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		{ "Model_Resource_NPC_MirabelGarlick", "MirabelGarlick" },
 		{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
 		{ "Model_Resource_NPC_AdelaideOakes", "AdelaideOakes" },
+		{ "Model_Resource_NPC_VictorRookwood", "VictorRookwood" },
 	};
 	for (const auto& Entry : NpcModels)
 	{

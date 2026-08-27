@@ -1221,7 +1221,14 @@ HRESULT CRenderer::Render_NonAlpha() {
 
 		// Default Texture - Dissolve Noise
 		SPtr<CResTexture2D> NoiseTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NOISE");
-		m_pContext->PSSetShaderResources(13, 1, NoiseTexture->GetSRV().GetAddressOf());
+		// 기존 모델 셰이더는 t13, 공용 NonBlend 셰이더는 t14에서 노이즈를 읽는다.
+		// 두 슬롯에 함께 제공하여 기존 렌더 경로의 동작을 유지한다.
+		ID3D11ShaderResourceView* pNoiseSRVs[2] =
+		{
+			NoiseTexture->GetSRV().Get(),
+			NoiseTexture->GetSRV().Get()
+		};
+		m_pContext->PSSetShaderResources(13, 2, pNoiseSRVs);
 
 		_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
 		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&clearColor));

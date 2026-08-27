@@ -607,7 +607,9 @@ HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
 	context->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::PER_PASS), 1, &perPassConstantBuffer);
 
 	ID3D11ShaderResourceView* noiseShaderResourceView = packet.noiseShaderResourceView.Get();
-	context->PSSetShaderResources(13, 1, &noiseShaderResourceView);
+	// Shader_VtxMesh_Instanced.hlsl의 DefaultNoiseTexture register(t14)와 맞춘다.
+	// t13은 CSMShadowTextures가 사용한다.
+	context->PSSetShaderResources(14, 1, &noiseShaderResourceView);
 
 	context->PSSetShader(packet.pixelShader->GetPixelShader().Get(), nullptr, 0);
 	context->PSSetSamplers(0, 1, packet.sampler->GetSamplerState().GetAddressOf());

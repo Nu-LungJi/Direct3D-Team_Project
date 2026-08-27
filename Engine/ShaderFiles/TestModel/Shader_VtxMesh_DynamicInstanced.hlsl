@@ -12,8 +12,6 @@ struct GPU_ANIM_INSTANCE_DATA
     float fPrevTrackPosition;
     float fBlendWeight;
     uint bBlending;
-    uint4 vMorphIndices;
-    float4 vMorphWeights;
 };
 
 StructuredBuffer<GPU_ANIM_INSTANCE_DATA> gInstances : register(t6);
