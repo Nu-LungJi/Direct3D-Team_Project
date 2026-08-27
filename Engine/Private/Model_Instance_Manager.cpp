@@ -79,6 +79,11 @@ void CModel_Instance_Manager::Add_Instance(CComModelInstance* pModelInstance,CCo
 
 	const auto eAnimatorMode = pAnimator->GetEvaluationMode();
 	const uint32_t iEvaluationMode = static_cast<uint32_t>(eAnimatorMode == CComAnimator::EVALUATION_MODE::CPU? CComAnimator::EVALUATION_MODE::CPU_GPU: eAnimatorMode);
+	if (CComAnimator::EVALUATION_MODE::CPU_GPU == eAnimatorMode)
+	{
+		InstanceData.iMorphTargetIndex = pAnimator->GetMorphPreviewTargetIndex();
+		InstanceData.fMorphWeight = pAnimator->GetMorphPreviewWeight();
+	}
 	
 	MODEL_INSTANCE_BATCH* pBatch = Find_Or_Create_Batch(pModelInstance, false, iEvaluationMode);
 	if (!pBatch) return;
