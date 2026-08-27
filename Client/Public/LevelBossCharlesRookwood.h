@@ -46,6 +46,11 @@ private:
 
 private:
 	_bool m_bCreatePlayScreenUI{ false };
+	_bool m_bBossQuestCreated{ false };
+	_bool m_bBossIntroPlaying{ false };
+	_bool m_bBossIntroFinished{ false };
+	_bool m_bBossDefeated{ false };
+	std::optional<CHandle> m_hBoss{};
 	SOUND_ID m_bmgID{ INVALID_SOUND_ID };
 	CHandle m_hPlayer{};
 	uint64_t m_iPlayerDeathListenerID{};

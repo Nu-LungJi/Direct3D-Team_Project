@@ -3,6 +3,8 @@
 #include "MyMagicSquareStepController.h"
 #include "Player.h"
 #include "TmbGurdian.h"
+#include "ClientEvents.h"
+#include "UIManager.h"
 NS_USING(Client)
 
 HRESULT CTriggerCRW_DeSpawnStep2::Initialize(void* pArg)
@@ -21,9 +23,19 @@ void CTriggerCRW_DeSpawnStep2::OnTriggerEnter(
 		if (!m_bSpawned)
 		{
 			m_bSpawned = true;
+			GET_SINGLE(UIManager)->CreateOrChangeQuest(
+				"경비병들을 쓰러트리기");
+			E::CGameInstance::Get().EventPublish(
+				FQuestUIGroupChanged{
+					.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_02,
+					.Active = true,
+					.QuestText = "경비병들을 쓰러트리기",
+					.UpdateMinimap = false,
+					.UpdateQuestWidget = false
+				});
 
 			auto pvec = CGameInstance::Get().GetGameObjectLayer("22_MyMagicSquareStepController");
-			if (!(pvec || pvec->empty()))
+			if (!pvec || pvec->empty())
 			{
 				return;
 			}

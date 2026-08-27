@@ -107,6 +107,24 @@ void CLevelLastBossRanrok::Update(E::_float fTimeDelta)
 		}
 	}
 
+	if (m_bCreatePlayScreenUI && !m_bQuestCreated)
+	{
+		m_bQuestCreated = true;
+		GET_SINGLE(UIManager)->CreateOrChangeQuest("란록 퇴치하기");
+	}
+
+	if (m_bQuestCreated && !m_bDragonDefeated && m_hEnderDragon)
+	{
+		auto* dragon = CGameInstance::Get().
+			GetGameObjectByHandleT<CEnderDragon>(*m_hEnderDragon);
+		if (!dragon || dragon->GetPendingDestroy() ||
+			dragon->Get_CurrentHp() <= 0)
+		{
+			m_bDragonDefeated = true;
+			GET_SINGLE(UIManager)->CreateOrChangeQuest("취업 성공하기");
+		}
+	}
+
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 
 	if (E::CGameInstance::Get().KeyDown(DIK_SPACE))
@@ -312,6 +330,8 @@ HRESULT CLevelLastBossRanrok::SpawnMonster(std::optional<CHandle> hPlayer)
 			MSG_BOX("Create Dragon Failed in Terrain");
 			return E_FAIL;
 		}
+
+		m_hEnderDragon = *pDragon;
 
 	}
 	return S_OK;

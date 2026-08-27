@@ -2,6 +2,7 @@
 
 #include "PhysXCollisionProxyObject.h"
 
+
 NS_BEGIN(Client)
 
 class CTriggerCRW_DeSpawnStep2 final : public E::CPhysXCollisionProxyObject

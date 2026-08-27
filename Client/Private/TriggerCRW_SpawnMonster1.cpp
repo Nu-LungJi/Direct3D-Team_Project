@@ -62,12 +62,13 @@ void CTriggerCRW_SpawnMonster1::Update(E::_float fTimeDelta)
 				.UpdateQuestWidget = false
 			});
 
-		// 첫 구역 완료 직후 두 번째 전투 구역의 빨간 원과 목표 마커를 연다.
+		// 첫 구역 완료 직후에는 두 번째 전투로 향하는 이동 목표만 연다.
+		// 이동 목표에 도착하면 UIController가 실제 2구역 그룹으로 전환한다.
 		if (m_eEncounterGroup == QUEST_UI_GROUP::ROOKWOOD_TRIAL_01)
 		{
 			E::CGameInstance::Get().EventPublish(
 				FQuestUIGroupChanged{
-					.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_02,
+					.Group = QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_TRIAL_02,
 					.Active = true,
 					.QuestText = "퍼시벌 랙햄의 시험을 완료하기",
 					.UpdateQuestWidget = false

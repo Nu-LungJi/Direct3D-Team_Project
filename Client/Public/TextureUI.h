@@ -48,10 +48,12 @@ private:
 	_bool m_bPathProgressMode{ false };
 	uint32_t m_iPathProgressType{};
 	_bool m_bSpellAlarmFlame{};
+	_bool m_bRaceStartFlagWave{};
 	_bool m_bAdditiveBlend{};
 	_float m_fTextureBrightness{ 1.f };
 	std::optional<CHandle> m_AlphaMaskSource{};
 	_float m_fSpellAlarmFlameTime{};
+	_float m_fRaceStartFlagWaveTime{};
 	_float m_fSpellAlarmFlamePhase{};
 	_float m_fSpellAlarmFlameSwayScale{ 1.f };
 	_float m_fSpellAlarmFlameSpeed{ 1.f };

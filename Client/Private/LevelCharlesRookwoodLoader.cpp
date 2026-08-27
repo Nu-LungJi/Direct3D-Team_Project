@@ -450,7 +450,8 @@ _bool CLevelCharlesRookwoodLoader::UILoad()
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
 				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame",
-				"./Resources/SampleClient/Textures/UI/UITexture/WandShop"
+				"./Resources/SampleClient/Textures/UI/UITexture/WandShop",
+				"./Resources/SampleClient/Textures/UI/UITexture/MiniGame"
 			};
 
 			for (const auto& targetDir : targetDirectories)

@@ -45,12 +45,22 @@ public:
 	std::wstring GetwText() { return m_textInfo.Text; }
 	void SetTextAlignment(TEXT_ALIGN alignment) { m_textInfo.Alignment = alignment; }
 	TEXT_ALIGN GetTextAlignment() const { return m_textInfo.Alignment; }
+	void SetFixedDigitLayout(_bool enabled) { m_bFixedDigitLayout = enabled; }
+	void SetColoredSuffix(const std::wstring& suffix, const _float3& color)
+	{
+		m_ColoredSuffix = suffix;
+		m_ColoredSuffixColor = color;
+	}
+	void ClearColoredSuffix() { m_ColoredSuffix.clear(); }
 public:
 	TEXT_INFO& GetTextInfo() { return m_textInfo; }
 	const TEXT_INFO& GetTextInfo() const { return m_textInfo; }
 
 protected:
 	TEXT_INFO m_textInfo{};
+	_bool m_bFixedDigitLayout{ false };
+	std::wstring m_ColoredSuffix{};
+	_float3 m_ColoredSuffixColor{ 1.f, 1.f, 1.f };
 };
 
 NS_END

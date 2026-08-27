@@ -2147,6 +2147,9 @@
     <FxCompile Include="..\ShaderFiles\QuadTex\QuadTex.hlsl">
       <Filter>ShaderFiles</Filter>
     </FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\RaceStartFlagWave.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">

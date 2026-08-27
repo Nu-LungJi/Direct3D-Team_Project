@@ -60,6 +60,9 @@ HRESULT CTextureUI::Initialize(void* pArg)
 	}
 
 	m_UIINFO.UIType = ETOUI(UI_TYPE::TEXUI);
+	m_bRaceStartFlagWave =
+		m_UIINFO.Restag == "TEX_UI_T_BRFlag_Right" &&
+		(m_UIINFO.Name == "FlagR" || m_UIINFO.Name == "FlagL");
 
 	return S_OK;
 }
@@ -71,6 +74,12 @@ void CTextureUI::PriorityUpdate(E::_float fTimeDelta)
 
 void CTextureUI::Update(E::_float fTimeDelta)
 {
+	// Prefab loading writes Name/Restag after Initialize(), so special texture
+	// behavior must be refreshed from the final UI_INFO before it is used.
+	m_bRaceStartFlagWave =
+		m_UIINFO.Restag == "TEX_UI_T_BRFlag_Right" &&
+		(m_UIINFO.Name == "FlagR" || m_UIINFO.Name == "FlagL");
+
 	_float2 mousePos = GET_SINGLE(UIManager)->GetUIInteractionMousePosition();
 
 	if (!m_isActive)
@@ -82,6 +91,15 @@ void CTextureUI::Update(E::_float fTimeDelta)
 		m_fSpellAlarmFlameTime = std::fmod(
 			m_fSpellAlarmFlameTime +
 				std::min(fTimeDelta, 0.05f) * m_fSpellAlarmFlameSpeed,
+			4096.f);
+	}
+
+	if (m_bRaceStartFlagWave &&
+		std::isfinite(fTimeDelta) && fTimeDelta > 0.f)
+	{
+		m_fRaceStartFlagWaveTime = std::fmod(
+			m_fRaceStartFlagWaveTime +
+				std::min(fTimeDelta, 0.05f) * 1.4f,
 			4096.f);
 	}
 
@@ -161,6 +179,12 @@ void CTextureUI::LateUpdate(E::_float fTimeDelta)
 
 HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 {
+	// Render can be reached immediately after prefab creation. Re-evaluate here
+	// as well so the first rendered frame also uses the flag shader.
+	m_bRaceStartFlagWave =
+		m_UIINFO.Restag == "TEX_UI_T_BRFlag_Right" &&
+		(m_UIINFO.Name == "FlagR" || m_UIINFO.Name == "FlagL");
+
 	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 	CTextureUI* alphaMaskSource = nullptr;
 	if (m_AlphaMaskSource)
@@ -191,6 +215,12 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
 			TAG_RES_GRP_PERMANENT_SHADER,
 			"PS_SpellAlarmFlame");
+	}
+	if (m_bRaceStartFlagWave)
+	{
+		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"PS_RaceStartFlagWave");
 	}
 	if (m_UIINFO.Restag == "TEX_UI_T_FG_IndexButtonRippleGlow")
 	{
@@ -231,7 +261,7 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	{
 		E::CB_PER_UI perUI{};
 		perUI.texCoord = {
-			m_fAmount,
+			m_bRaceStartFlagWave ? m_fRaceStartFlagWaveTime : m_fAmount,
 			static_cast<_float>(m_iPathProgressType)
 		};
 		perUI.uvSize = { 0.f, 0.f };
@@ -337,7 +367,27 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	{
 		auto& tmp = E::CGameInstance::Get();
 		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
-		if (m_bSpellAlarmFlame)
+		if (m_bRaceStartFlagWave)
+		{
+			const auto& mask = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_BRFlag_Right_Mask");
+			const auto& clouds = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_ScrollingClouds");
+			ID3D11ShaderResourceView* srvs[] = {
+				srv->GetSRV().Get(),
+				mask->GetSRV().Get(),
+				clouds->GetSRV().Get()
+			};
+			pContext->PSSetShaderResources(
+				0,
+				static_cast<UINT>(std::size(srvs)),
+				srvs);
+		}
+		else if (m_bSpellAlarmFlame)
 		{
 			const auto& flow = E::CGameInstance::GetConst().
 				GetResourceFirst<E::CResTexture2D>(
@@ -425,6 +475,13 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	}
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
+
+	if (m_bRaceStartFlagWave)
+	{
+		// Do not leave the auxiliary mask/noise SRVs attached for later UI draws.
+		ID3D11ShaderResourceView* nullSrvs[] = { nullptr, nullptr };
+		pContext->PSSetShaderResources(1, 2, nullSrvs);
+	}
 
 	if (m_bAdditiveBlend)
 	{

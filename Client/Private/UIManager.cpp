@@ -165,7 +165,430 @@ void UIManager::Update(_float fTimeDelta)
 	UpdateActiveButtons();
 	UpdateDialoguePopups(fTimeDelta);
 	UpdateNPCSpeechBubbles(fTimeDelta);
+	UpdateRaceStartTimer(fTimeDelta);
+	UpdateRaceMiniGame(fTimeDelta);
 	m_WandShop.Update(*this, fTimeDelta);
+}
+
+void UIManager::StartRaceMiniGame()
+{
+	ClearRaceMiniGameUI();
+	m_fRaceMiniGameElapsed = 0.f;
+	m_iRaceMiniGameCoinCount = 0u;
+	m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::NONE;
+
+	StartRaceStartTimer();
+	if (IsRaceStartTimerPlaying())
+		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::COUNTDOWN;
+}
+
+void UIManager::AddRaceMiniGameCoin(uint32_t amount)
+{
+	if (m_eRaceMiniGamePhase != RACE_MINIGAME_PHASE::RACING)
+		return;
+
+	constexpr uint32_t MAX_RACE_COIN_COUNT = 99u;
+	m_iRaceMiniGameCoinCount = std::min(
+		MAX_RACE_COIN_COUNT,
+		m_iRaceMiniGameCoinCount + amount);
+
+	if (!m_hRaceBoardCoinText)
+		return;
+	if (auto* textBox = dynamic_cast<CTextBox*>(
+		GetSafeUI(*m_hRaceBoardCoinText)))
+	{
+		wchar_t coinText[16]{};
+		swprintf_s(
+			coinText,
+			std::size(coinText),
+			L"%02u / %u",
+			m_iRaceMiniGameCoinCount,
+			MAX_RACE_COIN_COUNT);
+		textBox->SetwText(coinText);
+	}
+}
+
+void UIManager::BeginRaceBoard()
+{
+	m_RaceBoardRoots = LoadPrefab("RaceBoard");
+	m_hRaceBoardTimerText.reset();
+	m_hRaceBoardCoinText.reset();
+	m_fRaceMiniGameElapsed = 0.f;
+
+	if (auto* timer = FindUIByNameRecursive(
+		m_RaceBoardRoots, "TimerTitle"))
+	{
+		m_hRaceBoardTimerText = timer->GetHandle();
+		if (auto* textBox = dynamic_cast<CTextBox*>(timer))
+			textBox->SetFixedDigitLayout(true);
+	}
+	// RaceBoard has two objects named Coin. The first is the numeric counter
+	// and is intentionally found first by the hierarchy traversal.
+	if (auto* coin = FindUIByNameRecursive(m_RaceBoardRoots, "Coin"))
+	{
+		m_hRaceBoardCoinText = coin->GetHandle();
+		if (auto* textBox = dynamic_cast<CTextBox*>(coin))
+		{
+			textBox->SetColoredSuffix(
+				L"99",
+				{ 0.39215687f, 1.f, 0.39215687f });
+		}
+	}
+
+	if (!m_hRaceBoardTimerText || !m_hRaceBoardCoinText)
+	{
+		ClearRaceMiniGameUI();
+		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::NONE;
+		return;
+	}
+
+	m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RACING;
+	AddRaceMiniGameCoin(0u);
+	PlayRaceRootsFadeIn(m_RaceBoardRoots);
+}
+
+void UIManager::FinishRaceMiniGame()
+{
+	if (m_eRaceMiniGamePhase != RACE_MINIGAME_PHASE::RACING)
+		return;
+
+	for (const CHandle root : m_RaceBoardRoots)
+	{
+		if (GetSafeUI(root))
+			PlayFadeOutDelete(root, 0.f, 0.3f);
+	}
+	m_RaceBoardRoots.clear();
+	m_hRaceBoardTimerText.reset();
+	m_hRaceBoardCoinText.reset();
+
+	m_RaceResultRoots = LoadPrefab("Flag");
+	m_hRaceResultCoinText.reset();
+	if (auto* coin = FindUIByNameRecursive(
+		m_RaceResultRoots, "CoinCnt"))
+	{
+		m_hRaceResultCoinText = coin->GetHandle();
+		if (auto* textBox = dynamic_cast<CTextBox*>(coin))
+		{
+			wchar_t coinText[8]{};
+			swprintf_s(
+				coinText,
+				std::size(coinText),
+				L"%03u",
+				m_iRaceMiniGameCoinCount);
+			textBox->SetwText(coinText);
+		}
+	}
+
+	m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RESULT;
+	PlayRaceRootsFadeIn(m_RaceResultRoots);
+}
+
+void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
+{
+	if (m_eRaceMiniGamePhase == RACE_MINIGAME_PHASE::COUNTDOWN)
+	{
+		if (!IsRaceStartTimerPlaying())
+			BeginRaceBoard();
+		return;
+	}
+
+	if (m_eRaceMiniGamePhase != RACE_MINIGAME_PHASE::RACING)
+		return;
+
+	constexpr _float RACE_DURATION = 120.f;
+	m_fRaceMiniGameElapsed += std::max(0.f, fTimeDelta);
+	const _float remaining = std::max(
+		0.f,
+		RACE_DURATION - m_fRaceMiniGameElapsed);
+
+	if (m_hRaceBoardTimerText)
+	{
+		if (auto* textBox = dynamic_cast<CTextBox*>(
+			GetSafeUI(*m_hRaceBoardTimerText)))
+		{
+			const uint32_t totalCentiseconds = static_cast<uint32_t>(
+				std::ceil(remaining * 100.f));
+			const uint32_t minutes = totalCentiseconds / 6000u;
+			const uint32_t seconds = (totalCentiseconds / 100u) % 60u;
+			const uint32_t centiseconds = totalCentiseconds % 100u;
+			wchar_t timerText[16]{};
+			swprintf_s(
+				timerText,
+				std::size(timerText),
+				L"%u:%02u:%02u",
+				minutes,
+				seconds,
+				centiseconds);
+			textBox->SetwText(timerText);
+		}
+	}
+
+	if (m_fRaceMiniGameElapsed >= RACE_DURATION)
+		FinishRaceMiniGame();
+}
+
+void UIManager::ClearRaceMiniGameUI()
+{
+	for (const CHandle root : m_RaceBoardRoots)
+	{
+		if (GetSafeUI(root))
+			PlayFadeOutDelete(root, 0.f, 0.25f);
+	}
+	for (const CHandle root : m_RaceResultRoots)
+	{
+		if (GetSafeUI(root))
+			PlayFadeOutDelete(root, 0.f, 0.25f);
+	}
+
+	m_RaceBoardRoots.clear();
+	m_RaceResultRoots.clear();
+	m_hRaceBoardTimerText.reset();
+	m_hRaceBoardCoinText.reset();
+	m_hRaceResultCoinText.reset();
+}
+
+void UIManager::PlayRaceRootsFadeIn(
+	const std::vector<CHandle>& roots,
+	_float playtime)
+{
+	for (const CHandle root : roots)
+	{
+		auto* ui = GetSafeUI(root);
+		if (!ui)
+			continue;
+
+		const _float targetAlpha = ui->GetAlpha();
+		ui->SetAlpha(0.f);
+
+		// UI의 첫 APPEAR 처리에서는 각 UI 클래스가 기존 Tween을 지운다.
+		// 로드 직후 Tween을 시작하면 다음 프레임 APPEAR에서 삭제되므로,
+		// APPEAR 콜백 안에서 FadeIn Tween을 등록해야 한다.
+		ui->Appear = [root, targetAlpha, playtime](CUIObject*)
+		{
+			auto* target = GetSafeUI(root);
+			if (!target)
+				return;
+
+			target->SetAlpha(0.f);
+			if (auto* tween = target->GetTweenCom())
+			{
+				tween->PlayTween(
+					0.f,
+					targetAlpha,
+					std::max(0.f, playtime),
+					[root](_float value)
+					{
+						if (auto* current = GetSafeUI(root))
+							current->SetAlpha(value);
+					}, nullptr, EEaseType::EaseOutQuad);
+			}
+			else
+			{
+				target->SetAlpha(targetAlpha);
+			}
+		};
+	}
+}
+
+void UIManager::StartRaceStartTimer()
+{
+	// 디버그 키를 연속으로 눌러도 이전 타이머가 중복되지 않도록 정리한다.
+	for (const CHandle root : m_RaceStartTimerRoots)
+		DeleteUIRecursive(root);
+
+	m_RaceStartTimerRoots = LoadPrefab("RaceStartTimer");
+	m_hRaceStartTimerFrame.reset();
+	m_hRaceStartTimerNumberPad.reset();
+	m_hRaceStartTimerText.reset();
+	m_hRaceStartTimerFire.reset();
+	m_hRaceStartTimerFlagR.reset();
+	m_hRaceStartTimerFlagL.reset();
+
+	if (auto* frame = FindUIByNameRecursive(m_RaceStartTimerRoots, "StartTimerBG"))
+	{
+		m_hRaceStartTimerFrame = frame->GetHandle();
+		m_fRaceStartTimerFrameBaseScale = frame->GetScaleRatio();
+		frame->SetAlpha(1.f);
+	}
+
+	if (auto* numberPad = FindUIByNameRecursive(m_RaceStartTimerRoots, "NumberPad"))
+	{
+		m_hRaceStartTimerNumberPad = numberPad->GetHandle();
+		m_fRaceStartTimerNumberPadBaseScale = numberPad->GetScaleRatio();
+		numberPad->SetAlpha(0.f);
+		numberPad->SetScaleRatio(0.f);
+	}
+
+	if (auto* text = FindUIByNameRecursive(m_RaceStartTimerRoots, "64px"))
+	{
+		m_hRaceStartTimerText = text->GetHandle();
+		m_RaceStartTimerTextBaseLocalPos = {
+			text->GetUIInfo().LocalX,
+			text->GetUIInfo().LocalY
+		};
+		text->SetColor({ 1.f, 1.f, 1.f });
+		if (auto* textBox = dynamic_cast<CTextBox*>(text))
+			textBox->SetwText(L"3");
+	}
+
+	if (auto* fire = FindUIByNameRecursive(m_RaceStartTimerRoots, "Fire"))
+	{
+		m_hRaceStartTimerFire = fire->GetHandle();
+		m_fRaceStartTimerFireBaseAlpha = fire->GetAlpha();
+	}
+
+	if (auto* flagR = FindUIByNameRecursive(m_RaceStartTimerRoots, "FlagR"))
+	{
+		m_hRaceStartTimerFlagR = flagR->GetHandle();
+		m_fRaceStartTimerFlagRBaseAlpha = flagR->GetAlpha();
+	}
+
+	if (auto* flagL = FindUIByNameRecursive(m_RaceStartTimerRoots, "FlagL"))
+	{
+		m_hRaceStartTimerFlagL = flagL->GetHandle();
+		m_fRaceStartTimerFlagLBaseAlpha = flagL->GetAlpha();
+	}
+
+	m_fRaceStartTimerElapsed = 0.f;
+	m_bRaceStartTimerPlaying = m_hRaceStartTimerFrame.has_value() &&
+		m_hRaceStartTimerNumberPad.has_value() &&
+		m_hRaceStartTimerText.has_value() &&
+		m_hRaceStartTimerFire.has_value() &&
+		m_hRaceStartTimerFlagR.has_value() &&
+		m_hRaceStartTimerFlagL.has_value();
+
+	if (!m_bRaceStartTimerPlaying)
+	{
+		for (const CHandle root : m_RaceStartTimerRoots)
+			DeleteUIRecursive(root);
+		m_RaceStartTimerRoots.clear();
+	}
+}
+
+void UIManager::UpdateRaceStartTimer(_float fTimeDelta)
+{
+	if (!m_bRaceStartTimerPlaying || !m_hRaceStartTimerFrame ||
+		!m_hRaceStartTimerNumberPad || !m_hRaceStartTimerText ||
+		!m_hRaceStartTimerFire || !m_hRaceStartTimerFlagR ||
+		!m_hRaceStartTimerFlagL)
+	{
+		return;
+	}
+
+	auto* frame = GetSafeUI(*m_hRaceStartTimerFrame);
+	auto* numberPad = GetSafeUI(*m_hRaceStartTimerNumberPad);
+	auto* text = GetSafeUI(*m_hRaceStartTimerText);
+	auto* fire = GetSafeUI(*m_hRaceStartTimerFire);
+	auto* flagR = GetSafeUI(*m_hRaceStartTimerFlagR);
+	auto* flagL = GetSafeUI(*m_hRaceStartTimerFlagL);
+	if (!frame || !numberPad || !text || !fire || !flagR || !flagL)
+	{
+		m_bRaceStartTimerPlaying = false;
+		m_RaceStartTimerRoots.clear();
+		return;
+	}
+
+	constexpr _float countDuration = 1.f;
+	constexpr _float goDuration = 1.f;
+	constexpr _float countTotal = countDuration * 3.f;
+	constexpr _float totalDuration = countTotal + goDuration;
+	const auto saturate = [](_float value)
+	{
+		return std::clamp(value, 0.f, 1.f);
+	};
+	const auto easeOutQuad = [&saturate](_float value)
+	{
+		const _float t = saturate(value);
+		return 1.f - (1.f - t) * (1.f - t);
+	};
+	const auto heartbeat = [&saturate](_float localTime)
+	{
+		// 매초 시작 시점부터 0.2초 동안 한 번 작아졌다가 원래 크기로 복귀한다.
+		const _float secondPhase = std::fmod(std::max(localTime, 0.f), 1.f);
+		if (secondPhase >= 0.2f)
+			return 0.f;
+		return std::sin(saturate(secondPhase / 0.2f) * XM_PI) * 0.09f;
+	};
+
+	m_fRaceStartTimerElapsed += fTimeDelta;
+	const _float elapsed = m_fRaceStartTimerElapsed;
+	if (elapsed >= totalDuration)
+	{
+		for (const CHandle root : m_RaceStartTimerRoots)
+			DeleteUIRecursive(root);
+		m_RaceStartTimerRoots.clear();
+		m_hRaceStartTimerFrame.reset();
+		m_hRaceStartTimerNumberPad.reset();
+		m_hRaceStartTimerText.reset();
+		m_hRaceStartTimerFire.reset();
+		m_hRaceStartTimerFlagR.reset();
+		m_hRaceStartTimerFlagL.reset();
+		m_bRaceStartTimerPlaying = false;
+		return;
+	}
+
+	if (elapsed < countTotal)
+	{
+		const uint32_t countIndex = std::min(
+			2u, static_cast<uint32_t>(elapsed / countDuration));
+		const _float localTime = elapsed - countDuration * countIndex;
+		const wchar_t* countTexts[] = { L"3", L"2", L"1" };
+		if (auto* textBox = dynamic_cast<CTextBox*>(text))
+			textBox->SetwText(countTexts[countIndex]);
+
+		// Pretendard's '1' glyph has asymmetric side bearings. Keep the text
+		// mathematically centered, then apply a small optical correction only
+		// for that glyph so 3/2/GO retain their authored position.
+		constexpr _float ONE_OPTICAL_CENTER_OFFSET_X = -3.f;
+		text->SetLocalPos({
+			m_RaceStartTimerTextBaseLocalPos.x +
+				(countIndex == 2u ? ONE_OPTICAL_CENTER_OFFSET_X : 0.f),
+			m_RaceStartTimerTextBaseLocalPos.y
+		});
+
+		text->SetColor({ 1.f, 1.f, 1.f });
+		_float textAlpha = saturate(localTime / 0.25f);
+		if (localTime > 0.62f)
+			textAlpha *= 1.f - saturate((localTime - 0.62f) / 0.34f);
+		// NumberPad 알파 0.1 * 숫자 AlphaRatio 10 = 최종 숫자 알파 1.0.
+		numberPad->SetAlpha(textAlpha * 0.1f);
+		const _float numberSizeRatio = easeOutQuad(localTime / 0.32f);
+		numberPad->SetScaleRatio(
+			m_fRaceStartTimerNumberPadBaseScale * numberSizeRatio);
+
+		// Fire 플립북은 건드리지 않고 원형 프레임만 매초 한 번 두근거린다.
+		frame->SetScaleRatio(m_fRaceStartTimerFrameBaseScale *
+			(1.f - heartbeat(elapsed)));
+		const _float introAlpha = saturate(elapsed / 0.3f);
+		frame->SetAlpha(introAlpha);
+		fire->SetAlpha(m_fRaceStartTimerFireBaseAlpha * introAlpha);
+		flagR->SetAlpha(m_fRaceStartTimerFlagRBaseAlpha * introAlpha);
+		flagL->SetAlpha(m_fRaceStartTimerFlagLBaseAlpha * introAlpha);
+		return;
+	}
+
+	const _float goTime = elapsed - countTotal;
+	if (auto* textBox = dynamic_cast<CTextBox*>(text))
+		textBox->SetwText(L"GO");
+	text->SetLocalPos(m_RaceStartTimerTextBaseLocalPos);
+	text->SetColor({ 0.32f, 1.f, 0.28f });
+
+	_float goAlpha = saturate(goTime / 0.25f);
+	if (goTime > 0.62f)
+		goAlpha *= 1.f - saturate((goTime - 0.62f) / 0.34f);
+	numberPad->SetAlpha(goAlpha * 0.1f);
+	const _float goSizeRatio = easeOutQuad(goTime / 0.32f);
+	numberPad->SetScaleRatio(
+		m_fRaceStartTimerNumberPadBaseScale * goSizeRatio);
+
+	// GO 숫자만 남기고 원형 프레임, Fire, 양쪽 깃발은 함께 사라진다.
+	const _float backgroundAlpha = 1.f - saturate(goTime / 0.3f);
+	frame->SetAlpha(backgroundAlpha);
+	fire->SetAlpha(m_fRaceStartTimerFireBaseAlpha * backgroundAlpha);
+	flagR->SetAlpha(m_fRaceStartTimerFlagRBaseAlpha * backgroundAlpha);
+	flagL->SetAlpha(m_fRaceStartTimerFlagLBaseAlpha * backgroundAlpha);
+	frame->SetScaleRatio(m_fRaceStartTimerFrameBaseScale *
+		(1.f - heartbeat(elapsed)));
 }
 
 void UIManager::UpdateWandShopWorldMousePosition()
@@ -1331,7 +1754,7 @@ std::function<void(std::string text)> UIManager::GetFunc(const std::string& func
 void UIManager::CreateFadeIn(float delay, float playtime)
 {
 	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
-	PlayFadeIn(hBG, delay, playtime);
+	PlayOnlyFadeIn(hBG, delay, playtime);
 }
 
 void UIManager::CreateFadeOut(float delay, float playtime)
@@ -2117,11 +2540,14 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 	auto* root = m_hQuestRoot ? GetSafeUI(*m_hQuestRoot) : nullptr;
 	auto* text = m_hQuestText ? E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextBox>(*m_hQuestText) : nullptr;
+	auto* targetIcon = m_hQuestTargetIcon ?
+		GetSafeUI(*m_hQuestTargetIcon) : nullptr;
 
 	if (!root || !text)
 	{
 		m_hQuestRoot = std::nullopt;
 		m_hQuestText = std::nullopt;
+		m_hQuestTargetIcon = std::nullopt;
 
 		const auto roots = LoadPrefab("Quest");
 		if (roots.empty())
@@ -2133,6 +2559,7 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 			text = E::CGameInstance::Get().
 				GetGameObjectByHandleT<CTextBox>(textUI->GetHandle());
 		}
+		targetIcon = FindUIByNameRecursive(roots, "QuestTargetIcon");
 		if (!root || !text)
 		{
 			for (const CHandle rootHandle : roots)
@@ -2142,6 +2569,14 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 
 		m_hQuestRoot = root->GetHandle();
 		m_hQuestText = text->GetHandle();
+		if (targetIcon)
+		{
+			m_hQuestTargetIcon = targetIcon->GetHandle();
+			m_QuestTargetIconBaseLocalPos = {
+				targetIcon->GetUIInfo().LocalX,
+				targetIcon->GetUIInfo().LocalY
+			};
+		}
 		m_QuestTextBaseLocalPos = {
 			text->GetUIInfo().LocalX,
 			text->GetUIInfo().LocalY
@@ -2230,6 +2665,63 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 				ui->CalcUICoord();
 			}
 		}, nullptr, EEaseType::EaseOutQuad, outDuration);
+
+	// 퀘스트 문구 옆의 목표 아이콘도 문구 교체 모션과 같은 타이밍으로
+	// 함께 빠졌다가 나타나도록 한다.
+	if (targetIcon)
+	{
+		if (auto* iconTween = targetIcon->GetTweenCom())
+		{
+			iconTween->ClearTweens();
+			const CHandle iconHandle = targetIcon->GetHandle();
+			const _float iconBaseX = m_QuestTargetIconBaseLocalPos.x;
+			const _float iconBaseY = m_QuestTargetIconBaseLocalPos.y;
+
+			iconTween->PlayTween(
+				targetIcon->GetAlphaRatio(), 0.f, outDuration,
+				[iconHandle](_float value)
+				{
+					if (auto* ui = GetSafeUI(iconHandle))
+						ui->SetAlphaRatio(value);
+				},
+				[iconHandle, iconBaseX, iconBaseY]()
+				{
+					if (auto* ui = GetSafeUI(iconHandle))
+					{
+						ui->SetLocalPos({ iconBaseX - shift, iconBaseY });
+						ui->SetAlphaRatio(0.f);
+						ui->CalcUICoord();
+					}
+				}, EEaseType::EaseOutQuad);
+			iconTween->PlayTween(
+				iconBaseX, iconBaseX - shift, outDuration,
+				[iconHandle, iconBaseY](_float value)
+				{
+					if (auto* ui = GetSafeUI(iconHandle))
+					{
+						ui->SetLocalPos({ value, iconBaseY });
+						ui->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad);
+			iconTween->PlayTween(
+				0.f, 1.f, inDuration,
+				[iconHandle](_float value)
+				{
+					if (auto* ui = GetSafeUI(iconHandle))
+						ui->SetAlphaRatio(value);
+				}, nullptr, EEaseType::EaseOutQuad, outDuration);
+			iconTween->PlayTween(
+				iconBaseX - shift, iconBaseX, inDuration,
+				[iconHandle, iconBaseY](_float value)
+				{
+					if (auto* ui = GetSafeUI(iconHandle))
+					{
+						ui->SetLocalPos({ value, iconBaseY });
+						ui->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, outDuration);
+		}
+	}
 }
 
 void UIManager::DeleteQuest()
@@ -2239,8 +2731,52 @@ void UIManager::DeleteQuest()
 
 	m_hQuestRoot = std::nullopt;
 	m_hQuestText = std::nullopt;
+	m_hQuestTargetIcon = std::nullopt;
 	m_CurrentQuestText.clear();
 	m_QuestTextBaseLocalPos = {};
+	m_QuestTargetIconBaseLocalPos = {};
+}
+
+void UIManager::FadeOutQuest(float playtime)
+{
+	if (!m_hQuestRoot)
+		return;
+
+	const CHandle questHandle = *m_hQuestRoot;
+	auto* questRoot = GetSafeUI(questHandle);
+	if (!questRoot || !questRoot->GetTweenCom())
+		return;
+
+	questRoot->GetTweenCom()->ClearTweens();
+	const _float startAlpha = questRoot->GetAlpha();
+	questRoot->GetTweenCom()->PlayTween(
+		startAlpha, 0.f, std::max(0.f, playtime),
+		[questHandle](_float value)
+		{
+			if (auto* quest = GetSafeUI(questHandle))
+				quest->SetAlpha(value);
+		}, nullptr, EEaseType::EaseOutQuad);
+}
+
+void UIManager::FadeInQuest(float playtime)
+{
+	if (!m_hQuestRoot)
+		return;
+
+	const CHandle questHandle = *m_hQuestRoot;
+	auto* questRoot = GetSafeUI(questHandle);
+	if (!questRoot || !questRoot->GetTweenCom())
+		return;
+
+	questRoot->GetTweenCom()->ClearTweens();
+	const _float startAlpha = questRoot->GetAlpha();
+	questRoot->GetTweenCom()->PlayTween(
+		startAlpha, 1.f, std::max(0.f, playtime),
+		[questHandle](_float value)
+		{
+			if (auto* quest = GetSafeUI(questHandle))
+				quest->SetAlpha(value);
+		}, nullptr, EEaseType::EaseOutQuad);
 }
 
 void UIManager::UpdateNPCSpeechBubbles(_float fTimeDelta)
@@ -2934,9 +3470,9 @@ void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
 
 	pBtn->SetInputLcok(true);
 
-	_float Alpah = pBtn->GetAlpha();
+	const _float alpha = pBtn->GetAlpha();
 
-	pTween->PlayTween(1.f, 0.f, playtime,
+	pTween->PlayTween(alpha, 0.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
 		}, [pHandle]() {
@@ -2996,6 +3532,22 @@ void UIManager::PlayFadeIn(CHandle pHandle, float delay, float playtime)
 				pObj->CalcUICoord();
 			}
 		}, nullptr, EEaseType::EaseOutQuad, delay);
+
+	pTween->PlayTween(0.f, 1.f, playtime,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, nullptr, EEaseType::EaseOutQuad, delay);
+}
+
+void UIManager::PlayOnlyFadeIn(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+	_float scaleRatio = pBtn->GetScaleRatio();
 
 	pTween->PlayTween(0.f, 1.f, playtime,
 		[pBtn](float currentValue) {
