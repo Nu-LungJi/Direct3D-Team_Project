@@ -487,6 +487,9 @@
     <Filter Include="GameObject\InteractNpc">
       <UniqueIdentifier>{a058c676-cc04-45cd-b1af-f02cdea958b8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\AnimationWorldObject">
+      <UniqueIdentifier>{2ec69e32-ef56-40ec-9fed-c71016b51ac8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -1197,6 +1200,9 @@
     <ClInclude Include="..\public\InteractiveNpc.h">
       <Filter>GameObject\InteractNpc</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\AnimatedWorldObject.h">
+      <Filter>GameObject\AnimationWorldObject</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1846,6 +1852,9 @@
     </ClCompile>
     <ClCompile Include="..\private\InteractiveNpc.cpp">
       <Filter>GameObject\InteractNpc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AnimatedWorldObject.cpp">
+      <Filter>GameObject\AnimationWorldObject</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -410,6 +410,7 @@
     <ClInclude Include="..\Public\UI_Structs.h" />
     <ClInclude Include="..\Public\VideoObject.h" />
     <ClInclude Include="..\public\WorldAnimal.h" />
+    <ClInclude Include="..\public\AnimatedWorldObject.h" />
     <ClInclude Include="..\public\WorldNpc.h" />
     <ClInclude Include="..\public\InteractiveNpc.h" />
     <ClInclude Include="BTAnimNpc.h" />
@@ -616,6 +617,7 @@
     <ClCompile Include="..\Private\Mon_Weapon.cpp" />
     <ClCompile Include="..\Private\VideoObject.cpp" />
     <ClCompile Include="..\private\WorldAnimal.cpp" />
+    <ClCompile Include="..\private\AnimatedWorldObject.cpp" />
     <ClCompile Include="..\private\WorldNpc.cpp" />
     <ClCompile Include="..\private\InteractiveNpc.cpp" />
     <ClCompile Include="BTAnimNpc.cpp" />

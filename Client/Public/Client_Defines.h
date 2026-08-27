@@ -107,6 +107,7 @@ namespace Client
 		Prototype_GameObject_Griff,
 		Prototype_GameObject_GriffChild,
 		Prototype_GameObject_WorldAnimal,
+		Prototype_GameObject_AnimatedWorldObject,
 		Prototype_GameObject_PropBarrel,
 		Prototype_GameObject_PropBarrelDebris,
 		Prototype_GameObject_Coin,
