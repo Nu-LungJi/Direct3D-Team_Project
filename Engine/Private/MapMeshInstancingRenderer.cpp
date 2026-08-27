@@ -104,11 +104,17 @@ void CMapMeshInstancingRenderer::FrameEnd()
 void CMapMeshInstancingRenderer::ClearTextureCache()
 {
 	m_TextureCache.ClearAll();
+
+	m_IsResidentSceneDirty = true;
+	InvalidateCommandListCache();
 }
 
 void CMapMeshInstancingRenderer::EraseTextureCache(const SPtr<CResStaticModel>& model)
 {
 	m_TextureCache.EraseModel(model);
+
+	m_IsResidentSceneDirty = true;
+	InvalidateCommandListCache();
 }
 
 HRESULT CMapMeshInstancingRenderer::RegisterResidentChunk(const MAPCHUNK_COORD& coord, const std::vector<CHandle>& objectHandles)
@@ -169,6 +175,7 @@ HRESULT CMapMeshInstancingRenderer::RegisterResidentChunk(const MAPCHUNK_COORD& 
 
 	m_ResidentChunks[coord] = std::move(residentInstances);
 	m_IsResidentSceneDirty = true;
+	InvalidateCommandListCache(); // 커맨드리스트 캐싱 무효화
 
 	return S_OK;
 }
@@ -176,7 +183,10 @@ HRESULT CMapMeshInstancingRenderer::RegisterResidentChunk(const MAPCHUNK_COORD& 
 void CMapMeshInstancingRenderer::UnregisterResidentChunk(const MAPCHUNK_COORD& coord)
 {
 	if (m_ResidentChunks.erase(coord) > 0)
+	{
 		m_IsResidentSceneDirty = true;
+		InvalidateCommandListCache(); // 커맨드리스트 캐싱 무효화
+	}
 }
 
 void CMapMeshInstancingRenderer::ClearResidentChunks()
@@ -186,6 +196,7 @@ void CMapMeshInstancingRenderer::ClearResidentChunks()
 	ClearResidentDrawData();
 	m_ResidentBatchCount = 0;
 	m_IsResidentSceneDirty = false;
+	InvalidateCommandListCache(); // 커맨드리스트 캐싱 무효화
 }
 
 HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* context, const RENDER_CTX& renderContext)
@@ -199,12 +210,77 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* context, const R
 	if (!packet.isReady)
 		return S_OK;
 
+	if (m_IsCommandListCacheDirty)
+	{
+		if (FAILED(RebuildCachedCommandLists(packet)))
+			return E_FAIL;
+	}
+
+	// 완성된 명령 목록을 Immediate Context에서 순서대로 실행한다.
+	{
+		ZoneScopedN("MapMeshExecuteCommandLists");
+		for (const auto& commandList : m_CachedCommandLists)
+		{
+			//m_CurrentFrameStats.iDrawCalls += commandList.drawCalls;
+			context->ExecuteCommandList(commandList.Get(), TRUE);
+		}
+	}
+	return S_OK;
+}
+
+HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, DRAW_PACKET& outPacket)
+{
+	ZoneScopedN("MapMeshPrepareDrawPacket");
+	outPacket = {};
+
+	if (context == nullptr)
+		return E_INVALIDARG;
+
+	const _bool uploadResidentData = m_IsResidentSceneDirty;
+	if (uploadResidentData && FAILED(RebuildResidentDrawData()))
+		return E_FAIL;
+
+	if (m_ResidentInstances.empty() || m_DrawItems.empty())
+	{
+		m_IsResidentSceneDirty = false;
+		return S_OK;
+	}
+
+	if (FAILED(ResolveDrawResources(outPacket)))
+		return E_FAIL;
+
+	if (FAILED(RunGpuCulling(
+		context, renderContext, m_ResidentBatchCount,
+		uploadResidentData, outPacket)))
+		return E_FAIL;
+
+	m_IsResidentSceneDirty = false;
+	if (FAILED(CapturePipelineState(context, outPacket)))
+		return E_FAIL;
+
+	outPacket.isReady = true;
+
+	return S_OK;
+}
+
+HRESULT CMapMeshInstancingRenderer::RebuildCachedCommandLists(const DRAW_PACKET& packet)
+{
+	ZoneScopedN("MapMeshRebuildCachedCommandLists");
+
 	const uint32_t commandCount = static_cast<uint32_t>(m_DrawCommandIndices.size());
 	const uint32_t availableWorkers = CGameInstance::Get().GetRenderWorkerCount();
 	// 작은 작업의 과도한 분할을 막기 위해 실제 명령 수와 최대 6개 워커로 제한
 	const uint32_t workerCount = std::min({ 6u, availableWorkers, commandCount });
 	if (workerCount == 0)
+	{
+		m_CachedCommandLists.clear();
+		// 다음 프레임에 워커가 생기면 다시 시도하도록
+		// Dirty는 true 상태로 유지
 		return S_OK;
+	}
+
+	std::vector<ComPtr<ID3D11CommandList>> rebuiltCommandLists;
+	rebuiltCommandLists.reserve(workerCount);
 
 	std::vector<std::future<DRAW_COMMAND_LIST_RESULT>> commandListFutures{};
 	commandListFutures.reserve(workerCount);
@@ -252,6 +328,8 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* context, const R
 			{
 				return E_FAIL;
 			}
+
+			rebuiltCommandLists.push_back(commandListResults[i].commandList);
 		}
 	}
 	catch (...)
@@ -259,49 +337,9 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* context, const R
 		return E_FAIL;
 	}
 
-	// 완성된 명령 목록을 Immediate Context에서 순서대로 실행한다.
-	{
-		ZoneScopedN("MapMeshExecuteCommandLists");
-		for (const auto& commandListResult : commandListResults)
-		{
-			m_CurrentFrameStats.iDrawCalls += commandListResult.drawCalls;
-			context->ExecuteCommandList(commandListResult.commandList.Get(), TRUE);
-		}
-	}
-	return S_OK;
-}
-
-HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, DRAW_PACKET& outPacket)
-{
-	ZoneScopedN("MapMeshPrepareDrawPacket");
-	outPacket = {};
-
-	if (context == nullptr)
-		return E_INVALIDARG;
-
-	const _bool uploadResidentData = m_IsResidentSceneDirty;
-	if (uploadResidentData && FAILED(RebuildResidentDrawData()))
-		return E_FAIL;
-
-	if (m_ResidentInstances.empty() || m_DrawItems.empty())
-	{
-		m_IsResidentSceneDirty = false;
-		return S_OK;
-	}
-
-	if (FAILED(ResolveDrawResources(outPacket)))
-		return E_FAIL;
-
-	if (FAILED(RunGpuCulling(
-		context, renderContext, m_ResidentBatchCount,
-		uploadResidentData, outPacket)))
-		return E_FAIL;
-
-	m_IsResidentSceneDirty = false;
-	if (FAILED(CapturePipelineState(context, outPacket)))
-		return E_FAIL;
-
-	outPacket.isReady = true;
+	// 캐싱 적용
+	m_CachedCommandLists = std::move(rebuiltCommandLists);
+	m_IsCommandListCacheDirty = false;
 
 	return S_OK;
 }
@@ -666,11 +704,18 @@ void CMapMeshInstancingRenderer::ClearResidentDrawData()
 
 void CMapMeshInstancingRenderer::ReleaseInstancingResources()
 {
+	InvalidateCommandListCache(); // 커맨드리스트 캐싱 무효화
 	m_ResidentChunks.clear();
 	m_InstanceBatchCollector.ClearBatches();
 	ClearResidentDrawData();
 	ClearTextureCache();
 	m_pGpuCuller.reset();
+}
+
+void CMapMeshInstancingRenderer::InvalidateCommandListCache()
+{
+	m_CachedCommandLists.clear();
+	m_IsCommandListCacheDirty = true;
 }
 
 UPtr<CMapMeshInstancingRenderer> CMapMeshInstancingRenderer::Create()

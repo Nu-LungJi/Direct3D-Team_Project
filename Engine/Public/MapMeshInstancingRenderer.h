@@ -64,6 +64,8 @@ private:
 	// 렌더러가 소유한 수집 데이터, 캐시, GPU 컬링 처리기를 모두 해제
 	void ReleaseInstancingResources();
 
+	void InvalidateCommandListCache(); // 캐싱해놓은 커맨드리스트 캐시 무효화
+
 private:
 	// 하나의 메시를 한 번 간접 드로우하는 데 필요한 CPU 측 정보
 	struct DRAW_ITEM
@@ -127,6 +129,8 @@ private:
 
 	// 수집된 배치로부터 이번 프레임의 완성된 Draw 패킷을 만든다
 	HRESULT PrepareDrawPacket(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, DRAW_PACKET& outPacket);
+	// 커맨드리스트 캐싱 재구성하는 함수
+	HRESULT RebuildCachedCommandLists(const DRAW_PACKET& packet);
 	// Draw에 공통으로 필요한 셰이더, 샘플러, 상수 버퍼를 조회
 	HRESULT ResolveDrawResources(DRAW_PACKET& outPacket) const;
 	// 배치 전체 크기를 미리 계산해 상주 벡터의 재할당을 줄인다.
@@ -187,6 +191,10 @@ private:
 	// 렌더 기능 변경을 줄이기 위해 Draw 인덱스를 Static/Foliage 순서로 묶는다
 	static constexpr size_t RENDER_FEATURE_COUNT = 2;
 	std::array<std::vector<uint32_t>, RENDER_FEATURE_COUNT> m_DrawIndicesByFeature;
+
+	// 청크 변화 없을 때 기록해놨던 드로우명령 캐싱해놓을 곳
+	std::vector<ComPtr<ID3D11CommandList>> m_CachedCommandLists;
+	_bool m_IsCommandListCacheDirty = true;
 
 public:
 	static UPtr<CMapMeshInstancingRenderer> Create();
