@@ -947,7 +947,7 @@ void CPropBarrel::HandleAncientThrowImpact(
 	CGameInstance::Get().Spawn(
 		"LSY_AncientThrow_ImpactDust_Queue.json",
 		impactWorld);
-	if (auto* pMonster = dynamic_cast<CMonster*>(pHitObject))
+	if (auto* pMonster = dynamic_cast<CSkillTarget*>(pHitObject))
 		pMonster->Check_Table(PLAYER_SKILL_TYPE::DESTORY);
 	m_bDestroyRequested = true;
 }

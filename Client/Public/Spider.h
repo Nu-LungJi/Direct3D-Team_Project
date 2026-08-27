@@ -63,7 +63,7 @@ private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);
-
+	void						Stuck() override;
 private:
 	class CMon_State* m_pFsm{ nullptr };
 

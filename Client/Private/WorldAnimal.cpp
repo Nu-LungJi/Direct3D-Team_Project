@@ -49,6 +49,7 @@ HRESULT CWorldAnimal::Initialize(void* pArg)
 		return E_FAIL;
 	}
 
+	m_iHp = m_iMaxHp = 10;
 
 	_float3 vRot = WorldAgentDesc->vRot;
 	_matrix matRot = XMMatrixRotationX(XMConvertToRadians(vRot.x))

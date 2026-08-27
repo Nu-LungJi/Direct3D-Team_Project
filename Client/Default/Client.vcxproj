@@ -239,6 +239,7 @@
     <ClInclude Include="..\public\Gur_Spawn.h" />
     <ClInclude Include="..\public\LevelLastBossRanrok.h" />
     <ClInclude Include="..\public\LevelLastBossRanrokLoader.h" />
+    <ClInclude Include="..\public\MON_Default.h" />
     <ClInclude Include="..\public\Mon_Godae.h" />
     <ClInclude Include="..\public\Mon_Spawner.h" />
     <ClInclude Include="..\public\WorldAgent.h" />
@@ -451,6 +452,7 @@
     <ClCompile Include="..\private\Edg_Spawn.cpp" />
     <ClCompile Include="..\private\EnderDragon.cpp" />
     <ClCompile Include="..\private\EnderDragon_State.cpp" />
+    <ClCompile Include="..\private\MON_Default.cpp" />
     <ClCompile Include="..\private\Mon_Godae.cpp" />
     <ClCompile Include="..\private\Mon_Spawner.cpp" />
     <ClCompile Include="..\private\WorldAgent.cpp" />

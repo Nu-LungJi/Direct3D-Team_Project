@@ -208,6 +208,7 @@ _bool CSpider::Check_Table(PLAYER_SKILL_TYPE eType)
 		return false;
 
 	Damaged(eType);
+	
 	if (eType == PLAYER_SKILL_TYPE::ATTACK)
 	{
 		const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
@@ -291,6 +292,12 @@ _bool CSpider::BreakSkillType(PLAYER_SKILL_TYPE eType)
 		break;
 	}
 	return false;
+}
+
+void CSpider::Stuck()
+{
+	if (nullptr != m_pFsm)
+		m_pFsm->Request_State(MON_STATE::GODAE);
 }
 
 E::UPtr<CSpider> CSpider::Create()

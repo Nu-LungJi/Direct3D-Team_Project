@@ -92,14 +92,21 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			}
 			if(FAILED(MonsterLoad_InWorker()))
 				return false;
-			//if (FAILED(NpcLoad_InWorker()))
-			//	return false;
+			if (FAILED(NpcLoad_InWorker()))
+				return false;
 			if (FAILED(WorldAgentLoad_InWorker()))
 				return false;
 
 			if (FAILED(LoadCollsion_InWorker()))
 				return false;
-
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("TrollDoljin")))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("SpiderSpawn")))
+			{
+				return false;
+			}
 			return SUCCEEDED(LoadPlayerResources());
 		});
 }
@@ -354,6 +361,7 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 		{
 			return false;
 		}
+		
 	}
 	return true;
 }
@@ -430,7 +438,15 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 		}
 
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
-
+		
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "TROLL", CResJson::Create("./Resources/json/BeHavior/Troll.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED TROLL JSON");
+				return E_FAIL;
+			}
+		}
 	}
 }
 
@@ -440,6 +456,24 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	static constexpr NPC_MODEL_ENTRY NpcModels[] =
 	{
 		{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
+		{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
+		{ "Model_Resource_NPC_EffieBones", "EffieBones" },
+		{ "Model_Resource_NPC_EleazarFig", "EleazarFig" },
+		{ "Model_Resource_NPC_GladwinMoon", "GladwinMoon" },
+		{ "Model_Resource_NPC_HelenThistlewood", "HelenThistlewood" },
+		{ "Model_Resource_NPC_JasperTrout", "JasperTrout" },
+		{ "Model_Resource_NPC_LeonaPeck", "LeonaPeck" },
+		{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
+		{ "Model_Resource_NPC_NoreenBlainey", "NoreenBlainey" },
+		{ "Model_Resource_NPC_PadraicHaggarty", "PadraicHaggarty" },
+		{ "Model_Resource_NPC_PercivalPippin", "PercivalPippin" },
+		{ "Model_Resource_NPC_PhineasBlack", "PhineasBlack" },
+		{ "Model_Resource_NPC_SironaRyan", "SironaRyan" },
+		{ "Model_Resource_NPC_ThomasBrown", "ThomasBrown" },
+		{ "Model_Resource_NPC_TimothyTeasdale", "TimothyTeasdale" },
+		{ "Model_Resource_NPC_MirabelGarlick", "MirabelGarlick" },
+		{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
+		{ "Model_Resource_NPC_AdelaideOakes", "AdelaideOakes" },
 	};
 	for (const auto& Entry : NpcModels)
 	{

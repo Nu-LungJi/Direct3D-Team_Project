@@ -231,7 +231,7 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 		}
 		m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 		m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
-		m_pModelAnimator->Play_Anim(0, true);
+		m_pModelAnimator->Play_Anim(0, true,Randf(0.1f,1.f));
 
 		GetTransform().SetPosition(XMLoadFloat3(&WorldAgentDesc->vPos));
 		if(nullptr != m_pCharacterController)
@@ -257,7 +257,7 @@ void CWorldAgent::Stuck()
 
 void CWorldAgent::PriorityUpdate(E::_float fTimeDelta)
 {
-	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)))
+	if (m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)) || m_iHp <= 0)
 		SetPendingDestroy();
 
 	if (nullptr != m_pMoveIntent)
