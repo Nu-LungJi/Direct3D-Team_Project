@@ -583,7 +583,20 @@ void CInteractiveNpc::UpdateMoveOutcome()
 	}
 
 	EndDialogueCamera();
-	GET_SINGLE(UIManager)->CreateFadeOut(0.f, m_fMoveFadeOutDuration);
+	if (m_eActiveMiniGame == ACTIVE_MINIGAME::COIN)
+	{
+		GET_SINGLE(UIManager)->CreateFadeOut(
+			0.f, m_fMoveFadeOutDuration,
+			[]()
+			{
+				GET_SINGLE(UIManager)->StartRaceMiniGame();
+			});
+	}
+	else
+	{
+		GET_SINGLE(UIManager)->CreateFadeOut(
+			0.f, m_fMoveFadeOutDuration);
+	}
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fMoveFadeOutDuration);
 	m_bMovingToDestination = false;
