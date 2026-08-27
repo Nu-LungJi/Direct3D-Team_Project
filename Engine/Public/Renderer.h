@@ -1,7 +1,12 @@
 #pragma once
+#include <new>
 #include "Engine_Defines.h"
 #include "IRenderable.h"
 #include "HizBuffer.h"
+#pragma push_macro("new")
+#undef new
+#include "tracy/TracyD3D11.hpp"
+#pragma pop_macro("new")
 
 NS_BEGIN(Engine)
 class CGameObject;
@@ -165,6 +170,7 @@ public:
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
+	TracyD3D11Ctx				m_pTracyGpuContext{};
 
 	std::array<std::vector<IRenderable*>, ETOUI(RENDERGROUP::END)> m_pRenderObject{};
 	RENDER_CTX					m_pRenderContext{};

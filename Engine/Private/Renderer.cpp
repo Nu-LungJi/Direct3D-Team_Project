@@ -12,7 +12,14 @@ NS_USING(Engine)
 CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice{ pDevice }, m_pContext{ pContext }
 {
 }
-CRenderer::~CRenderer() {}
+CRenderer::~CRenderer()
+{
+	if (m_pTracyGpuContext != nullptr)
+	{
+		TracyD3D11Destroy(m_pTracyGpuContext);
+		m_pTracyGpuContext = nullptr;
+	}
+}
 
 VOID	CRenderer::UpdateGUI()
 {
@@ -28,6 +35,9 @@ VOID	CRenderer::Update(_float fTimeDelta) {
 
 HRESULT CRenderer::Initialize()
 {
+	m_pTracyGpuContext = TracyD3D11Context(m_pDevice.Get(), m_pContext.Get());
+	TracyD3D11ContextName(m_pTracyGpuContext, "D3D11 Main Context", 18);
+
 	if (FAILED(InitializeShaderResource()))     return E_FAIL;
 
 	if (FAILED(InitializeBackBuffer()))         return E_FAIL;
@@ -1033,6 +1043,9 @@ HRESULT CRenderer::Reset_RenderContext(RENDERPASS _Pass, CCameraObject* _ActiveC
 #pragma region  RENDERING
 HRESULT CRenderer::Draw() {
 	ZoneScopedN("Renderer : Draw");
+	// Resolve the previous frame's timestamp queries before opening this frame's GPU zone.
+	TracyD3D11Collect(m_pTracyGpuContext);
+	TracyD3D11Zone(m_pTracyGpuContext, "Renderer Frame");
 
 	// m_pRasterizer Setting - BackCull
 	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
@@ -1117,6 +1130,7 @@ VOID CRenderer::FrameEnd()
 
 HRESULT CRenderer::Render_Shadow() {
 	if (!m_bApplyShadow)	return S_OK;
+	TracyD3D11Zone(m_pTracyGpuContext, "Shadow");
 
 	if (FAILED(CGameInstance::Get().Capture_ShadowMap()))
 	{
@@ -1129,6 +1143,7 @@ HRESULT CRenderer::Render_Shadow() {
 
 HRESULT CRenderer::Render_DepthMap() {
 	ZoneScopedN("Render_DepthMap");
+	TracyD3D11Zone(m_pTracyGpuContext, "Depth Map");
 	{
 		{
 			ID3D11DepthStencilState* pDSS = nullptr;
@@ -1167,6 +1182,7 @@ HRESULT CRenderer::Render_DepthMap() {
 
 HRESULT CRenderer::Render_NonAlpha() {
 	ZoneScopedN("Render_NonAlpha");
+	TracyD3D11Zone(m_pTracyGpuContext, "Opaque GBuffer");
 	{
 		ID3D11RenderTargetView* pRTVs[4] = {
 			m_pResDynTexTargetDiffuse->GetRTV().Get(),
@@ -1225,6 +1241,7 @@ HRESULT CRenderer::Render_NonAlpha() {
 HRESULT CRenderer::Render_Decal()
 {
 	ZoneScopedN("Render_Decal");
+	TracyD3D11Zone(m_pTracyGpuContext, "Decal");
 
 	auto& decals = m_pRenderObject[ETOUI(RENDERGROUP::DECAL)];
 	if (decals.empty())
@@ -1296,6 +1313,7 @@ HRESULT CRenderer::Render_Decal()
 
 HRESULT CRenderer::Render_HBAO() {
 	ZoneScopedN("Render_HBAO");
+	TracyD3D11Zone(m_pTracyGpuContext, "HBAO");
 	ID3D11RenderTargetView* pRTVs[4] = { nullptr, nullptr, nullptr, nullptr };
 	m_pContext->OMSetRenderTargets(4, pRTVs, nullptr);
 
@@ -1362,6 +1380,7 @@ HRESULT CRenderer::Render_HBAO() {
 
 HRESULT CRenderer::Render_Lighting() {
 	ZoneScopedN("Render_Lighting");
+	TracyD3D11Zone(m_pTracyGpuContext, "Lighting");
 	{
 		// Default Texture - Dissolve HBAO
 		SPtr<CResTexture2D> WhiteResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE");
@@ -1402,6 +1421,7 @@ HRESULT CRenderer::Render_Alpha() {
 	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 
 	ZoneScopedN("Render_Alpha");
+	TracyD3D11Zone(m_pTracyGpuContext, "Transparent");
 	{
 		m_pContext->CopyResource(
 			m_pResDynTexTargetPBR->GetTexture().Get(),
@@ -1450,6 +1470,7 @@ HRESULT CRenderer::Render_Alpha() {
 HRESULT CRenderer::Render_Effect()
 {
 	ZoneScopedN("Render_Effect");
+	TracyD3D11Zone(m_pTracyGpuContext, "Effect");
 	{
 		m_pContext->CopyResource(
 			m_pResDynTexTargetEffect->GetTexture().Get(),
@@ -1492,6 +1513,7 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 	if (m_bApplyVolumetricFog == false && m_bApplyVolumetricCloud == false) return S_OK;
 
 	ZoneScopedN("Render_VolumetricEffect");
+	TracyD3D11Zone(m_pTracyGpuContext, "Volumetric");
 
 	if (FAILED(Update_VolumetricConstantBuffer())) { Unbind_Resources(); return S_OK; }
 
@@ -1882,6 +1904,7 @@ HRESULT CRenderer::Render_VolumetricComposite() {
 
 HRESULT CRenderer::Render_PostProcess() {
 	if (m_bApplyFilter == false) return S_OK;
+	TracyD3D11Zone(m_pTracyGpuContext, "Post Process");
 
 	if (FAILED(Update_PostProcessConstantBuffer())) { Unbind_Resources(); return S_OK; }
 
@@ -2198,6 +2221,7 @@ HRESULT CRenderer::Render_UI3D() {
 	ZoneScopedN("Render_UserInterface3D");
 	if (!m_bUI3DPanelActive)
 		return S_OK;
+	TracyD3D11Zone(m_pTracyGpuContext, "UI 3D");
 
 	ComPtr<ID3D11SamplerState> previousLinearClamp;
 	m_pContext->PSGetSamplers(1, 1, previousLinearClamp.GetAddressOf());
@@ -2351,6 +2375,7 @@ HRESULT CRenderer::Render_UserInterface() {
 	m_pRenderContext.eye = pUICame->GetTransform().GetLoadedPostion();
 
 	ZoneScopedN("Render_UserInterface");
+	TracyD3D11Zone(m_pTracyGpuContext, "UI");
 	{
 		{
 			m_pContext->CopyResource(
@@ -2407,6 +2432,7 @@ HRESULT CRenderer::Render_UserInterface() {
 HRESULT CRenderer::Render_FullScreen()
 {
 	ZoneScopedN("DrawFullscreen");
+	TracyD3D11Zone(m_pTracyGpuContext, "Final Fullscreen");
 	ID3D11RenderTargetView* pBackBufferRTVs[1] = { m_pBackBufferRTV.Get() };
 	m_pContext->OMSetRenderTargets(1, pBackBufferRTVs, nullptr);
 
@@ -3039,6 +3065,7 @@ HRESULT CRenderer::Render_Debugging() {
 	if (CGameInstance::Get().KeyDown(DIK_F7))	m_bRenderDebugScreen = !m_bRenderDebugScreen;
 
 	if (!m_bRenderDebugScreen) return S_OK;
+	TracyD3D11Zone(m_pTracyGpuContext, "Debug Overlay");
 
 	auto ActiveCam = CGameInstance::Get().GetActiveCamera();
 
@@ -3357,6 +3384,7 @@ HRESULT CRenderer::InitializeHizBuffer()
 HRESULT CRenderer::BuildCurrentHizBuffer()
 {
 	ZoneScopedN("BuildCurrentHizBuffer");
+	TracyD3D11Zone(m_pTracyGpuContext, "Hi-Z Build");
 	if (m_pCurrentHizBuffer == nullptr || m_pResDynTexTargetDepth == nullptr)
 		return E_FAIL;
 
