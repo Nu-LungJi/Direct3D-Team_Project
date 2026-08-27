@@ -69,6 +69,7 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 	auto WorldAgentDesc = static_cast<WORLD_AGENT_DESC*>(pArg);
 	m_TargetHandle = WorldAgentDesc->TargetHandle;
 	m_bFreezeAnimation = WorldAgentDesc->bFreezeAnimation;
+	m_iHp = 1;
 
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
