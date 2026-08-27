@@ -126,10 +126,7 @@ private:
     {
         size_t operator()(const CHandle& hHandle) const noexcept
         {
-            size_t iSeed = std::hash<size_t>{}(hHandle.GetIndex());
-            iSeed ^= std::hash<uint32_t>{}(hHandle.GetGeneration()) +
-                0x9e3779b9u + (iSeed << 6) + (iSeed >> 2);
-            return iSeed;
+            return std::hash<uint64_t>{}(hHandle.GetPackedValue());
         }
     };
 
