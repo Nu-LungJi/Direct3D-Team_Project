@@ -247,10 +247,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 				//	GetGameObjectByHandleT<CPlayer>(hDialoguePlayer);
 
 				//
-			};
+			}; 
 		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
 		Desc.MoveDestination = {
-			{ 303.512f, 44.703f, 85.749f }
+			{ 1895.461f, 35.9f, 267.991f  }
 		};
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
@@ -275,15 +275,15 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.resBeHaviorMajor = "BTJSON";
 		Desc.resBeHaviorMinor = "NPC1";
 		Desc.TargetHandle = *hPlayer;
-		Desc.vPos = { 303.512f, 44.703f, 85.749f };
+		Desc.vPos = { 1895.461f, 35.9f, 268.991f };
 		Desc.vStartPos = Desc.vPos;
-		Desc.vRot = { 0.f, 38.342f, 0.f };
+		Desc.vRot = {/*33.5f*/0.f, 24.5f, 0.f };
 		Desc.vScale = { 1.f, 1.f, 1.f };
 		Desc.fCCTHeight = 3.6f;
 		Desc.fCCTRadius = 0.6f;
 		Desc.fCCTStepOffset = 0.1f;
 		Desc.vCCTCenterOffset = { 0.f, 1.f, 0.f };
-		Desc.bPhyx = true;
+		Desc.bPhyx = false;
 		Desc.bDonMove = true;
 		Desc.SpeakerName = "미니게임";
 		Desc.InteractionDistance = 3.f;
@@ -318,7 +318,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 						CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME
 					},
 					{
-						"부릉 브룸", 2,
+						"부릉! 브룸!", 2,
 						CInteractiveNpc::DIALOGUE_ACTION::START_COIN_MINIGAME
 					}
 				}
