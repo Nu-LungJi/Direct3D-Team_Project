@@ -612,7 +612,7 @@ void CMiniMap::RefreshNearbyMonsters(E::CGameObject* pPlayer)
 	{
 		auto* pMonster = Cast<CMonster>(result.pGameObject);
 		if (!pMonster || pMonster->GetPendingDestroy() ||
-			pMonster->Get_CurrentHp() <= 0)
+			!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0)
 			continue;
 
 		const CHandle monsterHandle = pMonster->GetHandle();

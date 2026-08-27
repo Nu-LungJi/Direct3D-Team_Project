@@ -126,6 +126,7 @@ HRESULT CMonster::Initialize(void* pArg)
 {
 	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
 	m_bDonMove = MonDesc->bDonMove;
+	m_bSpawn = MonDesc->bSpawn;
 	m_TargetHandle = MonDesc->TargetHandle;
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{

@@ -73,7 +73,7 @@ namespace
 			return false;
 
 		if (const auto* pMonster = dynamic_cast<const CMonster*>(pObject);
-			pMonster && pMonster->Get_CurrentHp() <= 0)
+			pMonster && (!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0))
 			return false;
 
 		if (dynamic_cast<const CSkillTarget*>(pObject))
@@ -1161,12 +1161,22 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 40.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
 
-				const auto& result = results.front();
-				const CHandle hDetectedTarget = result.pGameObject->GetHandle();
-
-				if (!(hDetectedTarget == m_hAutoTarget)) {
-					m_hPrevAutoTarget = m_hAutoTarget;
-					m_hAutoTarget = hDetectedTarget;
+				const auto targetIter = std::ranges::find_if(
+					results,
+					[this](const PX_OVERLAP_RESULT& result)
+					{
+						return IsPlayerLockOnTargetCandidate(
+							result.pGameObject, GetHandle());
+					});
+				if (targetIter != results.end())
+				{
+					const CHandle hDetectedTarget =
+						targetIter->pGameObject->GetHandle();
+					if (!(hDetectedTarget == m_hAutoTarget))
+					{
+						m_hPrevAutoTarget = m_hAutoTarget;
+						m_hAutoTarget = hDetectedTarget;
+					}
 				}
 			}
 		}
@@ -1228,7 +1238,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	// 즉시 타겟, 외곽선, HP UI에서 해제한다.
 	if (auto* pTargetMonster =
 		CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
-		pTargetMonster && pTargetMonster->Get_CurrentHp() <= 0)
+		pTargetMonster &&
+		(!pTargetMonster->Is_Spawn() || pTargetMonster->Get_CurrentHp() <= 0))
 	{
 		m_hPrevAutoTarget = m_hAutoTarget;
 		m_hAutoTarget = CHandle{};
