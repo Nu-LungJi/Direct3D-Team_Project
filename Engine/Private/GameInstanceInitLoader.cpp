@@ -1332,6 +1332,18 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		}
 	}
 
+	if (auto res = CGameInstance::Get().AddResourceT<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_MapMesh_InstancedShadow", "./ShaderFiles/TestModel/Shader_VtxMapMesh_InstancedShadow.hlsl"))
+	{
+		if (FAILED(res->Load()))
+			return E_FAIL;
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_MapMesh_InstancedPointShadow", "./ShaderFiles/TestModel/Shader_VtxMapMesh_InstancedShadow.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{.sEntryPoint = "VSMainPointFace", .sTarget = "vs_5_0"})))
+			return E_FAIL;
+	}
+
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_SpellMeter", "./ShaderFiles/UI/SpellMeter.hlsl")) // 스펠이펙트
 	{
 		if (FAILED(res->Load()))    return E_FAIL;

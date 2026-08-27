@@ -66,6 +66,11 @@ HRESULT CMapMeshInstancingRenderer::Initialize()
 	if (m_pGpuCuller == nullptr)
 		return E_FAIL;
 
+	m_pShadowGpuCuller = CMapMeshGpuCuller::Create();
+
+	if (m_pShadowGpuCuller == nullptr)
+		return E_FAIL;
+
 	return S_OK;
 }
 
@@ -105,16 +110,14 @@ void CMapMeshInstancingRenderer::ClearTextureCache()
 {
 	m_TextureCache.ClearAll();
 
-	m_IsResidentSceneDirty = true;
-	InvalidateCommandListCache();
+	MarkResidentSceneDirty();
 }
 
 void CMapMeshInstancingRenderer::EraseTextureCache(const SPtr<CResStaticModel>& model)
 {
 	m_TextureCache.EraseModel(model);
 
-	m_IsResidentSceneDirty = true;
-	InvalidateCommandListCache();
+	MarkResidentSceneDirty();
 }
 
 HRESULT CMapMeshInstancingRenderer::RegisterResidentChunk(const MAPCHUNK_COORD& coord, const std::vector<CHandle>& objectHandles)
@@ -174,8 +177,7 @@ HRESULT CMapMeshInstancingRenderer::RegisterResidentChunk(const MAPCHUNK_COORD& 
 	}
 
 	m_ResidentChunks[coord] = std::move(residentInstances);
-	m_IsResidentSceneDirty = true;
-	InvalidateCommandListCache(); // 커맨드리스트 캐싱 무효화
+	MarkResidentSceneDirty();
 
 	return S_OK;
 }
@@ -184,8 +186,7 @@ void CMapMeshInstancingRenderer::UnregisterResidentChunk(const MAPCHUNK_COORD& c
 {
 	if (m_ResidentChunks.erase(coord) > 0)
 	{
-		m_IsResidentSceneDirty = true;
-		InvalidateCommandListCache(); // 커맨드리스트 캐싱 무효화
+		MarkResidentSceneDirty();
 	}
 }
 
@@ -195,8 +196,48 @@ void CMapMeshInstancingRenderer::ClearResidentChunks()
 	m_InstanceBatchCollector.ClearBatches();
 	ClearResidentDrawData();
 	m_ResidentBatchCount = 0;
-	m_IsResidentSceneDirty = false;
-	InvalidateCommandListCache(); // 커맨드리스트 캐싱 무효화
+	MarkResidentSceneDirty();
+}
+HRESULT CMapMeshInstancingRenderer::RenderShadow(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, LIGHT_TYPE lightType)
+{
+	ZoneScopedN("MapMeshInstancingRenderShadow");
+	
+	SHADOW_DRAW_PACKET shadowDrawPacket{};
+	if (FAILED(PrepareShadowDrawPacket(context, renderContext, lightType, shadowDrawPacket)))
+		return E_FAIL;
+	if (!shadowDrawPacket.isReady)
+		return S_OK;
+
+	ID3D11DepthStencilView* cacheKey = shadowDrawPacket.depthStencilView.Get();
+
+	auto cacheIterator = m_CachedShadowCommandLists.find(cacheKey);
+
+	const bool cacheNeedsRebuild = cacheIterator == m_CachedShadowCommandLists.end() || 
+		cacheIterator->second.commandList == nullptr ||
+		cacheIterator->second.lightType != lightType;
+
+	//Directional: Cascade DSV별 캐시
+	//Spot : Shadow Slot DSV별 캐시
+	//Point : Shadow Slot * Cube Face DSV별 캐시
+
+	if (cacheNeedsRebuild)
+	{
+		if (FAILED(RebuildCachedShadowCommandList(shadowDrawPacket, lightType)))
+		{
+			return E_FAIL;
+		}
+
+		cacheIterator = m_CachedShadowCommandLists.find(cacheKey);
+
+		if (cacheIterator == m_CachedShadowCommandLists.end() || cacheIterator->second.commandList == nullptr)
+		{
+			return E_FAIL;
+		}
+	}
+
+	context->ExecuteCommandList(cacheIterator->second.commandList.Get(), TRUE);
+
+	return S_OK;
 }
 
 HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* context, const RENDER_CTX& renderContext)
@@ -228,6 +269,46 @@ HRESULT CMapMeshInstancingRenderer::Render(ID3D11DeviceContext* context, const R
 	return S_OK;
 }
 
+HRESULT CMapMeshInstancingRenderer::PrepareShadowDrawPacket(ID3D11DeviceContext* context, const RENDER_CTX& shadowContext, LIGHT_TYPE lightType, SHADOW_DRAW_PACKET& outPacket)
+{
+	ZoneScopedN("MapMeshPrepareShadowDrawPacket");
+	outPacket = {};
+
+	if (context == nullptr)
+		return E_INVALIDARG;
+
+	if (m_IsResidentDrawDataDirty)
+	{
+		if (FAILED(RebuildResidentDrawData()))
+			return E_FAIL;
+
+		m_IsResidentDrawDataDirty = false;
+	}
+
+	if (m_ResidentInstances.empty() || m_DrawItems.empty())
+	{
+		m_IsShadowGpuDataDirty = false;
+		return S_OK;
+	}
+
+	if (FAILED(ResolveShadowDrawResources(lightType, outPacket)))
+		return E_FAIL;
+
+	const _bool uploadShadowData = m_IsShadowGpuDataDirty;
+
+	if (FAILED(RunShadowGpuCulling(context, shadowContext, lightType, uploadShadowData, outPacket)))
+		return E_FAIL;
+
+	m_IsShadowGpuDataDirty = false;
+
+	if (FAILED(CaptureShadowPipelineState(context, outPacket)))
+		return E_FAIL;
+
+	outPacket.isReady = true;
+
+	return S_OK;
+}
+
 HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, DRAW_PACKET& outPacket)
 {
 	ZoneScopedN("MapMeshPrepareDrawPacket");
@@ -236,29 +317,90 @@ HRESULT CMapMeshInstancingRenderer::PrepareDrawPacket(ID3D11DeviceContext* conte
 	if (context == nullptr)
 		return E_INVALIDARG;
 
-	const _bool uploadResidentData = m_IsResidentSceneDirty;
-	if (uploadResidentData && FAILED(RebuildResidentDrawData()))
-		return E_FAIL;
+	// Shadow 패스가 실행되지 않는 경우에도 일반 렌더링이 상주 Draw 데이터를 준비할 수 있어야함
+	if (m_IsResidentDrawDataDirty)
+	{
+		if (FAILED(RebuildResidentDrawData()))
+			return E_FAIL;
+
+		m_IsResidentDrawDataDirty = false;
+	}
 
 	if (m_ResidentInstances.empty() || m_DrawItems.empty())
 	{
-		m_IsResidentSceneDirty = false;
+		m_IsMainGpuDataDirty = false;
 		return S_OK;
 	}
+
+	const _bool uploadMainData = m_IsMainGpuDataDirty;
 
 	if (FAILED(ResolveDrawResources(outPacket)))
 		return E_FAIL;
 
 	if (FAILED(RunGpuCulling(
 		context, renderContext, m_ResidentBatchCount,
-		uploadResidentData, outPacket)))
+		uploadMainData, outPacket)))
 		return E_FAIL;
 
-	m_IsResidentSceneDirty = false;
+	m_IsMainGpuDataDirty = false;
+
 	if (FAILED(CapturePipelineState(context, outPacket)))
 		return E_FAIL;
 
 	outPacket.isReady = true;
+
+	return S_OK;
+}
+
+HRESULT CMapMeshInstancingRenderer::RebuildCachedShadowCommandList(const SHADOW_DRAW_PACKET& shadowDrawPacket, LIGHT_TYPE lightType)
+{
+	ZoneScopedN("MapMeshRebuildCachedShadowCommandList");
+
+	if (shadowDrawPacket.isReady == false || shadowDrawPacket.depthStencilView == nullptr)
+	{
+		return E_INVALIDARG;
+	}
+
+	if (0 == CGameInstance::Get().GetRenderWorkerCount())
+		return E_FAIL;
+
+	auto recordFuture = CGameInstance::Get().RenderWorkerEnqueueWithFuture(
+			"MapMeshRecordShadowDrawCommands",
+			[this, shadowDrawPacket](ID3D11DeviceContext* deferredContext)
+			{
+				DRAW_COMMAND_LIST_RESULT result{};
+
+				result.result = RecordShadowDrawCommands(deferredContext,shadowDrawPacket);
+
+				if (FAILED(result.result))
+					return result;
+
+				result.result = deferredContext->FinishCommandList(FALSE, result.commandList.GetAddressOf());
+
+				return result;
+			});
+
+	DRAW_COMMAND_LIST_RESULT result{};
+
+	try
+	{
+		result = recordFuture.get();
+	}
+	catch (...)
+	{
+		return E_FAIL;
+	}
+
+	if (FAILED(result.result) || nullptr == result.commandList)
+		return E_FAIL;
+
+	SHADOW_COMMANDLIST_CACHE_ENTRY cacheEntry{};
+
+	cacheEntry.lightType = lightType;
+	cacheEntry.depthStencilView = shadowDrawPacket.depthStencilView;
+	cacheEntry.commandList = result.commandList;
+
+	m_CachedShadowCommandLists[shadowDrawPacket.depthStencilView.Get()] = std::move(cacheEntry);
 
 	return S_OK;
 }
@@ -344,6 +486,45 @@ HRESULT CMapMeshInstancingRenderer::RebuildCachedCommandLists(const DRAW_PACKET&
 	return S_OK;
 }
 
+HRESULT CMapMeshInstancingRenderer::ResolveShadowDrawResources(LIGHT_TYPE lightType, SHADOW_DRAW_PACKET& outPacket) const
+{
+	ZoneScopedN("MapMeshResolveShadowDrawResources");
+	auto& gameInstance = CGameInstance::Get();
+
+	const char* vertexShaderTag = nullptr;
+	const char* pixelShaderTag = nullptr;
+
+	switch (lightType)
+	{
+	case LIGHT_TYPE::DIRECTIONAL:
+	case LIGHT_TYPE::SPOTLIGHT:
+		vertexShaderTag = "VS_MapMesh_InstancedShadow";
+		pixelShaderTag = "PS_DirectionalShadow";
+		break;
+
+	case LIGHT_TYPE::POINT:
+		vertexShaderTag = "VS_MapMesh_InstancedPointShadow";
+		pixelShaderTag = "PS_NormalPointFace";
+		break;
+
+	default:
+		return E_INVALIDARG;
+	}
+
+	auto shadowVertexShader = gameInstance.GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, vertexShaderTag);
+
+	outPacket.vertexStaticShader = shadowVertexShader;
+	outPacket.vertexFoliageShader = shadowVertexShader;
+	outPacket.pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, pixelShaderTag);
+
+	if (!outPacket.vertexStaticShader || !outPacket.vertexFoliageShader || !outPacket.pixelShader)
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
 HRESULT CMapMeshInstancingRenderer::RebuildResidentDrawData()
 {
 	ZoneScopedN("MapMeshRebuildResidentDrawData");
@@ -377,16 +558,11 @@ HRESULT CMapMeshInstancingRenderer::ResolveDrawResources(DRAW_PACKET& outPacket)
 	ZoneScopedN("MapMeshResolveDrawResources");
 	auto& gameInstance = CGameInstance::Get();
 
-	outPacket.vertexStaticShader = gameInstance.GetResourceFirst<CResVertexShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced");
-	outPacket.vertexFoliageShader = gameInstance.GetResourceFirst<CResVertexShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced_Foliage");
-	outPacket.pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(
-		TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER);
-	outPacket.sampler = gameInstance.GetResourceFirst<CResSamplerState>(
-		TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-	outPacket.materialConstantBuffer = gameInstance.GetResourceFirst<CResCBuffer>(
-		TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+	outPacket.vertexStaticShader = gameInstance.GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced");
+	outPacket.vertexFoliageShader = gameInstance.GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced_Foliage");
+	outPacket.pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER);
+	outPacket.sampler = gameInstance.GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
+	outPacket.materialConstantBuffer = gameInstance.GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
 
 	if (!outPacket.vertexStaticShader || !outPacket.vertexFoliageShader ||
 		!outPacket.pixelShader || !outPacket.sampler ||
@@ -492,6 +668,52 @@ HRESULT CMapMeshInstancingRenderer::BuildResidentDrawData(uint32_t& outBatchCoun
 	return m_DrawCommandIndices.size() == m_DrawItems.size() ? S_OK : E_FAIL;
 }
 
+HRESULT CMapMeshInstancingRenderer::RunShadowGpuCulling(ID3D11DeviceContext* context, const RENDER_CTX& shadowContext, 
+	LIGHT_TYPE lightType, _bool uploadResidentData, SHADOW_DRAW_PACKET& outPacket)
+{
+	ZoneScopedN("MapMeshRunShadowGpuCulling");
+	if (context == nullptr || m_pShadowGpuCuller == nullptr)
+		return E_INVALIDARG;
+
+	_float shadowMapSize = 0.f;
+	switch (lightType)
+	{
+	case LIGHT_TYPE::DIRECTIONAL:
+		shadowMapSize = static_cast<_float>(CSM_SHADOW_MAPSIZE);
+		break;
+
+	case LIGHT_TYPE::SPOTLIGHT:
+		shadowMapSize = static_cast<_float>(SPOT_SHADOW_MAPSIZE);
+		break;
+
+	case LIGHT_TYPE::POINT:
+		shadowMapSize = static_cast<_float>(POINT_SHADOW_MAPSIZE);
+		break;
+
+	default:
+		return E_INVALIDARG;
+	}
+
+	const _float2 shadowMapResolution{
+		shadowMapSize,
+		shadowMapSize
+	};
+
+	if (FAILED(m_pShadowGpuCuller->BuildVisibleInstancesAndIndirectArgs(
+		context, m_ResidentInstances, m_ResidentOcclusionData, m_ResidentCullMetadata, m_ResidentBatchCount,
+		m_BatchIndexByDraw, m_IndirectDrawArguments, uploadResidentData,
+		nullptr /* Shadow에서는 Hi-Z 비활성화 */, shadowContext.matViewProj,
+		shadowMapResolution)))
+	{
+		return E_FAIL;
+	}
+
+	outPacket.visibleInstanceBuffer = m_pShadowGpuCuller->GetVisibleInstanceBuffer();
+	outPacket.indirectArgsBuffer = m_pShadowGpuCuller->GetIndirectArgsBuffer();
+
+	return outPacket.visibleInstanceBuffer && outPacket.indirectArgsBuffer ? S_OK : E_FAIL;
+}
+
 HRESULT CMapMeshInstancingRenderer::RunGpuCulling(
 	ID3D11DeviceContext* context,
 	const RENDER_CTX& renderContext,
@@ -500,12 +722,6 @@ HRESULT CMapMeshInstancingRenderer::RunGpuCulling(
 	DRAW_PACKET& outPacket)
 {
 	ZoneScopedN("MapMeshRunGpuCulling");
-	if (m_pGpuCuller == nullptr)
-	{
-		m_pGpuCuller = CMapMeshGpuCuller::Create();
-		if (m_pGpuCuller == nullptr)
-			return E_FAIL;
-	}
 
 	auto& gameInstance = CGameInstance::Get();
 	if (FAILED(m_pGpuCuller->BuildVisibleInstancesAndIndirectArgs(
@@ -519,12 +735,53 @@ HRESULT CMapMeshInstancingRenderer::RunGpuCulling(
 
 	outPacket.visibleInstanceBuffer = m_pGpuCuller->GetVisibleInstanceBuffer();
 	outPacket.indirectArgsBuffer = m_pGpuCuller->GetIndirectArgsBuffer();
+
 	return outPacket.visibleInstanceBuffer && outPacket.indirectArgsBuffer ? S_OK : E_FAIL;
 }
 
-HRESULT CMapMeshInstancingRenderer::CapturePipelineState(
-	ID3D11DeviceContext* context,
-	DRAW_PACKET& outPacket) const
+HRESULT CMapMeshInstancingRenderer::CaptureShadowPipelineState(ID3D11DeviceContext* context, SHADOW_DRAW_PACKET& outPacket) const
+{
+	ZoneScopedN("MapMeshCaptureShadowPipelineState");
+
+	if (context == nullptr)
+		return E_INVALIDARG;
+
+	ID3D11DepthStencilView* depthStencilView = nullptr;
+
+	context->OMGetRenderTargets(0, nullptr, &depthStencilView);
+	outPacket.depthStencilView.Attach(depthStencilView); // 소유권 넘겨주기
+
+	ID3D11DepthStencilState* depthStencilState = nullptr;
+	context->OMGetDepthStencilState(&depthStencilState, &outPacket.stencilRef);
+	outPacket.depthStencilState.Attach(depthStencilState);
+
+	ID3D11RasterizerState* rasterizerState = nullptr;
+	context->RSGetState(&rasterizerState);
+	outPacket.rasterizerState.Attach(rasterizerState);
+
+	UINT viewportCount = 1;
+	context->RSGetViewports(&viewportCount, &outPacket.viewPort);
+
+	if (viewportCount != 1)
+		return E_FAIL;
+
+	ID3D11Buffer* lightConstantBuffer = nullptr;
+	context->VSGetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, &lightConstantBuffer);
+	outPacket.lightConstantBuffer.Attach(lightConstantBuffer);
+
+	ID3D11Buffer* shadowConstantBuffer = nullptr;
+	context->VSGetConstantBuffers(11, 1, &shadowConstantBuffer);
+	outPacket.shadowConstantBuffer.Attach(shadowConstantBuffer);
+
+	if (!outPacket.depthStencilView || !outPacket.lightConstantBuffer || !outPacket.shadowConstantBuffer)
+	{
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
+HRESULT CMapMeshInstancingRenderer::CapturePipelineState(ID3D11DeviceContext* context, DRAW_PACKET& outPacket) const
 {
 	ZoneScopedN("MapMeshCapturePipelineState");
 	ID3D11RenderTargetView* renderTargets[DRAW_PACKET::RENDER_TARGET_COUNT]{};
@@ -566,6 +823,110 @@ HRESULT CMapMeshInstancingRenderer::CapturePipelineState(
 	{
 		return E_FAIL;
 	}
+	return S_OK;
+}
+
+HRESULT CMapMeshInstancingRenderer::RecordShadowDrawCommands(ID3D11DeviceContext* context, const SHADOW_DRAW_PACKET& shadowDrawPacket)
+{
+	ZoneScopedN("MapMeshRecordShadowDrawCommands");
+	if (context == nullptr								  ||
+		shadowDrawPacket.isReady == false				  ||
+		shadowDrawPacket.depthStencilView  == nullptr	  ||
+		shadowDrawPacket.lightConstantBuffer  == nullptr  ||
+		shadowDrawPacket.shadowConstantBuffer  == nullptr ||
+		shadowDrawPacket.visibleInstanceBuffer == nullptr ||
+		shadowDrawPacket.indirectArgsBuffer == nullptr)
+	{
+		return E_INVALIDARG;
+	}
+
+	context->OMSetRenderTargets(0, nullptr, shadowDrawPacket.depthStencilView.Get());
+
+	context->OMSetDepthStencilState(shadowDrawPacket.depthStencilState.Get(), shadowDrawPacket.stencilRef);
+
+	context->RSSetState(shadowDrawPacket.rasterizerState.Get());
+
+	context->RSSetViewports(1, &shadowDrawPacket.viewPort);
+
+	ID3D11Buffer* lightConstantBuffer = shadowDrawPacket.lightConstantBuffer.Get();
+	ID3D11Buffer* shadowConstantBuffer = shadowDrawPacket.shadowConstantBuffer.Get();
+
+	context->VSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, &lightConstantBuffer);
+	context->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, &lightConstantBuffer);
+
+	context->VSSetConstantBuffers(11, 1, &shadowConstantBuffer);
+	context->PSSetConstantBuffers(11, 1, &shadowConstantBuffer);
+
+	context->GSSetShader(nullptr, nullptr, 0);
+
+	// 상태를 변경하기 전에 Draw 인덱스 유효성을 검사한다.
+	for (const uint32_t drawIndex : m_DrawCommandIndices)
+	{
+		if (drawIndex >= m_DrawItems.size())
+			return E_FAIL;
+	}
+
+	context->PSSetShader(shadowDrawPacket.pixelShader->GetPixelShader().Get(), nullptr, 0);
+
+	std::optional<EMapMeshRenderFeature> currentFeature{};
+
+	for (const uint32_t drawIndex : m_DrawCommandIndices)
+	{
+		const auto& item = m_DrawItems[drawIndex];
+		if (!currentFeature || *currentFeature != item.renderFeature)
+		{
+			const SPtr<CResVertexShader>* vertexShader = nullptr;
+
+			switch (item.renderFeature)
+			{
+			case EMapMeshRenderFeature::Static:
+				vertexShader = &shadowDrawPacket.vertexStaticShader;
+				break;
+			case EMapMeshRenderFeature::Foliage:
+				vertexShader = &shadowDrawPacket.vertexFoliageShader;
+				break;
+			default:
+				return E_FAIL;
+				break;
+			}
+
+			context->IASetInputLayout((*vertexShader)->GetInputLayout().Get());
+			context->VSSetShader((*vertexShader)->GetVertexShader().Get(), nullptr, 0);
+
+			currentFeature = item.renderFeature;
+		}
+
+		if (!item.model || item.meshIndex >= item.model->GetMeshes().size())
+		{
+			continue;
+		}
+
+		const auto& mesh = item.model->GetMeshes()[item.meshIndex];
+		if (!mesh)
+			continue;
+
+		ID3D11Buffer* vertexBuffers[] = {
+			mesh->GetVertexBuffer().Get(),
+			shadowDrawPacket.visibleInstanceBuffer.Get()
+		};
+		const uint32_t strides[] = {
+			mesh->GetVertexStride(),
+			static_cast<uint32_t>(sizeof(MAPMESH_INSTANCE_DATA))
+		};
+
+		const uint32_t offsets[] = {
+			0,
+			item.instanceOffset * static_cast<uint32_t>(sizeof(MAPMESH_INSTANCE_DATA)) /* VisibleInstanceBuffer의 배치 시작 위치 */
+		};
+
+		context->IASetVertexBuffers(0, 2, vertexBuffers, strides, offsets);
+		context->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+		context->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+
+		context->DrawIndexedInstancedIndirect(shadowDrawPacket.indirectArgsBuffer.Get(),
+			drawIndex * static_cast<uint32_t>(sizeof(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS))); /* 해당 메시의 IndirectArgs 위치 */
+	}
+
 	return S_OK;
 }
 
@@ -717,12 +1078,24 @@ void CMapMeshInstancingRenderer::ReleaseInstancingResources()
 	ClearResidentDrawData();
 	ClearTextureCache();
 	m_pGpuCuller.reset();
+	m_pShadowGpuCuller.reset();
+}
+
+void CMapMeshInstancingRenderer::MarkResidentSceneDirty()
+{
+	m_IsResidentDrawDataDirty = true;
+	m_IsMainGpuDataDirty = true;
+	m_IsShadowGpuDataDirty = true;
+
+	InvalidateCommandListCache();
 }
 
 void CMapMeshInstancingRenderer::InvalidateCommandListCache()
 {
 	m_CachedCommandLists.clear();
 	m_IsCommandListCacheDirty = true;
+
+	m_CachedShadowCommandLists.clear();
 }
 
 UPtr<CMapMeshInstancingRenderer> CMapMeshInstancingRenderer::Create()

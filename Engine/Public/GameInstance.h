@@ -589,6 +589,7 @@ public:
 	void SetDebugBoundsEnabled(_bool bEnabled);
 	void ClearMapMeshTextureCache();
 	void EraseMapMeshTextureCache(const SPtr<CResStaticModel>& model);
+	HRESULT RenderMapMeshShadow(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, LIGHT_TYPE lightType);
 #pragma endregion
 
 #pragma region EVENT_MANAGER

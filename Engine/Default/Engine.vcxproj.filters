@@ -1728,9 +1728,6 @@
     <ClCompile Include="..\private\Trail_CPU.cpp">
       <Filter>Particle\Trail</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\OctreeNode.cpp">
-      <Filter>GameObject\Manager\Octree</Filter>
-    </ClCompile>
     <ClCompile Include="..\private\PhysXManager.cpp">
       <Filter>PhysX\Manager</Filter>
     </ClCompile>
@@ -2038,6 +2035,7 @@
     <ClCompile Include="..\Private\OctreeNode.cpp">
       <Filter>GameObject\Manager\MapChunk\Octree</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\OctreeNode.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -2242,6 +2240,9 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\RaceStartFlagWave.hlsl">
       <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMapMesh_InstancedShadow.hlsl">
+      <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
