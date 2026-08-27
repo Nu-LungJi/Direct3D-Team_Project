@@ -30,6 +30,13 @@ private:
 	HRESULT Initialize();
 
 public:
+	HRESULT RenderShadow(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, LIGHT_TYPE lightType);
+	// Draw 패킷을 만들고 워커별 명령 목록을 기록한 뒤 GPU에 제출
+	HRESULT Render(ID3D11DeviceContext* context, const RENDER_CTX& renderContext) override;
+	// 이 렌더러가 기본 렌더 패스에서만 실행됨을 알린다
+	bool HasRenderPass(RENDERPASS renderPass) const override;
+
+public:
 	// 인스턴싱이 활성화되어 있으면 자신을 맵 메시 렌더 그룹에 등록
 	void Update();
 	// 프레임 통계를 확정한다. 상주 인스턴스와 Draw 데이터는 유지한다.
@@ -64,6 +71,8 @@ private:
 	// 렌더러가 소유한 수집 데이터, 캐시, GPU 컬링 처리기를 모두 해제
 	void ReleaseInstancingResources();
 
+	void MarkResidentSceneDirty();
+
 	void InvalidateCommandListCache(); // 캐싱해놓은 커맨드리스트 캐시 무효화
 
 private:
@@ -90,6 +99,35 @@ private:
 		EMapMeshRenderFeature renderFeature{};
 		MAPMESH_INSTANCE_DATA instanceData{};
 		MAPMESH_OCCLUSION_DATA occlusionData{};
+	};
+
+	struct SHADOW_DRAW_PACKET
+	{
+		SPtr<CResVertexShader> vertexStaticShader;
+		SPtr<CResVertexShader> vertexFoliageShader;
+		SPtr<CResPixelShader> pixelShader;
+
+		ComPtr<ID3D11Buffer> visibleInstanceBuffer;
+		ComPtr<ID3D11Buffer> indirectArgsBuffer;
+
+		ComPtr<ID3D11DepthStencilView> depthStencilView;
+		ComPtr<ID3D11DepthStencilState> depthStencilState;
+		ComPtr<ID3D11RasterizerState> rasterizerState;
+		D3D11_VIEWPORT viewPort{};
+		uint32_t stencilRef = 0;
+
+		// MapMesh Shadow VS/PS에서 참조하는 상수버퍼
+		ComPtr<ID3D11Buffer> lightConstantBuffer;
+		ComPtr<ID3D11Buffer> shadowConstantBuffer;
+
+		_bool isReady = false;
+	};
+
+	struct SHADOW_COMMANDLIST_CACHE_ENTRY
+	{
+		LIGHT_TYPE lightType{};
+		ComPtr<ID3D11DepthStencilView> depthStencilView;
+		ComPtr<ID3D11CommandList> commandList;
 	};
 
 	// Deferred Context 워커가 Draw 명령을 기록하는 동안 필요한 리소스와
@@ -127,10 +165,15 @@ private:
 		_bool isReady = false;
 	};
 
+	HRESULT PrepareShadowDrawPacket(ID3D11DeviceContext* context, const RENDER_CTX& shadowContext, LIGHT_TYPE lightType, SHADOW_DRAW_PACKET& outPacket);
 	// 수집된 배치로부터 이번 프레임의 완성된 Draw 패킷을 만든다
 	HRESULT PrepareDrawPacket(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, DRAW_PACKET& outPacket);
+
 	// 커맨드리스트 캐싱 재구성하는 함수
+	HRESULT RebuildCachedShadowCommandList(const SHADOW_DRAW_PACKET& shadowDrawPacket, LIGHT_TYPE lightType);
 	HRESULT RebuildCachedCommandLists(const DRAW_PACKET& packet);
+
+	HRESULT ResolveShadowDrawResources(LIGHT_TYPE lightType, SHADOW_DRAW_PACKET& outPacket) const;
 	// Draw에 공통으로 필요한 셰이더, 샘플러, 상수 버퍼를 조회
 	HRESULT ResolveDrawResources(DRAW_PACKET& outPacket) const;
 	// 배치 전체 크기를 미리 계산해 상주 벡터의 재할당을 줄인다.
@@ -139,20 +182,20 @@ private:
 	HRESULT AppendInstanceBatch(const CMapMeshInstanceBatchCollector::MODEL_RENDER_KEY& key, const MAPMESH_INSTANCE_BATCH& batch, uint32_t& batchIndex);
 	// 모든 배치를 병합하고 렌더 기능별 실행 순서까지 구성한다
 	HRESULT BuildResidentDrawData(uint32_t& outBatchCount);
+
+	HRESULT RunShadowGpuCulling(ID3D11DeviceContext* context, const RENDER_CTX& shadowContext, LIGHT_TYPE lightType, _bool uploadResidentData, SHADOW_DRAW_PACKET& outPacket);
 	// GPU 컬링을 실행해 가시 인스턴스 버퍼와 간접 드로우 인자 버퍼를 만든다
 	HRESULT RunGpuCulling(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, uint32_t batchCount, _bool uploadResidentData, DRAW_PACKET& outPacket);
+	
+	HRESULT CaptureShadowPipelineState(ID3D11DeviceContext* context, SHADOW_DRAW_PACKET& outPacket) const;
 	// Immediate Context의 현재 렌더 타깃과 파이프라인 상태를 패킷에 보관한다.
 	HRESULT CapturePipelineState(ID3D11DeviceContext* context, DRAW_PACKET& outPacket) const;
+
+	HRESULT RecordShadowDrawCommands(ID3D11DeviceContext* context, const SHADOW_DRAW_PACKET& shadowDrawPacket);
 	// 지정된 Draw 명령 구간을 하나의 Deferred Context에 기록한다
 	HRESULT RecordDrawCommands(ID3D11DeviceContext* context,const DRAW_PACKET& packet, uint32_t commandBegin, uint32_t commandEnd, uint32_t& outDrawCalls);
 	// 메시별 머티리얼 값을 상수 버퍼에 기록하고 픽셀 셰이더에 바인딩한다
 	static HRESULT BindMapMeshMaterial(ID3D11DeviceContext* context, const SPtr<CResCBuffer>& materialConstantBuffer, const MATERIAL_DESC& materialDesc);
-
-public:
-	// Draw 패킷을 만들고 워커별 명령 목록을 기록한 뒤 GPU에 제출
-	HRESULT Render(ID3D11DeviceContext* context, const RENDER_CTX& renderContext) override;
-	// 이 렌더러가 기본 렌더 패스에서만 실행됨을 알린다
-	bool HasRenderPass(RENDERPASS renderPass) const override;
 
 private:
 	// 현재 로드된 청크의 정적 인스턴스를 모델·렌더 기능별로 모은다.
@@ -161,8 +204,12 @@ private:
 	std::unordered_map<MAPCHUNK_COORD, std::vector<RESIDENT_INSTANCE>, tagMapChunkCoordHash> m_ResidentChunks;
 	// 모델의 메시별 텍스처 조회 결과를 프레임 사이에 재사용
 	CMapMeshTextureCache m_TextureCache;
-	// 프러스텀,오클루전 컬링과 간접 드로우 버퍼 생성을 담당
-	UPtr<CMapMeshGpuCuller> m_pGpuCuller;
+
+	UPtr<CMapMeshGpuCuller> m_pGpuCuller; // 프러스텀,오클루전 컬링과 간접 드로우 버퍼 생성을 담당
+	UPtr<CMapMeshGpuCuller> m_pShadowGpuCuller; // 광원 프러스텀만 사용해 그림자 가시 인스턴스를 생성하는 GPU 컬러
+
+	_bool m_IsMainGpuDataDirty = true;
+	_bool m_IsShadowGpuDataDirty = true;
 
 	// 청크 변경 시에만 다시 병합하고 GPU에 업로드하는 상주 입력 데이터다.
 	// 세 배열은 같은 인스턴스 인덱스를 공유함
@@ -170,7 +217,7 @@ private:
 	std::vector<MAPMESH_OCCLUSION_DATA> m_ResidentOcclusionData;
 	std::vector<MAPMESH_CULL_META> m_ResidentCullMetadata;
 	uint32_t m_ResidentBatchCount = 0;
-	_bool m_IsResidentSceneDirty = true;
+	_bool m_IsResidentDrawDataDirty = true;
 
 	// 각 Draw가 참조하는 GPU 컬링 배치 인덱스
 	std::vector<uint32_t> m_BatchIndexByDraw;
@@ -192,6 +239,8 @@ private:
 	static constexpr size_t RENDER_FEATURE_COUNT = 2;
 	std::array<std::vector<uint32_t>, RENDER_FEATURE_COUNT> m_DrawIndicesByFeature;
 
+	// Shadow 커맨드리스트 캐싱
+	std::unordered_map<ID3D11DepthStencilView*, SHADOW_COMMANDLIST_CACHE_ENTRY> m_CachedShadowCommandLists;
 	// 청크 변화 없을 때 기록해놨던 드로우명령 캐싱해놓을 곳
 	std::vector<ComPtr<ID3D11CommandList>> m_CachedCommandLists;
 	_bool m_IsCommandListCacheDirty = true;

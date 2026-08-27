@@ -475,6 +475,8 @@ void CPhysicsDoor::LateUpdate(_float)
 	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
 		return;
 
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
 		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
@@ -724,6 +726,22 @@ void CPhysicsDoor::UpdatePassageState()
 	{
 		SetPassageBarrierEnabled(true);
 	}
+}
+
+HRESULT CPhysicsDoor::Render_Shadow(
+	ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
+{
+	return m_pComModelInstance
+		? m_pComModelInstance->RenderShadow(
+			pContext, m_pComCBufferPerObject,
+			*GetTransform().GetCombinedWorldMatrix(), ctx.matViewProj)
+		: E_FAIL;
+}
+
+bool CPhysicsDoor::GetShadowBounds(BoundingBox& outBounds) const
+{
+	return m_pComModelInstance && m_pComModelInstance->GetShadowBounds(
+		*GetTransform().GetCombinedWorldMatrix(), outBounds);
 }
 
 void CPhysicsDoor::UpdateGUI()

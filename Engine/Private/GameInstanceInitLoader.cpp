@@ -689,6 +689,24 @@ HRESULT CGameInstanceInitLoader::LoadRasterizerState()
 		desc.DepthBiasClamp = 0.0f;
 		if (FAILED(res->Load(desc))) return E_FAIL;
 	}
+
+	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "RS_MAPMESH_SHADOW_BACKCULL", E::CResRasterizerState::Create()))
+	{
+		D3D11_RASTERIZER_DESC desc{};
+
+		desc.FillMode = D3D11_FILL_SOLID;
+		desc.CullMode = D3D11_CULL_BACK;
+		desc.DepthClipEnable = TRUE;
+
+		// 기존 RS_MULTIPLE_SHADOW와 동일한 Shadow Bias
+		desc.DepthBias = 2;
+		desc.SlopeScaledDepthBias = 0.1f;
+		desc.DepthBiasClamp = 0.f;
+
+		if (FAILED(res->Load(desc)))
+			return E_FAIL;
+	}
+
 	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_WIREFRAME_NOCULL, E::CResRasterizerState::Create()))
 	{
 		D3D11_RASTERIZER_DESC desc{};
@@ -1330,6 +1348,18 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 		{
 			return E_FAIL;
 		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_MapMesh_InstancedShadow", "./ShaderFiles/TestModel/Shader_VtxMapMesh_InstancedShadow.hlsl"))
+	{
+		if (FAILED(res->Load()))
+			return E_FAIL;
+	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_MapMesh_InstancedPointShadow", "./ShaderFiles/TestModel/Shader_VtxMapMesh_InstancedShadow.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{.sEntryPoint = "VSMainPointFace", .sTarget = "vs_5_0"})))
+			return E_FAIL;
 	}
 
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_SpellMeter", "./ShaderFiles/UI/SpellMeter.hlsl")) // 스펠이펙트

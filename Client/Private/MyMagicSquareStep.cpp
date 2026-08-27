@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "MyMagicSquareStep.h"
+#include "ComConstantBuffer.h"
 #include "ComStaticModelInstance.h"
 #include "ComPxRigidBody.h"
 #include "ComPxBoxCollider.h"
@@ -40,6 +41,18 @@ HRESULT CMyMagicSquareStep::Initialize(void* pArg)
 
 	m_vMoveTarget = pDesc->vInitialPosition;
 	m_vFinalMoveTarget = pDesc->vInitialPosition;
+
+	{
+		CComConstantBuffer::DESC Desc{};
+		Desc.cBufferId = { TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_OBJECT };
+		if (FAILED(AddComponentFromProto(
+			"PERMANENT",
+			"Prototype_Component_ConstantBuffer",
+			"ComCBufferPerObject",
+			&Desc,
+			&m_pComCBufferPerObject)))
+			return E_FAIL;
+	}
 
 	{
 		CComStaticModelInstance::DESC Desc{};
@@ -146,6 +159,11 @@ void CMyMagicSquareStep::LateUpdate(_float fTimeDelta)
 {
 	GetTransform().Update();
 
+	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
+		return;
+
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
 		return;
@@ -169,6 +187,22 @@ HRESULT CMyMagicSquareStep::Render_Instanced(
 HRESULT CMyMagicSquareStep::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
 	return S_OK;
+}
+
+HRESULT CMyMagicSquareStep::Render_Shadow(
+	ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
+{
+	return m_pComModelInstance
+		? m_pComModelInstance->RenderShadow(
+			pContext, m_pComCBufferPerObject,
+			*GetTransform().GetCombinedWorldMatrix(), ctx.matViewProj)
+		: E_FAIL;
+}
+
+bool CMyMagicSquareStep::GetShadowBounds(BoundingBox& outBounds) const
+{
+	return m_pComModelInstance && m_pComModelInstance->GetShadowBounds(
+		*GetTransform().GetCombinedWorldMatrix(), outBounds);
 }
 
 void CMyMagicSquareStep::UpdateGUI()

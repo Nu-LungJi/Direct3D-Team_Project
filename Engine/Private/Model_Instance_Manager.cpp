@@ -476,8 +476,12 @@ HRESULT CModel_Instance_Manager::Remove_Instance(CHandle _Handle) {
 HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pContext, std::optional<CHandle> _LightHandle, _bool _bStaticBatch, int32_t _PointFaceIndex){
 	
 	if (!_LightHandle)	return E_FAIL;
-
 	if (_PointFaceIndex < -1 || _PointFaceIndex >= static_cast<int32_t>(POINT_SHADOW_MAPCOUNT))	return E_FAIL;
+
+	// bModelStatic은 움직이지 않는다는 뜻이 아니라 CComStaticModelInstance 기반의
+	// 비스키닝 메시라는 뜻이다. 이 배치는 각 객체의 Render_Shadow에서 처리한다.
+	// 뼈 팔레트를 요구하는 아래 스키닝 그림자 경로에는 진입시키지 않는다.
+	if (_bStaticBatch)	return S_OK;
 
 	auto pLight = CGameInstance::Get().GetGameObjectByHandleT<CLight>(_LightHandle.value());
 	if (nullptr == pLight) return E_FAIL;
