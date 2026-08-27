@@ -17,6 +17,12 @@ class CResDepthStencilState;
 class CResBlendState;
 class ENGINE_DLL CDbgLineRender  final : public CEngineBase, public IRenderable
 {
+public:
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CDbgLineRender,
+		CEngineBase,
+		IRenderable)
+
 private:
 	explicit CDbgLineRender(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);
 	~CDbgLineRender() override;

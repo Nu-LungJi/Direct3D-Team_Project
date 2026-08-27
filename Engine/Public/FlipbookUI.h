@@ -18,7 +18,7 @@ typedef struct tagFlipbookInfo
 class ENGINE_DLL CFlipbookUI : public CUIObject
 {
 public:
-	DECLARE_DERIVED_TYPE(FlipbookUI, CUIObject)
+	DECLARE_DERIVED_TYPE(CFlipbookUI, CUIObject)
 public:
 	typedef struct tagFlipbookDesc : public E::CUIObject::UIOBJECT_DESC
 	{

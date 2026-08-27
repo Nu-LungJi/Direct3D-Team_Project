@@ -198,7 +198,7 @@ void UIManager::AddRaceMiniGameCoin(uint32_t amount)
 
 	if (!m_hRaceBoardCoinText)
 		return;
-	if (auto* textBox = dynamic_cast<CTextBox*>(
+	if (auto* textBox = Engine::Cast<CTextBox>(
 		GetSafeUI(*m_hRaceBoardCoinText)))
 	{
 		wchar_t coinText[16]{};
@@ -223,7 +223,7 @@ void UIManager::BeginRaceBoard()
 		m_RaceBoardRoots, "TimerTitle"))
 	{
 		m_hRaceBoardTimerText = timer->GetHandle();
-		if (auto* textBox = dynamic_cast<CTextBox*>(timer))
+		if (auto* textBox = Engine::Cast<CTextBox>(timer))
 			textBox->SetFixedDigitLayout(true);
 	}
 	// RaceBoard has two objects named Coin. The first is the numeric counter
@@ -231,7 +231,7 @@ void UIManager::BeginRaceBoard()
 	if (auto* coin = FindUIByNameRecursive(m_RaceBoardRoots, "Coin"))
 	{
 		m_hRaceBoardCoinText = coin->GetHandle();
-		if (auto* textBox = dynamic_cast<CTextBox*>(coin))
+		if (auto* textBox = Engine::Cast<CTextBox>(coin))
 		{
 			textBox->SetColoredSuffix(
 				L"99",
@@ -272,7 +272,7 @@ void UIManager::FinishRaceMiniGame()
 		m_RaceResultRoots, "CoinCnt"))
 	{
 		m_hRaceResultCoinText = coin->GetHandle();
-		if (auto* textBox = dynamic_cast<CTextBox*>(coin))
+		if (auto* textBox = Engine::Cast<CTextBox>(coin))
 		{
 			wchar_t coinText[8]{};
 			swprintf_s(
@@ -309,7 +309,7 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 
 	if (m_hRaceBoardTimerText)
 	{
-		if (auto* textBox = dynamic_cast<CTextBox*>(
+		if (auto* textBox = Engine::Cast<CTextBox>(
 			GetSafeUI(*m_hRaceBoardTimerText)))
 		{
 			const uint32_t totalCentiseconds = static_cast<uint32_t>(
@@ -433,7 +433,7 @@ void UIManager::StartRaceStartTimer()
 			text->GetUIInfo().LocalY
 		};
 		text->SetColor({ 1.f, 1.f, 1.f });
-		if (auto* textBox = dynamic_cast<CTextBox*>(text))
+		if (auto* textBox = Engine::Cast<CTextBox>(text))
 			textBox->SetwText(L"3");
 	}
 
@@ -539,7 +539,7 @@ void UIManager::UpdateRaceStartTimer(_float fTimeDelta)
 			2u, static_cast<uint32_t>(elapsed / countDuration));
 		const _float localTime = elapsed - countDuration * countIndex;
 		const wchar_t* countTexts[] = { L"3", L"2", L"1" };
-		if (auto* textBox = dynamic_cast<CTextBox*>(text))
+		if (auto* textBox = Engine::Cast<CTextBox>(text))
 			textBox->SetwText(countTexts[countIndex]);
 
 		// Pretendard's '1' glyph has asymmetric side bearings. Keep the text
@@ -574,7 +574,7 @@ void UIManager::UpdateRaceStartTimer(_float fTimeDelta)
 	}
 
 	const _float goTime = elapsed - countTotal;
-	if (auto* textBox = dynamic_cast<CTextBox*>(text))
+	if (auto* textBox = Engine::Cast<CTextBox>(text))
 		textBox->SetwText(L"GO");
 	text->SetLocalPos(m_RaceStartTimerTextBaseLocalPos);
 	text->SetColor({ 0.32f, 1.f, 0.28f });
@@ -3019,7 +3019,7 @@ void UIManager::CreateChoiceUI(
 			info.BaseFadeLocalPosition = { fadeInfo.LocalX, fadeInfo.LocalY };
 			info.SelectedFadeAlphaRatio = fade->GetAlphaRatio();
 		}
-		if (auto* text = dynamic_cast<CTextBox*>(
+		if (auto* text = Engine::Cast<CTextBox>(
 			FindUIByNameRecursive(roots, "Text")))
 		{
 			info.TextHandle = text->GetHandle();

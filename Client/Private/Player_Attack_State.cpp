@@ -42,7 +42,7 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 	}
 	if (animator->HasUpperAnimation())
 		animator->Stop_UpperAnim(0.08f);
-	if (auto* pCamera = dynamic_cast<CPlayerThirdPersonCamera*>(
+	if (auto* pCamera = Engine::Cast<CPlayerThirdPersonCamera>(
 		CGameInstance::Get().GetActiveCamera()); pCamera)
 	{
 		const _bool bDistanceOverride = pCamera->BeginDistanceOverride(

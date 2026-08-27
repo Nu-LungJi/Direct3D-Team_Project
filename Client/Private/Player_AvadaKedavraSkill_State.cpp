@@ -389,7 +389,7 @@ _bool CPlayer_AvadaKedavraSkill_State::ReleaseSpell(CPlayer& player)
 	if (auto* pTargetObject = CGameInstance::Get().
 		GetGameObjectByHandle(player.GetTargetHandle()))
 	{
-		if (auto* pSkillTarget = dynamic_cast<CSkillTarget*>(pTargetObject))
+		if (auto* pSkillTarget = Engine::Cast<CSkillTarget>(pTargetObject))
 			pSkillTarget->Check_Table(PLAYER_SKILL_TYPE::ABRA);
 	}
 

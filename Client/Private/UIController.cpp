@@ -1722,7 +1722,7 @@ void CUIController::CreateMonsterHP()
 
 			if (std::string_view(pUI->GetName()) == "MonsterName")
 			{
-				if (auto* pTextBox = dynamic_cast<CTextBox*>(pUI))
+				if (auto* pTextBox = Engine::Cast<CTextBox>(pUI))
 					pTextBox->SetwText(L"가시등 거미");
 			}
 

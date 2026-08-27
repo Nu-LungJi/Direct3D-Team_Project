@@ -44,7 +44,7 @@ void CCoin::OnTriggerEnter(E::CGameObject* pObj, const E::PX_ON_TRIGGER_DATA& in
    	if (nullptr == pObj || m_bCollected)
 		return;
 
-	auto* pPlayer = dynamic_cast<CPlayer*>(pObj);
+	auto* pPlayer = Engine::Cast<CPlayer>(pObj);
 	if (nullptr == pPlayer)
 		return;
 

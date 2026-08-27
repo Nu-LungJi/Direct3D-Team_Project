@@ -59,6 +59,12 @@ struct PARTICLE_EFFECT_PRESET
 
 class ENGINE_DLL CParticleManager final : public CEngineBase, public IRenderable
 {
+public:
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CParticleManager,
+		CEngineBase,
+		IRenderable)
+
 private:
     explicit CParticleManager();
     virtual ~CParticleManager();

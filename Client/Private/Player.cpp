@@ -76,14 +76,14 @@ namespace
 		if (!pObject || pObject->GetPendingDestroy())
 			return false;
 
-		if (const auto* pMonster = dynamic_cast<const CMonster*>(pObject);
+		if (const auto* pMonster = Engine::Cast<CMonster>(pObject);
 			pMonster && (!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0))
 			return false;
 
-		if (dynamic_cast<const CSkillTarget*>(pObject))
+		if (Engine::Cast<CSkillTarget>(pObject))
 			return true;
 
-		const auto* pBall = dynamic_cast<const CAccioBall*>(pObject);
+		const auto* pBall = Engine::Cast<CAccioBall>(pObject);
 		return pBall && pBall->CanAcquireControl(hPlayer);
 	}
 
@@ -1197,7 +1197,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			auto ori = m_pComTransform->GetPosition();
 
 			_bool bTargetStillInRange = false;
-			if (auto* pBall = dynamic_cast<CAccioBall*>(pTarget))
+			if (auto* pBall = Engine::Cast<CAccioBall>(pTarget))
 			{
 				// [LSY] 이미 알고 있는 공 하나의 거리 확인에 매 프레임 넓은
 				// WORLD_DYNAMIC Overlap을 반복하지 않고 실제 PhysX 중심을 사용한다.

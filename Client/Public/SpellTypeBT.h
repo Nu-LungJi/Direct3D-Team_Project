@@ -14,7 +14,7 @@ NS_BEGIN(Client)
 class CSpellTypeBT final : public E::CUITex
 {
 public:
-	DECLARE_DERIVED_TYPE(CButton, E::CUITex)
+	DECLARE_DERIVED_TYPE(CSpellTypeBT, E::CUITex)
 
 private:
 	CSpellTypeBT();

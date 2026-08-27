@@ -19,6 +19,11 @@ class CResVertexShader;
 class ENGINE_DLL CMapMeshInstancingRenderer final : public CEngineBase, public IRenderable
 {
 public:
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CMapMeshInstancingRenderer,
+		CEngineBase,
+		IRenderable)
+
 	CMapMeshInstancingRenderer(const CMapMeshInstancingRenderer&) = delete;
 	CMapMeshInstancingRenderer& operator=(const CMapMeshInstancingRenderer& rhs) = delete;
 

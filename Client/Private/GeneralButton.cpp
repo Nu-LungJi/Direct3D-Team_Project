@@ -1034,7 +1034,7 @@ void CGeneralButton::SetWandSliderHovered(_bool hovered)
 		m_vSliderBaseBrightness.clear();
 		auto captureBrightness = [&](CUIObject* ui)
 		{
-			if (auto* textureUI = dynamic_cast<CTextureUI*>(ui))
+			if (auto* textureUI = Engine::Cast<CTextureUI>(ui))
 				m_vSliderBaseBrightness.emplace_back(
 					ui->GetHandle(),
 					textureUI->GetTextureBrightness());

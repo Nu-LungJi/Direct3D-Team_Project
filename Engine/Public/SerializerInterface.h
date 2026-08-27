@@ -16,6 +16,8 @@ NS_BEGIN(Engine)
 class ENGINE_DLL ISerializer
 {
 public:
+	DECLARE_RUNTIME_TYPE(ISerializer)
+
 	virtual ~ISerializer() = default;
 
 #pragma region PRIMITIVE
@@ -161,6 +163,8 @@ protected:
 class ENGINE_DLL IDeserializer
 {
 public:
+	DECLARE_RUNTIME_TYPE(IDeserializer)
+
 	virtual ~IDeserializer() = default;
 	virtual bool HasValue(const std::string& key) const = 0;
 

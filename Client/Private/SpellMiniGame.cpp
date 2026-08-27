@@ -2320,7 +2320,7 @@ void CSpellMiniGame::ShowSuccessAlarm()
 
 			if (std::string_view(root->GetName()) == "Flame")
 			{
-				if (auto* flame = dynamic_cast<CTextureUI*>(root))
+				if (auto* flame = Engine::Cast<CTextureUI>(root))
 					flame->SetSpellAlarmFlame(flameIndex++);
 			}
 
