@@ -165,6 +165,7 @@ void UIManager::Update(_float fTimeDelta)
 	UpdateActiveButtons();
 	UpdateDialoguePopups(fTimeDelta);
 	UpdateNPCSpeechBubbles(fTimeDelta);
+	UpdateDialogueChoiceUI();
 	UpdateRaceStartTimer(fTimeDelta);
 	UpdateRaceMiniGame(fTimeDelta);
 	m_WandShop.Update(*this, fTimeDelta);
@@ -173,6 +174,7 @@ void UIManager::Update(_float fTimeDelta)
 void UIManager::StartRaceMiniGame()
 {
 	ClearRaceMiniGameUI();
+	FadeOutQuest(0.3f);
 	m_fRaceMiniGameElapsed = 0.f;
 	m_iRaceMiniGameCoinCount = 0u;
 	m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::NONE;
@@ -180,6 +182,8 @@ void UIManager::StartRaceMiniGame()
 	StartRaceStartTimer();
 	if (IsRaceStartTimerPlaying())
 		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::COUNTDOWN;
+	else
+		FadeInQuest(0.5f);
 }
 
 void UIManager::AddRaceMiniGameCoin(uint32_t amount)
@@ -239,6 +243,7 @@ void UIManager::BeginRaceBoard()
 	{
 		ClearRaceMiniGameUI();
 		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::NONE;
+		FadeInQuest(0.5f);
 		return;
 	}
 
@@ -281,6 +286,7 @@ void UIManager::FinishRaceMiniGame()
 
 	m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RESULT;
 	PlayRaceRootsFadeIn(m_RaceResultRoots);
+	FadeInQuest(0.5f);
 }
 
 void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
@@ -2609,8 +2615,11 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 			if (auto* questRoot = GetSafeUI(rootHandle))
 			{
 				questRoot->SetAlpha(0.f);
-				GET_SINGLE(UIManager)->PlayFadeIn(
-					rootHandle, 0.f, 0.3f);
+				if (!GET_SINGLE(UIManager)->m_bQuestFadeSuppressed)
+				{
+					GET_SINGLE(UIManager)->PlayFadeIn(
+						rootHandle, 0.f, 0.3f);
+				}
 			}
 		};
 		return;
@@ -2755,6 +2764,7 @@ void UIManager::DeleteQuest()
 
 void UIManager::FadeOutQuest(float playtime)
 {
+	m_bQuestFadeSuppressed = true;
 	if (!m_hQuestRoot)
 		return;
 
@@ -2776,6 +2786,7 @@ void UIManager::FadeOutQuest(float playtime)
 
 void UIManager::FadeInQuest(float playtime)
 {
+	m_bQuestFadeSuppressed = false;
 	if (!m_hQuestRoot)
 		return;
 
@@ -2917,6 +2928,256 @@ void UIManager::UpdateNPCSpeechBubbles(_float fTimeDelta)
 
 		++iter;
 	}
+}
+
+void UIManager::CreateChoiceUI(
+	const std::vector<std::string>& choices,
+	std::function<void(size_t)> onSelected)
+{
+	ClearChoiceUI(true);
+	if (choices.empty())
+		return;
+
+	constexpr _float CHOICE_INTERVAL_Y = 54.f;
+	m_iSelectedDialogueChoice = 0u;
+	m_bDialogueChoiceActive = true;
+	m_OnDialogueChoiceSelected = std::move(onSelected);
+
+	for (size_t index = 0; index < choices.size(); ++index)
+	{
+		const auto roots = LoadPrefab("Intersection");
+		if (roots.empty())
+			continue;
+
+		auto* root = GetSafeUI(roots.front());
+		if (!root)
+			continue;
+
+		DIALOGUE_CHOICE_UI_INFO info{};
+		info.RootHandle = root->GetHandle();
+
+		const _float2 basePosition = root->GetPos();
+		root->SetPos({
+			basePosition.x,
+			basePosition.y + CHOICE_INTERVAL_Y * static_cast<_float>(index) });
+		root->CalcUICoord();
+		info.BaseRootPosition = root->GetPos();
+		info.RootScaleRatio = std::max(0.001f, root->GetScaleRatio());
+
+		if (auto* frameU = FindUIByNameRecursive(roots, "FrameU"))
+		{
+			info.FrameUHandle = frameU->GetHandle();
+			const auto& frameInfo = frameU->GetUIInfo();
+			info.BaseFrameULocalPosition = { frameInfo.LocalX, frameInfo.LocalY };
+			info.SelectedFrameUAlphaRatio = frameU->GetAlphaRatio();
+		}
+		if (auto* frameD = FindUIByNameRecursive(roots, "FrameD"))
+		{
+			info.FrameDHandle = frameD->GetHandle();
+			const auto& frameInfo = frameD->GetUIInfo();
+			info.BaseFrameDLocalPosition = { frameInfo.LocalX, frameInfo.LocalY };
+			info.SelectedFrameDAlphaRatio = frameD->GetAlphaRatio();
+		}
+		if (auto* fade = FindUIByNameRecursive(roots, "Fade"))
+		{
+			info.FadeHandle = fade->GetHandle();
+			const auto& fadeInfo = fade->GetUIInfo();
+			info.BaseFadeLocalPosition = { fadeInfo.LocalX, fadeInfo.LocalY };
+			info.SelectedFadeAlphaRatio = fade->GetAlphaRatio();
+		}
+		if (auto* text = dynamic_cast<CTextBox*>(
+			FindUIByNameRecursive(roots, "Text")))
+		{
+			info.TextHandle = text->GetHandle();
+			text->SetwText(StringToWUTF8(choices[index]));
+		}
+
+		m_DialogueChoiceUIs.push_back(info);
+	}
+
+	if (m_DialogueChoiceUIs.empty())
+	{
+		m_bDialogueChoiceActive = false;
+		m_OnDialogueChoiceSelected = nullptr;
+		return;
+	}
+
+	// 최초 생성 시에는 첫 선택 상태를 즉시 반영한다. 로드 직후의
+	// APPEAR 처리에서 Tween이 초기화되므로 방향키 변경부터 모션을 사용한다.
+	RefreshDialogueChoiceVisuals(false);
+}
+
+void UIManager::ClearChoiceUI(_bool immediate)
+{
+	for (const auto& choice : m_DialogueChoiceUIs)
+	{
+		auto* root = GetSafeUI(choice.RootHandle);
+		if (!root)
+			continue;
+
+		if (immediate)
+			DeleteUIRecursive(choice.RootHandle);
+		else
+			PlayFadeOutDelete(choice.RootHandle, 0.f, 0.2f);
+	}
+
+	m_DialogueChoiceUIs.clear();
+	m_OnDialogueChoiceSelected = nullptr;
+	m_iSelectedDialogueChoice = 0u;
+	m_bDialogueChoiceActive = false;
+}
+
+void UIManager::RefreshDialogueChoiceVisuals(_bool animate)
+{
+	constexpr _float SELECT_MOVE_X = 12.f;
+	constexpr _float SELECT_DURATION = 0.18f;
+
+	for (size_t index = 0; index < m_DialogueChoiceUIs.size(); ++index)
+	{
+		const auto& choice = m_DialogueChoiceUIs[index];
+		const _bool selected = index == m_iSelectedDialogueChoice;
+		const _float rootTargetX = choice.BaseRootPosition.x +
+			(selected ? SELECT_MOVE_X : 0.f);
+		const _float localCompensation = selected ?
+			SELECT_MOVE_X / choice.RootScaleRatio : 0.f;
+
+		if (auto* root = GetSafeUI(choice.RootHandle))
+		{
+			if (!animate || !root->GetTweenCom())
+			{
+				root->SetPos({ rootTargetX, choice.BaseRootPosition.y });
+				root->CalcUICoord();
+			}
+			else
+			{
+				auto* tween = root->GetTweenCom();
+				tween->ClearTweens();
+				tween->PlayTween(
+					root->GetPos().x, rootTargetX, SELECT_DURATION,
+					[handle = choice.RootHandle,
+					 baseY = choice.BaseRootPosition.y](_float value)
+					{
+						if (auto* target = GetSafeUI(handle))
+						{
+							target->SetPos({ value, baseY });
+							target->CalcUICoord();
+						}
+					}, nullptr, EEaseType::EaseOutQuad);
+			}
+		}
+
+		const auto animateFixedChild =
+			[animate, localCompensation](
+				CHandle handle,
+				const _float2& baseLocalPosition,
+				_float targetAlphaRatio)
+			{
+				auto* child = GetSafeUI(handle);
+				if (!child)
+					return;
+
+				const _float targetLocalX =
+					baseLocalPosition.x - localCompensation;
+				if (!animate || !child->GetTweenCom())
+				{
+					child->SetLocalPos({ targetLocalX, baseLocalPosition.y });
+					child->SetAlphaRatio(targetAlphaRatio);
+					return;
+				}
+
+				auto* tween = child->GetTweenCom();
+				tween->ClearTweens();
+				const _float startLocalX = child->GetUIInfo().LocalX;
+				const _float startAlphaRatio = child->GetAlphaRatio();
+				tween->PlayTween(
+					startLocalX, targetLocalX, SELECT_DURATION,
+					[handle, baseY = baseLocalPosition.y](_float value)
+					{
+						if (auto* target = GetSafeUI(handle))
+							target->SetLocalPos({ value, baseY });
+					}, nullptr, EEaseType::EaseOutQuad);
+				tween->PlayTween(
+					startAlphaRatio, targetAlphaRatio, SELECT_DURATION,
+					[handle](_float value)
+					{
+						if (auto* target = GetSafeUI(handle))
+							target->SetAlphaRatio(value);
+					}, nullptr, EEaseType::EaseOutQuad);
+			};
+
+		animateFixedChild(
+			choice.FrameUHandle, choice.BaseFrameULocalPosition,
+			selected ? choice.SelectedFrameUAlphaRatio : 0.f);
+		animateFixedChild(
+			choice.FrameDHandle, choice.BaseFrameDLocalPosition,
+			selected ? choice.SelectedFrameDAlphaRatio : 0.f);
+		animateFixedChild(
+			choice.FadeHandle, choice.BaseFadeLocalPosition,
+			selected ? choice.SelectedFadeAlphaRatio : 0.f);
+	}
+}
+
+void UIManager::UpdateDialogueChoiceUI()
+{
+	if (!m_bDialogueChoiceActive || m_DialogueChoiceUIs.empty())
+		return;
+
+	const size_t choiceCount = m_DialogueChoiceUIs.size();
+	_bool selectionChanged{};
+
+	if (E::CGameInstance::Get().KeyDown(DIK_UP))
+	{
+		m_iSelectedDialogueChoice = m_iSelectedDialogueChoice == 0u ?
+			choiceCount - 1u : m_iSelectedDialogueChoice - 1u;
+		selectionChanged = true;
+	}
+	else if (E::CGameInstance::Get().KeyDown(DIK_DOWN))
+	{
+		m_iSelectedDialogueChoice =
+			(m_iSelectedDialogueChoice + 1u) % choiceCount;
+		selectionChanged = true;
+	}
+
+	if (selectionChanged)
+		RefreshDialogueChoiceVisuals();
+
+	if (!E::CGameInstance::Get().KeyDown(DIK_SPACE))
+		return;
+
+	const size_t selectedIndex = m_iSelectedDialogueChoice;
+	if (selectedIndex < m_DialogueChoiceUIs.size())
+	{
+		constexpr _float CONFIRM_MOVE_X = 24.f;
+		constexpr _float CONFIRM_DURATION = 0.2f;
+		const CHandle selectedRoot =
+			m_DialogueChoiceUIs[selectedIndex].RootHandle;
+		if (auto* root = GetSafeUI(selectedRoot))
+		{
+			const _float startX = root->GetPos().x;
+			const _float fixedY = root->GetPos().y;
+			if (auto* tween = root->GetTweenCom())
+			{
+				tween->ClearTweens();
+				tween->PlayTween(
+					startX,
+					startX + CONFIRM_MOVE_X,
+					CONFIRM_DURATION,
+					[selectedRoot, fixedY](_float value)
+					{
+						if (auto* target = GetSafeUI(selectedRoot))
+						{
+							target->SetPos({ value, fixedY });
+							target->CalcUICoord();
+						}
+					}, nullptr, EEaseType::EaseOutQuad);
+			}
+		}
+	}
+
+	auto callback = std::move(m_OnDialogueChoiceSelected);
+	ClearChoiceUI(false);
+	if (callback)
+		callback(selectedIndex);
 }
 
 std::optional<CHandle> UIManager::RootUIPicking()
@@ -3606,12 +3867,15 @@ void UIManager::PlayFadeOutAll2DUI(float delay, float playtime)
 	{
 		auto* pUI = GetSafeUI(handle);
 		if (!pUI || !pUI->GetActive() || !pUI->GetVisible() ||
-			pUI->GetResolvedRenderGroup() != RENDERGROUP::UI)
+			pUI->GetResolvedRenderGroup() != RENDERGROUP::UI ||
+			pUI->GetUIInfo().UIType == ETOUI(UI_TYPE::CURSOR))
 			continue;
 
 		// FadeIn 때 복원할 각 UI의 원래 상태를 FadeOut 시작 시점에 보관한다.
-		m_2DUIRestoreAlpha[handle] = pUI->GetAlpha();
-		m_2DUIRestoreInputLock[handle] = pUI->GetInputLcok();
+		// 대화 시작 FadeOut 뒤 선택창 FadeOut처럼 중첩 호출되어도 최초의
+		// 표시 상태를 보존한다.
+		m_2DUIRestoreAlpha.try_emplace(handle, pUI->GetAlpha());
+		m_2DUIRestoreInputLock.try_emplace(handle, pUI->GetInputLcok());
 		pUI->SetInputLcok(true);
 
 		if (auto* pTween = pUI->GetTweenCom())
@@ -3637,7 +3901,7 @@ void UIManager::PlayFadeOutAll2DUI(float delay, float playtime)
 				continue;
 
 			const _float startScale = pSpellMeter->GetScaleRatio();
-			m_SpellMeterRestoreScale[handle] = startScale;
+			m_SpellMeterRestoreScale.try_emplace(handle, startScale);
 			if (auto* pTween = pSpellMeter->GetTweenCom())
 			{
 				pTween->PlayTween(startScale, 0.f, playtime,
@@ -3656,17 +3920,25 @@ void UIManager::PlayFadeOutAll2DUI(float delay, float playtime)
 
 void UIManager::PlayFadeInAll2DUI(float delay, float playtime)
 {
-	UpdateRootUIHandles();
-
-	for (const CHandle handle : rootUIHandles)
+	// FadeOut 시점에 실제로 숨긴 UI만 복원한다. 이후 생성된 선택창이나
+	// 미니게임 UI에는 복원 Tween을 걸지 않는다.
+	for (const auto& [handle, targetAlpha] : m_2DUIRestoreAlpha)
 	{
 		auto* pUI = GetSafeUI(handle);
 		if (!pUI || !pUI->GetActive() || !pUI->GetVisible() ||
-			pUI->GetResolvedRenderGroup() != RENDERGROUP::UI)
+			pUI->GetResolvedRenderGroup() != RENDERGROUP::UI ||
+			pUI->GetUIInfo().UIType == ETOUI(UI_TYPE::CURSOR))
 			continue;
 
-		const auto alphaIt = m_2DUIRestoreAlpha.find(handle);
-		const _float targetAlpha = alphaIt != m_2DUIRestoreAlpha.end() ? alphaIt->second : pUI->GetAlpha();
+		const auto lockIt = m_2DUIRestoreInputLock.find(handle);
+		const _bool restoreInputLock = lockIt != m_2DUIRestoreInputLock.end() ?
+			lockIt->second : false;
+		if (m_bQuestFadeSuppressed && m_hQuestRoot && handle == *m_hQuestRoot)
+		{
+			pUI->SetAlpha(0.f);
+			pUI->SetInputLcok(restoreInputLock);
+			continue;
+		}
 
 		if (auto* pTween = pUI->GetTweenCom())
 		{
@@ -3676,16 +3948,20 @@ void UIManager::PlayFadeInAll2DUI(float delay, float playtime)
 				{
 					if (auto* pTarget = GetSafeUI(handle))
 						pTarget->SetAlpha(value);
-				}, [this, handle]()
+				}, [handle, restoreInputLock]()
 				{
 					if (auto* pTarget = GetSafeUI(handle))
-					{
-						const auto lockIt = m_2DUIRestoreInputLock.find(handle);
-						pTarget->SetInputLcok(lockIt != m_2DUIRestoreInputLock.end() ? lockIt->second : false);
-					}
+						pTarget->SetInputLcok(restoreInputLock);
 				}, EEaseType::EaseOutQuad, delay);
 		}
+		else
+		{
+			pUI->SetAlpha(targetAlpha);
+			pUI->SetInputLcok(restoreInputLock);
+		}
 	}
+	m_2DUIRestoreAlpha.clear();
+	m_2DUIRestoreInputLock.clear();
 
 	// FadeOut에서 저장한 SpellMeter의 고유 ScaleRatio로 천천히 복구한다.
 	for (auto it = m_SpellMeterRestoreScale.begin(); it != m_SpellMeterRestoreScale.end();)
@@ -3714,6 +3990,7 @@ void UIManager::PlayFadeInAll2DUI(float delay, float playtime)
 		}
 		++it;
 	}
+	m_SpellMeterRestoreScale.clear();
 }
 
 void UIManager::PlayFadeInChange(CHandle pHandle, LEVEL level, float delay, float playtime)

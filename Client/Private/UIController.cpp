@@ -129,6 +129,35 @@ void CUIController::Update(E::_float fTimeDelta)
 		}
 	}
 
+	// 대화 선택 UI와 콜백 연결 확인용 디버그 입력.
+	if (E::CGameInstance::Get().KeyDown(DIK_F5))
+	{
+		const CHandle controllerHandle = GetHandle();
+		GET_SINGLE(UIManager)->PlayFadeOutAll2DUI(0.f, 0.25f);
+		GET_SINGLE(UIManager)->CreateChoiceUI(
+			{
+				"스펠 미니게임 1 시작",
+				"레이스 미니게임 시작"
+			},
+			[controllerHandle](size_t choiceIndex)
+			{
+				GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.2f, 0.3f);
+
+				if (choiceIndex == 0u)
+				{
+					if (auto* controller = E::CGameInstance::Get().
+						GetGameObjectByHandleT<CUIController>(controllerHandle))
+					{
+						controller->StartSpellMiniGame(false);
+					}
+				}
+				else if (choiceIndex == 1u)
+				{
+					GET_SINGLE(UIManager)->StartRaceMiniGame();
+				}
+			});
+	}
+
 	if (m_hSpellMiniGame && !E::CGameInstance::Get().
 		GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
 	{
@@ -1174,6 +1203,7 @@ void CUIController::UpdateRookwoodPortalProgression()
 
 void CUIController::CreateSpellType()
 {
+	GET_SINGLE(UIManager)->FadeOutQuest(0.3f);
 	/********스펠슬롯**********/
 	m_SpellBTNs = GET_SINGLE(UIManager)->LoadPrefab("OnlySpellBTN");
 	static_cast<CButton*>(SafeGetOBJ(m_SpellBTNs[0]))->SetResTag("TEX_UI_T_spellmeter_ArrestoMomentum_Overlay");
@@ -1294,6 +1324,7 @@ void CUIController::DeleteSpellType()
 
 	E::CGameInstance::Get().SetMouseFix(true);
 	SafeGetOBJ(*m_Cursor)->SetAlpha(0.f);
+	GET_SINGLE(UIManager)->FadeInQuest(0.5f);
 
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/UI/SpellClose.wav", SOUND_PLAY_DESC{
 	.sBusID = SOUND_BUS::UI,
@@ -1692,7 +1723,7 @@ void CUIController::CreateMonsterHP()
 			if (std::string_view(pUI->GetName()) == "MonsterName")
 			{
 				if (auto* pTextBox = dynamic_cast<CTextBox*>(pUI))
-					pTextBox->SetwText(L"가시등 거비");
+					pTextBox->SetwText(L"가시등 거미");
 			}
 
 			for (const CHandle childHandle : pUI->GetChildren())

@@ -105,6 +105,12 @@ public:
 	void CloseWandShop();
 	_float2 GetUIInteractionMousePosition() const;
 	_bool IsWandShopWorldMode() const { return m_bWandShopWorldMode; }
+
+	/**********선택창API***********/
+	void CreateChoiceUI(
+		const std::vector<std::string>& choices,
+		std::function<void(size_t)> onSelected);
+	void ClearChoiceUI(_bool immediate = false);
 public:
 	std::optional<CHandle> RootUIPicking();
 	_bool IsPointerOverInteractiveUI();
@@ -154,10 +160,15 @@ private:
 	std::vector<ACTIVE_BUTTON_INFO> m_ActiveButtons{};
 	std::vector<DIALOGUE_POPUP_INFO> m_DialoguePopups{};
 	std::vector<NPC_SPEECH_BUBBLE_INFO> m_NPCSpeechBubbles{};
+	std::vector<DIALOGUE_CHOICE_UI_INFO> m_DialogueChoiceUIs{};
+	std::function<void(size_t)> m_OnDialogueChoiceSelected{};
+	size_t m_iSelectedDialogueChoice{};
+	_bool m_bDialogueChoiceActive{};
 	std::optional<CHandle> m_hQuestRoot{};
 	std::optional<CHandle> m_hQuestText{};
 	std::optional<CHandle> m_hQuestTargetIcon{};
 	std::string m_CurrentQuestText{};
+	_bool m_bQuestFadeSuppressed{};
 	_float2 m_QuestTextBaseLocalPos{};
 	_float2 m_QuestTargetIconBaseLocalPos{};
 	_float m_fDialogueTargetWidth{};
@@ -202,6 +213,8 @@ private:
 	void UpdateDialoguePopups(_float fTimeDelta);
 	void RefreshDialoguePopupLayout();
 	void UpdateNPCSpeechBubbles(_float fTimeDelta);
+	void UpdateDialogueChoiceUI();
+	void RefreshDialogueChoiceVisuals(_bool animate = true);
 	void UpdateRaceStartTimer(_float fTimeDelta);
 	void UpdateRaceMiniGame(_float fTimeDelta);
 	void BeginRaceBoard();

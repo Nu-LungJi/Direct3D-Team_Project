@@ -29,6 +29,8 @@ namespace
 
 CInteractiveNpc::~CInteractiveNpc()
 {
+	if (m_bTalking)
+		GET_SINGLE(UIManager)->ClearChoiceUI(false);
 	SyncInteractionPrompt(false);
 	if (m_hDialogueFade)
 		GET_SINGLE(UIManager)->DeleteUIRecursive(*m_hDialogueFade);
@@ -220,10 +222,22 @@ void CInteractiveNpc::AdvanceDialogue()
 	if (!currentLine.Choices.empty())
 	{
 		m_eConversationPhase = CONVERSATION_PHASE::WAITING_CHOICE;
+		std::vector<std::string> choiceTexts{};
+		choiceTexts.reserve(currentLine.Choices.size());
+		for (const auto& choice : currentLine.Choices)
+			choiceTexts.push_back(choice.Text);
 
-		// 선택 대화창 UI가 연결되면 여기에서 SelectDialogueChoice를 호출한다.
-		/*GET_SINGLE(UIManager)->ShowDialogueChoices(
-			GetHandle(), currentLine.Choices);*/
+		const CHandle npcHandle = GetHandle();
+		GET_SINGLE(UIManager)->CreateChoiceUI(
+			choiceTexts,
+			[npcHandle](size_t choiceIndex)
+			{
+				if (auto* npc = E::CGameInstance::Get().
+					GetGameObjectByHandleT<CInteractiveNpc>(npcHandle))
+				{
+					npc->SelectDialogueChoice(choiceIndex);
+				}
+			});
 
 		SyncInteractionPrompt(false);
 		return;
@@ -320,6 +334,7 @@ void CInteractiveNpc::ExecuteDialogueAction(DIALOGUE_ACTION action)
 
 void CInteractiveNpc::CancelDialogue()
 {
+	GET_SINGLE(UIManager)->ClearChoiceUI(false);
 	m_bTalking = false;
 	m_iDialogueIndex = 0u;
 	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
@@ -339,6 +354,7 @@ void CInteractiveNpc::CancelDialogue()
 
 void CInteractiveNpc::FinishDialogue()
 {
+	GET_SINGLE(UIManager)->ClearChoiceUI(false);
 	m_bTalking = false;
 	m_bCompleted = true;
 	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
@@ -469,6 +485,7 @@ _bool CInteractiveNpc::StartAccioMiniGame()
 	if (!pActivity || !pActivity->StartMatch())
 		return false;
 
+	GET_SINGLE(UIManager)->FadeOutQuest(0.3f);
 	m_eActiveMiniGame = ACTIVE_MINIGAME::ACCIO;
 	m_eState = STATE::MINIGAME;
 	return true;
@@ -510,6 +527,7 @@ void CInteractiveNpc::UpdateMiniGameState()
 		{
 			return;
 		}
+		GET_SINGLE(UIManager)->FadeInQuest(0.5f);
 	}
 
 	m_eActiveMiniGame = ACTIVE_MINIGAME::NONE;
