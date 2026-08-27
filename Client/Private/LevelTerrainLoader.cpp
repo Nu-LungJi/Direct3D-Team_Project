@@ -38,7 +38,7 @@
 #include "Mon_State.h"
 #include "Spider.h"
 #include "WorldNpc.h"
-#include "MiniGameNpc.h"
+#include "InteractiveNpc.h"
 // UI
 #include "UIController.h"
 #include "EffectUI.h"
@@ -72,6 +72,10 @@ std::future<bool> CLevelTerrainLoader::Load()
 	return E::CGameInstance::Get().WorkerEnqueueWithFuture("LOADING_TERRAIN", []()
 		{
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
 			{
 				return false;
 			}
@@ -710,23 +714,22 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
 		static constexpr NPC_MODEL_ENTRY NpcModels[] =
 		{
-			// TERRAIN 단일 NPC 검증용으로 AugustusHill만 로드한다.
+			// TERRAIN NPC 검증용으로 검증 완료된 남성 NPC 모델만 로드한다.
 			// NPC 전체 선로드는 각 모델 폴더의 모든 AN_ 클립까지 메모리에 올리므로 비활성화한다.
-			/*{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },
-			{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },*/
+			/*{ "Model_Resource_NPC_VictorRookwood", "AesopSharp" },*/
+			{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },
 			{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
-			/*{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
 			{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
+			{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
+			/*{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
 			{ "Model_Resource_NPC_EffieBones", "EffieBones" },
 			{ "Model_Resource_NPC_EleazarFig", "EleazarFig" },
 			{ "Model_Resource_NPC_GladwinMoon", "GladwinMoon" },
 			{ "Model_Resource_NPC_HelenThistlewood", "HelenThistlewood" },
 			{ "Model_Resource_NPC_JasperTrout", "JasperTrout" },
 			{ "Model_Resource_NPC_LeonaPeck", "LeonaPeck" },
-			{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
 			{ "Model_Resource_NPC_NoreenBlainey", "NoreenBlainey" },
 			{ "Model_Resource_NPC_PadraicHaggarty", "PadraicHaggarty" },
-			{ "Model_Resource_NPC_PercivalPippin", "PercivalPippin" },
 			{ "Model_Resource_NPC_PhineasBlack", "PhineasBlack" },
 			{ "Model_Resource_NPC_SironaRyan", "SironaRyan" },
 			{ "Model_Resource_NPC_ThomasBrown", "ThomasBrown" },
@@ -765,7 +768,7 @@ HRESULT CLevelTerrainLoader::MonsterLoad_InWorker()
 		if (FAILED(E::CGameInstance::Get().AddPrototype(
 			LEVEL::TERRAIN,
 			PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
-			CMiniGameNpc::Create())))
+			CInteractiveNpc::Create())))
 		{
 			MSG_BOX("TERRAIN Failed Prototype_GameObject_MiniGameNpc");
 			return E_FAIL;

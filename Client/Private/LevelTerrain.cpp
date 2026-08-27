@@ -32,7 +32,7 @@
 #include "BossTMB.h"
 #include "Spider.h"
 #include "WorldNpc.h"
-#include "MiniGameNpc.h"
+#include "InteractiveNpc.h"
 #include "TmbGurdian.h"
 #include "LightPlacementObject.h"
 #include "StarBurst.h"
@@ -198,7 +198,7 @@ HRESULT CLevelTerrain::Initialize()
 	
 	if(false)
 	{
-		CMiniGameNpc::DESC Desc{};
+		CInteractiveNpc::DESC Desc{};
 		Desc.sObjectTag = "MiniGameNpc_Test";
 		Desc.LevelTag = MagicEnumToStringView(LEVEL::TERRAIN);
 		// 스켈레톤/애니메이션 호환 확인을 위해 플레이어 SK를 사용하는 테스트 NPC.
@@ -226,8 +226,27 @@ HRESULT CLevelTerrain::Initialize()
 		Desc.IdleExpressionAnim =
 			"AN_ProfessorSharp_MasterRig_Hu_HUD_Idle_Casual_Loop_anm.bin";
 		Desc.Dialogue = {
+			// 0
 			{ "미니게임을 테스트해 보겠나?", "", true },
-			{ "좋아. 준비되면 시작하지!", "", true }
+
+			// 1
+			{ "도전할 생각인가?", "", true,
+				{
+				// 선택하면 2번 대사를 보여준 뒤 START_SPELL_MINIGAME 실행
+				{ "시작한다.", 2,
+					CInteractiveNpc::DIALOGUE_ACTION::START_SPELL_MINIGAME },
+
+					// 선택하면 3번 대사를 보여준 뒤 CANCEL_DIALOGUE 실행
+					{ "취소한다.", 3,
+						CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE }
+				}
+			},
+
+			// 2
+			{ "좋아. 바로 시작하지!", "", true },
+
+			// 3
+			{ "마음이 바뀌면 다시 찾아오게.", "", true }
 		};
 
 		if (!CGameInstance::Get().AddGameObjectToLayer(
@@ -281,7 +300,7 @@ HRESULT CLevelTerrain::Initialize()
 			{ "Gladwin Moon", "Model_Resource_NPC_GladwinMoon" }, { "Helen Thistlewood", "Model_Resource_NPC_HelenThistlewood" },
 			{ "Jasper Trout", "Model_Resource_NPC_JasperTrout" }, { "Leona Peck", "Model_Resource_NPC_LeonaPeck" },
 			{ "Leopold Babcocke", "Model_Resource_NPC_LeopoldBabcocke" }, { "Noreen Blainey", "Model_Resource_NPC_NoreenBlainey" },
-			{ "Padraic Haggarty", "Model_Resource_NPC_PadraicHaggarty" }, { "Percival Pippin", "Model_Resource_NPC_PercivalPippin" },
+			{ "Padraic Haggarty", "Model_Resource_NPC_PadraicHaggarty" },
 			{ "Phineas Black", "Model_Resource_NPC_PhineasBlack" }, { "Sirona Ryan", "Model_Resource_NPC_SironaRyan" },
 			{ "Thomas Brown", "Model_Resource_NPC_ThomasBrown" }, { "Timothy Teasdale", "Model_Resource_NPC_TimothyTeasdale" },
 		};

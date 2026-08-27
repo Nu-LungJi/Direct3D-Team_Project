@@ -77,6 +77,21 @@ public:
 	// Quest UI가 없으면 생성하고, 이미 표시 중이면 텍스트 전환 모션으로 교체한다.
 	void CreateOrChangeQuest(const std::string& questText);
 	void DeleteQuest();
+	void FadeOutQuest(float playtime = 0.3f);
+	void FadeInQuest(float playtime = 0.5f);
+
+	/********레이스 시작 타이머***********/
+	void StartRaceStartTimer();
+	_bool IsRaceStartTimerPlaying() const { return m_bRaceStartTimerPlaying; }
+
+	/********레이스 미니게임***********/
+	void StartRaceMiniGame();
+	void AddRaceMiniGameCoin(uint32_t amount = 1u);
+	void FinishRaceMiniGame();
+	uint32_t GetRaceMiniGameCoinCount() const
+	{
+		return m_iRaceMiniGameCoinCount;
+	}
 
 	/********지팡이 상점***********/
 	void OpenWandShop();
@@ -90,6 +105,12 @@ public:
 	void CloseWandShop();
 	_float2 GetUIInteractionMousePosition() const;
 	_bool IsWandShopWorldMode() const { return m_bWandShopWorldMode; }
+
+	/**********선택창API***********/
+	void CreateChoiceUI(
+		const std::vector<std::string>& choices,
+		std::function<void(size_t)> onSelected);
+	void ClearChoiceUI(_bool immediate = false);
 public:
 	std::optional<CHandle> RootUIPicking();
 	_bool IsPointerOverInteractiveUI();
@@ -118,7 +139,6 @@ private:
 		states[static_cast<size_t>(SPELL_TYPE::FLIPENDO)] = false;
 		states[static_cast<size_t>(SPELL_TYPE::TRANSFORMATION)] = false;
 		states[static_cast<size_t>(SPELL_TYPE::EXPELLIARMUS)] = false;
-		states[static_cast<size_t>(SPELL_TYPE::BOMBARDA)] = false;
 		states[static_cast<size_t>(SPELL_TYPE::INCENDIO)] = false;
 		states[static_cast<size_t>(SPELL_TYPE::DISILLUSIONMENT)] = false;
 		states[static_cast<size_t>(SPELL_TYPE::AVADAKEDAVRA)] = false;
@@ -140,11 +160,49 @@ private:
 	std::vector<ACTIVE_BUTTON_INFO> m_ActiveButtons{};
 	std::vector<DIALOGUE_POPUP_INFO> m_DialoguePopups{};
 	std::vector<NPC_SPEECH_BUBBLE_INFO> m_NPCSpeechBubbles{};
+	std::vector<DIALOGUE_CHOICE_UI_INFO> m_DialogueChoiceUIs{};
+	std::function<void(size_t)> m_OnDialogueChoiceSelected{};
+	size_t m_iSelectedDialogueChoice{};
+	_bool m_bDialogueChoiceActive{};
 	std::optional<CHandle> m_hQuestRoot{};
 	std::optional<CHandle> m_hQuestText{};
+	std::optional<CHandle> m_hQuestTargetIcon{};
 	std::string m_CurrentQuestText{};
+	_bool m_bQuestFadeSuppressed{};
 	_float2 m_QuestTextBaseLocalPos{};
+	_float2 m_QuestTargetIconBaseLocalPos{};
 	_float m_fDialogueTargetWidth{};
+	std::vector<CHandle> m_RaceStartTimerRoots{};
+	std::optional<CHandle> m_hRaceStartTimerFrame{};
+	std::optional<CHandle> m_hRaceStartTimerNumberPad{};
+	std::optional<CHandle> m_hRaceStartTimerText{};
+	std::optional<CHandle> m_hRaceStartTimerFire{};
+	std::optional<CHandle> m_hRaceStartTimerFlagR{};
+	std::optional<CHandle> m_hRaceStartTimerFlagL{};
+	_float m_fRaceStartTimerElapsed{};
+	_float m_fRaceStartTimerFrameBaseScale{ 1.f };
+	_float m_fRaceStartTimerNumberPadBaseScale{ 1.f };
+	_float2 m_RaceStartTimerTextBaseLocalPos{};
+	_float m_fRaceStartTimerFireBaseAlpha{ 1.f };
+	_float m_fRaceStartTimerFlagRBaseAlpha{ 1.f };
+	_float m_fRaceStartTimerFlagLBaseAlpha{ 1.f };
+	_bool m_bRaceStartTimerPlaying{ false };
+
+	enum class RACE_MINIGAME_PHASE : uint8_t
+	{
+		NONE,
+		COUNTDOWN,
+		RACING,
+		RESULT
+	};
+	RACE_MINIGAME_PHASE m_eRaceMiniGamePhase{ RACE_MINIGAME_PHASE::NONE };
+	std::vector<CHandle> m_RaceBoardRoots{};
+	std::vector<CHandle> m_RaceResultRoots{};
+	std::optional<CHandle> m_hRaceBoardTimerText{};
+	std::optional<CHandle> m_hRaceBoardCoinText{};
+	std::optional<CHandle> m_hRaceResultCoinText{};
+	_float m_fRaceMiniGameElapsed{};
+	uint32_t m_iRaceMiniGameCoinCount{};
 	CWandShop m_WandShop{};
 	_bool m_bWandShopWorldMode{ false };
 	_float4x4 m_WandShopPanelWorld{};
@@ -155,6 +213,14 @@ private:
 	void UpdateDialoguePopups(_float fTimeDelta);
 	void RefreshDialoguePopupLayout();
 	void UpdateNPCSpeechBubbles(_float fTimeDelta);
+	void UpdateDialogueChoiceUI();
+	void RefreshDialogueChoiceVisuals(_bool animate = true);
+	void UpdateRaceStartTimer(_float fTimeDelta);
+	void UpdateRaceMiniGame(_float fTimeDelta);
+	void BeginRaceBoard();
+	void ClearRaceMiniGameUI();
+	void PlayRaceRootsFadeIn(const std::vector<CHandle>& roots,
+		_float playtime = 0.3f);
 	void UpdateWandShopWorldMousePosition();
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
@@ -164,6 +230,7 @@ public:
 	void DeleteUIRecursive(std::optional<CHandle> targetHandle);
 	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
 	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
+	void PlayOnlyFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 
 private:
 	friend class CWandShop;

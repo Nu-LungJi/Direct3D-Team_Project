@@ -1000,9 +1000,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	if (m_pStateMachine &&
 		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
 		m_iHp > 0 && !m_bFlyRequested &&
+		!CGameInstance::Get().KeyPressing(DIK_LSHIFT) &&
+		CGameInstance::Get().KeyDown(DIK_R))
+	{
+		m_pStateMachine->RequestState(PLAYER_STATE::REVELIO_SKILL);
+	}
+
+	if (m_pStateMachine &&
+		m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&
+		m_iHp > 0 && !m_bFlyRequested &&
 		CGameInstance::Get().KeyDown(DIK_G))
 	{
-		m_pStateMachine->RequestState(PLAYER_STATE::POTION);
+		TryUsePotion();
 	}
 
 	// 프로테고가 실제 공격을 막은 뒤에도 Q를 유지하고 있을 때만
@@ -1349,91 +1358,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 	UpdateAncientMagicActiveButtons();
-
-	 // 임시
-	if (m_bCoolTime_Num1 == true) {
-		if (m_fCoolTime_Num1 > 3.f) {
-			m_bCoolTime_Num1 = false;
-			m_fCoolTime_Num1 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num1 += fTimeDelta;
-		}
-	}
-	if (m_bCoolTime_Num2 == true) {
-		if (m_fCoolTime_Num2 > 3.f) {
-			m_bCoolTime_Num2 = false;
-			m_fCoolTime_Num2 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num2 += fTimeDelta;
-		}
-	}
-	if (m_bCoolTime_Num3 == true) {
-		if (m_fCoolTime_Num3 > 3.f) {
-			m_bCoolTime_Num3 = false;
-			m_fCoolTime_Num3 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num3 += fTimeDelta;
-		}
-	}
-	if (m_bCoolTime_Num4 == true) {
-		if (m_fCoolTime_Num4 > 3.f) {
-			m_bCoolTime_Num4 = false;
-			m_fCoolTime_Num4 = 0.f;
-		}
-		else {
-			m_fCoolTime_Num4 += fTimeDelta;
-		}
-	}
-
+	UpdateSkillSlotCooldowns(fTimeDelta);
 
 	if (!m_bFlyRequested) {
-		if (CGameInstance::Get().KeyDown(DIK_1) && !m_bCoolTime_Num1) {
-			//if (TryUseSkillSlot(1))
-			if (m_pStateMachine->RequestState(PLAYER_STATE::ACCIO_SKILL))
-				m_bCoolTime_Num1 = true;
-		}
-
-		if (CGameInstance::Get().KeyDown(DIK_2) && !m_bCoolTime_Num2)
-		{
-			//if (TryUseSkillSlot(2))
-			if (m_pStateMachine->RequestState(PLAYER_STATE::DEPULSO_SKILL))
-				m_bCoolTime_Num2 = true;
-		}
-		if (CGameInstance::Get().KeyDown(DIK_3) && !m_bCoolTime_Num3)
-		{
-			//if (TryUseSkillSlot(3))
-			if (m_pStateMachine->RequestState(PLAYER_STATE::DESCENDO_SKILL))
-				m_bCoolTime_Num3 = true;
-		}
-
-		if (CGameInstance::Get().KeyDown(DIK_4) && !m_bCoolTime_Num4) {
-			if (m_pStateMachine->RequestState(PLAYER_STATE::REPAIRO_SKILL))
-				m_bCoolTime_Num4 = true;
-		}
-
-		// [LSY] 스킬 슬롯에서 CONFRINGO를 연결하기 전까지 5번 키로 직접 테스트한다.
-		if (CGameInstance::Get().KeyDown(DIK_5))
-			m_pStateMachine->RequestState(PLAYER_STATE::CONFRINGO_SKILL);
-
-		// 봄바르다 애니메이션 및 이펙트 큐 타이밍 확인용 임시 입력.
-		if (CGameInstance::Get().KeyDown(DIK_6))
-			m_pStateMachine->RequestState(PLAYER_STATE::BOMBARDA_SKILL);
-
-		// 변신 스킬 상태와 캐스팅 애니메이션 확인용 임시 입력.
-		if (CGameInstance::Get().KeyDown(DIK_7))
-			m_pStateMachine->RequestState(PLAYER_STATE::TRANSFORMATION_SKILL);
+		if (CGameInstance::Get().KeyDown(DIK_1)) TryUseSkillSlot(1);
+		else if (CGameInstance::Get().KeyDown(DIK_2)) TryUseSkillSlot(2);
+		else if (CGameInstance::Get().KeyDown(DIK_3)) TryUseSkillSlot(3);
+		else if (CGameInstance::Get().KeyDown(DIK_4)) TryUseSkillSlot(4);
 
 		// L 키는 빌드 구성과 무관한 정식 루모스 토글 입력이다.
 		// Lumos 상태가 현재 활성 여부에 따라 Start/Hold 또는 Stop을 선택한다.
 		if (CGameInstance::Get().KeyDown(DIK_L))
 			m_pStateMachine->RequestState(PLAYER_STATE::LUMOS_SKILL);
-
-		// [LSY] 아바다 케다브라 애니메이션과 이펙트 연결 확인용 임시 입력.
-		if (CGameInstance::Get().KeyDown(DIK_U))
-			m_pStateMachine->RequestState(PLAYER_STATE::AVADA_KEDAVRA_SKILL);
 
 	}
 	
@@ -1524,7 +1460,10 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 {
 	auto* pUIController =
 		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
-	if (!pUIController || !m_pStateMachine)
+	if (!pUIController || !m_pStateMachine ||
+		iSlotNumber < 1u || iSlotNumber > m_SkillSlotCooldowns.size())
+		return false;
+	if (m_SkillSlotCooldowns[iSlotNumber - 1u] > 0.f)
 		return false;
 
 	const SPELL_TYPE eSpellType = static_cast<SPELL_TYPE>(
@@ -1542,6 +1481,18 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 
 	case SPELL_TYPE::DESENDO:
 		eSkillState = PLAYER_STATE::DESCENDO_SKILL;
+		break;
+	case SPELL_TYPE::BOMBARDA:
+		eSkillState = PLAYER_STATE::BOMBARDA_SKILL;
+		break;
+	case SPELL_TYPE::TRANSFORMATION:
+		eSkillState = PLAYER_STATE::TRANSFORMATION_SKILL;
+		break;
+	case SPELL_TYPE::CONFRINGO:
+		eSkillState = PLAYER_STATE::CONFRINGO_SKILL;
+		break;
+	case SPELL_TYPE::AVADAKEDAVRA:
+		eSkillState = PLAYER_STATE::AVADA_KEDAVRA_SKILL;
 		break;
 
 	case SPELL_TYPE::REPARO:
@@ -1561,7 +1512,36 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 		return false;
 
 	if (eSpellType != SPELL_TYPE::LUMOS)
+	{
+		m_SkillSlotCooldowns[iSlotNumber - 1u] = SKILL_SLOT_COOLDOWN;
 		pUIController->UseSpell(iSlotNumber);
+	}
+	return true;
+}
+
+void CPlayer::UpdateSkillSlotCooldowns(_float fTimeDelta)
+{
+	for (auto& fCooldown : m_SkillSlotCooldowns)
+		fCooldown = std::max(0.f, fCooldown - std::max(0.f, fTimeDelta));
+}
+
+_bool CPlayer::TryUsePotion()
+{
+	auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+	if (!pUIController || !m_pStateMachine ||
+		!m_pStateMachine->RequestState(PLAYER_STATE::POTION))
+		return false;
+
+	pUIController->UsePotion();
+	CGameInstance::Get().GetSoundManager()->Play2D(
+		"./Resources/SampleClient/Sound/UI/Potion.wav", SOUND_PLAY_DESC{
+		.sBusID = SOUND_BUS::UI,
+		.fVolume = 1.f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = false
+	});
 	return true;
 }
 
@@ -1818,8 +1798,11 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 
 void CPlayer::SetDialoguePose(const _float3& vPosition, const _float3& vLookAt)
 {
-	if (m_pComCharacterController)
-		m_pComCharacterController->SetPosition(vPosition);
+	// Warp through the motor so vPosition is treated as the GameObject origin.
+	// Setting the CCT center directly here makes the next FixedUpdate subtract
+	// the controller center offset and shifts the player vertically.
+	if (m_pComMoveIntent)
+		m_pComMoveIntent->RequestWarp(vPosition);
 
 	GetTransform().SetPosition(vPosition);
 	_vector vTarget = XMLoadFloat3(&vLookAt);
@@ -2563,8 +2546,6 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
 		skinningConstants.iVertexCount = mesh->GetNumVertices();
 		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
-		skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
-		skinningConstants.iMorphVertexCount = mesh->GetNumVertices();
 
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
@@ -2573,10 +2554,6 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
 		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
-		ID3D11ShaderResourceView* morphSRV = nullptr;
-		if (const auto& morphBuffer = mesh->GetMorphDeltaBuffer())
-			morphSRV = morphBuffer->GetSRV().Get();
-		pContext->VSSetShaderResources(9, 1, &morphSRV);
 		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 		const UINT stride = mesh->GetVertexStride();
 		const UINT offset = 0;

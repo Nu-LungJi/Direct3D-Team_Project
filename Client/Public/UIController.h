@@ -40,7 +40,7 @@ public:
 	void CreateSpellType();  // b눌렀을때 스펠 슬롯 설정 생성
 	void DeleteSpellType(); // b눌렀을때 스펠 슬롯 설정 해제
 	void CreateDeathScene(); // 죽는 화면
-	_bool StartSpellMiniGame(_bool secondGame = false);
+	_bool StartSpellMiniGame(_bool secondGame = false); // 스펠 미니게임 시작
 	void StopSpellMiniGame();
 
 	// ******** HP
@@ -138,6 +138,13 @@ private:
 	std::optional<CHandle> m_hQuestRoot{ std::nullopt };
 	std::optional<CHandle> m_hQuestText{ std::nullopt };
 	QUEST_UI_GROUP m_eDisplayedQuestGroup{ QUEST_UI_GROUP::NONE };
+	_bool m_bRookwoodSecondApproachReached{ false };
+	_bool m_bRookwoodSecondBattleCompleted{ false };
+	std::vector<CHandle> m_RookwoodSecondBattleMonsters{};
+	_bool m_bRookwoodThirdBattleCompleted{ false };
+	_bool m_bRookwoodBridgeApproachReached{ false };
+	_bool m_bRookwoodPortalApproachReached{ false };
+	std::vector<CHandle> m_RookwoodThirdBattleMonsters{};
 
 	// Spell learning mini game
 	std::optional<CHandle> m_hSpellMiniGame{ std::nullopt };
@@ -162,6 +169,11 @@ private:
 	void BindMiniMap();
 	void SubscribeQuestUIEvents();
 	void ApplyPendingQuestUIGroups();
+	void UpdateRookwoodQuestProgression();
+	void UpdateRookwoodSecondBattleCompletion();
+	void UpdateRookwoodThirdBattleCompletion();
+	void UpdateRookwoodBridgeProgression();
+	void UpdateRookwoodPortalProgression();
 	void RefreshQuestWidget(QUEST_UI_GROUP changedGroup, _bool active);
 	void ShowQuestWidget(QUEST_UI_GROUP group);
 	void HideQuestWidget();
@@ -169,6 +181,8 @@ private:
 	void FadeOutSpellMiniGameBackground();
 	void FadeOutPotionCountForSpellMiniGame();
 	void FadeInPotionCountAfterSpellMiniGame();
+	void FadeOutQuestForSpellMiniGame();
+	void FadeInQuestAfterSpellMiniGame();
 
 	/**********모션************/
 	private:

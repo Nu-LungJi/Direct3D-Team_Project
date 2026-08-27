@@ -26,6 +26,8 @@ public:
 
 private:
 	_bool m_bSpawned{ false };
+	_bool m_bQuestAdvanced{ false };
+	_float m_fFixElapsedTime{};
 	std::optional<CHandle> m_hTiggeredPlayer{};
 };
 

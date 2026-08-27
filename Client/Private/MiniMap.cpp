@@ -471,6 +471,9 @@ void CMiniMap::InitializeBattleZone()
 	case ETOUI(LEVEL::CHARLES_ROOKWOOD):
 		InitRookwoodBattleZone();
 		break;
+	case ETOUI(LEVEL::BOSS_CHARLES_ROOKWOOD):
+		InitBossRookwoodBattleZone();
+		break;
 	default:
 		break;
 	}
@@ -1279,7 +1282,7 @@ void CMiniMap::InitRookwoodBattleZone()
 	BATTLE_ZONE_INFO trial03{};
 	trial03.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_03;
 	trial03.Enabled = false;
-	trial03.Center = { -254.f, 0.f, -210.f };
+	trial03.Center = { -254.361f, 0.f, -209.996f };
 	trial03.WorldRadius = 30.f;
 	trial03.VisibleDistance = 60.f;
 	trial03.Alpha = 0.25f;
@@ -1289,10 +1292,23 @@ void CMiniMap::InitRookwoodBattleZone()
 
 void CMiniMap::InitBossRookwoodBattleZone()
 {
+	BATTLE_ZONE_INFO bossZone{};
+	bossZone.Group = QUEST_UI_GROUP::BOSS_CHARLES_ROOKWOOD;
+	bossZone.Enabled = false;
+	bossZone.Center = { -28.f, 0.f, 7.f };
+	// 플레이어의 일반 몬스터/보스 HP UI 감지 반경과 동일한 거리다.
+	bossZone.WorldRadius = 40.f;
+	bossZone.VisibleDistance = 100.f;
+	bossZone.Alpha = 0.25f;
+	bossZone.LevelID = ETOUI(LEVEL::BOSS_CHARLES_ROOKWOOD);
+	AddBattleZone(bossZone);
 }
 
 void CMiniMap::InitRookwoodObjectives()
 {
+	_float MackerYOfsset = -1.f;
+	_float IconSize_default = 28.f;
+
 	MINIMAP_OBJECTIVE_INFO objective{};
 	objective.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_01;
 	objective.Enabled = false;
@@ -1304,19 +1320,45 @@ void CMiniMap::InitRookwoodObjectives()
 	objective.VisualPhases.push_back({
 		.MinDistance = 0.f,
 		.MaxDistance = 0.f,
-		.TextureTag = "TEX_UI_T_MiniMap_ActiveMission_Area",
+		.TextureTag = "TEX_UI_T_Minimap_Mission_Active",
 		.PrototypeTag = "Prototype_GameObject_TextureUI",
-		.IconSize = 36.f,
+		.IconSize = IconSize_default,
 		.TintColor = { 1.f, 0.78f, 0.04f },
 		.DistanceHysteresis = 1.f,
 		.ShowScreenMarker = true,
 		.ScreenMarkerHideWithinDistance = 40.f,
 		.ScreenMarkerSize = 28.f,
-		.ScreenMarkerWorldOffset = { 0.f, 0.f, 0.f },
+		.ScreenMarkerWorldOffset = { 0.f, MackerYOfsset, 0.f },
 		.ScreenMarkerWeight = 100
 	});
 
 	AddObjective(std::move(objective));
+
+	// 첫 전투 완료 후 실제 두 번째 전투 구역으로 가기 전에 거치는
+	// 이동 지점. 전투 그룹과 분리되어 있으므로 빨간 원은 생성되지 않는다.
+	MINIMAP_OBJECTIVE_INFO approachObjective{};
+	approachObjective.Group = QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_TRIAL_02;
+	approachObjective.Enabled = false;
+	approachObjective.Key = "Rookwood_Approach_Battle02";
+	approachObjective.WorldPosition = { -253.683f, -223.682f, -54.548f };
+	approachObjective.LevelID = ETOUI(LEVEL::CHARLES_ROOKWOOD);
+	approachObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::MANUAL;
+	approachObjective.ManualActive = true;
+	approachObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_Minimap_Mission_Active",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = IconSize_default,
+		.TintColor = { 1.f, 0.78f, 0.04f },
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = true,
+		.ScreenMarkerHideWithinDistance = 12.f,
+		.ScreenMarkerSize = 28.f,
+		.ScreenMarkerWorldOffset = { 0.f, MackerYOfsset, 0.f },
+		.ScreenMarkerWeight = 100
+	});
+	AddObjective(std::move(approachObjective));
 
 	MINIMAP_OBJECTIVE_INFO secondObjective{};
 	secondObjective.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_02;
@@ -1329,18 +1371,92 @@ void CMiniMap::InitRookwoodObjectives()
 	secondObjective.VisualPhases.push_back({
 		.MinDistance = 0.f,
 		.MaxDistance = 0.f,
-		.TextureTag = "TEX_UI_T_MiniMap_ActiveMission_Area",
+		.TextureTag = "TEX_UI_T_Minimap_Mission_Active",
 		.PrototypeTag = "Prototype_GameObject_TextureUI",
-		.IconSize = 36.f,
+		.IconSize = IconSize_default,
 		.TintColor = { 1.f, 0.78f, 0.04f },
 		.DistanceHysteresis = 1.f,
 		.ShowScreenMarker = true,
 		.ScreenMarkerHideWithinDistance = 20.f,
 		.ScreenMarkerSize = 28.f,
-		.ScreenMarkerWorldOffset = { 0.f, 0.f, 0.f },
+		.ScreenMarkerWorldOffset = { 0.f, MackerYOfsset, 0.f },
 		.ScreenMarkerWeight = 100
 	});
 	AddObjective(std::move(secondObjective));
+
+	MINIMAP_OBJECTIVE_INFO thirdObjective{};
+	thirdObjective.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_03;
+	thirdObjective.Enabled = false;
+	thirdObjective.Key = "Rookwood_MainMission_Battle03";
+	thirdObjective.WorldPosition = { -254.361f, -223.280f, -209.996f };
+	thirdObjective.LevelID = ETOUI(LEVEL::CHARLES_ROOKWOOD);
+	thirdObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::MANUAL;
+	thirdObjective.ManualActive = true;
+	thirdObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_Minimap_Mission_Active",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = IconSize_default,
+		.TintColor = { 1.f, 0.78f, 0.04f },
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = true,
+		.ScreenMarkerHideWithinDistance = 30.f,
+		.ScreenMarkerSize = 28.f,
+		.ScreenMarkerWorldOffset = { 0.f, 0.f, 0.f },
+		.ScreenMarkerWeight = 100
+	});
+	AddObjective(std::move(thirdObjective));
+
+	// 세 번째 전투 완료 후 복구해야 하는 다리까지 안내한다.
+	// 전투 구역이 아니므로 배틀존은 연결하지 않는다.
+	MINIMAP_OBJECTIVE_INFO bridgeObjective{};
+	bridgeObjective.Group = QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE;
+	bridgeObjective.Enabled = false;
+	bridgeObjective.Key = "Rookwood_RepairBridge";
+	bridgeObjective.WorldPosition = { -252.617f, -239.471f, -378.125f };
+	bridgeObjective.LevelID = ETOUI(LEVEL::CHARLES_ROOKWOOD);
+	bridgeObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::MANUAL;
+	bridgeObjective.ManualActive = true;
+	bridgeObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_Minimap_Mission_Active",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = IconSize_default,
+		.TintColor = { 1.f, 0.78f, 0.04f },
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = true,
+		.ScreenMarkerHideWithinDistance = 12.f,
+		.ScreenMarkerSize = 28.f,
+		.ScreenMarkerWorldOffset = { 0.f, MackerYOfsset, 0.f },
+		.ScreenMarkerWeight = 100
+	});
+	AddObjective(std::move(bridgeObjective));
+
+	MINIMAP_OBJECTIVE_INFO portalObjective{};
+	portalObjective.Group = QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_PORTAL;
+	portalObjective.Enabled = false;
+	portalObjective.Key = "Rookwood_UnknownPortal";
+	portalObjective.WorldPosition = { -253.258f, -236.414f, -582.386f };
+	portalObjective.LevelID = ETOUI(LEVEL::CHARLES_ROOKWOOD);
+	portalObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::MANUAL;
+	portalObjective.ManualActive = true;
+	portalObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_Minimap_Mission_Active",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = IconSize_default,
+		.TintColor = { 1.f, 0.78f, 0.04f },
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = true,
+		.ScreenMarkerHideWithinDistance = 12.f,
+		.ScreenMarkerSize = 28.f,
+		.ScreenMarkerWorldOffset = { 0.f, MackerYOfsset, 0.f },
+		.ScreenMarkerWeight = 100
+	});
+	AddObjective(std::move(portalObjective));
 }
 
 CUIObject* CMiniMap::SafeGetOBJ(CHandle pHandle)

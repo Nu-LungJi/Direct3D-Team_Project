@@ -165,7 +165,436 @@ void UIManager::Update(_float fTimeDelta)
 	UpdateActiveButtons();
 	UpdateDialoguePopups(fTimeDelta);
 	UpdateNPCSpeechBubbles(fTimeDelta);
+	UpdateDialogueChoiceUI();
+	UpdateRaceStartTimer(fTimeDelta);
+	UpdateRaceMiniGame(fTimeDelta);
 	m_WandShop.Update(*this, fTimeDelta);
+}
+
+void UIManager::StartRaceMiniGame()
+{
+	ClearRaceMiniGameUI();
+	FadeOutQuest(0.3f);
+	m_fRaceMiniGameElapsed = 0.f;
+	m_iRaceMiniGameCoinCount = 0u;
+	m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::NONE;
+
+	StartRaceStartTimer();
+	if (IsRaceStartTimerPlaying())
+		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::COUNTDOWN;
+	else
+		FadeInQuest(0.5f);
+}
+
+void UIManager::AddRaceMiniGameCoin(uint32_t amount)
+{
+	if (m_eRaceMiniGamePhase != RACE_MINIGAME_PHASE::RACING)
+		return;
+
+	constexpr uint32_t MAX_RACE_COIN_COUNT = 99u;
+	m_iRaceMiniGameCoinCount = std::min(
+		MAX_RACE_COIN_COUNT,
+		m_iRaceMiniGameCoinCount + amount);
+
+	if (!m_hRaceBoardCoinText)
+		return;
+	if (auto* textBox = dynamic_cast<CTextBox*>(
+		GetSafeUI(*m_hRaceBoardCoinText)))
+	{
+		wchar_t coinText[16]{};
+		swprintf_s(
+			coinText,
+			std::size(coinText),
+			L"%02u / %u",
+			m_iRaceMiniGameCoinCount,
+			MAX_RACE_COIN_COUNT);
+		textBox->SetwText(coinText);
+	}
+}
+
+void UIManager::BeginRaceBoard()
+{
+	m_RaceBoardRoots = LoadPrefab("RaceBoard");
+	m_hRaceBoardTimerText.reset();
+	m_hRaceBoardCoinText.reset();
+	m_fRaceMiniGameElapsed = 0.f;
+
+	if (auto* timer = FindUIByNameRecursive(
+		m_RaceBoardRoots, "TimerTitle"))
+	{
+		m_hRaceBoardTimerText = timer->GetHandle();
+		if (auto* textBox = dynamic_cast<CTextBox*>(timer))
+			textBox->SetFixedDigitLayout(true);
+	}
+	// RaceBoard has two objects named Coin. The first is the numeric counter
+	// and is intentionally found first by the hierarchy traversal.
+	if (auto* coin = FindUIByNameRecursive(m_RaceBoardRoots, "Coin"))
+	{
+		m_hRaceBoardCoinText = coin->GetHandle();
+		if (auto* textBox = dynamic_cast<CTextBox*>(coin))
+		{
+			textBox->SetColoredSuffix(
+				L"99",
+				{ 0.39215687f, 1.f, 0.39215687f });
+		}
+	}
+
+	if (!m_hRaceBoardTimerText || !m_hRaceBoardCoinText)
+	{
+		ClearRaceMiniGameUI();
+		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::NONE;
+		FadeInQuest(0.5f);
+		return;
+	}
+
+	m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RACING;
+	AddRaceMiniGameCoin(0u);
+	PlayRaceRootsFadeIn(m_RaceBoardRoots);
+}
+
+void UIManager::FinishRaceMiniGame()
+{
+	if (m_eRaceMiniGamePhase != RACE_MINIGAME_PHASE::RACING)
+		return;
+
+	for (const CHandle root : m_RaceBoardRoots)
+	{
+		if (GetSafeUI(root))
+			PlayFadeOutDelete(root, 0.f, 0.3f);
+	}
+	m_RaceBoardRoots.clear();
+	m_hRaceBoardTimerText.reset();
+	m_hRaceBoardCoinText.reset();
+
+	m_RaceResultRoots = LoadPrefab("Flag");
+	m_hRaceResultCoinText.reset();
+	if (auto* coin = FindUIByNameRecursive(
+		m_RaceResultRoots, "CoinCnt"))
+	{
+		m_hRaceResultCoinText = coin->GetHandle();
+		if (auto* textBox = dynamic_cast<CTextBox*>(coin))
+		{
+			wchar_t coinText[8]{};
+			swprintf_s(
+				coinText,
+				std::size(coinText),
+				L"%03u",
+				m_iRaceMiniGameCoinCount);
+			textBox->SetwText(coinText);
+		}
+	}
+
+	m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RESULT;
+	PlayRaceRootsFadeIn(m_RaceResultRoots);
+	FadeInQuest(0.5f);
+}
+
+void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
+{
+	if (m_eRaceMiniGamePhase == RACE_MINIGAME_PHASE::COUNTDOWN)
+	{
+		if (!IsRaceStartTimerPlaying())
+			BeginRaceBoard();
+		return;
+	}
+
+	if (m_eRaceMiniGamePhase != RACE_MINIGAME_PHASE::RACING)
+		return;
+
+	constexpr _float RACE_DURATION = 120.f;
+	m_fRaceMiniGameElapsed += std::max(0.f, fTimeDelta);
+	const _float remaining = std::max(
+		0.f,
+		RACE_DURATION - m_fRaceMiniGameElapsed);
+
+	if (m_hRaceBoardTimerText)
+	{
+		if (auto* textBox = dynamic_cast<CTextBox*>(
+			GetSafeUI(*m_hRaceBoardTimerText)))
+		{
+			const uint32_t totalCentiseconds = static_cast<uint32_t>(
+				std::ceil(remaining * 100.f));
+			const uint32_t minutes = totalCentiseconds / 6000u;
+			const uint32_t seconds = (totalCentiseconds / 100u) % 60u;
+			const uint32_t centiseconds = totalCentiseconds % 100u;
+			wchar_t timerText[16]{};
+			swprintf_s(
+				timerText,
+				std::size(timerText),
+				L"%u:%02u:%02u",
+				minutes,
+				seconds,
+				centiseconds);
+			textBox->SetwText(timerText);
+		}
+	}
+
+	if (m_fRaceMiniGameElapsed >= RACE_DURATION)
+		FinishRaceMiniGame();
+}
+
+void UIManager::ClearRaceMiniGameUI()
+{
+	for (const CHandle root : m_RaceBoardRoots)
+	{
+		if (GetSafeUI(root))
+			PlayFadeOutDelete(root, 0.f, 0.25f);
+	}
+	for (const CHandle root : m_RaceResultRoots)
+	{
+		if (GetSafeUI(root))
+			PlayFadeOutDelete(root, 0.f, 0.25f);
+	}
+
+	m_RaceBoardRoots.clear();
+	m_RaceResultRoots.clear();
+	m_hRaceBoardTimerText.reset();
+	m_hRaceBoardCoinText.reset();
+	m_hRaceResultCoinText.reset();
+}
+
+void UIManager::PlayRaceRootsFadeIn(
+	const std::vector<CHandle>& roots,
+	_float playtime)
+{
+	for (const CHandle root : roots)
+	{
+		auto* ui = GetSafeUI(root);
+		if (!ui)
+			continue;
+
+		const _float targetAlpha = ui->GetAlpha();
+		ui->SetAlpha(0.f);
+
+		// UI의 첫 APPEAR 처리에서는 각 UI 클래스가 기존 Tween을 지운다.
+		// 로드 직후 Tween을 시작하면 다음 프레임 APPEAR에서 삭제되므로,
+		// APPEAR 콜백 안에서 FadeIn Tween을 등록해야 한다.
+		ui->Appear = [root, targetAlpha, playtime](CUIObject*)
+		{
+			auto* target = GetSafeUI(root);
+			if (!target)
+				return;
+
+			target->SetAlpha(0.f);
+			if (auto* tween = target->GetTweenCom())
+			{
+				tween->PlayTween(
+					0.f,
+					targetAlpha,
+					std::max(0.f, playtime),
+					[root](_float value)
+					{
+						if (auto* current = GetSafeUI(root))
+							current->SetAlpha(value);
+					}, nullptr, EEaseType::EaseOutQuad);
+			}
+			else
+			{
+				target->SetAlpha(targetAlpha);
+			}
+		};
+	}
+}
+
+void UIManager::StartRaceStartTimer()
+{
+	// 디버그 키를 연속으로 눌러도 이전 타이머가 중복되지 않도록 정리한다.
+	for (const CHandle root : m_RaceStartTimerRoots)
+		DeleteUIRecursive(root);
+
+	m_RaceStartTimerRoots = LoadPrefab("RaceStartTimer");
+	m_hRaceStartTimerFrame.reset();
+	m_hRaceStartTimerNumberPad.reset();
+	m_hRaceStartTimerText.reset();
+	m_hRaceStartTimerFire.reset();
+	m_hRaceStartTimerFlagR.reset();
+	m_hRaceStartTimerFlagL.reset();
+
+	if (auto* frame = FindUIByNameRecursive(m_RaceStartTimerRoots, "StartTimerBG"))
+	{
+		m_hRaceStartTimerFrame = frame->GetHandle();
+		m_fRaceStartTimerFrameBaseScale = frame->GetScaleRatio();
+		frame->SetAlpha(1.f);
+	}
+
+	if (auto* numberPad = FindUIByNameRecursive(m_RaceStartTimerRoots, "NumberPad"))
+	{
+		m_hRaceStartTimerNumberPad = numberPad->GetHandle();
+		m_fRaceStartTimerNumberPadBaseScale = numberPad->GetScaleRatio();
+		numberPad->SetAlpha(0.f);
+		numberPad->SetScaleRatio(0.f);
+	}
+
+	if (auto* text = FindUIByNameRecursive(m_RaceStartTimerRoots, "64px"))
+	{
+		m_hRaceStartTimerText = text->GetHandle();
+		m_RaceStartTimerTextBaseLocalPos = {
+			text->GetUIInfo().LocalX,
+			text->GetUIInfo().LocalY
+		};
+		text->SetColor({ 1.f, 1.f, 1.f });
+		if (auto* textBox = dynamic_cast<CTextBox*>(text))
+			textBox->SetwText(L"3");
+	}
+
+	if (auto* fire = FindUIByNameRecursive(m_RaceStartTimerRoots, "Fire"))
+	{
+		m_hRaceStartTimerFire = fire->GetHandle();
+		m_fRaceStartTimerFireBaseAlpha = fire->GetAlpha();
+	}
+
+	if (auto* flagR = FindUIByNameRecursive(m_RaceStartTimerRoots, "FlagR"))
+	{
+		m_hRaceStartTimerFlagR = flagR->GetHandle();
+		m_fRaceStartTimerFlagRBaseAlpha = flagR->GetAlpha();
+	}
+
+	if (auto* flagL = FindUIByNameRecursive(m_RaceStartTimerRoots, "FlagL"))
+	{
+		m_hRaceStartTimerFlagL = flagL->GetHandle();
+		m_fRaceStartTimerFlagLBaseAlpha = flagL->GetAlpha();
+	}
+
+	m_fRaceStartTimerElapsed = 0.f;
+	m_bRaceStartTimerPlaying = m_hRaceStartTimerFrame.has_value() &&
+		m_hRaceStartTimerNumberPad.has_value() &&
+		m_hRaceStartTimerText.has_value() &&
+		m_hRaceStartTimerFire.has_value() &&
+		m_hRaceStartTimerFlagR.has_value() &&
+		m_hRaceStartTimerFlagL.has_value();
+
+	if (!m_bRaceStartTimerPlaying)
+	{
+		for (const CHandle root : m_RaceStartTimerRoots)
+			DeleteUIRecursive(root);
+		m_RaceStartTimerRoots.clear();
+	}
+}
+
+void UIManager::UpdateRaceStartTimer(_float fTimeDelta)
+{
+	if (!m_bRaceStartTimerPlaying || !m_hRaceStartTimerFrame ||
+		!m_hRaceStartTimerNumberPad || !m_hRaceStartTimerText ||
+		!m_hRaceStartTimerFire || !m_hRaceStartTimerFlagR ||
+		!m_hRaceStartTimerFlagL)
+	{
+		return;
+	}
+
+	auto* frame = GetSafeUI(*m_hRaceStartTimerFrame);
+	auto* numberPad = GetSafeUI(*m_hRaceStartTimerNumberPad);
+	auto* text = GetSafeUI(*m_hRaceStartTimerText);
+	auto* fire = GetSafeUI(*m_hRaceStartTimerFire);
+	auto* flagR = GetSafeUI(*m_hRaceStartTimerFlagR);
+	auto* flagL = GetSafeUI(*m_hRaceStartTimerFlagL);
+	if (!frame || !numberPad || !text || !fire || !flagR || !flagL)
+	{
+		m_bRaceStartTimerPlaying = false;
+		m_RaceStartTimerRoots.clear();
+		return;
+	}
+
+	constexpr _float countDuration = 1.f;
+	constexpr _float goDuration = 1.f;
+	constexpr _float countTotal = countDuration * 3.f;
+	constexpr _float totalDuration = countTotal + goDuration;
+	const auto saturate = [](_float value)
+	{
+		return std::clamp(value, 0.f, 1.f);
+	};
+	const auto easeOutQuad = [&saturate](_float value)
+	{
+		const _float t = saturate(value);
+		return 1.f - (1.f - t) * (1.f - t);
+	};
+	const auto heartbeat = [&saturate](_float localTime)
+	{
+		// 매초 시작 시점부터 0.2초 동안 한 번 작아졌다가 원래 크기로 복귀한다.
+		const _float secondPhase = std::fmod(std::max(localTime, 0.f), 1.f);
+		if (secondPhase >= 0.2f)
+			return 0.f;
+		return std::sin(saturate(secondPhase / 0.2f) * XM_PI) * 0.09f;
+	};
+
+	m_fRaceStartTimerElapsed += fTimeDelta;
+	const _float elapsed = m_fRaceStartTimerElapsed;
+	if (elapsed >= totalDuration)
+	{
+		for (const CHandle root : m_RaceStartTimerRoots)
+			DeleteUIRecursive(root);
+		m_RaceStartTimerRoots.clear();
+		m_hRaceStartTimerFrame.reset();
+		m_hRaceStartTimerNumberPad.reset();
+		m_hRaceStartTimerText.reset();
+		m_hRaceStartTimerFire.reset();
+		m_hRaceStartTimerFlagR.reset();
+		m_hRaceStartTimerFlagL.reset();
+		m_bRaceStartTimerPlaying = false;
+		return;
+	}
+
+	if (elapsed < countTotal)
+	{
+		const uint32_t countIndex = std::min(
+			2u, static_cast<uint32_t>(elapsed / countDuration));
+		const _float localTime = elapsed - countDuration * countIndex;
+		const wchar_t* countTexts[] = { L"3", L"2", L"1" };
+		if (auto* textBox = dynamic_cast<CTextBox*>(text))
+			textBox->SetwText(countTexts[countIndex]);
+
+		// Pretendard's '1' glyph has asymmetric side bearings. Keep the text
+		// mathematically centered, then apply a small optical correction only
+		// for that glyph so 3/2/GO retain their authored position.
+		constexpr _float ONE_OPTICAL_CENTER_OFFSET_X = -3.f;
+		text->SetLocalPos({
+			m_RaceStartTimerTextBaseLocalPos.x +
+				(countIndex == 2u ? ONE_OPTICAL_CENTER_OFFSET_X : 0.f),
+			m_RaceStartTimerTextBaseLocalPos.y
+		});
+
+		text->SetColor({ 1.f, 1.f, 1.f });
+		_float textAlpha = saturate(localTime / 0.25f);
+		if (localTime > 0.62f)
+			textAlpha *= 1.f - saturate((localTime - 0.62f) / 0.34f);
+		// NumberPad 알파 0.1 * 숫자 AlphaRatio 10 = 최종 숫자 알파 1.0.
+		numberPad->SetAlpha(textAlpha * 0.1f);
+		const _float numberSizeRatio = easeOutQuad(localTime / 0.32f);
+		numberPad->SetScaleRatio(
+			m_fRaceStartTimerNumberPadBaseScale * numberSizeRatio);
+
+		// Fire 플립북은 건드리지 않고 원형 프레임만 매초 한 번 두근거린다.
+		frame->SetScaleRatio(m_fRaceStartTimerFrameBaseScale *
+			(1.f - heartbeat(elapsed)));
+		const _float introAlpha = saturate(elapsed / 0.3f);
+		frame->SetAlpha(introAlpha);
+		fire->SetAlpha(m_fRaceStartTimerFireBaseAlpha * introAlpha);
+		flagR->SetAlpha(m_fRaceStartTimerFlagRBaseAlpha * introAlpha);
+		flagL->SetAlpha(m_fRaceStartTimerFlagLBaseAlpha * introAlpha);
+		return;
+	}
+
+	const _float goTime = elapsed - countTotal;
+	if (auto* textBox = dynamic_cast<CTextBox*>(text))
+		textBox->SetwText(L"GO");
+	text->SetLocalPos(m_RaceStartTimerTextBaseLocalPos);
+	text->SetColor({ 0.32f, 1.f, 0.28f });
+
+	_float goAlpha = saturate(goTime / 0.25f);
+	if (goTime > 0.62f)
+		goAlpha *= 1.f - saturate((goTime - 0.62f) / 0.34f);
+	numberPad->SetAlpha(goAlpha * 0.1f);
+	const _float goSizeRatio = easeOutQuad(goTime / 0.32f);
+	numberPad->SetScaleRatio(
+		m_fRaceStartTimerNumberPadBaseScale * goSizeRatio);
+
+	// GO 숫자만 남기고 원형 프레임, Fire, 양쪽 깃발은 함께 사라진다.
+	const _float backgroundAlpha = 1.f - saturate(goTime / 0.3f);
+	frame->SetAlpha(backgroundAlpha);
+	fire->SetAlpha(m_fRaceStartTimerFireBaseAlpha * backgroundAlpha);
+	flagR->SetAlpha(m_fRaceStartTimerFlagRBaseAlpha * backgroundAlpha);
+	flagL->SetAlpha(m_fRaceStartTimerFlagLBaseAlpha * backgroundAlpha);
+	frame->SetScaleRatio(m_fRaceStartTimerFrameBaseScale *
+		(1.f - heartbeat(elapsed)));
 }
 
 void UIManager::UpdateWandShopWorldMousePosition()
@@ -1331,7 +1760,7 @@ std::function<void(std::string text)> UIManager::GetFunc(const std::string& func
 void UIManager::CreateFadeIn(float delay, float playtime)
 {
 	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
-	PlayFadeIn(hBG, delay, playtime);
+	PlayOnlyFadeIn(hBG, delay, playtime);
 }
 
 void UIManager::CreateFadeOut(float delay, float playtime)
@@ -2133,11 +2562,14 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 	auto* root = m_hQuestRoot ? GetSafeUI(*m_hQuestRoot) : nullptr;
 	auto* text = m_hQuestText ? E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextBox>(*m_hQuestText) : nullptr;
+	auto* targetIcon = m_hQuestTargetIcon ?
+		GetSafeUI(*m_hQuestTargetIcon) : nullptr;
 
 	if (!root || !text)
 	{
 		m_hQuestRoot = std::nullopt;
 		m_hQuestText = std::nullopt;
+		m_hQuestTargetIcon = std::nullopt;
 
 		const auto roots = LoadPrefab("Quest");
 		if (roots.empty())
@@ -2149,6 +2581,7 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 			text = E::CGameInstance::Get().
 				GetGameObjectByHandleT<CTextBox>(textUI->GetHandle());
 		}
+		targetIcon = FindUIByNameRecursive(roots, "QuestTargetIcon");
 		if (!root || !text)
 		{
 			for (const CHandle rootHandle : roots)
@@ -2158,6 +2591,14 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 
 		m_hQuestRoot = root->GetHandle();
 		m_hQuestText = text->GetHandle();
+		if (targetIcon)
+		{
+			m_hQuestTargetIcon = targetIcon->GetHandle();
+			m_QuestTargetIconBaseLocalPos = {
+				targetIcon->GetUIInfo().LocalX,
+				targetIcon->GetUIInfo().LocalY
+			};
+		}
 		m_QuestTextBaseLocalPos = {
 			text->GetUIInfo().LocalX,
 			text->GetUIInfo().LocalY
@@ -2174,8 +2615,11 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 			if (auto* questRoot = GetSafeUI(rootHandle))
 			{
 				questRoot->SetAlpha(0.f);
-				GET_SINGLE(UIManager)->PlayFadeIn(
-					rootHandle, 0.f, 0.3f);
+				if (!GET_SINGLE(UIManager)->m_bQuestFadeSuppressed)
+				{
+					GET_SINGLE(UIManager)->PlayFadeIn(
+						rootHandle, 0.f, 0.3f);
+				}
 			}
 		};
 		return;
@@ -2246,6 +2690,63 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 				ui->CalcUICoord();
 			}
 		}, nullptr, EEaseType::EaseOutQuad, outDuration);
+
+	// 퀘스트 문구 옆의 목표 아이콘도 문구 교체 모션과 같은 타이밍으로
+	// 함께 빠졌다가 나타나도록 한다.
+	if (targetIcon)
+	{
+		if (auto* iconTween = targetIcon->GetTweenCom())
+		{
+			iconTween->ClearTweens();
+			const CHandle iconHandle = targetIcon->GetHandle();
+			const _float iconBaseX = m_QuestTargetIconBaseLocalPos.x;
+			const _float iconBaseY = m_QuestTargetIconBaseLocalPos.y;
+
+			iconTween->PlayTween(
+				targetIcon->GetAlphaRatio(), 0.f, outDuration,
+				[iconHandle](_float value)
+				{
+					if (auto* ui = GetSafeUI(iconHandle))
+						ui->SetAlphaRatio(value);
+				},
+				[iconHandle, iconBaseX, iconBaseY]()
+				{
+					if (auto* ui = GetSafeUI(iconHandle))
+					{
+						ui->SetLocalPos({ iconBaseX - shift, iconBaseY });
+						ui->SetAlphaRatio(0.f);
+						ui->CalcUICoord();
+					}
+				}, EEaseType::EaseOutQuad);
+			iconTween->PlayTween(
+				iconBaseX, iconBaseX - shift, outDuration,
+				[iconHandle, iconBaseY](_float value)
+				{
+					if (auto* ui = GetSafeUI(iconHandle))
+					{
+						ui->SetLocalPos({ value, iconBaseY });
+						ui->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad);
+			iconTween->PlayTween(
+				0.f, 1.f, inDuration,
+				[iconHandle](_float value)
+				{
+					if (auto* ui = GetSafeUI(iconHandle))
+						ui->SetAlphaRatio(value);
+				}, nullptr, EEaseType::EaseOutQuad, outDuration);
+			iconTween->PlayTween(
+				iconBaseX - shift, iconBaseX, inDuration,
+				[iconHandle, iconBaseY](_float value)
+				{
+					if (auto* ui = GetSafeUI(iconHandle))
+					{
+						ui->SetLocalPos({ value, iconBaseY });
+						ui->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad, outDuration);
+		}
+	}
 }
 
 void UIManager::DeleteQuest()
@@ -2255,8 +2756,54 @@ void UIManager::DeleteQuest()
 
 	m_hQuestRoot = std::nullopt;
 	m_hQuestText = std::nullopt;
+	m_hQuestTargetIcon = std::nullopt;
 	m_CurrentQuestText.clear();
 	m_QuestTextBaseLocalPos = {};
+	m_QuestTargetIconBaseLocalPos = {};
+}
+
+void UIManager::FadeOutQuest(float playtime)
+{
+	m_bQuestFadeSuppressed = true;
+	if (!m_hQuestRoot)
+		return;
+
+	const CHandle questHandle = *m_hQuestRoot;
+	auto* questRoot = GetSafeUI(questHandle);
+	if (!questRoot || !questRoot->GetTweenCom())
+		return;
+
+	questRoot->GetTweenCom()->ClearTweens();
+	const _float startAlpha = questRoot->GetAlpha();
+	questRoot->GetTweenCom()->PlayTween(
+		startAlpha, 0.f, std::max(0.f, playtime),
+		[questHandle](_float value)
+		{
+			if (auto* quest = GetSafeUI(questHandle))
+				quest->SetAlpha(value);
+		}, nullptr, EEaseType::EaseOutQuad);
+}
+
+void UIManager::FadeInQuest(float playtime)
+{
+	m_bQuestFadeSuppressed = false;
+	if (!m_hQuestRoot)
+		return;
+
+	const CHandle questHandle = *m_hQuestRoot;
+	auto* questRoot = GetSafeUI(questHandle);
+	if (!questRoot || !questRoot->GetTweenCom())
+		return;
+
+	questRoot->GetTweenCom()->ClearTweens();
+	const _float startAlpha = questRoot->GetAlpha();
+	questRoot->GetTweenCom()->PlayTween(
+		startAlpha, 1.f, std::max(0.f, playtime),
+		[questHandle](_float value)
+		{
+			if (auto* quest = GetSafeUI(questHandle))
+				quest->SetAlpha(value);
+		}, nullptr, EEaseType::EaseOutQuad);
 }
 
 void UIManager::UpdateNPCSpeechBubbles(_float fTimeDelta)
@@ -2381,6 +2928,256 @@ void UIManager::UpdateNPCSpeechBubbles(_float fTimeDelta)
 
 		++iter;
 	}
+}
+
+void UIManager::CreateChoiceUI(
+	const std::vector<std::string>& choices,
+	std::function<void(size_t)> onSelected)
+{
+	ClearChoiceUI(true);
+	if (choices.empty())
+		return;
+
+	constexpr _float CHOICE_INTERVAL_Y = 54.f;
+	m_iSelectedDialogueChoice = 0u;
+	m_bDialogueChoiceActive = true;
+	m_OnDialogueChoiceSelected = std::move(onSelected);
+
+	for (size_t index = 0; index < choices.size(); ++index)
+	{
+		const auto roots = LoadPrefab("Intersection");
+		if (roots.empty())
+			continue;
+
+		auto* root = GetSafeUI(roots.front());
+		if (!root)
+			continue;
+
+		DIALOGUE_CHOICE_UI_INFO info{};
+		info.RootHandle = root->GetHandle();
+
+		const _float2 basePosition = root->GetPos();
+		root->SetPos({
+			basePosition.x,
+			basePosition.y + CHOICE_INTERVAL_Y * static_cast<_float>(index) });
+		root->CalcUICoord();
+		info.BaseRootPosition = root->GetPos();
+		info.RootScaleRatio = std::max(0.001f, root->GetScaleRatio());
+
+		if (auto* frameU = FindUIByNameRecursive(roots, "FrameU"))
+		{
+			info.FrameUHandle = frameU->GetHandle();
+			const auto& frameInfo = frameU->GetUIInfo();
+			info.BaseFrameULocalPosition = { frameInfo.LocalX, frameInfo.LocalY };
+			info.SelectedFrameUAlphaRatio = frameU->GetAlphaRatio();
+		}
+		if (auto* frameD = FindUIByNameRecursive(roots, "FrameD"))
+		{
+			info.FrameDHandle = frameD->GetHandle();
+			const auto& frameInfo = frameD->GetUIInfo();
+			info.BaseFrameDLocalPosition = { frameInfo.LocalX, frameInfo.LocalY };
+			info.SelectedFrameDAlphaRatio = frameD->GetAlphaRatio();
+		}
+		if (auto* fade = FindUIByNameRecursive(roots, "Fade"))
+		{
+			info.FadeHandle = fade->GetHandle();
+			const auto& fadeInfo = fade->GetUIInfo();
+			info.BaseFadeLocalPosition = { fadeInfo.LocalX, fadeInfo.LocalY };
+			info.SelectedFadeAlphaRatio = fade->GetAlphaRatio();
+		}
+		if (auto* text = dynamic_cast<CTextBox*>(
+			FindUIByNameRecursive(roots, "Text")))
+		{
+			info.TextHandle = text->GetHandle();
+			text->SetwText(StringToWUTF8(choices[index]));
+		}
+
+		m_DialogueChoiceUIs.push_back(info);
+	}
+
+	if (m_DialogueChoiceUIs.empty())
+	{
+		m_bDialogueChoiceActive = false;
+		m_OnDialogueChoiceSelected = nullptr;
+		return;
+	}
+
+	// 최초 생성 시에는 첫 선택 상태를 즉시 반영한다. 로드 직후의
+	// APPEAR 처리에서 Tween이 초기화되므로 방향키 변경부터 모션을 사용한다.
+	RefreshDialogueChoiceVisuals(false);
+}
+
+void UIManager::ClearChoiceUI(_bool immediate)
+{
+	for (const auto& choice : m_DialogueChoiceUIs)
+	{
+		auto* root = GetSafeUI(choice.RootHandle);
+		if (!root)
+			continue;
+
+		if (immediate)
+			DeleteUIRecursive(choice.RootHandle);
+		else
+			PlayFadeOutDelete(choice.RootHandle, 0.f, 0.2f);
+	}
+
+	m_DialogueChoiceUIs.clear();
+	m_OnDialogueChoiceSelected = nullptr;
+	m_iSelectedDialogueChoice = 0u;
+	m_bDialogueChoiceActive = false;
+}
+
+void UIManager::RefreshDialogueChoiceVisuals(_bool animate)
+{
+	constexpr _float SELECT_MOVE_X = 12.f;
+	constexpr _float SELECT_DURATION = 0.18f;
+
+	for (size_t index = 0; index < m_DialogueChoiceUIs.size(); ++index)
+	{
+		const auto& choice = m_DialogueChoiceUIs[index];
+		const _bool selected = index == m_iSelectedDialogueChoice;
+		const _float rootTargetX = choice.BaseRootPosition.x +
+			(selected ? SELECT_MOVE_X : 0.f);
+		const _float localCompensation = selected ?
+			SELECT_MOVE_X / choice.RootScaleRatio : 0.f;
+
+		if (auto* root = GetSafeUI(choice.RootHandle))
+		{
+			if (!animate || !root->GetTweenCom())
+			{
+				root->SetPos({ rootTargetX, choice.BaseRootPosition.y });
+				root->CalcUICoord();
+			}
+			else
+			{
+				auto* tween = root->GetTweenCom();
+				tween->ClearTweens();
+				tween->PlayTween(
+					root->GetPos().x, rootTargetX, SELECT_DURATION,
+					[handle = choice.RootHandle,
+					 baseY = choice.BaseRootPosition.y](_float value)
+					{
+						if (auto* target = GetSafeUI(handle))
+						{
+							target->SetPos({ value, baseY });
+							target->CalcUICoord();
+						}
+					}, nullptr, EEaseType::EaseOutQuad);
+			}
+		}
+
+		const auto animateFixedChild =
+			[animate, localCompensation](
+				CHandle handle,
+				const _float2& baseLocalPosition,
+				_float targetAlphaRatio)
+			{
+				auto* child = GetSafeUI(handle);
+				if (!child)
+					return;
+
+				const _float targetLocalX =
+					baseLocalPosition.x - localCompensation;
+				if (!animate || !child->GetTweenCom())
+				{
+					child->SetLocalPos({ targetLocalX, baseLocalPosition.y });
+					child->SetAlphaRatio(targetAlphaRatio);
+					return;
+				}
+
+				auto* tween = child->GetTweenCom();
+				tween->ClearTweens();
+				const _float startLocalX = child->GetUIInfo().LocalX;
+				const _float startAlphaRatio = child->GetAlphaRatio();
+				tween->PlayTween(
+					startLocalX, targetLocalX, SELECT_DURATION,
+					[handle, baseY = baseLocalPosition.y](_float value)
+					{
+						if (auto* target = GetSafeUI(handle))
+							target->SetLocalPos({ value, baseY });
+					}, nullptr, EEaseType::EaseOutQuad);
+				tween->PlayTween(
+					startAlphaRatio, targetAlphaRatio, SELECT_DURATION,
+					[handle](_float value)
+					{
+						if (auto* target = GetSafeUI(handle))
+							target->SetAlphaRatio(value);
+					}, nullptr, EEaseType::EaseOutQuad);
+			};
+
+		animateFixedChild(
+			choice.FrameUHandle, choice.BaseFrameULocalPosition,
+			selected ? choice.SelectedFrameUAlphaRatio : 0.f);
+		animateFixedChild(
+			choice.FrameDHandle, choice.BaseFrameDLocalPosition,
+			selected ? choice.SelectedFrameDAlphaRatio : 0.f);
+		animateFixedChild(
+			choice.FadeHandle, choice.BaseFadeLocalPosition,
+			selected ? choice.SelectedFadeAlphaRatio : 0.f);
+	}
+}
+
+void UIManager::UpdateDialogueChoiceUI()
+{
+	if (!m_bDialogueChoiceActive || m_DialogueChoiceUIs.empty())
+		return;
+
+	const size_t choiceCount = m_DialogueChoiceUIs.size();
+	_bool selectionChanged{};
+
+	if (E::CGameInstance::Get().KeyDown(DIK_UP))
+	{
+		m_iSelectedDialogueChoice = m_iSelectedDialogueChoice == 0u ?
+			choiceCount - 1u : m_iSelectedDialogueChoice - 1u;
+		selectionChanged = true;
+	}
+	else if (E::CGameInstance::Get().KeyDown(DIK_DOWN))
+	{
+		m_iSelectedDialogueChoice =
+			(m_iSelectedDialogueChoice + 1u) % choiceCount;
+		selectionChanged = true;
+	}
+
+	if (selectionChanged)
+		RefreshDialogueChoiceVisuals();
+
+	if (!E::CGameInstance::Get().KeyDown(DIK_SPACE))
+		return;
+
+	const size_t selectedIndex = m_iSelectedDialogueChoice;
+	if (selectedIndex < m_DialogueChoiceUIs.size())
+	{
+		constexpr _float CONFIRM_MOVE_X = 24.f;
+		constexpr _float CONFIRM_DURATION = 0.2f;
+		const CHandle selectedRoot =
+			m_DialogueChoiceUIs[selectedIndex].RootHandle;
+		if (auto* root = GetSafeUI(selectedRoot))
+		{
+			const _float startX = root->GetPos().x;
+			const _float fixedY = root->GetPos().y;
+			if (auto* tween = root->GetTweenCom())
+			{
+				tween->ClearTweens();
+				tween->PlayTween(
+					startX,
+					startX + CONFIRM_MOVE_X,
+					CONFIRM_DURATION,
+					[selectedRoot, fixedY](_float value)
+					{
+						if (auto* target = GetSafeUI(selectedRoot))
+						{
+							target->SetPos({ value, fixedY });
+							target->CalcUICoord();
+						}
+					}, nullptr, EEaseType::EaseOutQuad);
+			}
+		}
+	}
+
+	auto callback = std::move(m_OnDialogueChoiceSelected);
+	ClearChoiceUI(false);
+	if (callback)
+		callback(selectedIndex);
 }
 
 std::optional<CHandle> UIManager::RootUIPicking()
@@ -2977,9 +3774,9 @@ void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
 
 	pBtn->SetInputLcok(true);
 
-	_float Alpah = pBtn->GetAlpha();
+	const _float alpha = pBtn->GetAlpha();
 
-	pTween->PlayTween(1.f, 0.f, playtime,
+	pTween->PlayTween(alpha, 0.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
 		}, [pHandle]() {
@@ -3046,6 +3843,22 @@ void UIManager::PlayFadeIn(CHandle pHandle, float delay, float playtime)
 		}, nullptr, EEaseType::EaseOutQuad, delay);
 }
 
+void UIManager::PlayOnlyFadeIn(CHandle pHandle, float delay, float playtime)
+{
+	CUIObject* pBtn = SafeGetOBJ(pHandle);
+	auto pTween = pBtn->GetTweenCom();
+
+	pBtn->SetInputLcok(true);
+
+	_float Alpah = pBtn->GetAlpha();
+	_float scaleRatio = pBtn->GetScaleRatio();
+
+	pTween->PlayTween(0.f, 1.f, playtime,
+		[pBtn](float currentValue) {
+			pBtn->SetAlpha(currentValue);
+		}, nullptr, EEaseType::EaseOutQuad, delay);
+}
+
 void UIManager::PlayFadeOutAll2DUI(float delay, float playtime)
 {
 	UpdateRootUIHandles();
@@ -3054,12 +3867,15 @@ void UIManager::PlayFadeOutAll2DUI(float delay, float playtime)
 	{
 		auto* pUI = GetSafeUI(handle);
 		if (!pUI || !pUI->GetActive() || !pUI->GetVisible() ||
-			pUI->GetResolvedRenderGroup() != RENDERGROUP::UI)
+			pUI->GetResolvedRenderGroup() != RENDERGROUP::UI ||
+			pUI->GetUIInfo().UIType == ETOUI(UI_TYPE::CURSOR))
 			continue;
 
 		// FadeIn 때 복원할 각 UI의 원래 상태를 FadeOut 시작 시점에 보관한다.
-		m_2DUIRestoreAlpha[handle] = pUI->GetAlpha();
-		m_2DUIRestoreInputLock[handle] = pUI->GetInputLcok();
+		// 대화 시작 FadeOut 뒤 선택창 FadeOut처럼 중첩 호출되어도 최초의
+		// 표시 상태를 보존한다.
+		m_2DUIRestoreAlpha.try_emplace(handle, pUI->GetAlpha());
+		m_2DUIRestoreInputLock.try_emplace(handle, pUI->GetInputLcok());
 		pUI->SetInputLcok(true);
 
 		if (auto* pTween = pUI->GetTweenCom())
@@ -3085,7 +3901,7 @@ void UIManager::PlayFadeOutAll2DUI(float delay, float playtime)
 				continue;
 
 			const _float startScale = pSpellMeter->GetScaleRatio();
-			m_SpellMeterRestoreScale[handle] = startScale;
+			m_SpellMeterRestoreScale.try_emplace(handle, startScale);
 			if (auto* pTween = pSpellMeter->GetTweenCom())
 			{
 				pTween->PlayTween(startScale, 0.f, playtime,
@@ -3104,17 +3920,25 @@ void UIManager::PlayFadeOutAll2DUI(float delay, float playtime)
 
 void UIManager::PlayFadeInAll2DUI(float delay, float playtime)
 {
-	UpdateRootUIHandles();
-
-	for (const CHandle handle : rootUIHandles)
+	// FadeOut 시점에 실제로 숨긴 UI만 복원한다. 이후 생성된 선택창이나
+	// 미니게임 UI에는 복원 Tween을 걸지 않는다.
+	for (const auto& [handle, targetAlpha] : m_2DUIRestoreAlpha)
 	{
 		auto* pUI = GetSafeUI(handle);
 		if (!pUI || !pUI->GetActive() || !pUI->GetVisible() ||
-			pUI->GetResolvedRenderGroup() != RENDERGROUP::UI)
+			pUI->GetResolvedRenderGroup() != RENDERGROUP::UI ||
+			pUI->GetUIInfo().UIType == ETOUI(UI_TYPE::CURSOR))
 			continue;
 
-		const auto alphaIt = m_2DUIRestoreAlpha.find(handle);
-		const _float targetAlpha = alphaIt != m_2DUIRestoreAlpha.end() ? alphaIt->second : pUI->GetAlpha();
+		const auto lockIt = m_2DUIRestoreInputLock.find(handle);
+		const _bool restoreInputLock = lockIt != m_2DUIRestoreInputLock.end() ?
+			lockIt->second : false;
+		if (m_bQuestFadeSuppressed && m_hQuestRoot && handle == *m_hQuestRoot)
+		{
+			pUI->SetAlpha(0.f);
+			pUI->SetInputLcok(restoreInputLock);
+			continue;
+		}
 
 		if (auto* pTween = pUI->GetTweenCom())
 		{
@@ -3124,16 +3948,20 @@ void UIManager::PlayFadeInAll2DUI(float delay, float playtime)
 				{
 					if (auto* pTarget = GetSafeUI(handle))
 						pTarget->SetAlpha(value);
-				}, [this, handle]()
+				}, [handle, restoreInputLock]()
 				{
 					if (auto* pTarget = GetSafeUI(handle))
-					{
-						const auto lockIt = m_2DUIRestoreInputLock.find(handle);
-						pTarget->SetInputLcok(lockIt != m_2DUIRestoreInputLock.end() ? lockIt->second : false);
-					}
+						pTarget->SetInputLcok(restoreInputLock);
 				}, EEaseType::EaseOutQuad, delay);
 		}
+		else
+		{
+			pUI->SetAlpha(targetAlpha);
+			pUI->SetInputLcok(restoreInputLock);
+		}
 	}
+	m_2DUIRestoreAlpha.clear();
+	m_2DUIRestoreInputLock.clear();
 
 	// FadeOut에서 저장한 SpellMeter의 고유 ScaleRatio로 천천히 복구한다.
 	for (auto it = m_SpellMeterRestoreScale.begin(); it != m_SpellMeterRestoreScale.end();)
@@ -3162,6 +3990,7 @@ void UIManager::PlayFadeInAll2DUI(float delay, float playtime)
 		}
 		++it;
 	}
+	m_SpellMeterRestoreScale.clear();
 }
 
 void UIManager::PlayFadeInChange(CHandle pHandle, LEVEL level, float delay, float playtime)

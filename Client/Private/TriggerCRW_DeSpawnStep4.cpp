@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "TriggerCRW_DeSpawnStep4.h"
 #include "MyMagicSquareStepController.h"
+#include "Player.h"
+#include "ClientEvents.h"
+#include "UIManager.h"
 NS_USING(Client)
 
 HRESULT CTriggerCRW_DeSpawnStep4::Initialize(void* pArg)
@@ -14,12 +17,25 @@ void CTriggerCRW_DeSpawnStep4::OnTriggerEnter(
 	DEBUG_LOG_STR(std::string("[PX][CTriggerCRW_DeSpawnStep4] Enter : ") +
 		(pObj ? std::string{ pObj->GetObjectTag() } : "null") + "\n");
 
+	if (!Cast<CPlayer>(pObj))
+		return;
+
 	if (!m_bSpawned)
 	{
 		m_bSpawned = true;
+		GET_SINGLE(UIManager)->CreateOrChangeQuest(
+			"엘리트 경비병들을 쓰러트리기");
+		E::CGameInstance::Get().EventPublish(
+			FQuestUIGroupChanged{
+				.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_03,
+				.Active = true,
+				.QuestText = "엘리트 경비병들을 쓰러트리기",
+				.UpdateMinimap = false,
+				.UpdateQuestWidget = false
+			});
 
 		auto pvec = CGameInstance::Get().GetGameObjectLayer("22_MyMagicSquareStepController");
-		if (!(pvec || pvec->empty()))
+		if (!pvec || pvec->empty())
 		{
 			return;
 		}

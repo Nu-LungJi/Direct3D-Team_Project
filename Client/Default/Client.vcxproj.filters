@@ -481,6 +481,9 @@
     <Filter Include="GameObject\DynamicMapObject\WaterWheel">
       <UniqueIdentifier>{d0c35028-76ee-4a7f-8ff9-5d72049245d2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\InteractNpc">
+      <UniqueIdentifier>{a058c676-cc04-45cd-b1af-f02cdea958b8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -1176,12 +1179,14 @@
     <ClInclude Include="..\public\WorldAnimal.h">
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\MiniGameNpc.h" />
     <ClInclude Include="..\public\MON_Default.h">
       <Filter>GameObject\Monster\02.PublicState</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\WaterWheel.h">
       <Filter>GameObject\DynamicMapObject\WaterWheel</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\InteractiveNpc.h">
+      <Filter>GameObject\InteractNpc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1821,9 +1826,11 @@
     <ClCompile Include="..\private\WorldAnimal.cpp">
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\MiniGameNpc.cpp" />
     <ClCompile Include="..\private\MON_Default.cpp">
       <Filter>GameObject\Monster\02.PublicState</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\InteractiveNpc.cpp">
+      <Filter>GameObject\InteractNpc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

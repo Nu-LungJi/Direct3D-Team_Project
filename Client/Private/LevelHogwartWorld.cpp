@@ -14,6 +14,7 @@
 #include "Mon_Spawner.h"
 #include "WorldNpc.h"
 #include "WorldAgent.h"
+#include "InteractiveNpc.h"
 #include "Griff.h"
 #include "NpcPlacementData.h"
 #include "NpcPlacementManager.h"
@@ -96,7 +97,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 			Desc.resBeHaviorMajor = Placement.sBehaviorMajorTag;
 			Desc.resBeHaviorMinor = Placement.sBehaviorMinorTag;
 			Desc.vPos = Placement.vPosition;
-			Desc.vStartPos = Placement.vPatrolStartPosition;
+			Desc.vStartPos = Placement.vPatrolStartPosition; 
 			Desc.vEndPos = Placement.vPatrolEndPosition;
 			Desc.vRot = Placement.vRotation;
 			Desc.vScale = Placement.vScale;
@@ -128,6 +129,66 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnTerrain(*hPlayer)))
 		return E_FAIL;
 
+	{
+		CInteractiveNpc::DESC Desc{};
+		Desc.sObjectTag = "Hogsmeade_MiniGameNpc_Professor";
+		Desc.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+		Desc.ReSourceTag = "PLAYER_MODEL_RESROUCE";
+		Desc.BeHaviorTag = "NPC1";
+		Desc.resBeHaviorMajor = "BTJSON";
+		Desc.resBeHaviorMinor = "NPC1";
+		Desc.TargetHandle = *hPlayer;
+		Desc.vPos = { 203.512f, 44.703f, 85.749f };
+		Desc.vStartPos = Desc.vPos;
+		Desc.vRot = { 0.f, 38.342f, 0.f };
+		Desc.vScale = { 1.f, 1.f, 1.f };
+		Desc.fCCTHeight = 3.6f;
+		Desc.fCCTRadius = 0.6f;
+		Desc.fCCTStepOffset = 0.1f;
+		Desc.vCCTCenterOffset = { 0.f, 1.f, 0.f };
+		Desc.bPhyx = true;
+		Desc.bDonMove = true;
+		Desc.SpeakerName = "교수";
+		Desc.InteractionDistance = 3.f;
+		Desc.Repeatable = true;
+		Desc.IdleExpressionAnim =
+			"AN_ProfessorSharp_MasterRig_Hu_HUD_Idle_Casual_Loop_anm.bin";
+		Desc.Dialogue = {
+			// 0
+			{ "미니게임을 테스트해 보겠나?", "", true },
+
+			// 1
+			{ "도전할 생각인가?", "", true,
+				{
+				// 선택하면 2번 대사를 보여준 뒤 START_SPELL_MINIGAME 실행
+				{ "시작한다.", 2,
+					CInteractiveNpc::DIALOGUE_ACTION::START_SPELL_MINIGAME },
+
+					// 선택하면 3번 대사를 보여준 뒤 CANCEL_DIALOGUE 실행
+					{ "취소한다.", 3,
+						CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE }
+				}
+			},
+
+			// 2
+			{ "좋아. 바로 시작하지!", "", true },
+
+			// 3
+			{ "마음이 바뀌면 다시 찾아오게.", "", true }
+		};
+		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
+		Desc.MoveDestination = { 206.614f, 44.703f, 89.671f };
+		Desc.MoveSpeed = 2.f;
+		Desc.MoveStopDistance = 0.2f;
+
+		if (!gameInstance.AddGameObjectToLayer(
+			LEVEL::HOGWART_WORLD,
+			PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
+			"02_Npc",
+			&Desc))
+			return E_FAIL;
+	}
+
 	if (FAILED(SpawnFlyCamera()) ||
 		FAILED(SpawnUICamera()) ||
 		FAILED(SpawnPlayerCamera(*hPlayer)))
@@ -145,10 +206,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	if (FAILED(SpawnMonster(*hPlayer)))
 		return E_FAIL;
-	//if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnIdle.json")))
-	//	return E_FAIL;
-	//if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnWalk.json")))
-	//	return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnIdle.json")))
+		return E_FAIL;
+	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/NpcSpawnWalk.json")))
+		return E_FAIL;
 	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/Cat.json")))
 		return E_FAIL;
 	if (FAILED(SpawnNpcPlacements(*hPlayer, "./Resources/json/NPC/RunSpider.json")))

@@ -16,8 +16,6 @@ struct GPU_ANIM_INSTANCE_DATA
 	float fPrevTrackPosition;
     float fBlendWeight;
     uint bBlending;
-    uint4 vMorphIndices;
-    float4 vMorphWeights;
 };
 
 struct GPU_SKIN_BONE_DESC

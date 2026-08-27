@@ -230,7 +230,7 @@ void CAccioBall::LateUpdate(_float)
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
 		// [LSY] 인스턴싱 비활성화 시에도 MapMesh의 스텐실 정책을 유지한다.
-		CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
+		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND_MAPMESH, this);
 		return;
 	}
 

@@ -1067,6 +1067,13 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_RaceStartFlagWave", "./ShaderFiles/UI/RaceStartFlagWave.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_SpellMiniGameRippleGlow", "./ShaderFiles/UI/SpellMiniGameRippleGlow.hlsl"))
 	{
 		if (FAILED(res->Load()))

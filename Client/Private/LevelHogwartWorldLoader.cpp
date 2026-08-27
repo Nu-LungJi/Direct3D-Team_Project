@@ -35,7 +35,7 @@
 #include "Mon_Spawner.h"
 #include "Mon_State.h"
 #include "WorldNpc.h"
-#include "MiniGameNpc.h"
+#include "InteractiveNpc.h"
 #include "Griff.h"
 #include "GriffChild.h"
 #include "Troll.h"
@@ -61,6 +61,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
 				return false;
 
 			if (auto texture = E::CGameInstance::Get().AddResource(
@@ -311,7 +313,8 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
 				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
-				"./Resources/SampleClient/Textures/UI/UITexture/WandShop"
+				"./Resources/SampleClient/Textures/UI/UITexture/WandShop",
+				"./Resources/SampleClient/Textures/UI/UITexture/MiniGame"
 			};
 
 			for (const auto& targetDir : targetDirectories)
@@ -461,6 +464,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	struct NPC_MODEL_ENTRY { const char* pTag; const char* pCharacter; };
 	static constexpr NPC_MODEL_ENTRY NpcModels[] =
 	{
+		{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },
 		{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
 		{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
 		{ "Model_Resource_NPC_EffieBones", "EffieBones" },
@@ -507,7 +511,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	if (FAILED(E::CGameInstance::Get().AddPrototype(
 		LEVEL::HOGWART_WORLD,
 		PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
-		CMiniGameNpc::Create())))
+		CInteractiveNpc::Create())))
 	{
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_MiniGameNpc");
 		return E_FAIL;

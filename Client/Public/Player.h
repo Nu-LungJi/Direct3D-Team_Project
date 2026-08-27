@@ -169,6 +169,8 @@ public:
 	_bool StartWiggenweldPotionUse();
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
+	_bool TryUsePotion();
+	void UpdateSkillSlotCooldowns(_float fTimeDelta);
 	std::optional<CHandle> ConsumeAncientThrowTarget();
 	void SetLumosActive(_bool bActive);
 	void SetLumosHoldAnimationIndex(int32_t iAnimation) { m_iLumosHoldAnimation = iAnimation; }
@@ -411,17 +413,9 @@ private:
 
 	_float m_fControlHoldTime{};
 	_bool m_bDashTriggered{};
+	static constexpr _float SKILL_SLOT_COOLDOWN = 5.f;
+	std::array<_float, 4> m_SkillSlotCooldowns{};
 
-
-private:
-	_float m_fCoolTime_Num1{};
-	_bool m_bCoolTime_Num1{};
-	_float m_fCoolTime_Num2{};
-	_bool m_bCoolTime_Num2{};
-	_float m_fCoolTime_Num3{};
-	_bool m_bCoolTime_Num3{};
-	_float m_fCoolTime_Num4{};
-	_bool m_bCoolTime_Num4{};
 
 private:
 	void DelayFinish(_float fTimeDelta);
