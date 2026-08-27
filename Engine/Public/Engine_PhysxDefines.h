@@ -79,7 +79,13 @@ namespace Engine
 		NONE = 0,
 		CAN_RIDE = 1 << 0,
 		SLIDE = 1 << 1,
-		USER_DEFINED_RIDE = 1 << 2
+		USER_DEFINED_RIDE = 1 << 2,
+		// PhysX 기본 플래그가 아니라 엔진 확장 정책이다. Dynamic Shape가
+		// CCT 아래로 파고들 때 생기는 비의도성 상승 투영을 해당 Shape에만 막는다.
+		PREVENT_UPWARD_PROJECTION = 1 << 3,
+		// PhysX 기본 플래그가 아니라 엔진 확장 정책이다. 접촉 결과에 추가된
+		// 입력 방향 직각의 수평 변위를 충돌 검사를 거쳐 제거한다.
+		CONSTRAIN_HORIZONTAL_TO_INPUT = 1 << 4
 	};
 
 	struct PX_CCT_HIT_DATA

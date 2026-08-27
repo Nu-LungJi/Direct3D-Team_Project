@@ -1,7 +1,12 @@
 #pragma once
+#include <new>
 #include "Engine_Defines.h"
 #include "IRenderable.h"
 #include "HizBuffer.h"
+#pragma push_macro("new")
+#undef new
+#include "tracy/TracyD3D11.hpp"
+#pragma pop_macro("new")
 
 NS_BEGIN(Engine)
 class CGameObject;
@@ -70,6 +75,7 @@ private:		// Render Object
 	HRESULT		RenderNonBlend_Instanced();
 	HRESULT		RenderMapMesh();
 	HRESULT		RenderBlend();
+	HRESULT		RenderBlendMapMesh();
 	HRESULT		RenderLight();
 	HRESULT		RenderSkybox();
 	HRESULT		RenderEffect();
@@ -118,6 +124,9 @@ public:			// PostProcess Effect Function
 private:		// Unbind Shader Resource / Shader / UAV / Render Target
 	VOID		Unbind_Resources();
 
+	VOID		Convert_Rasterizer_NoCull();
+	VOID		Convert_Rasterizer_BackCull();
+
 public:			// Shader Resource Generator
 	TEXTURE3D	Generate_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight, uint32_t _TexDepth);
 	SPtr<CResDynamicTexture2D>	Generate_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _Format, uint32_t _BindFlags, uint32_t _TexWidth = 0, uint32_t _TexHeight = 0);
@@ -165,6 +174,7 @@ public:
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
+	TracyD3D11Ctx				m_pTracyGpuContext{};
 
 	std::array<std::vector<IRenderable*>, ETOUI(RENDERGROUP::END)> m_pRenderObject{};
 	RENDER_CTX					m_pRenderContext{};
@@ -311,6 +321,8 @@ private:		// Volumetric Fog
 	ComPtr<ID3D11ShaderResourceView>	m_pVolumeTexture		= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pWeatherMapTexture	= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pCloudCurlNoiseTexture = { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	m_pBaseVolumeTexture	= { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	m_pDetailVolumeTexture	= { nullptr };
 
 
 	XMMATRIX					m_mShadowLightViewProj{};

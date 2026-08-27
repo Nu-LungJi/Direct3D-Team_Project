@@ -40,6 +40,8 @@ namespace Client
 		PLAYER_HURTBOX = 1u << 17,	// 적 공격에 피격되는 플레이어의 부위별 판정
 		ENEMY_HURTBOX = 1u << 18,	// 플레이어 공격에 피격되는 적의 부위별 판정
 		WORLD_STATIC_WALL = 1u << 19,	// 벽
+		DOOR_DYNAMIC = 1u << 20,	// D6 등으로 움직이는 문짝
+		DOOR_HINGE_BLOCKER = 1u << 21,	// 문과 벽 사이 힌지 영역의 CCT 접근 차단용
 	};
 
 
@@ -83,6 +85,7 @@ namespace Client
 		Prototype_GameObject_PlayerBroom,
 		Prototype_GameObject_Terrain,
 		Prototype_GameObject_OilBarrel,
+		Prototype_GameObject_WaterWheel,
 		Prototype_GameObject_WiggenweldPotion,
 		Prototype_GameObject_RagdollTest,
 		Prototype_GameObject_TestPathPlayback,
@@ -114,7 +117,8 @@ namespace Client
 		Prototype_GameObject_AccioActivity_BumperB,
 		Prototype_GameObject_AccioActivity_RampLarge,
 		Prototype_GameObject_AccioActivity_LampSmall,
-		Prototype_GameObject_AccioActivity_Npc,
+		Prototype_GameObject_AccioActivity_NpcController,
+		Prototype_GameObject_AccioActivity_NpcCharacter,
 		Prototype_GameObject_PhysicsDoor,
 	};
 

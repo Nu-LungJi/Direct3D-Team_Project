@@ -657,6 +657,8 @@
     <ClInclude Include="..\Public\NpcPlacementManager.h">
       <Filter>NPC</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\AnimatedObjectPlacementManager.h" />
+    <ClInclude Include="..\Public\AnimatedObjectPlacementData.h" />
     <ClInclude Include="..\Public\NpcPlacementData.h">
       <Filter>NPC</Filter>
     </ClInclude>
@@ -1386,6 +1388,7 @@
     <ClCompile Include="..\Private\NpcPlacementManager.cpp">
       <Filter>NPC</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\AnimatedObjectPlacementManager.cpp" />
     <ClCompile Include="..\..\ThirdParty\ImGuizmo-1.83\GraphEditor.cpp">
       <Filter>ImGui\imguizmo</Filter>
     </ClCompile>

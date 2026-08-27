@@ -143,18 +143,16 @@ float Compute_FogFlow(float3 _WorldPos, float3 _FlowDirection)
 
 float GetVolumeFogDensity(float3 _WorldPos)    
 {
-	if (FogMaxHeight <= 0.0001f)	return 0.f;
-	
-	float	FogMaxHeight = max(0.f, _WorldPos.y - FogBaseHeight);
+	float	CurrentHeight = max(0.f, _WorldPos.y - FogBaseHeight);
 
-	float	HeightFactor = exp(-FogMaxHeight * FogHeightFallOff);
+	float	HeightFactor = exp(-CurrentHeight * FogHeightFallOff);
 	
-	float	HeightLimit = 1.f - smoothstep(FogMaxHeight * 0.8f, FogMaxHeight, FogMaxHeight);
+	float	HeightLimit = 1.f - smoothstep(FogMaxHeight * 0.8f, FogMaxHeight, CurrentHeight);
 	
 	float	FinalFlowNoise = Compute_FogFlow(_WorldPos, float3(1.f, 1.f, 1.f));
 
-	return HeightFactor * FogDensity * HeightLimit * FinalFlowNoise;
-}
+	return	HeightFactor * FogDensity * HeightLimit * FinalFlowNoise;
+}	
 
 float Sample_CascadeShadow(float3 _WorldPos, uint _CascadeIndex)
 {
@@ -334,13 +332,8 @@ void CSMain_LightIntegration(uint3 ID : SV_DispatchThreadID)
 	float3	TexCoord = (float3(ID.xyz) + 0.5f + JitterOffset) / FroxelGridSize;
 	
 	float3	VoxelWorldPos	= FroxelZToWorldPos(TexCoord);
-	float	FogDensity		= GetVolumeFogDensity(VoxelWorldPos);
-	
-	float	FogDistance			= abs(mul(float4(VoxelWorldPos, 1.f), g_matView).z);
-	float	FogDistanceFactor	= smoothstep(FogStartDistance, max(FogEndDistance, FogStartDistance + 0.0001f), FogDistance);
-	
-	FogDensity *= FogDistanceFactor;
-	
+	float FogDensity = GetVolumeFogDensity(VoxelWorldPos);
+ 
 	if (FogDensity <= 0.0001f)
 	{
 		OUTPUT3D[ID] = float4(0.f, 0.f, 0.f, 0.f);
@@ -372,7 +365,7 @@ void CSMain_FroxelZAccumulation(uint3 ID : SV_DispatchThreadID)
 {
 	if (ID.x >= (uint) FroxelGridSize.x || ID.y >= (uint) FroxelGridSize.y)	return;
 	float2	TexCoord = (float2(ID.xy) + 0.5f) / FroxelGridSize.xy;
-	
+
 	float2	ScreenSpaceNDC;
 	ScreenSpaceNDC.x = TexCoord.x * +2.f - 1.f;
 	ScreenSpaceNDC.y = TexCoord.y * -2.f + 1.f;
@@ -392,18 +385,18 @@ void CSMain_FroxelZAccumulation(uint3 ID : SV_DispatchThreadID)
 	float	SliceNear = NearZ;
 	for (uint z = 0; z < (uint) FroxelGridSize.z; ++z)
 	{
-		float	NormalizedFarZ = ((float) z + 1.f) / FroxelGridSize.z;
+		float NormalizedFarZ = ((float) z + 1.f) / FroxelGridSize.z;
 		
-		float	SliceFar = lerp(NearZ, FarZ, pow(NormalizedFarZ, FroxelDepthExponent));
+		float SliceFar = lerp(NearZ, FarZ, pow(NormalizedFarZ, FroxelDepthExponent));
 		
-		float	RayStepSize = (SliceFar - SliceNear) / ViewRayZ;
-		float4	LightingData = VoxelLightingColor.Load(int4(ID.xy, z, 0));
+		float RayStepSize = (SliceFar - SliceNear) / ViewRayZ;
+		float4 LightingData = VoxelLightingColor.Load(int4(ID.xy, z, 0));
 		
-		float3	Scattering = LightingData.rgb;
-		float	Extinction = LightingData.a;
+		float3 Scattering = LightingData.rgb;
+		float Extinction = LightingData.a;
 		
-		float	StepTransmittance = exp(-Extinction * RayStepSize);
-		float3	IntegratedScattering = Extinction > 0.0001f ? (Scattering / Extinction) * (1.f - StepTransmittance) : Scattering * RayStepSize;
+		float StepTransmittance = exp(-Extinction * RayStepSize);
+		float3 IntegratedScattering = Extinction > 0.0001f ? (Scattering / Extinction) * (1.f - StepTransmittance) : Scattering * RayStepSize;
 		
 		float3 StepContribution = IntegratedScattering * AccumulatedTransmittance;
 

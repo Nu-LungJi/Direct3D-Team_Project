@@ -73,11 +73,9 @@ private:
 	_bool m_bCreatePlayScreenUI{ false };
 	CHandle m_hPlayer{};
 	CHandle m_hPropBarrel{};
-	CHandle m_hPhysicsDoor{};
-	_float m_fPhysicsDoorTestTorque{ 800.f };
 	_float3 m_vPropBarrelSpawnPosition{ 20.f, 5.f, 20.f };
 	CHandle m_hAccioActivityBase{};
-	CHandle m_hAccioActivityNpc{};
+	CHandle m_hAccioActivityNpcController{};
 	std::array<CHandle, 6> m_hAccioBalls{};
 	_float3 m_vAccioActivitySetOrigin{ 27.f, 5.f, 100.f };
 	_float m_fAccioActivitySetYawDegrees{ 18.f };

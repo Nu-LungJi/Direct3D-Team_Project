@@ -1,5 +1,17 @@
 #include "../ShaderDefines.hlsl"
 
+static const float2 RandomRotationCS[8] =
+{
+	float2(1.00000000f, 0.00000000f),
+    float2(0.70710678f, 0.70710678f),
+    float2(0.00000000f, 1.00000000f),
+    float2(-0.70710678f, 0.70710678f),
+    float2(-1.00000000f, 0.00000000f),
+    float2(-0.70710678f, -0.70710678f),
+    float2(0.00000000f, -1.0000000f),
+    float2(0.70710678f, -0.70710678f)
+};
+
 float4 Convert_WorldPosByDepth(float _Depth, float2 _TexCoord)
 {
     // Depth = NDC   -> (InvProj) -> WorldSpace(InvView)
@@ -150,16 +162,21 @@ bool Compute_EffectLight(float3 _WorldPosition, EffectLight Light, out float3 L,
 	return true;
 }
 
-float3 Apply_DissolveEffect(Texture2D _NoiseTex, float3 _BaseEmissive, float2 _TexCoord, float _EdgeWidth)
+float3 Apply_DissolveEffect(Texture2D _NoiseTex, float3 _BaseEmissive, float2 _TexCoord, float _EdgeWidth, float _DissolveIntensity)
 {
-	float DissolveFactor = _NoiseTex.Sample(LinearWrap, _TexCoord).r - DissolveIntensity;
-    clip(DissolveFactor);
+	float DissolveFactor = _NoiseTex.Sample(LinearWrap, _TexCoord).r - _DissolveIntensity;
+	clip(DissolveFactor);
 	
     float   DissolveEdge = 1.f - smoothstep(0.f, _EdgeWidth, DissolveFactor);
     
 	float3 DissolveEmissive = DissolveColor * DissolveEdge;
     
 	return _BaseEmissive + DissolveEmissive;
+}
+
+float3 Apply_DissolveEffect(Texture2D _NoiseTex, float3 _BaseEmissive, float2 _TexCoord, float _EdgeWidth)
+{
+	return Apply_DissolveEffect(_NoiseTex, _BaseEmissive, _TexCoord, _EdgeWidth, DissolveIntensity);
 }
 
 float Henyey_Greenstein_Phase(float _CosTheta, float _Anistropy)
@@ -177,4 +194,55 @@ float Henyey_Greenstein_DualPhase(float3 _RayDirection, float3 _FogLightDirectio
 	float PhaseValueB = Henyey_Greenstein_Phase(CosTheta, _BackAnistropy);
     
 	return lerp(PhaseValueB, PhaseValueA, k);
+}
+
+uint Hash_ShadowPixel(uint2 PixelPos)
+{
+	uint Hash = PixelPos.x * 0x8DA6B343u;
+	Hash ^= PixelPos.y * 0xD8163841u;
+
+	Hash ^= Hash >> 16;
+	Hash *= 0x7FEB352Du;
+	Hash ^= Hash >> 15;
+
+	return Hash;
+}
+
+float2x2 Get_RandomNoise(uint2 _PixelPos)
+{
+	uint RotationIndex = Hash_ShadowPixel(_PixelPos) & 7u;
+
+	float2 CosSin = RandomRotationCS[RotationIndex];
+
+	return float2x2(CosSin.x, -CosSin.y, CosSin.y, CosSin.x);
+}
+
+float DistributionGGX(float3 N, float3 H, float _Roughness)
+{
+	float R = _Roughness * _Roughness;
+	float R2 = R * R;
+    
+	float NDH = max(0.f, dot(N, H));
+    
+	float Num = R2;
+	float Denom = ((NDH * NDH) * (R2 - 1.f) + 1.f);
+	Denom = PI * Denom * Denom;
+	
+	return Num / max(0.000001f, Denom);
+}
+float VisibilitySmithJointGGX(float NDY, float NDL, float _Roughness)
+{
+	float R = _Roughness * _Roughness;
+	float R2 = R * R;
+    
+	float lambdaV = NDL * sqrt(max((-NDY * R2 + NDY) * NDY + R2, 0.001f));
+	float lambdaL = NDY * sqrt(max((-NDL * R2 + NDL) * NDL + R2, 0.001f));
+    
+	float Denom = lambdaV + lambdaL;
+	return Denom > 0.f ? 0.5f / Denom : 0.f;
+}
+float3 FresnelSchlick(float CTH, float3 MBR)
+{
+	float ClampCTH = clamp(CTH, 0.f, 1.f);
+	return MBR + (1.f - MBR) * pow(clamp(1.f - ClampCTH, 0.f, 1.f), 5.f);
 }

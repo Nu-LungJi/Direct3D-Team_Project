@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "Hierarchy.h"
 #include "GameInstance.h"
 #include "MapMeshObject.h"
@@ -336,6 +336,14 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 	{
 		ImGui::SetTooltip("Add TEST / Model_Resource to 00_OBJECTS");
 	}
+	/*----------- 광윤 추가 -----------*/	// 태그 검색 기능
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	ImGui::InputTextWithHint(
+		"##ObjectTagSearch",
+		"Search object tags...",
+		m_TagSearchBuffer,
+		sizeof(m_TagSearchBuffer));
+	/*---------------------------------*/
 
 	ImGui::BeginChild("##ObjectList", ImVec2(0.f, 156.f), true);
 
@@ -424,7 +432,10 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 					{
 						continue;
 					}
-
+					/*----------- 광윤 추가 -----------*/	// 태그 검색 기능
+					if (!ContainsIgnoreCase(pObject->GetObjectTag(), m_TagSearchBuffer))
+						continue;
+					/*---------------------------------*/
 					const bool bSelected = m_pSelection
 						? m_pSelection->IsSelected(handle)
 						: (handle == *pSelectedObject);
@@ -518,6 +529,23 @@ void CHierarchy::UpdateGUI(E::_float fTimeDelta)
 	ImGui::EndChild();
 	DrawRenamePopup();
 }
+/*----------- 광윤 추가 -----------*/	// 태그 검색 기능
+bool CHierarchy::ContainsIgnoreCase(std::string_view text, std::string_view pattern)
+{
+	if (pattern.empty())
+		return true;
+
+	std::string lowerText{ text };
+	std::string lowerPattern{ pattern };
+
+	std::transform(lowerText.begin(), lowerText.end(), lowerText.begin(),
+		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	std::transform(lowerPattern.begin(), lowerPattern.end(), lowerPattern.begin(),
+		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+	return lowerText.find(lowerPattern) != std::string::npos;
+}
+/*---------------------------------*/
 
 E::UPtr<CHierarchy> CHierarchy::Create(E::CHandle* pSelectedObject,
 	CEditorCommandManager* pCommandManager, CEditorSelection* pSelection)

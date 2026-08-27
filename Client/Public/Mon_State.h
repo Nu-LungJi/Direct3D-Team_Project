@@ -34,6 +34,7 @@ X(GROGGY)\
 X(PHASE_CHANGE)\
 X(DEAD)\
 X(GODAE)\
+X(NOTHING)\
 X(END)
 #define X(name) name,
 enum class MON_STATE { MON_STATE_M };

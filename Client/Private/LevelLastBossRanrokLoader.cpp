@@ -80,6 +80,7 @@ std::future<bool> CLevelLastBossRanrokLoader::Load()
 			{
 				return false;
 			}
+
 			if (FAILED(LoadPlayer_InWorker()))
 			{
 				return false;

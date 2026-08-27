@@ -15,6 +15,7 @@
 #include "Player_Stupefy_Bullet.h"
 #include "NvClothCape.h"
 #include "ResNvClothMesh.h"
+#include "WaterWheel.h"
 
 #include "UIController.h"
 #include "EffectUI.h"
@@ -92,6 +93,7 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			{
 				return false;
 			}
+
 			if(FAILED(MonsterLoad_InWorker()))
 				return false;
 			if (FAILED(NpcLoad_InWorker()))
@@ -100,6 +102,17 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 
 			if (FAILED(LoadCollsion_InWorker()))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("TrollDoljin")))
+			{
+				return false;
+			}
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("SpiderSpawn")))
+			{
+				return false;
+			}
+
+			if (FAILED(LoadHogsmeade_ExtraAsset()))
 				return false;
 
 			return SUCCEEDED(LoadPlayerResources());
@@ -357,6 +370,7 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 		{
 			return false;
 		}
+		
 	}
 	return true;
 }
@@ -433,7 +447,15 @@ HRESULT CLevelHogwartWorldLoader::MonsterLoad_InWorker()
 		}
 
 		if (FAILED(CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, "Prototype_Component_Mon_FSM", CMon_State::Create()))) return E_FAIL;
-
+		
+		if (auto res = CGameInstance::Get().AddResource("BTJSON", "TROLL", CResJson::Create("./Resources/json/BeHavior/Troll.json")))
+		{
+			if (FAILED(res->Load()))
+			{
+				MSG_BOX("LOAD FAILED TROLL JSON");
+				return E_FAIL;
+			}
+		}
 	}
 }
 
@@ -445,7 +467,24 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		{ "Model_Resource_NPC_AlbieWeekes", "AlbieWeekes" },
 		{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
 		{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
+		{ "Model_Resource_NPC_EffieBones", "EffieBones" },
+		{ "Model_Resource_NPC_EleazarFig", "EleazarFig" },
+		{ "Model_Resource_NPC_GladwinMoon", "GladwinMoon" },
+		{ "Model_Resource_NPC_HelenThistlewood", "HelenThistlewood" },
+		{ "Model_Resource_NPC_JasperTrout", "JasperTrout" },
+		{ "Model_Resource_NPC_LeonaPeck", "LeonaPeck" },
 		{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
+		{ "Model_Resource_NPC_NoreenBlainey", "NoreenBlainey" },
+		{ "Model_Resource_NPC_PadraicHaggarty", "PadraicHaggarty" },
+		{ "Model_Resource_NPC_PercivalPippin", "PercivalPippin" },
+		{ "Model_Resource_NPC_PhineasBlack", "PhineasBlack" },
+		{ "Model_Resource_NPC_SironaRyan", "SironaRyan" },
+		{ "Model_Resource_NPC_ThomasBrown", "ThomasBrown" },
+		{ "Model_Resource_NPC_TimothyTeasdale", "TimothyTeasdale" },
+		{ "Model_Resource_NPC_MirabelGarlick", "MirabelGarlick" },
+		{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
+		{ "Model_Resource_NPC_AdelaideOakes", "AdelaideOakes" },
+		{ "Model_Resource_NPC_VictorRookwood", "VictorRookwood" },
 	};
 	for (const auto& Entry : NpcModels)
 	{
@@ -543,6 +582,30 @@ HRESULT CLevelHogwartWorldLoader::LoadCollsion_InWorker()
 	{
 		MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
 		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorldLoader::LoadHogsmeade_ExtraAsset(){
+
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::HOGWART_WORLD, "Static_WaterWheel_Resource",
+			CResStaticModel::Create("./Resources/SampleClient/Models/Static/Hogsmeade_ExtraAsset/SM_CGY_WaterWheel.bin"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("HOGWART_WORLD Failed Static_WaterWheel Resource");
+				//return false;
+			}
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WaterWheel, CWaterWheel::Create())))
+		{
+			MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_WaterWheel");
+			return E_FAIL;
+		}
 	}
 	return S_OK;
 }

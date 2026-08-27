@@ -128,9 +128,11 @@ void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)
 	{
 		if (!m_bThrow)
 		{
-			if (auto pModel = iter->GetComponent<CComModelInstance>("ComCModelIntance"))
+			if (auto pModel = GetParentModelInstance())
 			{
-				if (pModel->Get_CombinedBoneMatrices().size() >= m_iBoneSocketIndex)
+				if (m_iBoneSocketIndex >= 0 &&
+					static_cast<size_t>(m_iBoneSocketIndex) <
+					pModel->Get_CombinedBoneMatrices().size())
 				{
 					_matrix Par = XMLoadFloat4x4(&pModel->Get_CombinedBoneMatrices()[m_iBoneSocketIndex]);
 					for (uint32_t i = 0; i < 3; ++i)
@@ -151,6 +153,23 @@ void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)
 	/*----------- 광윤 추가 -----------*/
 	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
 	/*---------------------------------*/
+}
+
+CComModelInstance* CPlayer_Weapon::GetParentModelInstance() const
+{
+	auto* pParent = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle);
+	if (!pParent)
+		return nullptr;
+
+	// [LSY] 기존 Player는 과거 오타가 포함된 태그를 사용하고, 신규 Pawn은
+	// 정상 태그를 사용한다. 양쪽을 허용해 기존 장비 부착을 깨지 않는다.
+	if (auto* pModel =
+		pParent->GetComponent<CComModelInstance>("ComCModelIntance"))
+	{
+		return pModel;
+	}
+
+	return pParent->GetComponent<CComModelInstance>("ComCModelInstance");
 }
 
 HRESULT CPlayer_Weapon::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
@@ -259,20 +278,20 @@ _float4x4 CPlayer_Weapon::GetSpawnWorldMatrix() const
 			// Player and weapon LateUpdate ordering is not guaranteed. Build the
 			// attachment matrix from the player's current-frame hand bone here so
 			// wand-tip effects never consume the weapon's previous-frame transform.
-			if (auto* pPlayer = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
+			if (auto* pParent = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
 			{
-				if (auto* pPlayerModel = pPlayer->GetComponent<CComModelInstance>("ComCModelIntance"))
+				if (auto* pParentModel = GetParentModelInstance())
 				{
-					const auto& playerBones = pPlayerModel->Get_CombinedBoneMatrices();
+					const auto& parentBones = pParentModel->Get_CombinedBoneMatrices();
 					if (m_iBoneSocketIndex >= 0 &&
-						static_cast<size_t>(m_iBoneSocketIndex) < playerBones.size())
+						static_cast<size_t>(m_iBoneSocketIndex) < parentBones.size())
 					{
-						_matrix handSocket = XMLoadFloat4x4(&playerBones[m_iBoneSocketIndex]);
+						_matrix handSocket = XMLoadFloat4x4(&parentBones[m_iBoneSocketIndex]);
 						for (uint32_t i = 0; i < 3; ++i)
 							handSocket.r[i] = XMVector3Normalize(handSocket.r[i]);
 
 						weaponWorld = GetTransform().GetLoadedWorldMatrix() *
-							handSocket * pPlayer->GetTransform().GetLoadedWorldMatrix();
+							handSocket * pParent->GetTransform().GetLoadedWorldMatrix();
 					}
 				}
 			}

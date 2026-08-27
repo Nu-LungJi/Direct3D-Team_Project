@@ -159,3 +159,5 @@ constexpr static const char* TAG_RES_CBUFFER_INIT_PARTICLE = "CB_InitGPUParticle
 constexpr static const char* TAG_RES_CBUFFER_BONE = "CB_Bone";
 constexpr static const char* TAG_RES_CBUFFER_PART_ATTACHMENT = "CB_GPU_PART_ATTACHMENT";
 
+constexpr static const char* TAG_RES_PERMANENT_NONBLENDSHADER = "PS_StaticNonBlendModel_Instanced";
+constexpr static const char* TAG_RES_PERMANENT_BLENDSHADER = "PS_StaticBlendModel_Instanced";

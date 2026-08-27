@@ -46,6 +46,7 @@ public:
 		_float3 vStartPos{}, vEndPos{};
 		_float fSpeed{};
 		_bool bPhyx{ true };
+		_bool bFreezeAnimation{ false };
 		_string AnimName{};
 		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
@@ -140,6 +141,7 @@ protected:
 	_float								m_fRootMotionTranslationScale{ 1.f };
 
 	_bool								m_bEndGame{false};
+	_bool								m_bFreezeAnimation{ false };
 	CHandle								m_TargetHandle{};
 	std::unordered_map<_string, std::vector<_string>> m_SoundTable;
 public:

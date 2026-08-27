@@ -126,6 +126,7 @@ HRESULT CMonster::Initialize(void* pArg)
 {
 	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
 	m_bDonMove = MonDesc->bDonMove;
+	m_bSpawn = MonDesc->bSpawn;
 	m_TargetHandle = MonDesc->TargetHandle;
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
@@ -390,7 +391,15 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 
 	if (!pModel->GetAnimations().empty())
 	{
-		CGameInstance::Get().Add_Instance(m_pComModelInstance, m_pModelAnimator, *GetTransform().GetCombinedWorldMatrix());
+	
+		uint32_t iDissolveBits{};
+		static_assert(sizeof(iDissolveBits) == sizeof(m_fDissolve));
+		memcpy(&iDissolveBits, &m_fDissolve, sizeof(iDissolveBits));
+		CGameInstance::Get().Add_Instance(
+			m_pComModelInstance,
+			m_pModelAnimator,
+			*GetTransform().GetCombinedWorldMatrix(),
+			iDissolveBits);
 
 		return;
 	}
@@ -498,7 +507,8 @@ HRESULT CMonster::Render_Instanced_CPU(ID3D11DeviceContext* pContext, const E::R
 		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
+		// Dissolve is supplied per instance through GPU_ANIM_INSTANCE_DATA::iFlags.
+		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
@@ -589,7 +599,8 @@ HRESULT CMonster::Render_Instanced_GPU(ID3D11DeviceContext* pContext, const E::R
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
+		// Dissolve is supplied per instance through GPU_ANIM_INSTANCE_DATA::iFlags.
+		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
@@ -1009,17 +1020,18 @@ void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 		break;
 	case PLAYER_SKILL_TYPE::DESTORY:
 		m_iHp -= 25.f;
+		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
 		break;
 	case PLAYER_SKILL_TYPE::ABRA:
 		m_iHp -= 50.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
+		GET_SINGLE(UIManager)->CreateDamageFont(50, GetHandle(), true);
 		break;
 	case PLAYER_SKILL_TYPE::CONFRIGO:
 		m_iHp -= 18.f;
 		GET_SINGLE(UIManager)->CreateDamageFont(18, GetHandle(), true);
 		break;
 	case PLAYER_SKILL_TYPE::BOMBARDA:
-		m_iHp -= 18.f;
+		m_iHp -= 28.f;
 		GET_SINGLE(UIManager)->CreateDamageFont(28, GetHandle(), true);
 		break;
 

@@ -19,9 +19,11 @@
 #include "NpcPlacementData.h"
 #include "NpcPlacementManager.h"
 #include "Troll.h"
+#include "LightPlacementObject.h"
 // Client에도 같은 이름의 Terrain.h가 있으므로 Engine SDK 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
+#include "WaterWheel.h"
 
 NS_USING(Client)
 
@@ -63,8 +65,11 @@ HRESULT CLevelHogwartWorld::Initialize()
 		};
 		for (const auto& Option : NpcSkeletons)
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, Option.pName, NpcOption.sModelGroupTag, Option.pTag);
-	
+		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_MirabelGarlick", NpcOption.sModelGroupTag, "Model_Resource_NPC_MirabelGarlick","./Resources/SampleClient/Models/Skeleton/NPC_MirabelGarlick/" );
+		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_AnneSallow", NpcOption.sModelGroupTag, "Model_Resource_NPC_AnneSallow", "./Resources/SampleClient/Models/Skeleton/NPC_AnneSallow/");
+		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NPC_Female_AdelaideOakes", NpcOption.sModelGroupTag, "Model_Resource_NPC_AdelaideOakes", "./Resources/SampleClient/Models/Skeleton/NPC_AdelaideOakes/");
 
+		
 		pNpcManager->RegisterBehaviorOption("World NPC", "BTJSON", "NPC1");
 		{
 			NpcOption.sPrototypeTag = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldAnimal);
@@ -125,6 +130,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 		return E_FAIL;
 
 	{
+		//상점 NPC 
 		CInteractiveNpc::DESC Desc{};
 		Desc.sObjectTag = "Hogsmeade_MiniGameNpc_Professor";
 		Desc.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
@@ -143,36 +149,108 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.vCCTCenterOffset = { 0.f, 1.f, 0.f };
 		Desc.bPhyx = true;
 		Desc.bDonMove = true;
-		Desc.SpeakerName = "교수";
+		Desc.SpeakerName = "상점주인";
 		Desc.InteractionDistance = 3.f;
 		Desc.Repeatable = true;
 		Desc.IdleExpressionAnim =
 			"AN_ProfessorSharp_MasterRig_Hu_HUD_Idle_Casual_Loop_anm.bin";
+
 		Desc.Dialogue = {
 			// 0
-			{ "미니게임을 테스트해 보겠나?", "", true },
-
-			// 1
-			{ "도전할 생각인가?", "", true,
+			{
+				"어서 오게, 지팡이를 사러 왔나?", "", true,
 				{
-				// 선택하면 2번 대사를 보여준 뒤 START_SPELL_MINIGAME 실행
-				{ "시작한다.", 2,
-					CInteractiveNpc::DIALOGUE_ACTION::START_SPELL_MINIGAME },
+					{
+						"네!",std::numeric_limits<size_t>::max(),CInteractiveNpc::DIALOGUE_ACTION::NONE,
+						[]() -> size_t
+						{
+							const uint32_t coinCount = 20; // 실제 코인 값으로 교체
 
-					// 선택하면 3번 대사를 보여준 뒤 CANCEL_DIALOGUE 실행
-					{ "취소한다.", 3,
-						CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE }
+							if (coinCount >= 20)
+								return 5;
+
+							return 1;
+						}
+					},
+
+					{
+						"다른 용무가 있습니다.", 4,
+						CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE
+					}
 				}
 			},
 
+			// 1
+			{
+				"자네는 아직 지팡이를 사기에는 돈도 실력도 부족하군.",
+				"",
+				true
+			},
+
 			// 2
-			{ "좋아. 바로 시작하지!", "", true },
+			{
+				"마침 학교에서 작은 대회를 연다고 하니 참여해 보는 게 어떠한가?",
+				"",
+				true,
+				{
+					{
+						"좋아요!", 3,
+						CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME
+					},
+					{
+						"다른 용무가 있습니다.", 4,
+						CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE
+					}
+				}
+			},
 
 			// 3
-			{ "마음이 바뀌면 다시 찾아오게.", "", true }
+			{ "좋은 배짱이군. 그곳으로 보내 주겠네.", "", true },
+
+			// 4
+			{ "마음이 바뀌면 다시 찾아오게.", "", true },
+
+			// 5
+			{
+				"한번 골라 보게.",
+				"",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::OPEN_SHOP
+			},
+
+			// 6
+			{ "꽤 강력한 지팡이를 골랐군.", "", true },
+
+			// 7
+			{
+				"지팡이마다 고유한 능력이 있으니 한번 시험해 보는 게 좋을 거야.",
+				"",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::START_SPELL_MINIGAME
+			}
 		};
+		Desc.ResolveStartDialogueIndex = []()
+			{
+
+				// 만약 플레이어가 이미 지팡이를 샀으면
+				// 대화 6번으로 
+				// 아직 안샀으면 0번으로 
+
+
+				//auto* pPlayer = E::CGameInstance::Get().
+				//	GetGameObjectByHandleT<CPlayer>(hDialoguePlayer);
+
+				//
+				return 0u;
+			};
 		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
-		Desc.MoveDestination = { 206.614f, 44.703f, 89.671f };
+		Desc.MoveDestination = {
+			{ 303.512f, 44.703f, 85.749f }
+		};
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
 
@@ -184,12 +262,111 @@ HRESULT CLevelHogwartWorld::Initialize()
 			return E_FAIL;
 	}
 
+
+
+	{
+		//미니게임 NPC 
+		CInteractiveNpc::DESC Desc{};
+		Desc.sObjectTag = "Hogsmeade_MiniGameNpc_Professor";
+		Desc.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+		Desc.ReSourceTag = "PLAYER_MODEL_RESROUCE";
+		Desc.BeHaviorTag = "NPC1";
+		Desc.resBeHaviorMajor = "BTJSON";
+		Desc.resBeHaviorMinor = "NPC1";
+		Desc.TargetHandle = *hPlayer;
+		Desc.vPos = { 303.512f, 44.703f, 85.749f };
+		Desc.vStartPos = Desc.vPos;
+		Desc.vRot = { 0.f, 38.342f, 0.f };
+		Desc.vScale = { 1.f, 1.f, 1.f };
+		Desc.fCCTHeight = 3.6f;
+		Desc.fCCTRadius = 0.6f;
+		Desc.fCCTStepOffset = 0.1f;
+		Desc.vCCTCenterOffset = { 0.f, 1.f, 0.f };
+		Desc.bPhyx = true;
+		Desc.bDonMove = true;
+		Desc.SpeakerName = "미니게임";
+		Desc.InteractionDistance = 3.f;
+		Desc.Repeatable = true;
+		Desc.IdleExpressionAnim =
+			"AN_ProfessorSharp_MasterRig_Hu_HUD_Idle_Casual_Loop_anm.bin";
+
+		Desc.Dialogue = {
+			// 0
+			{
+				"어서 와, 대회에 참가하려고?", "", true,
+				{
+					{
+						"네!", 1,
+						CInteractiveNpc::DIALOGUE_ACTION::CONTINUE_DIALOGUE
+					},
+					{
+						"다른 용무가 있습니다.", 3,
+						CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE
+					}
+				}
+			},
+
+			// 1
+			{
+				"그렇구나! 두 가지 종목이 있는데 어떤 것부터 시작해 볼래?",
+				"",
+				true,
+				{
+					{
+						"소환사의 코트", 2,
+						CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME
+					},
+					{
+						"부릉 브룸", 2,
+						CInteractiveNpc::DIALOGUE_ACTION::START_COIN_MINIGAME
+					}
+				}
+			},
+
+			// 2
+			{ "행운을 빌어.", "", true },
+
+			// 3
+			{ "곧 대회가 시작하니 늦기 전에 와야 해!", "", true }
+		};
+
+		Desc.ResolveStartDialogueIndex = []()
+			{
+
+				// 만약 플레이어가 이미 지팡이를 샀으면
+				// 대화 6번으로 
+				// 아직 안샀으면 0번으로 
+
+
+				//auto* pPlayer = E::CGameInstance::Get().
+				//	GetGameObjectByHandleT<CPlayer>(hDialoguePlayer);
+
+				//
+				return 0u;
+			};
+		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
+		Desc.MoveDestination = {
+			{ 323.512f, 44.703f, 85.749f }, // 0: 아씨오
+			{ 313.512f, 44.703f, 85.749f }  // 1: 코인 - 실제 좌표로 교체
+		};
+		Desc.MoveSpeed = 2.f;
+		Desc.MoveStopDistance = 0.2f;
+
+		if (!gameInstance.AddGameObjectToLayer(
+			LEVEL::HOGWART_WORLD,
+			PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
+			"02_Npc",
+			&Desc))
+			return E_FAIL;
+	}
 	if (FAILED(SpawnFlyCamera()) ||
 		FAILED(SpawnUICamera()) ||
 		FAILED(SpawnPlayerCamera(*hPlayer)))
 	{
 		return E_FAIL;
 	}
+	if (FAILED(SpawnLightPlacement()))
+		return E_FAIL;
 
 	if (FAILED(SpawnSkyBox()))
 		return E_FAIL;
@@ -219,6 +396,18 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	if (FAILED(Initialize_EnviromentLight()))
 		return E_FAIL;
+	if (FAILED(Initialize_LoopEffect()))
+		return E_FAIL;
+
+
+	{
+		CWaterWheel::DESC desc{};
+		desc.sObjectTag = "HOGWART_WORLD_WATERWHEEL";
+		desc.vInitialPosition = _float3(478.4f, 92.577f, 322.32f);
+		desc.vInitialRotation = _float3(0.f, 48.f, 0.f);
+		desc.vInitialScale = _float3(3.f, 3.f, 3.f);
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WaterWheel, "Hogsmeade_WaterWheel", &desc))	return E_FAIL;
+	}
 
 	// 레벨 진입 후 3초 동안 검은 화면을 유지하고,
 	// 이후 2초 동안 검은 UI를 사라지게 해 게임 화면을 드러낸다.
@@ -280,7 +469,22 @@ std::optional<CHandle> CLevelHogwartWorld::SpawnPlayer()
 		"03_Player",
 		&desc);
 }
+HRESULT CLevelHogwartWorld::SpawnLightPlacement()
+{
+	CLightPlacementObject::DESC desc{}; 
+	desc.sObjectTag = "HogwartWorldLightPlacement";
+	desc.sLightFileName = "Level_HogwartWorld";
 
+	return CGameInstance::Get().
+		AddGameObjectToLayer(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoGameObject::
+			Prototype_GameObject_LightPlacement,
+			"Layer_LightPlacement",
+			&desc)
+		? S_OK
+		: E_FAIL;
+}
 HRESULT CLevelHogwartWorld::SpawnPlayerCape(CHandle hPlayer)
 {
 	CNvClothCape::DESC desc{};
@@ -545,22 +749,24 @@ HRESULT CLevelHogwartWorld::SpawnMonster(std::optional<CHandle> hPlayer)
 		return E_FAIL;
 	}
 
-	CTroll::TROLL_DESC Troll{};
-	Troll.sObjectTag = "Troll";
-	Troll.TargetHandle = hPlayer.value();
-	Troll.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-	Troll.vPos = _float3(260.353f, 40.679f, 138.799f);
-	Troll.ReSourceTag = "Model_Resource_Troll";
-	Troll.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_TrollWeapon);
-	Troll.WeaponResourceName = "Model_Resource_TrollWeapon";
+	//CTroll::TROLL_DESC Troll{};
+	//Troll.sObjectTag = "Troll";
+	//Troll.TargetHandle = hPlayer.value();
+	//Troll.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+	//Troll.vPos = _float3(260.353f, 40.679f, 138.799f);
+	//Troll.ReSourceTag = "Model_Resource_Troll";
+	//Troll.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_TrollWeapon);
+	//Troll.WeaponResourceName = "Model_Resource_TrollWeapon";
 	//Troll.resBeHaviorMajor = "BTJSON";
-	//Troll.resBeHaviorMinor = "ENDERDRAGON";
-	Troll.MonType = MONSTER_TYPE::BOSS;
+	//Troll.resBeHaviorMinor = "TROLL";
+	//Troll.MonType = MONSTER_TYPE::BOSS;
+	//
+	//if (!CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, "02.Troll", &Troll))
+	//{
+	//	return E_FAIL;
+	//}
 
-	if (!CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, "02.Troll", &Troll))
-	{
-		return E_FAIL;
-	}
+
 }
 HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 {
@@ -666,21 +872,21 @@ HRESULT CLevelHogwartWorld::Initialize_VolumetricFog() {
 	CB_VLFOG FogOption{};
 
 	FogOption.g_fFogColor			= { 255.f / 255.f, 227.f / 255.f, 184.f / 255.f };
-	FogOption.g_fFogIntensity		= 0.25f;
-	FogOption.g_fFogDensity			= 0.02f;
-	FogOption.g_fFogNoiseScale		= 0.05f;
-	FogOption.g_fFogScattering		= 0.5f;
-	FogOption.g_fFogBaseBrightness	= 0.01f;
+	FogOption.g_fFogIntensity		= 0.70f;
+	FogOption.g_fFogDensity			= 0.004f;
+	FogOption.g_fFogNoiseScale		= 0.1f;
+	FogOption.g_fFogScattering		= 1.f;
+	FogOption.g_fFogBaseBrightness	= 0.05f;
 
 	FogOption.g_fFogLightColor		= { 255.f / 255.f, 230.f / 255.f, 180.f / 255.f };
 	FogOption.g_fFogLightDirection	= { 0.577f, -0.577f, 0.577f };
 
 	FogOption.g_fFogBaseHeight		= 300.f;
-	FogOption.g_fFogMaxHeight		= 500.f;
-	FogOption.g_fFogHeightFallOff	= 0.05f;
+	FogOption.g_fFogMaxHeight		= 600.f;
+	FogOption.g_fFogHeightFallOff	= 0.1f;
 
-	FogOption.g_fFogStartDistance	= 100.f;
-	FogOption.g_fFogEndDistance		= 250.f;
+	FogOption.g_fFogStartDistance	= 250.f;
+	FogOption.g_fFogEndDistance		= 500.f;
 
 	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
 
@@ -697,6 +903,13 @@ HRESULT CLevelHogwartWorld::Initialize_EnviromentLight() {
 
 	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
 
+
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorld::Initialize_LoopEffect(){
+
+	CGameInstance::Get().Spawn("CGY_HogwartSteam.json", XMMatrixTranslation(106.42f, -7.5f, -212.875f) * XMMatrixScaling(2.5f, 2.5f, 2.5f), _vector{}, true);
 
 	return S_OK;
 }

@@ -82,6 +82,7 @@ void CAccioActivity_Base::UpdateGUI()
 		m_iMaxRounds);
 	if (m_eMatchState == MATCH_STATE::READY)
 	{
+		ImGui::Checkbox("NPC Starts First", &m_bNpcStartsFirst);
 		if (ImGui::Button("Start Accio Match") && !StartMatch())
 			DEBUG_LOG("[AccioActivity] Participants or balls are invalid.\n");
 	}
@@ -115,20 +116,6 @@ std::optional<CHandle> CAccioActivity_Base::FindControllableBall(
 	}
 
 	return std::nullopt;
-}
-
-std::optional<CHandle> CAccioActivity_Base::FindHighestScoringBall(
-	PARTICIPANT eParticipant,
-	_bool bSettledOnly) const
-{
-	const auto scoringBalls = FindScoringBalls(
-		eParticipant,
-		1,
-		bSettledOnly);
-	if (scoringBalls.empty())
-		return std::nullopt;
-
-	return scoringBalls.front();
 }
 
 std::vector<CHandle> CAccioActivity_Base::FindScoringBalls(
@@ -286,20 +273,6 @@ CAccioActivity_Base::FindFirstBallOnPath(
 	return nearestHit;
 }
 
-_bool CAccioActivity_Base::CanPushBallOutsidePlayArea(
-	const CAccioBall& ball,
-	const _float3& vPushDirection,
-	_float fMaxDistanceToEdge) const
-{
-	if (fMaxDistanceToEdge < 0.f)
-		return false;
-
-	const auto distanceToEdge = GetDistanceToPlayAreaEdge(
-		ball,
-		vPushDirection);
-	return distanceToEdge && *distanceToEdge <= fMaxDistanceToEdge;
-}
-
 std::optional<_float> CAccioActivity_Base::GetDistanceToPlayAreaEdge(
 	const CAccioBall& ball,
 	const _float3& vPushDirection) const
@@ -429,7 +402,8 @@ _bool CAccioActivity_Base::StartMatch()
 	if (!ResetMatch(true))
 		return false;
 
-	m_eMatchState = MATCH_STATE::PLAYER_TURN;
+	m_eMatchState = m_bNpcStartsFirst ?
+		MATCH_STATE::NPC_TURN : MATCH_STATE::PLAYER_TURN;
 	return true;
 }
 
@@ -539,11 +513,19 @@ _bool CAccioActivity_Base::SkipNpcTurn(const CHandle& hController)
 
 	// [LSY] 사용할 NPC 공이 사라진 예외 상황에서도 매치가 NPC 턴에 고착되지 않게 한다.
 	m_hActiveBall = CHandle{};
-	++m_iCurrentRound;
-	if (m_iCurrentRound >= m_iMaxRounds)
-		m_eMatchState = MATCH_STATE::MATCH_END;
-	else
+	if (m_bNpcStartsFirst)
+	{
+		// [LSY] NPC 선공 규칙에서는 플레이어 턴까지 끝나야 한 라운드가 완료된다.
 		m_eMatchState = MATCH_STATE::PLAYER_TURN;
+	}
+	else
+	{
+		++m_iCurrentRound;
+		if (m_iCurrentRound >= m_iMaxRounds)
+			m_eMatchState = MATCH_STATE::MATCH_END;
+		else
+			m_eMatchState = MATCH_STATE::PLAYER_TURN;
+	}
 	return true;
 }
 
@@ -693,9 +675,12 @@ void CAccioActivity_Base::UpdateTurnState()
 		return;
 
 	m_hActiveBall = CHandle{};
-	if (bWaitingForPlayer)
+	const _bool bRoundFinished = m_bNpcStartsFirst ?
+		bWaitingForPlayer : bWaitingForNpc;
+	if (!bRoundFinished)
 	{
-		m_eMatchState = MATCH_STATE::NPC_TURN;
+		m_eMatchState = bWaitingForPlayer ?
+			MATCH_STATE::NPC_TURN : MATCH_STATE::PLAYER_TURN;
 		return;
 	}
 
@@ -703,7 +688,8 @@ void CAccioActivity_Base::UpdateTurnState()
 	if (m_iCurrentRound >= m_iMaxRounds)
 		m_eMatchState = MATCH_STATE::MATCH_END;
 	else
-		m_eMatchState = MATCH_STATE::PLAYER_TURN;
+		m_eMatchState = m_bNpcStartsFirst ?
+			MATCH_STATE::NPC_TURN : MATCH_STATE::PLAYER_TURN;
 }
 
 _bool CAccioActivity_Base::ValidateRegisteredBalls() const
@@ -919,6 +905,7 @@ _bool CAccioActivity_Base::IsPointInsideScoreZone(
 
 HRESULT CAccioActivity_Base::InitializeBasePhysics(const DESC& desc)
 {
+	m_bNpcStartsFirst = desc.bNpcStartsFirst;
 	m_PlayArea = desc.BoxColliders[3];
 	m_ScoreZones = {
 		desc.Score10Trigger,

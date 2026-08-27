@@ -48,6 +48,7 @@ public:
 
 private:
 	void					Weapon_Throw(_float fTimeDelta);
+	CComModelInstance*		GetParentModelInstance() const;
 private:
 	CComModelInstance* m_pComModelInstance{};
 	// nonAnim

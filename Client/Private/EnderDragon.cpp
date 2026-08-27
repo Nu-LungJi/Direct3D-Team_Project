@@ -424,9 +424,9 @@ void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 		return;
 	}
 	if (CGameInstance::Get().KeyPressing(DIK_LSHIFT) && CGameInstance::Get().KeyDown(DIK_H))
-		m_bDebug = !m_bDebug;
+		Set_Spawn(!Is_Spawn());
 	
-	if (!m_bDebug) return;
+	if (!Is_Spawn()) return;
 
 	Check_Phase();
 	m_pFsm->PriorityUpdate(fTimeDelta);
@@ -438,7 +438,7 @@ void CEnderDragon::PriorityUpdate(E::_float fTimeDelta)
 void CEnderDragon::Update(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;
-	if (!m_bDebug) return;
+	if (!Is_Spawn()) return;
 	__super::Update(fTimeDelta);
 	Update_EnvironmentParticles(fTimeDelta);
 	Update_WingParticles(fTimeDelta);
@@ -545,12 +545,12 @@ void CEnderDragon::Stuck()
 void CEnderDragon::FixedUpdate(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;
-	if (!m_bDebug) return;
+	if (!Is_Spawn()) return;
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 void CEnderDragon::LateUpdate(E::_float fTimeDelta)
 {
-	if (!m_bDebug) return;
+	if (!Is_Spawn()) return;
 	m_pFsm->LateUpdate(fTimeDelta);
 	__super::LateUpdate(fTimeDelta);
 

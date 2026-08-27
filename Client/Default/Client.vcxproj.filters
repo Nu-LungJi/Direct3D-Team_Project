@@ -97,6 +97,9 @@
     <Filter Include="GameObject\Player\StateMachine\State\Player_Locomotion_State">
       <UniqueIdentifier>{232233f9-be49-49ae-b9af-884605ffdcad}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Player\StateMachine\State\Player_DoorPush_State">
+      <UniqueIdentifier>{b292b704-1291-4488-a906-e51abf324554}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\Player\StateMachine\State\Player_Roll_State">
       <UniqueIdentifier>{9a4caa44-f46e-447a-8a58-58c13ec27b7d}</UniqueIdentifier>
     </Filter>
@@ -475,6 +478,12 @@
     <Filter Include="GameObject\Agent\Animal\WolrdAnimal">
       <UniqueIdentifier>{38724c55-2560-48a3-ac1f-fc3b4460030c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\DynamicMapObject">
+      <UniqueIdentifier>{aec790d9-50ad-42e0-a7e7-a670e973acc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\DynamicMapObject\WaterWheel">
+      <UniqueIdentifier>{d0c35028-76ee-4a7f-8ff9-5d72049245d2}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GameObject\InteractNpc">
       <UniqueIdentifier>{a058c676-cc04-45cd-b1af-f02cdea958b8}</UniqueIdentifier>
     </Filter>
@@ -569,6 +578,9 @@
     </ClInclude>
     <ClInclude Include="..\Public\Player_Locomotion_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Locomotion_State</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\Player_DoorPush_State.h">
+      <Filter>GameObject\Player\StateMachine\State\Player_DoorPush_State</Filter>
     </ClInclude>
     <ClInclude Include="..\Public\Player_Roll_State.h">
       <Filter>GameObject\Player\StateMachine\State\Player_Roll_State</Filter>
@@ -1116,7 +1128,10 @@
     <ClInclude Include="..\public\AccioActivity_LampSmall.h">
       <Filter>GameObject\AccioActivity</Filter>
     </ClInclude>
-    <ClInclude Include="..\public\AccioActivity_Npc.h">
+    <ClInclude Include="..\public\AccioActivity_NpcController.h">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\AccioActivity_NpcCharacter.h">
       <Filter>GameObject\AccioActivity</Filter>
     </ClInclude>
     <ClInclude Include="..\public\AccioActivity_Platform.h">
@@ -1172,6 +1187,12 @@
     </ClInclude>
     <ClInclude Include="..\public\WorldAnimal.h">
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\public\MON_Default.h">
+      <Filter>GameObject\Monster\02.PublicState</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\WaterWheel.h">
+      <Filter>GameObject\DynamicMapObject\WaterWheel</Filter>
     </ClInclude>
     <ClInclude Include="..\public\InteractiveNpc.h">
       <Filter>GameObject\InteractNpc</Filter>
@@ -1253,6 +1274,9 @@
     </ClCompile>
     <ClCompile Include="..\Private\Player_Locomotion_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Locomotion_State</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\Player_DoorPush_State.cpp">
+      <Filter>GameObject\Player\StateMachine\State\Player_DoorPush_State</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\Player_Roll_State.cpp">
       <Filter>GameObject\Player\StateMachine\State\Player_Roll_State</Filter>
@@ -1754,7 +1778,10 @@
     <ClCompile Include="..\private\AccioActivity_LampSmall.cpp">
       <Filter>GameObject\AccioActivity</Filter>
     </ClCompile>
-    <ClCompile Include="..\private\AccioActivity_Npc.cpp">
+    <ClCompile Include="..\private\AccioActivity_NpcController.cpp">
+      <Filter>GameObject\AccioActivity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\AccioActivity_NpcCharacter.cpp">
       <Filter>GameObject\AccioActivity</Filter>
     </ClCompile>
     <ClCompile Include="..\private\AccioActivity_Platform.cpp">
@@ -1780,6 +1807,9 @@
     </ClCompile>
     <ClCompile Include="..\private\BTChangeState.cpp">
       <Filter>GameObject\AI\Action\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\WaterWheel.cpp">
+      <Filter>GameObject\DynamicMapObject\WaterWheel</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Troll.cpp">
       <Filter>GameObject\Monster\Troll</Filter>
@@ -1810,6 +1840,9 @@
     </ClCompile>
     <ClCompile Include="..\private\WorldAnimal.cpp">
       <Filter>GameObject\Agent\Animal\WolrdAnimal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\private\MON_Default.cpp">
+      <Filter>GameObject\Monster\02.PublicState</Filter>
     </ClCompile>
     <ClCompile Include="..\private\InteractiveNpc.cpp">
       <Filter>GameObject\InteractNpc</Filter>

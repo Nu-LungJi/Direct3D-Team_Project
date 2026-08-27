@@ -84,7 +84,6 @@ HRESULT CSpider::Initialize(void* pArg)
 	m_pModelAnimator->Play_Anim(0, false);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 
-	m_bSpawn = MonDesc->bSpawn;
 	auto pBB = Get_BlackBoard();
 
 	pBB->Set_Value<_float3>(NPC_KEY::STARTPOS, MonDesc->vPatrollStart);
@@ -208,6 +207,7 @@ _bool CSpider::Check_Table(PLAYER_SKILL_TYPE eType)
 		return false;
 
 	Damaged(eType);
+	
 	if (eType == PLAYER_SKILL_TYPE::ATTACK)
 	{
 		const auto hUIController = GET_SINGLE(UIManager)->GetUIController();
@@ -291,6 +291,12 @@ _bool CSpider::BreakSkillType(PLAYER_SKILL_TYPE eType)
 		break;
 	}
 	return false;
+}
+
+void CSpider::Stuck()
+{
+	if (nullptr != m_pFsm)
+		m_pFsm->Request_State(MON_STATE::GODAE);
 }
 
 E::UPtr<CSpider> CSpider::Create()
