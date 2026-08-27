@@ -203,8 +203,8 @@ HRESULT CMapMeshInstancingRenderer::RenderShadow(ID3D11DeviceContext* context, c
 	ZoneScopedN("MapMeshInstancingRenderShadow");
 	
 	SHADOW_DRAW_PACKET shadowDrawPacket{};
-	if (FAILED(PrepareShadowDrawPacket(context, renderContext, lightType, shadowDrawPacket)))
-		return E_FAIL;
+		if (FAILED(PrepareShadowDrawPacket(context, renderContext, lightType, shadowDrawPacket)))
+			return E_FAIL;
 	if (!shadowDrawPacket.isReady)
 		return S_OK;
 
@@ -235,7 +235,7 @@ HRESULT CMapMeshInstancingRenderer::RenderShadow(ID3D11DeviceContext* context, c
 		}
 	}
 
-	context->ExecuteCommandList(cacheIterator->second.commandList.Get(), TRUE);
+		context->ExecuteCommandList(cacheIterator->second.commandList.Get(), TRUE);
 
 	return S_OK;
 }
@@ -512,12 +512,14 @@ HRESULT CMapMeshInstancingRenderer::ResolveShadowDrawResources(LIGHT_TYPE lightT
 	}
 
 	auto shadowVertexShader = gameInstance.GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, vertexShaderTag);
+	auto mapMeshShadowRasterizerState = gameInstance.GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, "RS_MAPMESH_SHADOW_BACKCULL");
 
 	outPacket.vertexStaticShader = shadowVertexShader;
 	outPacket.vertexFoliageShader = shadowVertexShader;
 	outPacket.pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, pixelShaderTag);
+	outPacket.rasterizerState = mapMeshShadowRasterizerState->GetRasterizerState();
 
-	if (!outPacket.vertexStaticShader || !outPacket.vertexFoliageShader || !outPacket.pixelShader)
+	if (!outPacket.vertexStaticShader || !outPacket.vertexFoliageShader || !outPacket.pixelShader || !outPacket.rasterizerState)
 	{
 		return E_FAIL;
 	}
@@ -755,9 +757,9 @@ HRESULT CMapMeshInstancingRenderer::CaptureShadowPipelineState(ID3D11DeviceConte
 	context->OMGetDepthStencilState(&depthStencilState, &outPacket.stencilRef);
 	outPacket.depthStencilState.Attach(depthStencilState);
 
-	ID3D11RasterizerState* rasterizerState = nullptr;
-	context->RSGetState(&rasterizerState);
-	outPacket.rasterizerState.Attach(rasterizerState);
+	//ID3D11RasterizerState* rasterizerState = nullptr;
+	//context->RSGetState(&rasterizerState);
+	//outPacket.rasterizerState.Attach(rasterizerState);
 
 	UINT viewportCount = 1;
 	context->RSGetViewports(&viewportCount, &outPacket.viewPort);
