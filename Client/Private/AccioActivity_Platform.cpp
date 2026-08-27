@@ -28,7 +28,7 @@ StringID CAccioActivity_Platform::GetModelResourceTag() const
 _bool CAccioActivity_Platform::GetNpcMoveAreaWorldOBB(
 	BoundingOrientedBox& outArea) const
 {
-	if (!m_pComPxNpcMoveAreaTrigger)
+	if (!m_pComPxNpcMoveAreaTrigger || !m_pComPxRigidBody)
 		return false;
 
 	const BoundingOrientedBox localArea{
@@ -36,9 +36,17 @@ _bool CAccioActivity_Platform::GetNpcMoveAreaWorldOBB(
 		m_pComPxNpcMoveAreaTrigger->GetHalfExtents(),
 		m_pComPxNpcMoveAreaTrigger->GetLocalRotation()
 	};
+	const _float3 vActorPosition = m_pComPxRigidBody->GetPosition();
+	const _float4 vActorRotation = m_pComPxRigidBody->GetRotation();
+	const _matrix actorWorld =
+		XMMatrixRotationQuaternion(XMLoadFloat4(&vActorRotation)) *
+		XMMatrixTranslation(
+			vActorPosition.x,
+			vActorPosition.y,
+			vActorPosition.z);
 	localArea.Transform(
 		outArea,
-		GetTransform().GetLoadedCombinedWorldMatrix());
+		actorWorld);
 	return true;
 }
 

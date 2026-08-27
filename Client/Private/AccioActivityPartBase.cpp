@@ -57,7 +57,7 @@ HRESULT CAccioActivityPartBase::Initialize(void* pArg)
 
 	{
 		CComStaticModelInstance::DESC desc{};
-		desc.sGroupTag = LEVEL::TERRAIN;
+		desc.sGroupTag = pDesc->sResourceGroup;
 		desc.sResTag = GetModelResourceTag();
 		if (FAILED(AddComponentFromProto(
 			"PERMANENT", "Prototype_Component_StaticModelInstance",

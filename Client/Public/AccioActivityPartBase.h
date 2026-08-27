@@ -26,6 +26,7 @@ public:
 
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
+		StringID sResourceGroup{ LEVEL::TERRAIN };
 		_float3 vInitialPosition{};
 		_float3 vInitialRotation{};
 		_float3 vInitialScale{ 1.f, 1.f, 1.f };

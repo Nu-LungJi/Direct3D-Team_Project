@@ -45,6 +45,9 @@ HRESULT CPhysicsDoor::Initialize(void* pArg)
 {
 	const auto* pDesc = static_cast<const DESC*>(pArg);
 	if (!pDesc ||
+		pDesc->vInitialScale.x <= 0.f ||
+		pDesc->vInitialScale.y <= 0.f ||
+		pDesc->vInitialScale.z <= 0.f ||
 		pDesc->vHalfExtents.x <= 0.f ||
 		pDesc->vHalfExtents.y <= 0.f ||
 		pDesc->vHalfExtents.z <= 0.f ||
@@ -67,8 +70,16 @@ HRESULT CPhysicsDoor::Initialize(void* pArg)
 		return E_INVALIDARG;
 	}
 
-	m_vHalfExtents = pDesc->vHalfExtents;
+	m_vPlacementScale = pDesc->vInitialScale;
+	m_vHalfExtents = {
+		pDesc->vHalfExtents.x * m_vPlacementScale.x,
+		pDesc->vHalfExtents.y * m_vPlacementScale.y,
+		pDesc->vHalfExtents.z * m_vPlacementScale.z
+	};
 	m_vInitialPosition = pDesc->vInitialPosition;
+	m_vPlacementEditorPosition = pDesc->vInitialPosition;
+	m_vPlacementEditorRotationEuler = pDesc->vInitialRotation;
+	m_vPlacementEditorScale = m_vPlacementScale;
 	m_fLowerLimitDegrees = pDesc->fLowerLimitDegrees;
 	m_fUpperLimitDegrees = pDesc->fUpperLimitDegrees;
 	m_fTwistDriveStiffness = pDesc->fTwistDriveStiffness;
@@ -77,16 +88,28 @@ HRESULT CPhysicsDoor::Initialize(void* pArg)
 	m_fCCTPushForce = pDesc->fCCTPushForce;
 	m_fPassageOpenAngleDegrees = pDesc->fPassageOpenAngleDegrees;
 	m_eHingeSide = pDesc->eHingeSide;
-	m_vPassageTriggerHalfExtents = pDesc->vPassageTriggerHalfExtents;
+	m_vPassageTriggerHalfExtents = {
+		pDesc->vPassageTriggerHalfExtents.x * m_vPlacementScale.x,
+		pDesc->vPassageTriggerHalfExtents.y * m_vPlacementScale.y,
+		pDesc->vPassageTriggerHalfExtents.z * m_vPlacementScale.z
+	};
 	m_vPassageBarrierHalfExtents = {
 		m_vHalfExtents.x,
 		m_vHalfExtents.y,
-		pDesc->fPassageBarrierHalfDepth
+		pDesc->fPassageBarrierHalfDepth * m_vPlacementScale.z
 	};
+	XMStoreFloat4(
+		&m_vInitialRotation,
+		XMQuaternionNormalize(
+			XMQuaternionRotationRollPitchYaw(
+				XMConvertToRadians(pDesc->vInitialRotation.x),
+				XMConvertToRadians(pDesc->vInitialRotation.y),
+				XMConvertToRadians(pDesc->vInitialRotation.z))));
 
 	GetTransform().SetPosition(m_vInitialPosition);
-	GetTransform().SetRotationEuler(pDesc->vInitialRotation);
-	m_vInitialRotation = GetTransform().GetQuaternion();
+	GetTransform().SetQuaternion(m_vInitialRotation);
+	GetTransform().UpdateEulerFromQuat();
+	GetTransform().SetScale(m_vPlacementScale);
 	GetTransform().Update();
 
 	{
@@ -223,9 +246,10 @@ _bool CPhysicsDoor::CreateHingeBlocker(const DESC& desc)
 		m_vInitialPosition,
 		m_vInitialRotation);
 	m_vHingeBlockerHalfExtents = {
-		desc.fHingeBlockerHalfWidth,
+		desc.fHingeBlockerHalfWidth * m_vPlacementScale.x,
 		m_vHalfExtents.y,
-		m_vHalfExtents.z + desc.fHingeBlockerDepthPadding
+		m_vHalfExtents.z +
+			desc.fHingeBlockerDepthPadding * m_vPlacementScale.z
 	};
 
 	{
@@ -356,6 +380,18 @@ void CPhysicsDoor::OnRegisteredToManager()
 	{
 		DEBUG_LOG(
 			"[PhysicsDoor] Failed to create the D6 hinge joint.\n");
+		return;
+	}
+
+	// [LSY] Joint 생성이 끝난 뒤 문짝 Pose와 월드 Anchor를 함께 확정한다.
+	// 초기 Transform만 회전시키면 Constraint 생성 과정에서 배치 회전이 유실될 수 있다.
+	if (!SetPlacement(
+			m_vPlacementEditorPosition,
+			m_vPlacementEditorRotationEuler,
+			m_vPlacementEditorScale))
+	{
+		DEBUG_LOG(
+			"[PhysicsDoor] Failed to apply the initial physics placement.\n");
 	}
 }
 
@@ -534,7 +570,12 @@ void CPhysicsDoor::DrawDebugDoor()
 
 	const _float4 vPreviousColor = pDebug->GetColor();
 	const DBG_LINE_DEPTH_MODE ePreviousDepth = pDebug->GetDepthMode();
-	const _matrix matWorld = GetTransform().GetLoadedWorldMatrix();
+	const _matrix matWorld =
+		XMMatrixRotationQuaternion(XMLoadFloat4(&m_vInitialRotation)) *
+		XMMatrixTranslation(
+			m_vInitialPosition.x,
+			m_vInitialPosition.y,
+			m_vInitialPosition.z);
 
 	pDebug->SetDepthTest(false);
 	pDebug->SetColor({ 0.95f, 0.5f, 0.1f, 1.f });
@@ -695,7 +736,6 @@ void CPhysicsDoor::UpdateGUI()
 		"Hinge: %s | Angle: %.2f deg",
 		m_eHingeSide == HINGE_SIDE::LEFT ? "Left" : "Right",
 		GetOpeningAngleDegrees());
-	ImGui::Checkbox("Debug Door Shape", &m_bDebugDraw);
 	ImGui::Text(
 		"Passage: %s | Return Drive: %s | Barrier: %s",
 		m_bPlayerInsidePassageTrigger ? "Player Inside" : "Empty",
@@ -732,11 +772,33 @@ void CPhysicsDoor::UpdateGUI()
 	if (ImGui::Button("Reset Door"))
 		ResetDoor();
 
-	if (ImGui::Button("Apply Transform As Door Placement"))
+	ImGui::Separator();
+	ImGui::TextUnformatted("Physics Placement");
+	ImGui::DragFloat3(
+		"Placement Position",
+		&m_vPlacementEditorPosition.x,
+		0.1f);
+	ImGui::DragFloat3(
+		"Placement Euler XYZ",
+		&m_vPlacementEditorRotationEuler.x,
+		0.5f,
+		-360.f,
+		360.f,
+		"%.1f deg");
+	ImGui::DragFloat3(
+		"Placement Scale XYZ",
+		&m_vPlacementEditorScale.x,
+		0.05f,
+		0.05f,
+		100.f,
+		"%.2f");
+	ImGui::Checkbox("Show Door Debug Lines", &m_bDebugDraw);
+	if (ImGui::Button("Apply Physics Door Placement"))
 	{
 		SetPlacement(
-			GetTransform().GetPosition(),
-			GetTransform().GetRotationEuler());
+			m_vPlacementEditorPosition,
+			m_vPlacementEditorRotationEuler,
+			m_vPlacementEditorScale);
 	}
 }
 
@@ -784,9 +846,106 @@ _bool CPhysicsDoor::ApplyCCTPush(const PX_CCT_HIT_DATA& tHit)
 	return ApplyOpeningTorque(fTorqueY);
 }
 
+_bool CPhysicsDoor::SetPlacementScale(const _float3& vScale)
+{
+	if (vScale.x <= 0.f || vScale.y <= 0.f || vScale.z <= 0.f ||
+		!m_pComPxDoorCollider ||
+		!m_pComPxHingeBlockerCollider ||
+		!m_pComPxPassageBarrierCollider ||
+		!m_pComPxPassageTriggerCollider ||
+		!m_pComPxD6Joint)
+	{
+		return false;
+	}
+
+	const _float fEpsilon = std::numeric_limits<_float>::epsilon();
+	if (fabsf(vScale.x - m_vPlacementScale.x) <= fEpsilon &&
+		fabsf(vScale.y - m_vPlacementScale.y) <= fEpsilon &&
+		fabsf(vScale.z - m_vPlacementScale.z) <= fEpsilon)
+	{
+		return true;
+	}
+
+	const _float3 vScaleRatio{
+		vScale.x / m_vPlacementScale.x,
+		vScale.y / m_vPlacementScale.y,
+		vScale.z / m_vPlacementScale.z
+	};
+	const _float3 vPreviousDoorExtents = m_vHalfExtents;
+	const _float3 vPreviousHingeBlockerExtents = m_vHingeBlockerHalfExtents;
+	const _float3 vPreviousPassageBarrierExtents = m_vPassageBarrierHalfExtents;
+	const _float3 vPreviousPassageTriggerExtents = m_vPassageTriggerHalfExtents;
+	const auto ScaleExtents = [vScaleRatio](const _float3& vExtents)
+	{
+		return _float3{
+			vExtents.x * vScaleRatio.x,
+			vExtents.y * vScaleRatio.y,
+			vExtents.z * vScaleRatio.z
+		};
+	};
+
+	const _float3 vDoorExtents = ScaleExtents(vPreviousDoorExtents);
+	const _float3 vHingeBlockerExtents =
+		ScaleExtents(vPreviousHingeBlockerExtents);
+	const _float3 vPassageBarrierExtents =
+		ScaleExtents(vPreviousPassageBarrierExtents);
+	const _float3 vPassageTriggerExtents =
+		ScaleExtents(vPreviousPassageTriggerExtents);
+
+	const auto restoreColliderExtents = [this,
+		&vPreviousDoorExtents,
+		&vPreviousHingeBlockerExtents,
+		&vPreviousPassageBarrierExtents,
+		&vPreviousPassageTriggerExtents]()
+	{
+		m_pComPxDoorCollider->SetHalfExtents(vPreviousDoorExtents);
+		m_pComPxHingeBlockerCollider->SetHalfExtents(
+			vPreviousHingeBlockerExtents);
+		m_pComPxPassageBarrierCollider->SetHalfExtents(
+			vPreviousPassageBarrierExtents);
+		m_pComPxPassageTriggerCollider->SetHalfExtents(
+			vPreviousPassageTriggerExtents);
+	};
+
+	const _bool bGeometryUpdated =
+		m_pComPxDoorCollider->SetHalfExtents(vDoorExtents) &&
+		m_pComPxHingeBlockerCollider->SetHalfExtents(vHingeBlockerExtents) &&
+		m_pComPxPassageBarrierCollider->SetHalfExtents(vPassageBarrierExtents) &&
+		m_pComPxPassageTriggerCollider->SetHalfExtents(vPassageTriggerExtents);
+	if (!bGeometryUpdated)
+	{
+		restoreColliderExtents();
+		return false;
+	}
+
+	const _float fHingeX = m_eHingeSide == HINGE_SIDE::LEFT
+		? -vDoorExtents.x
+		: vDoorExtents.x;
+	CComPxJoint::FRAME tHingeFrame{};
+	tHingeFrame.vPosition = { fHingeX, 0.f, 0.f };
+	XMStoreFloat4(
+		&tHingeFrame.vRotation,
+		XMQuaternionNormalize(
+			XMQuaternionRotationMatrix(XMMatrixRotationZ(XM_PIDIV2))));
+	if (!m_pComPxD6Joint->SetWorldAnchoredRigidBodyLocalFrame(tHingeFrame))
+	{
+		restoreColliderExtents();
+		return false;
+	}
+
+	m_vHalfExtents = vDoorExtents;
+	m_vHingeBlockerHalfExtents = vHingeBlockerExtents;
+	m_vPassageBarrierHalfExtents = vPassageBarrierExtents;
+	m_vPassageTriggerHalfExtents = vPassageTriggerExtents;
+	m_vPlacementScale = vScale;
+	GetTransform().SetScale(vScale);
+	return true;
+}
+
 _bool CPhysicsDoor::SetPlacement(
 	const _float3& vPosition,
-	const _float3& vRotationEulerDegrees)
+	const _float3& vRotationEulerDegrees,
+	const _float3& vScale)
 {
 	if (!m_pComPxDoorRigidBody ||
 		!m_pComPxHingeBlockerRigidBody ||
@@ -796,6 +955,10 @@ _bool CPhysicsDoor::SetPlacement(
 		return false;
 	}
 	if (!SetReturnDrivePaused(false))
+		return false;
+
+	const _float3 vPreviousScale = m_vPlacementScale;
+	if (!SetPlacementScale(vScale))
 		return false;
 
 	_float4 vRotation{};
@@ -830,6 +993,7 @@ _bool CPhysicsDoor::SetPlacement(
 			vPosition,
 			vRotation))
 	{
+		SetPlacementScale(vPreviousScale);
 		return false;
 	}
 
@@ -843,6 +1007,7 @@ _bool CPhysicsDoor::SetPlacement(
 		m_pComPxHingeBlockerRigidBody->SetPose(
 			vPreviousBlockerPosition,
 			vPreviousBlockerRotation);
+		SetPlacementScale(vPreviousScale);
 		return false;
 	}
 
@@ -857,12 +1022,16 @@ _bool CPhysicsDoor::SetPlacement(
 		m_pComPxPassageTriggerRigidBody->SetPose(
 			vPreviousPassageTriggerPosition,
 			vPreviousPassageTriggerRotation);
+		SetPlacementScale(vPreviousScale);
 		return false;
 	}
 
 	m_vInitialPosition = vPosition;
 	m_vInitialRotation = vRotation;
 	m_vHingeWorldPosition = vHingeWorldPosition;
+	m_vPlacementEditorPosition = vPosition;
+	m_vPlacementEditorRotationEuler = vRotationEulerDegrees;
+	m_vPlacementEditorScale = vScale;
 
 	GetTransform().SetPosition(vPosition);
 	GetTransform().SetRotationEuler(vRotationEulerDegrees);

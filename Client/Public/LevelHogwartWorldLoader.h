@@ -17,6 +17,8 @@ public:
 private:
 	static HRESULT LoadPlayerResources();
 	static HRESULT LoadPlayerCape();
+	static HRESULT LoadPhysicsDoorResources();
+	static HRESULT LoadAccioActivityResources();
 	static _bool UILoad_InWorker();
 
 	static HRESULT MonsterLoad_InWorker();
