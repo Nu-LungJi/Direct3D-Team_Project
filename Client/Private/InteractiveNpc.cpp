@@ -14,6 +14,7 @@
 #include "GameInstance.h"
 #include "UIController.h"
 #include "SpellMiniGame.h"
+#include "AccioActivity_Base.h"
 #include "UIManager.h"
 #include "Player.h"
 #include "CinematicTypes.h"
@@ -77,7 +78,6 @@ HRESULT CInteractiveNpc::Initialize(void* pArg)
 	m_fInteractionDistance = std::max(0.1f, pDesc->InteractionDistance);
 	m_bSecondSpellMiniGame = pDesc->SecondSpellMiniGame;
 	m_bRepeatable = pDesc->Repeatable;
-	m_eOutcome = pDesc->Outcome;
 	m_fFadeDuration = std::max(0.05f, pDesc->FadeDuration);
 	m_fFadeHoldDuration = std::max(0.f, pDesc->FadeHoldDuration);
 	m_vPlayerDialogueOffset = pDesc->PlayerDialogueOffset;
@@ -85,6 +85,7 @@ HRESULT CInteractiveNpc::Initialize(void* pArg)
 	m_vMoveDestination = pDesc->MoveDestination;
 	m_fMoveSpeed = std::max(0.1f, pDesc->MoveSpeed);
 	m_fMoveStopDistance = std::max(0.05f, pDesc->MoveStopDistance);
+	m_hAccioActivity = pDesc->AccioActivityHandle;
 	m_hInteractionPlayer = pDesc->TargetHandle;
 	ResolvePlayerHandle();
 	SetExpression(m_IdleExpressionAnim, true);
@@ -103,7 +104,7 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 	__super::Update(fTimeDelta);
 	UpdateDialogueIntro(fTimeDelta);
 	UpdateMoveOutcome();
-	UpdateMiniGameWorldPause();
+	UpdateMiniGameState();
 
 	const _bool playerInRange = IsPlayerInRange();
 	const _bool canStartDialogue = playerInRange &&
@@ -112,9 +113,10 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 	// 대화가 시작된 뒤에는 암전 중 위치 보정이나 물리 높이 차이 때문에
 	// 거리 판정이 달라져도 다음 대사가 막히지 않아야 한다.
 	const _bool canAdvanceDialogue = m_bTalking &&
-		m_eState == STATE::TALKING;
+		m_eState == STATE::TALKING &&
+		m_eConversationPhase == CONVERSATION_PHASE::TALKING;
 
-	SyncInteractionPrompt(canStartDialogue);
+	SyncInteractionPrompt(canStartDialogue || canAdvanceDialogue);
 
 	if ((canStartDialogue || canAdvanceDialogue) &&
 		E::CGameInstance::Get().KeyDown(DIK_F))
@@ -137,6 +139,7 @@ void CInteractiveNpc::BeginDialogue()
 
 	m_bTalking = true;
 	m_iDialogueIndex = 0u;
+	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
 	SetPlayerMovementLocked(true);
 	SyncInteractionPrompt(false);
 	m_eConversationPhase = CONVERSATION_PHASE::FADING_OUT;
@@ -200,8 +203,31 @@ void CInteractiveNpc::ShowFirstDialogueLine()
 
 void CInteractiveNpc::AdvanceDialogue()
 {
-	if (!m_bTalking || m_eConversationPhase != CONVERSATION_PHASE::TALKING)
+	if (!m_bTalking ||
+		m_eConversationPhase != CONVERSATION_PHASE::TALKING ||
+		m_iDialogueIndex >= m_Dialogue.size())
 		return;
+
+	if (m_ePendingDialogueAction != DIALOGUE_ACTION::NONE)
+	{
+		const DIALOGUE_ACTION action = m_ePendingDialogueAction;
+		m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
+		ExecuteDialogueAction(action);
+		return;
+	}
+
+	const auto& currentLine = m_Dialogue[m_iDialogueIndex];
+	if (!currentLine.Choices.empty())
+	{
+		m_eConversationPhase = CONVERSATION_PHASE::WAITING_CHOICE;
+
+		// 선택 대화창 UI가 연결되면 여기에서 SelectDialogueChoice를 호출한다.
+		/*GET_SINGLE(UIManager)->ShowDialogueChoices(
+			GetHandle(), currentLine.Choices);*/
+
+		SyncInteractionPrompt(false);
+		return;
+	}
 
 	++m_iDialogueIndex;
 	if (m_iDialogueIndex >= m_Dialogue.size())
@@ -215,11 +241,88 @@ void CInteractiveNpc::AdvanceDialogue()
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_SpeakerName, line.Text);
 }
 
+void CInteractiveNpc::SelectDialogueChoice(size_t choiceIndex)
+{
+	if (!m_bTalking ||
+		m_eConversationPhase != CONVERSATION_PHASE::WAITING_CHOICE ||
+		m_iDialogueIndex >= m_Dialogue.size())
+		return;
+
+	const auto& choices = m_Dialogue[m_iDialogueIndex].Choices;
+	if (choiceIndex >= choices.size())
+		return;
+
+	const DIALOGUE_CHOICE choice = choices[choiceIndex];
+
+	//GET_SINGLE(UIManager)->ClearDialogueChoices();
+
+	if (choice.NextDialogueIndex >= m_Dialogue.size())
+	{
+		ExecuteDialogueAction(choice.Action);
+		return;
+	}
+
+	m_ePendingDialogueAction =
+		choice.Action == DIALOGUE_ACTION::CONTINUE_DIALOGUE ||
+		choice.Action == DIALOGUE_ACTION::NONE
+		? DIALOGUE_ACTION::NONE
+		: choice.Action;
+	m_iDialogueIndex = choice.NextDialogueIndex;
+	m_eConversationPhase = CONVERSATION_PHASE::TALKING;
+
+	const auto& line = m_Dialogue[m_iDialogueIndex];
+	SetExpression(line.ExpressionAnim, line.LoopExpression);
+	GET_SINGLE(UIManager)->AddDialoguePopup(m_SpeakerName, line.Text);
+	SyncInteractionPrompt(true);
+}
+
+void CInteractiveNpc::ExecuteDialogueAction(DIALOGUE_ACTION action)
+{
+	switch (action)
+	{
+	case DIALOGUE_ACTION::CONTINUE_DIALOGUE:
+		m_eConversationPhase = CONVERSATION_PHASE::TALKING;
+		SyncInteractionPrompt(true);
+		break;
+
+	case DIALOGUE_ACTION::MOVE_TO_DESTINATION:
+		StartMoveToDestination();
+		FinishDialogue();
+		break;
+
+	case DIALOGUE_ACTION::START_SPELL_MINIGAME:
+		if (StartSpellMiniGame())
+			FinishDialogue();
+		break;
+
+	case DIALOGUE_ACTION::START_COIN_MINIGAME:
+		if (StartCoinMiniGame())
+			FinishDialogue();
+		break;
+
+	case DIALOGUE_ACTION::START_ACCIO_MINIGAME:
+		// 아씨오는 월드 물리와 플레이어 입력이 필요하므로 대화 연출을 먼저 종료한다.
+		FinishDialogue();
+		StartAccioMiniGame();
+		break;
+
+	case DIALOGUE_ACTION::CANCEL_DIALOGUE:
+		CancelDialogue();
+		break;
+
+	case DIALOGUE_ACTION::NONE:
+	default:
+		FinishDialogue();
+		break;
+	}
+}
+
 
 void CInteractiveNpc::CancelDialogue()
 {
 	m_bTalking = false;
 	m_iDialogueIndex = 0u;
+	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
 	SetExpression(m_IdleExpressionAnim, true);
 	if (m_hDialogueFade)
 	{
@@ -238,18 +341,13 @@ void CInteractiveNpc::FinishDialogue()
 {
 	m_bTalking = false;
 	m_bCompleted = true;
+	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
 	SetExpression(m_IdleExpressionAnim, true);
 	m_eConversationPhase = CONVERSATION_PHASE::IDLE;
 
-	// 플레이어 이동과 스펠 미니게임 결과에서는 대화 구도와 입력 잠금을
-	// 유지한다. 각 결과가 화면 전환을 마친 뒤 직접 복구한다.
-	if (m_eOutcome == OUTCOME::MOVE_TO_DESTINATION ||
-		m_eOutcome == OUTCOME::SPELL_MINIGAME)
-	{
-		ExecuteOutcome();
-		if (m_eState == STATE::MOVING || m_eState == STATE::MINIGAME)
-			return;
-	}
+	// 이동 화면 전환과 미니게임이 끝날 때까지 카메라와 입력 잠금을 유지한다.
+	if (m_eState == STATE::MOVING || m_eState == STATE::MINIGAME)
+		return;
 
 	EndDialogueCamera();
 	SetPlayerMovementLocked(false);
@@ -318,34 +416,62 @@ void CInteractiveNpc::SetPlayerMovementLocked(_bool locked)
 }
 
 
-void CInteractiveNpc::ExecuteOutcome()
+void CInteractiveNpc::StartMoveToDestination()
 {
-	if (m_eOutcome == OUTCOME::MOVE_TO_DESTINATION)
+	const auto fadeRoots = GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
+	if (!fadeRoots.empty())
 	{
-		const auto fadeRoots = GET_SINGLE(UIManager)->LoadPrefab("BlackBG");
-		if (!fadeRoots.empty())
-		{
-			m_hMoveFade = fadeRoots.front();
-			GET_SINGLE(UIManager)->PlayFadeIn(
-				*m_hMoveFade, 0.f, m_fMoveFadeInDuration);
-		}
-
-		m_bMovingToDestination = true;
-		m_fMoveOutcomeElapsed = 0.f;
-		m_eState = STATE::MOVING;
-		return;
+		m_hMoveFade = fadeRoots.front();
+		GET_SINGLE(UIManager)->PlayFadeIn(
+			*m_hMoveFade, 0.f, m_fMoveFadeInDuration);
 	}
-	if (m_eOutcome != OUTCOME::SPELL_MINIGAME)
-		return;
 
+	m_bMovingToDestination = true;
+	m_fMoveOutcomeElapsed = 0.f;
+	m_eState = STATE::MOVING;
+}
+
+_bool CInteractiveNpc::StartSpellMiniGame()
+{
 	const auto hController = GET_SINGLE(UIManager)->GetUIController();
-	if (hController)
-		if (auto* pController = E::CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hController))
-			if (pController->StartSpellMiniGame(m_bSecondSpellMiniGame))
-			{
-				m_eState = STATE::MINIGAME;
-				BeginMiniGameWorldPause();
-			}
+	if (!hController)
+		return false;
+
+	auto* pController = E::CGameInstance::Get().GetGameObjectByHandleT<CUIController>(*hController);
+	if (!pController)
+		return false;
+
+	const _bool bSecondSpellMiniGame =
+		m_bSecondSpellMiniGame ||
+		GET_SINGLE(UIManager)->IsSpellUnlocked(SPELL_TYPE::TRANSFORMATION);
+	if (!pController->StartSpellMiniGame(bSecondSpellMiniGame))
+		return false;
+
+	m_eActiveMiniGame = ACTIVE_MINIGAME::SPELL;
+	m_eState = STATE::MINIGAME;
+	BeginMiniGameWorldPause();
+	return true;
+}
+
+_bool CInteractiveNpc::StartCoinMiniGame()
+{
+	// 코인 코스는 별도의 런타임 컨트롤러가 없고 코인 충돌체가 이미 활성화되어 있다.
+	// 따라서 설정된 코스 시작 위치로 이동시키는 것이 시작 동작이다.
+	m_eActiveMiniGame = ACTIVE_MINIGAME::COIN;
+	StartMoveToDestination();
+	return true;
+}
+
+_bool CInteractiveNpc::StartAccioMiniGame()
+{
+	auto* pActivity = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_Base>(m_hAccioActivity);
+	if (!pActivity || !pActivity->StartMatch())
+		return false;
+
+	m_eActiveMiniGame = ACTIVE_MINIGAME::ACCIO;
+	m_eState = STATE::MINIGAME;
+	return true;
 }
 
 
@@ -360,16 +486,33 @@ void CInteractiveNpc::BeginMiniGameWorldPause()
 	m_bOwnsWorldPause = E::CGameInstance::Get().BeginTimeScale(Desc);
 }
 
-void CInteractiveNpc::UpdateMiniGameWorldPause()
+void CInteractiveNpc::UpdateMiniGameState()
 {
 	if (m_eState != STATE::MINIGAME)
 		return;
-	if (IsSpellMiniGameRunning())
-		return;
-	EndMiniGameWorldPause();
-	EndDialogueCamera();
-	SetPlayerMovementLocked(false);
-	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
+
+	if (m_eActiveMiniGame == ACTIVE_MINIGAME::SPELL)
+	{
+		if (IsSpellMiniGameRunning())
+			return;
+
+		EndMiniGameWorldPause();
+		EndDialogueCamera();
+		SetPlayerMovementLocked(false);
+		GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
+	}
+	else if (m_eActiveMiniGame == ACTIVE_MINIGAME::ACCIO)
+	{
+		auto* pActivity = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CAccioActivity_Base>(m_hAccioActivity);
+		if (pActivity && pActivity->GetMatchState() !=
+			CAccioActivity_Base::MATCH_STATE::MATCH_END)
+		{
+			return;
+		}
+	}
+
+	m_eActiveMiniGame = ACTIVE_MINIGAME::NONE;
 	m_eState = STATE::IDLE;
 }
 
@@ -423,6 +566,7 @@ void CInteractiveNpc::UpdateMoveOutcome()
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fMoveFadeOutDuration);
 	m_bMovingToDestination = false;
+	m_eActiveMiniGame = ACTIVE_MINIGAME::NONE;
 	m_eState = STATE::IDLE;
 }
 

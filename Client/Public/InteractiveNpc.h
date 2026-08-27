@@ -1,5 +1,6 @@
 #pragma once
 #include "WorldAgent.h"
+#include <limits>
 
 NS_BEGIN(Client)
 
@@ -17,11 +18,22 @@ public:
 		MINIGAME
 	};
 
-	enum class OUTCOME
+	enum class DIALOGUE_ACTION
 	{
 		NONE,
+		CONTINUE_DIALOGUE,
 		MOVE_TO_DESTINATION,
-		SPELL_MINIGAME
+		START_SPELL_MINIGAME,
+		START_COIN_MINIGAME,
+		START_ACCIO_MINIGAME,
+		CANCEL_DIALOGUE
+	};
+
+	struct DIALOGUE_CHOICE
+	{
+		_string Text{};
+		size_t NextDialogueIndex{ std::numeric_limits<size_t>::max() };
+		DIALOGUE_ACTION Action{ DIALOGUE_ACTION::NONE };
 	};
 
 	struct DIALOGUE_LINE
@@ -29,6 +41,7 @@ public:
 		_string Text{};
 		_string ExpressionAnim{};
 		_bool LoopExpression{ true };
+		std::vector<DIALOGUE_CHOICE> Choices{};
 	};
 
 	struct DESC : public WORLD_AGENT_DESC
@@ -39,7 +52,6 @@ public:
 		_float InteractionDistance{ 3.f };
 		_bool SecondSpellMiniGame{ false };
 		_bool Repeatable{ false };
-		OUTCOME Outcome{ OUTCOME::SPELL_MINIGAME };
 		_float FadeDuration{ 0.35f };
 		_float FadeHoldDuration{ 0.2f };
 		// NPC 로컬 축 기준: x=오른쪽, y=높이, z=앞쪽.
@@ -49,6 +61,8 @@ public:
 		_float3 MoveDestination{};
 		_float MoveSpeed{ 2.f };
 		_float MoveStopDistance{ 0.2f };
+		// START_ACCIO_MINIGAME 선택지가 시작할 CAccioActivity_Base 인스턴스.
+		CHandle AccioActivityHandle{};
 	};
 
 public:
@@ -74,6 +88,7 @@ public:
 	void BeginDialogue();
 	// 현재 대사를 넘기고 마지막 대사라면 설정된 결과를 실행한다.
 	void AdvanceDialogue();
+	void SelectDialogueChoice(size_t choiceIndex);
 	// 진행 중인 대화를 취소하고 카메라와 UI, 플레이어 제어를 복구한다.
 	void CancelDialogue();
 	// 현재 대화 진행 여부를 반환한다.
@@ -89,8 +104,9 @@ public:
 private:
 	// 이름으로 표정 또는 대화 애니메이션을 재생한다.
 	void SetExpression(const _string& animName, _bool loop);
-	// 대화를 종료하고 설정된 이동 또는 미니게임 결과로 전환한다.
+	// 대화를 종료하고 카메라, UI, 플레이어 제어를 복구한다.
 	void FinishDialogue();
+	void ExecuteDialogueAction(DIALOGUE_ACTION action);
 	// 암전, 플레이어 이동, 카메라 전환, 화면 복귀 순서를 갱신한다.
 	void UpdateDialogueIntro(_float fTimeDelta);
 	// 첫 대사와 해당 표정 애니메이션을 화면에 표시한다.
@@ -101,14 +117,16 @@ private:
 	void EndDialogueCamera();
 	// 대화 중 플레이어 이동 입력의 잠금 상태를 변경한다.
 	void SetPlayerMovementLocked(_bool locked);
-	// 설명자에 지정된 대화 종료 결과를 실행한다.
-	void ExecuteOutcome();
+	void StartMoveToDestination();
+	_bool StartSpellMiniGame();
+	_bool StartCoinMiniGame();
+	_bool StartAccioMiniGame();
 	// 완전 암전 후 플레이어를 목적지로 옮기고 화면을 복구한다.
 	void UpdateMoveOutcome();
 	// 스펠 미니게임 동안 UI를 제외한 월드 시간을 정지한다.
 	void BeginMiniGameWorldPause();
 	// 미니게임 종료를 감지해 월드와 카메라 및 UI를 복구한다.
-	void UpdateMiniGameWorldPause();
+	void UpdateMiniGameState();
 	// 이 NPC가 요청한 월드 시간 정지를 해제한다.
 	void EndMiniGameWorldPause();
 	// 현재 스펠 미니게임 객체가 실행 중인지 확인한다.
@@ -138,7 +156,6 @@ private:
 	std::optional<CHandle> m_hDialogueFade{};
 	std::optional<CHandle> m_hMoveFade{};
 	STATE m_eState{ STATE::IDLE };
-	OUTCOME m_eOutcome{ OUTCOME::SPELL_MINIGAME };
 	_float m_fFadeDuration{ 0.35f };
 	_float m_fFadeHoldDuration{ 0.2f };
 	_float m_fMoveFadeInDuration{ 2.f };
@@ -150,6 +167,17 @@ private:
 	_float3 m_vMoveDestination{};
 	_float m_fMoveSpeed{ 2.f };
 	_float m_fMoveStopDistance{ 0.2f };
+	CHandle m_hAccioActivity{};
+	DIALOGUE_ACTION m_ePendingDialogueAction{ DIALOGUE_ACTION::NONE };
+
+	enum class ACTIVE_MINIGAME
+	{
+		NONE,
+		SPELL,
+		COIN,
+		ACCIO
+	};
+	ACTIVE_MINIGAME m_eActiveMiniGame{ ACTIVE_MINIGAME::NONE };
 
 	enum class CONVERSATION_PHASE
 	{
@@ -157,7 +185,8 @@ private:
 		FADING_OUT,
 		HOLDING_BLACK,
 		FADING_IN,
-		TALKING
+		TALKING,
+		WAITING_CHOICE
 	};
 	CONVERSATION_PHASE m_eConversationPhase{ CONVERSATION_PHASE::IDLE };
 };
