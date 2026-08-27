@@ -125,6 +125,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 		return E_FAIL;
 
 	{
+		//상점 NPC 
 		CInteractiveNpc::DESC Desc{};
 		Desc.sObjectTag = "Hogsmeade_MiniGameNpc_Professor";
 		Desc.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
@@ -143,36 +144,108 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.vCCTCenterOffset = { 0.f, 1.f, 0.f };
 		Desc.bPhyx = true;
 		Desc.bDonMove = true;
-		Desc.SpeakerName = "교수";
+		Desc.SpeakerName = "상점주인";
 		Desc.InteractionDistance = 3.f;
 		Desc.Repeatable = true;
 		Desc.IdleExpressionAnim =
 			"AN_ProfessorSharp_MasterRig_Hu_HUD_Idle_Casual_Loop_anm.bin";
+
 		Desc.Dialogue = {
 			// 0
-			{ "미니게임을 테스트해 보겠나?", "", true },
-
-			// 1
-			{ "도전할 생각인가?", "", true,
+			{
+				"어서 오게, 지팡이를 사러 왔나?", "", true,
 				{
-				// 선택하면 2번 대사를 보여준 뒤 START_SPELL_MINIGAME 실행
-				{ "시작한다.", 2,
-					CInteractiveNpc::DIALOGUE_ACTION::START_SPELL_MINIGAME },
+					{
+						"네!",std::numeric_limits<size_t>::max(),CInteractiveNpc::DIALOGUE_ACTION::NONE,
+						[]() -> size_t
+						{
+							const uint32_t coinCount = 20; // 실제 코인 값으로 교체
 
-					// 선택하면 3번 대사를 보여준 뒤 CANCEL_DIALOGUE 실행
-					{ "취소한다.", 3,
-						CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE }
+							if (coinCount >= 20)
+								return 5;
+
+							return 1;
+						}
+					},
+
+					{
+						"다른 용무가 있습니다.", 4,
+						CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE
+					}
 				}
 			},
 
+			// 1
+			{
+				"자네는 아직 지팡이를 사기에는 돈도 실력도 부족하군.",
+				"",
+				true
+			},
+
 			// 2
-			{ "좋아. 바로 시작하지!", "", true },
+			{
+				"마침 학교에서 작은 대회를 연다고 하니 참여해 보는 게 어떠한가?",
+				"",
+				true,
+				{
+					{
+						"좋아요!", 3,
+						CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME
+					},
+					{
+						"다른 용무가 있습니다.", 4,
+						CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE
+					}
+				}
+			},
 
 			// 3
-			{ "마음이 바뀌면 다시 찾아오게.", "", true }
+			{ "좋은 배짱이군. 그곳으로 보내 주겠네.", "", true },
+
+			// 4
+			{ "마음이 바뀌면 다시 찾아오게.", "", true },
+
+			// 5
+			{
+				"한번 골라 보게.",
+				"",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::OPEN_SHOP
+			},
+
+			// 6
+			{ "꽤 강력한 지팡이를 골랐군.", "", true },
+
+			// 7
+			{
+				"지팡이마다 고유한 능력이 있으니 한번 시험해 보는 게 좋을 거야.",
+				"",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::START_SPELL_MINIGAME
+			}
 		};
+		Desc.ResolveStartDialogueIndex = []()
+			{
+
+				// 만약 플레이어가 이미 지팡이를 샀으면
+				// 대화 6번으로 
+				// 아직 안샀으면 0번으로 
+
+
+				//auto* pPlayer = E::CGameInstance::Get().
+				//	GetGameObjectByHandleT<CPlayer>(hDialoguePlayer);
+
+				//
+				return 0u;
+			};
 		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
-		Desc.MoveDestination = { 206.614f, 44.703f, 89.671f };
+		Desc.MoveDestination = {
+			{ 303.512f, 44.703f, 85.749f }
+		};
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
 
@@ -184,6 +257,103 @@ HRESULT CLevelHogwartWorld::Initialize()
 			return E_FAIL;
 	}
 
+
+
+	{
+		//미니게임 NPC 
+		CInteractiveNpc::DESC Desc{};
+		Desc.sObjectTag = "Hogsmeade_MiniGameNpc_Professor";
+		Desc.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+		Desc.ReSourceTag = "PLAYER_MODEL_RESROUCE";
+		Desc.BeHaviorTag = "NPC1";
+		Desc.resBeHaviorMajor = "BTJSON";
+		Desc.resBeHaviorMinor = "NPC1";
+		Desc.TargetHandle = *hPlayer;
+		Desc.vPos = { 303.512f, 44.703f, 85.749f };
+		Desc.vStartPos = Desc.vPos;
+		Desc.vRot = { 0.f, 38.342f, 0.f };
+		Desc.vScale = { 1.f, 1.f, 1.f };
+		Desc.fCCTHeight = 3.6f;
+		Desc.fCCTRadius = 0.6f;
+		Desc.fCCTStepOffset = 0.1f;
+		Desc.vCCTCenterOffset = { 0.f, 1.f, 0.f };
+		Desc.bPhyx = true;
+		Desc.bDonMove = true;
+		Desc.SpeakerName = "미니게임";
+		Desc.InteractionDistance = 3.f;
+		Desc.Repeatable = true;
+		Desc.IdleExpressionAnim =
+			"AN_ProfessorSharp_MasterRig_Hu_HUD_Idle_Casual_Loop_anm.bin";
+
+		Desc.Dialogue = {
+			// 0
+			{
+				"어서 와, 대회에 참가하려고?", "", true,
+				{
+					{
+						"네!", 1,
+						CInteractiveNpc::DIALOGUE_ACTION::CONTINUE_DIALOGUE
+					},
+					{
+						"다른 용무가 있습니다.", 3,
+						CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE
+					}
+				}
+			},
+
+			// 1
+			{
+				"그렇구나! 두 가지 종목이 있는데 어떤 것부터 시작해 볼래?",
+				"",
+				true,
+				{
+					{
+						"소환사의 코트", 2,
+						CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME
+					},
+					{
+						"부릉 브룸", 2,
+						CInteractiveNpc::DIALOGUE_ACTION::START_COIN_MINIGAME
+					}
+				}
+			},
+
+			// 2
+			{ "행운을 빌어.", "", true },
+
+			// 3
+			{ "곧 대회가 시작하니 늦기 전에 와야 해!", "", true }
+		};
+
+		Desc.ResolveStartDialogueIndex = []()
+			{
+
+				// 만약 플레이어가 이미 지팡이를 샀으면
+				// 대화 6번으로 
+				// 아직 안샀으면 0번으로 
+
+
+				//auto* pPlayer = E::CGameInstance::Get().
+				//	GetGameObjectByHandleT<CPlayer>(hDialoguePlayer);
+
+				//
+				return 0u;
+			};
+		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
+		Desc.MoveDestination = {
+			{ 323.512f, 44.703f, 85.749f }, // 0: 아씨오
+			{ 313.512f, 44.703f, 85.749f }  // 1: 코인 - 실제 좌표로 교체
+		};
+		Desc.MoveSpeed = 2.f;
+		Desc.MoveStopDistance = 0.2f;
+
+		if (!gameInstance.AddGameObjectToLayer(
+			LEVEL::HOGWART_WORLD,
+			PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc,
+			"02_Npc",
+			&Desc))
+			return E_FAIL;
+	}
 	if (FAILED(SpawnFlyCamera()) ||
 		FAILED(SpawnUICamera()) ||
 		FAILED(SpawnPlayerCamera(*hPlayer)))
