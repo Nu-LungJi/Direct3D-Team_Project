@@ -42,6 +42,7 @@ struct VS_OUT
     float2 vTexcoord : TEXCOORD0;
     float4 vWorldPos : TEXCOORD1;
     float4 vProjPos : TEXCOORD2;
+	nointerpolation float fDissolveIntensity : TEXCOORD3;
 };
 
 StructuredBuffer<GPU_ANIM_INSTANCE_DATA> gInstances : register(t6);
@@ -96,5 +97,6 @@ VS_OUT VSMain(VS_IN input, uint instanceId : SV_InstanceID)
     output.vTexcoord = input.vTexcoord;
     output.vWorldPos = worldPosition;
     output.vProjPos = output.vPosition;
+	output.fDissolveIntensity = asfloat(gInstances[instanceId].iFlags);
     return output;
 }

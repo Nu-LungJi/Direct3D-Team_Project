@@ -390,7 +390,15 @@ void CMonster::LateUpdate(E::_float fTimeDelta)
 
 	if (!pModel->GetAnimations().empty())
 	{
-		CGameInstance::Get().Add_Instance(m_pComModelInstance, m_pModelAnimator, *GetTransform().GetCombinedWorldMatrix());
+	
+		uint32_t iDissolveBits{};
+		static_assert(sizeof(iDissolveBits) == sizeof(m_fDissolve));
+		memcpy(&iDissolveBits, &m_fDissolve, sizeof(iDissolveBits));
+		CGameInstance::Get().Add_Instance(
+			m_pComModelInstance,
+			m_pModelAnimator,
+			*GetTransform().GetCombinedWorldMatrix(),
+			iDissolveBits);
 
 		return;
 	}
@@ -498,7 +506,8 @@ HRESULT CMonster::Render_Instanced_CPU(ID3D11DeviceContext* pContext, const E::R
 		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
+		// Dissolve is supplied per instance through GPU_ANIM_INSTANCE_DATA::iFlags.
+		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
@@ -589,7 +598,8 @@ HRESULT CMonster::Render_Instanced_GPU(ID3D11DeviceContext* pContext, const E::R
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, m_fDissolve, 1.f);
+		// Dissolve is supplied per instance through GPU_ANIM_INSTANCE_DATA::iFlags.
+		m_pComModelInstance->Bind_Materials(pContext, m_fEMissiveColor, m_fIntensive, { 1.f, 1.f, 1.f }, 0.f, 1.f);
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
