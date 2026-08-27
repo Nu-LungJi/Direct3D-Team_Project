@@ -43,13 +43,21 @@ void CPlayer_Attack_State::Enter(CStateMachine* pStateMachine)
 	if (animator->HasUpperAnimation())
 		animator->Stop_UpperAnim(0.08f);
 	if (auto* pCamera = dynamic_cast<CPlayerThirdPersonCamera*>(
-		CGameInstance::Get().GetActiveCamera());
-		pCamera && pCamera->BeginDistanceOverride(
-			ATTACK_CAMERA_DISTANCE_OFFSET,
-			ATTACK_CAMERA_BLEND_IN_RESPONSE))
+		CGameInstance::Get().GetActiveCamera()); pCamera)
 	{
-		m_hDistanceOverrideCamera = pCamera->GetHandle();
+		const _bool bDistanceOverride = pCamera->BeginDistanceOverride(
+			ATTACK_CAMERA_DISTANCE_OFFSET,
+			ATTACK_CAMERA_BLEND_IN_RESPONSE);
+		const _bool bFovOverride = pCamera->BeginFovOverride(
+			ATTACK_CAMERA_FOV_Y,
+			ATTACK_CAMERA_BLEND_IN_RESPONSE);
+		const _bool bHeightOverride = pCamera->BeginHeightOverride(
+			ATTACK_CAMERA_HEIGHT_OFFSET,
+			ATTACK_CAMERA_BLEND_IN_RESPONSE);
+		if (bDistanceOverride || bFovOverride || bHeightOverride)
+			m_hDistanceOverrideCamera = pCamera->GetHandle();
 	}
+	CGameInstance::Get().Set_RadialBlurIntensity(0.f);
 
 	player->SetCurrentMoveSpeed(0.f);
 	player->SetMovementLocked(true);
@@ -81,9 +89,14 @@ void CPlayer_Attack_State::Exit(CStateMachine* pStateMachine)
 		{
 			pCamera->EndDistanceOverride(
 				ATTACK_CAMERA_BLEND_OUT_RESPONSE);
+			pCamera->EndFovOverride(
+				ATTACK_CAMERA_BLEND_OUT_RESPONSE);
+			pCamera->EndHeightOverride(
+				ATTACK_CAMERA_BLEND_OUT_RESPONSE);
 		}
 		m_hDistanceOverrideCamera.reset();
 	}
+	CGameInstance::Get().Set_RadialBlurIntensity(0.f);
 
 	player->SetMovementLocked(false);
 	player->SetRootMotionTranslationActive(false);
@@ -118,6 +131,26 @@ void CPlayer_Attack_State::Update(CStateMachine* pStateMachine, _float fTimeDelt
 	const _float fAnimationRatio =
 		PlayerAnimationRatioGuard::Sanitize(
 			animator->GetPlayAnimRatio());
+
+	// 시전 초반에 부드럽게 선명해졌다가 타격 이후 빠르게 복원한다.
+	// SmoothStep 곡선을 사용해 프레임 경계에서 블러가 튀지 않게 한다.
+	_float fBlurRatio{};
+	if (fAnimationRatio < ATTACK_BLUR_FADE_IN_END_RATIO)
+	{
+		const _float t = std::clamp(
+			fAnimationRatio / ATTACK_BLUR_FADE_IN_END_RATIO, 0.f, 1.f);
+		fBlurRatio = t * t * (3.f - 2.f * t);
+	}
+	else if (fAnimationRatio < ATTACK_BLUR_FADE_OUT_END_RATIO)
+	{
+		const _float t = std::clamp(
+			(fAnimationRatio - ATTACK_BLUR_FADE_IN_END_RATIO) /
+			(ATTACK_BLUR_FADE_OUT_END_RATIO - ATTACK_BLUR_FADE_IN_END_RATIO),
+			0.f, 1.f);
+		fBlurRatio = 1.f - t * t * (3.f - 2.f * t);
+	}
+	CGameInstance::Get().Set_RadialBlurIntensity(
+		ATTACK_RADIAL_BLUR_INTENSITY * fBlurRatio);
 
 	const _float fMagicBulletFireRatio =
 		m_bPlayingHeavy

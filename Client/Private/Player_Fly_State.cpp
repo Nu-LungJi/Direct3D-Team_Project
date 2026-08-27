@@ -16,6 +16,8 @@ CPlayer_Fly_State::CPlayer_Fly_State() = default;
 
 void CPlayer_Fly_State::Enter(CStateMachine* pStateMachine)
 {
+	ResetRadialBlur();
+
 	auto* pPlayer = pStateMachine ? pStateMachine->GetOwner<CPlayer>() : nullptr;
 	if (!pPlayer)
 	{
@@ -85,6 +87,8 @@ void CPlayer_Fly_State::Enter(CStateMachine* pStateMachine)
 
 void CPlayer_Fly_State::Exit(CStateMachine* pStateMachine)
 {
+	ResetRadialBlur();
+
 	auto* pPlayer = pStateMachine ? pStateMachine->GetOwner<CPlayer>() : nullptr;
 	if (!pPlayer)
 	{
@@ -119,11 +123,14 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	auto* pMoveIntent = pPlayer->GetMoveIntent();
 	if (!pAnimator || !pMoveIntent)
 	{
+		ResetRadialBlur();
 		return;
 	}
 
 	if (!pPlayer->IsFlyRequested())
 	{
+		ResetRadialBlur();
+
 		// 하차 애니메이션 완료를 기다리지 않고 즉시 지상 이동 상태로 복귀한다.
 		pPlayer->SetMovementLocked(false);
 		pMoveIntent->ClearMoveIntent();
@@ -498,6 +505,13 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 	}
 	pAnimator->Play_Anim(iDesiredAnimation, true, 0.35f);
 	m_iActiveAnimation = iDesiredAnimation;
+}
+
+void CPlayer_Fly_State::ResetRadialBlur()
+{
+	m_bBoosting = false;
+	m_fCurBlurIntensity = 0.f;
+	CGameInstance::Get().Set_RadialBlurIntensity(0.f);
 }
 
 void CPlayer_Fly_State::CacheAnimationIndices(const CPlayer& player)

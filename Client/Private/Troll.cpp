@@ -8,6 +8,7 @@
 #include "ComBeHavior.h"
 #include "GameInstance.h"
 #include "ComCollider.h"
+#include "CollBox.h"
 #include "ComPxCharacterController.h"
 #include "ComCharacterMoveIntent.h"
 #include "ComCharacterMotor.h"
@@ -63,6 +64,17 @@ HRESULT CTroll::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
+
+	// 트롤은 기본 몬스터 컬링 박스보다 메시가 훨씬 크므로 몸 전체와
+	// 위로 솟는 애니메이션까지 포함하도록 로컬 박스를 넉넉하게 잡는다.
+	if (m_pComCollider && m_pComCollider->Get() &&
+		m_pComCollider->Get()->GetCollType() == CollType::Box)
+	{
+		static_cast<CCollBox*>(m_pComCollider->Get())->SetLocalBoundingBox(
+			{ 0.f, 2.f, 0.f },
+			{ 4.f, 6.f, 4.f });
+	}
+
 	m_iHp = m_iMaxHp = 300;
 
 	CTrollWeapon::TROLL_WEAPON_DESC WeaponDesc{};

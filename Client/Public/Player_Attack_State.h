@@ -83,7 +83,12 @@ private:
 	_bool m_bParryCounterSpeedRestored{};
 	_float m_fPreviousAnimationRatio{};
 	std::optional<CHandle> m_hDistanceOverrideCamera{};
-	static constexpr _float ATTACK_CAMERA_DISTANCE_OFFSET = 1.4f;
+	static constexpr _float ATTACK_CAMERA_DISTANCE_OFFSET = 2.2f;
+	static constexpr _float ATTACK_CAMERA_HEIGHT_OFFSET = 1.15f;
+	static constexpr _float ATTACK_CAMERA_FOV_Y = 62.f;
+	static constexpr _float ATTACK_RADIAL_BLUR_INTENSITY = 3.5f;
+	static constexpr _float ATTACK_BLUR_FADE_IN_END_RATIO = 0.14f;
+	static constexpr _float ATTACK_BLUR_FADE_OUT_END_RATIO = 0.42f;
 	static constexpr _float ATTACK_CAMERA_BLEND_OUT_RESPONSE = 6.f;
 	static constexpr _float ATTACK_CAMERA_BLEND_IN_RESPONSE = 10.f;
 

@@ -72,6 +72,10 @@ namespace
 		if (!pObject || pObject->GetPendingDestroy())
 			return false;
 
+		if (const auto* pMonster = dynamic_cast<const CMonster*>(pObject);
+			pMonster && pMonster->Get_CurrentHp() <= 0)
+			return false;
+
 		if (dynamic_cast<const CSkillTarget*>(pObject))
 			return true;
 
@@ -1218,6 +1222,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		
 			}
 		}
+	}
+
+	// 죽은 몬스터는 거리 판정이나 다음 프레임의 탐색을 기다리지 않고
+	// 즉시 타겟, 외곽선, HP UI에서 해제한다.
+	if (auto* pTargetMonster =
+		CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
+		pTargetMonster && pTargetMonster->Get_CurrentHp() <= 0)
+	{
+		m_hPrevAutoTarget = m_hAutoTarget;
+		m_hAutoTarget = CHandle{};
+		m_hPendingObjectAccioTarget = CHandle{};
+		m_bDistanceUI = false;
 	}
 
 	// 충돌/타겟 판정은 그대로 두고, 감지 상태가 바뀌는 순간에만 UI를 토글한다.

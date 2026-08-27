@@ -128,6 +128,29 @@ void CPlayerThirdPersonCamera::EndDistanceOverride(_float fRestoreResponse)
 		fRestoreResponse : 8.f;
 }
 
+_bool CPlayerThirdPersonCamera::BeginHeightOverride(
+	_float fHeightOffset, _float fResponse)
+{
+	if (!std::isfinite(fHeightOffset) || fHeightOffset < 0.f ||
+		!std::isfinite(fResponse) || fResponse <= 0.f)
+	{
+		return false;
+	}
+
+	m_fHeightOverrideOffset = fHeightOffset;
+	m_fHeightOverrideResponse = fResponse;
+	m_bHeightOverrideActive = true;
+	return true;
+}
+
+void CPlayerThirdPersonCamera::EndHeightOverride(_float fRestoreResponse)
+{
+	m_bHeightOverrideActive = false;
+	m_fHeightOverrideResponse =
+		std::isfinite(fRestoreResponse) && fRestoreResponse > 0.f ?
+		fRestoreResponse : 8.f;
+}
+
 void CPlayerThirdPersonCamera::PriorityUpdate(_float fTimeDelta)
 {
 	if (CGameInstance::Get().GetActiveCamera() != this ||
@@ -313,6 +336,12 @@ void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 		-fDistanceResponse * std::max(fTimeDelta, 0.f));
 	m_fCurrentDistance = std::lerp(
 		m_fCurrentDistance, fTargetDistance, fDistanceRatio);
+	const _float fTargetHeightOverride = m_bHeightOverrideActive ?
+		m_fHeightOverrideOffset : 0.f;
+	const _float fHeightRatio = 1.f - std::exp(
+		-m_fHeightOverrideResponse * std::max(fTimeDelta, 0.f));
+	m_fCurrentHeightOverrideOffset = std::lerp(
+		m_fCurrentHeightOverrideOffset, fTargetHeightOverride, fHeightRatio);
 	const _float fTargetShoulderOffset = bFlightCamera
 		? m_fFlightShoulderOffset
 		: m_fShoulderOffset;
@@ -334,7 +363,7 @@ void CPlayerThirdPersonCamera::UpdateFollow(_float fTimeDelta)
 	const _float3 vForward{ std::sin(fYawRadian), 0.f, std::cos(fYawRadian) };
 	const _float3 vRight{std::cos(fYawRadian), 0.f, -std::sin(fYawRadian) };
 	const _float3 vCompositionPivot{m_vFollowPivot.x + vRight.x * m_fCurrentShoulderOffset, m_vFollowPivot.y, m_vFollowPivot.z + vRight.z * m_fCurrentShoulderOffset };
-	const _float3 vDesiredPosition{vCompositionPivot.x - vForward.x * fHorizontalDistance, vCompositionPivot.y + std::sin(fPitchRadian) * m_fCurrentDistance + m_fCurrentFlightCameraHeightOffset, vCompositionPivot.z - vForward.z * fHorizontalDistance };
+	const _float3 vDesiredPosition{vCompositionPivot.x - vForward.x * fHorizontalDistance, vCompositionPivot.y + std::sin(fPitchRadian) * m_fCurrentDistance + m_fCurrentFlightCameraHeightOffset + m_fCurrentHeightOverrideOffset, vCompositionPivot.z - vForward.z * fHorizontalDistance };
 
 
 	_float3 finalPosition{};

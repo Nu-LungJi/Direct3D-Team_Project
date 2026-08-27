@@ -38,6 +38,7 @@ public:
 	static SPtr<CPlayer_Fly_State> Create();
 
 private:
+	void ResetRadialBlur();
 	void CacheAnimationIndices(const CPlayer& player);
 	int32_t ResolveFlightAnimation() const;
 	int32_t FindAnimationIndex(const CPlayer& player, const _string_view& sAnimationName) const;
