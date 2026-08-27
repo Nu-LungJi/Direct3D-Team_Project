@@ -1,5 +1,6 @@
 #pragma once
 #include "WorldAgent.h"
+#include <functional>
 #include <limits>
 
 NS_BEGIN(Client)
@@ -26,6 +27,7 @@ public:
 		START_SPELL_MINIGAME,
 		START_COIN_MINIGAME,
 		START_ACCIO_MINIGAME,
+		OPEN_SHOP,
 		CANCEL_DIALOGUE
 	};
 
@@ -34,6 +36,9 @@ public:
 		_string Text{};
 		size_t NextDialogueIndex{ std::numeric_limits<size_t>::max() };
 		DIALOGUE_ACTION Action{ DIALOGUE_ACTION::NONE };
+		// 선택하는 순간 조건에 따라 다음 대사 인덱스를 결정한다.
+		// 설정하지 않으면 NextDialogueIndex를 그대로 사용한다.
+		std::function<size_t()> ResolveNextDialogueIndex{};
 	};
 
 	struct DIALOGUE_LINE
@@ -42,12 +47,21 @@ public:
 		_string ExpressionAnim{};
 		_bool LoopExpression{ true };
 		std::vector<DIALOGUE_CHOICE> Choices{};
+		// 현재 대사를 넘길 때마다 호출되어 다음 대사 인덱스를 결정한다.
+		// 설정하지 않으면 기존처럼 바로 다음 인덱스로 진행한다.
+		std::function<size_t()> ResolveNextDialogueIndex{};
+		// 선택지가 없는 현재 대사를 넘길 때 실행할 행동.
+		// 기존 집계 초기화가 깨지지 않도록 항상 마지막 필드로 유지한다.
+		DIALOGUE_ACTION ActionOnAdvance{ DIALOGUE_ACTION::NONE };
 	};
 
 	struct DESC : public WORLD_AGENT_DESC
 	{
 		_string SpeakerName{ "NPC" };
 		std::vector<DIALOGUE_LINE> Dialogue{};
+		// 대화를 시작할 때마다 호출되어 이번 대화의 시작 인덱스를 결정한다.
+		// 설정하지 않은 NPC는 항상 0번 대사부터 시작한다.
+		std::function<size_t()> ResolveStartDialogueIndex{};
 		_string IdleExpressionAnim{};
 		_float InteractionDistance{ 3.f };
 		_bool SecondSpellMiniGame{ false };
@@ -58,7 +72,8 @@ public:
 		_float3 PlayerDialogueOffset{ -0.8f, 0.f, 2.2f };
 		// Resources/json/Cinematics에서 불러와 재생할 대화 카메라 JSON 이름.
 		_string DialogueCinematicName{ "InteractiveNpcDialogue" };
-		_float3 MoveDestination{};
+		// 0: 아씨오 미니게임, 1: 코인 미니게임 시작 위치.
+		std::vector<_float3> MoveDestination{};
 		_float MoveSpeed{ 2.f };
 		_float MoveStopDistance{ 0.2f };
 		// START_ACCIO_MINIGAME 선택지가 시작할 CAccioActivity_Base 인스턴스.
@@ -117,7 +132,7 @@ private:
 	void EndDialogueCamera();
 	// 대화 중 플레이어 이동 입력의 잠금 상태를 변경한다.
 	void SetPlayerMovementLocked(_bool locked);
-	void StartMoveToDestination();
+	_bool StartMoveToDestination(size_t destinationIndex);
 	_bool StartSpellMiniGame();
 	_bool StartCoinMiniGame();
 	_bool StartAccioMiniGame();
@@ -141,6 +156,7 @@ private:
 private:
 	_string m_SpeakerName{ "NPC" };
 	std::vector<DIALOGUE_LINE> m_Dialogue{};
+	std::function<size_t()> m_ResolveStartDialogueIndex{};
 	_string m_IdleExpressionAnim{};
 	_float m_fInteractionDistance{ 3.f };
 	_bool m_bSecondSpellMiniGame{};
@@ -164,6 +180,7 @@ private:
 	_float m_fMoveOutcomeElapsed{};
 	_float3 m_vPlayerDialogueOffset{ -0.8f, 0.f, 2.2f };
 	_string m_DialogueCinematicName{ "InteractiveNpcDialogue" };
+	std::vector<_float3> m_MoveDestinations{};
 	_float3 m_vMoveDestination{};
 	_float m_fMoveSpeed{ 2.f };
 	_float m_fMoveStopDistance{ 0.2f };
