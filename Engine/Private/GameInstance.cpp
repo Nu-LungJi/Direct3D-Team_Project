@@ -748,6 +748,16 @@ uint32_t CGameInstance::Spawn(
 		strJsonPath, worldMat, endPos, bApplyWorldScaleToParticleSize);
 }
 
+uint32_t CGameInstance::Spawn(
+	const std::string& strJsonPath,
+	const _matrix& worldMat,
+	const _fvector endPos,
+	_bool bApplyWorldScaleToParticleSize)
+{
+	return m_pParticleManager->Spawn(
+		strJsonPath, worldMat, endPos, bApplyWorldScaleToParticleSize);
+}
+
 std::vector<SPAWN_COMMAND>  CGameInstance::Parse_Command(const std::string& strJsonFile)
 {
 	return m_pParticleManager->Parse_Command(strJsonFile);

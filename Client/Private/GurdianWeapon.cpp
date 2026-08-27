@@ -37,7 +37,7 @@ HRESULT CGurdianWeapon::InitializePrototype(void* pArg)
 	if (FAILED(m_pResVertexNonAnimShader->Load()))
 		return E_FAIL;
 
-	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
+	m_pResPixelNonAnimShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER);
 	if (FAILED(m_pResPixelNonAnimShader->Load()))
 		return E_FAIL;
 

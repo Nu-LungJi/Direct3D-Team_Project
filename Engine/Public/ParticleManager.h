@@ -89,6 +89,8 @@ public:
 		const _fvector endPos,
 		_bool bApplyWorldScaleToParticleSize = false);
 
+	uint32_t Spawn(const std::string& strJsonPath, const _matrix& worldMat, const _fvector endPos);
+
 	
 
 	//실제 스폰 함수

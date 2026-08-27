@@ -71,9 +71,9 @@ HRESULT CMapMeshInstancingRenderer::Initialize()
 
 void CMapMeshInstancingRenderer::Update()
 {
-	// 인스턴싱이 활성화된 프레임에만 렌더 큐에 등록
-	if (m_bInstancingEnabled)
-		CGameInstance::Get().AddRenderObject(RENDERGROUP::MAPMESH, this);
+	// 인스턴싱이 활성화된 프레임에만 렌더 큐에 등록한다.
+	if (m_bInstancingEnabled) 
+		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND_MAPMESH, this);
 
 	// 디버그 표시가 켜진 경우에만 상주 바운드를 순회
 	if (!m_bDebugBoundsEnabled)
@@ -377,11 +377,16 @@ HRESULT CMapMeshInstancingRenderer::ResolveDrawResources(DRAW_PACKET& outPacket)
 	ZoneScopedN("MapMeshResolveDrawResources");
 	auto& gameInstance = CGameInstance::Get();
 
-	outPacket.vertexStaticShader = gameInstance.GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced");
-	outPacket.vertexFoliageShader = gameInstance.GetResourceFirst<CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced_Foliage");
-	outPacket.pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim_Instanced");
-	outPacket.sampler = gameInstance.GetResourceFirst<CResSamplerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
-	outPacket.materialConstantBuffer = gameInstance.GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
+	outPacket.vertexStaticShader = gameInstance.GetResourceFirst<CResVertexShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced");
+	outPacket.vertexFoliageShader = gameInstance.GetResourceFirst<CResVertexShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced_Foliage");
+	outPacket.pixelShader = gameInstance.GetResourceFirst<CResPixelShader>(
+		TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER);
+	outPacket.sampler = gameInstance.GetResourceFirst<CResSamplerState>(
+		TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_SS_LINEAR_WRAP);
+	outPacket.materialConstantBuffer = gameInstance.GetResourceFirst<CResCBuffer>(
+		TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
 
 	if (!outPacket.vertexStaticShader || !outPacket.vertexFoliageShader ||
 		!outPacket.pixelShader || !outPacket.sampler ||

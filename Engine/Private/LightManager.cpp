@@ -217,6 +217,7 @@ VOID CLightManager::Set_EnviromentLight(const CB_ENVLIGHT _EnvLight) {
 		m_pContext->Unmap(m_pEnvLightConstantBuffer->GetCBuffer().Get(), 0);
 	}
 	m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::ENVLIGHT), 1, m_pEnvLightConstantBuffer->GetCBuffer().GetAddressOf());
+	m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::ENVLIGHT), 1, m_pEnvLightConstantBuffer->GetCBuffer().GetAddressOf());
 }
 
 VOID CLightManager::Update(_float fTimeDelta) {
@@ -531,6 +532,7 @@ HRESULT CLightManager::Render_ObjectShadow() {
 	}
 	else { return E_FAIL; }
 
+	m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pNormalLightConstantBuffer->GetCBuffer().GetAddressOf());
 	m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pNormalLightConstantBuffer->GetCBuffer().GetAddressOf());
 	m_pContext->GSSetConstantBuffers(ETOUI(B_SLOTNUMBER::LIGHT), 1, m_pNormalLightConstantBuffer->GetCBuffer().GetAddressOf());
 
@@ -560,6 +562,7 @@ HRESULT CLightManager::Render_ObjectShadow() {
 		else { return E_FAIL; }
 
 		m_pContext->CSSetConstantBuffers(12, 1, m_pPBRCSMConstantBuffer->GetCBuffer().GetAddressOf());
+		m_pContext->PSSetConstantBuffers(12, 1, m_pPBRCSMConstantBuffer->GetCBuffer().GetAddressOf());
 	}
 	
 	Bind_ShadowResource();
@@ -855,7 +858,7 @@ VOID	CLightManager::Bind_ShadowResource() {
 		m_pMainDirectionalLight.m_pLightHandle ?
 			m_pMainDirectionalLight.m_pShadowSRV.Get() : nullptr
 	};
-
+	m_pContext->PSSetShaderResources(9, 5, ShadowSRV);
 	m_pContext->CSSetShaderResources(9, 5, ShadowSRV);
 }
 

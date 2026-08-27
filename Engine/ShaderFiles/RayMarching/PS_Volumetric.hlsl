@@ -91,8 +91,13 @@ float4 PSMain(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_T
 
 	float4  RayMarchedFog = Compute_AccumulatedFog(DepthTex, TexCoord);
 	
-	float3	WorldPos	= Convert_WorldPosByDepth(DepthTex, TexCoord).xyz;
-	float	ViewDepth	= Convert_ViewZPosByDepth(DepthTex);
+	float3 WorldPos = Convert_WorldPosByDepth(DepthTex, TexCoord).xyz;
+	float ViewDepth = Convert_ViewZPosByDepth(DepthTex);
+	
+	float SmoothDistanceFactor = smoothstep(FogStartDistance, max(FogEndDistance, FogStartDistance + 0.0001f), ViewDepth);
+	
+	RayMarchedFog.a = lerp(1.f, RayMarchedFog.a, SmoothDistanceFactor);
+	RayMarchedFog.rgb *= SmoothDistanceFactor;
 	
 	if (DepthTex >= 1.f)	// 백버퍼 빈 공간
 	{

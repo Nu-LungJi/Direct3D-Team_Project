@@ -226,7 +226,7 @@ HRESULT CRenderer::InitializeBackBuffer()
 	if (nullptr == m_pBackBufferTexture)	{ MSG_BOX("Invalid : m_pBackBufferTexture");    return E_FAIL; }
 
 	// m_pRasterizer Setting - BackCull
-	m_pRasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	m_pRasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
 	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 
 	return S_OK;
@@ -300,7 +300,7 @@ HRESULT CRenderer::InitializeTargetPBR()
 	{
 		if (nullptr == m_pResVertexShader)	return E_FAIL;
 	}
-	if (m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim"))
+	if (m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER))
 	{
 		if (nullptr == m_pResPixelShader)	return E_FAIL;
 	}
@@ -457,7 +457,7 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 		return E_FAIL;
 	}
 
-	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/cumulus.dds", nullptr, m_pWeatherMapTexture.GetAddressOf()))) {
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/WeatherMap.dds", nullptr, m_pWeatherMapTexture.GetAddressOf()))) {
 		MSG_BOX("Cannot Create WeatherMap Texture File.");
 		return E_FAIL;
 	}
@@ -467,6 +467,15 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 		return E_FAIL;
 	}
 	
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/BaseNoise.dds", nullptr, m_pBaseVolumeTexture.GetAddressOf()))) {
+		MSG_BOX("Cannot Create Cloud BaseNoise File.");
+		return E_FAIL;
+	}
+	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/VolumeTexture/DetailNoise.dds", nullptr, m_pDetailVolumeTexture.GetAddressOf()))) {
+		MSG_BOX("Cannot Create Cloud DetailNoise File.");
+		return E_FAIL;
+	}
+
 	if (m_pVolumetricFroxelCBuffer = CGameInstance::Get().AddResourceT(TAG_RES_GRP_PERMANENT_BUFFER, "CB_FROXEL", E::CResCBuffer::Create())) {
 		if (FAILED(m_pVolumetricFroxelCBuffer->Load(E::CResCBuffer::CBUFFER_DESC{ .byteWidth = sizeof(CB_FROXEL) })))    return E_FAIL;
 	}
@@ -974,6 +983,20 @@ VOID	CRenderer::Unbind_Resources() {
 	m_pContext->CSSetShader(nullptr, nullptr, 0);
 }
 
+VOID CRenderer::Convert_Rasterizer_NoCull() {
+	const auto NoCullRasterizer		= CGameInstance::Get().GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
+	if (!NoCullRasterizer)	return;
+
+	m_pContext->RSSetState(NoCullRasterizer->GetRasterizerState().Get());
+}
+
+VOID CRenderer::Convert_Rasterizer_BackCull() {
+	const auto BackCullRasterizer	= CGameInstance::Get().GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_BACKCULL);
+	if (!BackCullRasterizer)	return;
+
+	m_pContext->RSSetState(BackCullRasterizer->GetRasterizerState().Get());
+}
+
 HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
 	auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
 	D3D11_MAPPED_SUBRESOURCE mappedSubResource;
@@ -1282,7 +1305,7 @@ HRESULT CRenderer::Render_Decal()
 			Unbind_Resources();
 			m_pContext->OMSetBlendState(noBlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 			m_pContext->OMSetDepthStencilState(depthDisabled->GetDepthStencilState().Get(), 0);
-			m_pContext->RSSetState(backCull->GetRasterizerState().Get());
+			m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 		};
 
 	auto* activeCamera = gameInstance.GetActiveCamera();
@@ -1380,12 +1403,6 @@ HRESULT CRenderer::Render_HBAO() {
 
 HRESULT CRenderer::Render_Lighting() {
 	ZoneScopedN("Render_Lighting");
-	TracyD3D11Zone(m_pTracyGpuContext, "Lighting");
-	{
-		// Default Texture - Dissolve HBAO
-		SPtr<CResTexture2D> WhiteResource = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WHITE");
-		m_pContext->PSSetShaderResources(5, 1, WhiteResource->GetSRV().GetAddressOf());
-	}
 
 	{
 		ComPtr<ID3D11ShaderResourceView> SRVList[] = {
@@ -1413,8 +1430,7 @@ HRESULT CRenderer::Render_Lighting() {
 
 		m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
 	}
-
-	return S_OK;
+	
 }
 
 HRESULT CRenderer::Render_Alpha() {
@@ -1440,6 +1456,15 @@ HRESULT CRenderer::Render_Alpha() {
 		m_pContext->IASetInputLayout(m_pBlendVertexShader->GetInputLayout().Get());
 		m_pContext->VSSetShader(m_pBlendVertexShader->GetVertexShader().Get(), nullptr, 0);
 		m_pContext->PSSetShader(m_pBlendPixelShader->GetPixelShader().Get(), nullptr, 0);
+
+		
+		ComPtr<ID3D11ShaderResourceView> SRVList[] = {
+			m_pResDynTexTargetHBAO->GetSRV(),
+			nullptr,
+			m_pSRVIrradianceMap.Get(),
+			m_pSRVPreFilteredMap.Get(),
+			m_pSRVBRDFLookUpMap.Get()
+		};
 	}
 	{
 		auto pGameCam = CGameInstance::Get().GetActiveCamera();
@@ -1650,17 +1675,15 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer() {
 			D3D11_MAPPED_SUBRESOURCE MRES{};
 			if (SUCCEEDED(m_pContext->Map(m_pVolumetricVFogCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 			{
-				CB_VLFOG cbVLFog = m_pFogInfo;
-
 				if (auto LightHandle = CGameInstance::Get().Get_MainDirectionalLightData().m_pLightHandle) {
 					if (auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value()))
-						cbVLFog.g_fFogLightDirection = LightOBJ->Get_LightDirection();
+						m_pFogInfo.g_fFogLightDirection = LightOBJ->Get_LightDirection();
 					else
-						cbVLFog.g_fFogLightDirection = _float3(0.f, 0.f, 0.f);
+						m_pFogInfo.g_fFogLightDirection = _float3(0.f, 0.f, 0.f);
 				}
 
-				cbVLFog.g_fFogTime = std::fmod(m_fTimeAccumulation, 4096.f);
-				memcpy(MRES.pData, &cbVLFog, sizeof(CB_VLFOG));
+				m_pFogInfo.g_fFogTime = std::fmod(m_fTimeAccumulation, 4096.f);
+				memcpy(MRES.pData, &m_pFogInfo, sizeof(CB_VLFOG));
 				m_pContext->Unmap(m_pVolumetricVFogCBuffer->GetCBuffer().Get(), 0);
 			}
 			m_pContext->PSSetConstantBuffers(11, 1, m_pVolumetricVFogCBuffer->GetCBuffer().GetAddressOf());
@@ -1706,16 +1729,17 @@ HRESULT CRenderer::Render_VolumetricCloud() {
 	{
 		m_pContext->CSSetShader(m_pVolumetricCloudCS->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11ShaderResourceView* pSRVs[7] = {
+		ID3D11ShaderResourceView* pSRVs[8] = {
 			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
 			nullptr,
-			m_pVolumeTexture.Get(),
+			m_pBaseVolumeTexture.Get(),
+			m_pDetailVolumeTexture.Get(),
 			m_pResDynTexTargetDepth->GetSRV().Get(),
 			m_pWeatherMapTexture.Get(),
 			m_pBlueNoiseTexture.Get(),
 			m_pCloudCurlNoiseTexture.Get()
 		};
-		m_pContext->CSSetShaderResources(0, 7, pSRVs);
+		m_pContext->CSSetShaderResources(0, 8, pSRVs);
 
 		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVolumetricCloudTex->GetUAV().Get() };
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
@@ -2533,13 +2557,15 @@ HRESULT CRenderer::RenderMapMesh()
 	if (!stencilWrite)
 		return E_FAIL;
 
+	Convert_Rasterizer_NoCull();
+
 	ComPtr<ID3D11DepthStencilState> previousDepthState{};
 	UINT previousStencilRef = 0;
 	m_pContext->OMGetDepthStencilState(previousDepthState.GetAddressOf(), &previousStencilRef);
 	m_pContext->OMSetDepthStencilState(stencilWrite->GetDepthStencilState().Get(), STENCIL_MASK::DECAL_RECEIVER);
 
 	HRESULT result = S_OK;
-	for (auto* renderObject : m_pRenderObject[ETOUI(RENDERGROUP::MAPMESH)])
+	for (auto* renderObject : m_pRenderObject[ETOUI(RENDERGROUP::NONBLEND_MAPMESH)])
 	{
 		if (!renderObject || !renderObject->HasRenderPass(m_pRenderContext.pass))
 			continue;
@@ -2550,6 +2576,8 @@ HRESULT CRenderer::RenderMapMesh()
 			break;
 		}
 	}
+
+	m_pRenderContext.pass = RENDERPASS::DEFAULT;
 
 	m_pContext->OMSetDepthStencilState(previousDepthState.Get(), previousStencilRef);
 
@@ -2573,6 +2601,26 @@ HRESULT CRenderer::RenderBlend()
 
 	{
 		E::CGameInstance::Get().Render3DFont();
+	}
+
+	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
+	m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
+	return S_OK;
+}
+
+HRESULT CRenderer::RenderBlendMapMesh(){
+	ZoneScopedN("RenderBlendMapMesh");
+
+	auto BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+	m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
+
+	for (auto& pRenderObject : m_pRenderObject[ETOUI(RENDERGROUP::BLEND_MAPMESH)])
+	{
+		if (pRenderObject->HasRenderPass(m_pRenderContext.pass))
+		{
+			pRenderObject->Render(m_pContext.Get(), m_pRenderContext);
+		}
 	}
 
 	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
@@ -2619,7 +2667,7 @@ HRESULT CRenderer::RenderEffect()
 			pRenderObject->Render(m_pContext.Get(), m_pRenderContext);
 		}
 	}
-
+	
 	BlendState = CGameInstance::Get().GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
 	m_pContext->OMSetBlendState(BlendState->GetBlendState().Get(), nullptr, 0xffffffff);
 

@@ -475,6 +475,12 @@
     <Filter Include="GameObject\Agent\Animal\WolrdAnimal">
       <UniqueIdentifier>{38724c55-2560-48a3-ac1f-fc3b4460030c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\DynamicMapObject">
+      <UniqueIdentifier>{aec790d9-50ad-42e0-a7e7-a670e973acc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\DynamicMapObject\WaterWheel">
+      <UniqueIdentifier>{d0c35028-76ee-4a7f-8ff9-5d72049245d2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -1174,6 +1180,9 @@
     <ClInclude Include="..\public\MON_Default.h">
       <Filter>GameObject\Monster\02.PublicState</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\WaterWheel.h">
+      <Filter>GameObject\DynamicMapObject\WaterWheel</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1778,6 +1787,9 @@
     </ClCompile>
     <ClCompile Include="..\private\BTChangeState.cpp">
       <Filter>GameObject\AI\Action\NPC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\WaterWheel.cpp">
+      <Filter>GameObject\DynamicMapObject\WaterWheel</Filter>
     </ClCompile>
     <ClCompile Include="..\private\Troll.cpp">
       <Filter>GameObject\Monster\Troll</Filter>

@@ -15,6 +15,7 @@
 #include "Player_Stupefy_Bullet.h"
 #include "NvClothCape.h"
 #include "ResNvClothMesh.h"
+#include "WaterWheel.h"
 
 #include "UIController.h"
 #include "EffectUI.h"
@@ -90,6 +91,7 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			{
 				return false;
 			}
+
 			if(FAILED(MonsterLoad_InWorker()))
 				return false;
 			if (FAILED(NpcLoad_InWorker()))
@@ -107,6 +109,10 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			{
 				return false;
 			}
+
+			if (FAILED(LoadHogsmeade_ExtraAsset()))
+				return false;
+
 			return SUCCEEDED(LoadPlayerResources());
 		});
 }
@@ -571,6 +577,30 @@ HRESULT CLevelHogwartWorldLoader::LoadCollsion_InWorker()
 	{
 		MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
 		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorldLoader::LoadHogsmeade_ExtraAsset(){
+
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::HOGWART_WORLD, "Static_WaterWheel_Resource",
+			CResStaticModel::Create("./Resources/SampleClient/Models/Static/Hogsmeade_ExtraAsset/SM_CGY_WaterWheel.bin"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(1.f, 1.f, 1.f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("HOGWART_WORLD Failed Static_WaterWheel Resource");
+				//return false;
+			}
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WaterWheel, CWaterWheel::Create())))
+		{
+			MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_WaterWheel");
+			return E_FAIL;
+		}
 	}
 	return S_OK;
 }

@@ -1403,14 +1403,6 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 			}
 		}
 
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim", "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
-		{
-			if (FAILED(res->Load()))
-			{
-				return E_FAIL;
-			}
-		}
-
 		if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_TestModelNonAnim_Instanced", "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
 		{
 			if (FAILED(res->Load()))
@@ -1436,9 +1428,16 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 			}
 		}
 
-		if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim_Instanced", "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_NONBLENDSHADER, "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
 		{
-			if (FAILED(res->Load()))
+			if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_NonBlend", .sTarget = "ps_5_0" })))
+			{
+				return E_FAIL;
+			}
+		}
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, TAG_RES_PERMANENT_BLENDSHADER, "./ShaderFiles/TestModel/Shader_VtxMesh_Instanced.hlsl"))
+		{
+			if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "PSMain_Blend", .sTarget = "ps_5_0" })))
 			{
 				return E_FAIL;
 			}

@@ -75,6 +75,7 @@ private:		// Render Object
 	HRESULT		RenderNonBlend_Instanced();
 	HRESULT		RenderMapMesh();
 	HRESULT		RenderBlend();
+	HRESULT		RenderBlendMapMesh();
 	HRESULT		RenderLight();
 	HRESULT		RenderSkybox();
 	HRESULT		RenderEffect();
@@ -122,6 +123,9 @@ public:			// PostProcess Effect Function
 	
 private:		// Unbind Shader Resource / Shader / UAV / Render Target
 	VOID		Unbind_Resources();
+
+	VOID		Convert_Rasterizer_NoCull();
+	VOID		Convert_Rasterizer_BackCull();
 
 public:			// Shader Resource Generator
 	TEXTURE3D	Generate_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight, uint32_t _TexDepth);
@@ -317,6 +321,8 @@ private:		// Volumetric Fog
 	ComPtr<ID3D11ShaderResourceView>	m_pVolumeTexture		= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pWeatherMapTexture	= { nullptr };
 	ComPtr<ID3D11ShaderResourceView>	m_pCloudCurlNoiseTexture = { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	m_pBaseVolumeTexture	= { nullptr };
+	ComPtr<ID3D11ShaderResourceView>	m_pDetailVolumeTexture	= { nullptr };
 
 
 	XMMATRIX					m_mShadowLightViewProj{};

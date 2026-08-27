@@ -41,7 +41,7 @@ HRESULT COilBarrel::InitializePrototype(void* pArg)
 	//	return E_FAIL;
 
 	//m_pResPixelShader = CGameInstance::Get().GetResourceFirst<CResPixelShader>(
-	//	TAG_RES_GRP_PERMANENT_SHADER, "PS_TestModelNonAnim");
+	//	TAG_RES_GRP_PERMANENT_SHADER,TAG_RES_PERMANENT_NONBLENDSHADER);
 	//if (!m_pResPixelShader || FAILED(m_pResPixelShader->Load()))
 	//	return E_FAIL;
 

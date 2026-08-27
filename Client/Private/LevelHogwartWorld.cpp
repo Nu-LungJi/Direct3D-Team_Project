@@ -18,9 +18,11 @@
 #include "NpcPlacementData.h"
 #include "NpcPlacementManager.h"
 #include "Troll.h"
+#include "LightPlacementObject.h"
 // Client에도 같은 이름의 Terrain.h가 있으므로 Engine SDK 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
+#include "WaterWheel.h"
 
 NS_USING(Client)
 
@@ -132,6 +134,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 	{
 		return E_FAIL;
 	}
+	if (FAILED(SpawnLightPlacement()))
+		return E_FAIL;
 
 	if (FAILED(SpawnSkyBox()))
 		return E_FAIL;
@@ -161,6 +165,18 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	if (FAILED(Initialize_EnviromentLight()))
 		return E_FAIL;
+	if (FAILED(Initialize_LoopEffect()))
+		return E_FAIL;
+
+
+	{
+		CWaterWheel::DESC desc{};
+		desc.sObjectTag = "HOGWART_WORLD_WATERWHEEL";
+		desc.vInitialPosition = _float3(478.4f, 92.577f, 322.32f);
+		desc.vInitialRotation = _float3(0.f, 48.f, 0.f);
+		desc.vInitialScale = _float3(3.f, 3.f, 3.f);
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WaterWheel, "Hogsmeade_WaterWheel", &desc))	return E_FAIL;
+	}
 
 	// 레벨 진입 후 3초 동안 검은 화면을 유지하고,
 	// 이후 2초 동안 검은 UI를 사라지게 해 게임 화면을 드러낸다.
@@ -222,7 +238,22 @@ std::optional<CHandle> CLevelHogwartWorld::SpawnPlayer()
 		"03_Player",
 		&desc);
 }
+HRESULT CLevelHogwartWorld::SpawnLightPlacement()
+{
+	CLightPlacementObject::DESC desc{}; 
+	desc.sObjectTag = "HogwartWorldLightPlacement";
+	desc.sLightFileName = "Level_HogwartWorld";
 
+	return CGameInstance::Get().
+		AddGameObjectToLayer(
+			ES_EngineProtoMajorType::PERMANENT,
+			ES_EngineProtoGameObject::
+			Prototype_GameObject_LightPlacement,
+			"Layer_LightPlacement",
+			&desc)
+		? S_OK
+		: E_FAIL;
+}
 HRESULT CLevelHogwartWorld::SpawnPlayerCape(CHandle hPlayer)
 {
 	CNvClothCape::DESC desc{};
@@ -610,21 +641,21 @@ HRESULT CLevelHogwartWorld::Initialize_VolumetricFog() {
 	CB_VLFOG FogOption{};
 
 	FogOption.g_fFogColor			= { 255.f / 255.f, 227.f / 255.f, 184.f / 255.f };
-	FogOption.g_fFogIntensity		= 0.25f;
-	FogOption.g_fFogDensity			= 0.02f;
-	FogOption.g_fFogNoiseScale		= 0.05f;
-	FogOption.g_fFogScattering		= 0.5f;
-	FogOption.g_fFogBaseBrightness	= 0.01f;
+	FogOption.g_fFogIntensity		= 0.70f;
+	FogOption.g_fFogDensity			= 0.004f;
+	FogOption.g_fFogNoiseScale		= 0.1f;
+	FogOption.g_fFogScattering		= 1.f;
+	FogOption.g_fFogBaseBrightness	= 0.05f;
 
 	FogOption.g_fFogLightColor		= { 255.f / 255.f, 230.f / 255.f, 180.f / 255.f };
 	FogOption.g_fFogLightDirection	= { 0.577f, -0.577f, 0.577f };
 
 	FogOption.g_fFogBaseHeight		= 300.f;
-	FogOption.g_fFogMaxHeight		= 500.f;
-	FogOption.g_fFogHeightFallOff	= 0.05f;
+	FogOption.g_fFogMaxHeight		= 600.f;
+	FogOption.g_fFogHeightFallOff	= 0.1f;
 
-	FogOption.g_fFogStartDistance	= 100.f;
-	FogOption.g_fFogEndDistance		= 250.f;
+	FogOption.g_fFogStartDistance	= 250.f;
+	FogOption.g_fFogEndDistance		= 500.f;
 
 	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
 
@@ -641,6 +672,13 @@ HRESULT CLevelHogwartWorld::Initialize_EnviromentLight() {
 
 	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
 
+
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorld::Initialize_LoopEffect(){
+
+	CGameInstance::Get().Spawn("CGY_HogwartSteam.json", XMMatrixTranslation(106.42f, -7.5f, -212.875f) * XMMatrixScaling(2.5f, 2.5f, 2.5f), _vector{}, true);
 
 	return S_OK;
 }
