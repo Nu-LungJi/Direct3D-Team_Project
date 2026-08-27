@@ -318,7 +318,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 						CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME
 					},
 					{
-						"부릉 브룸", 2,
+						"부릉 브룸!", 2,
 						CInteractiveNpc::DIALOGUE_ACTION::START_COIN_MINIGAME
 					}
 				}

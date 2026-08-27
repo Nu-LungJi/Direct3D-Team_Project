@@ -575,7 +575,7 @@ void UIManager::UpdateRaceStartTimer(_float fTimeDelta)
 
 	const _float goTime = elapsed - countTotal;
 	if (auto* textBox = dynamic_cast<CTextBox*>(text))
-		textBox->SetwText(L"GO");
+		textBox->SetwText(L"GO!");
 	text->SetLocalPos(m_RaceStartTimerTextBaseLocalPos);
 	text->SetColor({ 0.32f, 1.f, 0.28f });
 
