@@ -159,6 +159,11 @@ void CTroll::PriorityUpdate(E::_float fTimeDelta)
 	{
 		m_pFsm->Request_State(MON_STATE::SPAWN);
 	}
+	if (nullptr != m_pFsm)
+	{
+		if(m_pFsm->GetCurState() == MON_STATE::NOTHING)
+			m_pFsm->Request_State(MON_STATE::SPAWN);
+	}
 	if (m_bEndGame)
 	{
 		SetPendingDestroy();

@@ -103,6 +103,10 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			{
 				return false;
 			}
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("SpiderSpawn")))
+			{
+				return false;
+			}
 			return SUCCEEDED(LoadPlayerResources());
 		});
 }

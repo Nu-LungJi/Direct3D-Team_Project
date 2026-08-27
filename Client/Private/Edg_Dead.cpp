@@ -51,6 +51,8 @@ void CEdg_Dead::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta)
 		pDragon->Set_Dissolve(1.f * t);
 		
 	}
+	if (pAnimator->GetFinish())
+		pDragon->Set_EndGame();
 }
 
 void CEdg_Dead::Update(CStateMachine* pStateMachine, _float fTimeDelta)

@@ -65,12 +65,12 @@ private:
 	void						InitializeEffects();
 	void						Stuck() override;
 private:
-	class CMon_State* m_pFsm{ nullptr };
+	class CMon_State*	m_pFsm{ nullptr };
 
 	_string				m_EffectNames[ETOUI(TROLL_SKILL::END)]{};
 	TROLL_SKILL_INFO	m_SkillHandle[ETOUI(TROLL_SKILL::END)]{};
 	TROLL_SKILL			m_eDragonSkill{};
-	_bool				m_bIsBreak{ false }, m_bActiveSKill{ false }, m_bEndGame{ false };
+	_bool				m_bIsBreak{ false }, m_bActiveSKill{ false };
 
 public:
 	static E::UPtr<CTroll> Create();

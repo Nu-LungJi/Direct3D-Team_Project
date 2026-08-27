@@ -37,7 +37,6 @@ private:
 	
 	void		Effect_All(CEnderDragon* pDragon, _float fTimeDelta);
 	void		Effect_Single(CEnderDragon* pDragon, const _string& strName);
-	void		Cinematic_SmokeMove(CEnderDragon* pDragon,_float3 vOffset);
 	void		End(CEnderDragon_State* pStateMachine, CBTBlackBoard* pBlackBoard);
 private:
 	DRAGON_PHASE			m_ePhase{};

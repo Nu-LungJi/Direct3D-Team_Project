@@ -487,22 +487,22 @@ HRESULT CLevelHogwartWorld::SpawnMonster(std::optional<CHandle> hPlayer)
 		return E_FAIL;
 	}
 
-	CTroll::TROLL_DESC Troll{};
-	Troll.sObjectTag = "Troll";
-	Troll.TargetHandle = hPlayer.value();
-	Troll.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-	Troll.vPos = _float3(260.353f, 40.679f, 138.799f);
-	Troll.ReSourceTag = "Model_Resource_Troll";
-	Troll.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_TrollWeapon);
-	Troll.WeaponResourceName = "Model_Resource_TrollWeapon";
-	Troll.resBeHaviorMajor = "BTJSON";
-	Troll.resBeHaviorMinor = "TROLL";
-	Troll.MonType = MONSTER_TYPE::BOSS;
-
-	if (!CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, "02.Troll", &Troll))
-	{
-		return E_FAIL;
-	}
+	//CTroll::TROLL_DESC Troll{};
+	//Troll.sObjectTag = "Troll";
+	//Troll.TargetHandle = hPlayer.value();
+	//Troll.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+	//Troll.vPos = _float3(260.353f, 40.679f, 138.799f);
+	//Troll.ReSourceTag = "Model_Resource_Troll";
+	//Troll.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_TrollWeapon);
+	//Troll.WeaponResourceName = "Model_Resource_TrollWeapon";
+	//Troll.resBeHaviorMajor = "BTJSON";
+	//Troll.resBeHaviorMinor = "TROLL";
+	//Troll.MonType = MONSTER_TYPE::BOSS;
+	//
+	//if (!CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, "02.Troll", &Troll))
+	//{
+	//	return E_FAIL;
+	//}
 
 
 }

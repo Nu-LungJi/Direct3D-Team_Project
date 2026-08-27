@@ -85,6 +85,14 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 {
 	if (CGameInstance::Get().KeyPressing(DIK_LSHIFT)&& CGameInstance::Get().KeyDown(DIK_F1))
 	{
+		FCinematicPlayOptions option{};
+		option.eStartMode = ECinematicStartMode::Immediate;
+		option.fStartBlendDuration = 0.f;
+		option.eReturnMode = ECinematicReturnMode::Blend;
+		option.fReturnBlendDuration = 1.f;
+
+		CGameInstance::Get().PlayCinematic("SpiderSpawn", option);
+
 		for (auto& iter : m_Monsters)
 		{
 			auto pSrc = CGameInstance::Get().GetGameObjectByHandleT<CSpider>(iter);
@@ -120,7 +128,6 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 				continue;
 			}
 			++iter;
-
 		}
 	}
 }

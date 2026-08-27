@@ -27,7 +27,7 @@ HRESULT CEdgPulse::Initialize(void* pArg)
 		MSG_BOX("Create Failed EDG CEdgPulse");
 		return E_FAIL;
 	}
-	m_fDamage = 70.f;
+	m_fDamage = 100.f;
 	m_fSpeed = 20.f;
 	m_fRadius = 1.5f;
 	m_fMaxLife = 3.f;

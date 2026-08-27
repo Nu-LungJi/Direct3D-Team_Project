@@ -26,7 +26,7 @@ HRESULT CEdgGasi::Initialize(void* pArg)
 		MSG_BOX("Create Failed EDG Gasi");
 		return E_FAIL;
 	}
-	m_fDamage = 30.f;
+	m_fDamage = 100.f;
 	m_fSpeed = 30.f;
 	m_fRadius = 3.f;
 	m_fMaxLife = 3.f;
