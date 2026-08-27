@@ -7,6 +7,8 @@
 
 NS_BEGIN(Client)
 
+static constexpr bool isPurchaseWand{ false };
+
 static Engine::CUIObject* GetSafeUI(CHandle handle)
 {
 	return E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(handle);
@@ -132,6 +134,8 @@ private:
 	std::unordered_map<CHandle, _float, UI_HANDLE_HASH> m_2DUIRestoreAlpha{};
 	std::unordered_map<CHandle, _bool, UI_HANDLE_HASH> m_2DUIRestoreInputLock{};
 	std::unordered_map<CHandle, _float, UI_HANDLE_HASH> m_SpellMeterRestoreScale{};
+	// CreateFadeIn/CreateFadeOut이 동일한 BlackBG를 이어서 사용한다.
+	std::optional<CHandle> m_hScreenFade{};
 	std::array<_bool, static_cast<size_t>(SPELL_TYPE::B_NONE)> m_SpellUnlockStates = []
 	{
 		std::array<_bool, static_cast<size_t>(SPELL_TYPE::B_NONE)> states{};
@@ -202,12 +206,13 @@ private:
 	std::optional<CHandle> m_hRaceBoardCoinText{};
 	std::optional<CHandle> m_hRaceResultCoinText{};
 	_float m_fRaceMiniGameElapsed{};
-	uint32_t m_iRaceMiniGameCoinCount{};
+	uint32_t m_iRaceMiniGameCoinCount{0};
 	CWandShop m_WandShop{};
 	_bool m_bWandShopWorldMode{ false };
 	_float4x4 m_WandShopPanelWorld{};
 	_float2 m_WandShopPanelMousePosition{ -FLT_MAX, -FLT_MAX };
 	_bool m_bWandShopPanelMouseHit{ false };
+
 
 	void UpdateActiveButtons();
 	void UpdateDialoguePopups(_float fTimeDelta);

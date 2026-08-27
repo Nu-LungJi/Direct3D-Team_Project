@@ -160,8 +160,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 						"네!",std::numeric_limits<size_t>::max(),CInteractiveNpc::DIALOGUE_ACTION::NONE,
 						[]() -> size_t
 						{
-							const uint32_t coinCount = 20; // 실제 코인 값으로 교체
-
+							uint32_t coinCount = GET_SINGLE(UIManager)->GetRaceMiniGameCoinCount();
+							
 							if (coinCount >= 20)
 								return 5;
 
@@ -191,7 +191,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 				{
 					{
 						"좋아요!", 3,
-						CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME
+						CInteractiveNpc::DIALOGUE_ACTION::MOVE_TO_DESTINATION
 					},
 					{
 						"다른 용무가 있습니다.", 4,
@@ -235,13 +235,18 @@ HRESULT CLevelHogwartWorld::Initialize()
 				// 만약 플레이어가 이미 지팡이를 샀으면
 				// 대화 6번으로 
 				// 아직 안샀으면 0번으로 
+				if (isPurchaseWand)
+				{
+					return 6;
 
-
+				}
+				else {
+					return 0;
+				}
 				//auto* pPlayer = E::CGameInstance::Get().
 				//	GetGameObjectByHandleT<CPlayer>(hDialoguePlayer);
 
 				//
-				return 0u;
 			};
 		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
 		Desc.MoveDestination = {

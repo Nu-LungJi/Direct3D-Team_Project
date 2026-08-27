@@ -169,8 +169,6 @@ private:
 	_bool m_bDialogueCinematicPlaying{};
 	size_t m_iDialogueIndex{};
 	CHandle m_hInteractionPlayer{};
-	std::optional<CHandle> m_hDialogueFade{};
-	std::optional<CHandle> m_hMoveFade{};
 	STATE m_eState{ STATE::IDLE };
 	_float m_fFadeDuration{ 0.35f };
 	_float m_fFadeHoldDuration{ 0.2f };
