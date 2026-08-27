@@ -46,6 +46,8 @@ private:
 		_float fYawDegrees,
 		_float fUniformScale);
 
+	void UpdateDebugWarp();
+
 	/*----------- 광윤 추가 -----------*/
 	HRESULT Initialize_VolumetricFog();
 	HRESULT Initialize_EnviromentLight();
@@ -61,6 +63,8 @@ public:
 
 private:
 	_bool m_bCreatePlayScreenUI = false;
+
+	CHandle m_hDebugPlayer{};
 
 private:
 	void Free() override;

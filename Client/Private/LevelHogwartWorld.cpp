@@ -7,6 +7,7 @@
 #include "FlyCamera.h"
 #include "UiCamera.h"
 #include "Player.h"
+#include "ComCharacterMoveIntent.h"
 #include "PlayerThirdPersonCamera.h"
 #include "NvClothCape.h"
 #include "UIController.h"
@@ -51,6 +52,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 	const auto hPlayer = SpawnPlayer();
 	if (!hPlayer)
 		return E_FAIL;
+	m_hDebugPlayer = *hPlayer;
 	if (auto* pNpcManager = gameInstance.GetNpcPlacementManager())
 	{
 		pNpcManager->ClearNpcOptions();
@@ -459,6 +461,36 @@ void CLevelHogwartWorld::Update(E::_float fTimeDelta)
 	}
 
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
+	UpdateDebugWarp();
+}
+
+void CLevelHogwartWorld::UpdateDebugWarp()
+{
+	auto& gameInstance = CGameInstance::Get();
+	if (!gameInstance.KeyPressing(DIK_LSHIFT) ||
+		!gameInstance.KeyDown(DIK_F9))
+	{
+		return;
+	}
+
+	auto* pPlayer = gameInstance.GetGameObjectByHandleT<CPlayer>(m_hDebugPlayer);
+	if (!pPlayer)
+	{
+		DEBUG_LOG("[HogwartWorld] Debug warp failed: Player is invalid.\n");
+		return;
+	}
+
+	auto* pMoveIntent = pPlayer->GetComponent<CComCharacterMoveIntent>(
+		"ComCharacterMoveIntent");
+	if (!pMoveIntent)
+	{
+		DEBUG_LOG("[HogwartWorld] Debug warp failed: MoveIntent is missing.\n");
+		return;
+	}
+
+	constexpr _float3 vHogwartsCastlePosition{ 1890.f, 42.f, 245.f };
+	pMoveIntent->RequestWarp(vHogwartsCastlePosition);
+	DEBUG_LOG("[HogwartWorld] Debug warp: Hogwarts Castle (Shift + F9).\n");
 }
 
 HRESULT CLevelHogwartWorld::Render()
@@ -476,8 +508,7 @@ std::optional<CHandle> CLevelHogwartWorld::SpawnPlayer()
 {
 	CPlayer::DESC desc{};
 	desc.sObjectTag = "Player";
-	// Hogsmeade 중심부의 Terrain 높이(약 48)보다 조금 위에서 시작한다.
-	desc.vInitialPosition = { 200.f, 55.f, 80.f };
+	desc.vInitialPosition = { 64.f, -18.f, -378.f };
 	desc.LevelTag = LEVEL::HOGWART_WORLD;
 	desc.tFilter = PX_FILTER_DESC{
 		.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
@@ -1005,8 +1036,8 @@ HRESULT CLevelHogwartWorld::SpawnPlayerCamera(CHandle hPlayer)
 {
 	CPlayerThirdPersonCamera::DESC desc{};
 	desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
-	desc.vAt = { 200.f, 55.f, 80.f };
-	desc.vEye = { 200.f, 58.f, 73.f };
+	desc.vAt = { 64.f, -18.f, -378.f };
+	desc.vEye = { 64.f, -15.f, -385.f };
 	desc.fAspect = g_iWinSizeX / static_cast<E::_float>(g_iWinSizeY);
 	desc.fFovY = 75.f;
 	desc.fNear = 0.1f;
