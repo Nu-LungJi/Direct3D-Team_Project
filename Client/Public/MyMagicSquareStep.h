@@ -4,6 +4,7 @@
 #include "Client_Defines.h"
 
 NS_BEGIN(Engine)
+class CComConstantBuffer;
 class CComPxBoxCollider;
 class CComPxRigidBody;
 class CComStaticModelInstance;
@@ -62,6 +63,8 @@ public:
 	HRESULT Render(
 		ID3D11DeviceContext* pContext,
 		const RENDER_CTX& ctx) override;
+	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	bool GetShadowBounds(BoundingBox& outBounds) const override;
 	void UpdateGUI() override;
 
 private:
@@ -70,6 +73,7 @@ private:
 
 private:
 	CComStaticModelInstance* m_pComModelInstance{};
+	CComConstantBuffer* m_pComCBufferPerObject{};
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxBoxCollider* m_pComPxBoxCollider{};
 

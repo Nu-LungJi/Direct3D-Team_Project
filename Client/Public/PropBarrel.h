@@ -69,6 +69,8 @@ public:
 	void LateUpdate(_float fTimeDelta) override;
 	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx, const MODEL_INSTANCE_BATCH& batch) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	bool GetShadowBounds(BoundingBox& outBounds) const override;
 	void UpdateGUI() override;
 	void OnCollisionEnter(
 		CGameObject* pObj,
