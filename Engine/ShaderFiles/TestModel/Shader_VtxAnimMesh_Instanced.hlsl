@@ -56,6 +56,7 @@ struct VS_OUT
     float2 vTexcoord : TEXCOORD0;
     float4 vWorldPos : TEXCOORD1;
     float4 vProjPos : TEXCOORD2;
+	nointerpolation float fDissolveIntensity : TEXCOORD3;
 };
 
 VS_OUT VSMain(VS_IN In, uint instanceId : SV_InstanceID)
@@ -85,5 +86,6 @@ VS_OUT VSMain(VS_IN In, uint instanceId : SV_InstanceID)
     Out.vTexcoord = In.vTexcoord;
     Out.vWorldPos = vWorldPosition;
     Out.vProjPos = Out.vPosition;
+	Out.fDissolveIntensity = asfloat(g_AnimationInstances[instanceId].iFlags);
     return Out;
 }

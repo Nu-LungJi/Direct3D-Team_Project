@@ -324,6 +324,7 @@ HRESULT CLevelLastBossRanrok::SpawnMonster(std::optional<CHandle> hPlayer)
 		Dragon.resBeHaviorMajor = "BTJSON";
 		Dragon.resBeHaviorMinor = "ENDERDRAGON";
 		Dragon.MonType = MONSTER_TYPE::BOSS;
+		Dragon.bSpawn = false;
 		auto pDragon = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::LAST_BOSS_RANROK, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon, "02_Dragon", &Dragon);
 
 		if (!pDragon)

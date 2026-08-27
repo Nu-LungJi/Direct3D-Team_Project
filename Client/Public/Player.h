@@ -327,7 +327,7 @@ private:
 	_float m_fParryCounterRemainTime{};
 	PLAYER_STATE m_ePreviousMotionBlurState{ static_cast<PLAYER_STATE>(0) };
 	_float m_fMotionBlurPulseRemainUnscaled{};
-	static constexpr _bool MOTION_BLUR_ENABLED = false;
+	static constexpr _bool MOTION_BLUR_ENABLED = true;
 	static constexpr _float MOTION_BLUR_STATE_PULSE_DURATION = 0.12f;
 	_float m_fProtegoRecoilRemainTime{};
 	_float3 m_vProtegoRecoilDirection{};

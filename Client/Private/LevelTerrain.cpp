@@ -1151,6 +1151,7 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 		Dragon.resBeHaviorMajor = "BTJSON";
 		Dragon.resBeHaviorMinor = "ENDERDRAGON";
 		Dragon.MonType = MONSTER_TYPE::BOSS;
+		Dragon.bSpawn = false;
 	
 		auto pDragon = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Dragon, "02_Dragon", &Dragon);
 	
@@ -1171,6 +1172,7 @@ HRESULT CLevelTerrain::SpawnMonster(const std::optional<CHandle>& hPlayer)
 		Spider.resBeHaviorMajor = "BTJSON";
 		Spider.resBeHaviorMinor = "SPIDER";
 		Spider.MonType = MONSTER_TYPE::NORMAL;
+		Spider.bSpawn = false;
 
 		auto pDragon = E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::TERRAIN, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider);
 

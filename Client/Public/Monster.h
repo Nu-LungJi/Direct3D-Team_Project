@@ -67,6 +67,7 @@ public:
 	{
 		_string SocketName{}, LevelTag{}, ReSourceTag{}, BeHaviorTag{};
 		_bool	bDonMove{ false };
+		_bool	bSpawn{ true };
 		_float3 vPos{}, vScale{ 1.f,1.f,1.f }, vRot{1.f,1.f,1.f};
 		_float fAngle{};
 		// 모델 로컬 크기이며 생성 시 vScale을 적용해 CCT 월드 크기로 변환한다.
@@ -161,6 +162,8 @@ public:
 
 	void						Set_HideOnBush(_bool bHide) { m_bHide = bHide; }
 	void						Set_EndGame() { m_bEndGame = true; }
+	void						Set_Spawn(_bool bSpawn) { m_bSpawn = bSpawn; }
+	_bool						Is_Spawn() const { return m_bSpawn; }
 	uint32_t					Find_SkillNum(ATTMON eType);
 protected:
 	 _bool						Check_Flag(uint32_t iFlag);
@@ -211,6 +214,7 @@ protected:
 	_float								m_fIntensive{}, m_fPreEmissive{}, m_fAlpha{}, m_fTimeTick{}, m_fDamage{}, m_fDissolve{};
 	int32_t								m_iHp{}, m_iMaxHp{}, m_iColliderBoneIndex{}, m_iEventBoneIndex{-1};
 	_bool								m_bEmissive{ false }, m_bWork{ false }, m_bSkillLoop{ false }, m_bSkipAtt{ false }, m_bHide{ false }, m_bEndGame{false};
+	_bool								m_bSpawn{ true };
 	_bool								m_bRootMotionTranslationActive{ false }, m_bRootMotionRotationActive{ false };
 	_float								m_fRootMotionTranslationScale{ 1.f };
 	_string								m_SocketName{}, m_CurEffectName{};

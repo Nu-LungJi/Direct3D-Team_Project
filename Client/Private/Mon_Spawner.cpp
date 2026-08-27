@@ -62,6 +62,7 @@ HRESULT CMon_Spawner::Initialize(void* pArg)
 		Spider.resBeHaviorMajor = "BTJSON";
 		Spider.resBeHaviorMinor = "SPIDER";
 		Spider.MonType = MONSTER_TYPE::NORMAL;
+		Spider.bSpawn = false;
 
 		auto pRes = CGameInstance::Get().GetResourceFirst<CResJson>("SPAWNER", "EVENTSPIDER");
 		if (nullptr == pRes)

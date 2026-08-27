@@ -76,6 +76,10 @@ namespace
 		if (!pObject || pObject->GetPendingDestroy())
 			return false;
 
+		if (const auto* pMonster = dynamic_cast<const CMonster*>(pObject);
+			pMonster && (!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0))
+			return false;
+
 		if (dynamic_cast<const CSkillTarget*>(pObject))
 			return true;
 
@@ -1169,12 +1173,22 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 40.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
 
-				const auto& result = results.front();
-				const CHandle hDetectedTarget = result.pGameObject->GetHandle();
-
-				if (!(hDetectedTarget == m_hAutoTarget)) {
-					m_hPrevAutoTarget = m_hAutoTarget;
-					m_hAutoTarget = hDetectedTarget;
+				const auto targetIter = std::ranges::find_if(
+					results,
+					[this](const PX_OVERLAP_RESULT& result)
+					{
+						return IsPlayerLockOnTargetCandidate(
+							result.pGameObject, GetHandle());
+					});
+				if (targetIter != results.end())
+				{
+					const CHandle hDetectedTarget =
+						targetIter->pGameObject->GetHandle();
+					if (!(hDetectedTarget == m_hAutoTarget))
+					{
+						m_hPrevAutoTarget = m_hAutoTarget;
+						m_hAutoTarget = hDetectedTarget;
+					}
 				}
 			}
 		}
@@ -1230,6 +1244,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		
 			}
 		}
+	}
+
+	// 죽은 몬스터는 거리 판정이나 다음 프레임의 탐색을 기다리지 않고
+	// 즉시 타겟, 외곽선, HP UI에서 해제한다.
+	if (auto* pTargetMonster =
+		CGameInstance::Get().GetGameObjectByHandleT<CMonster>(m_hAutoTarget);
+		pTargetMonster &&
+		(!pTargetMonster->Is_Spawn() || pTargetMonster->Get_CurrentHp() <= 0))
+	{
+		m_hPrevAutoTarget = m_hAutoTarget;
+		m_hAutoTarget = CHandle{};
+		m_hPendingObjectAccioTarget = CHandle{};
+		m_bDistanceUI = false;
 	}
 
 	// 충돌/타겟 판정은 그대로 두고, 감지 상태가 바뀌는 순간에만 UI를 토글한다.

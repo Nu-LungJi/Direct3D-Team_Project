@@ -60,6 +60,7 @@
 #include "EventManager.h"
 #include "EffectManager.h"
 #include "NpcPlacementManager.h"
+#include "AnimatedObjectPlacementManager.h"
 
 NS_USING(Engine)
 
@@ -299,6 +300,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
+	m_pAnimatedObjectPlacementManager = CAnimatedObjectPlacementManager::Create();
+	if (m_pAnimatedObjectPlacementManager == nullptr)
+	{
+		return E_FAIL;
+	}
 
 	m_pPathPlaybackEditor = CPathPlaybackEditor::Create();
 	if (m_pPathPlaybackEditor == nullptr)
@@ -420,6 +426,8 @@ void CGameInstance::UpdateGUI()
 	m_pSerializeManager->UpdateGUI();
 	if (m_pNpcPlacementManager)
 		m_pNpcPlacementManager->UpdateGUI();
+	if (m_pAnimatedObjectPlacementManager)
+		m_pAnimatedObjectPlacementManager->UpdateGUI();
 	if (m_pPathPlaybackEditor)
 		m_pPathPlaybackEditor->UpdateGUI();
 
@@ -609,6 +617,7 @@ HRESULT CGameInstance::Draw()
 void CGameInstance::Release_Engine()
 {
 	m_pNpcPlacementManager.reset();
+	m_pAnimatedObjectPlacementManager.reset();
 	m_pPathPlaybackEditor.reset();
 	m_pMapMeshInstancingRenderer.reset();
 	m_pNodeEditor.reset();

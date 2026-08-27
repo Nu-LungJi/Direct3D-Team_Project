@@ -84,7 +84,6 @@ HRESULT CSpider::Initialize(void* pArg)
 	m_pModelAnimator->Play_Anim(0, false);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 
-	m_bSpawn = MonDesc->bSpawn;
 	auto pBB = Get_BlackBoard();
 
 	pBB->Set_Value<_float3>(NPC_KEY::STARTPOS, MonDesc->vPatrollStart);

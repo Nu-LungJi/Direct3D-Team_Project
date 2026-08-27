@@ -162,16 +162,21 @@ bool Compute_EffectLight(float3 _WorldPosition, EffectLight Light, out float3 L,
 	return true;
 }
 
-float3 Apply_DissolveEffect(Texture2D _NoiseTex, float3 _BaseEmissive, float2 _TexCoord, float _EdgeWidth)
+float3 Apply_DissolveEffect(Texture2D _NoiseTex, float3 _BaseEmissive, float2 _TexCoord, float _EdgeWidth, float _DissolveIntensity)
 {
-	float DissolveFactor = _NoiseTex.Sample(LinearWrap, _TexCoord).r - DissolveIntensity;
-    clip(DissolveFactor);
+	float DissolveFactor = _NoiseTex.Sample(LinearWrap, _TexCoord).r - _DissolveIntensity;
+	clip(DissolveFactor);
 	
     float   DissolveEdge = 1.f - smoothstep(0.f, _EdgeWidth, DissolveFactor);
     
 	float3 DissolveEmissive = DissolveColor * DissolveEdge;
     
 	return _BaseEmissive + DissolveEmissive;
+}
+
+float3 Apply_DissolveEffect(Texture2D _NoiseTex, float3 _BaseEmissive, float2 _TexCoord, float _EdgeWidth)
+{
+	return Apply_DissolveEffect(_NoiseTex, _BaseEmissive, _TexCoord, _EdgeWidth, DissolveIntensity);
 }
 
 float Henyey_Greenstein_Phase(float _CosTheta, float _Anistropy)

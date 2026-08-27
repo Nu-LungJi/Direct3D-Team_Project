@@ -65,6 +65,7 @@ struct PS_IN
     float2 vTexcoord : TEXCOORD0;
     float4 vWorldPos : TEXCOORD1;
     float4 vProjPos : TEXCOORD2;
+	nointerpolation float fDissolveIntensity : TEXCOORD3;
 };
 
 struct PS_OUT
@@ -95,12 +96,15 @@ PS_OUT PSMain(PS_IN IN)
 	float3 fEmissive = g_EmissiveTexture.Sample(LinearWrap, IN.vTexcoord).r * EmissiveColor * EmissiveIntensity;
 	//EmissiveColor * EmissiveIntensity;
 
-    float3 fFinalEmissive = Apply_DissolveEffect(DefaultNoiseTexture, fEmissive, IN.vTexcoord, DissolveEdgeWidth);
+	// Non-instanced draws keep using the material constant. Instanced monster
+	// draws additionally receive their own dissolve value through TEXCOORD3.
+	float fDissolveIntensity = max(DissolveIntensity, IN.fDissolveIntensity);
+    float3 fFinalEmissive = Apply_DissolveEffect(DefaultNoiseTexture, fEmissive, IN.vTexcoord, DissolveEdgeWidth, fDissolveIntensity);
 
 	Out.vDiffuse	= fDiffuse;
     Out.vNormal		= float4(fNormal * 0.5f + 0.5f, 1.f);
     Out.vSMRO		= float4(fFinalMetallic, fFinalRoughness, fFinalAO, 1.f);
-	Out.vEmissive = float4(fEmissive, 1.f);
+	Out.vEmissive = float4(fFinalEmissive, 1.f);
     
     return Out;
 }
