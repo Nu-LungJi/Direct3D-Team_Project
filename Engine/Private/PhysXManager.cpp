@@ -7,6 +7,7 @@
 #include "RagdollEditorGUI.h"
 #include "PhysXCollisionProxyObject.h"
 
+#include <cassert>
 #include <filesystem>
 
 #pragma push_macro("new")
@@ -220,31 +221,39 @@ CPhysXManager::~CPhysXManager()
 {
 }
 
+void CPhysXManager::AssertOwnerThread() const
+{
+#ifdef _DEBUG
+	assert(m_iOwnerThreadId == GetCurrentThreadId() &&
+		"PhysX user-data registries must only be accessed from the owner thread.");
+#endif
+}
+
 _bool CPhysXManager::RegisterActor(const physx::PxActor* pActor, const PX_ACTOR_USER_DATA& userData)
 {
+	AssertOwnerThread();
 	if (!pActor)
 		return false;
 
-	std::unique_lock lock{ m_UserDataRegistryMutex };
 	m_ActorUserDataRegistry.insert_or_assign(pActor, userData);
 	return true;
 }
 
 void CPhysXManager::UnregisterActor(const physx::PxActor* pActor)
 {
+	AssertOwnerThread();
 	if (!pActor)
 		return;
 
-	std::unique_lock lock{ m_UserDataRegistryMutex };
 	m_ActorUserDataRegistry.erase(pActor);
 }
 
 std::optional<PX_ACTOR_USER_DATA> CPhysXManager::FindActorUserData(const physx::PxActor* pActor) const
 {
+	AssertOwnerThread();
 	if (!pActor)
 		return std::nullopt;
 
-	std::shared_lock lock{ m_UserDataRegistryMutex };
 	const auto iter = m_ActorUserDataRegistry.find(pActor);
 	if (iter == m_ActorUserDataRegistry.end())
 		return std::nullopt;
@@ -263,29 +272,29 @@ CGameObject* CPhysXManager::FindGameObject(const physx::PxActor* pActor) const
 
 _bool CPhysXManager::RegisterShape(const physx::PxShape* pShape, const PX_SHAPE_USER_DATA& userData)
 {
+	AssertOwnerThread();
 	if (!pShape)
 		return false;
 
-	std::unique_lock lock{ m_UserDataRegistryMutex };
 	m_ShapeUserDataRegistry.insert_or_assign(pShape, userData);
 	return true;
 }
 
 void CPhysXManager::UnregisterShape(const physx::PxShape* pShape)
 {
+	AssertOwnerThread();
 	if (!pShape)
 		return;
 
-	std::unique_lock lock{ m_UserDataRegistryMutex };
 	m_ShapeUserDataRegistry.erase(pShape);
 }
 
 std::optional<PX_SHAPE_USER_DATA> CPhysXManager::FindShapeUserData(const physx::PxShape* pShape) const
 {
+	AssertOwnerThread();
 	if (!pShape)
 		return std::nullopt;
 
-	std::shared_lock lock{ m_UserDataRegistryMutex };
 	const auto iter = m_ShapeUserDataRegistry.find(pShape);
 	if (iter == m_ShapeUserDataRegistry.end())
 		return std::nullopt;
@@ -318,12 +327,11 @@ void CPhysXManager::UpdateGUI()
 {
     ImGui::Begin("CPhysXManager");
 	ImGui::Text("Simulation: %s", m_bGpuSimulationEnabled ? "GPU" : "CPU");
+	ImGui::Text("Simulation State: %s", m_bSimulationFaulted ? "Faulted" : "Running");
 	ImGui::Checkbox("CCT Interactions", &m_bCCTInteractionsEnabled);
-    ImGui::Text("m_bDbgRender: %i", m_bDbgRender);
-    if (ImGui::Button("DebugRender"))
-    {
-        m_bDbgRender = !m_bDbgRender;
-    }
+	_bool bDebugRender = m_bDbgRender;
+	if (ImGui::Checkbox("Debug Render", &bDebugRender))
+		SetDebugVisualizationEnabled(bDebugRender);
 	if (ImGui::Button("Open Cooking Editor"))
 	{
 		if (m_pCookingEditor)
@@ -893,9 +901,24 @@ void CPhysXManager::Update(_float fTimeDeta)
     UpdateDebugRender(fTimeDeta);
 }
 
+void CPhysXManager::SetDebugVisualizationEnabled(_bool bEnabled)
+{
+	m_bDbgRender = bEnabled;
+	if (!m_pScene)
+		return;
+
+	const _float fVisualizationScale = bEnabled ? 1.f : 0.f;
+	m_pScene->setVisualizationParameter(
+		PxVisualizationParameter::eSCALE, fVisualizationScale);
+	m_pScene->setVisualizationParameter(
+		PxVisualizationParameter::eCOLLISION_SHAPES, fVisualizationScale);
+	m_pScene->setVisualizationParameter(
+		PxVisualizationParameter::eACTOR_AXES, fVisualizationScale);
+}
+
 //word0 = 자신의 Layer
 //word1 = 자신이 허용하는 Simulation Mask
-//word2 = 현재 미사용
+//word2 = 요청할 Contact Notify Flags
 //word3 = 현재 미사용
 static physx::PxFilterFlags MyFilterShader(
     physx::PxFilterObjectAttributes attributes0, physx::PxFilterData filterData0,
@@ -916,11 +939,17 @@ static physx::PxFilterFlags MyFilterShader(
 	}
 	else
 	{
-		pairFlags =
-			physx::PxPairFlag::eCONTACT_DEFAULT |
-			physx::PxPairFlag::eNOTIFY_TOUCH_FOUND |
-			physx::PxPairFlag::eNOTIFY_TOUCH_LOST |
-			physx::PxPairFlag::eNOTIFY_CONTACT_POINTS;
+		pairFlags = physx::PxPairFlag::eCONTACT_DEFAULT;
+		const uint32_t iNotifyFlags = filterData0.word2 | filterData1.word2;
+		if ((iNotifyFlags & PX_NOTIFY_TOUCH_FOUND) != 0)
+			pairFlags |= physx::PxPairFlag::eNOTIFY_TOUCH_FOUND;
+		if ((iNotifyFlags & PX_NOTIFY_TOUCH_LOST) != 0)
+			pairFlags |= physx::PxPairFlag::eNOTIFY_TOUCH_LOST;
+		if ((iNotifyFlags & PX_NOTIFY_CONTACT_POINTS) != 0)
+		{
+			pairFlags |= physx::PxPairFlag::eNOTIFY_TOUCH_FOUND;
+			pairFlags |= physx::PxPairFlag::eNOTIFY_CONTACT_POINTS;
+		}
 	}
 
 	return physx::PxFilterFlag::eDEFAULT;
@@ -928,6 +957,9 @@ static physx::PxFilterFlags MyFilterShader(
 
 HRESULT CPhysXManager::Initialize()
 {
+#ifdef _DEBUG
+	m_iOwnerThreadId = GetCurrentThreadId();
+#endif
 	m_pCollisionProxyEditor = CPhysXCollisionProxyEditor::Create();
 	if (!m_pCollisionProxyEditor)
 		return E_FAIL;
@@ -1083,16 +1115,8 @@ HRESULT CPhysXManager::Initialize()
 			return E_FAIL;
 		}
 
-        // for debug
-        {
-            m_pScene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f); // 전체 스케일
-            m_pScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f); // 충돌체 그리기
-            m_pScene->setVisualizationParameter(PxVisualizationParameter::eACTOR_AXES, 1.0f);
-            //m_pScene->setVisualizationParameter(PxVisualizationParameter::eJOINT_LIMITS, 1.0f);
-            //m_pScene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_NORMAL, 1.0f);
-            //m_pScene->setVisualizationParameter(PxVisualizationParameter::eCONTACT_FORCE, 1.0f);
-            //m_pScene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_DYNAMIC, 1.0f);
-        }
+		// 디버그 선을 그리지 않을 때 PhysX 내부에서도 시각화 데이터를 만들지 않는다.
+		SetDebugVisualizationEnabled(false);
     }
 
     
@@ -1112,12 +1136,31 @@ void CPhysXManager::PrepareCCTInteractions(_float fFixedTimeDelta)
 	m_pControllerManager->computeInteractions(fFixedTimeDelta, &tFilter);
 }
 
-void CPhysXManager::StepSimulation(float fixedDeltaTime)
+_bool CPhysXManager::StepSimulation(_float fFixedDeltaTime)
 {
+	if (m_bSimulationFaulted || !m_pScene || fFixedDeltaTime <= 0.f)
+		return false;
+
     {
         ZoneScopedN("CPhysXManager_simulate And fetchResults");
-        m_pScene->simulate(fixedDeltaTime);
-        m_pScene->fetchResults(true);
+		if (!m_pScene->simulate(fFixedDeltaTime))
+		{
+			m_bSimulationFaulted = true;
+			OutputDebugStringA("[PhysX] PxScene::simulate failed. Physics simulation disabled.\n");
+			return false;
+		}
+
+		PxU32 iErrorState{};
+		if (!m_pScene->fetchResults(true, &iErrorState) || iErrorState != 0)
+		{
+			m_bSimulationFaulted = true;
+			const std::string sMessage =
+				"[PhysX] PxScene::fetchResults failed. errorState=" +
+				std::to_string(iErrorState) +
+				". Physics simulation disabled.\n";
+			OutputDebugStringA(sMessage.c_str());
+			return false;
+		}
     }
 
     {
@@ -1130,6 +1173,8 @@ void CPhysXManager::StepSimulation(float fixedDeltaTime)
 		if (m_pListener)
 			m_pListener->DispatchPendingEvents();
 	}
+
+	return true;
 }
 
 void CPhysXManager::SyncPhysicsToComponents()
@@ -1156,7 +1201,8 @@ void CPhysXManager::SyncPhysicsToComponents()
 			continue;
 		}
 
-		auto* pObj = FindGameObject(actor);
+		auto* pObj = CGameInstance::Get().GetGameObjectByHandle(
+			tActorUserData->hGameObject);
         if (!pObj)
         {
             continue;
@@ -1186,15 +1232,13 @@ UPtr<CPhysXManager> CPhysXManager::Create()
 
 void CPhysXManager::Free()
 {
+	AssertOwnerThread();
 	m_pRagdollEditor.reset();
 	m_pCookingEditor.reset();
 	m_pCollisionProxyEditor.reset();
 
-	{
-		std::unique_lock lock{ m_UserDataRegistryMutex };
-		m_ShapeUserDataRegistry.clear();
-		m_ActorUserDataRegistry.clear();
-	}
+	m_ShapeUserDataRegistry.clear();
+	m_ActorUserDataRegistry.clear();
 
     // 해제는 생성의 역순
 	if (m_pControllerManager)

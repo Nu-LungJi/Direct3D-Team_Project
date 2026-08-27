@@ -327,6 +327,9 @@ HRESULT CPlayer::Initialize(void* pArg)
 		Desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::PLAYER_HURTBOX);
 		Desc.tFilter.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
 		Desc.tFilter.iSimulationMask = ETOUI(COLLISION_LAYER::ENEMY_PROJECTILE);
+		Desc.tFilter.iNotifyFlags =
+			PX_NOTIFY_TOUCH_FOUND |
+			PX_NOTIFY_CONTACT_POINTS;
 		if (FAILED(AddComponentFromProto(ES_EngineProtoMajorType::PHYSX, ES_EngineProtoPhysXComponent::Prototype_Component_ComPxBoxCollider, "ComPxBoxCollider", &Desc, &m_pComPxBoxCollider)))
 		{
 			return E_FAIL;

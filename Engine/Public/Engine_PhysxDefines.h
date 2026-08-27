@@ -58,12 +58,20 @@ namespace Engine
 	inline constexpr char PX_UNIT_WEDGE_CONVEX_PATH[] =
 		"./Resources/PhysX/Primitives/UnitWedge.pxconvex";
 	inline constexpr _float PX_UNIT_WEDGE_HALF_EXTENT = 0.5f;
+	inline constexpr uint32_t PX_NOTIFY_TOUCH_FOUND = 1u << 0;
+	inline constexpr uint32_t PX_NOTIFY_TOUCH_LOST = 1u << 1;
+	inline constexpr uint32_t PX_NOTIFY_CONTACT_POINTS = 1u << 2;
+	inline constexpr uint32_t PX_NOTIFY_ALL =
+		PX_NOTIFY_TOUCH_FOUND |
+		PX_NOTIFY_TOUCH_LOST |
+		PX_NOTIFY_CONTACT_POINTS;
 
 	struct PX_FILTER_DESC
 	{
 		uint32_t iLayer{ PX_DEFAULT_LAYER };
 		uint32_t iSimulationMask{ PX_ALL_LAYERS };
 		uint32_t iQueryMask{ PX_ALL_LAYERS };
+		uint32_t iNotifyFlags{};
 	};
 
 	enum class PX_CCT_BEHAVIOR : uint8_t

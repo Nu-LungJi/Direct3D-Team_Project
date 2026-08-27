@@ -19,6 +19,7 @@ public:
 		float   fMass = 1.0f;
 		XMFLOAT3 vPosition = { 0.f, 0.f, 0.f };
 		XMFLOAT4 vRotation = { 0.f, 0.f, 0.f, 1.f }; // Quaternion
+		_bool bSendSleepNotifies{ false };
 	};
 public:
 	DECLARE_DERIVED_TYPE(CComPxRigidBody, CComponent)
@@ -61,6 +62,8 @@ public:
 	_bool WakeUp();
 	_bool PutToSleep();
 	_bool IsSleeping() const;
+	_bool SetSleepNotificationsEnabled(_bool bEnabled);
+	_bool IsSleepNotificationsEnabled() const;
 	// Pool 반환이나 상태 전환 전에 이 RigidBody와 연결된 모든 Joint를 안전하게 해제한다.
 	void ReleaseConnectedJoints();
 
