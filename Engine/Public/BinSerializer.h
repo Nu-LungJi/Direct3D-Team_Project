@@ -10,7 +10,10 @@ class ISerializable;
 class ENGINE_DLL CBinSerializer : public CEngineBase, public ISerializer
 {
 public:
-	DECLARE_DERIVED_TYPE(CBinSerializer, CEngineBase)
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CBinSerializer,
+		CEngineBase,
+		ISerializer)
 
 private:
 	CBinSerializer();

@@ -25,7 +25,7 @@ class CComPxTriMeshCollider;
 class ENGINE_DLL CTerrain final : public CGameObject
 {
 public:
-	DECLARE_DERIVED_TYPE(CTerrain, CGameObject)
+	DECLARE_DERIVED_TYPE(Engine::CTerrain, CGameObject)
 
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{

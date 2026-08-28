@@ -284,12 +284,22 @@ _bool CTmbGurdian::ActivateDeadDebrisPhysics()
 		return false;
 	}
 
+	if (!m_bDeadDebrisSoundPlayed)
+	{
+		PlayDeadDebrisSound();
+		m_bDeadDebrisSoundPlayed = true;
+	}
+
 	_bool bAllActivated =
 		!m_vecDeadHandles.empty();
 
-	for (const CHandle& hDebris :
-		m_vecDeadHandles)
+	const _float3 vExplosionOrigin = GetTransform().GetPosition();
+	const uint32_t iDebrisCount =
+		static_cast<uint32_t>(m_vecDeadHandles.size());
+
+	for (uint32_t i = 0; i < iDebrisCount; ++i)
 	{
+		const CHandle& hDebris = m_vecDeadHandles[i];
 		auto* pDebris = CGameInstance::Get()
 			.GetGameObjectByHandleT<
 				CTmbGurdianDead>(hDebris);
@@ -300,14 +310,17 @@ _bool CTmbGurdian::ActivateDeadDebrisPhysics()
 		}
 
 		pDebris->SetRenderEnabled(true);
-		if (!pDebris->ActivatePhysics())
+		if (!pDebris->ActivatePhysics(
+			vExplosionOrigin, i, iDebrisCount))
 			bAllActivated = false;
 	}
 
 	m_bDeadDebrisPhysicsActivated =
 		bAllActivated;
 	if (bAllActivated)
+	{
 		m_bRenderDeadDebris = true;
+	}
 	return bAllActivated;
 }
 
@@ -584,13 +597,13 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 			Desc.vInitialQuaternion = vInitialQuaternion;
 			Desc.vInitialScale = vInitialScale;
 			Desc.vConvexScale = vInitialScale;
+			// [LSY] 파편 간 접촉 폭증을 막고, 폭발력은 활성화 시 초기 속도로 대체한다.
 			Desc.tFilter = PX_FILTER_DESC{
 				.iLayer = ETOUI(COLLISION_LAYER::DEBRIS),
 				.iSimulationMask =
 					ETOUI(COLLISION_LAYER::WORLD_STATIC) |
 					ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
-					ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
-					ETOUI(COLLISION_LAYER::DEBRIS),
+					ETOUI(COLLISION_LAYER::MOVING_PLATFORM),
 				.iQueryMask =
 					ETOUI(COLLISION_LAYER::WORLD_STATIC) |
 					ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
@@ -753,6 +766,35 @@ void CTmbGurdian::ReadySound()
 
 	m_SoundTable["TmbBeforeHit"] = { "./Resources/SampleClient/Sound/PensiveKnight/Sword/BeforeHit.wav", };
 	m_SoundTable["TombEliteSpawn"] = { "./Resources/SampleClient/Sound/PensiveKnight/TombEliteSpawn.wav", };
+	m_SoundTable["TmbDead"] = { "./Resources/SampleClient/Sound/PensiveKnight/TombDead.wav", };
+
+	// [LSY] 사망 프레임의 동기 로드를 피하고, 파편 13개가 아닌 본체에서 한 번만 재생한다.
+	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+		pSoundManager &&
+		!pSoundManager->Preload(m_SoundTable["TmbDead"].front()))
+	{
+		DEBUG_LOG("[TmbGurdian] Failed to preload TombDead.wav.\n");
+	}
+}
+
+void CTmbGurdian::PlayDeadDebrisSound()
+{
+	MONSOUND SoundDesc{};
+	SoundDesc.SoundKey = "TmbDead";
+	SoundDesc.str3DSound = {
+		.fMinDistance = 1.f,
+		.fMaxDistance = 30.f,
+		.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+	};
+	SoundDesc.SoundPlay = {
+		.sBusID = SOUND_BUS::SFX,
+		.fVolume = 0.65f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = false
+	};
+
+	Play_Sound(SoundDesc);
 }
 
 _bool CTmbGurdian::Check_Normal(PLAYER_SKILL_TYPE eType)

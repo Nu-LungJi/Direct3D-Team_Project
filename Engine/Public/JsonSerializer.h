@@ -7,7 +7,10 @@ class ISerializable;
 class ENGINE_DLL CJsonSerializer : public CEngineBase, public ISerializer
 {
 public:
-	DECLARE_DERIVED_TYPE(CJsonSerializer, CEngineBase)
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CJsonSerializer,
+		CEngineBase,
+		ISerializer)
 
 private:
 	CJsonSerializer();

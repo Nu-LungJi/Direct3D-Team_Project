@@ -12,22 +12,33 @@ enum class TEXT_ALIGN : uint32_t
 	RIGHT
 };
 
+enum class TEXT_FONT_TYPE : uint32_t
+{
+	DEFAULT = 0,
+	BLUE_FOREST_BOLD_20,
+	BLUE_FOREST_BOLD_32,
+	PRETENDARD_64 = 4,
+	HAKGYOANSIM_PUZZLE_OUTLINE_25
+};
+
 typedef struct tagTextInfo
 {
 	std::wstring Text{ L"" };
 	TEXT_ALIGN Alignment{ TEXT_ALIGN::LEFT };
+	TEXT_FONT_TYPE FontType{ TEXT_FONT_TYPE::DEFAULT };
 }TEXT_INFO;
 
 class ENGINE_DLL CTextUI : public CUIObject
 {
 public:
-	DECLARE_DERIVED_TYPE(CUITex, CUIObject)
+	DECLARE_DERIVED_TYPE(CTextUI, CUIObject)
 
 public:
 	typedef struct tagTextDesc : public E::CUIObject::UIOBJECT_DESC
 	{
 		std::wstring Text{ L"" };
 		TEXT_ALIGN Alignment{ TEXT_ALIGN::LEFT };
+		TEXT_FONT_TYPE FontType{ TEXT_FONT_TYPE::DEFAULT };
 	}TEXT_DESC;
 
 protected:
@@ -45,6 +56,8 @@ public:
 	std::wstring GetwText() { return m_textInfo.Text; }
 	void SetTextAlignment(TEXT_ALIGN alignment) { m_textInfo.Alignment = alignment; }
 	TEXT_ALIGN GetTextAlignment() const { return m_textInfo.Alignment; }
+	void SetFontType(TEXT_FONT_TYPE fontType) { m_textInfo.FontType = fontType; }
+	TEXT_FONT_TYPE GetFontType() const { return m_textInfo.FontType; }
 	void SetFixedDigitLayout(_bool enabled) { m_bFixedDigitLayout = enabled; }
 	void SetColoredSuffix(const std::wstring& suffix, const _float3& color)
 	{

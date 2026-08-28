@@ -227,6 +227,8 @@ void CAccioBall::LateUpdate(_float)
 	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
 		return;
 
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
 		// [LSY] 인스턴싱 비활성화 시에도 MapMesh의 스텐실 정책을 유지한다.
@@ -325,6 +327,22 @@ HRESULT CAccioBall::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 	}
 
 	return S_OK;
+}
+
+HRESULT CAccioBall::Render_Shadow(
+	ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
+{
+	return m_pComModelInstance
+		? m_pComModelInstance->RenderShadow(
+			pContext, m_pComCBufferPerObject,
+			*GetTransform().GetCombinedWorldMatrix(), ctx.matViewProj)
+		: E_FAIL;
+}
+
+bool CAccioBall::GetShadowBounds(BoundingBox& outBounds) const
+{
+	return m_pComModelInstance && m_pComModelInstance->GetShadowBounds(
+		*GetTransform().GetCombinedWorldMatrix(), outBounds);
 }
 
 void CAccioBall::OnWake()

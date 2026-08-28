@@ -209,7 +209,6 @@ private:
 	std::vector<DIALOGUE_LINE> m_NpcWinDialogue{};
 	std::vector<DIALOGUE_LINE> m_DrawDialogue{};
 	std::vector<DIALOGUE_LINE> m_ActiveDialogue{};
-	std::optional<CHandle> m_hDialogueFade{};
 	size_t m_iDialogueIndex{};
 	_float m_fInteractionDistance{ 3.f };
 	_float m_fDialogueFadeDuration{ 0.35f };

@@ -71,6 +71,36 @@ namespace
 		return static_cast<TEXT_ALIGN>(alignment);
 	}
 
+	TEXT_FONT_TYPE LoadTextFontTypeCompatible(
+		const nlohmann::ordered_json& obj)
+	{
+		if (obj.contains("FontType"))
+		{
+			const uint32_t fontType = obj.value("FontType", 0u);
+			const auto loadedType = static_cast<TEXT_FONT_TYPE>(fontType);
+			switch (loadedType)
+			{
+			case TEXT_FONT_TYPE::DEFAULT:
+			case TEXT_FONT_TYPE::BLUE_FOREST_BOLD_20:
+			case TEXT_FONT_TYPE::BLUE_FOREST_BOLD_32:
+			case TEXT_FONT_TYPE::PRETENDARD_64:
+			case TEXT_FONT_TYPE::HAKGYOANSIM_PUZZLE_OUTLINE_25:
+				return loadedType;
+			default:
+				break;
+			}
+		}
+
+		const std::string legacyName = obj.value("Name", std::string{});
+		if (legacyName == "BF20")
+			return TEXT_FONT_TYPE::BLUE_FOREST_BOLD_20;
+		if (legacyName == "BF32")
+			return TEXT_FONT_TYPE::BLUE_FOREST_BOLD_32;
+		if (legacyName == "64px")
+			return TEXT_FONT_TYPE::PRETENDARD_64;
+		return TEXT_FONT_TYPE::DEFAULT;
+	}
+
 	void LoadFlipInfoCompatible(
 		const nlohmann::ordered_json& obj,
 		FLIP_INFO& flipInfo)
@@ -168,7 +198,488 @@ void UIManager::Update(_float fTimeDelta)
 	UpdateDialogueChoiceUI();
 	UpdateRaceStartTimer(fTimeDelta);
 	UpdateRaceMiniGame(fTimeDelta);
+	UpdateAssioMiniGame(fTimeDelta);
 	m_WandShop.Update(*this, fTimeDelta);
+}
+
+void UIManager::AssioMiniGameStart()
+{
+	ClearAssioMiniGameUI();
+	// 미니게임 UI를 만들기 전에 기존 UI만 복원 목록에 저장해 숨긴다.
+	// 이후 생성되는 Coat UI는 전체 UI FadeOut 대상에 포함되지 않는다.
+	PlayFadeOutAll2DUI(0.f, 0.35f);
+	m_AssioMiniGameRoots = LoadPrefab("Coat");
+
+	auto StoreHandle = [this](
+		std::string_view name,
+		std::optional<CHandle>& destination)
+	{
+		if (auto* ui = FindUIByNameRecursive(m_AssioMiniGameRoots, name))
+			destination = ui->GetHandle();
+	};
+
+	StoreHandle("ScoreBoard", m_hAssioScoreBoard);
+	StoreHandle("playerScore", m_hAssioPlayerScoreRoot);
+	StoreHandle("NpcScore", m_hAssioNpcScoreRoot);
+	StoreHandle("CenterScore", m_hAssioCenterScore);
+	StoreHandle("TurnTitle", m_hAssioTurnTitle);
+
+	if (m_hAssioPlayerScoreRoot)
+	{
+		const std::vector<CHandle> playerRoot{ *m_hAssioPlayerScoreRoot };
+		if (auto* score = FindUIByNameRecursive(playerRoot, "Score"))
+			m_hAssioPlayerScoreText = score->GetHandle();
+		if (auto* frame = FindUIByNameRecursive(playerRoot, "frame"))
+			m_hAssioPlayerFrame = frame->GetHandle();
+	}
+	if (m_hAssioNpcScoreRoot)
+	{
+		const std::vector<CHandle> npcRoot{ *m_hAssioNpcScoreRoot };
+		if (auto* score = FindUIByNameRecursive(npcRoot, "Score"))
+			m_hAssioNpcScoreText = score->GetHandle();
+		if (auto* frame = FindUIByNameRecursive(npcRoot, "frame"))
+			m_hAssioNpcFrame = frame->GetHandle();
+	}
+	if (m_hAssioCenterScore)
+	{
+		const std::vector<CHandle> centerRoot{ *m_hAssioCenterScore };
+		if (auto* text = FindUIByNameRecursive(centerRoot, "64px"))
+			m_hAssioCenterScoreText = text->GetHandle();
+
+		if (auto* center = GetSafeUI(*m_hAssioCenterScore))
+		{
+			m_AssioCenterScoreBasePosition = center->GetPos();
+			m_fAssioCenterScoreBaseScale = center->GetScaleRatio();
+			m_fAssioCenterScoreBaseAlpha = center->GetAlpha();
+			const CHandle centerHandle = center->GetHandle();
+			center->SetAlpha(0.f);
+			center->SetScaleRatio(0.f);
+			center->CalcUICoord();
+			center->Appear = [centerHandle](CUIObject*)
+			{
+				if (auto* current = GetSafeUI(centerHandle))
+				{
+					current->SetAlpha(0.f);
+					current->SetScaleRatio(0.f);
+					current->CalcUICoord();
+				}
+			};
+		}
+	}
+
+	const _bool valid = m_hAssioScoreBoard.has_value() &&
+		m_hAssioPlayerScoreRoot.has_value() &&
+		m_hAssioNpcScoreRoot.has_value() &&
+		m_hAssioPlayerScoreText.has_value() &&
+		m_hAssioNpcScoreText.has_value() &&
+		m_hAssioPlayerFrame.has_value() &&
+		m_hAssioNpcFrame.has_value() &&
+		m_hAssioCenterScore.has_value() &&
+		m_hAssioCenterScoreText.has_value() &&
+		m_hAssioTurnTitle.has_value();
+	if (!valid)
+	{
+		ClearAssioMiniGameUI();
+		PlayFadeInAll2DUI(0.f, 0.35f);
+		return;
+	}
+
+	auto* playerRoot = GetSafeUI(*m_hAssioPlayerScoreRoot);
+	auto* npcRoot = GetSafeUI(*m_hAssioNpcScoreRoot);
+	auto* playerFrame = GetSafeUI(*m_hAssioPlayerFrame);
+	auto* npcFrame = GetSafeUI(*m_hAssioNpcFrame);
+	auto* turnTitle = GetSafeUI(*m_hAssioTurnTitle);
+	if (!playerRoot || !npcRoot || !playerFrame || !npcFrame || !turnTitle)
+	{
+		ClearAssioMiniGameUI();
+		PlayFadeInAll2DUI(0.f, 0.35f);
+		return;
+	}
+
+	// Coat 프리팹에서 현재 턴/대기 턴의 원래 배치를 보관한다.
+	m_AssioActiveTurnPosition = playerRoot->GetPos();
+	m_AssioInactiveTurnPosition = npcRoot->GetPos();
+	m_fAssioActiveTurnScale = playerRoot->GetScaleRatio();
+	m_fAssioInactiveTurnScale = npcRoot->GetScaleRatio();
+	m_fAssioActiveTurnAlpha = playerRoot->GetAlpha();
+	m_fAssioInactiveTurnAlpha = npcRoot->GetAlpha();
+	// frame은 자식이므로 실제 Alpha가 아니라 AlphaRatio를 보간해야 한다.
+	// 부모의 CalcUICoord()가 실제 Alpha를 부모 Alpha * AlphaRatio로 계산한다.
+	m_fAssioActiveFrameAlpha = playerFrame->GetAlphaRatio();
+	m_fAssioInactiveFrameAlpha = npcFrame->GetAlphaRatio();
+	m_fAssioTurnTitleBaseAlpha = turnTitle->GetAlpha();
+	m_bAssioCurrentTurnIsPlayer =
+		playerFrame->GetAlpha() >= npcFrame->GetAlpha();
+	m_bAssioTurnTitleFadeInStarted = false;
+	m_bAssioTurnTitleWasAlreadyHidden = false;
+
+	m_iAssioPlayerScore = 0;
+	m_iAssioNpcScore = 0;
+	m_iAssioPendingScore = 0;
+	m_fAssioScorePhaseElapsed = 0.f;
+	m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
+	m_bAssioMiniGameActive = true;
+
+	if (auto* text = dynamic_cast<CTextBox*>(
+		GetSafeUI(*m_hAssioPlayerScoreText)))
+		text->SetwText(L"0");
+	if (auto* text = dynamic_cast<CTextBox*>(
+		GetSafeUI(*m_hAssioNpcScoreText)))
+		text->SetwText(L"0");
+
+	PlayRaceRootsFadeIn({
+		*m_hAssioScoreBoard,
+		*m_hAssioPlayerScoreRoot,
+		*m_hAssioNpcScoreRoot,
+		*m_hAssioTurnTitle
+	}, 0.35f);
+}
+
+void UIManager::AssioMiniGameFinish()
+{
+	// Coat UI는 사라지게 하고, 시작 시 숨겼던 기존 UI만 다시 복원한다.
+	ClearAssioMiniGameUI(false);
+	PlayFadeInAll2DUI(0.f, 0.5f);
+}
+
+void UIManager::TurnTitleFadeOut(float playtime)
+{
+	if (!m_hAssioTurnTitle)
+		return;
+
+	const CHandle titleHandle = *m_hAssioTurnTitle;
+	auto* title = GetSafeUI(titleHandle);
+	if (!title)
+		return;
+
+	const _float startAlpha = title->GetAlpha();
+	if (auto* tween = title->GetTweenCom())
+	{
+		tween->ClearTweens();
+		tween->PlayTween(
+			startAlpha,
+			0.f,
+			std::max(0.f, playtime),
+			[titleHandle](_float value)
+			{
+				if (auto* current = GetSafeUI(titleHandle))
+					current->SetAlpha(value);
+			}, nullptr, EEaseType::EaseOutQuad);
+	}
+	else
+	{
+		title->SetAlpha(0.f);
+	}
+}
+
+void UIManager::AddScore(int score)
+{
+	if (!m_bAssioMiniGameActive ||
+		m_eAssioScorePhase != ASSIO_SCORE_PHASE::NONE ||
+		!m_hAssioCenterScore || !m_hAssioCenterScoreText)
+	{
+		return;
+	}
+	m_iAssioPendingScore = score;
+	if (!ResolveAssioCurrentTurn())
+	{
+		m_iAssioPendingScore = 0;
+		return;
+	}
+
+	auto* center = GetSafeUI(*m_hAssioCenterScore);
+	auto* centerText = dynamic_cast<CTextBox*>(
+		GetSafeUI(*m_hAssioCenterScoreText));
+	if (!center || !centerText)
+		return;
+
+	centerText->SetwText(std::to_wstring(score));
+	center->SetPos(m_AssioCenterScoreBasePosition);
+	center->SetScaleRatio(0.f);
+	center->SetAlpha(0.f);
+	center->CalcUICoord();
+
+	m_AssioCenterScoreMoveStart = m_AssioCenterScoreBasePosition;
+	m_fAssioScorePhaseElapsed = 0.f;
+	m_eAssioScorePhase = ASSIO_SCORE_PHASE::APPEAR;
+}
+
+_bool UIManager::ResolveAssioCurrentTurn()
+{
+	if (!m_hAssioPlayerScoreRoot || !m_hAssioNpcScoreRoot ||
+		!m_hAssioPlayerFrame || !m_hAssioNpcFrame ||
+		!m_hAssioPlayerScoreText || !m_hAssioNpcScoreText)
+	{
+		return false;
+	}
+
+	auto* playerRoot = GetSafeUI(*m_hAssioPlayerScoreRoot);
+	auto* npcRoot = GetSafeUI(*m_hAssioNpcScoreRoot);
+	auto* playerFrame = GetSafeUI(*m_hAssioPlayerFrame);
+	auto* npcFrame = GetSafeUI(*m_hAssioNpcFrame);
+	if (!playerRoot || !npcRoot || !playerFrame || !npcFrame)
+		return false;
+
+	const _bool targetPlayer = m_bAssioCurrentTurnIsPlayer;
+
+	m_bAssioTargetIsPlayer = targetPlayer;
+	m_hAssioTargetScoreText = targetPlayer ?
+		m_hAssioPlayerScoreText : m_hAssioNpcScoreText;
+	if (!m_hAssioTargetScoreText)
+		return false;
+
+	if (auto* target = GetSafeUI(*m_hAssioTargetScoreText))
+	{
+		const int currentScore = targetPlayer ?
+			m_iAssioPlayerScore : m_iAssioNpcScore;
+		const int64_t previewValue = static_cast<int64_t>(currentScore) +
+			static_cast<int64_t>(m_iAssioPendingScore);
+		const int previewScore = static_cast<int>(std::clamp<int64_t>(
+			previewValue, 0, std::numeric_limits<int>::max()));
+		const std::wstring previewText = std::to_wstring(previewScore);
+		const _float textScale = target->GetUIInfo().SizeX *
+			target->GetScaleRatio();
+		const _float2 textSize = E::CGameInstance::Get().FontMeasureString(
+			"Pretendard", previewText.c_str());
+		m_AssioCenterScoreMoveTarget = target->GetPos();
+		// Score is right-aligned, so its anchor is the right edge rather than
+		// the visual center of the number.
+		m_AssioCenterScoreMoveTarget.x -= textSize.x * textScale * 0.5f;
+		m_AssioCenterScoreMoveTarget.y += 6.f;
+		return true;
+	}
+	return false;
+}
+
+void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
+{
+	if (!m_bAssioMiniGameActive ||
+		m_eAssioScorePhase == ASSIO_SCORE_PHASE::NONE ||
+		!m_hAssioCenterScore || !m_hAssioTargetScoreText)
+	{
+		return;
+	}
+
+	auto* center = GetSafeUI(*m_hAssioCenterScore);
+	auto* targetScore = GetSafeUI(*m_hAssioTargetScoreText);
+	if (!center || !targetScore)
+	{
+		m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
+		return;
+	}
+
+	m_fAssioScorePhaseElapsed += std::max(0.f, fTimeDelta);
+	if (m_eAssioScorePhase == ASSIO_SCORE_PHASE::TURN_CHANGE)
+	{
+		auto* playerRoot = GetSafeUI(*m_hAssioPlayerScoreRoot);
+		auto* npcRoot = GetSafeUI(*m_hAssioNpcScoreRoot);
+		auto* playerFrame = GetSafeUI(*m_hAssioPlayerFrame);
+		auto* npcFrame = GetSafeUI(*m_hAssioNpcFrame);
+		if (!playerRoot || !npcRoot || !playerFrame || !npcFrame)
+		{
+			m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
+			return;
+		}
+
+		constexpr _float TITLE_FADE_OUT_DURATION = 0.2f;
+		constexpr _float TURN_CHANGE_DURATION = 0.65f;
+		const _bool nextTurnIsPlayer = !m_bAssioCurrentTurnIsPlayer;
+		const _float titleFadeInDelay =
+			m_bAssioTurnTitleWasAlreadyHidden ?
+			0.f : TITLE_FADE_OUT_DURATION;
+		if (!m_bAssioTurnTitleFadeInStarted &&
+			m_fAssioScorePhaseElapsed >= titleFadeInDelay)
+		{
+			m_bAssioTurnTitleFadeInStarted = true;
+			if (auto* title = dynamic_cast<CTextBox*>(
+				GetSafeUI(*m_hAssioTurnTitle)))
+			{
+				title->SetwText(nextTurnIsPlayer ?
+					L"이솝 샤프의 턴" : L"저스티스 훈의 턴");
+				title->SetAlpha(0.f);
+				if (auto* tween = title->GetTweenCom())
+				{
+					const CHandle titleHandle = title->GetHandle();
+					tween->ClearTweens();
+					tween->PlayTween(
+						0.f, m_fAssioTurnTitleBaseAlpha, 0.3f,
+						[titleHandle](_float value)
+						{
+							if (auto* current = GetSafeUI(titleHandle))
+								current->SetAlpha(value);
+						}, nullptr, EEaseType::EaseOutQuad);
+				}
+				else
+				{
+					title->SetAlpha(m_fAssioTurnTitleBaseAlpha);
+				}
+			}
+		}
+
+		const _float ratio = std::clamp(
+			m_fAssioScorePhaseElapsed / TURN_CHANGE_DURATION, 0.f, 1.f);
+		const _float eased = ratio * ratio * (3.f - 2.f * ratio);
+		auto ApplyTurnLayout = [this, eased](
+			CUIObject* root, CUIObject* frame, _bool becomingActive)
+		{
+			const _float2 startPosition = becomingActive ?
+				m_AssioInactiveTurnPosition : m_AssioActiveTurnPosition;
+			const _float2 targetPosition = becomingActive ?
+				m_AssioActiveTurnPosition : m_AssioInactiveTurnPosition;
+			const _float startScale = becomingActive ?
+				m_fAssioInactiveTurnScale : m_fAssioActiveTurnScale;
+			const _float targetScale = becomingActive ?
+				m_fAssioActiveTurnScale : m_fAssioInactiveTurnScale;
+			const _float startAlpha = becomingActive ?
+				m_fAssioInactiveTurnAlpha : m_fAssioActiveTurnAlpha;
+			const _float targetAlpha = becomingActive ?
+				m_fAssioActiveTurnAlpha : m_fAssioInactiveTurnAlpha;
+			const _float startFrameAlpha = becomingActive ?
+				m_fAssioInactiveFrameAlpha : m_fAssioActiveFrameAlpha;
+			const _float targetFrameAlpha = becomingActive ?
+				m_fAssioActiveFrameAlpha : m_fAssioInactiveFrameAlpha;
+
+			root->SetPos({
+				std::lerp(startPosition.x, targetPosition.x, eased),
+				std::lerp(startPosition.y, targetPosition.y, eased)
+			});
+			root->SetScaleRatio(std::lerp(startScale, targetScale, eased));
+			root->SetAlpha(std::lerp(startAlpha, targetAlpha, eased));
+			frame->SetAlphaRatio(std::lerp(
+				startFrameAlpha, targetFrameAlpha, eased));
+			root->CalcUICoord();
+		};
+
+		ApplyTurnLayout(playerRoot, playerFrame, nextTurnIsPlayer);
+		ApplyTurnLayout(npcRoot, npcFrame, !nextTurnIsPlayer);
+		if (ratio < 1.f)
+			return;
+
+		m_bAssioCurrentTurnIsPlayer = nextTurnIsPlayer;
+		m_bAssioTurnTitleFadeInStarted = false;
+		m_hAssioTargetScoreText.reset();
+		m_fAssioScorePhaseElapsed = 0.f;
+		m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
+		return;
+	}
+
+	if (m_eAssioScorePhase == ASSIO_SCORE_PHASE::APPEAR)
+	{
+		constexpr _float APPEAR_DURATION = 0.4f;
+		const _float ratio = std::clamp(
+			m_fAssioScorePhaseElapsed / APPEAR_DURATION, 0.f, 1.f);
+		const _float eased = 1.f - std::pow(1.f - ratio, 3.f);
+		center->SetScaleRatio(m_fAssioCenterScoreBaseScale * eased);
+		center->SetAlpha(m_fAssioCenterScoreBaseAlpha * ratio);
+		center->CalcUICoord();
+		if (ratio >= 1.f)
+		{
+			m_fAssioScorePhaseElapsed = 0.f;
+			m_eAssioScorePhase = ASSIO_SCORE_PHASE::HOLD;
+		}
+		return;
+	}
+
+	if (m_eAssioScorePhase == ASSIO_SCORE_PHASE::HOLD)
+	{
+		constexpr _float HOLD_DURATION = 1.f;
+		if (m_fAssioScorePhaseElapsed >= HOLD_DURATION)
+		{
+			m_fAssioScorePhaseElapsed = 0.f;
+			m_AssioCenterScoreMoveStart = center->GetPos();
+			m_eAssioScorePhase = ASSIO_SCORE_PHASE::MOVE;
+		}
+		return;
+	}
+
+	constexpr _float MOVE_DURATION = 0.3f;
+	const _float ratio = std::clamp(
+		m_fAssioScorePhaseElapsed / MOVE_DURATION, 0.f, 1.f);
+	center->SetPos({
+		std::lerp(m_AssioCenterScoreMoveStart.x,
+			m_AssioCenterScoreMoveTarget.x, ratio),
+		std::lerp(m_AssioCenterScoreMoveStart.y,
+			m_AssioCenterScoreMoveTarget.y, ratio)
+	});
+	center->SetScaleRatio(std::lerp(
+		m_fAssioCenterScoreBaseScale,
+		std::max(0.05f, targetScore->GetScaleRatio()),
+		ratio));
+	center->CalcUICoord();
+
+	if (ratio < 1.f)
+		return;
+
+	int& currentScore = m_bAssioTargetIsPlayer ?
+		m_iAssioPlayerScore : m_iAssioNpcScore;
+	const int64_t updatedScore = static_cast<int64_t>(currentScore) +
+		static_cast<int64_t>(m_iAssioPendingScore);
+	currentScore = static_cast<int>(std::clamp<int64_t>(
+		updatedScore, 0, std::numeric_limits<int>::max()));
+	if (auto* text = dynamic_cast<CTextBox*>(targetScore))
+		text->SetwText(std::to_wstring(currentScore));
+
+	// TODO: UpdateAssioFinalScore(...); // 최종 점수갱신
+
+	center->SetAlpha(0.f);
+	center->SetScaleRatio(0.f);
+	center->SetPos(m_AssioCenterScoreBasePosition);
+	center->CalcUICoord();
+	m_iAssioPendingScore = 0;
+	BeginAssioTurnChange();
+}
+
+void UIManager::BeginAssioTurnChange()
+{
+	m_fAssioScorePhaseElapsed = 0.f;
+	m_bAssioTurnTitleFadeInStarted = false;
+	if (m_hAssioTurnTitle)
+	{
+		if (auto* title = GetSafeUI(*m_hAssioTurnTitle))
+			m_bAssioTurnTitleWasAlreadyHidden = title->GetAlpha() <= 0.001f;
+		else
+			m_bAssioTurnTitleWasAlreadyHidden = true;
+	}
+	else
+	{
+		m_bAssioTurnTitleWasAlreadyHidden = true;
+	}
+	m_eAssioScorePhase = ASSIO_SCORE_PHASE::TURN_CHANGE;
+	if (!m_bAssioTurnTitleWasAlreadyHidden)
+		TurnTitleFadeOut(0.2f);
+}
+
+void UIManager::ClearAssioMiniGameUI(_bool immediate)
+{
+	for (const CHandle root : m_AssioMiniGameRoots)
+	{
+		if (!GetSafeUI(root))
+			continue;
+
+		if (immediate)
+			DeleteUIRecursive(root);
+		else
+			PlayFadeOutDelete(root, 0.f, 0.3f);
+	}
+	m_AssioMiniGameRoots.clear();
+	m_hAssioScoreBoard.reset();
+	m_hAssioPlayerScoreRoot.reset();
+	m_hAssioNpcScoreRoot.reset();
+	m_hAssioPlayerScoreText.reset();
+	m_hAssioNpcScoreText.reset();
+	m_hAssioPlayerFrame.reset();
+	m_hAssioNpcFrame.reset();
+	m_hAssioCenterScore.reset();
+	m_hAssioCenterScoreText.reset();
+	m_hAssioTurnTitle.reset();
+	m_hAssioTargetScoreText.reset();
+	m_iAssioPendingScore = 0;
+	m_fAssioScorePhaseElapsed = 0.f;
+	m_bAssioCurrentTurnIsPlayer = true;
+	m_bAssioTurnTitleFadeInStarted = false;
+	m_bAssioTurnTitleWasAlreadyHidden = false;
+	m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
+	m_bAssioMiniGameActive = false;
 }
 
 void UIManager::StartRaceMiniGame()
@@ -198,7 +709,7 @@ void UIManager::AddRaceMiniGameCoin(uint32_t amount)
 
 	if (!m_hRaceBoardCoinText)
 		return;
-	if (auto* textBox = dynamic_cast<CTextBox*>(
+	if (auto* textBox = Engine::Cast<CTextBox>(
 		GetSafeUI(*m_hRaceBoardCoinText)))
 	{
 		wchar_t coinText[16]{};
@@ -223,7 +734,7 @@ void UIManager::BeginRaceBoard()
 		m_RaceBoardRoots, "TimerTitle"))
 	{
 		m_hRaceBoardTimerText = timer->GetHandle();
-		if (auto* textBox = dynamic_cast<CTextBox*>(timer))
+		if (auto* textBox = Engine::Cast<CTextBox>(timer))
 			textBox->SetFixedDigitLayout(true);
 	}
 	// RaceBoard has two objects named Coin. The first is the numeric counter
@@ -231,7 +742,7 @@ void UIManager::BeginRaceBoard()
 	if (auto* coin = FindUIByNameRecursive(m_RaceBoardRoots, "Coin"))
 	{
 		m_hRaceBoardCoinText = coin->GetHandle();
-		if (auto* textBox = dynamic_cast<CTextBox*>(coin))
+		if (auto* textBox = Engine::Cast<CTextBox>(coin))
 		{
 			textBox->SetColoredSuffix(
 				L"99",
@@ -272,7 +783,7 @@ void UIManager::FinishRaceMiniGame()
 		m_RaceResultRoots, "CoinCnt"))
 	{
 		m_hRaceResultCoinText = coin->GetHandle();
-		if (auto* textBox = dynamic_cast<CTextBox*>(coin))
+		if (auto* textBox = Engine::Cast<CTextBox>(coin))
 		{
 			wchar_t coinText[8]{};
 			swprintf_s(
@@ -309,7 +820,7 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 
 	if (m_hRaceBoardTimerText)
 	{
-		if (auto* textBox = dynamic_cast<CTextBox*>(
+		if (auto* textBox = Engine::Cast<CTextBox>(
 			GetSafeUI(*m_hRaceBoardTimerText)))
 		{
 			const uint32_t totalCentiseconds = static_cast<uint32_t>(
@@ -433,7 +944,7 @@ void UIManager::StartRaceStartTimer()
 			text->GetUIInfo().LocalY
 		};
 		text->SetColor({ 1.f, 1.f, 1.f });
-		if (auto* textBox = dynamic_cast<CTextBox*>(text))
+		if (auto* textBox = Engine::Cast<CTextBox>(text))
 			textBox->SetwText(L"3");
 	}
 
@@ -539,10 +1050,10 @@ void UIManager::UpdateRaceStartTimer(_float fTimeDelta)
 			2u, static_cast<uint32_t>(elapsed / countDuration));
 		const _float localTime = elapsed - countDuration * countIndex;
 		const wchar_t* countTexts[] = { L"3", L"2", L"1" };
-		if (auto* textBox = dynamic_cast<CTextBox*>(text))
+		if (auto* textBox = Engine::Cast<CTextBox>(text))
 			textBox->SetwText(countTexts[countIndex]);
 
-		// Pretendard's '1' glyph has asymmetric side bearings. Keep the text
+		// The '1' glyph has asymmetric side bearings. Keep the text
 		// mathematically centered, then apply a small optical correction only
 		// for that glyph so 3/2/GO retain their authored position.
 		constexpr _float ONE_OPTICAL_CENTER_OFFSET_X = -3.f;
@@ -574,7 +1085,7 @@ void UIManager::UpdateRaceStartTimer(_float fTimeDelta)
 	}
 
 	const _float goTime = elapsed - countTotal;
-	if (auto* textBox = dynamic_cast<CTextBox*>(text))
+	if (auto* textBox = Engine::Cast<CTextBox>(text))
 		textBox->SetwText(L"GO");
 	text->SetLocalPos(m_RaceStartTimerTextBaseLocalPos);
 	text->SetColor({ 0.32f, 1.f, 0.28f });
@@ -1759,14 +2270,49 @@ std::function<void(std::string text)> UIManager::GetFunc(const std::string& func
 
 void UIManager::CreateFadeIn(float delay, float playtime)
 {
-	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
+	CHandle hBG{};
+	if (m_hScreenFade && GetSafeUI(*m_hScreenFade))
+	{
+		hBG = *m_hScreenFade;
+	}
+	else
+	{
+		auto roots = LoadPrefab("BlackBG");
+		if (roots.empty())
+			return;
+
+		hBG = roots.front();
+		m_hScreenFade = hBG;
+		if (auto* pBG = GetSafeUI(hBG))
+			pBG->SetAlpha(0.f);
+	}
+
+	if (auto* pBG = GetSafeUI(hBG))
+		pBG->GetTweenCom()->ClearTweens();
 	PlayOnlyFadeIn(hBG, delay, playtime);
 }
 
-void UIManager::CreateFadeOut(float delay, float playtime)
+void UIManager::CreateFadeOut(float delay, float playtime,
+	std::function<void()> onComplete)
 {
-	CHandle hBG = GET_SINGLE(UIManager)->LoadPrefab("BlackBG").front();
-	PlayFadeOutDelete(hBG, delay, playtime);
+	CHandle hBG{};
+	if (m_hScreenFade && GetSafeUI(*m_hScreenFade))
+	{
+		hBG = *m_hScreenFade;
+	}
+	else
+	{
+		auto roots = LoadPrefab("BlackBG");
+		if (roots.empty())
+			return;
+
+		hBG = roots.front();
+		m_hScreenFade = hBG;
+	}
+
+	if (auto* pBG = GetSafeUI(hBG))
+		pBG->GetTweenCom()->ClearTweens();
+	PlayFadeOutDelete(hBG, delay, playtime, std::move(onComplete));
 }
 
 void UIManager::CreateFadeInSceneChange(float delay, float playtime, LEVEL level)
@@ -1850,10 +2396,11 @@ void UIManager::CreateDamageFont(uint32_t damage, CHandle targetMonster, _bool i
 
 	desc.sObjectTag = "DamageFont";
 	desc.Name = "DamageFont";
-	desc.fSizeX = 1.5f;
-	desc.fSizeY = 1.5f;
+	desc.fSizeX = 1.1f;
+	desc.fSizeY = 1.1f;
 	desc.fAlpha = 1.f;
 	desc.Text = L"";
+	desc.FontType = TEXT_FONT_TYPE::HAKGYOANSIM_PUZZLE_OUTLINE_25;
 	desc.ResWeight = 1;
 
 	std::optional<CHandle> hDamageFont = E::CGameInstance::Get().AddGameObjectToLayer(m_CurrentLevel, "Prototype_GameObject_TextBox", "Layer_UI", &desc);
@@ -1872,13 +2419,13 @@ void UIManager::CreateDamageFont(uint32_t damage, CHandle targetMonster, _bool i
 	if (isCritical)
 	{
 		pDamageFont->SetColor({ 0.72f, 0.64f, 0.40f });
-		pDamageFont->SetSize({ 1.5f, 1.5f });
+		pDamageFont->SetSize({ 0.9f, 0.9f });
 		pDamageFont->SetScaleRatio(1.25f);
 	}
 	else
 	{
 		pDamageFont->SetColor({ 1.f, 1.f, 1.f });
-		pDamageFont->SetSize({1.2f, 1.2f});
+		pDamageFont->SetSize({ 0.72f, 0.72f });
 		pDamageFont->SetScaleRatio(1.f);
 	}
 
@@ -1938,10 +2485,10 @@ void UIManager::CreateActiveButton(CHandle handle, _ubyte KeyType)
 	CTextureUI::UIOBJECT_DESC desc{};
 	desc.sObjectTag = "ActiveButton";
 	desc.Name = "ActiveButton";
-	desc.fSizeX = 48.f;
-	desc.fSizeY = 48.f;
+	desc.fSizeX = 32.f;
+	desc.fSizeY = 32.f;
 	desc.fAlpha = 0.f;
-	desc.ResWeight = 950;
+	desc.ResWeight = 10;
 	desc.ResTag = resourceTag;
 	desc.UIType = ETOUI(UI_TYPE::TEXUI);
 
@@ -2985,7 +3532,7 @@ void UIManager::CreateChoiceUI(
 			info.BaseFadeLocalPosition = { fadeInfo.LocalX, fadeInfo.LocalY };
 			info.SelectedFadeAlphaRatio = fade->GetAlphaRatio();
 		}
-		if (auto* text = dynamic_cast<CTextBox*>(
+		if (auto* text = Engine::Cast<CTextBox>(
 			FindUIByNameRecursive(roots, "Text")))
 		{
 			info.TextHandle = text->GetHandle();
@@ -3543,6 +4090,7 @@ E::CUIObject* UIManager::LoadUIRecursive(const nlohmann::ordered_json& obj, E::C
 			textInfo.Text = StringToWUTF8(
 				obj.value("Text", std::string{}));
 			textInfo.Alignment = LoadTextAlignmentCompatible(obj);
+			textInfo.FontType = LoadTextFontTypeCompatible(obj);
 		}
 		break;
 	case ETOUI(UI_TYPE::BUTTON):
@@ -3767,7 +4315,8 @@ void UIManager::DeleteUIRecursive(std::optional<CHandle> targetHandle)
 	return;
 }
 
-void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
+void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay,
+	float playtime, std::function<void()> onComplete)
 {
 	CUIObject* pBtn = SafeGetOBJ(pHandle);
 	auto pTween = pBtn->GetTweenCom();
@@ -3779,8 +4328,13 @@ void UIManager::PlayFadeOutDelete(CHandle pHandle, float delay, float playtime)
 	pTween->PlayTween(alpha, 0.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
-		}, [pHandle]() {
-			if (auto pObj = GetSafeUI(pHandle)) GET_SINGLE(UIManager)->DeleteUIRecursive(pHandle);
+		}, [this, pHandle, onComplete = std::move(onComplete)]() {
+			if (auto pObj = GetSafeUI(pHandle))
+				DeleteUIRecursive(pHandle);
+			if (m_hScreenFade && *m_hScreenFade == pHandle)
+				m_hScreenFade.reset();
+			if (onComplete)
+				onComplete();
 			}, EEaseType::EaseOutQuad, delay);
 }
 
@@ -3850,10 +4404,9 @@ void UIManager::PlayOnlyFadeIn(CHandle pHandle, float delay, float playtime)
 
 	pBtn->SetInputLcok(true);
 
-	_float Alpah = pBtn->GetAlpha();
-	_float scaleRatio = pBtn->GetScaleRatio();
+	const _float alpha = pBtn->GetAlpha();
 
-	pTween->PlayTween(0.f, 1.f, playtime,
+	pTween->PlayTween(alpha, 1.f, playtime,
 		[pBtn](float currentValue) {
 			pBtn->SetAlpha(currentValue);
 		}, nullptr, EEaseType::EaseOutQuad, delay);

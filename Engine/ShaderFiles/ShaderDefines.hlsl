@@ -161,8 +161,9 @@ cbuffer CB_MATERIAL : register(b3)
 	float	MetallicIntensity;
 	float	RoughnessIntensity;
 	float	AmbientIntensity;
+	float	AlphaClipThreshold;
 
-    float3  MaterialPadding;
+    float2  MaterialPadding;
 }
 
 cbuffer CB_LIGHT_BUFFER : register(b4) 

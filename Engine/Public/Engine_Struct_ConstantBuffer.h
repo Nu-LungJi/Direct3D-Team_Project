@@ -44,8 +44,9 @@ namespace Engine
 		_float	 MetallicIntensity{};
 		_float	 RoughnessIntensity{};
 		_float	 AmbientIntensity{};
-		
-		_float3	 CB_MATERIAL_PADDING{};
+		_float	 AlphaClipThreshold{ 0.35f };
+
+		_float2	 CB_MATERIAL_PADDING{};
 	} CB_MATERIAL;
 	static_assert(sizeof(CB_MATERIAL) % 16 == 0);
 

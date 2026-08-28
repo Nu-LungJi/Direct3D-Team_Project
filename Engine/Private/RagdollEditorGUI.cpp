@@ -157,6 +157,11 @@ namespace Engine
 			default;
 
 	public:
+		DECLARE_DERIVED_TYPE_WITH_BASES(
+			CRagdollPreviewRenderer,
+			CEngineBase,
+			IRenderable)
+
 		HRESULT Initialize(
 			const StringID& sGroupTag,
 			const StringID& sResourceTag,

@@ -254,6 +254,50 @@ HRESULT CFontManager::Initialize()
 		}
 	}
 
+	if (auto res = CGameInstance::Get().AddResource(
+		"FONT", "BlueForestBold_20px",
+		CResFontCustom::Create(
+			"./Resources/Engine/Font/BlueForestBold_20px.spritefont")))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResource(
+		"FONT", "BlueForestBold_32px",
+		CResFontCustom::Create(
+			"./Resources/Engine/Font/BlueForestBold_32px.spritefont")))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResource(
+		"FONT", "HakgyoansimPuzzleOutline_25px",
+		CResFontCustom::Create(
+			"./Resources/Engine/Font/HakgyoansimPuzzleOutline_25px.spritefont")))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+
+	if (auto res = CGameInstance::Get().AddResource(
+		"FONT", "HakgyoansimPuzzleBlack_25px",
+		CResFontCustom::Create(
+			"./Resources/Engine/Font/HakgyoansimPuzzleBlack_25px.spritefont")))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
+
     m_pBatch = std::make_unique<SpriteBatch>(m_pContext.Get());
 	return S_OK;
 }

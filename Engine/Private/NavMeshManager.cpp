@@ -502,7 +502,7 @@ _bool CNavMeshManager::FindPathCenter(const _float3& start, const _float3& end, 
 		return false;
 	_float fStartPos[3] = {start.x, start.y, start.z};
 	_float fEndPos[3] = {end.x, end.y, end.z};
-	_float fHalf[3] = {2.f, 4.f, 2.f};
+	_float fHalf[3] = {2.f, 60.f, 2.f};
 
 	dtQueryFilter Filter{};
 	Filter.setIncludeFlags(0xffff);
@@ -523,7 +523,7 @@ _bool CNavMeshManager::FindPathCenter(const _float3& start, const _float3& end, 
 			NearestEnd)) || 0 == EndRef)
 		return false;
 
-	const int32_t iMaxPolys = 256;
+	const int32_t iMaxPolys = 2048;
 	dtPolyRef Polys[iMaxPolys]{};
 	int32_t iPolyCount{};
 

@@ -13,6 +13,12 @@ class ENGINE_DLL CResModelMesh final : public CResVIBuffer
 public:
 	DECLARE_DERIVED_TYPE(CResModelMesh, CResVIBuffer)
 public:
+	typedef struct tagMorphTarget
+	{
+		_string sName{};
+		std::vector<MORPH_VERTEX_DELTA> Deltas{};
+	} MORPH_TARGET;
+
 	typedef struct tagDesc {
 		MODEL eType;
 		CResModel* pModel;
@@ -31,6 +37,7 @@ public:
 
 private:
 	HRESULT	Ready_AnimMesh(class CResModel* pModel, _char* pPoint, uint32_t iRecordSize);
+	HRESULT Ready_MorphBuffers();
 
 
 public:
@@ -41,6 +48,10 @@ public:
 	std::vector<uint32_t>& GetBoneIndices() { return m_BoneIndices; }
 	std::vector<_float4x4>& GetBoneMatrices() { return m_BoneMatrices; }
 	std::vector<_float4x4>& GetOffsetMatrices() { return m_OffsetMatrices; }
+	uint32_t GetMorphTargetCount() const { return static_cast<uint32_t>(m_MorphTargets.size()); }
+	const std::vector<MORPH_TARGET>& GetMorphTargets() const { return m_MorphTargets; }
+	SPtr<CResStructuredBuffer> GetMorphDeltaBuffer() const { return m_pMorphDeltaBuffer; }
+	SPtr<CResStructuredBuffer> GetMorphTargetRangeBuffer() const { return m_pMorphTargetRangeBuffer; }
 	SPtr<CResStructuredBuffer> GetSkinningInputBuffer() const;
 	SPtr<CResStructuredBuffer> GetSkinnedVertexBuffer() const;
 	HRESULT EnsureSkinnedVertexBuffer(uint32_t iInstanceCapacity);
@@ -59,6 +70,9 @@ private:
 	std::vector<uint32_t>	m_BoneIndices;
 	std::vector<_float4x4>	m_BoneMatrices;
 	std::vector<_float4x4>	m_OffsetMatrices;
+	std::vector<MORPH_TARGET>	m_MorphTargets;
+	SPtr<CResStructuredBuffer> m_pMorphDeltaBuffer{};
+	SPtr<CResStructuredBuffer> m_pMorphTargetRangeBuffer{};
 
 	SPtr<CResStructuredBuffer> m_pSkinningInputBuffer{};
 	SPtr<CResStructuredBuffer> m_pSkinnedVertexBuffer{};

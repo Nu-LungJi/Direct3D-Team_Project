@@ -5,6 +5,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComAnimator.h"
 #include "ComModelInstance.h"
+
 NS_USING(Client)
 CTroll_Spawn::CTroll_Spawn()
 {
@@ -93,6 +94,7 @@ void CTroll_Spawn::Run(CTroll* pTroll, _float fTimeDelta)
 {
 	if (Play_Anim(pTroll, fTimeDelta, TRS_FINISHE))
 		m_eState = MON_DEF_STATE::END;
+
 }
 void CTroll_Spawn::End(CTroll* pTroll, CMon_State* pMonState, _float fTimeDelta)
 {

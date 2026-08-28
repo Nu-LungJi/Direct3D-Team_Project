@@ -7,6 +7,8 @@
 
 NS_BEGIN(Client)
 
+static constexpr bool isPurchaseWand{ false };
+
 static Engine::CUIObject* GetSafeUI(CHandle handle)
 {
 	return E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(handle);
@@ -43,7 +45,8 @@ public:
 
 	/*******페이드 인아웃******/
 	void CreateFadeIn(float delay = 0.f, float playtime = 0.5f);
-	void CreateFadeOut(float delay = 0.f, float playtime = 0.5f);
+	void CreateFadeOut(float delay = 0.f, float playtime = 0.5f,
+		std::function<void()> onComplete = nullptr);
 	void CreateFadeInSceneChange(float delay = 0.f, float playtime = 1.f, LEVEL level = LEVEL::LOGO);
 	void PlayFadeInAll2DUI(float delay = 0.f, float playtime = 0.5f);
 	void PlayFadeOutAll2DUI(float delay = 0.f, float playtime = 0.5f);
@@ -93,6 +96,13 @@ public:
 		return m_iRaceMiniGameCoinCount;
 	}
 
+	/********소환사의 코트 미니게임**********/
+	void AssioMiniGameStart();
+	void AssioMiniGameFinish();
+	void AddScore(int score);
+	void TurnTitleFadeOut(float playtime = 0.3f);
+	_bool IsAssioMiniGameActive() const { return m_bAssioMiniGameActive; }
+
 	/********지팡이 상점***********/
 	void OpenWandShop();
 
@@ -124,14 +134,14 @@ private:
 	{
 		size_t operator()(const CHandle& handle) const noexcept
 		{
-			const size_t indexHash = std::hash<size_t>{}(handle.GetIndex());
-			const size_t generationHash = std::hash<uint32_t>{}(handle.GetGeneration());
-			return indexHash ^ (generationHash + 0x9e3779b9u + (indexHash << 6u) + (indexHash >> 2u));
+			return std::hash<uint64_t>{}(handle.GetPackedValue());
 		}
 	};
 	std::unordered_map<CHandle, _float, UI_HANDLE_HASH> m_2DUIRestoreAlpha{};
 	std::unordered_map<CHandle, _bool, UI_HANDLE_HASH> m_2DUIRestoreInputLock{};
 	std::unordered_map<CHandle, _float, UI_HANDLE_HASH> m_SpellMeterRestoreScale{};
+	// CreateFadeIn/CreateFadeOut이 동일한 BlackBG를 이어서 사용한다.
+	std::optional<CHandle> m_hScreenFade{};
 	std::array<_bool, static_cast<size_t>(SPELL_TYPE::B_NONE)> m_SpellUnlockStates = []
 	{
 		std::array<_bool, static_cast<size_t>(SPELL_TYPE::B_NONE)> states{};
@@ -202,12 +212,58 @@ private:
 	std::optional<CHandle> m_hRaceBoardCoinText{};
 	std::optional<CHandle> m_hRaceResultCoinText{};
 	_float m_fRaceMiniGameElapsed{};
-	uint32_t m_iRaceMiniGameCoinCount{};
+	uint32_t m_iRaceMiniGameCoinCount{0};
+
+	enum class ASSIO_SCORE_PHASE : uint8_t
+	{
+		NONE,
+		APPEAR,
+		HOLD,
+		MOVE,
+		TURN_CHANGE
+	};
+	std::vector<CHandle> m_AssioMiniGameRoots{};
+	std::optional<CHandle> m_hAssioScoreBoard{};
+	std::optional<CHandle> m_hAssioPlayerScoreRoot{};
+	std::optional<CHandle> m_hAssioNpcScoreRoot{};
+	std::optional<CHandle> m_hAssioPlayerScoreText{};
+	std::optional<CHandle> m_hAssioNpcScoreText{};
+	std::optional<CHandle> m_hAssioPlayerFrame{};
+	std::optional<CHandle> m_hAssioNpcFrame{};
+	std::optional<CHandle> m_hAssioCenterScore{};
+	std::optional<CHandle> m_hAssioCenterScoreText{};
+	std::optional<CHandle> m_hAssioTurnTitle{};
+	std::optional<CHandle> m_hAssioTargetScoreText{};
+	_float2 m_AssioCenterScoreBasePosition{};
+	_float2 m_AssioCenterScoreMoveStart{};
+	_float2 m_AssioCenterScoreMoveTarget{};
+	_float m_fAssioCenterScoreBaseScale{ 1.f };
+	_float m_fAssioCenterScoreBaseAlpha{ 1.f };
+	_float2 m_AssioActiveTurnPosition{};
+	_float2 m_AssioInactiveTurnPosition{};
+	_float m_fAssioActiveTurnScale{ 1.f };
+	_float m_fAssioInactiveTurnScale{ 1.f };
+	_float m_fAssioActiveTurnAlpha{ 1.f };
+	_float m_fAssioInactiveTurnAlpha{ 1.f };
+	_float m_fAssioActiveFrameAlpha{ 1.f };
+	_float m_fAssioInactiveFrameAlpha{};
+	_float m_fAssioTurnTitleBaseAlpha{ 1.f };
+	_float m_fAssioScorePhaseElapsed{};
+	int m_iAssioPlayerScore{};
+	int m_iAssioNpcScore{};
+	int m_iAssioPendingScore{};
+	_bool m_bAssioTargetIsPlayer{};
+	_bool m_bAssioCurrentTurnIsPlayer{ true };
+	_bool m_bAssioTurnTitleFadeInStarted{};
+	_bool m_bAssioTurnTitleWasAlreadyHidden{};
+	_bool m_bAssioMiniGameActive{};
+	ASSIO_SCORE_PHASE m_eAssioScorePhase{ ASSIO_SCORE_PHASE::NONE };
 	CWandShop m_WandShop{};
 	_bool m_bWandShopWorldMode{ false };
 	_float4x4 m_WandShopPanelWorld{};
 	_float2 m_WandShopPanelMousePosition{ -FLT_MAX, -FLT_MAX };
 	_bool m_bWandShopPanelMouseHit{ false };
+
 
 	void UpdateActiveButtons();
 	void UpdateDialoguePopups(_float fTimeDelta);
@@ -221,6 +277,10 @@ private:
 	void ClearRaceMiniGameUI();
 	void PlayRaceRootsFadeIn(const std::vector<CHandle>& roots,
 		_float playtime = 0.3f);
+	void UpdateAssioMiniGame(_float fTimeDelta);
+	void BeginAssioTurnChange();
+	void ClearAssioMiniGameUI(_bool immediate = true);
+	_bool ResolveAssioCurrentTurn();
 	void UpdateWandShopWorldMousePosition();
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
@@ -228,7 +288,8 @@ public:
 	std::vector<CHandle> LoadPrefab(std::string name, std::string g_BasePath = "./Resources/SampleClient/UIData/Prefabs/");
 	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);
 	void DeleteUIRecursive(std::optional<CHandle> targetHandle);
-	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
+	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f,
+		float playtime = 5.f, std::function<void()> onComplete = nullptr);
 	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 	void PlayOnlyFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 

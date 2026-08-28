@@ -41,7 +41,7 @@ nlohmann::json CBTNaviMove::Save_Node()
 	nlohmann::json j = __super::Save_Node();
 	SaveJsonEnum(j, "MOVE", m_eMove);
 	SaveJsonValue(j, "Loop", m_bLoop);
-
+	SaveJsonValue(j, "DirectTurn", m_bDirectTurn);
 	SaveJsonValue(j, "BBValue", m_bBBValue);
 	return j;
 }
@@ -51,7 +51,7 @@ HRESULT CBTNaviMove::Load_json(const nlohmann::json& j)
 	__super::Load_json(j);
 	LoadJsonEnum(j, "MOVE", m_eMove);
 	LoadJsonValue(j, "Loop", m_bLoop);
-
+	LoadJsonValue(j, "DirectTurn", m_bDirectTurn);
 	LoadJsonValue(j, "BBValue", m_bBBValue);
 	return S_OK;
 }
@@ -200,6 +200,9 @@ EVALUATE CBTNaviMove::Evaluate(_float fTimeDelta)
 	//외않됨
 	XMStoreFloat3(&vDirection, vMoveDirection);
 	pMoveIntent->SetMoveIntent(vDirection, m_Value.fSpeed);
+	if (m_bDirectTurn)
+		pMoveIntent->SetFacingIntentImmediate(vDirection);
+	else
 	pMoveIntent->SetFacingIntent(vDirection, 45.f);
 
 	return m_eDebug = EVALUATE::RUN;
@@ -214,6 +217,9 @@ void CBTNaviMove::Update_Gui()
 
 	if (ImGui::Button(m_bBBValue == true ? "BBValue : TRUE" : "BBValue : FALSE"))
 		m_bBBValue = !m_bBBValue;
+	
+	if (ImGui::Button(m_bDirectTurn == true ? "DirectTurn : TRUE" : "DirectTurn : FALSE"))
+		m_bDirectTurn = !m_bDirectTurn;
 }
 
 void CBTNaviMove::Abort()
@@ -251,7 +257,10 @@ void CBTNaviMove::OnEnter()
 
 		if (nullptr == pvStart || nullptr == pvEnd) 	return;
 		_float3& vDestination = m_bMoveToEnd ? *pvEnd : *pvStart;
-		pNavMesh->FindPathCenter(vCurrentPosition, vDestination, m_NaviPath);
+		if(m_bMoveToEnd)
+			pNavMesh->FindPathCenter(*pvStart, *pvEnd, m_NaviPath);
+		else
+			pNavMesh->FindPathCenter(*pvEnd, *pvStart, m_NaviPath);
 	}
 	else
 	{

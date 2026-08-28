@@ -18,7 +18,7 @@ class CResTerrainVIBuffer;
 class CTerrain final : public CGameObject
 {
 public:
-	DECLARE_DERIVED_TYPE(CTerrain, CGameObject)
+	DECLARE_DERIVED_TYPE(Client::CTerrain, CGameObject)
 
 private:
 	CTerrain();

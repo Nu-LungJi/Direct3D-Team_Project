@@ -173,6 +173,9 @@ void CPropBarrelDebris::LateUpdate(_float fTimeDelta)
 	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
 		return;
 
+	if (!m_bDissolving)
+		CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+
 	if (m_bDissolving || !CGameInstance::Get().IsInstancingEnabled())
 	{
 		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
@@ -248,6 +251,22 @@ HRESULT CPropBarrelDebris::Render(ID3D11DeviceContext* pContext, const RENDER_CT
 	pContext->RSSetState(previousRasterizer.Get());
 
 	return S_OK;
+}
+
+HRESULT CPropBarrelDebris::Render_Shadow(
+	ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
+{
+	return m_pComModelInstance
+		? m_pComModelInstance->RenderShadow(
+			pContext, m_pComCBufferPerObject,
+			*GetTransform().GetCombinedWorldMatrix(), ctx.matViewProj)
+		: E_FAIL;
+}
+
+bool CPropBarrelDebris::GetShadowBounds(BoundingBox& outBounds) const
+{
+	return m_pComModelInstance && m_pComModelInstance->GetShadowBounds(
+		*GetTransform().GetCombinedWorldMatrix(), outBounds);
 }
 
 UPtr<CPropBarrelDebris> CPropBarrelDebris::Create()

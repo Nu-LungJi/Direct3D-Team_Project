@@ -2,6 +2,7 @@
 #include "Client_Defines.h"
 #include "GameInstance.h"
 #include "Player.h"
+#include "UIManager.h"
 NS_USING(Client)
 
 
@@ -44,7 +45,7 @@ void CCoin::OnTriggerEnter(E::CGameObject* pObj, const E::PX_ON_TRIGGER_DATA& in
    	if (nullptr == pObj || m_bCollected)
 		return;
 
-	auto* pPlayer = dynamic_cast<CPlayer*>(pObj);
+	auto* pPlayer = Engine::Cast<CPlayer>(pObj);
 	if (nullptr == pPlayer)
 		return;
 
@@ -60,6 +61,7 @@ void CCoin::OnTriggerEnter(E::CGameObject* pObj, const E::PX_ON_TRIGGER_DATA& in
 	CGameInstance::Get().PlayEffect("CoinEarn", effectWorld);
 
 	SetCollisionEnabled(false);
+	GET_SINGLE(UIManager)->AddRaceMiniGameCoin();
 	SetPendingDestroy();
 }
 void CCoin::OnTriggerExit(E::CGameObject* pObj, const E::PX_ON_TRIGGER_DATA& info)

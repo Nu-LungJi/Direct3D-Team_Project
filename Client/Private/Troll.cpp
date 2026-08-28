@@ -31,6 +31,7 @@
 #include "Troll_Combat.h"
 #include "Troll_Spawn.h"
 #include "Troll_Grogy.h"
+#include "PropBarrel.h"
 NS_USING(Client)
 
 CTroll::CTroll()
@@ -151,7 +152,7 @@ HRESULT CTroll::Ready_Skill(const _string& LevelTag)
 	m_MonSkillLists[ATTMON::SLOT1] = ETOUI(TROLL_SKILL::SMASH);
 	//////////////////////파티클 넣는곳/////////////////////////
 	m_EffectNames[ETOUI(TROLL_SKILL::DOLJIN)] = "Doljin";
-	m_EffectNames[ETOUI(TROLL_SKILL::SMASH)] = "Smash";
+	m_EffectNames[ETOUI(TROLL_SKILL::SMASH)] = "TrollSmash.json";
 	////////////////////////////////////////////////////////////
 
 	int32_t iBone{};
@@ -302,7 +303,9 @@ void CTroll::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	if (*pbEffect)
 	{
 		_float4x4 mat;
-		XMStoreFloat4x4(&mat, GetTransform().GetLoadedWorldMatrix());
+		int32_t iBoneIndex = m_SkillHandle[ETOUI(iSkillNum)].iBoneIndex;
+		_matrix matBone = XMLoadFloat4x4(Get_CombineBoneMatrix(iBoneIndex));
+		XMStoreFloat4x4(&mat, matBone * GetTransform().GetLoadedWorldMatrix());
 		CGameInstance::Get().Spawn(m_EffectNames[iSkillNum], mat);
 		Get_BlackBoard()->Set_Value<_bool>(EDG_KEY::EDGEFFECT, false);
 	}
@@ -325,6 +328,15 @@ void CTroll::Destory_Child()
 	if (nullptr != pWeapon)
 		pWeapon->Set_Dead();
 	
+}
+void CTroll::OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit)
+{
+	if (nullptr != m_pFsm)
+		if (MON_STATE::SPAWN != m_pFsm->GetCurState())
+			return;
+
+	if (auto* pBarrel = Cast<CPropBarrel>(tHit.pGameObject))
+		pBarrel->DestroyBarrel();
 }
 void CTroll::Update_BBToFsm()
 {

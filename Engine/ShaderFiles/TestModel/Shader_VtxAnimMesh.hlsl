@@ -4,6 +4,7 @@ Texture2D g_DiffuseTexture : register(t0);
 Texture2D g_NormalTexture : register(t1);
 Texture2D g_SMROTexture : register(t2);
 Texture2D g_EmissiveTexture : register(t3);
+Texture2D g_OpacityTexture : register(t4);
 
 Texture2D DefaultNoiseTexture : register(t13);
 static const float DissolveEdgeWidth = 0.025f;
@@ -80,11 +81,17 @@ PS_OUT PSMain(PS_IN IN)
 {
     PS_OUT Out;
     
-    float4 fDiffuse = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord) * float4(AlbedoColor, ObjectAlpha);
+	float4 fDiffuse = g_DiffuseTexture.Sample(LinearWrap, IN.vTexcoord);
+	float fOpacity = g_OpacityTexture.Sample(LinearWrap, IN.vTexcoord).a * ObjectAlpha;
+	// 0 이하의 컷 기준은 캐릭터의 불투명 피부/의상 머티리얼을 의미한다.
+	// 잘못 기록된 Opacity 슬롯 때문에 몸체 전체가 사라지는 것을 방지한다.
+	if (AlphaClipThreshold <= 0.f)
+		fOpacity = ObjectAlpha;
+	fDiffuse = float4(fDiffuse.rgb * AlbedoColor, fOpacity);
     
     // Hair and eyelash cards use filtered alpha.  Testing only for an exact zero
     // leaves the compressed/filtered transparent texels visible as rectangles.
-    clip(fDiffuse.a - 0.35f);
+    clip(fDiffuse.a - AlphaClipThreshold);
     
     float3 fNormal = Compute_WorldNormal(g_NormalTexture, IN.vTexcoord, IN.vNormal, IN.vTangent) * NormalIntensity;
     float3 fMRO = g_SMROTexture.Sample(LinearWrap, IN.vTexcoord);

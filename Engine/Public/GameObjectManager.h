@@ -212,19 +212,7 @@ template<typename T>
 inline T* Engine::CGameObjectManager::GetGameObjectByHandleT(const CHandle& handle)
 {
 	const CGameObject* obj = _GetGameObjectByHandle(handle);
-
-	if (!obj)
-	{
-		return nullptr;
-	}
-
-	
-	if (!obj->Is<T>())
-	{
-		return nullptr;
-	}
-	
-	return const_cast<T*>(static_cast<const T*>(obj));
+	return const_cast<T*>(Engine::Cast<T>(obj));
 }
 
 
@@ -232,18 +220,7 @@ template<typename T>
 inline const T* Engine::CGameObjectManager::GetGameObjectByHandleT(const CHandle& handle) const
 {
 	const CGameObject* obj = _GetGameObjectByHandle(handle);
-
-	if (!obj)
-	{
-		return nullptr;
-	}
-
-	if (!obj->Is<T>())
-	{
-		return nullptr;
-	}
-
-	return static_cast<const T*>(obj);
+	return Engine::Cast<T>(obj);
 }
 
 template<typename T>

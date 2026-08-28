@@ -37,12 +37,20 @@ void CTmbGurdianDead::UpdateGUI()
 	ImGui::DragFloat("hmmmm", &m_EmissiveIntensive, 0.1f, 0.f, 100.f);
 }
 
-_bool CTmbGurdianDead::ActivatePhysics()
+_bool CTmbGurdianDead::ActivatePhysics(
+	const _float3& vExplosionOrigin,
+	uint32_t iDebrisIndex,
+	uint32_t iDebrisCount)
 {
+	constexpr _float TMB_DEBRIS_BASE_OUTWARD_SPEED = 4.f;
+	constexpr _float TMB_DEBRIS_BASE_UPWARD_SPEED = 3.5f;
+	constexpr _float TMB_DEBRIS_ANGULAR_SPEED = 5.f;
+
 	if (m_bActivated)
 		return true;
 
-	if (!m_pComPxRigidBody ||
+	if (!m_pComModelInstance ||
+		!m_pComPxRigidBody ||
 		!m_pComPxConvexCollider)
 	{
 		return false;
@@ -52,13 +60,62 @@ _bool CTmbGurdianDead::ActivatePhysics()
 		GetTransform().GetPosition();
 	const _float4 vRotation =
 		GetTransform().GetQuaternion();
-	
-	Dead_Sound(vPosition);
+
+	_vector vDebrisCenter = XMLoadFloat3(&vPosition);
+	if (const auto& pModel = m_pComModelInstance->GetModel();
+		pModel && pModel->HasLocalBounds())
+	{
+		vDebrisCenter = XMVector3TransformCoord(
+			XMLoadFloat3(&pModel->GetLocalBounds().Center),
+			GetTransform().GetLoadedCombinedWorldMatrix());
+	}
+
+	const uint32_t iSafeDebrisCount = std::max(iDebrisCount, 1u);
+	const _float fAngle = XM_2PI *
+		(static_cast<_float>(iDebrisIndex) /
+			static_cast<_float>(iSafeDebrisCount));
+
+	_vector vOutwardDirection = vDebrisCenter -
+		XMLoadFloat3(&vExplosionOrigin);
+	vOutwardDirection = XMVectorSetY(vOutwardDirection, 0.f);
+	if (XMVectorGetX(XMVector3LengthSq(vOutwardDirection)) <= FLT_EPSILON)
+	{
+		vOutwardDirection = XMVectorSet(
+			std::cos(fAngle), 0.f, std::sin(fAngle), 0.f);
+	}
+	else
+	{
+		vOutwardDirection = XMVector3Normalize(vOutwardDirection);
+	}
+
+	const _float fOutwardSpeed = TMB_DEBRIS_BASE_OUTWARD_SPEED +
+		0.3f * static_cast<_float>(iDebrisIndex % 4);
+	const _float fUpwardSpeed = TMB_DEBRIS_BASE_UPWARD_SPEED +
+		0.25f * static_cast<_float>(iDebrisIndex % 3);
+	_float fSpinSign = 1.f;
+	if (iDebrisIndex % 2 == 0)
+		fSpinSign = -1.f;
+
+	_float3 vLinearVelocity{};
+	_float3 vAngularVelocity{};
+	XMStoreFloat3(
+		&vLinearVelocity,
+		vOutwardDirection * fOutwardSpeed +
+			XMVectorSet(0.f, fUpwardSpeed, 0.f, 0.f));
+	XMStoreFloat3(
+		&vAngularVelocity,
+		XMVectorSet(
+			std::cos(fAngle) * TMB_DEBRIS_ANGULAR_SPEED,
+			fSpinSign * TMB_DEBRIS_ANGULAR_SPEED,
+			std::sin(fAngle) * TMB_DEBRIS_ANGULAR_SPEED,
+			0.f));
+
+	// [LSY] 겹친 Convex의 depenetration 대신 제어 가능한 초기 속도로 폭발감을 만든다.
 	if (!m_pComPxRigidBody->SetPose(
 			vPosition,
 			vRotation) ||
-		!m_pComPxRigidBody->SetLinearVelocity({}) ||
-		!m_pComPxRigidBody->SetAngularVelocity({}) ||
+		!m_pComPxRigidBody->SetLinearVelocity(vLinearVelocity) ||
+		!m_pComPxRigidBody->SetAngularVelocity(vAngularVelocity) ||
 		!m_pComPxConvexCollider
 			->SetSimulationEnabled(true) ||
 		!m_pComPxConvexCollider
@@ -398,29 +455,6 @@ void CTmbGurdianDead::Boom(_float fTimeDelta)
 		SetPendingDestroyCascade();
 	}
 
-}
-void CTmbGurdianDead::Dead_Sound(_float3 vPos)
-{
-	if (!m_bSound)
-		return;
-
-	_string SoundPath = "./Resources/SampleClient/Sound/PensiveKnight/TombDead.wav";
-
-	SOUND_3D_DESC   Sound3D = { .fMinDistance = 1.f, .fMaxDistance = 30.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
-	SOUND_PLAY_DESC SoundPlay = { .sBusID = SOUND_BUS::SFX ,.fVolume = 0.65f,.fPitch = 1.f,.iPriority = 64,.bLoop = false };
-
-	Sound3D.vPosition = GetTransform().GetPosition();
-
-	auto id = CGameInstance::Get().GetSoundManager()->Play3D(
-		SoundPath,
-		Sound3D,
-		SoundPlay
-	);
-	if (id == INVALID_SOUND_ID)
-	{
-		MSG_BOX("TombDead.wav");
-	}
-	m_bSound = false;
 }
 /*---------------------------------*/
 
