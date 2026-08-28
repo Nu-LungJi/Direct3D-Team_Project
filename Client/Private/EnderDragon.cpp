@@ -305,7 +305,7 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 
 	m_SkillHandle[ETOUI(DRAGON_SKILL::PULSE)]  = EDG_SKILL_INFO{.handle = PulseHandle.value() , .bPool = true,};
 	m_SkillHandle[ETOUI(DRAGON_SKILL::GASI)]   = EDG_SKILL_INFO{ .handle = GasiHandle.value() , .bPool = true,};
-	m_SkillHandle[ETOUI(DRAGON_SKILL::READY_BREATH)] = EDG_SKILL_INFO{ .iBoneIndex = iOffsetBoneIndex };
+	m_SkillHandle[ETOUI(DRAGON_SKILL::READY_BREATH)] = EDG_SKILL_INFO{ .iBoneIndex = iHeadBoneIndex,.iOffsetBoneIndex = iOffsetBoneIndex };
 	return S_OK;
 }
 void CEnderDragon::Ready_BBKeyValue()
@@ -863,10 +863,27 @@ void CEnderDragon::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	if (*pbEffect)
 	{
 		int32_t iBoneIndex = m_SkillHandle[ETOUI(ACTable.eType)].iBoneIndex;
+		int32_t iBoneOffsetIndex = m_SkillHandle[ETOUI(ACTable.eType)].iOffsetBoneIndex;
 		_matrix BoneMat = XMMatrixIdentity();
 		if (-1 != iBoneIndex)
+		{
 			BoneMat = XMLoadFloat4x4(Get_CombineBoneMatrix(iBoneIndex));
+			for (uint32_t i = 0; i < 3; ++i)
+				BoneMat.r[i] = XMVector3Normalize(BoneMat.r[i]);
+		}
+		if (-1 != iBoneOffsetIndex)
+		{
+			_matrix BoneMatTwo = XMLoadFloat4x4(Get_CombineBoneMatrix(iBoneOffsetIndex));
+			
+			_vector vLook = XMVector3Normalize(BoneMatTwo.r[3] - BoneMat.r[3]);
+			_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
+			_vector vUp   = XMVector3Normalize(XMVector3Cross(vLook, vRight));
 
+			BoneMat.r[0] = vRight;
+			BoneMat.r[1] = vUp;
+			BoneMat.r[2] = vLook;
+		}
+		_matrix OriginMat = GetTransform().GetLoadedWorldMatrix();
 		_float4x4 mat;
 		XMStoreFloat4x4(&mat, BoneMat * GetTransform().GetLoadedWorldMatrix());
 		CGameInstance::Get().Spawn(ACTable.SkillName, mat);
