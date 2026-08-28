@@ -10,6 +10,7 @@
 #include "EnderDragon.h"
 #include "BossTMB.h"
 #include "Spider.h"
+#include "Troll.h"
 #include "MiniMap.h"
 #include "ClientEvents.h"
 #include "SpellMiniGame.h"
@@ -96,10 +97,15 @@ void CUIController::Update(E::_float fTimeDelta)
 	UpdateRookwoodBridgeProgression();
 	UpdateRookwoodPortalProgression();
 
-	// 전체 레이스 미니게임 흐름 확인용 디버그 입력.
+	// 소환사의 코트 미니게임 UI 확인용 디버그 입력.
 	if (E::CGameInstance::Get().KeyDown(DIK_F3))
 	{
-		GET_SINGLE(UIManager)->StartRaceMiniGame();
+		GET_SINGLE(UIManager)->AssioMiniGameStart();
+	}
+	if (E::CGameInstance::Get().KeyDown(DIK_SPACE) &&
+		GET_SINGLE(UIManager)->IsAssioMiniGameActive())
+	{
+		GET_SINGLE(UIManager)->AddScore(30);
 	}
 
 	// World-space RTT wand-shop debug entry.
@@ -1676,6 +1682,19 @@ void CUIController::UsePotion()
 
 void CUIController::TargetMonsterHP(CHandle monsterHandle)
 {
+	auto* pMonster = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CMonster>(monsterHandle);
+	if (!pMonster || pMonster->GetPendingDestroy() ||
+		!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0)
+	{
+		m_bMonsterHP = false;
+		m_ReserveTargetHandle.reset();
+		if (m_TargetHandle == monsterHandle)
+			m_TargetHandle.reset();
+		DeleteMonsterHP();
+		return;
+	}
+
 	m_ReserveTargetHandle = monsterHandle;
 	if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
 	{
@@ -1698,14 +1717,21 @@ void CUIController::CreateMonsterHP()
 	if (std::nullopt == m_TargetHandle || nullptr == pMonster)
 		return;
 
-	if (pMonster->Get_CurrentHp() <= 0.f)
+	if (pMonster->GetPendingDestroy() ||
+		!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0)
+	{
+		m_TargetHandle.reset();
+		m_ReserveTargetHandle.reset();
 		return;
+	}
 
 	const char* pPrefabName = "MonsterHP";
 	if (pMonster->Is<CEnderDragon>())
 		pPrefabName = "RanRockHP";
 	else if (pMonster->Is<CBossTMB>())
 		pPrefabName = "PensiveHP";
+	else if (pMonster->Is<CTroll>())
+		pPrefabName = "TrollHP";
 
 	auto loadedHandles = GET_SINGLE(UIManager)->LoadPrefab(pPrefabName);
 	if (loadedHandles.empty())
@@ -1738,23 +1764,27 @@ void CUIController::CreateMonsterHP()
 
 void CUIController::UpdateMonsterHP()
 {
-	if (m_TargetHandle != std::nullopt && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle))
+	auto* pMonster = m_TargetHandle ?
+		E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(
+			*m_TargetHandle) : nullptr;
+	if (!pMonster || pMonster->GetPendingDestroy() ||
+		!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0)
 	{
-		auto* pMonster = E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle);
-		
-		if (m_MonsterHP != std::nullopt && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
-		{
-			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetMaxFill(static_cast<_float>(pMonster->Get_MaxHp()));
-			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetCurrentFill(static_cast<_float>(pMonster->Get_CurrentHp()));
-		}
-
+		m_bMonsterHP = false;
+		m_TargetHandle.reset();
+		m_ReserveTargetHandle.reset();
+		DeleteMonsterHP();
+		return;
 	}
-	else {
-		if (m_MonsterHP != std::nullopt && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
-		{	
-			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetMaxFill(static_cast<_float>(100.f));
-			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetCurrentFill(static_cast<_float>(0.f));
-		}
+
+	if (m_MonsterHP != std::nullopt &&
+		nullptr != E::CGameInstance::Get().
+		GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+	{
+		static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetMaxFill(
+			static_cast<_float>(pMonster->Get_MaxHp()));
+		static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetCurrentFill(
+			static_cast<_float>(pMonster->Get_CurrentHp()));
 	}
 }
 
