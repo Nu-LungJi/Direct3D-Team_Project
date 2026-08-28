@@ -17,6 +17,7 @@
 #include "GameOverMask.h"
 #include "VideoObject.h"
 #include "Monster.h"
+#include "Player.h"
 
 NS_USING(Client)
 
@@ -685,6 +686,8 @@ void UIManager::ClearAssioMiniGameUI(_bool immediate)
 void UIManager::StartRaceMiniGame()
 {
 	ClearRaceMiniGameUI();
+	m_bRaceReturnPositionApplied = false;
+	m_fRaceReturnElapsed = 0.f;
 	FadeOutQuest(0.3f);
 	m_fRaceMiniGameElapsed = 0.f;
 	m_iRaceMiniGameCoinCount = 0u;
@@ -809,6 +812,48 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 		return;
 	}
 
+	if (m_eRaceMiniGamePhase == RACE_MINIGAME_PHASE::RETURNING_TO_SHOP)
+	{
+		constexpr _float RETURN_FADE_DURATION = 1.f;
+		m_fRaceReturnElapsed += std::max(0.f, fTimeDelta);
+
+		if (m_fRaceReturnElapsed < RETURN_FADE_DURATION)
+			return;
+
+		if (!m_bRaceReturnPositionApplied)
+		{
+
+			// 코인 게임 종료 후 복귀할 상점 좌표. 실제 상점 좌표로 교체한다.
+			const _float3 vShopPosition{ 127.833f, 4.5f, -87.941f };
+			const _float3 vShopLookAt{ 108.5f, 2.5f, -82.f };
+
+			CPlayer* pPlayer = nullptr;
+			if (const auto* pPlayerLayer = E::CGameInstance::Get().
+				GetGameObjectLayer("03_Player"))
+			{
+				for (const CHandle hPlayer : *pPlayerLayer)
+				{
+					pPlayer = E::CGameInstance::Get().
+						GetGameObjectByHandleT<CPlayer>(hPlayer);
+					if (pPlayer)
+						break;
+				}
+			}
+
+			if (pPlayer)
+			{
+				pPlayer->SetFlyRequested(false);
+				pPlayer->SetDialoguePose(vShopPosition, vShopLookAt);
+			}
+
+			m_bRaceReturnPositionApplied = true;
+			CreateFadeOut(0.f, RETURN_FADE_DURATION);
+		}
+
+		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RESULT;
+		return;
+	}
+
 	if (m_eRaceMiniGamePhase != RACE_MINIGAME_PHASE::RACING)
 		return;
 
@@ -841,7 +886,13 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 	}
 
 	if (m_fRaceMiniGameElapsed >= RACE_DURATION)
+	{
 		FinishRaceMiniGame();
+		m_fRaceReturnElapsed = 0.f;
+		m_bRaceReturnPositionApplied = false;
+		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RETURNING_TO_SHOP;
+		CreateFadeIn(0.f, 1.f);
+	}
 }
 
 void UIManager::ClearRaceMiniGameUI()
