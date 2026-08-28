@@ -104,30 +104,62 @@ void CPlayer_Broom::SetBoostEffectRatio(_float fRatio)
 	m_fBoostEffectRatio = std::clamp(fRatio, 0.f, 1.f);
 }
 
-void CPlayer_Broom::LateUpdate(_float fTimeDelta)
+_bool CPlayer_Broom::TryBuildAttachmentParentWorld(
+	_matrix& OutParentWorld) const
 {
 	auto* pPlayer = CGameInstance::Get().GetGameObjectByHandle(m_hParent);
 	if (!pPlayer)
-		return;
+		return false;
 
 	auto* pPlayerModel = pPlayer->GetComponent<CComModelInstance>("ComCModelIntance");
 	if (!pPlayerModel)
-		return;
+		return false;
 
 	const auto& boneMatrices = pPlayerModel->Get_CombinedBoneMatrices();
 	if (m_iSocketBoneIndex < 0 ||
 		static_cast<size_t>(m_iSocketBoneIndex) >= boneMatrices.size())
-		return;
+	{
+		return false;
+	}
 
 	_matrix socketMatrix = XMLoadFloat4x4(&boneMatrices[m_iSocketBoneIndex]);
 	for (uint32_t i = 0; i < 3; ++i)
 		socketMatrix.r[i] = XMVector3Normalize(socketMatrix.r[i]);
 
-	XMStoreFloat4x4(
-		&m_ParentMatrix,
-		socketMatrix * pPlayer->GetTransform().GetLoadedWorldMatrix());
+	OutParentWorld =
+		socketMatrix * pPlayer->GetTransform().GetLoadedWorldMatrix();
+	return true;
+}
+
+_bool CPlayer_Broom::TryBuildAttachedWorldMatrix(
+	_matrix& OutWorld) const
+{
+	_matrix ParentWorld{};
+	if (!TryBuildAttachmentParentWorld(ParentWorld))
+		return false;
+
+	const auto& Transform = GetTransform();
+	const _matrix LocalWorld =
+		XMMatrixScalingFromVector(Transform.GetLoadedScale()) *
+		XMMatrixRotationQuaternion(Transform.GetLoadedQuaternion()) *
+		XMMatrixTranslationFromVector(Transform.GetLoadedPostion());
+	OutWorld = LocalWorld * ParentWorld;
+	return true;
+}
+
+void CPlayer_Broom::LateUpdate(_float fTimeDelta)
+{
+	_matrix ParentWorld{};
+	if (!TryBuildAttachmentParentWorld(ParentWorld))
+		return;
+
+	XMStoreFloat4x4(&m_ParentMatrix, ParentWorld);
 	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
 	GetTransform().Update();
+
+	auto* pPlayer = CGameInstance::Get().GetGameObjectByHandle(m_hParent);
+	if (!pPlayer)
+		return;
 
 	const _bool bBoostEffectActive = m_bVisible && m_fBoostEffectRatio > 0.05f;
 	if (bBoostEffectActive)

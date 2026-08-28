@@ -5,6 +5,8 @@ NS_BEGIN(Client)
 class CSkillTarget 
 {
 public:
+	DECLARE_RUNTIME_TYPE(CSkillTarget)
+
 	virtual ~CSkillTarget() = default;
 public:
 	virtual _bool Check_Table(PLAYER_SKILL_TYPE) = 0;

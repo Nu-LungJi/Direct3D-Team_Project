@@ -96,7 +96,7 @@ HRESULT CLevelLogo::Initialize()
 						E::CUICamera* volatile sink = nullptr;
 						for (size_t i = 0; i < 10'000'000; ++i)
 						{
-							sink = dynamic_cast<E::CUICamera*>(val);
+							sink = Engine::Cast<E::CUICamera>(val);
 						}
 					}
 					auto end = std::chrono::high_resolution_clock::now();

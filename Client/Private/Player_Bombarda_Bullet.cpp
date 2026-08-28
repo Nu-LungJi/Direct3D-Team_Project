@@ -180,7 +180,7 @@ void CPlayer_Bombarda_Bullet::FixedUpdate(_float fTimeDelta)
 					Hit.hGameObject))
 			{
 				if (auto* pSkillTarget =
-					dynamic_cast<CSkillTarget*>(pHitObject))
+					Engine::Cast<CSkillTarget>(pHitObject))
 				{
 					pSkillTarget->Check_Table(
 						PLAYER_SKILL_TYPE::BOMBARDA);

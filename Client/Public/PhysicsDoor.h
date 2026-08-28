@@ -40,6 +40,7 @@ public:
 		StringID sModelResourceTag{ "Static_PhysicsDoor_Resource" };
 		_float3 vInitialPosition{};
 		_float3 vInitialRotation{};
+		_float3 vInitialScale{ 1.f, 1.f, 1.f };
 		_float3 vHalfExtents{ 1.875f, 3.735f, 0.354f };
 		_float fMass{ 30.f };
 		_float fAngularDamping{ 5.f };
@@ -60,7 +61,9 @@ public:
 			// [LSY] CCT는 Query로 문에 막히고 OnCCTShapeHit에서 제한된 토크를
 			// 전달한다. 직접 Simulation 접촉은 D6 문을 요동시킬 수 있어 제외한다.
 			.iSimulationMask =
-				PX_ALL_LAYERS & ~ETOUI(COLLISION_LAYER::PLAYER_BODY),
+				PX_ALL_LAYERS &
+				~ETOUI(COLLISION_LAYER::PLAYER_BODY) &
+				~ETOUI(COLLISION_LAYER::WORLD_STATIC),
 			.iQueryMask = PX_ALL_LAYERS
 		};
 		PX_FILTER_DESC tCCTBlockerFilter{
@@ -110,7 +113,8 @@ public:
 	// [LSY] 문짝, 월드 힌지 앵커와 출입구용 고정 Actor를 함께 옮긴다.
 	_bool SetPlacement(
 		const _float3& vPosition,
-		const _float3& vRotationEulerDegrees);
+		const _float3& vRotationEulerDegrees,
+		const _float3& vScale);
 	_bool ResetDoor();
 	_bool IsHingeReady() const { return m_pComPxD6Joint != nullptr; }
 	_float GetOpeningAngleDegrees() const;
@@ -129,6 +133,7 @@ private:
 	_bool CreatePassageBarrier(const DESC& desc);
 	_bool CreatePassageTrigger(const DESC& desc);
 	_bool CreateHingeJoint();
+	_bool SetPlacementScale(const _float3& vScale);
 	_bool SetReturnDrivePaused(_bool bPaused);
 	_bool SetPassageBarrierEnabled(_bool bEnabled);
 	void UpdatePassageState();
@@ -159,6 +164,10 @@ private:
 	_float3 m_vPassageTriggerHalfExtents{};
 	_float3 m_vInitialPosition{};
 	_float4 m_vInitialRotation{ 0.f, 0.f, 0.f, 1.f };
+	// [LSY] 물리 동기화에 덮어쓰이는 Transform과 분리한 GUI 배치 입력값이다.
+	_float3 m_vPlacementEditorPosition{};
+	_float3 m_vPlacementEditorRotationEuler{};
+	_float3 m_vPlacementEditorScale{ 1.f, 1.f, 1.f };
 	_float m_fLowerLimitDegrees{ -110.f };
 	_float m_fUpperLimitDegrees{ 110.f };
 	_float m_fTwistDriveStiffness{ 300.f };
@@ -166,6 +175,7 @@ private:
 	_float m_fTwistDriveForceLimit{ 1500.f };
 	_float m_fCCTPushForce{ 500.f };
 	_float m_fPassageOpenAngleDegrees{ 35.f };
+	_float3 m_vPlacementScale{ 1.f, 1.f, 1.f };
 	_float m_fTestTorque{ 800.f };
 	HINGE_SIDE m_eHingeSide{ HINGE_SIDE::LEFT };
 	_bool m_bPlayerInsidePassageTrigger{};

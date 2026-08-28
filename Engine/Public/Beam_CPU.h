@@ -5,6 +5,7 @@ NS_BEGIN(Engine)
 class ENGINE_DLL CBeam_CPU final: public CParticle
 {
 public:
+	DECLARE_DERIVED_TYPE(CBeam_CPU, CParticle)
 
 	struct CB_BEAM
 	{

@@ -21,7 +21,7 @@ typedef struct tagTextInfo
 class ENGINE_DLL CTextUI : public CUIObject
 {
 public:
-	DECLARE_DERIVED_TYPE(CUITex, CUIObject)
+	DECLARE_DERIVED_TYPE(CTextUI, CUIObject)
 
 public:
 	typedef struct tagTextDesc : public E::CUIObject::UIOBJECT_DESC

@@ -3,6 +3,7 @@
 
 #include "ComSound.h"
 #include "GameInstance.h"
+#include "GameObjectPoolManager.h"
 #include "MyMagicSquareStep.h"
 
 NS_USING(Client)
@@ -19,6 +20,10 @@ HRESULT CMyMagicSquareStepController::Initialize(void* pArg)
 {
 	const auto* pDesc = static_cast<DESC*>(pArg);
 	if (!pDesc || pDesc->iMaxSpawnPerFrame == 0 ||
+		pDesc->PoolKey.hash == 0 ||
+		pDesc->iPoolGrowCount == 0 ||
+		(pDesc->iPoolMaxCount != 0 &&
+			pDesc->iPoolPrewarmCount > pDesc->iPoolMaxCount) ||
 		FAILED(CGameObject::Initialize(pArg)))
 		return E_INVALIDARG;
 	m_StepProtoMajorTag = pDesc->ProtoMajorTag;
@@ -28,6 +33,51 @@ HRESULT CMyMagicSquareStepController::Initialize(void* pArg)
 	m_ResMinorTag = pDesc->ResMinorTag;
 
 	m_iMaxSpawnPerFrame = pDesc->iMaxSpawnPerFrame;
+	m_StepPoolKey = pDesc->PoolKey;
+
+	auto* pPoolManager =
+		CGameInstance::Get().GetGameObjectPoolManager();
+	if (!pPoolManager)
+		return E_FAIL;
+
+	CGameObjectPoolManager::POOL_DESC PoolDesc{};
+	// [LSY] 첫 구간은 기존 프레임 예산만큼만 미리 만들고, 이후 구간은 반환된 동일 발판을 재사용한다.
+	PoolDesc.iPrewarmCount = pDesc->iPoolPrewarmCount;
+	PoolDesc.iGrowCount = pDesc->iPoolGrowCount;
+	PoolDesc.iMaxCount = pDesc->iPoolMaxCount;
+	PoolDesc.eExhaustPolicy =
+		CGameObjectPoolManager::EXHAUST_POLICY::GROW;
+	PoolDesc.fnCreate = [
+		ProtoMajorTag = m_StepProtoMajorTag,
+		ProtoMinorTag = m_StepProtoMinorTag,
+		SpawnLayerName = m_StepSpawnLayerName,
+		ResMajorTag = m_ResMajorTag,
+		ResMinorTag = m_ResMinorTag,
+		iObjectIndex = size_t{ 0 }]() mutable
+		-> std::optional<CHandle>
+	{
+		CMyMagicSquareStep::DESC StepDesc{};
+		StepDesc.sObjectTag =
+			"PooledMagicSquareStep_" +
+			std::to_string(iObjectIndex++);
+		StepDesc.ResMajorTag = ResMajorTag;
+		StepDesc.ResMinorTag = ResMinorTag;
+		StepDesc.vInitialPosition = { 0.f, -10000.f, 0.f };
+
+		return CGameInstance::Get().AddGameObjectToLayer(
+			ProtoMajorTag,
+			ProtoMinorTag,
+			SpawnLayerName,
+			&StepDesc);
+	};
+
+	if (!pPoolManager->RegisterPool(
+			m_StepPoolKey,
+			std::move(PoolDesc)))
+	{
+		return E_FAIL;
+	}
+	m_bPoolRegistered = true;
 
 	CComSound::DESC SoundDesc{};
 	if (FAILED(AddComponentFromProto(
@@ -629,12 +679,20 @@ _bool CMyMagicSquareStepController::DeleteGroup(
 	if (iter == m_mapGroup.end())
 		return false;
 
+	auto* pPoolManager =
+		CGameInstance::Get().GetGameObjectPoolManager();
 	for (const STEP_DATA& StepData :
 		iter->second.vecSteps)
 	{
+		// [LSY] 그룹 제거는 객체 파괴 대신 풀 반환을 우선하고, 풀 상태가 깨진 경우에만 안전하게 파괴한다.
+		if (pPoolManager &&
+			pPoolManager->Release(StepData.hStep))
+		{
+			continue;
+		}
+
 		if (auto* pStep = CGameInstance::Get()
-			.GetGameObjectByHandle(
-				StepData.hStep))
+			.GetGameObjectByHandle(StepData.hStep))
 		{
 			pStep->SetPendingDestroyCascade();
 		}
@@ -764,18 +822,16 @@ _bool CMyMagicSquareStepController::SpawnOne(
 	if (iter == m_mapGroup.end())
 		return false;
 
-	CMyMagicSquareStep::DESC Desc{};
-	Desc.sObjectTag = "MyMagicSquareStep";
-	Desc.vInitialPosition = Data.vPosition;
-	Desc.ResMajorTag = m_ResMajorTag;
-	Desc.ResMinorTag = m_ResMinorTag;
+	auto* pPoolManager =
+		CGameInstance::Get().GetGameObjectPoolManager();
+	if (!pPoolManager || !m_bPoolRegistered)
+		return false;
 
-	const auto hStep =
-		CGameInstance::Get().AddGameObjectToLayer(
-			m_StepProtoMajorTag,
-			m_StepProtoMinorTag,
-			m_StepSpawnLayerName,
-			&Desc);
+	CMyMagicSquareStep::POOL_ACQUIRE_DESC AcquireDesc{};
+	AcquireDesc.vPosition = Data.vPosition;
+	const auto hStep = pPoolManager->Acquire(
+		m_StepPoolKey,
+		&AcquireDesc);
 	if (!hStep)
 		return false;
 
@@ -1303,4 +1359,19 @@ CMyMagicSquareStepController::Clone(void* pArg)
 		return nullptr;
 	}
 	return pInstance;
+}
+
+void CMyMagicSquareStepController::Free()
+{
+	if (m_bPoolRegistered)
+	{
+		if (auto* pPoolManager =
+			CGameInstance::Get().GetGameObjectPoolManager())
+		{
+			pPoolManager->UnregisterPool(m_StepPoolKey);
+		}
+		m_bPoolRegistered = false;
+	}
+
+	CGameObject::Free();
 }

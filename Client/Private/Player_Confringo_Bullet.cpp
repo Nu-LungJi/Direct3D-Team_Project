@@ -393,7 +393,7 @@ void CPlayer_Confringo_Bullet::ProcessHitGameplay(
 	//	pMonster->Check_Table(m_eSkillType);
 	//창준 변경
 	if (nullptr == Hit.pGameObject) return;
-	auto pSkillTarget = dynamic_cast<CSkillTarget*>(Hit.pGameObject);
+	auto pSkillTarget = Engine::Cast<CSkillTarget>(Hit.pGameObject);
 	if (nullptr == pSkillTarget) return;
 	pSkillTarget->Check_Table(m_eSkillType);
 }

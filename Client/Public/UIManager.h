@@ -127,9 +127,7 @@ private:
 	{
 		size_t operator()(const CHandle& handle) const noexcept
 		{
-			const size_t indexHash = std::hash<size_t>{}(handle.GetIndex());
-			const size_t generationHash = std::hash<uint32_t>{}(handle.GetGeneration());
-			return indexHash ^ (generationHash + 0x9e3779b9u + (indexHash << 6u) + (indexHash >> 2u));
+			return std::hash<uint64_t>{}(handle.GetPackedValue());
 		}
 	};
 	std::unordered_map<CHandle, _float, UI_HANDLE_HASH> m_2DUIRestoreAlpha{};

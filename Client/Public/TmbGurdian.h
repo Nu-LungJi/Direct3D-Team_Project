@@ -49,6 +49,7 @@ private:
 	void						Damaged(PLAYER_SKILL_TYPE eType) override;
 	void						Active_Skill();
 	void						ReadySound();
+	void						PlayDeadDebrisSound();
 	_bool						Check_Normal(PLAYER_SKILL_TYPE eType);
 	void						Update_BBToFsm();
 private:
@@ -57,6 +58,7 @@ private:
 	std::vector<_float4x4> m_vecDeadInverseBindMatrices{};
 	_bool m_bRenderDeadDebris{};
 	_bool m_bDeadDebrisPhysicsActivated{};
+	_bool m_bDeadDebrisSoundPlayed{};
 	class CMon_State* m_pFsm{ nullptr };
 
 	_string			m_EffectNames[ETOUI(TOMB_SKILL::END)];

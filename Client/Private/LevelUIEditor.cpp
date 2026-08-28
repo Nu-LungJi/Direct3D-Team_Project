@@ -156,7 +156,7 @@ HRESULT CLevelUIEditor::Initialize()
 						E::CUICamera* volatile sink = nullptr;
 						for (size_t i = 0; i < 10'000'000; ++i)
 						{
-							sink = dynamic_cast<E::CUICamera*>(val);
+							sink = Engine::Cast<E::CUICamera>(val);
 						}
 					}
 					auto end = std::chrono::high_resolution_clock::now();
@@ -1901,7 +1901,7 @@ void CLevelUIEditor::RefreshFlipbookResources()
 				resourceTag);
 		if (!resource)
 		{
-			resource = std::dynamic_pointer_cast<E::CResTexture2D>(
+			resource = Engine::Cast<E::CResTexture2D>(
 				E::CGameInstance::Get().AddResource(
 					"LEVEL_UIEDITOR",
 					resourceTag,

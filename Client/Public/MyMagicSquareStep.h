@@ -4,7 +4,6 @@
 #include "Client_Defines.h"
 
 NS_BEGIN(Engine)
-class CComConstantBuffer;
 class CComPxBoxCollider;
 class CComPxRigidBody;
 class CComStaticModelInstance;
@@ -46,6 +45,12 @@ public:
 		};
 	};
 
+	struct POOL_ACQUIRE_DESC
+	{
+		_float3 vPosition{};
+		_float4 vRotation{ 0.f, 0.f, 0.f, 1.f };
+	};
+
 public:
 	static constexpr _float3 MAGIC_STEP_BOX_HALF_EXTENTS{ 0.5031f, 1.5048f, 0.5031f };
 	static constexpr _float3 MAGIC_STEP_BOX_LOCAL_OFFSET{ 0.f, -1.4953f, 0.f };
@@ -63,8 +68,6 @@ public:
 	HRESULT Render(
 		ID3D11DeviceContext* pContext,
 		const RENDER_CTX& ctx) override;
-	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
-	bool GetShadowBounds(BoundingBox& outBounds) const override;
 	void UpdateGUI() override;
 
 private:
@@ -73,7 +76,6 @@ private:
 
 private:
 	CComStaticModelInstance* m_pComModelInstance{};
-	CComConstantBuffer* m_pComCBufferPerObject{};
 	CComPxRigidBody* m_pComPxRigidBody{};
 	CComPxBoxCollider* m_pComPxBoxCollider{};
 
@@ -106,6 +108,12 @@ private:
 public:
 	static UPtr<CMyMagicSquareStep> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
+
+protected:
+	_bool OnAcquireFromPool(void* pArg) override;
+	void OnReleaseToPool() override;
+	void OnManagedUpdateEnabled() override;
+	void OnManagedUpdateDisabled() override;
 };
 
 NS_END

@@ -5,7 +5,7 @@ NS_BEGIN(Engine)
 class CShadowCamera final : public CCameraObject
 {
 public:
-	DECLARE_DERIVED_TYPE(CFlyCamera, CCameraObject)
+	DECLARE_DERIVED_TYPE(CShadowCamera, CCameraObject)
 
 public:
 	void UpdateGUI() override;

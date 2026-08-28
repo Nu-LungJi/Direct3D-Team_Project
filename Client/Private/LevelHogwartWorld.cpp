@@ -7,6 +7,7 @@
 #include "FlyCamera.h"
 #include "UiCamera.h"
 #include "Player.h"
+#include "ComCharacterMoveIntent.h"
 #include "PlayerThirdPersonCamera.h"
 #include "NvClothCape.h"
 #include "UIController.h"
@@ -21,6 +22,12 @@
 #include "Troll.h"
 #include "PropBarrel.h"
 #include "LightPlacementObject.h"
+#include "PhysicsDoor.h"
+#include "AccioBall.h"
+#include "AccioActivity_Base.h"
+#include "AccioActivity_Platform.h"
+#include "AccioActivity_NpcController.h"
+#include "AccioActivity_NpcCharacter.h"
 // Client에도 같은 이름의 Terrain.h가 있으므로 Engine SDK 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
@@ -46,6 +53,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 	const auto hPlayer = SpawnPlayer();
 	if (!hPlayer)
 		return E_FAIL;
+	m_hDebugPlayer = *hPlayer;
 	if (auto* pNpcManager = gameInstance.GetNpcPlacementManager())
 	{
 		pNpcManager->ClearNpcOptions();
@@ -119,10 +127,17 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnStaticCollision()))
 		return E_FAIL;
 
-
-
 	if (FAILED(SpawnTerrain(*hPlayer)))
 		return E_FAIL;
+
+	// [LSY] 호그와트 월드 상호작용 오브젝트 배치 좌표는 이 호출부에서 조정한다.
+	if (FAILED(SpawnPhysicsDoor(
+		{ 134.1f, 3.7f, -93.5f },
+		{ 0.f, -60.f, 0.f },
+		{ 0.9f, 0.8f, 1.f })))
+	{
+		return E_FAIL;
+	}
 
 	if (FAILED(SpawnPropBarrelPyramid()))
 		return E_FAIL;
@@ -427,6 +442,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 void CLevelHogwartWorld::Update(E::_float fTimeDelta)
 {
 	UNREFERENCED_PARAMETER(fTimeDelta);
+	UpdateRuntimeActivitySpawnShortcut();
 
 	if (!m_bCreatePlayScreenUI)
 	{
@@ -443,6 +459,36 @@ void CLevelHogwartWorld::Update(E::_float fTimeDelta)
 	}
 
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
+	UpdateDebugWarp();
+}
+
+void CLevelHogwartWorld::UpdateDebugWarp()
+{
+	auto& gameInstance = CGameInstance::Get();
+	if (!gameInstance.KeyPressing(DIK_LSHIFT) ||
+		!gameInstance.KeyDown(DIK_F9))
+	{
+		return;
+	}
+
+	auto* pPlayer = gameInstance.GetGameObjectByHandleT<CPlayer>(m_hDebugPlayer);
+	if (!pPlayer)
+	{
+		DEBUG_LOG("[HogwartWorld] Debug warp failed: Player is invalid.\n");
+		return;
+	}
+
+	auto* pMoveIntent = pPlayer->GetComponent<CComCharacterMoveIntent>(
+		"ComCharacterMoveIntent");
+	if (!pMoveIntent)
+	{
+		DEBUG_LOG("[HogwartWorld] Debug warp failed: MoveIntent is missing.\n");
+		return;
+	}
+
+	constexpr _float3 vHogwartsCastlePosition{ 1890.f, 42.f, 245.f };
+	pMoveIntent->RequestWarp(vHogwartsCastlePosition);
+	DEBUG_LOG("[HogwartWorld] Debug warp: Hogwarts Castle (Shift + F9).\n");
 }
 
 HRESULT CLevelHogwartWorld::Render()
@@ -452,24 +498,88 @@ HRESULT CLevelHogwartWorld::Render()
 
 void CLevelHogwartWorld::UpdateGUI()
 {
-	ImGui::Begin("Level: Hogwart World");
+}
 
-	ImGui::End();
+void CLevelHogwartWorld::UpdateRuntimeActivitySpawnShortcut()
+{
+	auto& gameInstance = CGameInstance::Get();
+	const _bool bShiftPressed =
+		gameInstance.KeyPressing(DIK_LSHIFT) ||
+		gameInstance.KeyPressing(DIK_RSHIFT);
+	if (!bShiftPressed)
+		return;
+
+	if (gameInstance.KeyDown(DIK_F10))
+	{
+		PruneInvalidRuntimeHandles(m_AccioActivityHandles);
+		PruneInvalidRuntimeHandles(m_CoinCollisionHandles);
+
+		const HRESULT hrAccio = m_AccioActivityHandles.empty()
+			? SpawnAccioActivity(
+				m_hDebugPlayer,
+				{ 1912.f, 24.8f, 316.f },
+				180.f,
+				1.f)
+			: S_FALSE;
+		const HRESULT hrCoin = m_CoinCollisionHandles.empty()
+			? SpawnCoinCollision()
+			: S_FALSE;
+
+		if (FAILED(hrAccio) || FAILED(hrCoin))
+		{
+			DespawnRuntimeObjects(m_AccioActivityHandles);
+			DespawnRuntimeObjects(m_CoinCollisionHandles);
+			DEBUG_LOG("[HogwartWorld] Shift + F10 runtime activity spawn failed.\n");
+		}
+		else
+		{
+			DEBUG_LOG("[HogwartWorld] Shift + F10 spawned Accio Activity and Coin Collision.\n");
+		}
+	}
+	else if (gameInstance.KeyDown(DIK_F11))
+	{
+		DespawnRuntimeObjects(m_AccioActivityHandles);
+		DespawnRuntimeObjects(m_CoinCollisionHandles);
+		DEBUG_LOG("[HogwartWorld] Shift + F11 despawned Accio Activity and Coin Collision.\n");
+	}
+}
+
+void CLevelHogwartWorld::DespawnRuntimeObjects(
+	std::vector<CHandle>& Handles)
+{
+	for (auto iter = Handles.rbegin(); iter != Handles.rend(); ++iter)
+	{
+		if (auto* pObject = CGameInstance::Get().GetGameObjectByHandle(*iter))
+			pObject->SetPendingDestroyCascade();
+	}
+	Handles.clear();
+}
+
+void CLevelHogwartWorld::PruneInvalidRuntimeHandles(
+	std::vector<CHandle>& Handles)
+{
+	std::erase_if(
+		Handles,
+		[](const CHandle& hObject)
+		{
+			return CGameInstance::Get().GetGameObjectByHandle(hObject) == nullptr;
+		});
 }
 
 std::optional<CHandle> CLevelHogwartWorld::SpawnPlayer()
 {
 	CPlayer::DESC desc{};
 	desc.sObjectTag = "Player";
-	// Hogsmeade 중심부의 Terrain 높이(약 48)보다 조금 위에서 시작한다.
-	desc.vInitialPosition = { 200.f, 55.f, 80.f };
+	desc.vInitialPosition = { 64.f, -18.f, -378.f };
 	desc.LevelTag = LEVEL::HOGWART_WORLD;
 	desc.tFilter = PX_FILTER_DESC{
 		.iLayer = ETOUI(COLLISION_LAYER::PLAYER_BODY),
 		.iSimulationMask = PX_ALL_LAYERS,
 		.iQueryMask =
 			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
-			ETOUI(COLLISION_LAYER::MOVING_PLATFORM)
+			ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
+			ETOUI(COLLISION_LAYER::DOOR_DYNAMIC) |
+			ETOUI(COLLISION_LAYER::DOOR_HINGE_BLOCKER)
 	};
 
 	return E::CGameInstance::Get().AddGameObjectToLayer(
@@ -478,6 +588,307 @@ std::optional<CHandle> CLevelHogwartWorld::SpawnPlayer()
 		"03_Player",
 		&desc);
 }
+
+HRESULT CLevelHogwartWorld::SpawnPhysicsDoor(
+	const _float3& vPosition,
+	const _float3& vRotationEulerDegrees,
+	const _float3& vScale)
+{
+	CPhysicsDoor::DESC desc{};
+	desc.sObjectTag = "HogwartWorld_PhysicsDoor";
+	desc.sModelResourceGroup = LEVEL::HOGWART_WORLD;
+	desc.vInitialPosition = vPosition;
+	desc.vInitialRotation = vRotationEulerDegrees;
+	desc.vInitialScale = vScale;
+	// [LSY] 월드 배치 문은 복귀 힘을 낮추고 감쇠를 높여 천천히 닫히게 한다.
+	desc.fTwistDriveStiffness = 220.f;
+	desc.fTwistDriveDamping = 100.f;
+
+	return CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PhysicsDoor,
+		"01_PhysicsInteraction",
+		&desc)
+		? S_OK
+		: E_FAIL;
+}
+
+HRESULT CLevelHogwartWorld::SpawnAccioActivity(
+	CHandle hPlayer,
+	const _float3& vOrigin,
+	_float fYawDegrees,
+	_float fUniformScale)
+{
+	if (fUniformScale <= 0.f)
+		return E_INVALIDARG;
+	if (!m_AccioActivityHandles.empty())
+		return S_FALSE;
+
+	const _float3 vSetRotation{ 0.f, fYawDegrees, 0.f };
+	const _matrix setWorld =
+		XMMatrixRotationY(XMConvertToRadians(fYawDegrees)) *
+		XMMatrixTranslation(vOrigin.x, vOrigin.y, vOrigin.z);
+	const auto makeWorldPosition = [&setWorld](const _float3& vLocalPosition)
+	{
+		_float3 vWorldPosition{};
+		XMStoreFloat3(
+			&vWorldPosition,
+			XMVector3TransformCoord(
+				XMLoadFloat3(&vLocalPosition),
+				setWorld));
+		return vWorldPosition;
+	};
+	const auto scaleVector = [fUniformScale](const _float3& value)
+	{
+		return _float3{
+			value.x * fUniformScale,
+			value.y * fUniformScale,
+			value.z * fUniformScale
+		};
+	};
+	const auto scaleBox = [&scaleVector](
+		ACCIO_ACTIVITY_BOX_COLLIDER_DESC& box)
+	{
+		box.vHalfExtents = scaleVector(box.vHalfExtents);
+		box.vLocalOffset = scaleVector(box.vLocalOffset);
+	};
+
+	std::vector<CHandle> spawnedHandles{};
+	spawnedHandles.reserve(11);
+	// [LSY] 세트 생성은 전부 성공했을 때만 유효하다. 중간 실패 시 이미
+	// 생성된 구성요소를 역순으로 정리하고 실패 코드를 반환한다.
+	const auto rollbackSpawnedObjects = [&spawnedHandles]() -> HRESULT
+	{
+		for (auto iter = spawnedHandles.rbegin();
+			iter != spawnedHandles.rend();
+			++iter)
+		{
+			if (auto* pObject = CGameInstance::Get().GetGameObjectByHandle(*iter))
+				pObject->SetPendingDestroyCascade();
+		}
+		return E_FAIL;
+	};
+
+	CAccioActivity_Base::DESC baseDesc{};
+	baseDesc.sObjectTag = "HogwartWorld_AccioActivity_Base";
+	baseDesc.sResourceGroup = LEVEL::HOGWART_WORLD;
+	baseDesc.vInitialPosition = vOrigin;
+	baseDesc.vInitialRotation = vSetRotation;
+	baseDesc.vInitialScale = {
+		fUniformScale,
+		fUniformScale,
+		fUniformScale
+	};
+	for (auto& box : baseDesc.BoxColliders)
+		scaleBox(box);
+	scaleBox(baseDesc.Score10Trigger);
+	scaleBox(baseDesc.Score20Trigger);
+	scaleBox(baseDesc.Score30Trigger);
+	scaleBox(baseDesc.Score50Trigger);
+	const auto hBase = CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Base,
+		"01_PhysicsInteraction",
+		&baseDesc);
+	if (!hBase)
+		return E_FAIL;
+	spawnedHandles.push_back(*hBase);
+
+	CAccioActivity_Platform::DESC platformDesc{};
+	platformDesc.sObjectTag = "HogwartWorld_AccioActivity_Platform";
+	platformDesc.sResourceGroup = LEVEL::HOGWART_WORLD;
+	platformDesc.vInitialPosition = vOrigin;
+	platformDesc.vInitialRotation = vSetRotation;
+	platformDesc.vInitialScale = {
+		fUniformScale,
+		fUniformScale,
+		fUniformScale
+	};
+	scaleBox(platformDesc.BoxCollider);
+	platformDesc.WedgeCollider.vScale =
+		scaleVector(platformDesc.WedgeCollider.vScale);
+	platformDesc.WedgeCollider.vLocalOffset =
+		scaleVector(platformDesc.WedgeCollider.vLocalOffset);
+	scaleBox(platformDesc.NpcMoveAreaTrigger);
+	const auto hPlatform = CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Platform,
+		"01_PhysicsInteraction",
+		&platformDesc);
+	if (!hPlatform)
+	{
+		return rollbackSpawnedObjects();
+	}
+	spawnedHandles.push_back(*hPlatform);
+
+	struct ACCIO_BALL_PLACEMENT
+	{
+		const _char* pObjectTag;
+		const _char* pResourceTag;
+		CAccioBall::COLOR eColor;
+		_float3 vLocalPosition;
+	};
+
+	constexpr ACCIO_BALL_PLACEMENT ballPlacements[] =
+	{
+		{ "HogwartWorld_AccioBall_Blue_1", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { -7.f, 4.25f, 26.f } },
+		{ "HogwartWorld_AccioBall_Red_1", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { -4.f, 4.25f, 26.f } },
+		{ "HogwartWorld_AccioBall_Blue_2", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { -1.f, 4.25f, 26.f } },
+		{ "HogwartWorld_AccioBall_Red_2", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { 2.f, 4.25f, 26.f } },
+		{ "HogwartWorld_AccioBall_Blue_3", "Static_AccioBall_Blue_Resource", CAccioBall::COLOR::BLUE, { 5.f, 4.25f, 26.f } },
+		{ "HogwartWorld_AccioBall_Red_3", "Static_AccioBall_Red_Resource", CAccioBall::COLOR::RED, { 8.f, 4.25f, 26.f } }
+	};
+
+	std::array<CHandle, std::size(ballPlacements)> ballHandles{};
+	for (size_t i = 0; i < std::size(ballPlacements); ++i)
+	{
+		const auto& placement = ballPlacements[i];
+		CAccioBall::DESC ballDesc{};
+		ballDesc.sObjectTag = placement.pObjectTag;
+		ballDesc.sResourceGroup = LEVEL::HOGWART_WORLD;
+		ballDesc.sModelResourceTag = placement.pResourceTag;
+		ballDesc.eColor = placement.eColor;
+		ballDesc.vInitialPosition = makeWorldPosition(
+			scaleVector(placement.vLocalPosition));
+		ballDesc.vInitialRotation = vSetRotation;
+		ballDesc.vInitialScale = {
+			3.f * fUniformScale,
+			3.f * fUniformScale,
+			3.f * fUniformScale
+		};
+		ballDesc.fSphereRadius *= fUniformScale;
+
+		const auto hBall = CGameInstance::Get().AddGameObjectToLayer(
+			LEVEL::HOGWART_WORLD,
+			PROTO_GAMEOBJECT::Prototype_GameObject_AccioBall,
+			"02_AccioBall",
+			&ballDesc);
+		if (!hBall)
+		{
+			return rollbackSpawnedObjects();
+		}
+
+		ballHandles[i] = *hBall;
+		spawnedHandles.push_back(*hBall);
+	}
+
+	auto* pActivity = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_Base>(*hBase);
+	if (!pActivity)
+	{
+		return rollbackSpawnedObjects();
+	}
+	for (const auto& hBall : ballHandles)
+	{
+		if (!pActivity->RegisterBall(hBall))
+		{
+			return rollbackSpawnedObjects();
+		}
+	}
+
+	CAccioActivity_NpcCharacter::DESC npcCharacterDesc{};
+	CAccioActivity_NpcController::DESC npcControllerDesc{};
+	npcControllerDesc.sObjectTag = "HogwartWorld_AccioActivity_NpcController";
+	npcControllerDesc.hActivity = *hBase;
+	npcControllerDesc.hPlatform = *hPlatform;
+	npcControllerDesc.hInteractionPlayer = hPlayer;
+	npcControllerDesc.SpeakerName = "호그와트 학생";
+	npcControllerDesc.fInteractionDistance = 10.f;
+	npcControllerDesc.Dialogue =
+	{
+		{ "준비됐어? 아씨오로 공을 끌어 점수를 겨뤄 보자.", {}, true },
+		{ "높은 점수 구역에 공을 멈추면 이겨. 네가 먼저 시작해.", {}, true }
+	};
+	npcControllerDesc.PlayerWinDialogue =
+	{
+		{ "잘했어. 이번 승부는 네가 이겼네.", {}, true }
+	};
+	npcControllerDesc.NpcWinDialogue =
+	{
+		{ "이번 승부는 내가 이겼네. 다시 도전해 봐.", {}, true }
+	};
+	npcControllerDesc.DrawDialogue =
+	{
+		{ "무승부네. 꽤 좋은 승부였어.", {}, true }
+	};
+
+	constexpr _float fNpcSpawnClearance = 0.5f;
+	const _float fCCTBottomFromObjectOrigin =
+		npcCharacterDesc.vCCTCenterOffset.y -
+		(npcCharacterDesc.fCCTHeight * 0.5f + npcCharacterDesc.fCCTRadius);
+	const _float fNpcSideLocalX =
+		platformDesc.NpcMoveAreaTrigger.vLocalOffset.x +
+		std::max(
+			platformDesc.NpcMoveAreaTrigger.vHalfExtents.x -
+			npcControllerDesc.fMoveAreaMargin -
+			npcControllerDesc.fSideStandbyInset,
+			0.f);
+	const _float3 vNpcLocalPosition{
+		fNpcSideLocalX,
+		platformDesc.BoxCollider.vLocalOffset.y +
+		platformDesc.BoxCollider.vHalfExtents.y +
+		fNpcSpawnClearance - fCCTBottomFromObjectOrigin,
+		platformDesc.NpcMoveAreaTrigger.vLocalOffset.z
+	};
+	npcControllerDesc.vInitialPosition = makeWorldPosition(vNpcLocalPosition);
+	npcControllerDesc.vInitialRotation = {
+		vSetRotation.x,
+		vSetRotation.y - 90.f,
+		vSetRotation.z
+	};
+
+	npcCharacterDesc.sObjectTag = "HogwartWorld_AccioActivity_NpcCharacter";
+	npcCharacterDesc.sResourceGroup =
+		_string{ MagicEnumToStringView(LEVEL::HOGWART_WORLD) };
+	npcCharacterDesc.sModelResourceTag =
+		"ACCIO_ACTIVITY_STUDENT_MODEL_RESOURCE";
+	npcCharacterDesc.vInitialPosition = npcControllerDesc.vInitialPosition;
+	npcCharacterDesc.vInitialRotation = npcControllerDesc.vInitialRotation;
+	const auto hNpcCharacter = CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_NpcCharacter,
+		"02_Npc",
+		&npcCharacterDesc);
+	if (!hNpcCharacter)
+	{
+		return rollbackSpawnedObjects();
+	}
+	spawnedHandles.push_back(*hNpcCharacter);
+
+	auto* pNpcCharacter = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_NpcCharacter>(*hNpcCharacter);
+	if (!pNpcCharacter || pNpcCharacter->GetWeaponHandle() == CHandle{})
+	{
+		return rollbackSpawnedObjects();
+	}
+	spawnedHandles.push_back(pNpcCharacter->GetWeaponHandle());
+
+	npcControllerDesc.hNpcCharacter = *hNpcCharacter;
+	const auto hNpcController = CGameInstance::Get().AddGameObjectToLayer(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_NpcController,
+		"02_Npc",
+		&npcControllerDesc);
+	if (!hNpcController)
+	{
+		return rollbackSpawnedObjects();
+	}
+	spawnedHandles.push_back(*hNpcController);
+
+	pActivity->SetParticipantHandle(
+		CAccioActivity_Base::PARTICIPANT::PLAYER,
+		hPlayer);
+	auto* pNpcController = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_NpcController>(*hNpcController);
+	if (!pNpcController)
+		return rollbackSpawnedObjects();
+
+	pNpcController->SetInteractionPlayerHandle(hPlayer);
+	m_AccioActivityHandles = std::move(spawnedHandles);
+
+	return S_OK;
+}
+
 HRESULT CLevelHogwartWorld::SpawnLightPlacement()
 {
 	CLightPlacementObject::DESC desc{}; 
@@ -739,8 +1150,8 @@ HRESULT CLevelHogwartWorld::SpawnPlayerCamera(CHandle hPlayer)
 {
 	CPlayerThirdPersonCamera::DESC desc{};
 	desc.eProj = E::CCameraObject::PROJ::PERSPECTIVE;
-	desc.vAt = { 200.f, 55.f, 80.f };
-	desc.vEye = { 200.f, 58.f, 73.f };
+	desc.vAt = { 64.f, -18.f, -378.f };
+	desc.vEye = { 64.f, -15.f, -385.f };
 	desc.fAspect = g_iWinSizeX / static_cast<E::_float>(g_iWinSizeY);
 	desc.fFovY = 75.f;
 	desc.fNear = 0.1f;
@@ -822,7 +1233,22 @@ HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 	return S_OK;
 }
 
+HRESULT CLevelHogwartWorld::SpawnCoinCollision()
+{
+	if (!m_CoinCollisionHandles.empty())
+		return S_FALSE;
 
+	auto handles = CGameInstance::Get()
+		.GetPhysXManager()
+		->CreateCollisionProxyObjectsFromFile(
+			"Level_HogwartCoin",
+			"00_CoinCollision");
+
+	if (handles.empty())
+		return E_FAIL;
+	m_CoinCollisionHandles = std::move(handles);
+	return S_OK;
+}
 
 HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer, const _string& Path)
 {

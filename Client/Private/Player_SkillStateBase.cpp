@@ -112,7 +112,7 @@ _bool CPlayer_SkillStateBase::TryApplySkillToTarget(CPlayer& player,PLAYER_SKILL
 {//창준 변경
 	auto pMonster = CGameInstance::Get().GetGameObjectByHandle(player.GetTargetHandle());
 	if (nullptr == pMonster) return false;
-	auto pSkillTarget = dynamic_cast<CSkillTarget*>(pMonster);
+	auto pSkillTarget = Engine::Cast<CSkillTarget>(pMonster);
 	if (nullptr == pSkillTarget) return false;
 	return pSkillTarget->Check_Table(eSkillType);
 }

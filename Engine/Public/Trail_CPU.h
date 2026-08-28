@@ -14,6 +14,8 @@ NS_BEGIN(Engine)
 class ENGINE_DLL CTrail_CPU final : public CParticle
 {
 public:
+	DECLARE_DERIVED_TYPE(CTrail_CPU, CParticle)
+
 	// 한 프레임에 기록된 무기 궤적 한 쌍(칼날 밑동~칼끝) + 그 순간부터 흐른 시간
 	struct TRAIL_FRAME
 	{
@@ -126,10 +128,7 @@ private:
     {
         size_t operator()(const CHandle& hHandle) const noexcept
         {
-            size_t iSeed = std::hash<size_t>{}(hHandle.GetIndex());
-            iSeed ^= std::hash<uint32_t>{}(hHandle.GetGeneration()) +
-                0x9e3779b9u + (iSeed << 6) + (iSeed >> 2);
-            return iSeed;
+            return std::hash<uint64_t>{}(hHandle.GetPackedValue());
         }
     };
 

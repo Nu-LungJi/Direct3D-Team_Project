@@ -44,11 +44,16 @@ public:
 	_bool IsVisible() const { return m_bVisible; }
 	void SetMovementRatio(_float fRatio);
 	void SetBoostEffectRatio(_float fRatio);
+	// [LSY] LateUpdate 캐시를 읽지 않고 현재 플레이어 루트와 소켓으로
+	// 이번 틱의 빗자루 최종 월드 행렬을 계산한다.
+	_bool TryBuildAttachedWorldMatrix(_matrix& OutWorld) const;
 
 	static UPtr<CPlayer_Broom> Create();
 	UPtr<CPrototype> Clone(void* pArg) override;
 
 private:
+	_bool TryBuildAttachmentParentWorld(_matrix& OutParentWorld) const;
+
 	CComModelInstance* m_pModelInstance{};
 	CComConstantBuffer* m_pObjectBuffer{};
 	SPtr<CResVertexShader> m_pVertexShader{};
