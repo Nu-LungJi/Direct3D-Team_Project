@@ -21,7 +21,7 @@
 #include "PlayerThirdPersonCamera.h"
 #include "ResModel.h"
 #include "Troll.h"
-#include "UIController.h"
+#include "UIController.h" 
 #include "UIManager.h"
 #include "UiCamera.h"
 #include "WorldAgent.h"
@@ -1394,12 +1394,33 @@ HRESULT CLevelHogwartWorld::Initialize_EnviromentLight()
 }
 
 HRESULT CLevelHogwartWorld::Initialize_LoopEffect()
-{
+{	
+	//CGameInstance::Get().Spawn("CGY_HogwartSteam.json", XMMatrixScaling(2.5f, 2.5f, 2.5f)* XMMatrixTranslation(106.42f, -7.5f, -212.875f),  _vector {}, true);
+	//CGameInstance::Get().Spawn("CGY_HogwartSteam.json", XMMatrixScaling(3.2f, 3.2f, 3.2f)* XMMatrixTranslation(110.28f, -7.0f, -201.295f),  _vector {}, true);
+	//CGameInstance::Get().Spawn("CGY_HogwartSteam.json", XMMatrixScaling(2.7f, 2.7f, 2.7f)* XMMatrixTranslation(110.41f, -6.95f, -215.515f), _vector{}, true);
+	{
+		_float4x4 SteamFirst{}, SteamSecond{}, SteamThird{};
 
-	CGameInstance::Get().Spawn("CGY_HogwartSteam.json",
-							   XMMatrixTranslation(106.42f, -7.5f, -212.875f) * XMMatrixScaling(2.5f, 2.5f, 2.5f),
-							   _vector{},
-							   true);
+		XMStoreFloat4x4(&SteamFirst, XMMatrixScaling(2.5f, 2.5f, 2.5f) * XMMatrixTranslation(106.42f, -7.5f, -212.875f));
+		XMStoreFloat4x4(&SteamSecond, XMMatrixScaling(3.2f, 3.2f, 3.2f) * XMMatrixTranslation(110.28f, -7.0f, -201.295f));
+		XMStoreFloat4x4(&SteamThird, XMMatrixScaling(2.7f, 2.7f, 2.7f) * XMMatrixTranslation(110.41f, -6.95f, -215.515f));
+
+		CGameInstance::Get().PlayEffect("HogwartSteam_A", SteamFirst);
+		CGameInstance::Get().PlayEffect("HogwartSteam_B", SteamSecond);
+		CGameInstance::Get().PlayEffect("HogwartSteam_C", SteamThird);
+	}
+
+	//{
+	//	_float4x4 SteamFirst{}, SteamSecond{}, SteamThird{};
+	//
+	//	XMStoreFloat4x4(&SteamFirst, XMMatrixScaling(2.5f, 2.5f, 2.5f) * XMMatrixTranslation(106.42f, -7.5f, -212.875f));
+	//	XMStoreFloat4x4(&SteamSecond, XMMatrixScaling(3.2f, 3.2f, 3.2f) * XMMatrixTranslation(110.28f, -7.0f, -201.295f));
+	//	XMStoreFloat4x4(&SteamThird, XMMatrixScaling(2.7f, 2.7f, 2.7f) * XMMatrixTranslation(110.41f, -6.95f, -215.515f));
+	//
+	//	CGameInstance::Get().PlayEffect("ChimneySteam_A", SteamFirst);
+	//	CGameInstance::Get().PlayEffect("ChimneySteam_B", SteamSecond);
+	//	CGameInstance::Get().PlayEffect("ChimneySteam_C", SteamThird);
+	//}
 
 	return S_OK;
 }
