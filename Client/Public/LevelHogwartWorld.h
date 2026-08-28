@@ -25,7 +25,7 @@ public:
 private:
 	std::optional<CHandle> SpawnPlayer();
 	HRESULT SpawnPlayerCape(CHandle hPlayer);
-	HRESULT SpawnPropBarrelPyramid();
+	HRESULT SpawnPropBarrelBlock();
 	HRESULT SpawnTerrain(std::optional<CHandle> hPlayer);
 	HRESULT SpawnNaviMesh(class E::CTerrain* pTerrain);
 	HRESULT SpawnFlyCamera();
