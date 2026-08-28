@@ -61,7 +61,6 @@
 #include "EffectManager.h"
 #include "NpcPlacementManager.h"
 #include "AnimatedObjectPlacementManager.h"
-
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -333,7 +332,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
-	
+	m_pWayManager = CWayPointManager::Create();
+	if (m_pWayManager == nullptr)
+	{
+		return E_FAIL;
+	}
 	return S_OK;
 }
 
@@ -433,6 +436,7 @@ void CGameInstance::UpdateGUI()
 
 	m_pLuaManager->UpdateGUI();
 	m_pEffectManager->UpdateGUI();
+	m_pWayManager->UpdateGUI();
 	//if (ImGui::Button("ShaderRebuild"))
 	//{
 	//	//TAG_RES_GRP_PERMANENT_SHADER

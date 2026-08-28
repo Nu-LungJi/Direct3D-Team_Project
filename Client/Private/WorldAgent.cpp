@@ -242,6 +242,7 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 
 		auto* pBB = Get_BlackBoard();
 		pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
+		
 		if (!WorldAgentDesc->AnimName.empty())
 		{
 			pBB->Set_Value<_string>(PUBLIC_KEY::ANIMNAME, WorldAgentDesc->AnimName);

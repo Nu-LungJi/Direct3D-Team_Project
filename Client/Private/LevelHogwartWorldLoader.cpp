@@ -44,7 +44,7 @@
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
-
+#include "WayPointManager.h"
 #include "Coin.h"
 NS_USING(Client)
 
@@ -114,7 +114,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 
 			if (FAILED(LoadHogsmeade_ExtraAsset()))
 				return false;
-
+			if (FAILED(LoadWay_InWorker()))
+				return false;
 			return SUCCEEDED(LoadPlayerResources());
 		});
 }
@@ -504,43 +505,28 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 
 HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 {
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Griff",
-		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Griff/SK_Griff.bin"))) {
+	struct MODEL_ANIMAL
+	{ _string ResName{};					_string PathName{};				_float3 vScale{3.f,3.f,3.f}; };
+	MODEL_ANIMAL resAnimal[]{ 
+	{"Model_Resource_Griff",	   "./Resources/SampleClient/Models/Skeleton/Griff/SK_Griff.bin",_float3(6.f,6.f,6.f)},
+	{"Model_Resource_Cat",		   "./Resources/SampleClient/Models/Skeleton/Cat/SK_Cat.bin"},
+	{"Model_Resource_Bird_Kestrel","./Resources/SampleClient/Models/Skeleton/Birds_Kestrel/SK_Birds_Kestrel.bin"},
+	{"Model_Resource_Bird_Phoneix","./Resources/SampleClient/Models/Skeleton/Phoneix/SK_Phoneix.bin",_float3(5.f,5.f,5.f) },};
 
-		E::CResModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(6.f,6.f,6.f)*XMMatrixRotationY(XMConvertToRadians(180.f));
+	for (auto& iter : resAnimal)
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, iter.ResName,CResModel::Create(iter.PathName))) {
+			E::CResModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(iter.vScale.x, iter.vScale.y, iter.vScale.z) * XMMatrixRotationY(XMConvertToRadians(180.f));
 
-		if (FAILED(res->Load(pDesc)))
-		{
-			MSG_BOX("HOGWART_WORLD Failed Model_Resource_Griff");
-			return E_FAIL;
+			if (FAILED(res->Load(pDesc)))
+			{
+				_string FailedName = "HOGWART_WORLD Failed" + iter.ResName;
+				MessageBoxA(g_hWnd, FailedName.c_str(), "System Error Message", MB_OK | MB_ICONERROR);
+				return E_FAIL;
+			}
 		}
 	}
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Cat",
-		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Cat/SK_Cat.bin"))) {
-
-		E::CResModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
-
-		if (FAILED(res->Load(pDesc)))
-		{
-			MSG_BOX("HOGWART_WORLD Failed Model_Resource_Cat");
-			return E_FAIL;
-		}
-	}
-	if (auto res = CGameInstance::Get().AddResourceT<E::CResModel>(LEVEL::HOGWART_WORLD, "Model_Resource_Bird_Kestrel",
-		CResModel::Create("./Resources/SampleClient/Models/Skeleton/Birds_Kestrel/SK_Birds_Kestrel.bin"))) {
-
-		E::CResModel::DESC pDesc{};
-		pDesc.PreTransformMatrix = XMMatrixScaling(3.f, 3.f, 3.f) * XMMatrixRotationY(XMConvertToRadians(180.f));
-
-		if (FAILED(res->Load(pDesc)))
-		{
-			MSG_BOX("HOGWART_WORLD Failed Model_Resource_Bird_Kestrel");
-			return E_FAIL;
-		}
-	}
-	
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Griff, CGriff::Create())))
 	{
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_Griff");
@@ -564,6 +550,27 @@ HRESULT CLevelHogwartWorldLoader::LoadCollsion_InWorker()
 	{
 		MSG_BOX("TERRAIN Failed Prototype_GameObject_Coin");
 		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorldLoader::LoadWay_InWorker()
+{
+	auto* pWay = CGameInstance::Get().GetWayManager();
+	if (nullptr == pWay)
+	{
+		MSG_BOX("WayLoad Failed in HogwartWorld");
+		return E_FAIL;
+	}
+	if (auto res = CGameInstance::Get().AddResource("WAYPOINT", "PHONEIX", CResJson::Create("./Resources/json/WayPoint/Phoneix.json")))
+	{
+		if (FAILED(res->Load()))
+		{
+			MSG_BOX("LOAD FAILED PHONEIX JSON");
+			return E_FAIL;
+		}
+		else//처음 매개변수는 json이름과 동일하게
+			pWay->RegistWayTag("Phoneix", "WAYPOINT", "PHONEIX");
 	}
 	return S_OK;
 }

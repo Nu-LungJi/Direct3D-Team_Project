@@ -25,6 +25,8 @@ private:
 	static HRESULT WorldAgentLoad_InWorker();
 
 	static HRESULT LoadCollsion_InWorker();
+
+	static HRESULT LoadWay_InWorker();
 	static HRESULT LoadHogsmeade_ExtraAsset();
 private:
 	constexpr static LEVEL CURR_LEVEL = LEVEL::HOGWART_WORLD;
