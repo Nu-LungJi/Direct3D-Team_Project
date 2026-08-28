@@ -85,7 +85,6 @@ HRESULT CSpider::Initialize(void* pArg)
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 
 	auto pBB = Get_BlackBoard();
-
 	pBB->Set_Value<_float3>(NPC_KEY::STARTPOS, MonDesc->vPatrollStart);
 	pBB->Set_Value<_float3>(NPC_KEY::ENDPOS, MonDesc->vPatrollEnd);
 	return S_OK;

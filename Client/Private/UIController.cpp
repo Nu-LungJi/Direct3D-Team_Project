@@ -98,41 +98,46 @@ void CUIController::Update(E::_float fTimeDelta)
 	UpdateRookwoodPortalProgression();
 
 	// 소환사의 코트 미니게임 UI 확인용 디버그 입력.
+	static uint32_t assioDebugScoreCount = 0u;
 	if (E::CGameInstance::Get().KeyDown(DIK_F3))
 	{
 		GET_SINGLE(UIManager)->AssioMiniGameStart();
+		assioDebugScoreCount = 0u;
 	}
 	if (E::CGameInstance::Get().KeyDown(DIK_SPACE) &&
-		GET_SINGLE(UIManager)->IsAssioMiniGameActive())
+		GET_SINGLE(UIManager)->CanAddAssioScore())
 	{
-		GET_SINGLE(UIManager)->AddScore(30);
+		++assioDebugScoreCount;
+		const _bool isFinalScore = assioDebugScoreCount >= 4u;
+		GET_SINGLE(UIManager)->AddScore(30, isFinalScore);
 	}
 
 	// World-space RTT wand-shop debug entry.
 	if (E::CGameInstance::Get().KeyDown(DIK_F4))
 	{
-		CPlayer* player = nullptr;
-		CHandle playerHandle{};
-		if (const auto* playerLayer = E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
-		{
-			for (const CHandle handle : *playerLayer)
-			{
-				player = E::CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(handle);
-				if (player)
-				{
-					playerHandle = handle;
-					break;
-				}
-			}
-		}
+		//CPlayer* player = nullptr;
+		//CHandle playerHandle{};
+		//if (const auto* playerLayer = E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
+		//{
+		//	for (const CHandle handle : *playerLayer)
+		//	{
+		//		player = E::CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(handle);
+		//		if (player)
+		//		{
+		//			playerHandle = handle;
+		//			break;
+		//		}
+		//	}
+		//}
 
-		if (player)
-		{
-			GET_SINGLE(UIManager)->OpenWandShopWorld(
-				playerHandle,
-				{ 0.f, 1.6f, 3.f },
-				{ 0.f, 0.f, 0.f });
-		}
+		//if (player)
+		//{
+		//	GET_SINGLE(UIManager)->OpenWandShopWorld(
+		//		playerHandle,
+		//		{ 0.f, 1.6f, 3.f },
+		//		{ 0.f, 0.f, 0.f });
+		//}
+		GET_SINGLE(UIManager)->LoadPrefab("AccioSuccess");
 	}
 
 	// 대화 선택 UI와 콜백 연결 확인용 디버그 입력.
