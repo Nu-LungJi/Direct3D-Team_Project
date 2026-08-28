@@ -71,7 +71,7 @@ private:
 	std::vector<size_t> m_FilteredItemIndices{};
 
 	// 광윤 추가
-	E::_float3 m_vDropInitialScale{ 1.f, 1.f, 1.f };
+	float m_fDropInitialScale = 1.f;
 };
 
 NS_END

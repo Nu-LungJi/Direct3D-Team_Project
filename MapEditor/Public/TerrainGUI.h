@@ -35,6 +35,7 @@ private:
 		_float amplitude, _float baseHeight, int octaves, _float persistence,
 		_float lacunarity, _bool additive);
 
+
 private:
 	E::UPtr<CTerrainPickingPass> m_pPickingPass{};
 	E::UPtr<CTerrainBrushController> m_pBrushController{};

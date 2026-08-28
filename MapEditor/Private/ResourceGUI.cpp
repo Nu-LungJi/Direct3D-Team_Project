@@ -503,6 +503,11 @@ HRESULT CResourceGUI::CachingAllResource()
 }
 void CResourceGUI::UpdateGUI(E::_float fTimeDelta)
 {
+	ImGui::SetNextItemWidth(220.f);
+	ImGui::DragFloat3("Scale Initialize",&m_fDropInitialScale, 0.01f, 0.001f, 100.f, "%.2f");
+
+	m_fDropInitialScale = std::max(m_fDropInitialScale, 0.001f);
+
 	m_pThumbnailCache->BeginFrame();
 	ImGui::SetNextWindowSize(ImVec2(560.f, 420.f), ImGuiCond_FirstUseEver);
 	if (!ImGui::Begin("Resources"))
@@ -737,7 +742,7 @@ void CResourceGUI::CreateDroppedMapMeshObject(const E::_float3& worldPosition)
 	snapshot.layerTag = E::MAPMESHOBJECTLAYER;
 	snapshot.position = worldPosition;
 	// 광윤 추가 -> 초기 생성 스케일 조절기능  (추후 추가 예정)
-	snapshot.scale = m_vDropInitialScale;
+	snapshot.scale = { m_fDropInitialScale, m_fDropInitialScale, m_fDropInitialScale };
 	m_pCommandManager->Submit(
 		std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), GetSelectedHandle()));
 }
