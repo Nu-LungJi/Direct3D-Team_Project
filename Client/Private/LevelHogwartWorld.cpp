@@ -9,6 +9,7 @@
 #include "GameInstance.h"
 #include "Griff.h"
 #include "InteractiveNpc.h"
+#include "ShopNpc.h"
 #include "LevelHogwartWorldLoader.h"
 #include "LightPlacementObject.h"
 #include "Mon_Spawner.h"
@@ -83,8 +84,23 @@ HRESULT CLevelHogwartWorld::Initialize()
 												   NpcOption.sModelGroupTag,
 												   "Model_Resource_Bird_Kestrel",
 												   "./Resources/SampleClient/Models/Skeleton/Birds_Kestrel/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag,
+				"BalloonLauncher",
+				NpcOption.sModelGroupTag,
+				"Model_Resource_AnimatedObject_BalloonLauncher_Animated",
+				"./Resources/SampleClient/Models/AnimatedObject/BalloonLauncher_Animated/");
 		}
-
+		//{
+		//	NpcOption.sPrototypeTag = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldAnimal);
+		//	NpcOption.sLayerTag = "02_AnimObject";
+		//	pNpcManager->RegisterNpcOption("AnimObject", NpcOption);
+		//	pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag,
+		//		"BalloonLauncher",
+		//		NpcOption.sModelGroupTag,
+		//		"Model_Resource_AnimatedObject_BalloonLauncher_Animated",
+		//		"./Resources/SampleClient/Models/AnimatedObject/BalloonLauncher_Animated/");
+		//
+		//}
 		pNpcManager->SetSpawnCallback(
 			[hTarget = *hPlayer](const E::NPC_PLACEMENT_DESC &Placement)
 			{
@@ -248,17 +264,18 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	{
 		// 상점 NPC
-		CInteractiveNpc::DESC Desc{};
-		Desc.sObjectTag = "Hogsmeade_MiniGameNpc_Professor";
+		CShopNpc::DESC Desc{};
+		Desc.sObjectTag = "Hogsmeade_ShopNpc_GerboldOllivander";
 		Desc.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-		Desc.ReSourceTag = "PLAYER_MODEL_RESROUCE";
+		Desc.ReSourceTag = "Model_Resource_NPC_GerboldOllivander";
 		Desc.BeHaviorTag = "NPC1";
 		Desc.resBeHaviorMajor = "BTJSON";
 		Desc.resBeHaviorMinor = "NPC1";
 		Desc.TargetHandle = *hPlayer;
-		Desc.vPos = {203.512f, 44.703f, 85.749f};
+		// 인게임에서 잡은 첫 등장 위치. Shot_020의 루트 모션으로 작업대 쪽에 등장한다.
+		Desc.vPos = { 108.5f, 2.5f, -82.f };
 		Desc.vStartPos = Desc.vPos;
-		Desc.vRot = {0.f, 38.342f, 0.f};
+		Desc.vRot = { 0.f, 113.1f, 0.f };
 		Desc.vScale = {1.f, 1.f, 1.f};
 		Desc.fCCTHeight = 3.6f;
 		Desc.fCCTRadius = 0.6f;
@@ -266,79 +283,63 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.vCCTCenterOffset = {0.f, 1.f, 0.f};
 		Desc.bPhyx = true;
 		Desc.bDonMove = true;
-		Desc.SpeakerName = "상점주인";
-		Desc.InteractionDistance = 3.f;
-		Desc.Repeatable = true;
-		Desc.IdleExpressionAnim = "AN_ProfessorSharp_MasterRig_Hu_HUD_Idle_Casual_Loop_anm.bin";
+		Desc.SpeakerName = "거볼드 올리밴더";
+		// 가게 출입문에서 카운터까지 거리를 포함해 입장 직후 자동 연출을 시작한다.
+		Desc.InteractionDistance = 12.f;
+		Desc.Repeatable = false;
+		Desc.AutoStartOnEnter = true;
+		Desc.FadeDuration = 0.6f;
+		Desc.FadeHoldDuration = 0.25f;
+		Desc.IdleExpressionAnim = "AN_BODY__Idle__Hu_BM_Idle_Casual_Loop.bin";
+		Desc.WorldSpaceShop = false;
+		Desc.RepositionPlayerForDialogue = false;
 
-		Desc.Dialogue = {// 0
-						 {"어서 오게, 지팡이를 사러 왔나?",
-						  "",
-						  true,
-						  {{"네!",
-							std::numeric_limits<size_t>::max(),
-							CInteractiveNpc::DIALOGUE_ACTION::NONE,
-							[]() -> size_t
-							{
-								const uint32_t coinCount = 20; // 실제 코인 값으로 교체
-
-								if (coinCount >= 20)
-									return 5;
-
-								return 1;
-							}},
-
-						   {"다른 용무가 있습니다.", 4, CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE}}},
-
-						 // 1
-						 {"자네는 아직 지팡이를 사기에는 돈도 실력도 부족하군.", "", true},
-
-						 // 2
-						 {"마침 학교에서 작은 대회를 연다고 하니 참여해 보는 게 어떠한가?",
-						  "",
-						  true,
-						  {{"좋아요!", 3, CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME},
-						   {"다른 용무가 있습니다.", 4, CInteractiveNpc::DIALOGUE_ACTION::CANCEL_DIALOGUE}}},
-
-						 // 3
-						 {"좋은 배짱이군. 그곳으로 보내 주겠네.", "", true},
-
-						 // 4
-						 {"마음이 바뀌면 다시 찾아오게.", "", true},
-
-						 // 5
-						 {"한번 골라 보게.", "", true, {}, {}, CInteractiveNpc::DIALOGUE_ACTION::OPEN_SHOP},
-
-						 // 6
-						 {"꽤 강력한 지팡이를 골랐군.", "", true},
-
-						 // 7
-						 {"지팡이마다 고유한 능력이 있으니 한번 시험해 보는 게 좋을 거야.",
-						  "",
-						  true,
-						  {},
-						  {},
-						  CInteractiveNpc::DIALOGUE_ACTION::START_SPELL_MINIGAME}};
-		Desc.ResolveStartDialogueIndex = []()
-		{
-			// 만약 플레이어가 이미 지팡이를 샀으면
-			// 대화 6번으로
-			// 아직 안샀으면 0번으로
-
-			// auto* pPlayer = E::CGameInstance::Get().
-			//	GetGameObjectByHandleT<CPlayer>(hDialoguePlayer);
-
-				//
-			}; 
-		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
+		Desc.Dialogue = {
+			{
+				"오, 샤프 교수님. 오셨군요.",
+				"AN_BODY__Meeting__Shot_020_GerboldOllivander.bin",
+				false,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::NONE,
+				false,
+				true,
+				"ShopNpcEntrance"
+			},
+			{
+				"돈은 준비되셨죠?",
+				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
+				true,
+				{
+					{ "예", 2, CInteractiveNpc::DIALOGUE_ACTION::NONE },
+					{ "아니오", 2, CInteractiveNpc::DIALOGUE_ACTION::NONE }
+				},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::NONE,
+				true,
+				false,
+				"ShopNpcDialogueCloseUp"
+			},
+			{
+				"아, 돈이 없네요... 호그와트 성에 돈이 있다고 하던데, 그곳으로 가보시죠!",
+				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::MOVE_TO_DESTINATION
+			}
+		};
+		// 기존 호그와트 쪽 액티비티 시작 지점을 이동 목적지로 사용한다.
 		Desc.MoveDestination = {
 			{ 1895.461f, 35.9f, 267.991f  }
 		};
+		Desc.MoveOutcomeAnimation =
+			"AN_BODY__Meeting__Shot_180_GerboldOllivander.bin";
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
 
 		if (!gameInstance.AddGameObjectToLayer(
-				LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_MiniGameNpc, "02_Npc", &Desc))
+				LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_ShopNpc, "02_Npc", &Desc))
 			return E_FAIL;
 	}
 

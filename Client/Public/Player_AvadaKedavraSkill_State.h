@@ -58,6 +58,8 @@ protected:
 
 private:
 	int32_t m_iCastAnimation{ -1 };
+	int32_t m_iFacialAnimation{ -1 };
+	uint32_t m_iFacialMorphTarget{ UINT32_MAX };
 	_bool m_bAnimationsCached{};
 	PHASE m_ePhase{ PHASE::CAST_BEGIN };
 	_float m_fAnimationRatio{};

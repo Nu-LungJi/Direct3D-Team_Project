@@ -8,6 +8,28 @@
 #include "ResModelMesh.h"
 NS_USING(Engine)
 
+uint32_t CComAnimator::FindMorphTargetIndex(std::string_view sTargetName) const
+{
+	if (m_pModelInstance == nullptr || m_pModelInstance->GetModel() == nullptr)
+		return UINT32_MAX;
+
+	const auto& meshes = m_pModelInstance->GetModel()->GetMeshes();
+	for (const auto& pMesh : meshes)
+	{
+		if (pMesh == nullptr)
+			continue;
+
+		const auto& morphTargets = pMesh->GetMorphTargets();
+		for (uint32_t iTargetIndex = 0; iTargetIndex < morphTargets.size(); ++iTargetIndex)
+		{
+			if (morphTargets[iTargetIndex].sName == sTargetName)
+				return iTargetIndex;
+		}
+	}
+
+	return UINT32_MAX;
+}
+
 
 
 void CComAnimator::UpdateGUI()

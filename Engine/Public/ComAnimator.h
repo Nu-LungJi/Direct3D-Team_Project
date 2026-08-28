@@ -485,6 +485,7 @@ public:
 	void SetAnimationTYPE(ANIMTYPE eType) { m_iPlayAnimationType = eType; }
 	EVALUATION_MODE GetEvaluationMode() const { return m_eEvaluationMode; }
 	void SetEvaluationMode(EVALUATION_MODE mode) { m_eEvaluationMode = mode; }
+	uint32_t FindMorphTargetIndex(std::string_view sTargetName) const;
 	void SetMorphPreview(uint32_t iTargetIndex, _float fWeight)
 	{
 		m_iMorphPreviewTargetIndex = iTargetIndex;

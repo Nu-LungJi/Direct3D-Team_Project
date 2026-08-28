@@ -26,6 +26,8 @@ private:
 
 public:
 	HRESULT Initialize(void* pArg) override;
+	void PriorityUpdate(E::_float fTimeDelta) override;
+	void UpdateGUI() override;
 
 	static E::UPtr<CShopNpc> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
@@ -37,6 +39,15 @@ private:
 	_bool m_bWorldSpaceShop{};
 	_float3 m_vShopPanelPositionOffset{ 0.f, 1.6f, 1.2f };
 	_float3 m_vShopPanelRotationOffsetDegrees{};
+	int32_t m_iDebugAnimationIndex{};
+	_bool m_bDebugAnimationLoop{ true };
+	_float m_fDebugAnimationSpeed{ 1.f };
+	_float m_fDebugAnimationBlend{ 0.1f };
+	_bool m_bDebugRootMotion{};
+	_bool m_bDebugRootMotionRotation{};
+	_float3 m_vDebugEntrancePosition{};
+	_float3 m_vDebugEntranceControllerPosition{};
+	_float4 m_qDebugEntranceRotation{ 0.f, 0.f, 0.f, 1.f };
 };
 
 NS_END

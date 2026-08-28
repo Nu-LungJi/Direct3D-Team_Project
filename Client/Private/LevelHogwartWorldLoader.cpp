@@ -66,6 +66,10 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
 				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcEntrance")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcDialogueCloseUp")))
+				return false;
 
 			if (auto texture = E::CGameInstance::Get().AddResource(
 				LEVEL::HOGWART_WORLD,
@@ -471,6 +475,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		// NpcSpawnIdle/NpcSpawnWalk에서 실제 사용하는 NPC만 선로드한다.
 		// 리소스 폴더의 Viector 오타는 런타임 태그와 분리해 여기서만 보정한다.
 		{ "Model_Resource_NPC_VictorRookwood", "ViectorRookwood_lsy" },
+		{ "Model_Resource_NPC_GerboldOllivander", "GerboldOllivander" },
 	};
 	for (const auto& Entry : NpcModels)
 	{
