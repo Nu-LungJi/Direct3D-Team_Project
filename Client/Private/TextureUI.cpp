@@ -63,6 +63,9 @@ HRESULT CTextureUI::Initialize(void* pArg)
 	m_bRaceStartFlagWave =
 		m_UIINFO.Restag == "TEX_UI_T_BRFlag_Right" &&
 		(m_UIINFO.Name == "FlagR" || m_UIINFO.Name == "FlagL");
+	m_bAccioSuccessFlagWave =
+		m_UIINFO.Restag == "TEX_UI_T_FinalizedBackGround" &&
+		m_UIINFO.Name == "SuccesFlag";
 	m_bScoreAura = m_UIINFO.Restag == "TEX_UI_T_ScoreAuraRing";
 
 	return S_OK;
@@ -80,6 +83,9 @@ void CTextureUI::Update(E::_float fTimeDelta)
 	m_bRaceStartFlagWave =
 		m_UIINFO.Restag == "TEX_UI_T_BRFlag_Right" &&
 		(m_UIINFO.Name == "FlagR" || m_UIINFO.Name == "FlagL");
+	m_bAccioSuccessFlagWave =
+		m_UIINFO.Restag == "TEX_UI_T_FinalizedBackGround" &&
+		m_UIINFO.Name == "SuccesFlag";
 	m_bScoreAura = m_UIINFO.Restag == "TEX_UI_T_ScoreAuraRing";
 
 	_float2 mousePos = GET_SINGLE(UIManager)->GetUIInteractionMousePosition();
@@ -96,12 +102,13 @@ void CTextureUI::Update(E::_float fTimeDelta)
 			4096.f);
 	}
 
-	if (m_bRaceStartFlagWave &&
+	if ((m_bRaceStartFlagWave || m_bAccioSuccessFlagWave) &&
 		std::isfinite(fTimeDelta) && fTimeDelta > 0.f)
 	{
 		m_fRaceStartFlagWaveTime = std::fmod(
 			m_fRaceStartFlagWaveTime +
-				std::min(fTimeDelta, 0.05f) * 1.4f,
+				std::min(fTimeDelta, 0.05f) *
+				(m_bAccioSuccessFlagWave ? 0.35f : 1.4f),
 			4096.f);
 	}
 	if (m_bScoreAura &&
@@ -193,6 +200,9 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	m_bRaceStartFlagWave =
 		m_UIINFO.Restag == "TEX_UI_T_BRFlag_Right" &&
 		(m_UIINFO.Name == "FlagR" || m_UIINFO.Name == "FlagL");
+	m_bAccioSuccessFlagWave =
+		m_UIINFO.Restag == "TEX_UI_T_FinalizedBackGround" &&
+		m_UIINFO.Name == "SuccesFlag";
 	m_bScoreAura = m_UIINFO.Restag == "TEX_UI_T_ScoreAuraRing";
 
 	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
@@ -226,7 +236,7 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 			TAG_RES_GRP_PERMANENT_SHADER,
 			"PS_SpellAlarmFlame");
 	}
-	if (m_bRaceStartFlagWave)
+	if (m_bRaceStartFlagWave || m_bAccioSuccessFlagWave)
 	{
 		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
 			TAG_RES_GRP_PERMANENT_SHADER,
@@ -277,9 +287,11 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	{
 		E::CB_PER_UI perUI{};
 		perUI.texCoord = {
-			m_bRaceStartFlagWave ? m_fRaceStartFlagWaveTime :
+			(m_bRaceStartFlagWave || m_bAccioSuccessFlagWave) ?
+				m_fRaceStartFlagWaveTime :
 				(m_bScoreAura ? m_fScoreAuraTime : m_fAmount),
-			static_cast<_float>(m_iPathProgressType)
+			m_bAccioSuccessFlagWave ? 1.f :
+				static_cast<_float>(m_iPathProgressType)
 		};
 		perUI.uvSize = { 0.f, 0.f };
 		perUI.quadSize = { m_fTextureBrightness, 0.f };
@@ -397,6 +409,24 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 			ID3D11ShaderResourceView* srvs[] = {
 				srv->GetSRV().Get(),
 				mask->GetSRV().Get(),
+				clouds->GetSRV().Get()
+			};
+			pContext->PSSetShaderResources(
+				0,
+				static_cast<UINT>(std::size(srvs)),
+				srvs);
+		}
+		else if (m_bAccioSuccessFlagWave)
+		{
+			const auto& clouds = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_ScrollingClouds");
+			// The subtle result-banner mode uses the source alpha instead of the
+			// race flag silhouette mask. Slot 1 is intentionally a harmless copy.
+			ID3D11ShaderResourceView* srvs[] = {
+				srv->GetSRV().Get(),
+				srv->GetSRV().Get(),
 				clouds->GetSRV().Get()
 			};
 			pContext->PSSetShaderResources(
@@ -524,7 +554,7 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
-	if (m_bRaceStartFlagWave || m_bScoreAura)
+	if (m_bRaceStartFlagWave || m_bAccioSuccessFlagWave || m_bScoreAura)
 	{
 		// Do not leave the auxiliary mask/noise SRVs attached for later UI draws.
 		ID3D11ShaderResourceView* nullSrvs[] = {

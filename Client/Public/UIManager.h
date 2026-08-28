@@ -99,9 +99,14 @@ public:
 	/********소환사의 코트 미니게임**********/
 	void AssioMiniGameStart();
 	void AssioMiniGameFinish();
-	void AddScore(int score);
+	void AddScore(int score, _bool isFinalScore = false);
 	void TurnTitleFadeOut(float playtime = 0.3f);
 	_bool IsAssioMiniGameActive() const { return m_bAssioMiniGameActive; }
+	_bool CanAddAssioScore() const
+	{
+		return m_bAssioMiniGameActive &&
+			m_eAssioScorePhase == ASSIO_SCORE_PHASE::NONE;
+	}
 
 	/********지팡이 상점***********/
 	void OpenWandShop();
@@ -220,9 +225,13 @@ private:
 		APPEAR,
 		HOLD,
 		MOVE,
-		TURN_CHANGE
+		TURN_CHANGE,
+		RESULT_COAT_FADE_OUT,
+		RESULT_HOLD,
+		RESULT_FADE_OUT
 	};
 	std::vector<CHandle> m_AssioMiniGameRoots{};
+	std::vector<CHandle> m_AssioResultRoots{};
 	std::optional<CHandle> m_hAssioScoreBoard{};
 	std::optional<CHandle> m_hAssioPlayerScoreRoot{};
 	std::optional<CHandle> m_hAssioNpcScoreRoot{};
@@ -256,6 +265,7 @@ private:
 	_bool m_bAssioCurrentTurnIsPlayer{ true };
 	_bool m_bAssioTurnTitleFadeInStarted{};
 	_bool m_bAssioTurnTitleWasAlreadyHidden{};
+	_bool m_bAssioFinalScore{};
 	_bool m_bAssioMiniGameActive{};
 	ASSIO_SCORE_PHASE m_eAssioScorePhase{ ASSIO_SCORE_PHASE::NONE };
 	CWandShop m_WandShop{};
@@ -279,6 +289,9 @@ private:
 		_float playtime = 0.3f);
 	void UpdateAssioMiniGame(_float fTimeDelta);
 	void BeginAssioTurnChange();
+	void BeginAssioResult();
+	void LoadAssioResult();
+	void ClearAssioGameplayHandles();
 	void ClearAssioMiniGameUI(_bool immediate = true);
 	_bool ResolveAssioCurrentTurn();
 	void UpdateWandShopWorldMousePosition();
