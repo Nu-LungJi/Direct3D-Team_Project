@@ -997,6 +997,8 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 				pPlayer->SetFlyRequested(false);
 				pPlayer->SetDialoguePose(vShopPosition, vShopLookAt);
 			}
+			if (m_OnRaceReturnToShop)
+				m_OnRaceReturnToShop();
 
 			m_bRaceReturnPositionApplied = true;
 			CreateFadeOut(0.f, RETURN_FADE_DURATION);

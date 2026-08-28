@@ -291,7 +291,6 @@ void CWorldAgent::Update(E::_float fTimeDelta)
 
 void CWorldAgent::Update_Animation(_float fTimeDelta)
 {
-
 	if (m_pComModelInstance->GetModel()->GetAnimations().empty())
 		return;
 
