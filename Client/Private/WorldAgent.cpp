@@ -422,6 +422,11 @@ HRESULT CWorldAgent::Render_Instanced(ID3D11DeviceContext* pContext, const E::RE
 		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
 		skinningConstants.iVertexCount = mesh->GetNumVertices();
 		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+
+		const auto morphDeltaBuffer = mesh->GetMorphDeltaBuffer();
+		const auto morphTargetRangeBuffer = mesh->GetMorphTargetRangeBuffer();
+		if (morphDeltaBuffer && morphTargetRangeBuffer)
+			skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 			return E_FAIL;
@@ -429,6 +434,13 @@ HRESULT CWorldAgent::Render_Instanced(ID3D11DeviceContext* pContext, const E::RE
 		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
 		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+
+		ID3D11ShaderResourceView* morphSRVs[2] =
+		{
+			morphDeltaBuffer ? morphDeltaBuffer->GetSRV().Get() : nullptr,
+			morphTargetRangeBuffer ? morphTargetRangeBuffer->GetSRV().Get() : nullptr
+		};
+		pContext->VSSetShaderResources(9, 2, morphSRVs);
 		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 		const UINT stride = mesh->GetVertexStride();
 		const UINT offset = 0;
@@ -451,8 +463,9 @@ HRESULT CWorldAgent::Render_Instanced(ID3D11DeviceContext* pContext, const E::RE
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
-	ID3D11ShaderResourceView* nullVSSRVs[3]{};
-	pContext->VSSetShaderResources(6, 3, nullVSSRVs);
+	// 인스턴스/본/모프 SRV(t6~t10)가 다음 렌더 패스의 리소스와 충돌하지 않게 해제한다.
+	ID3D11ShaderResourceView* nullVSSRVs[5]{};
+	pContext->VSSetShaderResources(6, 5, nullVSSRVs);
 
 	return S_OK;
 

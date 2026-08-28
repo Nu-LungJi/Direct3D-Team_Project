@@ -192,6 +192,7 @@ void UIManager::SaveSpellSlot(uint32_t slotNumber, uint32_t spellType)
 
 void UIManager::Update(_float fTimeDelta)
 {
+	UpdateWandShopWorldBillboard();
 	UpdateWandShopWorldMousePosition();
 	UpdateActiveButtons();
 	UpdateDialoguePopups(fTimeDelta);
@@ -201,6 +202,43 @@ void UIManager::Update(_float fTimeDelta)
 	UpdateRaceMiniGame(fTimeDelta);
 	UpdateAssioMiniGame(fTimeDelta);
 	m_WandShop.Update(*this, fTimeDelta);
+}
+
+void UIManager::UpdateWandShopWorldBillboard()
+{
+	if (!m_bWandShopWorldMode)
+		return;
+
+	auto* camera = E::CGameInstance::Get().GetActiveCamera();
+	if (!camera)
+		return;
+
+	const _vector panelPosition = XMLoadFloat3(&m_vWandShopPanelWorldPosition);
+	_vector panelLook = camera->GetTransform().GetLoadedPostion() - panelPosition;
+	// Keep the shop panel upright while it turns toward the active gameplay or
+	// cinematic camera.  A nearly vertical camera angle retains the last pose.
+	panelLook = XMVectorSetY(panelLook, 0.f);
+	if (XMVectorGetX(XMVector3LengthSq(panelLook)) <= 0.0001f)
+		return;
+
+	panelLook = XMVector3Normalize(panelLook);
+	const _vector worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	const _vector panelRight = XMVector3Normalize(
+		XMVector3Cross(worldUp, panelLook));
+	const _matrix panelPose{
+		XMVectorSetW(panelRight, 0.f),
+		worldUp,
+		XMVectorSetW(panelLook, 0.f),
+		XMVectorSetW(panelPosition, 1.f)
+	};
+	const _matrix panelWorld = XMMatrixScaling(
+		m_vWandShopPanelWorldScale.x,
+		m_vWandShopPanelWorldScale.y,
+		1.f) * panelPose;
+
+	XMStoreFloat4x4(&m_WandShopPanelWorld, panelWorld);
+	E::CGameInstance::Get().SetUI3DPanel(
+		m_WandShopPanelWorld, true, false);
 }
 
 void UIManager::AssioMiniGameStart()
@@ -1317,10 +1355,9 @@ void UIManager::UpdateWandShopWorldMousePosition()
 	if (!m_bWandShopWorldMode)
 		return;
 
-	// Picking must use the same camera that projects the world RTT panel.
-	auto* camera = E::CGameInstance::Get().GetCamera("PlayerCamera");
-	if (!camera)
-		camera = E::CGameInstance::Get().GetActiveCamera();
+	// Picking must use the same active camera that projects and billboards the
+	// world RTT panel, including cinematic cameras.
+	auto* camera = E::CGameInstance::Get().GetActiveCamera();
 	if (!camera)
 		return;
 
@@ -4109,7 +4146,8 @@ void UIManager::OpenWandShop()
 void UIManager::OpenWandShopWorld(
 	CHandle targetHandle,
 	const _float3& positionOffset,
-	const _float3& rotationOffsetDegrees)
+	const _float3& rotationOffsetDegrees,
+	_float panelScale)
 {
 	auto* targetObject = E::CGameInstance::Get().
 		GetGameObjectByHandle(targetHandle);
@@ -4164,8 +4202,17 @@ void UIManager::OpenWandShopWorld(
 		XMMatrixRotationX(XMConvertToRadians(rotationOffsetDegrees.x)) *
 		XMMatrixRotationZ(XMConvertToRadians(rotationOffsetDegrees.z)) *
 		XMMatrixRotationY(XMConvertToRadians(rotationOffsetDegrees.y));
+	const _float safePanelScale = std::clamp(panelScale, 0.05f, 2.f);
+	m_vWandShopPanelWorldScale = {
+		PANEL_WIDTH * safePanelScale,
+		PANEL_HEIGHT * safePanelScale
+	};
+	XMStoreFloat3(&m_vWandShopPanelWorldPosition, panelPosition);
 	const _matrix panelWorld =
-		XMMatrixScaling(PANEL_WIDTH, PANEL_HEIGHT, 1.f) *
+		XMMatrixScaling(
+			m_vWandShopPanelWorldScale.x,
+			m_vWandShopPanelWorldScale.y,
+			1.f) *
 		rotationOffset * targetPanelPose;
 
 	_float4x4 storedPanelWorld{};
@@ -4173,9 +4220,11 @@ void UIManager::OpenWandShopWorld(
 
 	m_bWandShopWorldMode = true;
 	m_WandShopPanelWorld = storedPanelWorld;
+	// Replace the initial NPC-relative rotation immediately with an upright
+	// billboard facing whichever camera is currently active.
+	UpdateWandShopWorldBillboard();
 	// The placement is now confirmed, so use the scene depth buffer and let
 	// walls/props occlude the physical panel naturally.
-	E::CGameInstance::Get().SetUI3DPanel(storedPanelWorld, true, false);
 	CGeneralButton::ResetWandShopSelection();
 	LoadPrefab("ShopWand1", "./Resources/SampleClient/UIData/RTT/");
 	m_WandShop.CreatePurchasePrompt();

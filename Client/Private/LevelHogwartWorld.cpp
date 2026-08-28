@@ -43,6 +43,11 @@
 #include "WayPointManager.h"
 NS_USING(Client)
 
+namespace
+{
+	_bool g_bOllivanderMoneyTripStarted{};
+}
+
 CLevelHogwartWorld::CLevelHogwartWorld() : CLevel{ETOUI(LEVEL::HOGWART_WORLD)}
 {
 }
@@ -220,13 +225,21 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.SpeakerName = "거볼드 올리밴더";
 		// 가게 출입문에서 카운터까지 거리를 포함해 입장 직후 자동 연출을 시작한다.
 		Desc.InteractionDistance = 12.f;
-		Desc.Repeatable = false;
+		Desc.Repeatable = true;
 		Desc.AutoStartOnEnter = true;
+		Desc.AutoAdvanceOpeningLineCount = 2u;
+		// 입장 시네마틱 10초 동안 첫 두 대사를 각각 5초씩 자동 표시한다.
+		Desc.OpeningLineAutoAdvanceDelay = 5.f;
+		Desc.HideDialogueInteractionPrompt = true;
 		Desc.FadeDuration = 0.6f;
 		Desc.FadeHoldDuration = 0.25f;
 		Desc.IdleExpressionAnim = "AN_BODY__Idle__Hu_BM_Idle_Casual_Loop.bin";
 		Desc.WorldSpaceShop = false;
 		Desc.RepositionPlayerForDialogue = false;
+		Desc.ResolveStartDialogueIndex = []()
+		{
+			return g_bOllivanderMoneyTripStarted ? 4u : 0u;
+		};
 
 		Desc.Dialogue = {
 			{
@@ -241,12 +254,25 @@ HRESULT CLevelHogwartWorld::Initialize()
 				"ShopNpcEntrance"
 			},
 			{
+				"일이 많아서.. 잠시만 기다려주십쇼!",
+				"",
+				false,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::NONE,
+				false,
+				true,
+				"ShopNpcEntrance"
+			},
+			{
 				"돈은 준비되셨죠?",
 				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
 				true,
 				{
-					{ "예", 2, CInteractiveNpc::DIALOGUE_ACTION::NONE },
-					{ "아니오", 2, CInteractiveNpc::DIALOGUE_ACTION::NONE }
+					{ "예", 3, CInteractiveNpc::DIALOGUE_ACTION::NONE,
+						[]() { g_bOllivanderMoneyTripStarted = true; return 3u; } },
+					{ "아니오", 3, CInteractiveNpc::DIALOGUE_ACTION::NONE,
+						[]() { g_bOllivanderMoneyTripStarted = true; return 3u; } }
 				},
 				{},
 				CInteractiveNpc::DIALOGUE_ACTION::NONE,
@@ -261,6 +287,32 @@ HRESULT CLevelHogwartWorld::Initialize()
 				{},
 				{},
 				CInteractiveNpc::DIALOGUE_ACTION::MOVE_TO_DESTINATION
+			},
+			{
+				"오우, 돈을 다 모아오셨군요!",
+				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::NONE,
+				false,
+				false,
+				"ShopNpcDialogueCloseUp",
+				true,
+				3.f
+			},
+			{
+				"그럼 자, 여기 지팡이를 한번 골라보십쇼!",
+				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::OPEN_SHOP,
+				false,
+				false,
+				"ShopNpcDialogueCloseUp",
+				true,
+				3.5f
 			}
 		};
 		// 기존 호그와트 쪽 액티비티 시작 지점을 이동 목적지로 사용한다.

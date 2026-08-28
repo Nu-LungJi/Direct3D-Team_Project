@@ -114,10 +114,12 @@ public:
 	void OpenWandShopWorld(
 		CHandle targetHandle,
 		const _float3& positionOffset,
-		const _float3& rotationOffsetDegrees); // 3D월드 상점
+		const _float3& rotationOffsetDegrees,
+		_float panelScale = 1.f); // 3D월드 상점
 
 	void OpenWandShopPage(uint32_t pageIndex);
 	void CloseWandShop();
+	_bool IsWandShopOpen() const { return m_WandShop.IsOpen(); }
 	_float2 GetUIInteractionMousePosition() const;
 	_bool IsWandShopWorldMode() const { return m_bWandShopWorldMode; }
 
@@ -274,6 +276,8 @@ private:
 	CWandShop m_WandShop{};
 	_bool m_bWandShopWorldMode{ false };
 	_float4x4 m_WandShopPanelWorld{};
+	_float3 m_vWandShopPanelWorldPosition{};
+	_float2 m_vWandShopPanelWorldScale{};
 	_float2 m_WandShopPanelMousePosition{ -FLT_MAX, -FLT_MAX };
 	_bool m_bWandShopPanelMouseHit{ false };
 
@@ -297,6 +301,7 @@ private:
 	void ClearAssioGameplayHandles();
 	void ClearAssioMiniGameUI(_bool immediate = true);
 	_bool ResolveAssioCurrentTurn();
+	void UpdateWandShopWorldBillboard();
 	void UpdateWandShopWorldMousePosition();
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);

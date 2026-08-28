@@ -2,6 +2,7 @@
 #include "WorldAgent.h"
 #include <functional>
 #include <limits>
+#include <optional>
 
 NS_BEGIN(Client)
 
@@ -59,6 +60,9 @@ public:
 		_bool UseRootMotion{};
 		// 비어 있지 않으면 이 대사를 표시하기 전에 해당 시네마틱으로 교체한다.
 		_string CinematicName{};
+		// 이 대사를 키 입력 없이 다음 대사/액션으로 진행한다.
+		_bool AutoAdvance{};
+		_float AutoAdvanceDelay{ 3.f };
 	};
 
 	struct DESC : public WORLD_AGENT_DESC
@@ -74,6 +78,11 @@ public:
 		_bool Repeatable{ false };
 		// 플레이어가 상호작용 범위에 처음 들어오면 F 입력 없이 대화를 시작한다.
 		_bool AutoStartOnEnter{};
+		// 처음 N개 대사를 F 입력 없이 순서대로 자동 진행한다.
+		size_t AutoAdvanceOpeningLineCount{};
+		_float OpeningLineAutoAdvanceDelay{ 3.f };
+		// 대화 중 F 프롬프트를 숨기고 선택지/결과 대사를 자동 진행한다.
+		_bool HideDialogueInteractionPrompt{};
 		_float FadeDuration{ 0.35f };
 		_float FadeHoldDuration{ 0.2f };
 		// NPC 로컬 축 기준: x=오른쪽, y=높이, z=앞쪽.
@@ -124,6 +133,8 @@ public:
 	void CancelDialogue();
 	// 현재 대화 진행 여부를 반환한다.
 	_bool IsTalking() const { return m_bTalking; }
+	// 현재 대사 문장을 실제로 발화하는 시간 구간인지 반환한다.
+	_bool IsDialogueSpeechActive() const { return m_fDialogueSpeechRemaining > 0.f; }
 	// 현재 상호작용 NPC 상태를 반환한다.
 	STATE GetState() const { return m_eState; }
 
@@ -137,6 +148,15 @@ protected:
 	virtual void OpenShop();
 	// 에디터 GUI에서 완료 여부와 자동 시작 여부를 초기화하고 첫 대사를 다시 시험한다.
 	void RestartDialogueForTest();
+	void RestartDialogueAtIndexForTest(size_t dialogueIndex);
+	// NPC와 플레이어 Transform을 건드리지 않고 지정한 시네마틱 카메라만 시험한다.
+	void PlayDialogueCameraOnlyForTest(const _string& cinematicName);
+	void StopDialogueCameraOnlyForTest();
+	// 특정 대화 카메라가 시작되기 직전 파생 NPC가 전용 포즈를 적용하는 지점.
+	virtual void PrepareDialogueCamera(const _string& cinematicName) {}
+	virtual _bool KeepDialogueCameraOnFinish() const { return false; }
+	// 현재 NPC 로컬 좌표의 오프셋에 플레이어를 놓고 NPC 얼굴을 바라보게 한다.
+	void PlacePlayerFacingNpc(const _float3& localOffset);
 
 private:
 	// 이름으로 표정 또는 대화 애니메이션을 재생한다.
@@ -182,6 +202,7 @@ private:
 	_string m_SpeakerName{ "NPC" };
 	std::vector<DIALOGUE_LINE> m_Dialogue{};
 	std::function<size_t()> m_ResolveStartDialogueIndex{};
+	std::optional<size_t> m_DebugStartDialogueIndex{};
 	_string m_IdleExpressionAnim{};
 	_float m_fInteractionDistance{ 3.f };
 	_bool m_bSecondSpellMiniGame{};
@@ -195,6 +216,11 @@ private:
 	_bool m_bDialogueCinematicPlaying{};
 	_bool m_bAutoStartOnEnter{};
 	_bool m_bAutoStartTriggered{};
+	size_t m_iAutoAdvanceOpeningLineCount{};
+	_float m_fOpeningLineAutoAdvanceDelay{ 3.f };
+	_float m_fOpeningLineElapsed{};
+	_float m_fDialogueSpeechRemaining{};
+	_bool m_bHideDialogueInteractionPrompt{};
 	size_t m_iDialogueIndex{};
 	CHandle m_hInteractionPlayer{};
 	STATE m_eState{ STATE::IDLE };
