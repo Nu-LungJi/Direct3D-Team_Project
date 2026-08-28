@@ -11,6 +11,8 @@
 #include "JsonSerializer.h"
 #include "BinDeSerializer.h"
 
+#include <cmath>
+
 NS_USING(Engine)
 
 
@@ -25,17 +27,28 @@ CBaseApp::~CBaseApp()
 
 HRESULT CBaseApp::Loop()
 {
-	//constexpr float MAX_DELTA = 1.f;
-	const float fPerfTime = Engine::CGameInstance::Get().UpdateTimeProvider();
+	constexpr float MAX_GAMEPLAY_DELTA = 0.125f;
+	const float fMeasuredDelta =
+		Engine::CGameInstance::Get().UpdateTimeProvider();
+	const float fPerfTime =
+		std::isfinite(fMeasuredDelta) && fMeasuredDelta > 0.f
+		? fMeasuredDelta
+		: 0.f;
 
 	m_UpdateTimer.AppendCurrTime(fPerfTime);
+	m_fPendingUpdateElapsed += fPerfTime;
 	if (m_UpdateTimer.Get_JustFinished())
-		{
-			const float fGoalTime = m_UpdateTimer.Get_GoalTime();
-		float fCurrTime = m_UpdateTimer.Get_CurrTime();
+	{
+		const float fGoalTime = m_UpdateTimer.Get_GoalTime();
+		const float fCadenceTime = m_UpdateTimer.Get_CurrTime();
 
-		//float fDeltaTime = std::min(fCurrTime, MAX_DELTA);
-		float fDeltaTime = fCurrTime;
+		// [LSY] 누적시간 전체를 소비한 뒤 cadence 나머지를 다시 Delta에 포함하던
+		// 중복 가산을 막는다. 큰 정지 시간은 게임플레이가 한 프레임에 따라잡지 않는다.
+		const float fRawDeltaTime = m_fPendingUpdateElapsed;
+		m_fPendingUpdateElapsed = 0.f;
+		const float fDeltaTime = std::min(
+			fRawDeltaTime,
+			MAX_GAMEPLAY_DELTA);
 		Engine::CGameInstance::Get().BeginFrameTime(fDeltaTime);
 
 		{
@@ -84,10 +97,8 @@ HRESULT CBaseApp::Loop()
 		}
 
 
-		float remain = fmodf(fDeltaTime, fGoalTime);
+		const float remain = fmodf(fCadenceTime, fGoalTime);
 		m_UpdateTimer.Reset(remain);
-		//fDeltaTime = fmodf(fDeltaTime, fGoalTime);
-		//m_UpdateTimer.Reset(fDeltaTime);
 
 		float fUpdateGoalTime = m_UpdateTimer.Get_GoalTime();
 		float fInterpolatoin = m_UpdateTimer.Get_CurrTime() / fUpdateGoalTime;
