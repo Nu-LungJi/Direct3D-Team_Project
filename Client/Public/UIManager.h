@@ -225,6 +225,7 @@ private:
 		APPEAR,
 		HOLD,
 		MOVE,
+		IMPACT_HOLD,
 		TURN_CHANGE,
 		RESULT_COAT_FADE_OUT,
 		RESULT_HOLD,
@@ -288,6 +289,8 @@ private:
 	void PlayRaceRootsFadeIn(const std::vector<CHandle>& roots,
 		_float playtime = 0.3f);
 	void UpdateAssioMiniGame(_float fTimeDelta);
+	void PlayAssioScoreImpactEffect();
+	void CompleteAssioScoreImpact();
 	void BeginAssioTurnChange();
 	void BeginAssioResult();
 	void LoadAssioResult();

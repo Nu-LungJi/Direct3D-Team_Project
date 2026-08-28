@@ -507,6 +507,18 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 		return;
 	}
 
+	if (m_eAssioScorePhase == ASSIO_SCORE_PHASE::IMPACT_HOLD)
+	{
+		// Normally the ring FadeOut completion callback advances immediately.
+		// Keep only a fallback in case the transient effect could not be created.
+		constexpr _float IMPACT_FALLBACK_DURATION = 0.8f;
+		if (m_fAssioScorePhaseElapsed < IMPACT_FALLBACK_DURATION)
+			return;
+
+		CompleteAssioScoreImpact();
+		return;
+	}
+
 	if (m_eAssioScorePhase == ASSIO_SCORE_PHASE::TURN_CHANGE)
 	{
 		auto* playerRoot = GetSafeUI(*m_hAssioPlayerScoreRoot);
@@ -656,6 +668,7 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 		updatedScore, 0, std::numeric_limits<int>::max()));
 	if (auto* text = dynamic_cast<CTextBox*>(targetScore))
 		text->SetwText(std::to_wstring(currentScore));
+	PlayAssioScoreImpactEffect();
 
 	// TODO: UpdateAssioFinalScore(...); // 최종 점수갱신
 
@@ -664,6 +677,193 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 	center->SetPos(m_AssioCenterScoreBasePosition);
 	center->CalcUICoord();
 	m_iAssioPendingScore = 0;
+	m_fAssioScorePhaseElapsed = 0.f;
+	m_eAssioScorePhase = ASSIO_SCORE_PHASE::IMPACT_HOLD;
+}
+
+void UIManager::PlayAssioScoreImpactEffect()
+{
+	if (!m_hAssioTargetScoreText)
+		return;
+
+	auto* targetScore = GetSafeUI(*m_hAssioTargetScoreText);
+	const auto& targetRoot = m_bAssioTargetIsPlayer ?
+		m_hAssioPlayerScoreRoot : m_hAssioNpcScoreRoot;
+	if (!targetScore || !targetRoot)
+		return;
+	auto* scoreRootUI = GetSafeUI(*targetRoot);
+	if (!scoreRootUI)
+		return;
+
+	const std::vector<CHandle> scoreRoot{ *targetRoot };
+	auto* auraTemplate = FindUIByNameRecursive(scoreRoot, "ScoreAura");
+	if (!auraTemplate)
+		return;
+
+	// Keep the impact attached to the score row. The row starts moving as soon
+	// as the turn changes, so a root-level effect would remain at the old spot.
+	const _float parentScale = std::max(0.001f,
+		scoreRootUI->GetScaleRatio());
+	const _float2 rootPosition = scoreRootUI->GetPos();
+	const _float2 effectLocalPosition{
+		(m_AssioCenterScoreMoveTarget.x - rootPosition.x) / parentScale,
+		(m_AssioCenterScoreMoveTarget.y - rootPosition.y) / parentScale
+	};
+	// The prefab aura is intentionally large. The impact begins at roughly half
+	// that size so it hugs the score glyphs instead of covering the whole row.
+	const _float ringWidth = auraTemplate->GetSize().x * 0.55f;
+	const _float ringHeight = auraTemplate->GetSize().y * 0.55f;
+	const uint32_t effectWeight = static_cast<uint32_t>(std::max(
+		0, targetScore->GetWeight() + 2));
+
+	CUIObject::UIOBJECT_DESC ringDesc{};
+	ringDesc.sObjectTag = "AssioScoreImpactRing";
+	ringDesc.Name = ringDesc.sObjectTag;
+	ringDesc.fX = m_AssioCenterScoreMoveTarget.x;
+	ringDesc.fY = m_AssioCenterScoreMoveTarget.y;
+	ringDesc.fSizeX = std::max(1.f, ringWidth);
+	ringDesc.fSizeY = std::max(1.f, ringHeight);
+	ringDesc.fAlpha = 0.85f;
+	ringDesc.ResTag = "TEX_UI_T_ScoreAuraRing";
+	ringDesc.ResWeight = effectWeight + 1u;
+	ringDesc.UIType = ETOUI(UI_TYPE::TEXUI);
+	const auto ringHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+		m_CurrentLevel,
+		"Prototype_GameObject_TextureUI",
+		"Layer_UI",
+		&ringDesc);
+	if (ringHandle)
+	{
+		auto* ring = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CTextureUI>(*ringHandle);
+		if (ring)
+		{
+			const CHandle safeHandle = *ringHandle;
+			ring->SetParent(*targetRoot);
+			scoreRootUI->AddChildren(safeHandle);
+			auto& ringInfo = ring->GetUIInfo();
+			ringInfo.LocalX = effectLocalPosition.x;
+			ringInfo.LocalY = effectLocalPosition.y;
+			ringInfo.WeightOffset = targetScore->GetUIInfo().WeightOffset + 3;
+			ring->SetColor({ 0.35f, 0.95f, 0.65f });
+			ring->SetLocalScaleRatio(1.f);
+			ring->SetAlphaRatio(0.85f);
+			ring->CalcUICoord();
+			ring->Appear = [safeHandle](CUIObject*)
+			{
+				auto* current = GetSafeUI(safeHandle);
+				if (!current)
+					return;
+				if (auto* tween = current->GetTweenCom())
+				{
+					tween->PlayTween(
+						0.8f, 1.5f, 0.2f,
+						[safeHandle](_float value)
+						{
+							if (auto* ui = GetSafeUI(safeHandle))
+							{
+								ui->SetLocalScaleRatio(value);
+								ui->CalcUICoord();
+							}
+						}, nullptr, EEaseType::EaseOutQuad);
+					tween->PlayTween(
+						0.85f, 0.f, 0.2f,
+						[safeHandle](_float value)
+						{
+							if (auto* ui = GetSafeUI(safeHandle))
+								ui->SetAlphaRatio(value);
+						}, [safeHandle]()
+						{
+							GET_SINGLE(UIManager)->DeleteUIRecursive(safeHandle);
+							GET_SINGLE(UIManager)->CompleteAssioScoreImpact();
+						}, EEaseType::EaseOutQuad);
+				}
+			};
+		}
+	}
+
+	CEffectUI::FLIPBOOK_DESC smokeDesc{};
+	smokeDesc.sObjectTag = "AssioScoreImpactSmoke";
+	smokeDesc.Name = smokeDesc.sObjectTag;
+	smokeDesc.fX = m_AssioCenterScoreMoveTarget.x;
+	smokeDesc.fY = m_AssioCenterScoreMoveTarget.y;
+	smokeDesc.fSizeX = std::max(1.f, ringWidth * 0.76f);
+	smokeDesc.fSizeY = std::max(1.f, ringHeight * 0.76f);
+	smokeDesc.fAlpha = 0.55f;
+	smokeDesc.ResTag = "TEX_VFX_T_SmokeMedium_8x8_D";
+	smokeDesc.ResWeight = effectWeight;
+	smokeDesc.UIType = ETOUI(UI_TYPE::FLIPBOOK);
+	smokeDesc.cellsize = 1024u;
+	smokeDesc.Padding = 2u;
+	smokeDesc.TotalFrame = 64u;
+	smokeDesc.Columns = 8u;
+	smokeDesc.Rows = 8u;
+	smokeDesc.Duration = 0.65f;
+	const auto smokeHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+		m_CurrentLevel,
+		"Prototype_GameObject_EffectUI",
+		"Layer_UI",
+		&smokeDesc);
+	if (smokeHandle)
+	{
+		auto* smoke = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CEffectUI>(*smokeHandle);
+		if (smoke)
+		{
+			const CHandle safeHandle = *smokeHandle;
+			smoke->SetParent(*targetRoot);
+			scoreRootUI->AddChildren(safeHandle);
+			auto& smokeInfo = smoke->GetUIInfo();
+			smokeInfo.LocalX = effectLocalPosition.x;
+			smokeInfo.LocalY = effectLocalPosition.y;
+			smokeInfo.WeightOffset = targetScore->GetUIInfo().WeightOffset + 2;
+			smoke->SetColor({ 0.35f, 0.85f, 0.60f });
+			smoke->SetAdditiveBlend(true);
+			smoke->SetLocalScaleRatio(0.96f);
+			smoke->SetAlphaRatio(0.52f);
+			smoke->CalcUICoord();
+			smoke->Appear = [safeHandle](CUIObject*)
+			{
+				auto* current = GetSafeUI(safeHandle);
+				if (!current)
+					return;
+				if (auto* tween = current->GetTweenCom())
+				{
+					tween->PlayTween(
+						0.8f, 1.5f, 0.2f,
+						[safeHandle](_float value)
+						{
+							if (auto* ui = GetSafeUI(safeHandle))
+							{
+								ui->SetLocalScaleRatio(value);
+								ui->CalcUICoord();
+							}
+						}, nullptr, EEaseType::EaseOutQuad);
+					tween->PlayTween(
+						0.52f, 0.f, 0.2f,
+						[safeHandle](_float value)
+						{
+							if (auto* ui = GetSafeUI(safeHandle))
+								ui->SetAlphaRatio(value);
+						}, [safeHandle]()
+						{
+							GET_SINGLE(UIManager)->DeleteUIRecursive(safeHandle);
+						}, EEaseType::EaseOutQuad);
+				}
+			};
+		}
+	}
+}
+
+void UIManager::CompleteAssioScoreImpact()
+{
+	if (!m_bAssioMiniGameActive ||
+		m_eAssioScorePhase != ASSIO_SCORE_PHASE::IMPACT_HOLD)
+	{
+		return;
+	}
+
+	m_fAssioScorePhaseElapsed = 0.f;
 	if (m_bAssioFinalScore)
 		BeginAssioResult();
 	else
@@ -729,53 +929,6 @@ void UIManager::LoadAssioResult()
 	{
 		score->SetwText(std::to_wstring(winnerScore));
 	}
-	if (auto* gameOverMask = FindUIByNameRecursive(
-		m_AssioResultRoots, "GameOverMask"))
-	{
-		const CHandle maskHandle = gameOverMask->GetHandle();
-		const _float baseLocalScale = gameOverMask->GetLocalScaleRatio();
-		gameOverMask->SetLocalScaleRatio(baseLocalScale);
-		gameOverMask->CalcUICoord();
-		if (auto* tween = gameOverMask->GetTweenCom())
-		{
-			tween->ClearTweens();
-			constexpr _float GROW_DURATION = 0.35f;
-			constexpr _float RETURN_DURATION = 0.45f;
-			const _float enlargedScale = baseLocalScale * 1.2f;
-			tween->PlayTween(
-				baseLocalScale,
-				enlargedScale,
-				GROW_DURATION,
-				[maskHandle](_float value)
-				{
-					if (auto* current = GetSafeUI(maskHandle))
-					{
-						current->SetLocalScaleRatio(value);
-						current->CalcUICoord();
-					}
-				}, nullptr, EEaseType::EaseOutQuad);
-			tween->PlayTween(
-				enlargedScale,
-				baseLocalScale,
-				RETURN_DURATION,
-				[maskHandle, enlargedScale, baseLocalScale](_float value)
-				{
-					if (auto* current = GetSafeUI(maskHandle))
-					{
-						const _float range = std::max(
-							enlargedScale - baseLocalScale, FLT_EPSILON);
-						const _float linearRatio = std::clamp(
-							(enlargedScale - value) / range, 0.f, 1.f);
-						const _float easeInRatio = linearRatio * linearRatio;
-						current->SetLocalScaleRatio(std::lerp(
-							enlargedScale, baseLocalScale, easeInRatio));
-						current->CalcUICoord();
-					}
-				}, nullptr, EEaseType::Linear,
-				GROW_DURATION);
-		}
-	}
-
 	PlayRaceRootsFadeIn(m_AssioResultRoots, 0.35f);
 	m_fAssioScorePhaseElapsed = 0.f;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::RESULT_HOLD;
