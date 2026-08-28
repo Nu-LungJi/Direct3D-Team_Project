@@ -830,8 +830,8 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 		"FlyingMagicPaper_Animated_Blender_4_3", "GACTreasureChest_Animated_Blender_4_3",
 		"GiantPendulumClock_Animated_Blender_4_3", "GlowingLumosMoth_Animated_Blender_4_3",
 		"Hippogriff_Animated_Blender_4_3", "HoppingPot_Animated_Blender_4_3",
-		"IdentificationStation_Animated_Blender_4_3", "MagicChoppingIngredients_Animated_Blender_4_3",
-		"MagicChoppingStation_Animated_Blender_4_3", "MagicMaterialRefinerTools_Animated_Blender_4_3",
+		"IdentificationStation_Animated_Blender_4_3", /*"MagicChoppingIngredients_Animated_Blender_4_3",
+		"MagicChoppingStation_Animated_Blender_4_3", "MagicMaterialRefinerTools_Animated_Blender_4_3",*/
 		"OrangeButterfly_Animated_Blender_4_3", "OutdoorDiricawlBird_Animated_Blender_4_3",
 		"OutdoorFwooperBird_Animated_Blender_4_3", "SanctuaryToyBox_Animated_Blender_4_3",
 		"SelfWrappingPaper_Animated_Blender_4_3", "ShopCounterHandBell_Animated_Blender_4_3",
@@ -846,8 +846,18 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 		const _string folder = modelName;
 		const _string resourceTag = "Model_Resource_" + folder;
 		const _string modelPath = "./Resources/SampleClient/Models/Skeleton/" + folder + "/SK_" + folder + ".bin";
-		auto model = CGameInstance::Get().AddResourceT<E::CResModel>(
-			LEVEL::HOGWART_WORLD, resourceTag, CResModel::Create(modelPath));
+		// The resource manager stores multiple resources under one tag while
+		// model instances resolve the first one. Re-registering here could load
+		// a new model successfully but leave runtime objects bound to an older,
+		// animation-empty model. Reuse the same resource the instances resolve.
+		auto model = CGameInstance::Get().GetResourceFirst<E::CResModel>(
+			LEVEL::HOGWART_WORLD, resourceTag);
+		if (!model)
+		{
+			model = CGameInstance::Get().AddResourceT<E::CResModel>(
+				LEVEL::HOGWART_WORLD, resourceTag,
+				CResModel::Create(modelPath));
+		}
 		if (!model)
 			return E_FAIL;
 
@@ -855,8 +865,17 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 		// Blender 4.3 export 모델은 정점 단위가 월드 기준보다 100배 작다.
 		// 에디터의 Scale 1이 실제 월드 크기가 되도록 로드 시 보정한다.
 		desc.PreTransformMatrix = XMMatrixScaling(100.f, 100.f, 100.f);
+
 		if (FAILED(model->Load(desc)))
 			return E_FAIL;
+		if (model->GetAnimations().empty())
+		{
+			const _string failedName =
+				"HOGWART_WORLD animation list is empty: " + folder;
+			MessageBoxA(g_hWnd, failedName.c_str(),
+				"System Error Message", MB_OK | MB_ICONERROR);
+			return E_FAIL;
+		}
 	}
 
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Griff, CGriff::Create())))
