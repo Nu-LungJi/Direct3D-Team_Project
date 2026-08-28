@@ -404,6 +404,9 @@ void CAccioActivity_NpcController::UpdateDialogue(_float fTimeDelta)
 	if (eMatchState == CAccioActivity_Base::MATCH_STATE::MATCH_END)
 	{
 		SyncInteractionPrompt(false);
+		// 최종 점수와 승패 UI가 모두 끝난 뒤 결과 대화를 시작한다.
+		if (GET_SINGLE(UIManager)->IsAssioMiniGameActive())
+			return;
 		if (!m_bMatchEndDialogueCompleted &&
 			m_bAtSideStandby && m_eState == STATE::IDLE)
 		{
@@ -612,13 +615,13 @@ void CAccioActivity_NpcController::FinishDialogue()
 		pNpcCharacter->SetAction(CAccioActivity_NpcCharacter::ACTION::IDLE);
 	EndDialogueCamera();
 	SetPlayerMovementLocked(false);
-	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
-		0.f, m_fDialogueFadeDuration);
 
 	auto* pActivity = CGameInstance::Get().
 		GetGameObjectByHandleT<CAccioActivity_Base>(m_hActivity);
 	if (eFinishedPurpose == DIALOGUE_PURPOSE::MATCH_RESULT)
 	{
+		GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
+			0.f, m_fDialogueFadeDuration);
 		// [LSY] 결과 확인 후 공과 점수를 준비 상태로 되돌려 NPC에게 다시 말을 걸 수 있게 한다.
 		if (pActivity && pActivity->ResetMatch(true))
 		{
@@ -630,14 +633,20 @@ void CAccioActivity_NpcController::FinishDialogue()
 		return;
 	}
 	if (eFinishedPurpose != DIALOGUE_PURPOSE::START_MATCH)
+	{
+		GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
+			0.f, m_fDialogueFadeDuration);
+		return;
+	}
+
+	if (pActivity && pActivity->StartMatch())
 		return;
 
-	if (!pActivity || !pActivity->StartMatch())
-	{
-		// [LSY] 경기 시작 실패 시 F 상호작용을 다시 열어 재시도할 수 있게 한다.
-		m_bDialogueCompleted = false;
-		DEBUG_LOG("[AccioActivity] Dialogue finished, but StartMatch failed.\n");
-	}
+	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
+		0.f, m_fDialogueFadeDuration);
+	// [LSY] 경기 시작 실패 시 F 상호작용을 다시 열어 재시도할 수 있게 한다.
+	m_bDialogueCompleted = false;
+	DEBUG_LOG("[AccioActivity] Dialogue finished, but StartMatch failed.\n");
 }
 
 void CAccioActivity_NpcController::BeginDialogueCamera()
@@ -1533,7 +1542,7 @@ void CAccioActivity_NpcController::UpdateAccioEffects(_float fTimeDelta)
 			m_fPullEffectBlend = 0.f;
 			const CHandle hOwner = GetHandle();
 			m_iPullEffectID = CGameInstance::Get().PlayEffect(
-				"AccioBallPull",
+				"AccioBallPullNpc",
 				wandWorld,
 				XMVectorSetW(XMLoadFloat3(&vEnd), 1.f),
 				[hOwner](EFFECT_INSTANCE_ID iEffectID, EFFECT_FINISH_REASON)
