@@ -5,7 +5,30 @@
 #include "ComFootIK.h"
 #include "ResModelAnim.h"
 #include "ResModel.h"
+#include "ResModelMesh.h"
 NS_USING(Engine)
+
+uint32_t CComAnimator::FindMorphTargetIndex(std::string_view sTargetName) const
+{
+	if (m_pModelInstance == nullptr || m_pModelInstance->GetModel() == nullptr)
+		return UINT32_MAX;
+
+	const auto& meshes = m_pModelInstance->GetModel()->GetMeshes();
+	for (const auto& pMesh : meshes)
+	{
+		if (pMesh == nullptr)
+			continue;
+
+		const auto& morphTargets = pMesh->GetMorphTargets();
+		for (uint32_t iTargetIndex = 0; iTargetIndex < morphTargets.size(); ++iTargetIndex)
+		{
+			if (morphTargets[iTargetIndex].sName == sTargetName)
+				return iTargetIndex;
+		}
+	}
+
+	return UINT32_MAX;
+}
 
 
 
@@ -83,6 +106,78 @@ void CComAnimator::UpdateGUI()
 		rootMotionTransform._42,
 		rootMotionTransform._43,
 		rootMotionTransform._44);
+
+	ImGui::Separator();
+	if (ImGui::CollapsingHeader("Morph Preview (CPU+GPU)"))
+	{
+		ImGui::Text("Evaluation Mode: %s",
+			m_eEvaluationMode == EVALUATION_MODE::CPU_GPU ? "CPU+GPU" : "Unsupported");
+
+		const CResModelMesh* pPreviewMesh = nullptr;
+		uint32_t iPreviewMeshIndex = 0;
+		if (m_pModelInstance != nullptr && m_pModelInstance->GetModel() != nullptr)
+		{
+			const auto& meshes = m_pModelInstance->GetModel()->GetMeshes();
+			for (uint32_t iMeshIndex = 0; iMeshIndex < meshes.size(); ++iMeshIndex)
+			{
+				if (meshes[iMeshIndex] != nullptr && meshes[iMeshIndex]->GetMorphTargetCount() > 0)
+				{
+					pPreviewMesh = meshes[iMeshIndex].get();
+					iPreviewMeshIndex = iMeshIndex;
+					break;
+				}
+			}
+		}
+
+		if (pPreviewMesh == nullptr)
+		{
+			ImGui::TextDisabled("This model has no Morph Target data.");
+		}
+		else
+		{
+			const auto& morphTargets = pPreviewMesh->GetMorphTargets();
+			ImGui::Text("Source Mesh: %u / Target Count: %zu", iPreviewMeshIndex, morphTargets.size());
+
+			const char* pPreviewName = "<None>";
+			if (m_iMorphPreviewTargetIndex < morphTargets.size())
+				pPreviewName = morphTargets[m_iMorphPreviewTargetIndex].sName.c_str();
+
+			if (ImGui::BeginCombo("Morph Target", pPreviewName))
+			{
+				const bool bNoneSelected = m_iMorphPreviewTargetIndex == UINT32_MAX;
+				if (ImGui::Selectable("<None>", bNoneSelected))
+					ClearMorphPreview();
+
+				for (uint32_t iTargetIndex = 0; iTargetIndex < morphTargets.size(); ++iTargetIndex)
+				{
+					ImGui::PushID(static_cast<int>(iTargetIndex));
+					const bool bSelected = m_iMorphPreviewTargetIndex == iTargetIndex;
+					if (ImGui::Selectable(morphTargets[iTargetIndex].sName.c_str(), bSelected))
+						SetMorphPreview(iTargetIndex, m_fMorphPreviewWeight);
+					if (bSelected)
+						ImGui::SetItemDefaultFocus();
+					ImGui::PopID();
+				}
+				ImGui::EndCombo();
+			}
+
+			_float fPreviewWeight = m_fMorphPreviewWeight;
+			if (ImGui::SliderFloat("Morph Weight", &fPreviewWeight, 0.f, 1.f, "%.3f"))
+			{
+				if (m_iMorphPreviewTargetIndex < morphTargets.size())
+					SetMorphPreview(m_iMorphPreviewTargetIndex, fPreviewWeight);
+			}
+
+			if (ImGui::Button("Full Weight") && m_iMorphPreviewTargetIndex < morphTargets.size())
+				SetMorphPreview(m_iMorphPreviewTargetIndex, 1.f);
+			ImGui::SameLine();
+			if (ImGui::Button("Clear Morph"))
+				ClearMorphPreview();
+
+			if (m_eEvaluationMode != EVALUATION_MODE::CPU_GPU)
+				ImGui::TextDisabled("Morph Preview is transferred only in CPU+GPU mode.");
+		}
+	}
 
 	//if (ImGui::Button("save")) {
 	//	CGameInstance::Get( ).JsonSerialize("./Test.json", m_CurAnimState);

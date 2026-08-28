@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "GameInstance.h"
 #include "ComStaticModelInstance.h"
+#include "ComConstantBuffer.h"
 #include "ResStaticModelMesh.h"
 #include "ResModelMaterial.h"
 #include "ResModel.h"
@@ -9,6 +10,66 @@
 #include "ResPixelShader.h"
 #include "ResSamplerState.h"
 NS_USING(Engine)
+
+HRESULT CComStaticModelInstance::RenderShadow(
+	ID3D11DeviceContext* context,
+	CComConstantBuffer* perObjectBuffer,
+	const _float4x4& worldMatrix,
+	_fmatrix viewProjectionMatrix)
+{
+	if (!context || !perObjectBuffer || !m_pModel)
+		return E_FAIL;
+
+	CB_PER_OBJECT perObjectData{};
+	perObjectData.matWorld = worldMatrix;
+	XMStoreFloat4x4(
+		&perObjectData.matWVP,
+		XMLoadFloat4x4(&worldMatrix) * viewProjectionMatrix);
+	if (FAILED(perObjectBuffer->MapDiscard(
+		context, &perObjectData, sizeof(perObjectData))))
+	{
+		return E_FAIL;
+	}
+
+	context->VSSetConstantBuffers(
+		ETOUI(B_SLOTNUMBER::PER_OBJECT), 1,
+		perObjectBuffer->GetAdressOfBuffer());
+	context->PSSetConstantBuffers(
+		ETOUI(B_SLOTNUMBER::PER_OBJECT), 1,
+		perObjectBuffer->GetAdressOfBuffer());
+
+	for (uint32_t meshIndex = 0;
+		 meshIndex < m_pModel->Get_NumMeshes();
+		 ++meshIndex)
+	{
+		const auto& mesh = m_pModel->GetMeshes()[meshIndex];
+		if (!mesh)
+			continue;
+
+		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
+		const UINT stride = mesh->GetVertexStride();
+		const UINT offset{};
+		context->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+		context->IASetIndexBuffer(
+			mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
+		context->IASetPrimitiveTopology(mesh->GetPrimitiveType());
+		context->DrawIndexed(mesh->GetNumIndices(), 0, 0);
+	}
+
+	return S_OK;
+}
+
+bool CComStaticModelInstance::GetShadowBounds(
+	const _float4x4& worldMatrix,
+	BoundingBox& outBounds) const
+{
+	if (!m_pModel || !m_pModel->HasLocalBounds())
+		return false;
+
+	m_pModel->GetLocalBounds().Transform(
+		outBounds, XMLoadFloat4x4(&worldMatrix));
+	return true;
+}
 
 void CComStaticModelInstance::UpdateGUI()
 {

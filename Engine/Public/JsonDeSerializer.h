@@ -9,7 +9,10 @@ NS_BEGIN(Engine)
 class ENGINE_DLL CJsonDeSerializer : public CEngineBase, public IDeserializer
 {
 public:
-	DECLARE_DERIVED_TYPE(CJsonDeSerializer, CEngineBase)
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CJsonDeSerializer,
+		CEngineBase,
+		IDeserializer)
 
 	CJsonDeSerializer();
 	~CJsonDeSerializer() override;

@@ -76,14 +76,14 @@ namespace
 		if (!pObject || pObject->GetPendingDestroy())
 			return false;
 
-		if (const auto* pMonster = dynamic_cast<const CMonster*>(pObject);
+		if (const auto* pMonster = Engine::Cast<CMonster>(pObject);
 			pMonster && (!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0))
 			return false;
 
-		if (dynamic_cast<const CSkillTarget*>(pObject))
+		if (Engine::Cast<CSkillTarget>(pObject))
 			return true;
 
-		const auto* pBall = dynamic_cast<const CAccioBall*>(pObject);
+		const auto* pBall = Engine::Cast<CAccioBall>(pObject);
 		return pBall && pBall->CanAcquireControl(hPlayer);
 	}
 
@@ -169,6 +169,38 @@ void CPlayer::UpdateGUI()
 		CGameInstance::Get().SetAnimationEditorTarget(GetHandle());
 	ImGui::SameLine();
 	ImGui::TextDisabled("SampleClient-compatible");
+
+	if (ImGui::CollapsingHeader("Avada Facial Preview", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Text("Morph: Avada_Facial_Peak / fallback: jaw_drop");
+		ImGui::Text("Time Scale: %.2f", CGameInstance::Get().GetTimeScale());
+		if (ImGui::Button("Play Avada Facial Preview (0.2x)"))
+			RequestAvadaFacialPreview();
+		ImGui::SameLine();
+		ImGui::TextDisabled("Shortcut: 0");
+
+		if (ImGui::Button("Test Jaw Open (Weight 1.0)"))
+		{
+			if (m_pModelAnimator)
+			{
+				const uint32_t iJawTarget =
+					m_pModelAnimator->FindMorphTargetIndex("jaw_drop");
+				if (iJawTarget != UINT32_MAX)
+					m_pModelAnimator->SetMorphPreview(iJawTarget, 1.f);
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Clear Facial Morph") && m_pModelAnimator)
+			m_pModelAnimator->ClearMorphPreview();
+
+		if (m_pModelAnimator)
+		{
+			ImGui::Text(
+				"Active Target Index: %u / Weight: %.2f",
+				m_pModelAnimator->GetMorphPreviewTargetIndex(),
+				m_pModelAnimator->GetMorphPreviewWeight());
+		}
+	}
 
 	UpdateStupefyDebugGUI();
 	if (m_pRagdollController)
@@ -862,7 +894,11 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 		else if (!bWandReadyRequested && m_bDebugWandReadyPlaying)
 		{
-			m_pModelAnimator->Stop_UpperAnim(debugUpperBodyFadeDuration);
+			if (m_pStateMachine &&
+				m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION)
+			{
+				m_pModelAnimator->Stop_UpperAnim(debugUpperBodyFadeDuration);
+			}
 			m_bDebugWandReadyPlaying = false;
 		}
 	}
@@ -1197,7 +1233,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			auto ori = m_pComTransform->GetPosition();
 
 			_bool bTargetStillInRange = false;
-			if (auto* pBall = dynamic_cast<CAccioBall*>(pTarget))
+			if (auto* pBall = Engine::Cast<CAccioBall>(pTarget))
 			{
 				// [LSY] 이미 알고 있는 공 하나의 거리 확인에 매 프레임 넓은
 				// WORLD_DYNAMIC Overlap을 반복하지 않고 실제 PhysX 중심을 사용한다.
@@ -1399,6 +1435,15 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	UpdateAncientMagicActiveButtons();
 	UpdateSkillSlotCooldowns(fTimeDelta);
 
+	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_9))
+	{
+		// Avada Kedavra debug shortcut: bypass slot assignment, unlock, and cooldown checks.
+		m_pStateMachine->RequestState(PLAYER_STATE::AVADA_KEDAVRA_SKILL);
+	}
+
+	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_0))
+		RequestAvadaFacialPreview();
+
 	if (!m_bFlyRequested) {
 		if (CGameInstance::Get().KeyDown(DIK_1)) TryUseSkillSlot(1);
 		else if (CGameInstance::Get().KeyDown(DIK_2)) TryUseSkillSlot(2);
@@ -1493,6 +1538,31 @@ void CPlayer::InitializeSkillSlotUI()
 
 
 	m_bSkillSlotUIInitialized = true;
+}
+
+_bool CPlayer::RequestAvadaFacialPreview()
+{
+	if (!m_pStateMachine)
+		return false;
+
+	TIME_SCALE_REQUEST_DESC Desc{};
+	Desc.fTargetScale = 0.2f;
+	Desc.fBlendIn = 0.08f;
+	Desc.fMaxUnscaledDuration = 20.f;
+	Desc.fSafetyBlendOut = 0.15f;
+	Desc.sTag = "Debug_AvadaFacialPreview";
+
+	auto& GameInstance = CGameInstance::Get();
+	GameInstance.CancelTimeScale(Desc.sTag);
+	const _bool bSlowMotionStarted = GameInstance.BeginTimeScale(Desc);
+	if (!m_pStateMachine->RequestState(PLAYER_STATE::AVADA_KEDAVRA_SKILL))
+	{
+		if (bSlowMotionStarted)
+			GameInstance.EndTimeScale(Desc.sTag, 0.15f);
+		return false;
+	}
+
+	return true;
 }
 
 _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
@@ -2584,6 +2654,11 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		skinningConstants.iVertexCount = mesh->GetNumVertices();
 		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
 
+		const auto morphDeltaBuffer = mesh->GetMorphDeltaBuffer();
+		const auto morphTargetRangeBuffer = mesh->GetMorphTargetRangeBuffer();
+		if (morphDeltaBuffer && morphTargetRangeBuffer)
+			skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
+
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 			return E_FAIL;
@@ -2591,6 +2666,13 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
 		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+
+		ID3D11ShaderResourceView* morphSRVs[2] =
+		{
+			morphDeltaBuffer ? morphDeltaBuffer->GetSRV().Get() : nullptr,
+			morphTargetRangeBuffer ? morphTargetRangeBuffer->GetSRV().Get() : nullptr
+		};
+		pContext->VSSetShaderResources(9, 2, morphSRVs);
 		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 		const UINT stride = mesh->GetVertexStride();
 		const UINT offset = 0;
@@ -2603,8 +2685,8 @@ HRESULT CPlayer::Render_Instanced(ID3D11DeviceContext* pContext, const E::RENDER
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
-	ID3D11ShaderResourceView* nullVSSRVs[4]{};
-	pContext->VSSetShaderResources(6, 4, nullVSSRVs);
+	ID3D11ShaderResourceView* nullVSSRVs[5]{};
+	pContext->VSSetShaderResources(6, 5, nullVSSRVs);
 
 	return S_OK;
 }

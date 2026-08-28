@@ -61,7 +61,10 @@ typedef struct MonsterHitInfo
 class CMonster : public CAnimationObject, public CSkillTarget
 {
 public:
-	DECLARE_DERIVED_TYPE(CMonster, CAnimationObject)
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CMonster,
+		CAnimationObject,
+		CSkillTarget)
 public:
 	typedef struct tagGoblnedesc : CAnimationObject::GAMEOBJECT_DESC
 	{

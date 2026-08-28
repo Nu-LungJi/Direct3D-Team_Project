@@ -11,6 +11,10 @@ struct GPU_ANIM_INSTANCE_DATA
     float fPrevTrackPosition;
     float fBlendWeight;
     uint bBlending;
+    uint iMorphTargetIndex;
+    float fMorphWeight;
+    uint iMorphPadding0;
+    uint iMorphPadding1;
 };
 
 

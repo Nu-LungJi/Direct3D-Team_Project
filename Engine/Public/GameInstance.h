@@ -517,6 +517,7 @@ public:
 
 	/*----------- 광윤 추가 -----------*/
 	MATERIAL_DESC FindMaterial(const std::string& modelName);
+	void SetMaterialOverride(const std::string& modelTag, const MATERIAL_DESC& material) { m_pMapManager->SetMaterialOverride(modelTag, material); }
 	/*---------------------------------*/
 #ifdef _DEBUG
 	void SetDebugDrawMapChunk(_bool draw);
@@ -588,6 +589,7 @@ public:
 	void SetDebugBoundsEnabled(_bool bEnabled);
 	void ClearMapMeshTextureCache();
 	void EraseMapMeshTextureCache(const SPtr<CResStaticModel>& model);
+	HRESULT RenderMapMeshShadow(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, LIGHT_TYPE lightType);
 #pragma endregion
 
 #pragma region EVENT_MANAGER

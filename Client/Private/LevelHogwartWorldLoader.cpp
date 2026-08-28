@@ -36,11 +36,23 @@
 #include "Mon_State.h"
 #include "WorldNpc.h"
 #include "InteractiveNpc.h"
+#include "ShopNpc.h"
 #include "Griff.h"
 #include "GriffChild.h"
 #include "Troll.h"
 #include "TrollWeapon.h"
 #include "WorldAnimal.h"
+#include "PhysicsDoor.h"
+#include "AccioBall.h"
+#include "AccioActivity_Base.h"
+#include "AccioActivity_Platform.h"
+#include "AccioActivity_BumperA.h"
+#include "AccioActivity_BumperB.h"
+#include "AccioActivity_RampLarge.h"
+#include "AccioActivity_LampSmall.h"
+#include "AccioActivity_NpcController.h"
+#include "AccioActivity_NpcCharacter.h"
+#include "AnimatedWorldObject.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
@@ -63,6 +75,10 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcEntrance")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcDialogueCloseUp")))
 				return false;
 
 			if (auto texture = E::CGameInstance::Get().AddResource(
@@ -98,6 +114,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 			if (FAILED(NpcLoad_InWorker()))
 				return false;
+			if (FAILED(AnimatedObjectLoad_InWorker()))
+				return false;
 			if (FAILED(WorldAgentLoad_InWorker()))
 				return false;
 
@@ -114,6 +132,11 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 
 			if (FAILED(LoadHogsmeade_ExtraAsset()))
 				return false;
+			if (FAILED(LoadPhysicsDoorResources()))
+				return false;
+			if (FAILED(LoadAccioActivityResources()))
+				return false;
+
 			if (FAILED(LoadWay_InWorker()))
 				return false;
 			return SUCCEEDED(LoadPlayerResources());
@@ -140,6 +163,196 @@ std::future<bool> CLevelHogwartWorldLoader::UnLoad()
 			E::CGameInstance::Get().DelResource(LEVEL::HOGWART_WORLD);
 			return true;
 		});
+}
+
+HRESULT CLevelHogwartWorldLoader::LoadPhysicsDoorResources()
+{
+	auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+		CURR_LEVEL,
+		"Static_PhysicsDoor_Resource",
+		CResStaticModel::Create(
+			"./Resources/SampleClient/Models/Static/LCJ_ObjecMap/"
+			"SM_BP_Door_Template64_1295.bin"));
+	if (!resource)
+		return E_FAIL;
+
+	CResStaticModel::DESC desc{};
+	desc.PreTransformMatrix =
+		XMMatrixScaling(0.03f, 0.03f, 0.03f) *
+		XMMatrixTranslation(-1.875f, -3.73479f, 0.031791f);
+	if (FAILED(resource->Load(desc)))
+		return E_FAIL;
+
+	return CGameInstance::Get().AddPrototype(
+		CURR_LEVEL,
+		PROTO_GAMEOBJECT::Prototype_GameObject_PhysicsDoor,
+		CPhysicsDoor::Create());
+}
+
+HRESULT CLevelHogwartWorldLoader::LoadAccioActivityResources()
+{
+	const auto loadStaticModel = [](
+		const StringID& resourceTag,
+		const _char* modelPath,
+		FXMMATRIX preTransform)
+	{
+		auto resource = CGameInstance::Get().AddResourceT<CResStaticModel>(
+			CURR_LEVEL,
+			resourceTag,
+			CResStaticModel::Create(modelPath));
+		if (!resource)
+			return false;
+
+		CResStaticModel::DESC desc{};
+		desc.PreTransformMatrix = preTransform;
+		return SUCCEEDED(resource->Load(desc));
+	};
+
+	if (!loadStaticModel(
+		"Static_AccioBall_Blue_Resource",
+		"./Resources/SampleClient/Models/Static/"
+		"SM_SM_HM_Quid_BallBox_Quaffle_RoundA_Blue.bin",
+		XMMatrixIdentity()))
+	{
+		return E_FAIL;
+	}
+	if (!loadStaticModel(
+		"Static_AccioBall_Red_Resource",
+		"./Resources/SampleClient/Models/Static/"
+		"SM_SM_HM_Quid_BallBox_Quaffle_RoundA_Red.bin",
+		XMMatrixIdentity()))
+	{
+		return E_FAIL;
+	}
+
+	struct ACCIO_STATIC_RESOURCE
+	{
+		const _char* pTag;
+		const _char* pPath;
+		_matrix PreTransform;
+	};
+
+	const ACCIO_STATIC_RESOURCE staticResources[] =
+	{
+		{
+			"Static_AccioActivity_Resource",
+			"./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity.bin",
+			XMMatrixScaling(500.f, 500.f, 500.f) *
+			XMMatrixRotationX(XMConvertToRadians(90.f))
+		},
+		{
+			"Static_AccioActivity_Platform_Resource",
+			"./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity_Platform.bin",
+			XMMatrixScaling(600.f, 600.f, 600.f) *
+			XMMatrixRotationX(XMConvertToRadians(90.f))
+		},
+		{
+			"Static_AccioActivity_Bumper_Resource",
+			"./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity_Bumper.bin",
+			XMMatrixIdentity()
+		},
+		{
+			"Static_AccioActivity_BumperA_Resource",
+			"./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity_Bumper_A.bin",
+			XMMatrixIdentity()
+		},
+		{
+			"Static_AccioActivity_RampLarge_Resource",
+			"./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity_RampLarge.bin",
+			XMMatrixIdentity()
+		},
+		{
+			"Static_AccioActivity_RampSmall_Resource",
+			"./Resources/SampleClient/Models/Static/SM_SM_HW_AccioActivity_RampSmall.bin",
+			XMMatrixIdentity()
+		}
+	};
+
+	for (const auto& entry : staticResources)
+	{
+		if (!loadStaticModel(entry.pTag, entry.pPath, entry.PreTransform))
+			return E_FAIL;
+	}
+
+	auto studentModel = CGameInstance::Get().AddResourceT<CResModel>(
+		CURR_LEVEL,
+		"ACCIO_ACTIVITY_STUDENT_MODEL_RESOURCE",
+		CResModel::Create(
+			"./Resources/SampleClient/Models/Skeleton/"
+			"ElegantStudent_PrettyGirl2_RigCorrectedFinal/"
+			"SK_ElegantStudent_PrettyGirl2_RigCorrectedFinal.bin"));
+	if (!studentModel)
+		return E_FAIL;
+
+	CResModel::DESC studentDesc{};
+	studentDesc.PreTransformMatrix =
+		XMMatrixScaling(3.f, 3.f, 3.f) *
+		XMMatrixRotationY(XMConvertToRadians(180.f)) *
+		XMMatrixTranslation(0.f, -1.8f, 0.f);
+	if (FAILED(studentModel->Load(studentDesc)))
+		return E_FAIL;
+
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		CURR_LEVEL,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioBall,
+		CAccioBall::Create())))
+	{
+		return E_FAIL;
+	}
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		CURR_LEVEL,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Base,
+		CAccioActivity_Base::Create())))
+	{
+		return E_FAIL;
+	}
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		CURR_LEVEL,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_Platform,
+		CAccioActivity_Platform::Create())))
+	{
+		return E_FAIL;
+	}
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		CURR_LEVEL,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_BumperA,
+		CAccioActivity_BumperA::Create())))
+	{
+		return E_FAIL;
+	}
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		CURR_LEVEL,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_BumperB,
+		CAccioActivity_BumperB::Create())))
+	{
+		return E_FAIL;
+	}
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		CURR_LEVEL,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_RampLarge,
+		CAccioActivity_RampLarge::Create())))
+	{
+		return E_FAIL;
+	}
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		CURR_LEVEL,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_LampSmall,
+		CAccioActivity_LampSmall::Create())))
+	{
+		return E_FAIL;
+	}
+	if (FAILED(CGameInstance::Get().AddPrototype(
+		CURR_LEVEL,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_NpcController,
+		CAccioActivity_NpcController::Create())))
+	{
+		return E_FAIL;
+	}
+
+	return CGameInstance::Get().AddPrototype(
+		CURR_LEVEL,
+		PROTO_GAMEOBJECT::Prototype_GameObject_AccioActivity_NpcCharacter,
+		CAccioActivity_NpcCharacter::Create());
 }
 
 HRESULT CLevelHogwartWorldLoader::LoadPlayerResources()
@@ -468,6 +681,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		// NpcSpawnIdle/NpcSpawnWalk에서 실제 사용하는 NPC만 선로드한다.
 		// 리소스 폴더의 Viector 오타는 런타임 태그와 분리해 여기서만 보정한다.
 		{ "Model_Resource_NPC_VictorRookwood", "ViectorRookwood_lsy" },
+		{ "Model_Resource_NPC_GerboldOllivander", "GerboldOllivander" },
 	};
 	for (const auto& Entry : NpcModels)
 	{
@@ -500,6 +714,76 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_MiniGameNpc");
 		return E_FAIL;
 	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_ShopNpc,
+		CShopNpc::Create())))
+	{
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_ShopNpc");
+		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorldLoader::AnimatedObjectLoad_InWorker()
+{
+	static constexpr const char* ModelNames[] =
+	{
+		"AnimatedGlobe_Animated",
+		"BalloonLauncher_Animated",
+		"CottonCandyDisplay_Animated",
+		"DeathdayParty_Animated",
+		"DragonBush_Animated",
+		"EnchantedScarecrow_Animated",
+		"EnchantedWateringCan_Animated",
+		"HungryForRubbish_Animated",
+		"LivingBooks_Animated",
+		"MagicKiteBattle_Animated",
+		"ManicStreetSigns_Animated",
+		"MarionetteCandyBooth_Animated",
+		"MirrorMirror_Animated",
+		"NifflerTightropeToy_Animated",
+		"OneManBand_Animated",
+		"PaperAndQuill_Animated",
+		"PlantParty_Animated",
+		"PlayingWithFire_Animated",
+		"RollUpRollUpCart_Animated",
+		"SelfCheckingBooks_Animated",
+		"SelfPruningTools_Animated",
+		"SelfShufflingCards_Animated",
+		"SelfWrappingPresent_Animated",
+		"Snowman_Animated",
+		"StirCrazyKitchen_Animated"
+	};
+
+	auto& gameInstance = E::CGameInstance::Get();
+	for (const char* modelName : ModelNames)
+	{
+		const _string resourceTag =
+			"Model_Resource_AnimatedObject_" + _string{ modelName };
+		const _string modelPath =
+			"./Resources/SampleClient/Models/AnimatedObject/" +
+			_string{ modelName } + "/SK_" + modelName + ".bin";
+
+		auto model = gameInstance.AddResourceT<E::CResModel>(
+			LEVEL::HOGWART_WORLD,
+			resourceTag,
+			E::CResModel::Create(modelPath));
+		if (!model)
+		{
+			MSG_BOX("HOGWART_WORLD Failed to register AnimatedObject model resource");
+			return E_FAIL;
+		}
+
+		E::CResModel::DESC modelDesc{};
+		modelDesc.PreTransformMatrix = XMMatrixIdentity();
+		if (FAILED(model->Load(modelDesc)))
+		{
+			MSG_BOX("HOGWART_WORLD Failed to load AnimatedObject model resource");
+			return E_FAIL;
+		}
+	}
+
 	return S_OK;
 }
 
@@ -540,6 +824,11 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldAnimal, CWorldAnimal::Create())))
 	{
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_WorldWorldAgent");
+		return E_FAIL;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_AnimatedWorldObject, CAnimatedWorldObject::Create())))
+	{
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_AnimatedWorldObject");
 		return E_FAIL;
 	}
 	return S_OK;

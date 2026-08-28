@@ -180,6 +180,7 @@ public:
 	_bool StartWiggenweldPotionUse();
 	void InitializeSkillSlotUI();
 	_bool TryUseSkillSlot(uint32_t iSlotNumber);
+	_bool RequestAvadaFacialPreview();
 	_bool TryUsePotion();
 	void UpdateSkillSlotCooldowns(_float fTimeDelta);
 	std::optional<CHandle> ConsumeAncientThrowTarget();

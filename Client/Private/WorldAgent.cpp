@@ -437,7 +437,18 @@ HRESULT CWorldAgent::Render_Instanced(ID3D11DeviceContext* pContext, const E::RE
 		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext,_float3{1,1,1}, 0, {1.f, 1.f, 1.f}, m_fDissolve, 1.f);
+		// 올리밴더의 5번 머리카락 카드만 알파 컷을 낮춰 가닥 밀도를 높인다.
+		// 다른 캐릭터와 속눈썹 머티리얼은 기존 0.35 기준을 유지한다.
+		const _bool bGerbold =
+			Batch.Key.modelTag == StringID{ "Model_Resource_NPC_GerboldOllivander" };
+		const _bool bGerboldHair = bGerbold && materialIndex == 5u;
+		const _bool bGerboldOpaqueBody =
+			bGerbold && materialIndex >= 6u && materialIndex <= 8u;
+		const _float fAlphaClipThreshold =
+			bGerboldOpaqueBody ? 0.f : (bGerboldHair ? 0.12f : 0.35f);
+		m_pComModelInstance->Bind_Materials(
+			pContext, _float3{ 1,1,1 }, 0, { 1.f, 1.f, 1.f },
+			m_fDissolve, 1.f, 1.f, 1.f, 1.f, 1.f, fAlphaClipThreshold);
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 

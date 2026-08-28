@@ -363,6 +363,11 @@ HRESULT CMapChunkStreamer::ContinueApplyLoadedChunkResult(
 		completed = true;
 		return E_FAIL;
 	}
+
+	if (!chunk.GetObjectHandles().empty())
+	{
+		CGameInstance::Get().Notify_StaticShadowSceneChanged(chunk.GetCullingBounds());
+	}
 	completed = true;
 
 	return S_OK;

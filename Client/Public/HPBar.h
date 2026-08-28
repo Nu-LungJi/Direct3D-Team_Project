@@ -14,7 +14,7 @@ NS_BEGIN(Client)
 class CHPBar final : public E::CUITex
 {
 public:
-	DECLARE_DERIVED_TYPE(HPBar, E::CUITex)
+	DECLARE_DERIVED_TYPE(CHPBar, E::CUITex)
 
 private:
 	CHPBar();

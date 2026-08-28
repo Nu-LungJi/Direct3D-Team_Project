@@ -192,6 +192,14 @@ VOID CComModelInstance::Bind_Textures(ID3D11DeviceContext* pContext, uint32_t _M
 	}
 	pContext->PSSetShaderResources(0, 1, DiffuseTexture->GetSRV().GetAddressOf());
 
+	// 별도 Opacity가 없으면 기존처럼 Diffuse 알파를 사용한다.
+	// 별도 슬롯이 있으면 BaseColor의 알파와 분리해 해당 마스크를 사용한다.
+	SPtr<CResTexture2D> OpacityTexture = DiffuseTexture;
+	if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_OPACITY, 0)) {
+		OpacityTexture = Resource;
+	}
+	pContext->PSSetShaderResources(4, 1, OpacityTexture->GetSRV().GetAddressOf());
+
 	SPtr<CResTexture2D> NormalTexture = E::CGameInstance::Get().GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_NORMAL");
 	if (auto Resource = Get_MeshTexture(_MeshIndex, AI_TEXTURE_TYPE::aiTextureType_NORMALS, 0)) {
 		NormalTexture = Resource;
@@ -212,7 +220,8 @@ VOID CComModelInstance::Bind_Textures(ID3D11DeviceContext* pContext, uint32_t _M
 }
 
 VOID CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, _float3 _EmissiveColor, _float _EmissiveIntensity, _float3 _DissolveColor, _float _DissolveIntensity, _float _ObjectAlpha, 
-	_float _NormalIntensity, _float _MetallicIntensity, _float _RoughnessIntensity, _float _AmbientIntensity)
+	_float _NormalIntensity, _float _MetallicIntensity, _float _RoughnessIntensity, _float _AmbientIntensity,
+	_float _AlphaClipThreshold)
 {
 	auto MaterialConstantBuffer = E::CGameInstance::Get().GetResourceFirst<E::CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_MATERIAL");
 	D3D11_MAPPED_SUBRESOURCE MRES;
@@ -232,6 +241,7 @@ VOID CComModelInstance::Bind_Materials(ID3D11DeviceContext* pContext, _float3 _E
 		CMMAT.MetallicIntensity  = _MetallicIntensity;
 		CMMAT.RoughnessIntensity = _RoughnessIntensity;
 		CMMAT.AmbientIntensity	 = _AmbientIntensity;
+		CMMAT.AlphaClipThreshold = std::clamp(_AlphaClipThreshold, 0.f, 1.f);
 
 		memcpy(MRES.pData, &CMMAT, sizeof(CB_MATERIAL));
 		pContext->Unmap(MaterialConstantBuffer->GetCBuffer().Get(), 0);

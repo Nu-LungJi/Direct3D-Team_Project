@@ -952,6 +952,7 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_CPU_Skinning_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxAnimMesh_Instanced.hlsl" />
+    <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMapMesh_InstancedShadow.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_DynamicInstanced.hlsl" />
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMesh_Instanced_Foliage.hlsl" />
@@ -974,7 +975,10 @@
     <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\UI\RaceStartFlagWave.hlsl" />
+	<FxCompile Include="..\ShaderFiles\UI\RaceStartFlagWave.hlsl" />
+	<FxCompile Include="..\ShaderFiles\UI\ScoreAura.hlsl">
+	  <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+	</FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\SpellPathProgress.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\TwoTone.hlsl" />

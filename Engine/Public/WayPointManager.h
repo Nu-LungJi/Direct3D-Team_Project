@@ -25,7 +25,7 @@ public:
 	void Update(_float fTimeDelta);
 	HRESULT Render();
 private:
-	const WAY_NAME& FInd_Way(const _string& WayName);
+	const WAY_NAME FInd_Way(const _string& WayName);
 	void Way_Debug();
 	void WayPoint(_float3& vPos, uint32_t iID);
 private:

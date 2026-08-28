@@ -37,7 +37,7 @@ void CPlayer_AncientAttack_State::Enter(CStateMachine* pStateMachine)
 	const _bool bThrowBranch = m_hThrowBarrel.has_value();
 	if (bThrowBranch)
 	{
-		auto* pTrail = dynamic_cast<CTrail_CPU*>(
+		auto* pTrail = Engine::Cast<CTrail_CPU>(
 			CGameInstance::Get().GetParticle(
 				ANCIENT_THROW_WAND_TRAIL_TAG,
 				ANCIENT_THROW_WAND_TRAIL_TAG));
@@ -50,7 +50,7 @@ void CPlayer_AncientAttack_State::Enter(CStateMachine* pStateMachine)
 	}
 	else
 	{
-		auto* pTrail = dynamic_cast<CTrail_CPU*>(
+		auto* pTrail = Engine::Cast<CTrail_CPU>(
 			CGameInstance::Get().GetParticle(
 				"Lightning_Trail", "Lightning_Trail"));
 		if (pTrail)
@@ -358,7 +358,7 @@ void CPlayer_AncientAttack_State::BeginThrowSlowMotion()
 		GameInstance.Set_RadialBlurIntensity(ANCIENT_THROW_BLUR_INTENSITY);
 		m_bThrowBlurActive = true;
 
-		if (auto* pCamera = dynamic_cast<CPlayerThirdPersonCamera*>(
+		if (auto* pCamera = Engine::Cast<CPlayerThirdPersonCamera>(
 			GameInstance.GetActiveCamera());
 			pCamera && pCamera->BeginFovOverride(
 				ANCIENT_THROW_FOV_Y,

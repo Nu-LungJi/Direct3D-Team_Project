@@ -1748,6 +1748,13 @@ void CGameInstance::EraseMapMeshTextureCache(const SPtr<CResStaticModel>& model)
 		m_pMapMeshInstancingRenderer->EraseTextureCache(model);
 	}
 }
+HRESULT CGameInstance::RenderMapMeshShadow(ID3D11DeviceContext* context, const RENDER_CTX& renderContext, LIGHT_TYPE lightType)
+{
+	if (m_pMapMeshInstancingRenderer == nullptr)
+		return E_FAIL;
+
+	return m_pMapMeshInstancingRenderer->RenderShadow(context,renderContext, lightType);
+}
 #pragma endregion
 
 void CGameInstance::MouseFix() const

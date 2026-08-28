@@ -51,10 +51,6 @@ HRESULT CInteractiveNpc::Initialize(void* pArg)
 
 	m_iHp = m_iMaxHp = 3555;
 
-	if (!m_pComRigidBody || !m_pComSphereCol || !m_pCharacterController ||
-		!m_pMoveIntent || !m_pCharacterMotor || !m_pComModelInstance ||
-		!m_pModelAnimator)
-		return E_FAIL;
 
 	const _matrix rotation =
 		XMMatrixRotationX(XMConvertToRadians(pDesc->vRot.x)) *
@@ -66,8 +62,7 @@ HRESULT CInteractiveNpc::Initialize(void* pArg)
 	GetTransform().Update();
 	m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
-	m_pComSphereCol->SetQueryEnabled(true);
-	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+
 	m_eState = STATE::IDLE;
 
 	m_SpeakerName = pDesc->SpeakerName;
@@ -77,11 +72,16 @@ HRESULT CInteractiveNpc::Initialize(void* pArg)
 	m_fInteractionDistance = std::max(0.1f, pDesc->InteractionDistance);
 	m_bSecondSpellMiniGame = pDesc->SecondSpellMiniGame;
 	m_bRepeatable = pDesc->Repeatable;
+	m_bAutoStartOnEnter = pDesc->AutoStartOnEnter;
 	m_fFadeDuration = std::max(0.05f, pDesc->FadeDuration);
 	m_fFadeHoldDuration = std::max(0.f, pDesc->FadeHoldDuration);
 	m_vPlayerDialogueOffset = pDesc->PlayerDialogueOffset;
+	m_bRepositionPlayerForDialogue = pDesc->RepositionPlayerForDialogue;
 	m_DialogueCinematicName = pDesc->DialogueCinematicName;
 	m_MoveDestinations = pDesc->MoveDestination;
+	m_vCoinMoveRotationEuler = pDesc->CoinMoveRotationEuler;
+	m_fMoveFadeHoldDuration = std::max(0.f, pDesc->MoveFadeHoldDuration);
+	m_MoveOutcomeAnimation = pDesc->MoveOutcomeAnimation;
 	m_fMoveSpeed = std::max(0.1f, pDesc->MoveSpeed);
 	m_fMoveStopDistance = std::max(0.05f, pDesc->MoveStopDistance);
 	m_hAccioActivity = pDesc->AccioActivityHandle;
@@ -106,6 +106,14 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 	UpdateMiniGameState();
 
 	const _bool playerInRange = IsPlayerInRange();
+	if (m_bAutoStartOnEnter && !m_bAutoStartTriggered &&
+		playerInRange && m_eState == STATE::IDLE &&
+		(!m_bCompleted || m_bRepeatable))
+	{
+		m_bAutoStartTriggered = true;
+		BeginDialogue();
+		return;
+	}
 	const _bool canStartDialogue = playerInRange &&
 		(!m_bCompleted || m_bRepeatable) &&
 		m_eState == STATE::IDLE;
@@ -158,10 +166,35 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 {
 	if (m_eConversationPhase != CONVERSATION_PHASE::FADING_OUT &&
 		m_eConversationPhase != CONVERSATION_PHASE::HOLDING_BLACK &&
-		m_eConversationPhase != CONVERSATION_PHASE::FADING_IN)
+		m_eConversationPhase != CONVERSATION_PHASE::FADING_IN &&
+		m_eConversationPhase != CONVERSATION_PHASE::LINE_FADING_OUT &&
+		m_eConversationPhase != CONVERSATION_PHASE::LINE_FADING_IN)
 		return;
 
 	m_fIntroElapsed += fTimeDelta;
+	if (m_eConversationPhase == CONVERSATION_PHASE::LINE_FADING_OUT)
+	{
+		if (m_fIntroElapsed < m_fFadeDuration)
+			return;
+		m_fIntroElapsed = -m_fFadeHoldDuration;
+		const auto& line = m_Dialogue[m_iDialogueIndex];
+		if (!line.CinematicName.empty() && line.CinematicName != m_DialogueCinematicName)
+			SwitchDialogueCamera(line.CinematicName);
+		SetRootMotionActive(line.UseRootMotion);
+		SetRootMotionRotationActive(line.UseRootMotion);
+		SetExpression(line.ExpressionAnim, line.LoopExpression);
+		GET_SINGLE(UIManager)->CreateFadeOut(
+			m_fFadeHoldDuration, m_fFadeDuration);
+		m_eConversationPhase = CONVERSATION_PHASE::LINE_FADING_IN;
+		return;
+	}
+	if (m_eConversationPhase == CONVERSATION_PHASE::LINE_FADING_IN)
+	{
+		if (m_fIntroElapsed < m_fFadeDuration)
+			return;
+		ShowCurrentDialogueLine();
+		return;
+	}
 	if (m_eConversationPhase == CONVERSATION_PHASE::FADING_OUT)
 	{
 		if (m_fIntroElapsed < m_fFadeDuration)
@@ -185,12 +218,31 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 
 void CInteractiveNpc::ShowFirstDialogueLine()
 {
+	m_eState = STATE::TALKING;
+	ShowCurrentDialogueLine();
+}
+
+void CInteractiveNpc::BeginLineTransition()
+{
+	m_fIntroElapsed = 0.f;
+	m_eConversationPhase = CONVERSATION_PHASE::LINE_FADING_OUT;
+	SyncInteractionPrompt(false);
+	GET_SINGLE(UIManager)->ClearDialoguePopups(false);
+	GET_SINGLE(UIManager)->CreateFadeIn(0.f, m_fFadeDuration);
+}
+
+void CInteractiveNpc::ShowCurrentDialogueLine()
+{
+	if (m_iDialogueIndex >= m_Dialogue.size())
+		return;
 	m_fIntroElapsed = 0.f;
 	m_eConversationPhase = CONVERSATION_PHASE::TALKING;
-	m_eState = STATE::TALKING;
 	const auto& line = m_Dialogue[m_iDialogueIndex];
+	SetRootMotionActive(line.UseRootMotion);
+	SetRootMotionRotationActive(line.UseRootMotion);
 	SetExpression(line.ExpressionAnim, line.LoopExpression);
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_SpeakerName, line.Text);
+	SyncInteractionPrompt(true);
 }
 
 void CInteractiveNpc::AdvanceDialogue()
@@ -251,8 +303,10 @@ void CInteractiveNpc::AdvanceDialogue()
 	}
 
 	const auto& line = m_Dialogue[m_iDialogueIndex];
-	SetExpression(line.ExpressionAnim, line.LoopExpression);
-	GET_SINGLE(UIManager)->AddDialoguePopup(m_SpeakerName, line.Text);
+	if (line.FadeBeforeLine)
+		BeginLineTransition();
+	else
+		ShowCurrentDialogueLine();
 }
 
 void CInteractiveNpc::SelectDialogueChoice(size_t choiceIndex)
@@ -288,9 +342,10 @@ void CInteractiveNpc::SelectDialogueChoice(size_t choiceIndex)
 	m_eConversationPhase = CONVERSATION_PHASE::TALKING;
 
 	const auto& line = m_Dialogue[m_iDialogueIndex];
-	SetExpression(line.ExpressionAnim, line.LoopExpression);
-	GET_SINGLE(UIManager)->AddDialoguePopup(m_SpeakerName, line.Text);
-	SyncInteractionPrompt(true);
+	if (line.FadeBeforeLine)
+		BeginLineTransition();
+	else
+		ShowCurrentDialogueLine();
 }
 
 void CInteractiveNpc::ExecuteDialogueAction(DIALOGUE_ACTION action)
@@ -322,8 +377,7 @@ void CInteractiveNpc::ExecuteDialogueAction(DIALOGUE_ACTION action)
 			FinishDialogue();
 		break;
 	case DIALOGUE_ACTION::OPEN_SHOP:
-		// 상점 ui open
-
+		OpenShop();
 		FinishDialogue();
 		break;
 
@@ -336,6 +390,23 @@ void CInteractiveNpc::ExecuteDialogueAction(DIALOGUE_ACTION action)
 		FinishDialogue();
 		break;
 	}
+}
+
+void CInteractiveNpc::OpenShop()
+{
+	GET_SINGLE(UIManager)->OpenWandShop();
+}
+
+void CInteractiveNpc::RestartDialogueForTest()
+{
+	if (m_bTalking)
+		CancelDialogue();
+	m_bCompleted = false;
+	m_bAutoStartTriggered = true;
+	m_iDialogueIndex = 0u;
+	m_eConversationPhase = CONVERSATION_PHASE::IDLE;
+	m_eState = STATE::IDLE;
+	BeginDialogue();
 }
 
 
@@ -394,25 +465,47 @@ void CInteractiveNpc::BeginDialogueCamera()
 	else
 		npcLook = XMVector3Normalize(npcLook);
 
-	// 암전된 동안 NPC 기준의 고정 대화 자리로 플레이어를 옮긴다.
-	const _vector playerPosition = npcPosition +
-		npcRight * m_vPlayerDialogueOffset.x +
-		up * m_vPlayerDialogueOffset.y +
-		npcLook * m_vPlayerDialogueOffset.z;
-	_float3 dialoguePlayerPosition{};
-	_float3 npcLookAt{};
-	XMStoreFloat3(&dialoguePlayerPosition, playerPosition);
-	XMStoreFloat3(&npcLookAt, npcPosition + up * 1.35f);
-	pPlayer->SetDialoguePose(dialoguePlayerPosition, npcLookAt);
+	if (m_bRepositionPlayerForDialogue)
+	{
+		const _vector playerPosition = npcPosition +
+			npcRight * m_vPlayerDialogueOffset.x +
+			up * m_vPlayerDialogueOffset.y +
+			npcLook * m_vPlayerDialogueOffset.z;
+		_float3 dialoguePlayerPosition{};
+		_float3 npcLookAt{};
+		XMStoreFloat3(&dialoguePlayerPosition, playerPosition);
+		XMStoreFloat3(&npcLookAt, npcPosition + up * 1.35f);
+		pPlayer->SetDialoguePose(dialoguePlayerPosition, npcLookAt);
+	}
 
-	if (m_DialogueCinematicName.empty())
+	_string cinematicName = m_DialogueCinematicName;
+	if (m_iDialogueIndex < m_Dialogue.size() &&
+		!m_Dialogue[m_iDialogueIndex].CinematicName.empty())
+		cinematicName = m_Dialogue[m_iDialogueIndex].CinematicName;
+	if (cinematicName.empty())
 		return;
+	m_DialogueCinematicName = cinematicName;
 
 	E::FCinematicPlayOptions options{};
 	options.eStartMode = E::ECinematicStartMode::Immediate;
 	options.eReturnMode = E::ECinematicReturnMode::Immediate;
 	m_bDialogueCinematicPlaying =
 		gameInstance.PlayCinematic(
+			StringID{ m_DialogueCinematicName }, GetHandle(), options) == S_OK;
+}
+
+void CInteractiveNpc::SwitchDialogueCamera(const _string& cinematicName)
+{
+	if (cinematicName.empty())
+		return;
+	EndDialogueCamera();
+	m_DialogueCinematicName = cinematicName;
+
+	FCinematicPlayOptions options{};
+	options.eStartMode = ECinematicStartMode::Immediate;
+	options.eReturnMode = ECinematicReturnMode::Immediate;
+	m_bDialogueCinematicPlaying =
+		E::CGameInstance::Get().PlayCinematic(
 			StringID{ m_DialogueCinematicName }, GetHandle(), options) == S_OK;
 }
 
@@ -440,10 +533,12 @@ _bool CInteractiveNpc::StartMoveToDestination(size_t destinationIndex)
 		return false;
 
 	m_vMoveDestination = m_MoveDestinations[destinationIndex];
+	SetExpression(m_MoveOutcomeAnimation, false);
 
 	GET_SINGLE(UIManager)->CreateFadeIn(0.f, m_fMoveFadeInDuration);
 
 	m_bMovingToDestination = true;
+	m_bMovePositionApplied = false;
 	m_fMoveOutcomeElapsed = 0.f;
 	m_eState = STATE::MOVING;
 	return true;
@@ -476,6 +571,7 @@ _bool CInteractiveNpc::StartCoinMiniGame()
 	// 코인 코스는 별도의 런타임 컨트롤러가 없고 코인 충돌체가 이미 활성화되어 있다.
 	// 따라서 설정된 코스 시작 위치로 이동시키는 것이 시작 동작이다.
 	m_eActiveMiniGame = ACTIVE_MINIGAME::COIN;
+	SpawnCoinCollision();
 	if (StartMoveToDestination(1u))
 		return true;
 
@@ -575,18 +671,64 @@ void CInteractiveNpc::UpdateMoveOutcome()
 		return;
 
 	auto& gameInstance = E::CGameInstance::Get();
-	if (auto* pPlayer = gameInstance.GetGameObjectByHandleT<CPlayer>(m_hInteractionPlayer))
+	auto ApplyMovePose = [this](CPlayer& player)
+		{
+			_float3 lookAt = GetTransform().GetPosition();
+			lookAt.y = m_vMoveDestination.y;
+			player.SetDialoguePose(m_vMoveDestination, lookAt);
+
+			if (m_eActiveMiniGame == ACTIVE_MINIGAME::COIN)
+			{
+				player.GetTransform().SetRotationEuler(
+					m_vCoinMoveRotationEuler);
+				player.GetTransform().Update();
+			}
+		};
+
+	if (!m_bMovePositionApplied)
 	{
-		_float3 lookAt = GetTransform().GetPosition();
-		lookAt.y = m_vMoveDestination.y;
-		pPlayer->SetDialoguePose(m_vMoveDestination, lookAt);
+		if (auto* pPlayer = gameInstance.GetGameObjectByHandleT<CPlayer>(m_hInteractionPlayer))
+		{
+			ApplyMovePose(*pPlayer);
+			if (m_eActiveMiniGame == ACTIVE_MINIGAME::COIN)
+				pPlayer->SetFlyRequested(true);
+		}
+
+		EndDialogueCamera();
+		m_bMovePositionApplied = true;
 	}
 
-	EndDialogueCamera();
-	GET_SINGLE(UIManager)->CreateFadeOut(0.f, m_fMoveFadeOutDuration);
+	const _float fFadeOutStartTime =
+		m_fMoveFadeInDuration + m_fMoveFadeHoldDuration;
+	if (m_fMoveOutcomeElapsed < fFadeOutStartTime)
+		return;
+
+	// 빗자루 탑승 상태가 적용되는 동안 발생한 리프트 보정을 제거하고,
+	// 화면이 다시 보이기 직전에 요청한 코인 게임 시작 자세를 확정한다.
+	if (m_eActiveMiniGame == ACTIVE_MINIGAME::COIN)
+	{
+		if (auto* pPlayer = gameInstance.GetGameObjectByHandleT<CPlayer>(m_hInteractionPlayer))
+			ApplyMovePose(*pPlayer);
+	}
+
+	if (m_eActiveMiniGame == ACTIVE_MINIGAME::COIN)
+	{
+		GET_SINGLE(UIManager)->CreateFadeOut(
+			0.f, m_fMoveFadeOutDuration,
+			[]()
+			{
+				GET_SINGLE(UIManager)->StartRaceMiniGame();
+			});
+	}
+	else
+	{
+		GET_SINGLE(UIManager)->CreateFadeOut(
+			0.f, m_fMoveFadeOutDuration);
+	}
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fMoveFadeOutDuration);
 	m_bMovingToDestination = false;
+	m_bMovePositionApplied = false;
 
 	if (m_eActiveMiniGame == ACTIVE_MINIGAME::ACCIO)
 	{
@@ -665,7 +807,19 @@ void CInteractiveNpc::SyncInteractionPrompt(_bool show)
 	else
 		GET_SINGLE(UIManager)->RemoveActiveButton(GetHandle());
 }
+HRESULT CInteractiveNpc::SpawnCoinCollision()
+{
+	auto handles = CGameInstance::Get()
+		.GetPhysXManager()
+		->CreateCollisionProxyObjectsFromFile(
+			"Level_HogwartCoin",
+			"00_CoinCollision");
 
+	if (handles.empty())
+		return E_FAIL;
+
+	return S_OK;
+}
 // 상호작용 NPC의 프로토타입 객체를 생성한다.
 E::UPtr<CInteractiveNpc> CInteractiveNpc::Create()
 {

@@ -26,6 +26,7 @@ public:
 
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
+		StringID sResourceGroup{ LEVEL::TERRAIN };
 		_float3 vInitialPosition{};
 		_float3 vInitialRotation{};
 		_float3 vInitialScale{ 1.f, 1.f, 1.f };
@@ -42,6 +43,8 @@ public:
 	void LateUpdate(_float fTimeDelta) override;
 	HRESULT Render_Instanced(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx, const MODEL_INSTANCE_BATCH& batch) override;
 	HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) override;
+	bool GetShadowBounds(BoundingBox& outBounds) const override;
 
 	bool IsOcclusionCullable() const override;
 	bool GetOcclusionBounds(BoundingBox& outBounds) const override;

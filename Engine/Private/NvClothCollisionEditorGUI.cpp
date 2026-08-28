@@ -28,6 +28,11 @@ namespace Engine
 		~CNvClothCollisionPreviewRenderer() override = default;
 
 	public:
+		DECLARE_DERIVED_TYPE_WITH_BASES(
+			CNvClothCollisionPreviewRenderer,
+			CEngineBase,
+			IRenderable)
+
 		HRESULT Initialize(
 			const StringID& sGroupTag,
 			const StringID& sResourceTag,

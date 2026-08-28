@@ -459,7 +459,8 @@ HRESULT CMapManager::UnLoadChunk(const MAPCHUNK_COORD& coord)
 }
 HRESULT CMapManager::SaveMaterial(const std::string& path)
 {
-	return m_MaterialRepository.SaveFile(std::filesystem::path(path) / "Material.json", CollectMapMaterials());
+	return m_MaterialRepository.SaveFile(std::filesystem::path(path) / "Material.json", m_MaterialRepository.GetSnapshot());
+	//return m_MaterialRepository.SaveFile(std::filesystem::path(path) / "Material.json", CollectMapMaterials());
 }
 
 HRESULT CMapManager::LoadMaterial(const std::string& path)

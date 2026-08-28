@@ -30,5 +30,7 @@ public:
 	std::shared_ptr<std::vector<uint32_t>>	m_BoneIndices;
 	std::shared_ptr<std::vector<XMFLOAT4X4>>	m_BoneMatrices;
 	std::shared_ptr<std::vector<XMFLOAT4X4>>	m_OffsetMatrices;
+
+	std::vector<MORPHTARGETDATA>				m_MorphTargets;
 };
 

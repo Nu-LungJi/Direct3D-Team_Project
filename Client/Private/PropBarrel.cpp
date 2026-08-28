@@ -947,7 +947,7 @@ void CPropBarrel::HandleAncientThrowImpact(
 	CGameInstance::Get().Spawn(
 		"LSY_AncientThrow_ImpactDust_Queue.json",
 		impactWorld);
-	if (auto* pMonster = dynamic_cast<CSkillTarget*>(pHitObject))
+	if (auto* pMonster = Engine::Cast<CSkillTarget>(pHitObject))
 		pMonster->Check_Table(PLAYER_SKILL_TYPE::DESTORY);
 	m_bDestroyRequested = true;
 }
@@ -992,6 +992,8 @@ void CPropBarrel::LateUpdate(_float fTimeDelta)
 	GetTransform().Update();
 	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
 		return;
+
+	CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
 
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
@@ -1071,6 +1073,22 @@ HRESULT CPropBarrel::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx
 	pContext->RSSetState(previousRasterizer.Get());*/
 
 	return S_OK;
+}
+
+HRESULT CPropBarrel::Render_Shadow(
+	ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
+{
+	return m_pComModelInstance
+		? m_pComModelInstance->RenderShadow(
+			pContext, m_pComCBufferPerObject,
+			*GetTransform().GetCombinedWorldMatrix(), ctx.matViewProj)
+		: E_FAIL;
+}
+
+bool CPropBarrel::GetShadowBounds(BoundingBox& outBounds) const
+{
+	return m_pComModelInstance && m_pComModelInstance->GetShadowBounds(
+		*GetTransform().GetCombinedWorldMatrix(), outBounds);
 }
 
 UPtr<CPropBarrel> CPropBarrel::Create()
