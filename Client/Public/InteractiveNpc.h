@@ -7,7 +7,7 @@ NS_BEGIN(Client)
 
 // 플레이어와 대화하고, 대화 결과에 따라 이동하거나 미니게임을 시작하는 상호작용 NPC.
 // ExpressionAnim에는 현재 NPC 모델에 실제로 존재하는 애니메이션 클립 이름을 넣는다.
-class CInteractiveNpc final : public CWorldAgent
+class CInteractiveNpc : public CWorldAgent
 {
 public:
 	enum class STATE
@@ -53,6 +53,12 @@ public:
 		// 선택지가 없는 현재 대사를 넘길 때 실행할 행동.
 		// 기존 집계 초기화가 깨지지 않도록 항상 마지막 필드로 유지한다.
 		DIALOGUE_ACTION ActionOnAdvance{ DIALOGUE_ACTION::NONE };
+		// 이 대사를 표시하기 전에 짧게 암전하여 카메라/애니메이션 전환을 감춘다.
+		_bool FadeBeforeLine{};
+		// 해당 대사 애니메이션 동안 루트 이동/회전을 월드에 반영한다.
+		_bool UseRootMotion{};
+		// 비어 있지 않으면 이 대사를 표시하기 전에 해당 시네마틱으로 교체한다.
+		_string CinematicName{};
 	};
 
 	struct DESC : public WORLD_AGENT_DESC
@@ -66,10 +72,14 @@ public:
 		_float InteractionDistance{ 3.f };
 		_bool SecondSpellMiniGame{ false };
 		_bool Repeatable{ false };
+		// 플레이어가 상호작용 범위에 처음 들어오면 F 입력 없이 대화를 시작한다.
+		_bool AutoStartOnEnter{};
 		_float FadeDuration{ 0.35f };
 		_float FadeHoldDuration{ 0.2f };
 		// NPC 로컬 축 기준: x=오른쪽, y=높이, z=앞쪽.
 		_float3 PlayerDialogueOffset{ -0.8f, 0.f, 2.2f };
+		// false면 플레이어 위치/회전은 유지하고 시네마틱 카메라만 재생한다.
+		_bool RepositionPlayerForDialogue{ true };
 		// Resources/json/Cinematics에서 불러와 재생할 대화 카메라 JSON 이름.
 		_string DialogueCinematicName{ "InteractiveNpcDialogue" };
 		// 0: 아씨오 미니게임, 1: 코인 미니게임 시작 위치.
@@ -78,6 +88,8 @@ public:
 		_float3 CoinMoveRotationEuler{};
 		// 이동용 화면이 완전히 검어진 뒤 유지할 시간.
 		_float MoveFadeHoldDuration{ 5.f };
+		// 플레이어를 목적지로 보내기 직전에 한 번 재생할 NPC 제스처.
+		_string MoveOutcomeAnimation{};
 		_float MoveSpeed{ 2.f };
 		_float MoveStopDistance{ 0.2f };
 		// START_ACCIO_MINIGAME 선택지가 시작할 CAccioActivity_Base 인스턴스.
@@ -87,7 +99,7 @@ public:
 public:
 	DECLARE_DERIVED_TYPE(CInteractiveNpc, CWorldAgent)
 
-private:
+protected:
 	// 프로토타입 및 복제 생성에서만 객체를 만들 수 있도록 생성자를 제한한다.
 	CInteractiveNpc() = default;
 	// 남아 있는 상호작용 UI, 페이드 UI와 시간 정지 요청을 정리한다.
@@ -120,6 +132,12 @@ public:
 	// 전달된 설명자로 실제 상호작용 NPC 인스턴스를 복제한다.
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
 
+protected:
+	// 상점 전용 NPC가 실제 상점 UI 종류와 배치를 결정할 수 있는 확장 지점.
+	virtual void OpenShop();
+	// 에디터 GUI에서 완료 여부와 자동 시작 여부를 초기화하고 첫 대사를 다시 시험한다.
+	void RestartDialogueForTest();
+
 private:
 	// 이름으로 표정 또는 대화 애니메이션을 재생한다.
 	void SetExpression(const _string& animName, _bool loop);
@@ -128,10 +146,13 @@ private:
 	void ExecuteDialogueAction(DIALOGUE_ACTION action);
 	// 암전, 플레이어 이동, 카메라 전환, 화면 복귀 순서를 갱신한다.
 	void UpdateDialogueIntro(_float fTimeDelta);
+	void BeginLineTransition();
+	void ShowCurrentDialogueLine();
 	// 첫 대사와 해당 표정 애니메이션을 화면에 표시한다.
 	void ShowFirstDialogueLine();
 	// 플레이어를 NPC 앞에 배치하고 대화용 시네마틱 카메라를 시작한다.
 	void BeginDialogueCamera();
+	void SwitchDialogueCamera(const _string& cinematicName);
 	// 대화용 시네마틱을 종료하고 기존 플레이어 카메라로 복귀한다.
 	void EndDialogueCamera();
 	// 대화 중 플레이어 이동 입력의 잠금 상태를 변경한다.
@@ -172,6 +193,8 @@ private:
 	_bool m_bMovePositionApplied{};
 	_bool m_bOwnsWorldPause{};
 	_bool m_bDialogueCinematicPlaying{};
+	_bool m_bAutoStartOnEnter{};
+	_bool m_bAutoStartTriggered{};
 	size_t m_iDialogueIndex{};
 	CHandle m_hInteractionPlayer{};
 	STATE m_eState{ STATE::IDLE };
@@ -183,8 +206,10 @@ private:
 	_float m_fIntroElapsed{}; 
 	_float m_fMoveOutcomeElapsed{};
 	_float3 m_vPlayerDialogueOffset{ -0.8f, 0.f, 2.2f };
+	_bool m_bRepositionPlayerForDialogue{ true };
 	_string m_DialogueCinematicName{ "InteractiveNpcDialogue" };
 	std::vector<_float3> m_MoveDestinations{};
+	_string m_MoveOutcomeAnimation{};
 	_float3 m_vMoveDestination{};
 	_float3 m_vCoinMoveRotationEuler{};
 	_float m_fMoveSpeed{ 2.f };
@@ -207,6 +232,8 @@ private:
 		FADING_OUT,
 		HOLDING_BLACK,
 		FADING_IN,
+		LINE_FADING_OUT,
+		LINE_FADING_IN,
 		TALKING,
 		WAITING_CHOICE
 	};

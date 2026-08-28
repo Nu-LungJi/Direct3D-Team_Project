@@ -36,6 +36,7 @@
 #include "Mon_State.h"
 #include "WorldNpc.h"
 #include "InteractiveNpc.h"
+#include "ShopNpc.h"
 #include "Griff.h"
 #include "GriffChild.h"
 #include "Troll.h"
@@ -51,6 +52,7 @@
 #include "AccioActivity_LampSmall.h"
 #include "AccioActivity_NpcController.h"
 #include "AccioActivity_NpcCharacter.h"
+#include "AnimatedWorldObject.h"
 // Client Terrain과 구분하기 위해 Engine Terrain 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
@@ -73,6 +75,10 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcEntrance")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcDialogueCloseUp")))
 				return false;
 
 			if (auto texture = E::CGameInstance::Get().AddResource(
@@ -107,6 +113,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 			if(FAILED(MonsterLoad_InWorker()))
 				return false;
 			if (FAILED(NpcLoad_InWorker()))
+				return false;
+			if (FAILED(AnimatedObjectLoad_InWorker()))
 				return false;
 			if (FAILED(WorldAgentLoad_InWorker()))
 				return false;
@@ -673,6 +681,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		// NpcSpawnIdle/NpcSpawnWalk에서 실제 사용하는 NPC만 선로드한다.
 		// 리소스 폴더의 Viector 오타는 런타임 태그와 분리해 여기서만 보정한다.
 		{ "Model_Resource_NPC_VictorRookwood", "ViectorRookwood_lsy" },
+		{ "Model_Resource_NPC_GerboldOllivander", "GerboldOllivander" },
 	};
 	for (const auto& Entry : NpcModels)
 	{
@@ -705,6 +714,76 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_MiniGameNpc");
 		return E_FAIL;
 	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(
+		LEVEL::HOGWART_WORLD,
+		PROTO_GAMEOBJECT::Prototype_GameObject_ShopNpc,
+		CShopNpc::Create())))
+	{
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_ShopNpc");
+		return E_FAIL;
+	}
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorldLoader::AnimatedObjectLoad_InWorker()
+{
+	static constexpr const char* ModelNames[] =
+	{
+		"AnimatedGlobe_Animated",
+		"BalloonLauncher_Animated",
+		"CottonCandyDisplay_Animated",
+		"DeathdayParty_Animated",
+		"DragonBush_Animated",
+		"EnchantedScarecrow_Animated",
+		"EnchantedWateringCan_Animated",
+		"HungryForRubbish_Animated",
+		"LivingBooks_Animated",
+		"MagicKiteBattle_Animated",
+		"ManicStreetSigns_Animated",
+		"MarionetteCandyBooth_Animated",
+		"MirrorMirror_Animated",
+		"NifflerTightropeToy_Animated",
+		"OneManBand_Animated",
+		"PaperAndQuill_Animated",
+		"PlantParty_Animated",
+		"PlayingWithFire_Animated",
+		"RollUpRollUpCart_Animated",
+		"SelfCheckingBooks_Animated",
+		"SelfPruningTools_Animated",
+		"SelfShufflingCards_Animated",
+		"SelfWrappingPresent_Animated",
+		"Snowman_Animated",
+		"StirCrazyKitchen_Animated"
+	};
+
+	auto& gameInstance = E::CGameInstance::Get();
+	for (const char* modelName : ModelNames)
+	{
+		const _string resourceTag =
+			"Model_Resource_AnimatedObject_" + _string{ modelName };
+		const _string modelPath =
+			"./Resources/SampleClient/Models/AnimatedObject/" +
+			_string{ modelName } + "/SK_" + modelName + ".bin";
+
+		auto model = gameInstance.AddResourceT<E::CResModel>(
+			LEVEL::HOGWART_WORLD,
+			resourceTag,
+			E::CResModel::Create(modelPath));
+		if (!model)
+		{
+			MSG_BOX("HOGWART_WORLD Failed to register AnimatedObject model resource");
+			return E_FAIL;
+		}
+
+		E::CResModel::DESC modelDesc{};
+		modelDesc.PreTransformMatrix = XMMatrixIdentity();
+		if (FAILED(model->Load(modelDesc)))
+		{
+			MSG_BOX("HOGWART_WORLD Failed to load AnimatedObject model resource");
+			return E_FAIL;
+		}
+	}
+
 	return S_OK;
 }
 
@@ -745,6 +824,11 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WorldAnimal, CWorldAnimal::Create())))
 	{
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_WorldWorldAgent");
+		return E_FAIL;
+	}
+	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_AnimatedWorldObject, CAnimatedWorldObject::Create())))
+	{
+		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_AnimatedWorldObject");
 		return E_FAIL;
 	}
 	return S_OK;

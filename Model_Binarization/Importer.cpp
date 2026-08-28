@@ -1248,6 +1248,17 @@ HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
         uint32_t BoneIndicesCount = (uint32_t)mesh->m_BoneIndices->size();
         uint32_t BoneMatricesCount = (uint32_t)mesh->m_BoneMatrices->size();
         uint32_t OffsetMatricesCount = (uint32_t)mesh->m_OffsetMatrices->size();
+
+		uint32_t MorphDataSize = sizeof(uint32_t) * 2;
+		for (const auto& MorphTarget : mesh->m_MorphTargets)
+		{
+			MorphDataSize += sizeof(uint32_t);
+			MorphDataSize += static_cast<uint32_t>(MorphTarget.Name.size());
+			MorphDataSize += sizeof(uint32_t);
+			MorphDataSize += static_cast<uint32_t>(
+				MorphTarget.Deltas.size() * sizeof(MORPHVERTEXDELTA));
+		}
+
         uint32_t meshSize =
             sizeof(uint32_t) +                                         // MaterialIndex
             sizeof(uint32_t) +                                         // Vertex Count
@@ -1260,7 +1271,8 @@ HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
             sizeof(uint32_t) +                                         // OffsetMatrices Count
             sizeof(uint32_t) * BoneIndicesCount +                      // BoneIndices Data
             sizeof(XMFLOAT4X4) * BoneMatricesCount +                   // BoneMatrices Data
-            sizeof(XMFLOAT4X4) * OffsetMatricesCount;                  // OffsetMatrices Data
+            sizeof(XMFLOAT4X4) * OffsetMatricesCount +                 // OffsetMatrices Data
+			MorphDataSize;                                                   // Morph Data
 
         pushMesh(&meshSize, sizeof(uint32_t));
 
@@ -1304,6 +1316,33 @@ HRESULT CImporter::ExportSkeletal(const std::string& outpath) {
         // OffsetMatrices ?곗씠??
         pushMesh(mesh->m_OffsetMatrices->data(),
             sizeof(XMFLOAT4X4) * OffsetMatricesCount);
+
+		pushMesh(&MORPH_BINARY_MAGIC, sizeof(uint32_t));
+
+		const uint32_t iMorphTargetCount =
+			static_cast<uint32_t>(mesh->m_MorphTargets.size());
+		pushMesh(&iMorphTargetCount, sizeof(uint32_t));
+
+		for (const auto& MorphTarget : mesh->m_MorphTargets)
+		{
+			const uint32_t iNameLength =
+				static_cast<uint32_t>(MorphTarget.Name.size());
+			pushMesh(&iNameLength, sizeof(uint32_t));
+
+			if (iNameLength > 0)
+				pushMesh(MorphTarget.Name.data(), iNameLength);
+
+			const uint32_t iMorphDeltaCount =
+				static_cast<uint32_t>(MorphTarget.Deltas.size());
+			pushMesh(&iMorphDeltaCount, sizeof(uint32_t));
+
+			if (iMorphDeltaCount > 0)
+			{
+				pushMesh(
+					MorphTarget.Deltas.data(),
+					sizeof(MORPHVERTEXDELTA) * iMorphDeltaCount);
+			}
+		}
 
     }
 
@@ -2027,6 +2066,63 @@ void CImporter::ProcessAnimMesh(aiMesh* mesh, const aiScene* scene, std::string 
     fbxmesh->m_BoneIndices = m_Boneindices;
     fbxmesh->m_BoneMatrices = m_BoneMatrices;
     fbxmesh->m_OffsetMatrices = m_OffsetMatrices;
+
+	constexpr float MORPH_DELTA_EPSILON_SQ = 1.e-12f;
+
+	for (uint32_t iMorphTargetIndex = 0; iMorphTargetIndex < mesh->mNumAnimMeshes; ++iMorphTargetIndex)
+	{
+		const aiAnimMesh* pAIMorphTarget = mesh->mAnimMeshes[iMorphTargetIndex];
+		if (nullptr == pAIMorphTarget || pAIMorphTarget->mNumVertices != mesh->mNumVertices)
+			continue;
+
+		MORPHTARGETDATA MorphTarget{};
+		MorphTarget.Name = pAIMorphTarget->mName.length > 0
+			? pAIMorphTarget->mName.C_Str()
+			: ("Morph_" + std::to_string(iMorphTargetIndex));
+		MorphTarget.Deltas.reserve(mesh->mNumVertices / 4);
+
+		for (uint32_t iVertexIndex = 0; iVertexIndex < mesh->mNumVertices; ++iVertexIndex)
+		{
+			const aiVector3D PositionDelta = pAIMorphTarget->HasPositions()
+				? pAIMorphTarget->mVertices[iVertexIndex] - mesh->mVertices[iVertexIndex]
+				: aiVector3D{};
+			const aiVector3D NormalDelta = pAIMorphTarget->HasNormals() && mesh->HasNormals()
+				? pAIMorphTarget->mNormals[iVertexIndex] - mesh->mNormals[iVertexIndex]
+				: aiVector3D{};
+			const aiVector3D TangentDelta = pAIMorphTarget->HasTangentsAndBitangents() && mesh->HasTangentsAndBitangents()
+				? pAIMorphTarget->mTangents[iVertexIndex] - mesh->mTangents[iVertexIndex]
+				: aiVector3D{};
+			const aiVector3D BinormalDelta = pAIMorphTarget->HasTangentsAndBitangents() && mesh->HasTangentsAndBitangents()
+				? pAIMorphTarget->mBitangents[iVertexIndex] - mesh->mBitangents[iVertexIndex]
+				: aiVector3D{};
+
+			const float fMagnitudeSq =
+				PositionDelta.SquareLength() +
+				NormalDelta.SquareLength() +
+				TangentDelta.SquareLength() +
+				BinormalDelta.SquareLength();
+
+			if (fMagnitudeSq <= MORPH_DELTA_EPSILON_SQ)
+				continue;
+
+			MORPHVERTEXDELTA MorphDelta{};
+			MorphDelta.VertexIndex = iVertexIndex;
+			MorphDelta.PositionDelta = { PositionDelta.x, PositionDelta.y, PositionDelta.z };
+			MorphDelta.NormalDelta = { NormalDelta.x, NormalDelta.y, NormalDelta.z };
+			MorphDelta.TangentDelta = { TangentDelta.x, TangentDelta.y, TangentDelta.z };
+			MorphDelta.BinormalDelta = { BinormalDelta.x, BinormalDelta.y, BinormalDelta.z };
+			MorphTarget.Deltas.push_back(MorphDelta);
+		}
+
+		std::cout
+			<< "Morph target: mesh=" << fbxmesh->m_name
+			<< ", index=" << iMorphTargetIndex
+			<< ", name=" << MorphTarget.Name
+			<< ", delta vertices=" << MorphTarget.Deltas.size()
+			<< '\n';
+
+		fbxmesh->m_MorphTargets.push_back(std::move(MorphTarget));
+	}
 
 
     Meshes.emplace_back(fbxmesh);

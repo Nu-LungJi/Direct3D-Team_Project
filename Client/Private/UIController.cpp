@@ -215,7 +215,8 @@ void CUIController::Update(E::_float fTimeDelta)
 	}
 
 	// ************** 플레이어 HP
-	if (E::CGameInstance::Get().KeyDown(DIK_9))
+	if (E::CGameInstance::Get().KeyPressing(DIK_LSHIFT) &&
+		E::CGameInstance::Get().KeyDown(DIK_9))
 	{
 		AddHP(-200.f);
 	}
