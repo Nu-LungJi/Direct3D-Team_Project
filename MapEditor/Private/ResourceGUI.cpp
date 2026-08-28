@@ -736,6 +736,8 @@ void CResourceGUI::CreateDroppedMapMeshObject(const E::_float3& worldPosition)
 	snapshot.modelResTag = m_DragModelTag;
 	snapshot.layerTag = E::MAPMESHOBJECTLAYER;
 	snapshot.position = worldPosition;
+	// 광윤 추가 -> 초기 생성 스케일 조절기능  (추후 추가 예정)
+	snapshot.scale = m_vDropInitialScale;
 	m_pCommandManager->Submit(
 		std::make_unique<CCreateMapMeshCommand>(std::move(snapshot), GetSelectedHandle()));
 }

@@ -22,6 +22,9 @@ public:
 	MATERIAL_MAP GetSnapshot() const;
 	void Clear();
 
+	void SetOverride(const std::string& modelTag, const MATERIAL_DESC& material);
+	void RemoveOverride(const std::string& modelTag);
+
 private:
 	nlohmann::ordered_json WriteMaterial(const MATERIAL_DESC& material) const;
 	MATERIAL_DESC ReadMaterial(const nlohmann::ordered_json& json) const;

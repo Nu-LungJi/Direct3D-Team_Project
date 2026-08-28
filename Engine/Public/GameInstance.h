@@ -517,6 +517,7 @@ public:
 
 	/*----------- 광윤 추가 -----------*/
 	MATERIAL_DESC FindMaterial(const std::string& modelName);
+	void SetMaterialOverride(const std::string& modelTag, const MATERIAL_DESC& material) { m_pMapManager->SetMaterialOverride(modelTag, material); }
 	/*---------------------------------*/
 #ifdef _DEBUG
 	void SetDebugDrawMapChunk(_bool draw);
