@@ -6,6 +6,14 @@ NS_BEGIN(Client)
 class CGriff final : public CWorldAgent
 {
 public:
+	typedef struct strGriffdesc : CWorldAgent::WORLD_AGENT_DESC
+	{
+		_string WayName{};
+		_string ChildModelTag{};
+		_string ChildObjectTag{};
+	}GRIFF_DESC;
+
+public:
 	DECLARE_DERIVED_TYPE(CGriff, CWorldAgent)
 
 private:
@@ -25,10 +33,10 @@ public:
 public:
 	void						Set_Gravity(_bool bGravity);
 	void						Set_Child();
-private:
-	std::vector<CHandle>		m_ChildHandles;
+	private:
+		std::vector<CHandle>		m_ChildHandles;
 	std::vector<_float3>		m_WayPoint;
-
+	_string	m_ChildModelTag{}, m_ChildObjectTag{};
 	int32_t						m_iIndex{0};
 	_bool						m_bLoop{ false };
 public:

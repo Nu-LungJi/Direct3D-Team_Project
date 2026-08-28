@@ -57,6 +57,7 @@ public:
 	TROLL_SKILL_INFO&			Get_SkillInfo(TROLL_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
 	const _string&				Get_SkillName(TROLL_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
 	void						Destory_Child() override;
+	void						OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit) override;
 private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;

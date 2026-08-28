@@ -477,6 +477,7 @@
     <ClInclude Include="..\Public\UICamera.h" />
     <ClInclude Include="..\Public\UIObject.h" />
     <ClInclude Include="..\Public\Water.h" />
+    <ClInclude Include="..\public\WayPointManager.h" />
     <ClInclude Include="..\Public\WorkerManager.h" />
     <ClInclude Include="..\Public\RenderWorkerManager.h" />
     <ClInclude Include="..\Public\Engine_PhysxDefines.h" />
@@ -829,6 +830,7 @@
     <ClCompile Include="..\Private\UICamera.cpp" />
     <ClCompile Include="..\Private\UIObject.cpp" />
     <ClCompile Include="..\Private\Water.cpp" />
+    <ClCompile Include="..\private\WayPointManager.cpp" />
     <ClCompile Include="..\Private\WorkerManager.cpp" />
     <ClCompile Include="..\Private\RenderWorkerManager.cpp" />
     <ClCompile Include="pch.cpp">

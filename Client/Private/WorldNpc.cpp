@@ -74,7 +74,8 @@ HRESULT CWorldNpc::Initialize(void* pArg)
 	GetTransform().SetQuaternion(vFinalRot);
 	GetTransform().SetScale(NpcDesc->vScale);
 
-	m_pComSphereCol->SetQueryEnabled(true);
+	if(nullptr != m_pComSphereCol)
+		m_pComSphereCol->SetQueryEnabled(true);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	return S_OK;
 }
@@ -141,6 +142,8 @@ void CWorldNpc::Update(E::_float fTimeDelta)
 void CWorldNpc::FixedUpdate(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;
+
+	if(nullptr != m_pCharacterMotor)
 	m_pCharacterMotor->FixedUpdate(fTimeDelta);
 }
 void CWorldNpc::LateUpdate(E::_float fTimeDelta)

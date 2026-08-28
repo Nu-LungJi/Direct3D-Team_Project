@@ -36,6 +36,15 @@ namespace Engine
 				jsonArray.push_back({value.x,value.y,value.z});
 			}
 		}
+		inline static void  SaveJsonTypeFloat3vector(nlohmann::json& jsonFile, const _string& TypeName, std::vector<_float3>& Values)
+		{
+			auto& jsonArray = jsonFile[TypeName];
+			jsonArray = nlohmann::json::array();
+			for (auto& value : Values)
+			{
+				jsonArray.push_back({ value.x,value.y,value.z });
+			}
+		}
 		///////////////Load
 		inline static _bool  LoadJsonTypeString(const nlohmann::json& jsonFile, const _string& TypeName, _string& Src)
 		{
@@ -111,13 +120,33 @@ namespace Engine
 			}
 			return true;
 		}
+		inline static _bool  LoadJsonTypeFloat3Vector(nlohmann::json& jsonFile, const _string& TypeName, std::vector<_float3>& Values)
+		{
+			if (!jsonFile.contains(TypeName))
+				return false;
+
+			auto& jsonArray = jsonFile[TypeName];
+
+			if (!jsonArray.is_array())
+				return false;
+
+			for (auto& value : jsonArray)
+			{
+				if (!value.is_array() || value.size() < 3)
+					continue;
+
+				Values.emplace_back(value[0], value[1], value[2]);
+			}
+			return true;
+		}
 	};
 	
+
 	template<typename T>
-		void SaveJsonValue(nlohmann::json& jsonFile, const _string& TypeName, T& Value)
-		{
-			jsonFile[TypeName] = Value;
-		}
+	void SaveJsonValue(nlohmann::json& jsonFile, const _string& TypeName, T& Value)
+	{
+		jsonFile[TypeName] = Value;
+	}
 	template<typename T>
 		_bool LoadJsonValue(const nlohmann::json& jsonFile, const _string& TypeName, T& Value)
 		{

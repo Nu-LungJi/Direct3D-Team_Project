@@ -19,12 +19,13 @@
 #include "NpcPlacementData.h"
 #include "NpcPlacementManager.h"
 #include "Troll.h"
+#include "PropBarrel.h"
 #include "LightPlacementObject.h"
 // Client에도 같은 이름의 Terrain.h가 있으므로 Engine SDK 헤더를 명시한다.
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
 #include "WaterWheel.h"
-
+#include "WayPointManager.h"
 NS_USING(Client)
 
 CLevelHogwartWorld::CLevelHogwartWorld()
@@ -74,7 +75,6 @@ HRESULT CLevelHogwartWorld::Initialize()
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Spider",NpcOption.sModelGroupTag, "Model_Resource_Spider");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Cat", NpcOption.sModelGroupTag, "Model_Resource_Cat","./Resources/SampleClient/Models/Skeleton/Cat/");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Bird_Kestrel", NpcOption.sModelGroupTag, "Model_Resource_Bird_Kestrel", "./Resources/SampleClient/Models/Skeleton/Birds_Kestrel/");
-
 			
 		}
 
@@ -123,6 +123,9 @@ HRESULT CLevelHogwartWorld::Initialize()
 		return E_FAIL;
 
 	if (FAILED(SpawnTerrain(*hPlayer)))
+		return E_FAIL;
+
+	if (FAILED(SpawnPropBarrelPyramid()))
 		return E_FAIL;
 
 	{
@@ -446,6 +449,7 @@ HRESULT CLevelHogwartWorld::Render()
 void CLevelHogwartWorld::UpdateGUI()
 {
 	ImGui::Begin("Level: Hogwart World");
+
 	ImGui::End();
 }
 
@@ -527,6 +531,55 @@ HRESULT CLevelHogwartWorld::SpawnPlayerCape(CHandle hPlayer)
 		if (auto pPlayer = CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(hPlayer))
 		{
 			pPlayer->SetCapeHandle(hCape.value());
+		}
+	}
+
+	return S_OK;
+}
+
+HRESULT CLevelHogwartWorld::SpawnPropBarrelPyramid()
+{
+	// 전달받은 위치를 바닥 줄의 오른쪽 끝으로 두고 왼쪽으로 펼친다.
+	const _float3 vRightBasePosition{ 273.554f, 38.809f, 130.496f };
+	// 배럴을 세운 크기에 맞춰 초기 Convex가 서로 겹치지 않게 여유를 둔다.
+	const _float fHorizontalSpacing = 4.4f;
+	const _float fVerticalSpacing = 4.6f;
+	const uint32_t iRowCounts[]{ 5u, 3u, 1u };
+	const _float fPyramidCenterX =
+		vRightBasePosition.x - fHorizontalSpacing * 2.f;
+
+	uint32_t iBarrelIndex{};
+	for (uint32_t iRow = 0; iRow < std::size(iRowCounts); ++iRow)
+	{
+		const uint32_t iBarrelCount = iRowCounts[iRow];
+		const _float fHalfRow =
+			static_cast<_float>(iBarrelCount - 1u) * 0.5f;
+
+		for (uint32_t iColumn = 0; iColumn < iBarrelCount; ++iColumn)
+		{
+			CPropBarrel::DESC Desc{};
+			Desc.sObjectTag =
+				"Hogwart_PropBarrel_Pyramid_" + std::to_string(iBarrelIndex++);
+			Desc.sResourceGroup = "PERMANENT";
+			Desc.vInitialRotation = { 90.f, 0.f, 0.f };
+			// 위쪽 배럴이 자리를 잡는 동안 발생하는 초기 접촉으로는 파괴하지 않는다.
+			Desc.fCollisionDestroyGraceTime = 2.f;
+			Desc.vInitialPosition =
+			{
+				fPyramidCenterX +
+					(static_cast<_float>(iColumn) - fHalfRow) * fHorizontalSpacing,
+				vRightBasePosition.y + static_cast<_float>(iRow) * fVerticalSpacing,
+				vRightBasePosition.z
+			};
+
+			if (!CGameInstance::Get().AddGameObjectToLayer(
+				"PERMANENT",
+				PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
+				"PropBarrel",
+				&Desc))
+			{
+				return E_FAIL;
+			}
 		}
 	}
 
@@ -750,24 +803,6 @@ HRESULT CLevelHogwartWorld::SpawnMonster(std::optional<CHandle> hPlayer)
 		return E_FAIL;
 	}
 
-	//CTroll::TROLL_DESC Troll{};
-	//Troll.sObjectTag = "Troll";
-	//Troll.TargetHandle = hPlayer.value();
-	//Troll.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-	//Troll.vPos = _float3(260.353f, 40.679f, 138.799f);
-	//Troll.ReSourceTag = "Model_Resource_Troll";
-	//Troll.WeaponProtoName = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_TrollWeapon);
-	//Troll.WeaponResourceName = "Model_Resource_TrollWeapon";
-	//Troll.resBeHaviorMajor = "BTJSON";
-	//Troll.resBeHaviorMinor = "TROLL";
-	//Troll.MonType = MONSTER_TYPE::BOSS;
-	//
-	//if (!CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, "02.Troll", &Troll))
-	//{
-	//	return E_FAIL;
-	//}
-
-
 }
 HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 {
@@ -846,12 +881,14 @@ HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer, const _string& P
 
 HRESULT CLevelHogwartWorld::SpanwWorldAgent()
 {
-	CGriff::WORLD_AGENT_DESC Griff{};
+	CGriff::GRIFF_DESC Griff{};
 	Griff.sObjectTag = "Griff";
 	Griff.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
 	Griff.ReSourceTag = "Model_Resource_Griff";
 	Griff.vPos = _float3(30.f, 75.f, -326.f);
-
+	Griff.ChildModelTag = "Model_Resource_Griff";
+	Griff.ChildObjectTag = "GriffChild";
+	//Griff.WayName = ""; //넣을거
 	auto Handle = CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Griff, "02_Griff", &Griff);
 	if (!Handle)
 	{
@@ -864,6 +901,29 @@ HRESULT CLevelHogwartWorld::SpanwWorldAgent()
 		if (nullptr == pGiff)
 			return E_FAIL;
 		pGiff->Set_Child();
+	}
+	{
+	
+		CGriff::GRIFF_DESC Phoneix{};
+		Phoneix.sObjectTag = "Phoneix";
+		Phoneix.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+		Phoneix.ReSourceTag = "Model_Resource_Bird_Phoneix";
+		Phoneix.ChildModelTag = "Model_Resource_Bird_Phoneix";
+		Phoneix.ChildObjectTag = "PhoneixChild";
+		Phoneix.WayName = "Phoneix"; //넣을거
+		auto Handle = CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Griff, "02_Phoneix", &Phoneix);
+		if (!Handle)
+		{
+			MSG_BOX("Create Failed to Phoneix in Hogwart");
+			return E_FAIL;
+		}
+		else
+		{
+			auto Phoneix = CGameInstance::Get().GetGameObjectByHandleT<CGriff>(Handle.value());
+			if (nullptr == Phoneix)
+				return E_FAIL;
+			Phoneix->Set_Child();
+		}
 	}
 	return S_OK;
 }

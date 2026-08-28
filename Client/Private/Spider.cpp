@@ -80,7 +80,7 @@ HRESULT CSpider::Initialize(void* pArg)
 	m_eMonType = MONSTER_TYPE::NORMAL;
 	
 	m_pComSphereCol->SetQueryEnabled(true);
-	//m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RigPelvisSocket");
+	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RigPelvisSocket");
 	m_pModelAnimator->Play_Anim(0, false);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 

@@ -993,49 +993,51 @@ int32_t CMonster::Find_AnimIndex(const _string& AnimName)
 }
 void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 {
+	int32_t iRand = 0;
 	switch (eType)
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
-		GET_SINGLE(UIManager)->CreateDamageFont(5, GetHandle(), false);
-		m_iHp -= 5.f;
+		iRand = RandInt(3, 10);
+		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), false);
 		break;
 	case PLAYER_SKILL_TYPE::ACCIO:
-		GET_SINGLE(UIManager)->CreateDamageFont(10, GetHandle(), true);
-		m_iHp -= 10.f;
+		iRand = RandInt(8, 15);
+		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
 		break;
 	case PLAYER_SKILL_TYPE::DEPULSO:
-		GET_SINGLE(UIManager)->CreateDamageFont(15, GetHandle(), true);
-		m_iHp -= 15.f;
+		iRand = RandInt(11, 20);
+		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
 		break;
 	case PLAYER_SKILL_TYPE::DESCENDO:
-		GET_SINGLE(UIManager)->CreateDamageFont(20, GetHandle(), true);
-		m_iHp -= 20.f;
+		iRand = RandInt(15, 25);
+		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
 		break;
 	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
-		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
-		m_iHp -= 25.f;
+		iRand = RandInt(20, 28);
+		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
 		break;
 	case PLAYER_SKILL_TYPE::PROTEGO:
 		m_iHp -= 8.f;
 		break;
 	case PLAYER_SKILL_TYPE::DESTORY:
-		m_iHp -= 25.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
+		iRand = RandInt(23, 28);
+		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
 		break;
 	case PLAYER_SKILL_TYPE::ABRA:
-		m_iHp -= 50.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(50, GetHandle(), true);
+		iRand = RandInt(40, 65);
+		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
 		break;
 	case PLAYER_SKILL_TYPE::CONFRIGO:
-		m_iHp -= 18.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(18, GetHandle(), true);
+		iRand = RandInt(9, 23);
+		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
 		break;
 	case PLAYER_SKILL_TYPE::BOMBARDA:
-		m_iHp -= 28.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(28, GetHandle(), true);
+		iRand = RandInt(16, 28);
+		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
 		break;
 
 	}
+	m_iHp -= iRand;
 }
 
 void CMonster::Update_HurtBox()

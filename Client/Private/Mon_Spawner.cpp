@@ -18,24 +18,31 @@ CMon_Spawner::~CMon_Spawner()
 void CMon_Spawner::UpdateGUI()
 {
 	ImGui::Text(m_bPick == true ? "Pick : TRUE" : "Pick FALSE");
-	
-	if (ImGui::Button("Save EventSpider"))
-	{
-		nlohmann::json j;
-		JsonSaveLoadManager::SaveJsonTypeFloat3list(j, "EVENTSPIDER", m_SpawnPos);
-		std::ofstream path("./Resources/json/Spawn/EVENTSPIDER.json");
-		path << j.dump(4);
-		path.close();
-	}
 	if (ImGui::Button("Reset"))
 		m_SpawnPos.clear();
-	Debug_Point();
 
-	if (ImGui::Button("Undo"))
+	if (ImGui::TreeNode("Spawn"))
 	{
-		if (!m_SpawnPos.empty())
-			m_SpawnPos.pop_back();
+		if (ImGui::Button("Save EventSpider"))
+		{
+			nlohmann::json j;
+			JsonSaveLoadManager::SaveJsonTypeFloat3list(j, "EVENTSPIDER", m_SpawnPos);
+			std::ofstream path("./Resources/json/Spawn/EVENTSPIDER.json");
+			path << j.dump(4);
+			path.close();
+		}
+		Debug_Point();
+
+		if (ImGui::Button("Undo"))
+		{
+			if (!m_SpawnPos.empty())
+				m_SpawnPos.pop_back();
+		}
+		ImGui::TreePop();
 	}
+	
+	
+	
 }
 
 HRESULT CMon_Spawner::InitializePrototype(void* pArg)
@@ -170,6 +177,7 @@ void CMon_Spawner::Debug_Point()
 		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 	}
 }
+
 
 void CMon_Spawner::Picking()
 {

@@ -25,6 +25,7 @@ public:
 private:
 	std::optional<CHandle> SpawnPlayer();
 	HRESULT SpawnPlayerCape(CHandle hPlayer);
+	HRESULT SpawnPropBarrelPyramid();
 	HRESULT SpawnTerrain(std::optional<CHandle> hPlayer);
 	HRESULT SpawnNaviMesh(class E::CTerrain* pTerrain);
 	HRESULT SpawnFlyCamera();
@@ -46,13 +47,11 @@ private:
 	HRESULT SpawnNpcPlacements(CHandle hPlayer, const _string& Path);
 
 
-
 public:
 	static UPtr<CLevelHogwartWorld> Create();
 
 private:
 	_bool m_bCreatePlayScreenUI = false;
-
 private:
 	void Free() override;
 };
