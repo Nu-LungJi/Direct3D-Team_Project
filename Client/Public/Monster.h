@@ -222,7 +222,7 @@ protected:
 	_float								m_fRootMotionTranslationScale{ 1.f };
 	_string								m_SocketName{}, m_CurEffectName{};
 	ATTMON								m_eAttType{ ATTMON::END },m_eLastSkillTable{ ATTMON::END };
-	
+
 	_bool								m_bPending{ false };
 	MON_HIT_INFO						m_PendingMonTable{};
 
@@ -230,7 +230,7 @@ protected:
 	MON_HIT_INFO						m_ActiveMonTable{};
 	
 	std::vector<E::SPAWN_COMMAND>		m_Effects[ETOUI(ATTMON::END)];
-	CHandle								m_TargetHandle{};
+	CHandle								m_TargetHandle{}, m_PlayerHandle{};
 	std::unordered_map<_string, std::vector<_string>> m_SoundTable;
 
 	std::map<ATTMON, uint32_t>			m_MonSkillLists;
