@@ -127,7 +127,8 @@ HRESULT CMonster::Initialize(void* pArg)
 	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
 	m_bDonMove = MonDesc->bDonMove;
 	m_bSpawn = MonDesc->bSpawn;
-	m_TargetHandle = MonDesc->TargetHandle;
+
+	m_PlayerHandle = m_TargetHandle = MonDesc->TargetHandle;
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
@@ -831,16 +832,18 @@ void CMonster::Find_Target()
 		}
 	}
 
+	auto* pBB = Get_BlackBoard();
+	if (nullptr == pBB) return;
 	if (nullptr != pLastTarget)
 	{
-		auto* pBB = Get_BlackBoard();
 		m_TargetHandle = pLastTarget->GetHandle();
-		if( nullptr != pBB)
-			pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
+		pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
 
 	}
 	else
-		m_TargetHandle = {};
+	{
+		pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_PlayerHandle);
+	}
 }
 
 void CMonster::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
