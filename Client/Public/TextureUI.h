@@ -49,6 +49,7 @@ private:
 	uint32_t m_iPathProgressType{};
 	_bool m_bSpellAlarmFlame{};
 	_bool m_bRaceStartFlagWave{};
+	_bool m_bAccioSuccessFlagWave{};
 	_bool m_bScoreAura{};
 	_bool m_bAdditiveBlend{};
 	_float m_fTextureBrightness{ 1.f };
