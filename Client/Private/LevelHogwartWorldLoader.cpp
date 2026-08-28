@@ -680,8 +680,16 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	{
 		// NpcSpawnIdle/NpcSpawnWalk에서 실제 사용하는 NPC만 선로드한다.
 		// 리소스 폴더의 Viector 오타는 런타임 태그와 분리해 여기서만 보정한다.
-		{ "Model_Resource_NPC_VictorRookwood", "ViectorRookwood_lsy" },
 		{ "Model_Resource_NPC_GerboldOllivander", "GerboldOllivander" },
+		{ "Model_Resource_NPC_VictorRookwood", "VictorRookwood_lsy" },
+		{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
+		{ "Model_Resource_NPC_SolomonSallow", "SolomonSallow" },
+		{ "Model_Resource_NPC_TownCrier", "TownCrier" },
+		{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
+		{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
+		{ "Model_Resource_NPC_AdelaideOakes", "AdelaideOakes" },
+		{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
+		{ "Model_Resource_NPC_MirabelGarlick", "MirabelGarlick" },
 	};
 	for (const auto& Entry : NpcModels)
 	{
@@ -695,6 +703,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 				XMMatrixRotationY(XMConvertToRadians(180.f));
 			if (FAILED(res->Load(Desc)))
 			{
+				MessageBoxA(g_hWnd, ModelPath.c_str(), "hm", MB_OK | MB_ICONERROR);
 				MSG_BOX("HOGWART Failed NPC model resource");
 				return E_FAIL;
 			}
@@ -811,6 +820,43 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 			}
 		}
 	}
+
+	static constexpr const char* Blender43Skeletons[] =
+	{
+		"BlueButterfly_Animated_Blender_4_3", "CaptureBag_Animated_Blender_4_3",
+		"ChompingCabbage_Animated_Blender_4_3", "DisillusionmentChest_Animated_Blender_4_3",
+		"FlyingMagicPaper_Animated_Blender_4_3", "GACTreasureChest_Animated_Blender_4_3",
+		"GiantPendulumClock_Animated_Blender_4_3", "GlowingLumosMoth_Animated_Blender_4_3",
+		"Hippogriff_Animated_Blender_4_3", "HoppingPot_Animated_Blender_4_3",
+		"IdentificationStation_Animated_Blender_4_3", "MagicChoppingIngredients_Animated_Blender_4_3",
+		"MagicChoppingStation_Animated_Blender_4_3", "MagicMaterialRefinerTools_Animated_Blender_4_3",
+		"OrangeButterfly_Animated_Blender_4_3", "OutdoorDiricawlBird_Animated_Blender_4_3",
+		"OutdoorFwooperBird_Animated_Blender_4_3", "SanctuaryToyBox_Animated_Blender_4_3",
+		"SelfWrappingPaper_Animated_Blender_4_3", "ShopCounterHandBell_Animated_Blender_4_3",
+		"StirCrazyTeaSpoon_Animated_Blender_4_3", "StreetRabbit_Animated_Blender_4_3",
+		"StreetRat_Animated_Blender_4_3", "StreetRaven_Animated_Blender_4_3",
+		"StreetSquirrel_Animated_Blender_4_3", "TeaShopTeaCup_Animated_Blender_4_3",
+		"ThestralStreetCarriage_Animated_Blender_4_3", "VillageGiantToad_Animated_Blender_4_3",
+		"WizardingDeck_Animated_Blender_4_3"
+	};
+	for (const char* modelName : Blender43Skeletons)
+	{
+		const _string folder = modelName;
+		const _string resourceTag = "Model_Resource_" + folder;
+		const _string modelPath = "./Resources/SampleClient/Models/Skeleton/" + folder + "/SK_" + folder + ".bin";
+		auto model = CGameInstance::Get().AddResourceT<E::CResModel>(
+			LEVEL::HOGWART_WORLD, resourceTag, CResModel::Create(modelPath));
+		if (!model)
+			return E_FAIL;
+
+		E::CResModel::DESC desc{};
+		// Blender 4.3 export 모델은 정점 단위가 월드 기준보다 100배 작다.
+		// 에디터의 Scale 1이 실제 월드 크기가 되도록 로드 시 보정한다.
+		desc.PreTransformMatrix = XMMatrixScaling(100.f, 100.f, 100.f);
+		if (FAILED(model->Load(desc)))
+			return E_FAIL;
+	}
+
 	if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Griff, CGriff::Create())))
 	{
 		MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_Griff");

@@ -79,6 +79,10 @@ private:
 	void DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t iIndex);
 	void DrawFileConfirmPopup();
 	void UpdatePlacementPicking();
+	void SyncPlacement(const NPC_PLACEMENT_DESC& Desc);
+	void DestroyRuntimeObject(const CHandle& Handle);
+	void ClearRuntimeObjects();
+	static _bool IsSamePlacement(const NPC_PLACEMENT_DESC& Left, const NPC_PLACEMENT_DESC& Right);
 	NPC_PLACEMENT_RESULT SpawnPlacement(const NPC_PLACEMENT_DESC& Desc) const;
 	_string ValidatePlacement(const NPC_PLACEMENT_DESC& Desc) const;
 	uint64_t AllocatePlacementId();
@@ -86,6 +90,8 @@ private:
 private:
 	std::vector<NPC_PLACEMENT_DESC> m_Placements{};
 	std::vector<NPC_PLACEMENT_RESULT> m_LastResults{};
+	std::unordered_map<uint64_t, CHandle> m_RuntimeObjects{};
+	std::unordered_map<uint64_t, NPC_PLACEMENT_DESC> m_RuntimeDescs{};
 	std::vector<std::pair<_string, NPC_PLACEMENT_DESC>> m_NpcOptions{};
 	struct NPC_SKELETON_OPTION
 	{
@@ -109,7 +115,6 @@ private:
 	_string m_sFilePath{ "./Resources/json/NPC/Level_HogwartWorld.json" };
 	_string m_sFileStatus{};
 	_bool m_bPlacementPicking{};
-	_bool m_bSpawnOnPick{ true };
 	std::vector<_string>		m_ResMinorNames;
 	uint32_t m_iPickingQueryMask{ PX_ALL_LAYERS };
 	FILE_CONFIRM_ACTION m_eFileConfirmAction{ FILE_CONFIRM_ACTION::NONE };
