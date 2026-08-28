@@ -317,6 +317,7 @@ void UIManager::AssioMiniGameStart()
 	m_iAssioNpcScore = 0;
 	m_iAssioPendingScore = 0;
 	m_fAssioScorePhaseElapsed = 0.f;
+	m_bAssioFinalScore = false;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
 	m_bAssioMiniGameActive = true;
 
@@ -372,7 +373,7 @@ void UIManager::TurnTitleFadeOut(float playtime)
 	}
 }
 
-void UIManager::AddScore(int score)
+void UIManager::AddScore(int score, _bool isFinalScore)
 {
 	if (!m_bAssioMiniGameActive ||
 		m_eAssioScorePhase != ASSIO_SCORE_PHASE::NONE ||
@@ -392,6 +393,7 @@ void UIManager::AddScore(int score)
 		GetSafeUI(*m_hAssioCenterScoreText));
 	if (!center || !centerText)
 		return;
+	m_bAssioFinalScore = isFinalScore;
 
 	centerText->SetwText(std::to_wstring(score));
 	center->SetPos(m_AssioCenterScoreBasePosition);
@@ -454,11 +456,48 @@ _bool UIManager::ResolveAssioCurrentTurn()
 void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 {
 	if (!m_bAssioMiniGameActive ||
-		m_eAssioScorePhase == ASSIO_SCORE_PHASE::NONE ||
-		!m_hAssioCenterScore || !m_hAssioTargetScoreText)
+		m_eAssioScorePhase == ASSIO_SCORE_PHASE::NONE)
 	{
 		return;
 	}
+
+	m_fAssioScorePhaseElapsed += std::max(0.f, fTimeDelta);
+	if (m_eAssioScorePhase == ASSIO_SCORE_PHASE::RESULT_COAT_FADE_OUT)
+	{
+		if (m_fAssioScorePhaseElapsed >= 0.3f)
+			LoadAssioResult();
+		return;
+	}
+	if (m_eAssioScorePhase == ASSIO_SCORE_PHASE::RESULT_HOLD)
+	{
+		if (m_fAssioScorePhaseElapsed >= 3.f)
+		{
+			for (const CHandle root : m_AssioResultRoots)
+			{
+				if (GetSafeUI(root))
+					PlayFadeOutDelete(root, 0.f, 0.3f);
+			}
+			m_AssioResultRoots.clear();
+			m_fAssioScorePhaseElapsed = 0.f;
+			m_eAssioScorePhase = ASSIO_SCORE_PHASE::RESULT_FADE_OUT;
+		}
+		return;
+	}
+	if (m_eAssioScorePhase == ASSIO_SCORE_PHASE::RESULT_FADE_OUT)
+	{
+		if (m_fAssioScorePhaseElapsed >= 0.3f)
+		{
+			m_fAssioScorePhaseElapsed = 0.f;
+			m_bAssioFinalScore = false;
+			m_bAssioMiniGameActive = false;
+			m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
+			PlayFadeInAll2DUI(0.f, 0.5f);
+		}
+		return;
+	}
+
+	if (!m_hAssioCenterScore || !m_hAssioTargetScoreText)
+		return;
 
 	auto* center = GetSafeUI(*m_hAssioCenterScore);
 	auto* targetScore = GetSafeUI(*m_hAssioTargetScoreText);
@@ -468,7 +507,6 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 		return;
 	}
 
-	m_fAssioScorePhaseElapsed += std::max(0.f, fTimeDelta);
 	if (m_eAssioScorePhase == ASSIO_SCORE_PHASE::TURN_CHANGE)
 	{
 		auto* playerRoot = GetSafeUI(*m_hAssioPlayerScoreRoot);
@@ -626,7 +664,10 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 	center->SetPos(m_AssioCenterScoreBasePosition);
 	center->CalcUICoord();
 	m_iAssioPendingScore = 0;
-	BeginAssioTurnChange();
+	if (m_bAssioFinalScore)
+		BeginAssioResult();
+	else
+		BeginAssioTurnChange();
 }
 
 void UIManager::BeginAssioTurnChange()
@@ -649,6 +690,115 @@ void UIManager::BeginAssioTurnChange()
 		TurnTitleFadeOut(0.2f);
 }
 
+void UIManager::BeginAssioResult()
+{
+	for (const CHandle root : m_AssioMiniGameRoots)
+	{
+		if (GetSafeUI(root))
+			PlayFadeOutDelete(root, 0.f, 0.3f);
+	}
+	m_AssioMiniGameRoots.clear();
+	ClearAssioGameplayHandles();
+	m_fAssioScorePhaseElapsed = 0.f;
+	m_eAssioScorePhase = ASSIO_SCORE_PHASE::RESULT_COAT_FADE_OUT;
+}
+
+void UIManager::LoadAssioResult()
+{
+	m_AssioResultRoots = LoadPrefab("AccioSuccess");
+	if (m_AssioResultRoots.empty())
+	{
+		m_bAssioFinalScore = false;
+		m_bAssioMiniGameActive = false;
+		m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
+		PlayFadeInAll2DUI(0.f, 0.5f);
+		return;
+	}
+
+	// 동점일 때는 플레이어를 우선한다.
+	const _bool playerWon = m_iAssioPlayerScore >= m_iAssioNpcScore;
+	const wchar_t* winnerName = playerWon ? L"이솝 샤프" : L"저스티스 훈";
+	const int winnerScore = playerWon ? m_iAssioPlayerScore : m_iAssioNpcScore;
+	if (auto* winName = dynamic_cast<CTextBox*>(
+		FindUIByNameRecursive(m_AssioResultRoots, "WinName")))
+	{
+		winName->SetwText(winnerName);
+	}
+	if (auto* score = dynamic_cast<CTextBox*>(
+		FindUIByNameRecursive(m_AssioResultRoots, "Score")))
+	{
+		score->SetwText(std::to_wstring(winnerScore));
+	}
+	if (auto* gameOverMask = FindUIByNameRecursive(
+		m_AssioResultRoots, "GameOverMask"))
+	{
+		const CHandle maskHandle = gameOverMask->GetHandle();
+		const _float baseLocalScale = gameOverMask->GetLocalScaleRatio();
+		gameOverMask->SetLocalScaleRatio(baseLocalScale);
+		gameOverMask->CalcUICoord();
+		if (auto* tween = gameOverMask->GetTweenCom())
+		{
+			tween->ClearTweens();
+			constexpr _float GROW_DURATION = 0.35f;
+			constexpr _float RETURN_DURATION = 0.45f;
+			const _float enlargedScale = baseLocalScale * 1.2f;
+			tween->PlayTween(
+				baseLocalScale,
+				enlargedScale,
+				GROW_DURATION,
+				[maskHandle](_float value)
+				{
+					if (auto* current = GetSafeUI(maskHandle))
+					{
+						current->SetLocalScaleRatio(value);
+						current->CalcUICoord();
+					}
+				}, nullptr, EEaseType::EaseOutQuad);
+			tween->PlayTween(
+				enlargedScale,
+				baseLocalScale,
+				RETURN_DURATION,
+				[maskHandle, enlargedScale, baseLocalScale](_float value)
+				{
+					if (auto* current = GetSafeUI(maskHandle))
+					{
+						const _float range = std::max(
+							enlargedScale - baseLocalScale, FLT_EPSILON);
+						const _float linearRatio = std::clamp(
+							(enlargedScale - value) / range, 0.f, 1.f);
+						const _float easeInRatio = linearRatio * linearRatio;
+						current->SetLocalScaleRatio(std::lerp(
+							enlargedScale, baseLocalScale, easeInRatio));
+						current->CalcUICoord();
+					}
+				}, nullptr, EEaseType::Linear,
+				GROW_DURATION);
+		}
+	}
+
+	PlayRaceRootsFadeIn(m_AssioResultRoots, 0.35f);
+	m_fAssioScorePhaseElapsed = 0.f;
+	m_eAssioScorePhase = ASSIO_SCORE_PHASE::RESULT_HOLD;
+}
+
+void UIManager::ClearAssioGameplayHandles()
+{
+	m_hAssioScoreBoard.reset();
+	m_hAssioPlayerScoreRoot.reset();
+	m_hAssioNpcScoreRoot.reset();
+	m_hAssioPlayerScoreText.reset();
+	m_hAssioNpcScoreText.reset();
+	m_hAssioPlayerFrame.reset();
+	m_hAssioNpcFrame.reset();
+	m_hAssioCenterScore.reset();
+	m_hAssioCenterScoreText.reset();
+	m_hAssioTurnTitle.reset();
+	m_hAssioTargetScoreText.reset();
+	m_iAssioPendingScore = 0;
+	m_bAssioTurnTitleFadeInStarted = false;
+	m_bAssioTurnTitleWasAlreadyHidden = false;
+}
+
 void UIManager::ClearAssioMiniGameUI(_bool immediate)
 {
 	for (const CHandle root : m_AssioMiniGameRoots)
@@ -662,22 +812,20 @@ void UIManager::ClearAssioMiniGameUI(_bool immediate)
 			PlayFadeOutDelete(root, 0.f, 0.3f);
 	}
 	m_AssioMiniGameRoots.clear();
-	m_hAssioScoreBoard.reset();
-	m_hAssioPlayerScoreRoot.reset();
-	m_hAssioNpcScoreRoot.reset();
-	m_hAssioPlayerScoreText.reset();
-	m_hAssioNpcScoreText.reset();
-	m_hAssioPlayerFrame.reset();
-	m_hAssioNpcFrame.reset();
-	m_hAssioCenterScore.reset();
-	m_hAssioCenterScoreText.reset();
-	m_hAssioTurnTitle.reset();
-	m_hAssioTargetScoreText.reset();
-	m_iAssioPendingScore = 0;
+	for (const CHandle root : m_AssioResultRoots)
+	{
+		if (!GetSafeUI(root))
+			continue;
+		if (immediate)
+			DeleteUIRecursive(root);
+		else
+			PlayFadeOutDelete(root, 0.f, 0.3f);
+	}
+	m_AssioResultRoots.clear();
+	ClearAssioGameplayHandles();
 	m_fAssioScorePhaseElapsed = 0.f;
 	m_bAssioCurrentTurnIsPlayer = true;
-	m_bAssioTurnTitleFadeInStarted = false;
-	m_bAssioTurnTitleWasAlreadyHidden = false;
+	m_bAssioFinalScore = false;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
 	m_bAssioMiniGameActive = false;
 }
