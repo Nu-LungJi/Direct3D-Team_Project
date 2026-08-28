@@ -565,7 +565,7 @@ void CLevelHogwartWorld::UpdateRuntimeActivitySpawnShortcut()
 	if (gameInstance.KeyDown(DIK_F10))
 	{
 		PruneInvalidRuntimeHandles(m_AccioActivityHandles);
-		PruneInvalidRuntimeHandles(m_CoinCollisionHandles);
+		//PruneInvalidRuntimeHandles(m_CoinCollisionHandles);
 
 		const HRESULT hrAccio = m_AccioActivityHandles.empty()
 			? SpawnAccioActivity(
@@ -574,14 +574,14 @@ void CLevelHogwartWorld::UpdateRuntimeActivitySpawnShortcut()
 				180.f,
 				1.f)
 			: S_FALSE;
-		const HRESULT hrCoin = m_CoinCollisionHandles.empty()
-			? SpawnCoinCollision()
-			: S_FALSE;
+		//const HRESULT hrCoin = m_CoinCollisionHandles.empty()
+		//	? SpawnCoinCollision()
+		//	: S_FALSE;
 
-		if (FAILED(hrAccio) || FAILED(hrCoin))
+		if (FAILED(hrAccio) /*|| FAILED(hrCoin)*/)
 		{
 			DespawnRuntimeObjects(m_AccioActivityHandles);
-			DespawnRuntimeObjects(m_CoinCollisionHandles);
+			//DespawnRuntimeObjects(m_CoinCollisionHandles);
 			DEBUG_LOG("[HogwartWorld] Shift + F10 runtime activity spawn failed.\n");
 		}
 		else

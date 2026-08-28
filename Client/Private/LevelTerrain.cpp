@@ -355,7 +355,6 @@ HRESULT CLevelTerrain::Initialize()
 				Desc.vRot = Placement.vRotation;
 				Desc.vScale = Placement.vScale;
 				Desc.bDonMove = Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
-				Desc.bFreezeAnimation = true;
 				hNpc = E::CGameInstance::Get().AddGameObjectToLayer(
 					Placement.sPrototypeGroupTag, Placement.sPrototypeTag, Placement.sLayerTag, &Desc);
 			}

@@ -68,7 +68,6 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 {
 	auto WorldAgentDesc = static_cast<WORLD_AGENT_DESC*>(pArg);
 	m_TargetHandle = WorldAgentDesc->TargetHandle;
-	m_bFreezeAnimation = WorldAgentDesc->bFreezeAnimation;
 	m_iHp = 1;
 
 	if (FAILED(CGameObject::Initialize(pArg)))
@@ -291,9 +290,6 @@ void CWorldAgent::Update(E::_float fTimeDelta)
 
 void CWorldAgent::Update_Animation(_float fTimeDelta)
 {
-	if (m_bFreezeAnimation)
-		return;
-
 	if (m_pComModelInstance->GetModel()->GetAnimations().empty())
 		return;
 
