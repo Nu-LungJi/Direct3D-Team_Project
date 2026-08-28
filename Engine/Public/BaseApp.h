@@ -35,6 +35,8 @@ protected:
 	CTimer m_UpdateTimer{};
 	CTimer m_FixedUpdateTimer{};
 	CTimer m_MeasureTimer{};
+	// [LSY] 60Hz 실행 주기용 나머지와 분리해, 마지막 Update 이후 실제 경과시간만 누적한다.
+	_float m_fPendingUpdateElapsed{};
 
 	uint32_t m_iMeasureUpdateCnt{};
 	uint32_t m_iMeasureUpdateCntPerSec{};
