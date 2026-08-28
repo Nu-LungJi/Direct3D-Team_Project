@@ -45,6 +45,9 @@ private:
 		const _float3& vOrigin,
 		_float fYawDegrees,
 		_float fUniformScale);
+	void DespawnRuntimeObjects(std::vector<CHandle>& Handles);
+	void PruneInvalidRuntimeHandles(std::vector<CHandle>& Handles);
+	void UpdateRuntimeActivitySpawnShortcut();
 
 	void UpdateDebugWarp();
 
@@ -65,6 +68,8 @@ private:
 	_bool m_bCreatePlayScreenUI = false;
 
 	CHandle m_hDebugPlayer{};
+	std::vector<CHandle> m_AccioActivityHandles{};
+	std::vector<CHandle> m_CoinCollisionHandles{};
 
 private:
 	void Free() override;

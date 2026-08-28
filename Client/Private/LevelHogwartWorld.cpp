@@ -127,9 +127,6 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnStaticCollision()))
 		return E_FAIL;
 
-	if (FAILED(SpawnCoinCollision()))
-		return E_FAIL;
-
 	if (FAILED(SpawnTerrain(*hPlayer)))
 		return E_FAIL;
 
@@ -141,15 +138,6 @@ HRESULT CLevelHogwartWorld::Initialize()
 	{
 		return E_FAIL;
 	}
-	if (FAILED(SpawnAccioActivity(
-		*hPlayer,
-		{ 1912.f, 24.8f, 316.f },
-		180.f,
-		1.f)))
-	{
-		return E_FAIL;
-	}
-
 	{
 		//상점 NPC 
 		CInteractiveNpc::DESC Desc{};
@@ -445,6 +433,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 void CLevelHogwartWorld::Update(E::_float fTimeDelta)
 {
 	UNREFERENCED_PARAMETER(fTimeDelta);
+	UpdateRuntimeActivitySpawnShortcut();
 
 	if (!m_bCreatePlayScreenUI)
 	{
@@ -500,8 +489,72 @@ HRESULT CLevelHogwartWorld::Render()
 
 void CLevelHogwartWorld::UpdateGUI()
 {
-	ImGui::Begin("Level: Hogwart World");
-	ImGui::End();
+}
+
+void CLevelHogwartWorld::UpdateRuntimeActivitySpawnShortcut()
+{
+	auto& gameInstance = CGameInstance::Get();
+	const _bool bShiftPressed =
+		gameInstance.KeyPressing(DIK_LSHIFT) ||
+		gameInstance.KeyPressing(DIK_RSHIFT);
+	if (!bShiftPressed)
+		return;
+
+	if (gameInstance.KeyDown(DIK_F10))
+	{
+		PruneInvalidRuntimeHandles(m_AccioActivityHandles);
+		PruneInvalidRuntimeHandles(m_CoinCollisionHandles);
+
+		const HRESULT hrAccio = m_AccioActivityHandles.empty()
+			? SpawnAccioActivity(
+				m_hDebugPlayer,
+				{ 1912.f, 24.8f, 316.f },
+				180.f,
+				1.f)
+			: S_FALSE;
+		const HRESULT hrCoin = m_CoinCollisionHandles.empty()
+			? SpawnCoinCollision()
+			: S_FALSE;
+
+		if (FAILED(hrAccio) || FAILED(hrCoin))
+		{
+			DespawnRuntimeObjects(m_AccioActivityHandles);
+			DespawnRuntimeObjects(m_CoinCollisionHandles);
+			DEBUG_LOG("[HogwartWorld] Shift + F10 runtime activity spawn failed.\n");
+		}
+		else
+		{
+			DEBUG_LOG("[HogwartWorld] Shift + F10 spawned Accio Activity and Coin Collision.\n");
+		}
+	}
+	else if (gameInstance.KeyDown(DIK_F11))
+	{
+		DespawnRuntimeObjects(m_AccioActivityHandles);
+		DespawnRuntimeObjects(m_CoinCollisionHandles);
+		DEBUG_LOG("[HogwartWorld] Shift + F11 despawned Accio Activity and Coin Collision.\n");
+	}
+}
+
+void CLevelHogwartWorld::DespawnRuntimeObjects(
+	std::vector<CHandle>& Handles)
+{
+	for (auto iter = Handles.rbegin(); iter != Handles.rend(); ++iter)
+	{
+		if (auto* pObject = CGameInstance::Get().GetGameObjectByHandle(*iter))
+			pObject->SetPendingDestroyCascade();
+	}
+	Handles.clear();
+}
+
+void CLevelHogwartWorld::PruneInvalidRuntimeHandles(
+	std::vector<CHandle>& Handles)
+{
+	std::erase_if(
+		Handles,
+		[](const CHandle& hObject)
+		{
+			return CGameInstance::Get().GetGameObjectByHandle(hObject) == nullptr;
+		});
 }
 
 std::optional<CHandle> CLevelHogwartWorld::SpawnPlayer()
@@ -559,6 +612,8 @@ HRESULT CLevelHogwartWorld::SpawnAccioActivity(
 {
 	if (fUniformScale <= 0.f)
 		return E_INVALIDARG;
+	if (!m_AccioActivityHandles.empty())
+		return S_FALSE;
 
 	const _float3 vSetRotation{ 0.f, fYawDegrees, 0.f };
 	const _matrix setWorld =
@@ -820,6 +875,7 @@ HRESULT CLevelHogwartWorld::SpawnAccioActivity(
 		return rollbackSpawnedObjects();
 
 	pNpcController->SetInteractionPlayerHandle(hPlayer);
+	m_AccioActivityHandles = std::move(spawnedHandles);
 
 	return S_OK;
 }
@@ -1139,6 +1195,9 @@ HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 
 HRESULT CLevelHogwartWorld::SpawnCoinCollision()
 {
+	if (!m_CoinCollisionHandles.empty())
+		return S_FALSE;
+
 	auto handles = CGameInstance::Get()
 		.GetPhysXManager()
 		->CreateCollisionProxyObjectsFromFile(
@@ -1147,6 +1206,7 @@ HRESULT CLevelHogwartWorld::SpawnCoinCollision()
 
 	if (handles.empty())
 		return E_FAIL;
+	m_CoinCollisionHandles = std::move(handles);
 
 	return S_OK;
 }
