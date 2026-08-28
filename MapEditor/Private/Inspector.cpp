@@ -206,6 +206,8 @@ namespace
 		if (Matchanged)
 		{
 			MapStaticMesh->SetMaterialDesc(matDesc);
+			E::CGameInstance::Get().SetMaterialOverride(mapMeshObject.GetModelResourceTag(), matDesc);
+
 			residentDataChanged = true;
 		}
 		/*---------------------------------*/
