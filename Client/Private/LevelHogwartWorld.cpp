@@ -75,12 +75,20 @@ HRESULT CLevelHogwartWorld::Initialize()
 		NpcOption.sModelResourceTag = "Model_Resource_NPC_VictorRookwood";
 		NpcOption.sBehaviorMajorTag = "BTJSON";
 		NpcOption.sBehaviorMinorTag = "NPC1";
+		struct NPC_TAGS { _string TagName{}; _string Resources{}; _string AnimPath{}; };
+		NPC_TAGS Tags[]{
+		{ "VictorRookwood","Model_Resource_NPC_VictorRookwood" },
+		{"LeopoldBabcocke","Model_Resource_NPC_LeopoldBabcocke"},
+		{"SolomonSallow","Model_Resource_NPC_SolomonSallow"}, 
+		{"TownCrier","Model_Resource_NPC_TownCrier"},
+		{"CrispinDunn","Model_Resource_NPC_CrispinDunn"}, 
+		{"AugustusHill","Model_Resource_NPC_AugustusHill"}, 
+		{ "FEMALE_AdelaideOakes", "Model_Resource_NPC_AdelaideOakes","./Resources/SampleClient/Models/Skeleton/NPC_AdelaideOakes/"},
+		{ "FEMALE_MirabelGarlick", "Model_Resource_NPC_MirabelGarlick","./Resources/SampleClient/Models/Skeleton/NPC_MirabelGarlick/" }, 
+		{ "FEMALE_AnneSallow", "Model_Resource_NPC_AnneSallow","./Resources/SampleClient/Models/Skeleton/NPC_AnneSallow/" } };
 		pNpcManager->RegisterNpcOption("World NPC", NpcOption);
-		pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag,
-											   "Victor Rookwood",
-											   NpcOption.sModelGroupTag,
-											   "Model_Resource_NPC_VictorRookwood",
-											   "./Resources/SampleClient/Models/Skeleton/NPC_ViectorRookwood_lsy/");
+		for(auto& Tag :Tags)
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, Tag.TagName, NpcOption.sModelGroupTag,Tag.Resources, Tag.AnimPath);
 
 		pNpcManager->RegisterBehaviorOption("World NPC", "BTJSON", "NPC1");
 		{
