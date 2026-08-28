@@ -98,6 +98,7 @@ public:
 
 	/********소환사의 코트 미니게임**********/
 	void AssioMiniGameStart();
+	void AssioMiniGameFinish();
 	void AddScore(int score);
 	void TurnTitleFadeOut(float playtime = 0.3f);
 	_bool IsAssioMiniGameActive() const { return m_bAssioMiniGameActive; }
@@ -280,7 +281,7 @@ private:
 		_float playtime = 0.3f);
 	void UpdateAssioMiniGame(_float fTimeDelta);
 	void BeginAssioTurnChange();
-	void ClearAssioMiniGameUI();
+	void ClearAssioMiniGameUI(_bool immediate = true);
 	_bool ResolveAssioCurrentTurn();
 	void UpdateWandShopWorldMousePosition();
 	// 피킹용

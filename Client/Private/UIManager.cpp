@@ -205,6 +205,9 @@ void UIManager::Update(_float fTimeDelta)
 void UIManager::AssioMiniGameStart()
 {
 	ClearAssioMiniGameUI();
+	// 미니게임 UI를 만들기 전에 기존 UI만 복원 목록에 저장해 숨긴다.
+	// 이후 생성되는 Coat UI는 전체 UI FadeOut 대상에 포함되지 않는다.
+	PlayFadeOutAll2DUI(0.f, 0.35f);
 	m_AssioMiniGameRoots = LoadPrefab("Coat");
 
 	auto StoreHandle = [this](
@@ -277,6 +280,7 @@ void UIManager::AssioMiniGameStart()
 	if (!valid)
 	{
 		ClearAssioMiniGameUI();
+		PlayFadeInAll2DUI(0.f, 0.35f);
 		return;
 	}
 
@@ -288,6 +292,7 @@ void UIManager::AssioMiniGameStart()
 	if (!playerRoot || !npcRoot || !playerFrame || !npcFrame || !turnTitle)
 	{
 		ClearAssioMiniGameUI();
+		PlayFadeInAll2DUI(0.f, 0.35f);
 		return;
 	}
 
@@ -328,6 +333,13 @@ void UIManager::AssioMiniGameStart()
 		*m_hAssioNpcScoreRoot,
 		*m_hAssioTurnTitle
 	}, 0.35f);
+}
+
+void UIManager::AssioMiniGameFinish()
+{
+	// Coat UI는 사라지게 하고, 시작 시 숨겼던 기존 UI만 다시 복원한다.
+	ClearAssioMiniGameUI(false);
+	PlayFadeInAll2DUI(0.f, 0.5f);
 }
 
 void UIManager::TurnTitleFadeOut(float playtime)
@@ -637,12 +649,17 @@ void UIManager::BeginAssioTurnChange()
 		TurnTitleFadeOut(0.2f);
 }
 
-void UIManager::ClearAssioMiniGameUI()
+void UIManager::ClearAssioMiniGameUI(_bool immediate)
 {
 	for (const CHandle root : m_AssioMiniGameRoots)
 	{
-		if (GetSafeUI(root))
+		if (!GetSafeUI(root))
+			continue;
+
+		if (immediate)
 			DeleteUIRecursive(root);
+		else
+			PlayFadeOutDelete(root, 0.f, 0.3f);
 	}
 	m_AssioMiniGameRoots.clear();
 	m_hAssioScoreBoard.reset();
