@@ -96,6 +96,12 @@ public:
 		return m_iRaceMiniGameCoinCount;
 	}
 
+	/********소환사의 코트 미니게임**********/
+	void AssioMiniGameStart();
+	void AddScore(int score);
+	void TurnTitleFadeOut(float playtime = 0.3f);
+	_bool IsAssioMiniGameActive() const { return m_bAssioMiniGameActive; }
+
 	/********지팡이 상점***********/
 	void OpenWandShop();
 
@@ -208,6 +214,51 @@ private:
 	std::optional<CHandle> m_hRaceResultCoinText{};
 	_float m_fRaceMiniGameElapsed{};
 	uint32_t m_iRaceMiniGameCoinCount{0};
+
+	enum class ASSIO_SCORE_PHASE : uint8_t
+	{
+		NONE,
+		APPEAR,
+		HOLD,
+		MOVE,
+		TURN_CHANGE
+	};
+	std::vector<CHandle> m_AssioMiniGameRoots{};
+	std::optional<CHandle> m_hAssioScoreBoard{};
+	std::optional<CHandle> m_hAssioPlayerScoreRoot{};
+	std::optional<CHandle> m_hAssioNpcScoreRoot{};
+	std::optional<CHandle> m_hAssioPlayerScoreText{};
+	std::optional<CHandle> m_hAssioNpcScoreText{};
+	std::optional<CHandle> m_hAssioPlayerFrame{};
+	std::optional<CHandle> m_hAssioNpcFrame{};
+	std::optional<CHandle> m_hAssioCenterScore{};
+	std::optional<CHandle> m_hAssioCenterScoreText{};
+	std::optional<CHandle> m_hAssioTurnTitle{};
+	std::optional<CHandle> m_hAssioTargetScoreText{};
+	_float2 m_AssioCenterScoreBasePosition{};
+	_float2 m_AssioCenterScoreMoveStart{};
+	_float2 m_AssioCenterScoreMoveTarget{};
+	_float m_fAssioCenterScoreBaseScale{ 1.f };
+	_float m_fAssioCenterScoreBaseAlpha{ 1.f };
+	_float2 m_AssioActiveTurnPosition{};
+	_float2 m_AssioInactiveTurnPosition{};
+	_float m_fAssioActiveTurnScale{ 1.f };
+	_float m_fAssioInactiveTurnScale{ 1.f };
+	_float m_fAssioActiveTurnAlpha{ 1.f };
+	_float m_fAssioInactiveTurnAlpha{ 1.f };
+	_float m_fAssioActiveFrameAlpha{ 1.f };
+	_float m_fAssioInactiveFrameAlpha{};
+	_float m_fAssioTurnTitleBaseAlpha{ 1.f };
+	_float m_fAssioScorePhaseElapsed{};
+	int m_iAssioPlayerScore{};
+	int m_iAssioNpcScore{};
+	int m_iAssioPendingScore{};
+	_bool m_bAssioTargetIsPlayer{};
+	_bool m_bAssioCurrentTurnIsPlayer{ true };
+	_bool m_bAssioTurnTitleFadeInStarted{};
+	_bool m_bAssioTurnTitleWasAlreadyHidden{};
+	_bool m_bAssioMiniGameActive{};
+	ASSIO_SCORE_PHASE m_eAssioScorePhase{ ASSIO_SCORE_PHASE::NONE };
 	CWandShop m_WandShop{};
 	_bool m_bWandShopWorldMode{ false };
 	_float4x4 m_WandShopPanelWorld{};
@@ -227,6 +278,10 @@ private:
 	void ClearRaceMiniGameUI();
 	void PlayRaceRootsFadeIn(const std::vector<CHandle>& roots,
 		_float playtime = 0.3f);
+	void UpdateAssioMiniGame(_float fTimeDelta);
+	void BeginAssioTurnChange();
+	void ClearAssioMiniGameUI();
+	_bool ResolveAssioCurrentTurn();
 	void UpdateWandShopWorldMousePosition();
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);

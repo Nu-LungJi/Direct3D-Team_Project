@@ -108,7 +108,7 @@ void CTextureUI::Update(E::_float fTimeDelta)
 		std::isfinite(fTimeDelta) && fTimeDelta > 0.f)
 	{
 		m_fScoreAuraTime = std::fmod(
-			m_fScoreAuraTime + std::min(fTimeDelta, 0.05f),
+			m_fScoreAuraTime + std::min(fTimeDelta, 0.05f) * 1.5f,
 			4096.f);
 	}
 
@@ -410,14 +410,24 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 				GetResourceFirst<E::CResTexture2D>(
 					currentLevel,
 					"TEX_UI_T_ScoreAuraCloud");
-			const auto& scrollingClouds = E::CGameInstance::GetConst().
+			const auto& smokeNoise = E::CGameInstance::GetConst().
 				GetResourceFirst<E::CResTexture2D>(
 					currentLevel,
-					"TEX_UI_T_ScrollingClouds");
+					"TEX_UI_T_SmokesNoiseMask");
+			const auto& smokeThin = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_ScoreAuraSmokeThin");
+			const auto& smokeThick = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_ScoreAuraSmokeThick");
 			ID3D11ShaderResourceView* srvs[] = {
 				srv->GetSRV().Get(),
 				cloudRing->GetSRV().Get(),
-				scrollingClouds->GetSRV().Get()
+				smokeNoise ? smokeNoise->GetSRV().Get() : nullptr,
+				smokeThin ? smokeThin->GetSRV().Get() : nullptr,
+				smokeThick ? smokeThick->GetSRV().Get() : nullptr
 			};
 			pContext->PSSetShaderResources(
 				0,
@@ -517,8 +527,10 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	if (m_bRaceStartFlagWave || m_bScoreAura)
 	{
 		// Do not leave the auxiliary mask/noise SRVs attached for later UI draws.
-		ID3D11ShaderResourceView* nullSrvs[] = { nullptr, nullptr };
-		pContext->PSSetShaderResources(1, 2, nullSrvs);
+		ID3D11ShaderResourceView* nullSrvs[] = {
+			nullptr, nullptr, nullptr, nullptr
+		};
+		pContext->PSSetShaderResources(1, 4, nullSrvs);
 	}
 
 	if (useAdditiveBlend)

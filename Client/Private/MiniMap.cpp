@@ -675,7 +675,7 @@ void CMiniMap::UpdateMonsterMarkers(
 		auto* pMonster = E::CGameInstance::Get().
 			GetGameObjectByHandleT<CMonster>(m_vNearbyMonsterHandles[i]);
 		if (!pMonster || pMonster->GetPendingDestroy() ||
-			pMonster->Get_CurrentHp() <= 0)
+			!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0)
 		{
 			SetMonsterMarkerVisible(pMarker, false);
 			continue;

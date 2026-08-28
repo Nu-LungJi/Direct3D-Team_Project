@@ -14,6 +14,7 @@ HRESULT CTextUI::Initialize(void* pArg)
 {
 	auto		pDesc = static_cast<CTextUI::TEXT_DESC*>(pArg);
 	m_textInfo.Alignment = pDesc->Alignment;
+	m_textInfo.FontType = pDesc->FontType;
 
 	m_textInfo.Text = L"한글";
 
@@ -38,8 +39,25 @@ void CTextUI::Update(_float fTimeDelta)
 		fontscale = m_UIINFO.SizeX * parentUI->GetScaleRatio();
 	}
 
-	const StringID fontName = m_UIINFO.Name == "64px" ?
-		"Pretendard_64px" : "Pretendard";
+	StringID fontName = "Pretendard";
+	switch (m_textInfo.FontType)
+	{
+	case TEXT_FONT_TYPE::BLUE_FOREST_BOLD_20:
+		fontName = "BlueForestBold_20px";
+		break;
+	case TEXT_FONT_TYPE::BLUE_FOREST_BOLD_32:
+		fontName = "BlueForestBold_32px";
+		break;
+	case TEXT_FONT_TYPE::HAKGYOANSIM_PUZZLE_OUTLINE_25:
+		fontName = "HakgyoansimPuzzleOutline_25px";
+		break;
+	case TEXT_FONT_TYPE::PRETENDARD_64:
+		fontName = "Pretendard_64px";
+		break;
+	case TEXT_FONT_TYPE::DEFAULT:
+	default:
+		break;
+	}
 	_float originX = m_UIINFO.SizeX * 0.5f;
 	if (m_textInfo.Alignment != TEXT_ALIGN::LEFT)
 	{
@@ -55,6 +73,64 @@ void CTextUI::Update(_float fTimeDelta)
 		m_UIINFO.SizeY * 0.5f
 	};
 	const RENDERGROUP renderGroup = GetResolvedRenderGroup();
+	const _bool usePuzzleFillAndOutline = m_textInfo.FontType ==
+		TEXT_FONT_TYPE::HAKGYOANSIM_PUZZLE_OUTLINE_25;
+	const auto queueText = [&, this](
+		const _wstring& text,
+		const _float2& position,
+		const _float2& origin,
+		_fvector color,
+		_bool strengthen)
+	{
+		if (usePuzzleFillAndOutline)
+		{
+			const _vector fillColor = XMVectorSet(
+				1.f, 1.f, 1.f, m_UIINFO.Alpha);
+			const _vector outlineColor = XMVectorSet(
+				0.f, 0.f, 0.f, m_UIINFO.Alpha);
+			CGameInstance::Get().FontAddLateDraw(
+				renderGroup,
+				"HakgyoansimPuzzleBlack_25px",
+				text,
+				position,
+				fontscale,
+				fillColor,
+				0.f,
+				origin);
+			CGameInstance::Get().FontAddLateDraw(
+				renderGroup,
+				"HakgyoansimPuzzleOutline_25px",
+				text,
+				position,
+				fontscale,
+				outlineColor,
+				0.f,
+				origin);
+			return;
+		}
+
+		CGameInstance::Get().FontAddLateDraw(
+			renderGroup,
+			fontName,
+			text,
+			position,
+			fontscale,
+			color,
+			0.f,
+			origin);
+		if (strengthen)
+		{
+			CGameInstance::Get().FontAddLateDraw(
+				renderGroup,
+				fontName,
+				text,
+				position,
+				fontscale,
+				color,
+				0.f,
+				origin);
+		}
+	};
 
 	if (m_bFixedDigitLayout && !m_textInfo.Text.empty())
 	{
@@ -95,6 +171,7 @@ void CTextUI::Update(_float fTimeDelta)
 		for (const wchar_t character : m_textInfo.Text)
 		{
 			const wchar_t glyph[] = { character, L'\0' };
+			const _wstring glyphText{ glyph };
 			const _float2 glyphSize = CGameInstance::Get().
 				FontMeasureString(fontName, glyph);
 			const _float cellWidth =
@@ -115,25 +192,7 @@ void CTextUI::Update(_float fTimeDelta)
 				m_UIINFO.Color.z,
 				m_UIINFO.Alpha);
 
-			CGameInstance::Get().FontAddLateDraw(
-				renderGroup,
-				fontName,
-				glyph,
-				glyphPosition,
-				fontscale,
-				color,
-				0.f,
-				glyphOrigin);
-			// Preserve the existing TextUI double draw used by ordinary text.
-			CGameInstance::Get().FontAddLateDraw(
-				renderGroup,
-				fontName,
-				glyph,
-				glyphPosition,
-				fontscale,
-				color,
-				0.f,
-				glyphOrigin);
+			queueText(glyphText, glyphPosition, glyphOrigin, color, true);
 
 			cursorUnscaled += cellWidth;
 		}
@@ -178,43 +237,31 @@ void CTextUI::Update(_float fTimeDelta)
 			m_ColoredSuffixColor.z,
 			m_UIINFO.Alpha);
 
-		for (uint32_t drawIndex = 0; drawIndex < 2u; ++drawIndex)
-		{
-			CGameInstance::Get().FontAddLateDraw(
-				renderGroup, fontName, prefix.c_str(),
-				{ leftX, m_UIINFO.fY }, fontscale, prefixColor,
-				0.f, segmentOrigin);
-			CGameInstance::Get().FontAddLateDraw(
-				renderGroup, fontName, m_ColoredSuffix.c_str(),
-				{ leftX + prefixSize.x * fontscale, m_UIINFO.fY },
-				fontscale, suffixColor, 0.f, segmentOrigin);
-		}
+		queueText(
+			prefix,
+			{ leftX, m_UIINFO.fY },
+			segmentOrigin,
+			prefixColor,
+			true);
+		queueText(
+			m_ColoredSuffix,
+			{ leftX + prefixSize.x * fontscale, m_UIINFO.fY },
+			segmentOrigin,
+			suffixColor,
+			true);
 		return;
 	}
 
-	if (m_UIINFO.Name == "64px")
-	{
-		CGameInstance::Get().FontAddLateDraw(
-			renderGroup,
-			fontName,
-			m_textInfo.Text.c_str(),
-			{ m_UIINFO.fX, m_UIINFO.fY },
-			fontscale,
-			XMVectorSet(m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha),
-			0.f,
-			textOrigin
-		);
-	}
-	else
-	{
-		CGameInstance::Get().FontAddLateDraw(renderGroup, fontName, m_textInfo.Text.c_str(),
-			{ m_UIINFO.fX, m_UIINFO.fY }, fontscale, XMVectorSet(m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha),
-			0.f, textOrigin);
-
-		CGameInstance::Get().FontAddLateDraw(renderGroup, fontName, m_textInfo.Text.c_str(),
-			{ m_UIINFO.fX, m_UIINFO.fY }, fontscale, XMVectorSet(m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha),
-			0.f, textOrigin);
-	}
+	queueText(
+		m_textInfo.Text,
+		{ m_UIINFO.fX, m_UIINFO.fY },
+		textOrigin,
+		XMVectorSet(
+			m_UIINFO.Color.x,
+			m_UIINFO.Color.y,
+			m_UIINFO.Color.z,
+			m_UIINFO.Alpha),
+		m_textInfo.FontType != TEXT_FONT_TYPE::PRETENDARD_64);
 }
 
 void CTextUI::PlayEffect(uint32_t uiState)

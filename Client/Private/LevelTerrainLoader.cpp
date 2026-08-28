@@ -497,7 +497,8 @@ _bool CLevelTerrainLoader::UILoad()
 				"./Resources/SampleClient/Textures/UI/UITexture/SpellSlot",
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
 				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
-				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame"
+				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame",
+				"./Resources/SampleClient/Textures/UI/UITexture/MiniGame"
 			};
 
 			for (const auto& targetDir : targetDirectories)
