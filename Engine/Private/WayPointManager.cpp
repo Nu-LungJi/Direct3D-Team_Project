@@ -158,7 +158,7 @@ void CWayPointManager::LoadWay(const _string& jsonFileName, std::vector<_float3>
 	return;
 }
 
-const WAY_NAME& CWayPointManager::FInd_Way(const _string& WayName)
+const WAY_NAME CWayPointManager::FInd_Way(const _string& WayName)
 {
 	auto iter = m_WayNames.find(WayName);
 
