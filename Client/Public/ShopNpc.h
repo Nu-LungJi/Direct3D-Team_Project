@@ -27,6 +27,7 @@ private:
 public:
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(E::_float fTimeDelta) override;
+	void Update(E::_float fTimeDelta) override;
 	void UpdateGUI() override;
 
 	static E::UPtr<CShopNpc> Create();
@@ -34,6 +35,11 @@ public:
 
 protected:
 	void OpenShop() override;
+	void PrepareDialogueCamera(const _string& cinematicName) override;
+	_bool KeepDialogueCameraOnFinish() const override
+	{
+		return m_bWandBoxPresentationPending || m_bWandBoxPresentationActive;
+	}
 
 private:
 	_bool m_bWorldSpaceShop{};
@@ -48,6 +54,21 @@ private:
 	_float3 m_vDebugEntrancePosition{};
 	_float3 m_vDebugEntranceControllerPosition{};
 	_float4 m_qDebugEntranceRotation{ 0.f, 0.f, 0.f, 1.f };
+	uint32_t m_iSpeechMouthMorph{ UINT32_MAX };
+	int32_t m_iSpeechFacialAnimation{ -1 };
+	_float m_fSpeechMorphTime{};
+	_bool m_bSpeechMorphApplied{};
+	_bool m_bSpeechUpperAnimationPlaying{};
+	_bool m_bSpeechJawChannel{};
+	_bool m_bSpeechLowerTeethChannel{};
+	_bool m_bSpeechTongueChannel{};
+	int32_t m_iWandBoxOpenAnimation{ -1 };
+	_bool m_bWandBoxPresentationPending{};
+	_bool m_bWandBoxPresentationActive{};
+	_bool m_bWandBoxCameraStarted{};
+	_float m_fWandBoxCameraElapsed{};
+	_bool m_bWandShopOpenedByPresentation{};
+	_bool m_bWandPresentationOwnsTimePause{};
 };
 
 NS_END

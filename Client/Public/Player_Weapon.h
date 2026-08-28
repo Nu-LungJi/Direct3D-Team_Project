@@ -36,6 +36,8 @@ public:
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
+	HRESULT EquipWand2();
+	HRESULT EquipWandModel(const _string& strModelPath, const _string& strResourceTag);
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
@@ -49,6 +51,7 @@ public:
 private:
 	void					Weapon_Throw(_float fTimeDelta);
 	CComModelInstance*		GetParentModelInstance() const;
+	HRESULT					RefreshModelBones();
 private:
 	CComModelInstance* m_pComModelInstance{};
 	// nonAnim

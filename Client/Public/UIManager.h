@@ -91,6 +91,10 @@ public:
 	void StartRaceMiniGame();
 	void AddRaceMiniGameCoin(uint32_t amount = 1u);
 	void FinishRaceMiniGame();
+	void SetRaceReturnToShopCallback(std::function<void()> callback)
+	{
+		m_OnRaceReturnToShop = callback;
+	}
 	uint32_t GetRaceMiniGameCoinCount() const
 	{
 		return m_iRaceMiniGameCoinCount;
@@ -114,10 +118,12 @@ public:
 	void OpenWandShopWorld(
 		CHandle targetHandle,
 		const _float3& positionOffset,
-		const _float3& rotationOffsetDegrees); // 3D월드 상점
+		const _float3& rotationOffsetDegrees,
+		_float panelScale = 1.f); // 3D월드 상점
 
 	void OpenWandShopPage(uint32_t pageIndex);
 	void CloseWandShop();
+	_bool IsWandShopOpen() const { return m_WandShop.IsOpen(); }
 	_float2 GetUIInteractionMousePosition() const;
 	_bool IsWandShopWorldMode() const { return m_bWandShopWorldMode; }
 
@@ -221,6 +227,7 @@ private:
 	uint32_t m_iRaceMiniGameCoinCount{40};
 	_bool m_bRaceReturnPositionApplied{};
 	_float m_fRaceReturnElapsed{};
+	std::function<void()> m_OnRaceReturnToShop{};
 
 	enum class ASSIO_SCORE_PHASE : uint8_t
 	{
@@ -274,6 +281,8 @@ private:
 	CWandShop m_WandShop{};
 	_bool m_bWandShopWorldMode{ false };
 	_float4x4 m_WandShopPanelWorld{};
+	_float3 m_vWandShopPanelWorldPosition{};
+	_float2 m_vWandShopPanelWorldScale{};
 	_float2 m_WandShopPanelMousePosition{ -FLT_MAX, -FLT_MAX };
 	_bool m_bWandShopPanelMouseHit{ false };
 
@@ -297,6 +306,7 @@ private:
 	void ClearAssioGameplayHandles();
 	void ClearAssioMiniGameUI(_bool immediate = true);
 	_bool ResolveAssioCurrentTurn();
+	void UpdateWandShopWorldBillboard();
 	void UpdateWandShopWorldMousePosition();
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);

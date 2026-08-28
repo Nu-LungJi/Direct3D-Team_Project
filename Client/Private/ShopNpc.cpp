@@ -5,6 +5,8 @@
 #include "ComModelInstance.h"
 #include "GameInstance.h"
 #include "ResModel.h"
+#include "ResModelAnim.h"
+#include "ResModelBone.h"
 #include "UIManager.h"
 
 NS_USING(Client)
@@ -41,6 +43,40 @@ HRESULT CShopNpc::Initialize(void* pArg)
 	GetTransform().Update();
 	if (m_pCharacterMotor)
 		m_pCharacterMotor->SetUseGravity(true);
+	if (m_pModelAnimator)
+	{
+		m_iSpeechMouthMorph = m_pModelAnimator->FindMorphTargetIndex("jaw_drop");
+		if (m_iSpeechMouthMorph == UINT32_MAX)
+			m_iSpeechMouthMorph = m_pModelAnimator->FindMorphTargetIndex("jaw_drop_mid");
+		m_iSpeechFacialAnimation = Find_AnimIndex(
+			"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin");
+		m_iWandBoxOpenAnimation = Find_AnimIndex(
+			"AN_BODY__WandSelection__Clip21_Ollivander.bin");
+		if (m_iSpeechFacialAnimation >= 0 && m_pComModelInstance &&
+			m_pComModelInstance->GetModel())
+		{
+			const auto& model = m_pComModelInstance->GetModel();
+			const auto& animations = model->GetAnimations();
+			if (static_cast<size_t>(m_iSpeechFacialAnimation) < animations.size())
+			{
+				const auto& facialAnim = animations[m_iSpeechFacialAnimation];
+				const auto& bones = model->GetBones();
+				for (size_t boneIndex = 0; boneIndex < bones.size(); ++boneIndex)
+				{
+					if (!bones[boneIndex] ||
+						!facialAnim->GetChannelByBoneIndex(static_cast<uint32_t>(boneIndex)))
+						continue;
+					const _string boneName = bones[boneIndex]->GetBoneName();
+					if (boneName == "jawC" || boneName.find("jaw") != _string::npos)
+						m_bSpeechJawChannel = true;
+					if (boneName == "teeth_lwr")
+						m_bSpeechLowerTeethChannel = true;
+					if (boneName.find("tongue") != _string::npos)
+						m_bSpeechTongueChannel = true;
+				}
+			}
+		}
+	}
 	return S_OK;
 }
 
@@ -163,10 +199,44 @@ void CShopNpc::UpdateGUI()
 
 	if (ImGui::Button("Open in Animation Editor"))
 		CGameInstance::Get().SetAnimationEditorTarget(GetHandle());
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("CloseUp Cinematic Test (No Transform Move)");
+	if (ImGui::Button("Test ShopNpcDialogueCloseUp"))
+		PlayDialogueCameraOnlyForTest("ShopNpcDialogueCloseUp");
+	ImGui::SameLine();
+	if (ImGui::Button("Stop CloseUp Camera"))
+		StopDialogueCameraOnlyForTest();
+	ImGui::TextDisabled("NPC and player position/rotation are not changed.");
+	if (ImGui::Button("Test Return Visit Dialogue"))
+		RestartDialogueAtIndexForTest(4u);
+	ImGui::SameLine();
+	ImGui::TextDisabled("Return lines -> open wand shop");
+	if (ImGui::Button("Test Wand Box Camera"))
+		PlayDialogueCameraOnlyForTest("ShopNpcWandBox");
+	ImGui::SameLine();
+	if (ImGui::Button("Stop Wand Box Camera"))
+		StopDialogueCameraOnlyForTest();
+	ImGui::Separator();
+	ImGui::TextUnformatted("Speech Face Diagnostics");
+	ImGui::Text("jaw_drop morph: %s",
+		m_iSpeechMouthMorph != UINT32_MAX ? "found" : "missing");
+	ImGui::Text("DialogueTalk face layer: %s",
+		m_iSpeechFacialAnimation >= 0 ? "found" : "missing");
+	ImGui::Text("Channels - jaw: %s / lower teeth: %s / tongue: %s",
+		m_bSpeechJawChannel ? "yes" : "no",
+		m_bSpeechLowerTeethChannel ? "yes" : "no",
+		m_bSpeechTongueChannel ? "yes" : "no");
 }
 
 void CShopNpc::OpenShop()
 {
+	if (m_iWandBoxOpenAnimation >= 0)
+	{
+		m_bWandBoxPresentationPending = true;
+		return;
+	}
+
 	auto* pUIManager = GET_SINGLE(UIManager);
 	if (m_bWorldSpaceShop)
 	{
@@ -178,6 +248,167 @@ void CShopNpc::OpenShop()
 	}
 
 	pUIManager->OpenWandShop();
+}
+
+void CShopNpc::PrepareDialogueCamera(const _string& cinematicName)
+{
+	if (cinematicName != "ShopNpcDialogueCloseUp")
+		return;
+
+	constexpr _float3 closeUpPosition{ 124.677f, 3.f, -87.211f };
+	const _float3 controllerOffset{
+		m_vDebugEntranceControllerPosition.x - m_vDebugEntrancePosition.x,
+		m_vDebugEntranceControllerPosition.y - m_vDebugEntrancePosition.y,
+		m_vDebugEntranceControllerPosition.z - m_vDebugEntrancePosition.z
+	};
+	if (m_pCharacterController)
+	{
+		m_pCharacterController->SetPosition({
+			closeUpPosition.x + controllerOffset.x,
+			closeUpPosition.y + controllerOffset.y,
+			closeUpPosition.z + controllerOffset.z
+		});
+	}
+	GetTransform().SetPosition(closeUpPosition);
+	GetTransform().SetQuaternion(
+		XMQuaternionRotationRollPitchYaw(
+			0.f, XMConvertToRadians(131.699f), 0.f));
+	GetTransform().Update();
+
+	// NPC 앞에 세워 NPC를 바라보게 한다. 현재 월드 카메라 기준 플레이어가 화면 왼쪽에 온다.
+	PlacePlayerFacingNpc({ 1.2f, -1.f, 2.2f });
+}
+
+void CShopNpc::Update(E::_float fTimeDelta)
+{
+	__super::Update(fTimeDelta);
+	if (!m_pModelAnimator)
+		return;
+
+	if (m_bWandBoxPresentationPending)
+	{
+		m_bWandBoxPresentationPending = false;
+		m_bWandBoxPresentationActive = true;
+		m_bWandBoxCameraStarted = false;
+		m_fWandBoxCameraElapsed = 0.f;
+		m_bWandShopOpenedByPresentation = false;
+		GetTransform().SetQuaternion(
+			XMQuaternionRotationRollPitchYaw(
+				0.f, XMConvertToRadians(180.f), 0.f));
+		GetTransform().Update();
+		m_pModelAnimator->Play_Anim(m_iWandBoxOpenAnimation, false, 0.15f);
+	}
+
+	if (m_bWandBoxPresentationActive)
+	{
+		const _float wandOpenRatio = m_pModelAnimator->GetPlayAnimRatio();
+		// JSON의 0초 CloseUp 키에서 1초 상자 키로 이어지도록 열리기 직전에 시작한다.
+		if (!m_bWandBoxCameraStarted && wandOpenRatio >= 0.55f)
+		{
+			PlayDialogueCameraOnlyForTest("ShopNpcWandBox");
+			m_bWandBoxCameraStarted = true;
+			m_fWandBoxCameraElapsed = 0.f;
+		}
+		if (!m_bWandBoxCameraStarted && m_pModelAnimator->GetFinish())
+		{
+			PlayDialogueCameraOnlyForTest("ShopNpcWandBox");
+			m_bWandBoxCameraStarted = true;
+			m_fWandBoxCameraElapsed = 0.f;
+		}
+		if (m_bWandBoxCameraStarted && !m_bWandShopOpenedByPresentation)
+			m_fWandBoxCameraElapsed += E::CGameInstance::Get().GetUnscaledDelta();
+		if (!m_bWandShopOpenedByPresentation && m_bWandBoxCameraStarted &&
+			m_fWandBoxCameraElapsed >= 8.f)
+		{
+			E::TIME_SCALE_REQUEST_DESC pauseDesc{};
+			pauseDesc.fTargetScale = 0.f;
+			pauseDesc.fBlendIn = 0.f;
+			pauseDesc.fMaxUnscaledDuration = 600.f;
+			pauseDesc.fSafetyBlendOut = 0.15f;
+			pauseDesc.sTag = "ShopNpc_WandBoxRevealPause";
+			m_bWandPresentationOwnsTimePause =
+				E::CGameInstance::Get().BeginTimeScale(pauseDesc);
+			// ShopNpcWandBox의 마지막 카메라 포즈를 기준으로 패널을
+			// 화면 정중앙 3m 앞에 배치한다. 카메라 키가 수정되어도
+			// NPC 로컬 오프셋을 런타임에 다시 계산해 같은 구도를 유지한다.
+			_float3 panelOffset{ -2.f, 1.5f, 0.2f };
+			if (auto* activeCamera = E::CGameInstance::Get().GetActiveCamera())
+			{
+				constexpr _float PANEL_DISTANCE = 3.f;
+				const _vector cameraPosition =
+					activeCamera->GetTransform().GetLoadedPostion();
+				const _vector cameraLook = XMVector3Normalize(
+					activeCamera->GetTransform().GetState(E::STATE::LOOK));
+				const _vector panelPosition =
+					cameraPosition + cameraLook * PANEL_DISTANCE;
+				const _vector panelDelta =
+					panelPosition - GetTransform().GetLoadedPostion();
+				const _vector npcRight = XMVector3Normalize(
+					GetTransform().GetState(E::STATE::RIGHT));
+				const _vector npcUp = XMVector3Normalize(
+					GetTransform().GetState(E::STATE::UP));
+				const _vector npcLook = XMVector3Normalize(
+					GetTransform().GetState(E::STATE::LOOK));
+
+				panelOffset = {
+					XMVectorGetX(XMVector3Dot(panelDelta, npcRight)),
+					XMVectorGetX(XMVector3Dot(panelDelta, npcUp)),
+					XMVectorGetX(XMVector3Dot(panelDelta, npcLook))
+				};
+			}
+			GET_SINGLE(UIManager)->OpenWandShopWorld(
+				GetHandle(), panelOffset, { 0.f, 180.f, 0.f }, 0.32f);
+			m_bWandShopOpenedByPresentation = true;
+		}
+		else if (m_bWandShopOpenedByPresentation &&
+			!GET_SINGLE(UIManager)->IsWandShopOpen())
+		{
+			if (m_bWandPresentationOwnsTimePause)
+				E::CGameInstance::Get().EndTimeScale(
+					"ShopNpc_WandBoxRevealPause", 0.15f);
+			m_bWandPresentationOwnsTimePause = false;
+			m_bWandBoxPresentationActive = false;
+			StopDialogueCameraOnlyForTest();
+		}
+	}
+
+	const _bool talking = IsTalking() && GetState() == STATE::TALKING &&
+		IsDialogueSpeechActive();
+	if (!talking)
+	{
+		m_fSpeechMorphTime = 0.f;
+		if (m_bSpeechMorphApplied)
+		{
+			m_pModelAnimator->ClearMorphPreview();
+			m_bSpeechMorphApplied = false;
+		}
+		if (m_bSpeechUpperAnimationPlaying)
+		{
+			m_pModelAnimator->Stop_UpperAnim(0.12f);
+			m_bSpeechUpperAnimationPlaying = false;
+		}
+		return;
+	}
+
+	if (!m_bSpeechUpperAnimationPlaying && m_iSpeechFacialAnimation >= 0 &&
+		m_pModelAnimator->Set_UpperBodyRootBone("face", 1))
+	{
+		m_pModelAnimator->Play_UpperAnim(
+			m_iSpeechFacialAnimation, true, 0.1f);
+		m_pModelAnimator->SetUpperAnimationFadeOutDuration(0.12f);
+		m_bSpeechUpperAnimationPlaying = true;
+	}
+	if (m_iSpeechMouthMorph == UINT32_MAX)
+		return;
+
+	m_fSpeechMorphTime += fTimeDelta;
+	// 서로 다른 주기의 파형과 짧은 휴지 구간을 섞어 기계적인 반복을 줄인다.
+	const _float syllable = std::abs(std::sin(m_fSpeechMorphTime * 10.7f));
+	const _float variation = 0.65f + 0.35f * std::sin(m_fSpeechMorphTime * 3.1f + 0.8f);
+	const _bool pause = std::fmod(m_fSpeechMorphTime, 2.35f) > 2.05f;
+	const _float weight = pause ? 0.03f : std::clamp(syllable * variation, 0.04f, 0.72f);
+	m_pModelAnimator->SetMorphPreview(m_iSpeechMouthMorph, weight);
+	m_bSpeechMorphApplied = true;
 }
 
 E::UPtr<CShopNpc> CShopNpc::Create()

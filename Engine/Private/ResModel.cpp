@@ -24,7 +24,23 @@ HRESULT CResModel::Load(const std::any& arg)
 		return E_FAIL;
 
 	if (m_eState == STATE::LOADED)
+	{
+		// A resource tag can survive a level reload. Older instances may have
+		// been loaded before their split AN_ clips were copied next to the
+		// model, so do not permanently keep an empty animation list.
+		if (m_Animations.empty())
+		{
+			if (FAILED(Ready_Animation()))
+				return E_FAIL;
+
+			if (!m_Animations.empty() && FAILED(Ready_GPU_Animation()))
+			{
+				m_Animations.clear();
+				return E_FAIL;
+			}
+		}
 		return S_OK;
+	}
 
 	m_eState = STATE::LOADING;
 	XMStoreFloat4x4(&m_PreTransformMatrix, descArg->PreTransformMatrix);
