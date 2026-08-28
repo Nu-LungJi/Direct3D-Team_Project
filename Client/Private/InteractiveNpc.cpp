@@ -82,6 +82,7 @@ HRESULT CInteractiveNpc::Initialize(void* pArg)
 	m_vCoinMoveRotationEuler = pDesc->CoinMoveRotationEuler;
 	m_fMoveFadeHoldDuration = std::max(0.f, pDesc->MoveFadeHoldDuration);
 	m_MoveOutcomeAnimation = pDesc->MoveOutcomeAnimation;
+	m_OnMoveDestinationApplied = pDesc->OnMoveDestinationApplied;
 	m_fMoveSpeed = std::max(0.1f, pDesc->MoveSpeed);
 	m_fMoveStopDistance = std::max(0.05f, pDesc->MoveStopDistance);
 	m_hAccioActivity = pDesc->AccioActivityHandle;
@@ -692,6 +693,8 @@ void CInteractiveNpc::UpdateMoveOutcome()
 			ApplyMovePose(*pPlayer);
 			if (m_eActiveMiniGame == ACTIVE_MINIGAME::COIN)
 				pPlayer->SetFlyRequested(true);
+			if (m_OnMoveDestinationApplied)
+				m_OnMoveDestinationApplied();
 		}
 
 		EndDialogueCamera();

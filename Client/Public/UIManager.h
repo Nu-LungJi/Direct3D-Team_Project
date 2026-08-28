@@ -91,6 +91,10 @@ public:
 	void StartRaceMiniGame();
 	void AddRaceMiniGameCoin(uint32_t amount = 1u);
 	void FinishRaceMiniGame();
+	void SetRaceReturnToShopCallback(std::function<void()> callback)
+	{
+		m_OnRaceReturnToShop = callback;
+	}
 	uint32_t GetRaceMiniGameCoinCount() const
 	{
 		return m_iRaceMiniGameCoinCount;
@@ -222,6 +226,7 @@ private:
 	_bool m_bRaceReturnPositionApplied{};
 	_bool m_bRaceResultFadeOutStarted{};
 	_float m_fRaceReturnElapsed{};
+	std::function<void()> m_OnRaceReturnToShop{};
 
 	enum class ASSIO_SCORE_PHASE : uint8_t
 	{
