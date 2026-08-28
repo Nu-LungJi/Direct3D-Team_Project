@@ -953,6 +953,10 @@ void UIManager::FinishRaceMiniGame()
 
 void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 {
+	constexpr _float RACE_DURATION = 120.f;
+	constexpr _float RESULT_HOLD_DURATION = 5.f;
+	constexpr _float RETURN_FADE_DURATION = 1.f;
+
 	if (m_eRaceMiniGamePhase == RACE_MINIGAME_PHASE::COUNTDOWN)
 	{
 		if (!IsRaceStartTimerPlaying())
@@ -962,10 +966,10 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 
 	if (m_eRaceMiniGamePhase == RACE_MINIGAME_PHASE::RETURNING_TO_SHOP)
 	{
-		constexpr _float RETURN_FADE_DURATION = 1.f;
 		m_fRaceReturnElapsed += std::max(0.f, fTimeDelta);
 
-		if (m_fRaceReturnElapsed < RETURN_FADE_DURATION)
+		if (m_fRaceReturnElapsed <
+			RESULT_HOLD_DURATION + RETURN_FADE_DURATION)
 			return;
 
 		if (!m_bRaceReturnPositionApplied)
@@ -1005,7 +1009,6 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 	if (m_eRaceMiniGamePhase != RACE_MINIGAME_PHASE::RACING)
 		return;
 
-	constexpr _float RACE_DURATION = 120.f;
 	m_fRaceMiniGameElapsed += std::max(0.f, fTimeDelta);
 	const _float remaining = std::max(
 		0.f,
@@ -1039,7 +1042,7 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 		m_fRaceReturnElapsed = 0.f;
 		m_bRaceReturnPositionApplied = false;
 		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RETURNING_TO_SHOP;
-		CreateFadeIn(0.f, 1.f);
+		CreateFadeIn(RESULT_HOLD_DURATION, RETURN_FADE_DURATION);
 	}
 }
 
