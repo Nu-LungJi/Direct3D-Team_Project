@@ -142,7 +142,7 @@ protected:
 	int32_t								m_iHp{}, m_iMaxHp{},m_iCurAnimIndex{-1};
 	_bool								m_bRootMotionTranslationActive{ false }, m_bRootMotionRotationActive{ false };
 	_float								m_fRootMotionTranslationScale{ 1.f };
-
+	_float3								m_vPos{};
 	_bool								m_bEndGame{false};
 	_bool								m_bFreezeAnimation{ false };
 	CHandle								m_TargetHandle{};
