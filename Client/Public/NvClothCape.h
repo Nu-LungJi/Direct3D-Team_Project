@@ -42,13 +42,12 @@ public:
 		_float fBackstopFullRatio{ 0.35f };
 		_float fBackstopFadeEndRatio{ 0.9f };
 		_float fBackstopFadeDepth{ 0.15f };
-		// [LSY] 빗자루 고속 이동 중에는 상단 백스톱만 남기고
-		// 하단은 몸 충돌 리그에 맡겨 망토가 자세 형상에 붙는 현상을 줄인다.
-		_float fBroomBackstopOffset{ -0.03f };
+		// [LSY] 수직 상승 중에도 몸 안쪽 관통을 막되 하단 끝은 자유롭게 둔다.
+		_float fBroomBackstopOffset{};
 		_float fBroomBackstopFullRatio{ 0.15f };
 		_float fBroomBackstopFadeEndRatio{ 0.55f };
-		_float fBroomBackstopFadeDepth{ 0.3f };
-		_float fBroomBackstopFullInfluenceRatio{ 0.2f };
+		_float fBroomBackstopFadeDepth{ 0.15f };
+		_float fBroomBackstopFullInfluenceRatio{ 0.35f };
 		_float fBroomBackstopDisableRatio{ 0.7f };
 		_bool bUseVirtualParticles{};
 		// [LSY] 바람과 무관하게 망토 면끼리 통과하며 꼬이는 현상을 줄인다.
@@ -57,7 +56,9 @@ public:
 		_float fSelfCollisionStiffness{ 0.9f };
 		_bool bUseVelocityWind{ true };
 		_float fVelocityWindScale{ 0.55f };
-		_float fMaxWindSpeed{ 22.f };
+		// [LSY] 상승·하강 속도가 만드는 수직 상대풍만 별도로 감쇠한다.
+		_float fVerticalVelocityWindScale{ 0.2f };
+		_float fMaxWindSpeed{ 20.f };
 		_float fWindResponse{ 18.f };
 		_float fWindDragCoefficient{ 0.24f };
 		_float fWindLiftCoefficient{ 0.08f };
@@ -65,11 +66,17 @@ public:
 		// [LSY] 일정풍에 시간 변화가 있는 횡풍과 돌풍을 합성해
 		// 고속 이동 중 망토가 뒤로 붙기만 하지 않고 계속 펄럭이게 한다.
 		_bool bUseWindFlutter{ true };
-		_float fWindFlutterStrength{ 0.55f };
+		_float fWindFlutterStrength{ 0.35f };
 		_float fWindFlutterFrequency{ 3.5f };
 		_float fWindGustStrength{ 0.35f };
 		_float fWindGustFrequency{ 0.9f };
-		_float fMotionConstraintScale{ 1.2f };
+		// [LSY] 저속 반응은 유지하고 빗자루 고속 구간에서만 펄럭임을 강조한다.
+		_float fHighSpeedWindStart{ 6.f };
+		_float fHighSpeedWindFull{ 16.f };
+		_float fHighSpeedFlutterStrength{ 0.75f };
+		_float fHighSpeedFlutterFrequency{ 5.f };
+		_float fHighSpeedGustStrength{ 0.55f };
+		_float fMotionConstraintScale{ 1.f };
 
 		// 래그돌 Authoring 데이터를 망토 몸 충돌 리그의 공용 원본으로 사용한다.
 		NVCLOTH_COLLISION_RIG_DESC
@@ -143,7 +150,10 @@ private:
 		_float fTimeDelta,
 		CPlayer* pPlayer,
 		_bool bSuppressed);
+	_bool ValidateAndRecoverSimulation();
 	_bool ResetSimulationToAnimationPose();
+	_bool GetValidatedRenderParticleView(
+		NVCLOTH_RENDER_PARTICLE_VIEW& OutView);
 	_bool AppendCollisionsFromRig(
 		const NVCLOTH_COLLISION_RIG_DESC& Rig,
 		const std::vector<int32_t>& BoneIndices,
@@ -197,31 +207,48 @@ private:
 	_float m_fBackstopFullRatio{ 0.35f };
 	_float m_fBackstopFadeEndRatio{ 0.9f };
 	_float m_fBackstopFadeDepth{ 0.15f };
-	_float m_fBroomBackstopOffset{ -0.03f };
+	_float m_fBroomBackstopOffset{};
 	_float m_fBroomBackstopFullRatio{ 0.15f };
 	_float m_fBroomBackstopFadeEndRatio{ 0.55f };
-	_float m_fBroomBackstopFadeDepth{ 0.3f };
-	_float m_fBroomBackstopFullInfluenceRatio{ 0.2f };
-	_float m_fBroomBackstopDisableRatio{ 0.7f };
+	_float m_fBroomBackstopFadeDepth{ 0.15f };
+	_float m_fBroomBackstopFullInfluenceRatio{ 0.35f };
+	_float m_fBroomBackstopDisableRatio{ 0.75f };
 	_bool m_bUseVirtualParticles{};
 	_bool m_bUseSelfCollision{ true };
 	_float m_fSelfCollisionDistance{ 0.1f };
 	_float m_fSelfCollisionStiffness{ 0.8f };
 	_bool m_bUseVelocityWind{ true };
 	_float m_fVelocityWindScale{ 0.55f };
-	_float m_fMaxWindSpeed{ 22.f };
+	_float m_fVerticalVelocityWindScale{ 0.2f };
+	_float m_fMaxWindSpeed{ 20.f };
 	_float m_fWindResponse{ 18.f };
 	_float m_fWindDragCoefficient{ 0.24f };
 	_float m_fWindLiftCoefficient{ 0.08f };
 	_float m_fWindFluidDensity{ 1.f };
 	_bool m_bUseWindFlutter{ true };
-	_float m_fWindFlutterStrength{ 0.55f };
+	_float m_fWindFlutterStrength{ 0.35f };
 	_float m_fWindFlutterFrequency{ 3.5f };
 	_float m_fWindGustStrength{ 0.35f };
 	_float m_fWindGustFrequency{ 0.9f };
+	_float m_fHighSpeedWindStart{ 6.f };
+	_float m_fHighSpeedWindFull{ 16.f };
+	_float m_fHighSpeedFlutterStrength{ 0.75f };
+	_float m_fHighSpeedFlutterFrequency{ 5.f };
+	_float m_fHighSpeedGustStrength{ 0.55f };
+	_float m_fHighSpeedWindBlend{};
+	_float m_fWindFlutterPhase{};
 	_float m_fWindTime{};
 	_float3 m_vCurrentWindVelocity{};
-	_float m_fMotionConstraintScale{ 1.2f };
+	_float m_fMotionConstraintScale{ 1.f };
+	std::vector<_float3> m_SimulationValidationParticles{};
+	uint32_t m_iSimulationValidationTick{};
+	uint32_t m_iSimulationRecoveryCount{};
+	uint32_t m_iSimulationDistanceWarningCount{};
+	_bool m_bSimulationValidationFailureLogged{};
+	_bool m_bSimulationRecoveryLogged{};
+	_bool m_bSimulationDistanceWarningLogged{};
+	_bool m_bCollisionUpdateFailureLogged{};
+	_bool m_bRenderParticleViewFailureLogged{};
 	NVCLOTH_COLLISION_RIG_DESC
 		m_BodyCollisionRig{};
 	NVCLOTH_COLLISION_RIG_DESC

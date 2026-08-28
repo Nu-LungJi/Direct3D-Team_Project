@@ -196,7 +196,7 @@ void CGameObjectManager::UpdateGUI()
 						static_cast<int>(sObjectTag.size()),
 						sObjectTag.data());
 					ImGui::Text(
-						"Object Handle: Index %zu | Gen %u",
+						"Object Handle: Index %u | Gen %u",
 						hObject.GetIndex(),
 						hObject.GetGeneration());
 					ImGui::Text("Pending Destroy: %s", pObj->GetPendingDestroy() ? "True" : "False");
@@ -543,9 +543,15 @@ std::optional<CHandle> CGameObjectManager::AllocateHandleSlot()
 	CHandle objectHandle{};
 	if (m_FreeSlots.empty())
 	{
+		if (m_Objects.size() >= CHandle::INVALID_INDEX)
+		{
+			assert(false && "CGameObjectManager handle slot capacity exceeded.");
+			return std::nullopt;
+		}
+
 		// 새 slot을 만들 때 위치 캐시와 삭제 표식도 같은 인덱스로 동시에 확장한다.
-		size_t idx = m_Objects.size();
-		uint32_t gen = 0;
+		const uint32_t idx = static_cast<uint32_t>(m_Objects.size());
+		constexpr uint32_t gen = 0;
 
 		objectHandle = CHandle{ idx, gen };
 		m_Objects.push_back({});
@@ -556,11 +562,17 @@ std::optional<CHandle> CGameObjectManager::AllocateHandleSlot()
 	else
 	{
 		// CSlot::Reset이 증가시킨 현재 generation으로 Handle을 만들고 이전 사용의 scratch를 지운다.
-		size_t emptyIdx = m_FreeSlots.back();
+		const size_t emptyIdx = m_FreeSlots.back();
+		if (emptyIdx >= CHandle::INVALID_INDEX)
+		{
+			assert(false && "CGameObjectManager free slot index exceeds CHandle capacity.");
+			return std::nullopt;
+		}
+
 		m_FreeSlots.pop_back();
 
-		size_t idx = emptyIdx;
-		uint32_t gen = m_Objects[emptyIdx].GetGeneration();
+		const uint32_t idx = static_cast<uint32_t>(emptyIdx);
+		const uint32_t gen = m_Objects[emptyIdx].GetGeneration();
 
 		m_ObjectLayerLocations[emptyIdx] = {};
 		m_PendingLayerRemoveGenerationKeys[emptyIdx] = 0;

@@ -74,7 +74,7 @@ private:
 	// 첫 번째 컴퓨트 단계가 배치별 가시 인스턴스 수와 데이터를 기록한다
 	SPtr<CResStructuredBuffer> m_pBatchVisibleCountBuffer{};
 	SPtr<CResStructuredBuffer> m_pVisibleInstanceBuffer{};
-
+	
 	// 구조화 버퍼의 컬링 결과를 실제 인스턴스 버텍스 스트림으로 제공한다
 	ComPtr<ID3D11Buffer> m_pVisibleInstanceVertexBuffer{};
 	// 두 번째 컴퓨트 단계가 InstanceCount를 채우는 간접 드로우 인자 버퍼

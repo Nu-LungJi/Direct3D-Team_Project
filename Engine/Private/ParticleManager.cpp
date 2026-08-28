@@ -933,10 +933,10 @@ void CParticleManager::UpdateGUI()
 
 			switch (groupTypeIndex)
 			{
-			case 0: bCategoryMatch = (dynamic_cast<CParticle_CPU*>(pParticle) != nullptr); break;
-			case 1: bCategoryMatch = (dynamic_cast<CParticle_GPU*>(pParticle) != nullptr); break;
-			case 2: bCategoryMatch = (dynamic_cast<CBeam_CPU*>(pParticle) != nullptr); break;
-			case 3: bCategoryMatch = (dynamic_cast<CTrail_CPU*>(pParticle) != nullptr); break;
+			case 0: bCategoryMatch = (Cast<CParticle_CPU>(pParticle) != nullptr); break;
+			case 1: bCategoryMatch = (Cast<CParticle_GPU>(pParticle) != nullptr); break;
+			case 2: bCategoryMatch = (Cast<CBeam_CPU>(pParticle) != nullptr); break;
+			case 3: bCategoryMatch = (Cast<CTrail_CPU>(pParticle) != nullptr); break;
 			}
 
 			if (!bCategoryMatch)
@@ -944,12 +944,12 @@ void CParticleManager::UpdateGUI()
 
 			MESHORTEXTURE wantedKind = (whatKindFilterIndex == 0) ? MESHORTEXTURE::MESH : MESHORTEXTURE::TEX;
 
-			if (auto pGPU = dynamic_cast<CParticle_GPU*>(pParticle))
+			if (auto pGPU = Cast<CParticle_GPU>(pParticle))
 			{
 				if (pGPU->GetWhatKind() != wantedKind)
 					continue;
 			}
-			else if (auto pCPU = dynamic_cast<CParticle_CPU*>(pParticle))
+			else if (auto pCPU = Cast<CParticle_CPU>(pParticle))
 			{
 				if (pCPU->GetWhatKind() != wantedKind)
 					continue;
@@ -989,7 +989,7 @@ void CParticleManager::UpdateGUI()
 		selectedType = matchedList[typeIndex].sTypeTag;
 
 		auto pSelected = GetParticle(selectedGroup, selectedType);
-		if (dynamic_cast<CBeam_CPU*>(pSelected) != nullptr)
+		if (Cast<CBeam_CPU>(pSelected) != nullptr)
 			currentKind = SPAWN_COMMAND_KIND::BEAM;
 
 		if (selectedGroup != previewGroup || selectedType != previewType)
@@ -1877,7 +1877,7 @@ std::optional<BEAM_HANDLE> CParticleManager::SpawnBeam(
 	const BEAM_PARAMS& params)
 {
 	CParticle* particle = GetParticle(groupTag, typeTag);
-	CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle);
+	CBeam_CPU* beam = Cast<CBeam_CPU>(particle);
 
 	if (!beam)
 		return std::nullopt;
@@ -2221,7 +2221,7 @@ uint32_t CParticleManager::ExecuteCommandQueue(std::vector<SPAWN_COMMAND>& queue
 			p.ownerId = ownerId;
 
 			CParticle* particle = GetParticle(cmd.sGroupTag, cmd.sTypeTag);
-			CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle);
+			CBeam_CPU* beam = Cast<CBeam_CPU>(particle);
 
 			if (beam)
 				beam->AddBeam(p);
@@ -4119,7 +4119,7 @@ HRESULT CParticleManager::AddTrailPoint(const StringID& groupTag, const StringID
 	if (!particle)
 		return E_FAIL;
 
-	CTrail_CPU* trail = dynamic_cast<CTrail_CPU*>(particle);
+	CTrail_CPU* trail = Cast<CTrail_CPU>(particle);
 
 	if (!trail)
 		return E_FAIL;
@@ -4135,7 +4135,7 @@ HRESULT CParticleManager::AddTrailPoint(const StringID& groupTag, const StringID
 	if (!particle)
 		return E_FAIL;
 
-	CTrail_CPU* trail = dynamic_cast<CTrail_CPU*>(particle);
+	CTrail_CPU* trail = Cast<CTrail_CPU>(particle);
 
 	if (!trail)
 		return E_FAIL;
@@ -4158,7 +4158,7 @@ void CParticleManager::SetColorByOwner(uint32_t ownerId, const _float4& color)
 HRESULT CParticleManager::StopBeam(const BEAM_HANDLE& handle)
 {
 	CParticle* particle = GetParticle(handle.groupTag, handle.typeTag);
-	CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle);
+	CBeam_CPU* beam = Cast<CBeam_CPU>(particle);
 
 	if (!beam || handle.beamIndex < 0)
 		return E_FAIL;
@@ -4172,7 +4172,7 @@ HRESULT CParticleManager::StopBeam(const BEAM_HANDLE& handle)
 HRESULT CParticleManager::SetBeamPositions(const BEAM_HANDLE& handle,const _float4& start,const _float4& end)
 {
 	CParticle* particle = GetParticle(handle.groupTag, handle.typeTag);
-	CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle);
+	CBeam_CPU* beam = Cast<CBeam_CPU>(particle);
 
 	if (!beam || handle.beamIndex < 0)
 		return E_FAIL;
@@ -4193,7 +4193,7 @@ void CParticleManager::SetBeamPositionsByOwner(uint32_t ownerId, const _float3& 
 			if (!particle)
 				continue;
 
-			CBeam_CPU* beam = dynamic_cast<CBeam_CPU*>(particle.get());
+			CBeam_CPU* beam = Cast<CBeam_CPU>(particle.get());
 			if (!beam)
 				continue;
 

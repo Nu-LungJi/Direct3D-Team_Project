@@ -407,6 +407,8 @@ public:
 	void Advance_GPUBlend(_float fTimeDelta);
 private:
 	EVALUATION_MODE m_eEvaluationMode{ EVALUATION_MODE::GPU };
+	uint32_t m_iMorphPreviewTargetIndex{ UINT32_MAX };
+	_float m_fMorphPreviewWeight{};
 
 	CComModelInstance* m_pModelInstance;
 
@@ -483,6 +485,19 @@ public:
 	void SetAnimationTYPE(ANIMTYPE eType) { m_iPlayAnimationType = eType; }
 	EVALUATION_MODE GetEvaluationMode() const { return m_eEvaluationMode; }
 	void SetEvaluationMode(EVALUATION_MODE mode) { m_eEvaluationMode = mode; }
+	uint32_t FindMorphTargetIndex(std::string_view sTargetName) const;
+	void SetMorphPreview(uint32_t iTargetIndex, _float fWeight)
+	{
+		m_iMorphPreviewTargetIndex = iTargetIndex;
+		m_fMorphPreviewWeight = std::clamp(fWeight, 0.f, 1.f);
+	}
+	void ClearMorphPreview()
+	{
+		m_iMorphPreviewTargetIndex = UINT32_MAX;
+		m_fMorphPreviewWeight = 0.f;
+	}
+	uint32_t GetMorphPreviewTargetIndex() const { return m_iMorphPreviewTargetIndex; }
+	_float GetMorphPreviewWeight() const { return m_fMorphPreviewWeight; }
 
 	uint32_t GetPlayAnimIndex() const { return m_CurAnimState.iAnimIndex; }
 	void SetPlayAnimIndex(uint32_t iIndex) { m_iPlayAnimIndex = iIndex; }

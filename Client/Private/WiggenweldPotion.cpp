@@ -143,6 +143,9 @@ void CWiggenweldPotion::LateUpdate(_float fTimeDelta)
 	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
 		return;
 
+	if (!m_bDissolving)
+		CGameInstance::Get().AddShadowRenderGroup(ACTORTYPE::DYNAMIC, this);
+
 	if (m_bDissolving || !CGameInstance::Get().IsInstancingEnabled())
 	{
 		CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
@@ -273,6 +276,22 @@ _bool CWiggenweldPotion::Drop(
 	m_fDissolveIntensity = 0.f;
 	m_bDissolving = false;
 	return true;
+}
+
+HRESULT CWiggenweldPotion::Render_Shadow(
+	ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
+{
+	return m_pComModelInstance
+		? m_pComModelInstance->RenderShadow(
+			pContext, m_pComCBufferPerObject,
+			*GetTransform().GetCombinedWorldMatrix(), ctx.matViewProj)
+		: E_FAIL;
+}
+
+bool CWiggenweldPotion::GetShadowBounds(BoundingBox& outBounds) const
+{
+	return m_pComModelInstance && m_pComModelInstance->GetShadowBounds(
+		*GetTransform().GetCombinedWorldMatrix(), outBounds);
 }
 
 UPtr<CWiggenweldPotion> CWiggenweldPotion::Create()

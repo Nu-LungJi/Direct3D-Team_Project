@@ -10,7 +10,7 @@ CBTChangeState::CBTChangeState()
 }
 CBTChangeState::CBTChangeState(const CBTChangeState& rhs) : CBTActionNode(rhs)
 {
-	m_eState = rhs.m_eState;
+
 }
 
 CBTChangeState::~CBTChangeState()

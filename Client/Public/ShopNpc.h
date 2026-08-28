@@ -1,0 +1,53 @@
+#pragma once
+#include "InteractiveNpc.h"
+
+NS_BEGIN(Client)
+
+// 대사와 시네마틱은 CInteractiveNpc의 흐름을 사용하고,
+// OPEN_SHOP 대사 액션에서 지팡이 상점 UI를 여는 상점 전용 NPC.
+class CShopNpc final : public CInteractiveNpc
+{
+public:
+	struct DESC : public CInteractiveNpc::DESC
+	{
+		// false면 일반 2D 상점, true면 NPC 기준 월드 패널 상점을 연다.
+		_bool WorldSpaceShop{};
+		_float3 ShopPanelPositionOffset{ 0.f, 1.6f, 1.2f };
+		_float3 ShopPanelRotationOffsetDegrees{};
+	};
+
+public:
+	DECLARE_DERIVED_TYPE(CShopNpc, CInteractiveNpc)
+
+private:
+	CShopNpc() = default;
+	CShopNpc(const CShopNpc& prototype);
+	~CShopNpc() override = default;
+
+public:
+	HRESULT Initialize(void* pArg) override;
+	void PriorityUpdate(E::_float fTimeDelta) override;
+	void UpdateGUI() override;
+
+	static E::UPtr<CShopNpc> Create();
+	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
+protected:
+	void OpenShop() override;
+
+private:
+	_bool m_bWorldSpaceShop{};
+	_float3 m_vShopPanelPositionOffset{ 0.f, 1.6f, 1.2f };
+	_float3 m_vShopPanelRotationOffsetDegrees{};
+	int32_t m_iDebugAnimationIndex{};
+	_bool m_bDebugAnimationLoop{ true };
+	_float m_fDebugAnimationSpeed{ 1.f };
+	_float m_fDebugAnimationBlend{ 0.1f };
+	_bool m_bDebugRootMotion{};
+	_bool m_bDebugRootMotionRotation{};
+	_float3 m_vDebugEntrancePosition{};
+	_float3 m_vDebugEntranceControllerPosition{};
+	_float4 m_qDebugEntranceRotation{ 0.f, 0.f, 0.f, 1.f };
+};
+
+NS_END

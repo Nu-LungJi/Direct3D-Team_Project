@@ -13,7 +13,7 @@ NS_USING(Client)
 void CPlayer_DepulsoSkill_State::Enter(CStateMachine* pStateMachine)
 {
 
-	auto* pTrail = dynamic_cast<CTrail_CPU*>(CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail"));
+	auto* pTrail = Engine::Cast<CTrail_CPU>(CGameInstance::Get().GetParticle("Lightning_Trail", "Lightning_Trail"));
 
 	if (pTrail)
 	{

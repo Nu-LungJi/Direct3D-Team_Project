@@ -90,11 +90,36 @@ std::filesystem::path CResModelMaterial::ResolveModelTexture(
 	const std::filesystem::path& modelPath,
 	const std::filesystem::path& preferredDirectory,
 	const std::string& file,
-	const std::string& extension)
+	const std::string& extension,
+	uint32_t textureType)
 {
+	std::string resolvedFile = file;
+	// Gerbold Ollivander 원본 BIN은 BaseColor와 알파 베이크 텍스처를
+	// Diffuse 슬롯에 동시에 기록한다. 알파(type 8)는 유지하고 Diffuse만 보정한다.
+	if (textureType == static_cast<uint32_t>(aiTextureType_DIFFUSE) &&
+		_stricmp(modelPath.stem().string().c_str(),
+			"SK_NPC_GerboldOllivander") == 0)
+	{
+		static constexpr std::pair<std::string_view, std::string_view> aliases[] =
+		{
+			{ "T_Gerbold_Teeth_Baked_A", "T_HUM_Head_Teeth_BaseColor" },
+			{ "T_Gerbold_Head_Baked_A", "T_Old_M_Head_GerboldOllivander_WithHands_BaseColor" },
+			{ "T_Gerbold_Low_Baked_A", "T_HUM_M_Low_Ollivander_BaseColor" },
+			{ "T_Gerbold_Upper_Baked_A", "T_HUM_M_Upp_Ollivander_BaseColor" },
+		};
+		for (const auto& [source, target] : aliases)
+		{
+			if (_stricmp(resolvedFile.c_str(), source.data()) == 0)
+			{
+				resolvedFile = target;
+				break;
+			}
+		}
+	}
+
 	const auto existingIn = [&](const std::filesystem::path& directory)
 	{
-		std::filesystem::path original = directory / (file + extension);
+		std::filesystem::path original = directory / (resolvedFile + extension);
 		std::filesystem::path dds = original;
 		dds.replace_extension(".dds");
 		if (std::filesystem::exists(dds)) return dds;
@@ -113,7 +138,7 @@ std::filesystem::path CResModelMaterial::ResolveModelTexture(
 	// 스트리밍 맵에서는 SetResourceIndex 시점에 이미 생성되어 즉시 반환한다.
 	WarmUpTextureSearchIndex(modelPath.parent_path());
 
-	std::filesystem::path desired = file + extension;
+	std::filesystem::path desired = resolvedFile + extension;
 	desired.replace_extension(".dds");
 	std::lock_guard<std::mutex> lock(GetTextureIndexMutex());
 	const auto rootIter = GetTextureRootIndexes().find(rootKey);
@@ -123,7 +148,7 @@ std::filesystem::path CResModelMaterial::ResolveModelTexture(
 	auto candidates = rootIter->second.find(LowerPathString(desired.filename()));
 	if (candidates == rootIter->second.end())
 	{
-		const std::filesystem::path originalName = file + extension;
+		const std::filesystem::path originalName = resolvedFile + extension;
 		candidates = rootIter->second.find(LowerPathString(originalName.filename()));
 	}
 	if (candidates == rootIter->second.end() || candidates->second.empty())
@@ -213,7 +238,7 @@ HRESULT CResModelMaterial::Load(const std::any& arg)
 				// Models 기준이 아니라 Textures 기준으로 텍스처 경로 생성
 				// ------------------------------------------------------------
 				std::filesystem::path texPath = descArg->recursiveTextureSearch
-					? ResolveModelTexture(strModelFilePath, textureBaseDir, file, ext)
+					? ResolveModelTexture(strModelFilePath, textureBaseDir, file, ext, textureType)
 					: textureBaseDir / (file + ext);
 
 				std::filesystem::path ddsPath = texPath;
@@ -321,7 +346,8 @@ HRESULT CResModelMaterial::LoadAssimp(aiMaterial* material, uint32_t materialNum
 			);
 
 			std::filesystem::path texPath = ResolveModelTexture(
-				m_sPath, textureBaseDir, szFileName, szExt);
+				m_sPath, textureBaseDir, szFileName, szExt,
+				static_cast<uint32_t>(textureType));
 
 			std::filesystem::path ddsPath = texPath;
 			ddsPath.replace_extension(".dds");

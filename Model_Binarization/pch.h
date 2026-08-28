@@ -116,6 +116,23 @@ typedef struct tagChannel {
 	shared_ptr<vector<KEYFRAME>> KeyFrames;
 }CHANNELDATA;
 
+typedef struct tagMorphVertexDelta {
+	uint32_t VertexIndex{};
+	XMFLOAT3 PositionDelta{};
+	XMFLOAT3 NormalDelta{};
+	XMFLOAT3 TangentDelta{};
+	XMFLOAT3 BinormalDelta{};
+} MORPHVERTEXDELTA;
+
+static_assert(sizeof(MORPHVERTEXDELTA) == 52);
+
+typedef struct tagMorphTargetData {
+	string Name;
+	vector<MORPHVERTEXDELTA> Deltas;
+} MORPHTARGETDATA;
+
+constexpr uint32_t MORPH_BINARY_MAGIC = 0x4850524D; // "MRPH"
+
 
 typedef struct tagAnimation {
 	string sAnimName;

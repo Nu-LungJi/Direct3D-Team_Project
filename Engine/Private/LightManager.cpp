@@ -3,7 +3,6 @@
 #include "GameInstance.h"
 // LSY 변경: 기존 LightManager GUI를 대체하는 배치 전용 에디터를 연결한다.
 #include "MapManager.h"
-#include "MapMeshObject.h"
 #include "OctreeNode.h"
 
 #include "LightPlacementEditor.h"
@@ -304,7 +303,7 @@ HRESULT CLightManager::Capture_ShadowMap() {
 					m_pContext->OMSetRenderTargets(0, nullptr, StaticFaceDSV.Get());
 
 					if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pStaticShadowCasterScratch, static_cast<int32_t>(Face)))) { UnBind_ShadowResource();  return E_FAIL; }
-
+					if (FAILED(CGameInstance::Get().RenderMapMeshShadow(m_pContext.Get(), RCTX, LTYPE))) { UnBind_ShadowResource(); return E_FAIL; }
 					if (FAILED(Render_ShadowInstanced(m_pContext, m_pActiveShadowLightList[i], true, static_cast<int32_t>(Face)))) { UnBind_ShadowResource();  return E_FAIL; }
 				}
 				LightOBJ->Set_StaticDirty(false);
@@ -366,7 +365,7 @@ HRESULT CLightManager::Capture_ShadowMap() {
 					m_pContext->OMSetRenderTargets(0, nullptr, StaticShadowDSV.Get());
 					
 					if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pStaticShadowCasterScratch, -1))) { UnBind_ShadowResource();  return E_FAIL; }
-
+					if (FAILED(CGameInstance::Get().RenderMapMeshShadow(m_pContext.Get(), RCTX, LTYPE))) { UnBind_ShadowResource(); return E_FAIL; }
 					if (FAILED(Render_ShadowInstanced(m_pContext, m_pActiveShadowLightList[i], true)))				 { UnBind_ShadowResource();  return E_FAIL; }
 	
 					LightOBJ->Set_StaticDirty(false);
@@ -423,7 +422,8 @@ HRESULT CLightManager::Capture_ShadowMap() {
 					m_pContext->OMSetRenderTargets(0, nullptr, CSM_DSV.Get());
 
 					if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pStaticShadowCasterScratch, IDX))) { UnBind_ShadowResource();  return E_FAIL; }
-					if (FAILED(Render_ShadowInstanced(m_pContext, m_pActiveShadowLightList[i], true, IDX))) { UnBind_ShadowResource();  return E_FAIL; }
+					if (FAILED(CGameInstance::Get().RenderMapMeshShadow(m_pContext.Get(),RCTX, LTYPE))) { UnBind_ShadowResource(); return E_FAIL; }
+					if (FAILED(Render_ShadowInstanced(m_pContext,m_pActiveShadowLightList[i], true, IDX))) { UnBind_ShadowResource(); return E_FAIL; }
 
 					if (FAILED(LightOBJ->Capture_ShadowMap(m_pContext.Get(), RCTX, m_pRenderable_DynamicObjectList, IDX))) { UnBind_ShadowResource();  return E_FAIL; }
 					if (FAILED(Render_ShadowInstanced(m_pContext, m_pActiveShadowLightList[i], false, IDX))) { UnBind_ShadowResource();  return E_FAIL; }
@@ -1109,32 +1109,9 @@ VOID CLightManager::Build_StaticShadowCasterList(std::optional<CHandle> _LightHa
 		m_pStaticShadowCasterScratch.push_back(pRenderable);
 		};
 
+	// MapMeshObject는 CMapMeshInstancingRenderer가 처리함, 이 목록에는 그 외의 일반 정적 오브젝트만 들어옴
 	for (auto pRenderable : m_pRenderable_StaticObjectList) {
 		AddStaticShadowCaster(pRenderable);
-	}
-
-	const auto& MapChunks = CGameInstance::Get().GetMapChunks();
-
-	for (const auto& [Coord, Chunk] : MapChunks)
-	{
-		if (!Chunk.IsLoaded()) continue;
-
-		if (CullLight && Chunk.GetOctree()) {
-			BoundingBox ChunkBounds = Chunk.GetOctree()->GetCullingBoundingBox();
-
-			ChunkBounds.Extents.x += ShadowCullPadding;
-			ChunkBounds.Extents.y += ShadowCullPadding;
-			ChunkBounds.Extents.z += ShadowCullPadding;
-
-			if (!LightOBJ->Intersects_ShadowBounds(ChunkBounds))	continue;
-		}
-
-		for (const auto& ObjectHandle : Chunk.GetObjectHandles()) {
-			CMapMeshObject* pMapObject = CGameInstance::Get().GetGameObjectByHandleT<CMapMeshObject>(ObjectHandle);
-			if (nullptr == pMapObject)	continue;
-
-			AddStaticShadowCaster(pMapObject);
-		}
 	}
 }
 

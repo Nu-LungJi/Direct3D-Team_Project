@@ -25,6 +25,7 @@ public:
 private:
 	std::optional<CHandle> SpawnPlayer();
 	HRESULT SpawnPlayerCape(CHandle hPlayer);
+	HRESULT SpawnPropBarrelPyramid();
 	HRESULT SpawnTerrain(std::optional<CHandle> hPlayer);
 	HRESULT SpawnNaviMesh(class E::CTerrain* pTerrain);
 	HRESULT SpawnFlyCamera();
@@ -36,6 +37,20 @@ private:
 	HRESULT SpawnStaticCollision();
 	HRESULT SpawnCoinCollision();
 	HRESULT SpawnLightPlacement();
+	HRESULT SpawnPhysicsDoor(
+		const _float3& vPosition,
+		const _float3& vRotationEulerDegrees,
+		const _float3& vScale);
+	HRESULT SpawnAccioActivity(
+		CHandle hPlayer,
+		const _float3& vOrigin,
+		_float fYawDegrees,
+		_float fUniformScale);
+	void DespawnRuntimeObjects(std::vector<CHandle>& Handles);
+	void PruneInvalidRuntimeHandles(std::vector<CHandle>& Handles);
+	void UpdateRuntimeActivitySpawnShortcut();
+
+	void UpdateDebugWarp();
 
 	/*----------- 광윤 추가 -----------*/
 	HRESULT Initialize_VolumetricFog();
@@ -46,12 +61,15 @@ private:
 	HRESULT SpawnNpcPlacements(CHandle hPlayer, const _string& Path);
 
 
-
 public:
 	static UPtr<CLevelHogwartWorld> Create();
 
 private:
 	_bool m_bCreatePlayScreenUI = false;
+
+	CHandle m_hDebugPlayer{};
+	std::vector<CHandle> m_AccioActivityHandles{};
+	std::vector<CHandle> m_CoinCollisionHandles{};
 
 private:
 	void Free() override;

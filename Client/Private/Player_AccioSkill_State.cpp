@@ -33,7 +33,7 @@ void CPlayer_AccioSkill_State::Enter(CStateMachine* pStateMachine)
 	CacheAnimationIndices(*pPlayer);
 	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(
 		pPlayer->GetTargetHandle());
-	if (auto* pBall = dynamic_cast<CAccioBall*>(pTarget))
+	if (auto* pBall = Engine::Cast<CAccioBall>(pTarget))
 	{
 		if (!EnterObjectAccio(*pPlayer, *pBall))
 			RequestLocomotion(pStateMachine);

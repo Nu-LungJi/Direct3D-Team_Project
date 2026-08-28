@@ -146,6 +146,9 @@ void CMyMagicSquareStep::LateUpdate(_float fTimeDelta)
 {
 	GetTransform().Update();
 
+	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
+		return;
+
 	if (!CGameInstance::Get().IsInstancingEnabled())
 	{
 		return;
@@ -227,6 +230,84 @@ void CMyMagicSquareStep::SetKinematicPosition(
 		m_pComPxRigidBody->SetKinematicTarget(
 			vPosition,
 			GetTransform().GetQuaternion());
+	}
+}
+
+_bool CMyMagicSquareStep::OnAcquireFromPool(void* pArg)
+{
+	const auto* pDesc = static_cast<POOL_ACQUIRE_DESC*>(pArg);
+	if (!pDesc || !m_pComPxRigidBody || !m_pComPxBoxCollider)
+		return false;
+
+	if (!m_pComPxRigidBody->SetPose(
+			pDesc->vPosition,
+			pDesc->vRotation))
+	{
+		return false;
+	}
+
+	GetTransform().SetPosition(pDesc->vPosition);
+	GetTransform().SetQuaternion(pDesc->vRotation);
+	GetTransform().Update();
+
+	m_vMoveTarget = pDesc->vPosition;
+	m_vFinalMoveTarget = pDesc->vPosition;
+	m_fSpeed = 1.f;
+	m_fBounceSettleSpeed = 1.f;
+	m_eState = STATE::IDLE;
+	return true;
+}
+
+void CMyMagicSquareStep::OnReleaseToPool()
+{
+	// [LSY] 비활성 발판은 충돌이 꺼진 뒤 맵 밖으로 이동해 디버그 및 실패 상황에서도 잔류하지 않게 한다.
+	constexpr _float3 vParkingPosition{ 0.f, -10000.f, 0.f };
+
+	m_vMoveTarget = vParkingPosition;
+	m_vFinalMoveTarget = vParkingPosition;
+	m_fSpeed = 1.f;
+	m_fBounceSettleSpeed = 1.f;
+	m_eState = STATE::IDLE;
+
+	GetTransform().SetPosition(vParkingPosition);
+	GetTransform().Update();
+
+	if (m_pComPxRigidBody)
+	{
+		m_pComPxRigidBody->SetPose(
+			vParkingPosition,
+			GetTransform().GetQuaternion());
+	}
+}
+
+void CMyMagicSquareStep::OnManagedUpdateEnabled()
+{
+	if (!m_pComPxBoxCollider)
+		return;
+
+	const _bool bSimulationEnabled =
+		m_pComPxBoxCollider->SetSimulationEnabled(true);
+	const _bool bQueryEnabled =
+		m_pComPxBoxCollider->SetQueryEnabled(true);
+	if (!bSimulationEnabled || !bQueryEnabled)
+	{
+		DEBUG_LOG("[MagicStepPool] Failed to enable pooled step collision.\n");
+	}
+}
+
+void CMyMagicSquareStep::OnManagedUpdateDisabled()
+{
+	if (!m_pComPxBoxCollider)
+		return;
+
+	// [LSY] Managed Update만 끄면 PhysX Shape는 씬에 남으므로 Simulation과 Query도 함께 제외한다.
+	const _bool bSimulationDisabled =
+		m_pComPxBoxCollider->SetSimulationEnabled(false);
+	const _bool bQueryDisabled =
+		m_pComPxBoxCollider->SetQueryEnabled(false);
+	if (!bSimulationDisabled || !bQueryDisabled)
+	{
+		DEBUG_LOG("[MagicStepPool] Failed to disable pooled step collision.\n");
 	}
 }
 

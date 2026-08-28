@@ -16,6 +16,12 @@ class CResModel;
 
 class CModel_Instance_Manager final : public CEngineBase, public IRenderable
 {
+public:
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CModel_Instance_Manager,
+		CEngineBase,
+		IRenderable)
+
 private:
 	CModel_Instance_Manager();
 	~CModel_Instance_Manager() override;

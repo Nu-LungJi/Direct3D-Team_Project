@@ -28,6 +28,33 @@ static int selectedParent = -1;
 
 namespace
 {
+	constexpr TEXT_FONT_TYPE UI_EDITOR_FONT_TYPES[] = {
+		TEXT_FONT_TYPE::DEFAULT,
+		TEXT_FONT_TYPE::BLUE_FOREST_BOLD_20,
+		TEXT_FONT_TYPE::BLUE_FOREST_BOLD_32,
+		TEXT_FONT_TYPE::HAKGYOANSIM_PUZZLE_OUTLINE_25,
+		TEXT_FONT_TYPE::PRETENDARD_64
+	};
+
+	const char* UI_EDITOR_FONT_TYPE_NAMES[] = {
+		"Default (Pretendard 15px)",
+		"BlueForestBold 20px",
+		"BlueForestBold 32px",
+		"Hakgyoansim Puzzle Outline 25px",
+		"Pretendard 64px"
+	};
+
+	int FindFontTypeEditorIndex(TEXT_FONT_TYPE fontType)
+	{
+		for (int index = 0; index < static_cast<int>(
+			std::size(UI_EDITOR_FONT_TYPES)); ++index)
+		{
+			if (UI_EDITOR_FONT_TYPES[index] == fontType)
+				return index;
+		}
+		return 0;
+	}
+
 	TEXT_ALIGN LoadTextAlignmentCompatible(
 		const nlohmann::ordered_json& obj)
 	{
@@ -38,6 +65,36 @@ namespace
 			return TEXT_ALIGN::LEFT;
 
 		return static_cast<TEXT_ALIGN>(alignment);
+	}
+
+	TEXT_FONT_TYPE LoadTextFontTypeCompatible(
+		const nlohmann::ordered_json& obj)
+	{
+		if (obj.contains("FontType"))
+		{
+			const uint32_t fontType = obj.value("FontType", 0u);
+			const auto loadedType = static_cast<TEXT_FONT_TYPE>(fontType);
+			switch (loadedType)
+			{
+			case TEXT_FONT_TYPE::DEFAULT:
+			case TEXT_FONT_TYPE::BLUE_FOREST_BOLD_20:
+			case TEXT_FONT_TYPE::BLUE_FOREST_BOLD_32:
+			case TEXT_FONT_TYPE::PRETENDARD_64:
+			case TEXT_FONT_TYPE::HAKGYOANSIM_PUZZLE_OUTLINE_25:
+				return loadedType;
+			default:
+				break;
+			}
+		}
+
+		const std::string legacyName = obj.value("Name", std::string{});
+		if (legacyName == "BF20")
+			return TEXT_FONT_TYPE::BLUE_FOREST_BOLD_20;
+		if (legacyName == "BF32")
+			return TEXT_FONT_TYPE::BLUE_FOREST_BOLD_32;
+		if (legacyName == "64px")
+			return TEXT_FONT_TYPE::PRETENDARD_64;
+		return TEXT_FONT_TYPE::DEFAULT;
 	}
 
 	void LoadFlipInfoCompatible(
@@ -156,7 +213,7 @@ HRESULT CLevelUIEditor::Initialize()
 						E::CUICamera* volatile sink = nullptr;
 						for (size_t i = 0; i < 10'000'000; ++i)
 						{
-							sink = dynamic_cast<E::CUICamera*>(val);
+							sink = Engine::Cast<E::CUICamera>(val);
 						}
 					}
 					auto end = std::chrono::high_resolution_clock::now();
@@ -1901,7 +1958,7 @@ void CLevelUIEditor::RefreshFlipbookResources()
 				resourceTag);
 		if (!resource)
 		{
-			resource = std::dynamic_pointer_cast<E::CResTexture2D>(
+			resource = Engine::Cast<E::CResTexture2D>(
 				E::CGameInstance::Get().AddResource(
 					"LEVEL_UIEDITOR",
 					resourceTag,
@@ -2026,6 +2083,7 @@ void CLevelUIEditor::SaveUIRecursive(E::CUIObject* pUI, nlohmann::ordered_json& 
 		const TEXT_INFO& textInfo = static_cast<CTextUI*>(pUI)->GetTextInfo();
 		obj["Text"] = WStringToUTF8(textInfo.Text);
 		obj["TextAlignment"] = static_cast<uint32_t>(textInfo.Alignment);
+		obj["FontType"] = static_cast<uint32_t>(textInfo.FontType);
 		break;
 	}
 	case ETOUI(UI_TYPE::GENERAL_BUTTON):
@@ -2129,6 +2187,7 @@ E::CUIObject* CLevelUIEditor::LoadUIRecursive(const nlohmann::ordered_json& obj,
 			textInfo.Text = StringToWUTF8(
 				obj.value("Text", std::string{}));
 			textInfo.Alignment = LoadTextAlignmentCompatible(obj);
+			textInfo.FontType = LoadTextFontTypeCompatible(obj);
 		}
 		break;
 	case ETOUI(UI_TYPE::GENERAL_BUTTON):
@@ -2436,6 +2495,24 @@ void CLevelUIEditor::StateView()
 					pTextBox->SetTextAlignment(
 						static_cast<TEXT_ALIGN>(textAlignment));
 				}
+
+				int fontTypeIndex = FindFontTypeEditorIndex(
+					pTextBox->GetFontType());
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Font Type");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(190.f);
+				if (ImGui::Combo(
+					"##FontType",
+					&fontTypeIndex,
+					UI_EDITOR_FONT_TYPE_NAMES,
+					IM_ARRAYSIZE(UI_EDITOR_FONT_TYPE_NAMES)))
+				{
+					pTextBox->SetFontType(
+						UI_EDITOR_FONT_TYPES[fontTypeIndex]);
+				}
 			}
 		}
 	
@@ -2613,6 +2690,24 @@ void CLevelUIEditor::LocalStateView()
 				{
 					pTextBox->SetTextAlignment(
 						static_cast<TEXT_ALIGN>(textAlignment));
+				}
+
+				int fontTypeIndex = FindFontTypeEditorIndex(
+					pTextBox->GetFontType());
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::AlignTextToFramePadding();
+				ImGui::Text("Font Type");
+				ImGui::TableNextColumn();
+				ImGui::SetNextItemWidth(190.f);
+				if (ImGui::Combo(
+					"##LocalFontType",
+					&fontTypeIndex,
+					UI_EDITOR_FONT_TYPE_NAMES,
+					IM_ARRAYSIZE(UI_EDITOR_FONT_TYPE_NAMES)))
+				{
+					pTextBox->SetFontType(
+						UI_EDITOR_FONT_TYPES[fontTypeIndex]);
 				}
 			}
 		}

@@ -10,7 +10,10 @@ NS_BEGIN(Client)
 class CEdgRandomBall : public CDragonSkill,  public CSkillTarget
 {
 public:
-	DECLARE_DERIVED_TYPE(CEdgRandomBall, CDragonSkill)
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CEdgRandomBall,
+		CDragonSkill,
+		CSkillTarget)
 
 	enum class COLOR {YELLOW, PURPLE, RED, END};
 protected:

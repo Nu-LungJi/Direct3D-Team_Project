@@ -3,6 +3,7 @@
 #include "Component.h"
 
 NS_BEGIN(Engine)
+class CComConstantBuffer;
 class CResStaticModelMesh;
 class CResModelMaterial;
 class CResModelBone;
@@ -46,6 +47,15 @@ public:
 	HRESULT RenderDynamicInstances(
 		ID3D11DeviceContext* context,
 		const MODEL_INSTANCE_BATCH& batch);
+	// 비스키닝 모델의 객체별 그림자 렌더링과 월드 바운드 계산을 공통 처리한다.
+	HRESULT RenderShadow(
+		ID3D11DeviceContext* context,
+		CComConstantBuffer* perObjectBuffer,
+		const _float4x4& worldMatrix,
+		_fmatrix viewProjectionMatrix);
+	bool GetShadowBounds(
+		const _float4x4& worldMatrix,
+		BoundingBox& outBounds) const;
 	SPtr<CResTexture2D> Get_MeshTexture(uint32_t iMeshIndex, AI_TEXTURE_TYPE eMaterialType, uint32_t iTextureIndex);
 
 public:

@@ -28,7 +28,10 @@ NS_BEGIN(Client)
 class CWorldAgent : public CAnimationObject, public CSkillTarget
 {
 public:
-	DECLARE_DERIVED_TYPE(CWorldAgent, CAnimationObject)
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CWorldAgent,
+		CAnimationObject,
+		CSkillTarget)
 public:
 	typedef struct tagnpcdesc : CAnimationObject::GAMEOBJECT_DESC
 	{

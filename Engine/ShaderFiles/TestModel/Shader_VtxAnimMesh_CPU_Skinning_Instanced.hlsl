@@ -11,6 +11,10 @@ struct GPU_ANIM_INSTANCE_DATA
     float fPrevTrackPosition;
     float fBlendWeight;
     uint bBlending;
+    uint iMorphTargetIndex;
+    float fMorphWeight;
+    uint iMorphPadding0;
+    uint iMorphPadding1;
 };
 
 struct GPU_SKIN_BONE_DESC
@@ -20,6 +24,21 @@ struct GPU_SKIN_BONE_DESC
 	uint iPadding0;
 	uint iPadding1;
 	uint iPadding2;
+};
+
+struct MORPH_VERTEX_DELTA
+{
+    uint iVertexIndex;
+    float3 vPositionDelta;
+    float3 vNormalDelta;
+    float3 vTangentDelta;
+    float3 vBinormalDelta;
+};
+
+struct GPU_MORPH_TARGET_RANGE
+{
+    uint iDeltaOffset;
+    uint iDeltaCount;
 };
 
 struct VS_IN
@@ -53,17 +72,71 @@ StructuredBuffer<float4x4> gCPUCombinedBoneMatrices : register(t7);
 // GPU-only 경로와 동일한 mesh-local bone -> skeleton bone 매핑.
 StructuredBuffer<GPU_SKIN_BONE_DESC> gSkinBones : register(t8);
 
+// 모든 Morph Target의 sparse delta를 이어 붙인 배열.
+StructuredBuffer<MORPH_VERTEX_DELTA> gMorphDeltas : register(t9);
+
+// Target별로 gMorphDeltas 안에서 사용할 [offset, count] 범위를 보관한다.
+StructuredBuffer<GPU_MORPH_TARGET_RANGE> gMorphTargetRanges : register(t10);
+
 cbuffer CB_CPU_SKINNING_MESH : register(b5)
 {
     uint gSkinBoneOffset;
     uint gVertexCount;
     uint gSkinBoneCount;
     uint gBonePaletteStride;
+    uint gMorphTargetCount;
+    uint3 gMorphPadding;
 };
 
-VS_OUT VSMain(VS_IN input, uint instanceId : SV_InstanceID)
+bool FindMorphDelta(uint morphTargetIndex, uint vertexId, out MORPH_VERTEX_DELTA morphDelta)
+{
+    morphDelta = (MORPH_VERTEX_DELTA)0;
+
+    const GPU_MORPH_TARGET_RANGE range = gMorphTargetRanges[morphTargetIndex];
+    uint left = range.iDeltaOffset;
+    uint right = range.iDeltaOffset + range.iDeltaCount;
+
+    while (left < right)
+    {
+        const uint middle = left + ((right - left) >> 1);
+        const uint middleVertexIndex = gMorphDeltas[middle].iVertexIndex;
+
+        if (middleVertexIndex < vertexId)
+            left = middle + 1;
+        else
+            right = middle;
+    }
+
+    const uint rangeEnd = range.iDeltaOffset + range.iDeltaCount;
+    if (left >= rangeEnd || gMorphDeltas[left].iVertexIndex != vertexId)
+        return false;
+
+    morphDelta = gMorphDeltas[left];
+    return true;
+}
+
+void ApplyMorph(inout VS_IN input, uint vertexId, uint instanceId)
+{
+    const GPU_ANIM_INSTANCE_DATA instanceData = gInstances[instanceId];
+    if (instanceData.iMorphTargetIndex >= gMorphTargetCount || abs(instanceData.fMorphWeight) <= 0.0001f)
+        return;
+
+    MORPH_VERTEX_DELTA morphDelta;
+    if (!FindMorphDelta(instanceData.iMorphTargetIndex, vertexId, morphDelta))
+        return;
+
+    input.vPosition += morphDelta.vPositionDelta * instanceData.fMorphWeight;
+    input.vNormal += morphDelta.vNormalDelta * instanceData.fMorphWeight;
+    input.vTangent += morphDelta.vTangentDelta * instanceData.fMorphWeight;
+    input.vBinormal += morphDelta.vBinormalDelta * instanceData.fMorphWeight;
+}
+
+VS_OUT VSMain(VS_IN input, uint vertexId : SV_VertexID, uint instanceId : SV_InstanceID)
 {
     const uint instanceBoneOffset = instanceId * 512;
+
+    // Morph는 bind pose 공간의 delta이므로 Bone Skinning보다 먼저 적용한다.
+    ApplyMorph(input, vertexId, instanceId);
 
     const float weightW = 1.f -(input.vBlendWeights.x + input.vBlendWeights.y + input.vBlendWeights.z);
 

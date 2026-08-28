@@ -456,7 +456,32 @@ namespace Engine
 		/*----------- 광윤 추가 -----------*/
 		uint32_t iBonePaletteStride = 0;
 		/*---------------------------------*/
+		uint32_t iMorphTargetCount = 0;
+		uint32_t iMorphPadding0 = 0;
+		uint32_t iMorphPadding1 = 0;
+		uint32_t iMorphPadding2 = 0;
 	}GPU_SKIN_MESH_CONSTANTS;
+
+	constexpr uint32_t MORPH_BINARY_MAGIC = 0x4850524D; // "MRPH"
+
+	typedef struct MORPH_VERTEX_DELTA
+	{
+		uint32_t iVertexIndex = 0;
+		_float3 vPositionDelta{};
+		_float3 vNormalDelta{};
+		_float3 vTangentDelta{};
+		_float3 vBinormalDelta{};
+	} MORPH_VERTEX_DELTA;
+
+	static_assert(sizeof(MORPH_VERTEX_DELTA) == 52);
+
+	typedef struct GPU_MORPH_TARGET_RANGE
+	{
+		uint32_t iDeltaOffset = 0;
+		uint32_t iDeltaCount = 0;
+	} GPU_MORPH_TARGET_RANGE;
+
+	static_assert(sizeof(GPU_MORPH_TARGET_RANGE) == 8);
 
 
 	//struct GPU_ANIM_INSTANCE_DATA { 
@@ -485,7 +510,14 @@ namespace Engine
 		_float fPrevTrackPosition = 0.f;
 		_float fBlendWeight = 1.f;
 		uint32_t bBlending = 0;
+
+		uint32_t iMorphTargetIndex = UINT32_MAX;
+		_float fMorphWeight = 0.f;
+		uint32_t iMorphPadding0 = 0;
+		uint32_t iMorphPadding1 = 0;
 	}GPU_ANIM_INSTANCE_DATA;
+
+	static_assert(sizeof(GPU_ANIM_INSTANCE_DATA) == 112);
 
 	constexpr uint32_t INVALID_ANIM_INDEX = UINT32_MAX;
 

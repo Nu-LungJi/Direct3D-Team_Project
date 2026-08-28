@@ -56,7 +56,8 @@ private:
 		const std::filesystem::path& modelPath,
 		const std::filesystem::path& preferredDirectory,
 		const std::string& file,
-		const std::string& extension);
+		const std::string& extension,
+		uint32_t textureType);
 
 	HRESULT AcquireCachedTexture(const _string& texturePath, SPtr<CResTexture2D>& outTexture);
 
