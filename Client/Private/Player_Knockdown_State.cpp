@@ -69,6 +69,14 @@ void CPlayer_Knockdown_State::Enter(CStateMachine* pStateMachine)
 	XMStoreFloat3(&vLaunchVelocity, vLaunchDirection);
 	vLaunchVelocity.y = LAUNCH_VERTICAL_SPEED;
 	motor->SetVelocity(vLaunchVelocity);
+
+	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/Player/Combat/Hit/Player_Damaged.wav", SOUND_PLAY_DESC{
+		.sBusID = SOUND_BUS::SFX,
+		.fVolume = 1.f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = false
+		});
 }
 
 void CPlayer_Knockdown_State::Exit(CStateMachine* pStateMachine)

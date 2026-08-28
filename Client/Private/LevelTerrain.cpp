@@ -320,6 +320,9 @@ HRESULT CLevelTerrain::Initialize()
 
 		pNpcManager->SetSpawnCallback([hTarget = *hPlayer](const E::NPC_PLACEMENT_DESC& Placement)
 		{
+			if (Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::GPU_CROWD_AMBIENT)
+				return E::NPC_PLACEMENT_RESULT{
+					Placement.iPlacementId, false, {}, "GPU Crowd runtime is not implemented." };
 			std::optional<E::CHandle> hNpc{};
 			if (Placement.sPrototypeTag == MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_Spider))
 			{
@@ -355,7 +358,6 @@ HRESULT CLevelTerrain::Initialize()
 				Desc.vRot = Placement.vRotation;
 				Desc.vScale = Placement.vScale;
 				Desc.bDonMove = Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::CPU_ACTOR_AMBIENT;
-				Desc.bFreezeAnimation = true;
 				hNpc = E::CGameInstance::Get().AddGameObjectToLayer(
 					Placement.sPrototypeGroupTag, Placement.sPrototypeTag, Placement.sLayerTag, &Desc);
 			}

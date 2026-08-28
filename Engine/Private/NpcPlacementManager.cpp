@@ -2,6 +2,7 @@
 #include <filesystem>
 #include "NpcPlacementManager.h"
 #include "GameInstance.h"
+#include "GameObject.h"
 #include "ResModel.h"
 #include "CameraObject.h"
 #include "PhysXManager.h"
@@ -99,10 +100,6 @@ void CNpcPlacementManager::UpdateGUI()
 	if (ImGui::Button(m_bPlacementPicking ? "Pick Placement: ON" : "Pick Placement: OFF"))
 		m_bPlacementPicking = !m_bPlacementPicking;
 	ImGui::SameLine();
-	ImGui::Checkbox("Spawn On Pick", &m_bSpawnOnPick);
-	ImGui::SameLine();
-	if (ImGui::Button("Spawn All") && HasSpawnCallback()) SpawnAll();
-	ImGui::SameLine();
 	if (ImGui::Button("Clear Results")) m_LastResults.clear();
 
 	ImGui::Separator();
@@ -126,7 +123,7 @@ void CNpcPlacementManager::UpdateGUI()
 		ImGui::TextDisabled("Select or add a placement.");
 	ImGui::EndGroup();
 
-	if (!m_LastResults.empty() && ImGui::CollapsingHeader("Last Spawn Results", ImGuiTreeNodeFlags_DefaultOpen))
+	if (!m_LastResults.empty() && ImGui::CollapsingHeader("Last Sync Results", ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		for (const auto& Result : m_LastResults)
 		{
@@ -219,7 +216,7 @@ void CNpcPlacementManager::UpdatePlacementPicking()
 
 	const uint64_t iPlacementId = AddPlacement(Desc);
 	m_iSelectedIndex = static_cast<int32_t>(m_Placements.size()) - 1;
-	if (m_bSpawnOnPick && HasSpawnCallback()) Spawn(iPlacementId);
+	(void)iPlacementId;
 }
 
 uint64_t CNpcPlacementManager::AddPlacement(const NPC_PLACEMENT_DESC& Desc)
@@ -232,7 +229,10 @@ uint64_t CNpcPlacementManager::AddPlacement(const NPC_PLACEMENT_DESC& Desc)
 		m_iNextPlacementId = std::max(m_iNextPlacementId, NewDesc.iPlacementId + 1);
 
 	m_Placements.push_back(std::move(NewDesc));
-	return m_Placements.back().iPlacementId;
+	const uint64_t iPlacementId = m_Placements.back().iPlacementId;
+	if (HasSpawnCallback() && ValidatePlacement(m_Placements.back()).empty())
+		Spawn(iPlacementId);
+	return iPlacementId;
 }
 
 _bool CNpcPlacementManager::RemovePlacement(uint64_t iPlacementId)
@@ -240,6 +240,12 @@ _bool CNpcPlacementManager::RemovePlacement(uint64_t iPlacementId)
 	const auto Iter = std::find_if(m_Placements.begin(), m_Placements.end(),
 		[&](const NPC_PLACEMENT_DESC& Desc) { return Desc.iPlacementId == iPlacementId; });
 	if (Iter == m_Placements.end()) return false;
+	if (const auto Runtime = m_RuntimeObjects.find(iPlacementId); Runtime != m_RuntimeObjects.end())
+	{
+		DestroyRuntimeObject(Runtime->second);
+		m_RuntimeObjects.erase(Runtime);
+	}
+	m_RuntimeDescs.erase(iPlacementId);
 
 	const size_t iRemovedIndex = static_cast<size_t>(std::distance(m_Placements.begin(), Iter));
 	m_Placements.erase(Iter);
@@ -252,6 +258,7 @@ _bool CNpcPlacementManager::RemovePlacement(uint64_t iPlacementId)
 
 void CNpcPlacementManager::ClearPlacements()
 {
+	ClearRuntimeObjects();
 	m_Placements.clear();
 	m_LastResults.clear();
 	m_iSelectedIndex = -1;
@@ -320,18 +327,37 @@ NPC_PLACEMENT_RESULT CNpcPlacementManager::Spawn(uint64_t iPlacementId)
 {
 	const auto Iter = std::find_if(m_Placements.begin(), m_Placements.end(),
 		[&](const NPC_PLACEMENT_DESC& Desc) { return Desc.iPlacementId == iPlacementId; });
-	NPC_PLACEMENT_RESULT Result = Iter == m_Placements.end()
-		? NPC_PLACEMENT_RESULT{ iPlacementId, false, {}, "Placement not found." }
-		: SpawnPlacement(*Iter);
+	NPC_PLACEMENT_RESULT Result{};
+	if (Iter == m_Placements.end())
+		Result = { iPlacementId, false, {}, "Placement not found." };
+	else if (const _string Error = ValidatePlacement(*Iter); !Error.empty())
+		Result = { iPlacementId, false, {}, Error };
+	else
+	{
+		if (const auto Runtime = m_RuntimeObjects.find(iPlacementId); Runtime != m_RuntimeObjects.end())
+		{
+			DestroyRuntimeObject(Runtime->second);
+			m_RuntimeObjects.erase(Runtime);
+		}
+		m_RuntimeDescs.erase(iPlacementId);
+		Result = SpawnPlacement(*Iter);
+		if (Result.bSucceeded)
+		{
+			m_RuntimeObjects[iPlacementId] = Result.hObject;
+			m_RuntimeDescs[iPlacementId] = *Iter;
+		}
+	}
 	m_LastResults = { Result };
 	return Result;
 }
 
 const std::vector<NPC_PLACEMENT_RESULT>& CNpcPlacementManager::SpawnAll()
 {
-	m_LastResults.clear();
-	m_LastResults.reserve(m_Placements.size());
-	for (const auto& Desc : m_Placements) m_LastResults.push_back(SpawnPlacement(Desc));
+	std::vector<NPC_PLACEMENT_RESULT> Results{};
+	Results.reserve(m_Placements.size());
+	for (const auto& Desc : m_Placements)
+		Results.push_back(Spawn(Desc.iPlacementId));
+	m_LastResults = std::move(Results);
 	return m_LastResults;
 }
 
@@ -372,10 +398,12 @@ HRESULT CNpcPlacementManager::Load(const _string& sFilePath)
 		iNextPlacementId = std::max(iNextPlacementId, Desc.iPlacementId + 1);
 	}
 
+	ClearPlacements();
 	m_Placements = std::move(File.Placements);
 	m_LastResults.clear();
 	m_iNextPlacementId = iNextPlacementId;
 	m_iSelectedIndex = m_Placements.empty() ? -1 : 0;
+	if (HasSpawnCallback()) SpawnAll();
 	return S_OK;
 }
 
@@ -387,6 +415,13 @@ void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t 
 	ImGui::PushID(static_cast<int32_t>(Desc.iPlacementId));
 	ImGui::PushItemWidth(420.f);
 	ImGui::Text("Placement ID: %llu", static_cast<unsigned long long>(Desc.iPlacementId));
+	const auto Runtime = m_RuntimeObjects.find(Desc.iPlacementId);
+	const _bool bRuntimeAlive = Runtime != m_RuntimeObjects.end() &&
+		CGameInstance::Get().GetGameObjectByHandle(Runtime->second) != nullptr;
+	ImGui::SameLine();
+	ImGui::TextColored(
+		bRuntimeAlive ? ImVec4{ 0.3f, 1.f, 0.3f, 1.f } : ImVec4{ 1.f, 0.35f, 0.25f, 1.f },
+		bRuntimeAlive ? "LIVE" : "NOT SPAWNED");
 
 	_string sSelectedNpc{};
 	for (const auto& [Name, Option] : m_NpcOptions)
@@ -556,8 +591,8 @@ void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t 
 		Desc.bCastShadow = false;
 	}
 
-	if (ImGui::Button("Spawn Selected") && HasSpawnCallback()) Spawn(Desc.iPlacementId);
-	ImGui::SameLine();
+	SyncPlacement(Desc);
+
 	if (ImGui::Button("Duplicate"))
 	{
 		NPC_PLACEMENT_DESC Copy = Desc;
@@ -580,6 +615,57 @@ void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t 
 	ImGui::TextDisabled("Editor index: %zu", iIndex);
 	ImGui::PopItemWidth();
 	ImGui::PopID();
+}
+
+void CNpcPlacementManager::SyncPlacement(const NPC_PLACEMENT_DESC& Desc)
+{
+	if (!HasSpawnCallback() || !ValidatePlacement(Desc).empty())
+		return;
+
+	const auto Runtime = m_RuntimeObjects.find(Desc.iPlacementId);
+	const auto Snapshot = m_RuntimeDescs.find(Desc.iPlacementId);
+	const _bool bRuntimeAlive = Runtime != m_RuntimeObjects.end() &&
+		CGameInstance::Get().GetGameObjectByHandle(Runtime->second) != nullptr;
+	if (bRuntimeAlive && Snapshot != m_RuntimeDescs.end() && IsSamePlacement(Snapshot->second, Desc))
+		return;
+
+	Spawn(Desc.iPlacementId);
+}
+
+void CNpcPlacementManager::DestroyRuntimeObject(const CHandle& Handle)
+{
+	if (auto* pObject = CGameInstance::Get().GetGameObjectByHandle(Handle))
+		pObject->SetPendingDestroy();
+}
+
+void CNpcPlacementManager::ClearRuntimeObjects()
+{
+	for (const auto& [PlacementId, Handle] : m_RuntimeObjects)
+		DestroyRuntimeObject(Handle);
+	m_RuntimeObjects.clear();
+	m_RuntimeDescs.clear();
+}
+
+_bool CNpcPlacementManager::IsSamePlacement(
+	const NPC_PLACEMENT_DESC& Left, const NPC_PLACEMENT_DESC& Right)
+{
+	const auto SameFloat3 = [] (const _float3& A, const _float3& B)
+	{
+		return A.x == B.x && A.y == B.y && A.z == B.z;
+	};
+	return Left.iPlacementId == Right.iPlacementId &&
+		Left.sPrototypeGroupTag == Right.sPrototypeGroupTag && Left.sPrototypeTag == Right.sPrototypeTag &&
+		Left.sLayerTag == Right.sLayerTag && Left.sModelGroupTag == Right.sModelGroupTag &&
+		Left.sModelResourceTag == Right.sModelResourceTag &&
+		Left.sBehaviorMajorTag == Right.sBehaviorMajorTag && Left.sBehaviorMinorTag == Right.sBehaviorMinorTag &&
+		SameFloat3(Left.vPosition, Right.vPosition) && SameFloat3(Left.vRotation, Right.vRotation) &&
+		SameFloat3(Left.vScale, Right.vScale) && SameFloat3(Left.vPatrolStartPosition, Right.vPatrolStartPosition) &&
+		SameFloat3(Left.vPatrolEndPosition, Right.vPatrolEndPosition) && Left.eRuntimeType == Right.eRuntimeType &&
+		Left.bCastShadow == Right.bCastShadow && Left.fVisibleDistance == Right.fVisibleDistance &&
+		Left.fAnimationUpdateDistance == Right.fAnimationUpdateDistance &&
+		Left.fAIUpdateDistance == Right.fAIUpdateDistance && Left.iCrowdCount == Right.iCrowdCount &&
+		Left.fCrowdRadius == Right.fCrowdRadius && Left.iRandomSeed == Right.iRandomSeed &&
+		Left.fSpeed == Right.fSpeed && Left.bPhyx == Right.bPhyx && Left.strAnimName == Right.strAnimName;
 }
 
 NPC_PLACEMENT_RESULT CNpcPlacementManager::SpawnPlacement(const NPC_PLACEMENT_DESC& Desc) const

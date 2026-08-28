@@ -49,6 +49,11 @@ private:
 	void DespawnRuntimeObjects(std::vector<CHandle>& Handles);
 	void PruneInvalidRuntimeHandles(std::vector<CHandle>& Handles);
 	void UpdateRuntimeActivitySpawnShortcut();
+	void RequestSummonersCourtSpawn(CHandle hPlayer);
+	void UpdateRequestedSummonersCourtSpawn();
+	HRESULT SpawnSummonersCourtIfNeeded(CHandle hPlayer);
+	void RequestSummonersCourtDespawn();
+	void UpdateRequestedSummonersCourtDespawn();
 
 	void UpdateDebugWarp();
 
@@ -68,6 +73,8 @@ private:
 	_bool m_bCreatePlayScreenUI = false;
 
 	CHandle m_hDebugPlayer{};
+	std::optional<CHandle> m_hPendingSummonersCourtPlayer{};
+	_bool m_bSummonersCourtDespawnRequested{};
 	std::vector<CHandle> m_AccioActivityHandles{};
 	std::vector<CHandle> m_CoinCollisionHandles{};
 
