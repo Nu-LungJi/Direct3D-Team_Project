@@ -45,7 +45,8 @@ public:
 
 	/*******페이드 인아웃******/
 	void CreateFadeIn(float delay = 0.f, float playtime = 0.5f);
-	void CreateFadeOut(float delay = 0.f, float playtime = 0.5f);
+	void CreateFadeOut(float delay = 0.f, float playtime = 0.5f,
+		std::function<void()> onComplete = nullptr);
 	void CreateFadeInSceneChange(float delay = 0.f, float playtime = 1.f, LEVEL level = LEVEL::LOGO);
 	void PlayFadeInAll2DUI(float delay = 0.f, float playtime = 0.5f);
 	void PlayFadeOutAll2DUI(float delay = 0.f, float playtime = 0.5f);
@@ -233,7 +234,8 @@ public:
 	std::vector<CHandle> LoadPrefab(std::string name, std::string g_BasePath = "./Resources/SampleClient/UIData/Prefabs/");
 	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);
 	void DeleteUIRecursive(std::optional<CHandle> targetHandle);
-	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
+	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f,
+		float playtime = 5.f, std::function<void()> onComplete = nullptr);
 	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 	void PlayOnlyFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 

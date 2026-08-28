@@ -119,8 +119,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 	if (FAILED(SpawnStaticCollision()))
 		return E_FAIL;
 
-	if (FAILED(SpawnCoinCollision()))
-		return E_FAIL;
+
 
 	if (FAILED(SpawnTerrain(*hPlayer)))
 		return E_FAIL;
@@ -232,7 +231,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 				CInteractiveNpc::DIALOGUE_ACTION::START_SPELL_MINIGAME
 			}
 		};
-		Desc.ResolveStartDialogueIndex = []()
+		Desc.ResolveStartDialogueIndex = []()		
 			{
 
 				// 만약 플레이어가 이미 지팡이를 샀으면
@@ -250,10 +249,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 				//	GetGameObjectByHandleT<CPlayer>(hDialoguePlayer);
 
 				//
-			};
+			}; 
 		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
 		Desc.MoveDestination = {
-			{ 303.512f, 44.703f, 85.749f }
+			{ 1900.461f, 40.9f, 281.991f  }
 		};
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
@@ -278,15 +277,15 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.resBeHaviorMajor = "BTJSON";
 		Desc.resBeHaviorMinor = "NPC1";
 		Desc.TargetHandle = *hPlayer;
-		Desc.vPos = { 303.512f, 44.703f, 85.749f };
+		Desc.vPos = { 1895.461f, 35.9f, 268.991f };
 		Desc.vStartPos = Desc.vPos;
-		Desc.vRot = { 0.f, 38.342f, 0.f };
+		Desc.vRot = {/*33.5f*/0.f, 24.5f, 0.f };
 		Desc.vScale = { 1.f, 1.f, 1.f };
 		Desc.fCCTHeight = 3.6f;
 		Desc.fCCTRadius = 0.6f;
 		Desc.fCCTStepOffset = 0.1f;
 		Desc.vCCTCenterOffset = { 0.f, 1.f, 0.f };
-		Desc.bPhyx = true;
+		Desc.bPhyx = false;
 		Desc.bDonMove = true;
 		Desc.SpeakerName = "미니게임";
 		Desc.InteractionDistance = 3.f;
@@ -317,11 +316,11 @@ HRESULT CLevelHogwartWorld::Initialize()
 				true,
 				{
 					{
-						"소환사의 코트", 2,
-						CInteractiveNpc::DIALOGUE_ACTION::START_ACCIO_MINIGAME
+						"소환사의 코트", 4,
+						CInteractiveNpc::DIALOGUE_ACTION::CONTINUE_DIALOGUE
 					},
 					{
-						"부릉 브룸", 2,
+						"부릉! 브룸!", 2,
 						CInteractiveNpc::DIALOGUE_ACTION::START_COIN_MINIGAME
 					}
 				}
@@ -331,7 +330,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 			{ "행운을 빌어.", "", true },
 
 			// 3
-			{ "곧 대회가 시작하니 늦기 전에 와야 해!", "", true }
+			{ "곧 대회가 시작하니 늦기 전에 와야 해!", "", true },
+			//4
+			{ "알겠어, 뒤에 있는 경기장으로 가서 여학생에게 말을 걸어봐.", "", true },
+
 		};
 
 		Desc.ResolveStartDialogueIndex = []()
@@ -351,8 +353,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 		// Facing direction (Y 38.342 degrees), approximately five metres ahead.
 		Desc.MoveDestination = {
 			{ 323.512f, 44.703f, 85.749f }, // 0: 아씨오
-			{ 313.512f, 44.703f, 85.749f }  // 1: 코인 - 실제 좌표로 교체
+			{ 1953.605f, 60.391f, -188.274f } // 1: 코인
 		};
+		Desc.CoinMoveRotationEuler = { 2.034f, 13.171f, 0.f };
+		Desc.MoveFadeHoldDuration = 10.f;
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
 
@@ -818,19 +822,7 @@ HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorld::SpawnCoinCollision()
-{
-	auto handles = CGameInstance::Get()
-		.GetPhysXManager()
-		->CreateCollisionProxyObjectsFromFile(
-			"Level_HogwartCoin",
-			"00_CoinCollision");
 
-	if (handles.empty())
-		return E_FAIL;
-
-	return S_OK;
-}
 
 HRESULT CLevelHogwartWorld::SpawnNpcPlacements(CHandle hPlayer, const _string& Path)
 {

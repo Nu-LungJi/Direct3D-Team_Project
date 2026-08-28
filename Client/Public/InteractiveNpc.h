@@ -74,6 +74,10 @@ public:
 		_string DialogueCinematicName{ "InteractiveNpcDialogue" };
 		// 0: 아씨오 미니게임, 1: 코인 미니게임 시작 위치.
 		std::vector<_float3> MoveDestination{};
+		// 코인 미니게임 도착 시 플레이어에게 적용할 월드 Euler 각도(도 단위).
+		_float3 CoinMoveRotationEuler{};
+		// 이동용 화면이 완전히 검어진 뒤 유지할 시간.
+		_float MoveFadeHoldDuration{ 5.f };
 		_float MoveSpeed{ 2.f };
 		_float MoveStopDistance{ 0.2f };
 		// START_ACCIO_MINIGAME 선택지가 시작할 CAccioActivity_Base 인스턴스.
@@ -152,7 +156,7 @@ private:
 	_bool IsPlayerInRange();
 	// 대화 시작용 F 상호작용 UI의 표시 상태를 동기화한다.
 	void SyncInteractionPrompt(_bool show);
-
+	HRESULT SpawnCoinCollision();
 private:
 	_string m_SpeakerName{ "NPC" };
 	std::vector<DIALOGUE_LINE> m_Dialogue{};
@@ -165,6 +169,7 @@ private:
 	_bool m_bCompleted{};
 	_bool m_bPromptVisible{};
 	_bool m_bMovingToDestination{};
+	_bool m_bMovePositionApplied{};
 	_bool m_bOwnsWorldPause{};
 	_bool m_bDialogueCinematicPlaying{};
 	size_t m_iDialogueIndex{};
@@ -173,6 +178,7 @@ private:
 	_float m_fFadeDuration{ 0.35f };
 	_float m_fFadeHoldDuration{ 0.2f };
 	_float m_fMoveFadeInDuration{ 2.f };
+	_float m_fMoveFadeHoldDuration{ 10.f };
 	_float m_fMoveFadeOutDuration{ 1.f };
 	_float m_fIntroElapsed{}; 
 	_float m_fMoveOutcomeElapsed{};
@@ -180,6 +186,7 @@ private:
 	_string m_DialogueCinematicName{ "InteractiveNpcDialogue" };
 	std::vector<_float3> m_MoveDestinations{};
 	_float3 m_vMoveDestination{};
+	_float3 m_vCoinMoveRotationEuler{};
 	_float m_fMoveSpeed{ 2.f };
 	_float m_fMoveStopDistance{ 0.2f };
 	CHandle m_hAccioActivity{};
