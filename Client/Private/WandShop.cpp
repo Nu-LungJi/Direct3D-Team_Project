@@ -3,6 +3,8 @@
 
 #include "GeneralButton.h"
 #include "GameInstance.h"
+#include "Player.h"
+#include "Player_Weapon.h"
 #include "TextureUI.h"
 #include "TweenComponent.h"
 #include "UIManager.h"
@@ -205,8 +207,26 @@ void CWandShop::Update(UIManager& manager, _float fTimeDelta)
 
 void CWandShop::CompletePurchase(UIManager& manager)
 {
-	// The selected wand model replacement can be connected here later.
-	static bool isPurchaseWand = true;
+	if (const auto* playerLayer =
+		E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
+	{
+		for (const CHandle playerHandle : *playerLayer)
+		{
+			auto* player = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CPlayer>(playerHandle);
+			if (!player)
+				continue;
+
+			auto* weapon = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CPlayer_Weapon>(
+					player->GetWeaponHandle());
+			if (weapon)
+				weapon->EquipWand2();
+
+			break;
+		}
+	}
+
 	Close(manager);
 }
 
