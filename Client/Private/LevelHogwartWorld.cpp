@@ -321,6 +321,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 		};
 		Desc.MoveOutcomeAnimation =
 			"AN_BODY__Meeting__Shot_180_GerboldOllivander.bin";
+		Desc.OnMoveDestinationApplied = [this, hPlayer = *hPlayer]()
+		{
+			RequestSummonersCourtSpawn(hPlayer);
+		};
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
 
@@ -463,6 +467,11 @@ HRESULT CLevelHogwartWorld::Initialize()
 			return E_FAIL;
 	}
 
+	GET_SINGLE(UIManager)->SetRaceReturnToShopCallback([this]()
+	{
+		RequestSummonersCourtDespawn();
+	});
+
 	// 레벨 진입 후 3초 동안 검은 화면을 유지하고,
 	// 이후 2초 동안 검은 UI를 사라지게 해 게임 화면을 드러낸다.
 	GET_SINGLE(UIManager)->CreateFadeOut(3.f, 2.f);
@@ -473,6 +482,8 @@ HRESULT CLevelHogwartWorld::Initialize()
 void CLevelHogwartWorld::Update(E::_float fTimeDelta)
 {
 	UNREFERENCED_PARAMETER(fTimeDelta);
+	UpdateRequestedSummonersCourtDespawn();
+	UpdateRequestedSummonersCourtSpawn();
 	UpdateRuntimeActivitySpawnShortcut();
 
 	if (!m_bCreatePlayScreenUI)
@@ -539,24 +550,17 @@ void CLevelHogwartWorld::UpdateRuntimeActivitySpawnShortcut()
 
 	if (gameInstance.KeyDown(DIK_F10))
 	{
-		PruneInvalidRuntimeHandles(m_AccioActivityHandles);
-		PruneInvalidRuntimeHandles(m_CoinCollisionHandles);
+		//PruneInvalidRuntimeHandles(m_CoinCollisionHandles);
 
-		const HRESULT hrAccio = m_AccioActivityHandles.empty()
-			? SpawnAccioActivity(
-				m_hDebugPlayer,
-				{ 1912.f, 24.8f, 316.f },
-				180.f,
-				1.f)
-			: S_FALSE;
-		const HRESULT hrCoin = m_CoinCollisionHandles.empty()
-			? SpawnCoinCollision()
-			: S_FALSE;
+		const HRESULT hrAccio = SpawnSummonersCourtIfNeeded(m_hDebugPlayer);
+		//const HRESULT hrCoin = m_CoinCollisionHandles.empty()
+		//	? SpawnCoinCollision()
+		//	: S_FALSE;
 
-		if (FAILED(hrAccio) || FAILED(hrCoin))
+		if (FAILED(hrAccio) /*|| FAILED(hrCoin)*/)
 		{
 			DespawnRuntimeObjects(m_AccioActivityHandles);
-			DespawnRuntimeObjects(m_CoinCollisionHandles);
+			//DespawnRuntimeObjects(m_CoinCollisionHandles);
 			DEBUG_LOG("[HogwartWorld] Shift + F10 runtime activity spawn failed.\n");
 		}
 		else
@@ -570,6 +574,53 @@ void CLevelHogwartWorld::UpdateRuntimeActivitySpawnShortcut()
 		DespawnRuntimeObjects(m_CoinCollisionHandles);
 		DEBUG_LOG("[HogwartWorld] Shift + F11 despawned Accio Activity and Coin Collision.\n");
 	}
+}
+
+void CLevelHogwartWorld::RequestSummonersCourtSpawn(CHandle hPlayer)
+{
+	m_hPendingSummonersCourtPlayer = hPlayer;
+}
+
+void CLevelHogwartWorld::UpdateRequestedSummonersCourtSpawn()
+{
+	if (!m_hPendingSummonersCourtPlayer)
+		return;
+
+	const CHandle hPlayer = *m_hPendingSummonersCourtPlayer;
+	m_hPendingSummonersCourtPlayer.reset();
+	if (FAILED(SpawnSummonersCourtIfNeeded(hPlayer)))
+	{
+		DespawnRuntimeObjects(m_AccioActivityHandles);
+		DEBUG_LOG("[HogwartWorld] Shop NPC failed to spawn Summoner's Court.\n");
+	}
+}
+
+HRESULT CLevelHogwartWorld::SpawnSummonersCourtIfNeeded(CHandle hPlayer)
+{
+	PruneInvalidRuntimeHandles(m_AccioActivityHandles);
+	if (!m_AccioActivityHandles.empty())
+		return S_FALSE;
+
+	return SpawnAccioActivity(
+		hPlayer,
+		{ 1935.f, 24.8f, 325.f },
+		180.f,
+		1.f);
+}
+
+void CLevelHogwartWorld::RequestSummonersCourtDespawn()
+{
+	m_bSummonersCourtDespawnRequested = true;
+}
+
+void CLevelHogwartWorld::UpdateRequestedSummonersCourtDespawn()
+{
+	if (!m_bSummonersCourtDespawnRequested)
+		return;
+
+	m_bSummonersCourtDespawnRequested = false;
+	DespawnRuntimeObjects(m_AccioActivityHandles);
+	DEBUG_LOG("[HogwartWorld] Race return removed Summoner's Court.\n");
 }
 
 void CLevelHogwartWorld::DespawnRuntimeObjects(
@@ -1392,6 +1443,7 @@ UPtr<CLevelHogwartWorld> CLevelHogwartWorld::Create()
 
 void CLevelHogwartWorld::Free()
 {
+	GET_SINGLE(UIManager)->SetRaceReturnToShopCallback({});
 	if (auto *pNpcManager = E::CGameInstance::Get().GetNpcPlacementManager())
 		pNpcManager->ClearNpcOptions();
 

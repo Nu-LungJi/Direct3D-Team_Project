@@ -99,6 +99,8 @@ public:
 		_float MoveFadeHoldDuration{ 5.f };
 		// 플레이어를 목적지로 보내기 직전에 한 번 재생할 NPC 제스처.
 		_string MoveOutcomeAnimation{};
+		// 암전 중 플레이어 이동 좌표가 실제로 적용된 직후 한 번 호출한다.
+		std::function<void()> OnMoveDestinationApplied{};
 		_float MoveSpeed{ 2.f };
 		_float MoveStopDistance{ 0.2f };
 		// START_ACCIO_MINIGAME 선택지가 시작할 CAccioActivity_Base 인스턴스.
@@ -229,6 +231,7 @@ private:
 	_float m_fMoveFadeInDuration{ 2.f };
 	_float m_fMoveFadeHoldDuration{ 10.f };
 	_float m_fMoveFadeOutDuration{ 1.f };
+	std::function<void()> m_OnMoveDestinationApplied{};
 	_float m_fIntroElapsed{}; 
 	_float m_fMoveOutcomeElapsed{};
 	_float3 m_vPlayerDialogueOffset{ -0.8f, 0.f, 2.2f };
