@@ -2,9 +2,6 @@
 #include "SkyCloudyCube.h"
 #include "pch.h"
 
-#include "AnimatedObjectPlacementManager.h"
-#include "AnimatedWorldObject.h"
-#include "ComAnimator.h"
 #include "FlyCamera.h"
 #include "GameInstance.h"
 #include "Griff.h"
@@ -19,7 +16,6 @@
 #include "Player.h"
 #include "ComCharacterMoveIntent.h"
 #include "PlayerThirdPersonCamera.h"
-#include "ResModel.h"
 #include "Troll.h"
 #include "UIController.h"
 #include "UIManager.h"
@@ -98,6 +94,35 @@ HRESULT CLevelHogwartWorld::Initialize()
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Spider",NpcOption.sModelGroupTag, "Model_Resource_Spider");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Cat", NpcOption.sModelGroupTag, "Model_Resource_Cat","./Resources/SampleClient/Models/Skeleton/Cat/");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Bird_Kestrel", NpcOption.sModelGroupTag, "Model_Resource_Bird_Kestrel", "./Resources/SampleClient/Models/Skeleton/Birds_Kestrel/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "BlueButterfly_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_BlueButterfly_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/BlueButterfly_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "CaptureBag_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_CaptureBag_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/CaptureBag_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ChompingCabbage_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_ChompingCabbage_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/ChompingCabbage_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "DisillusionmentChest_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_DisillusionmentChest_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/DisillusionmentChest_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "FlyingMagicPaper_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_FlyingMagicPaper_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/FlyingMagicPaper_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GACTreasureChest_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_GACTreasureChest_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/GACTreasureChest_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GiantPendulumClock_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_GiantPendulumClock_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/GiantPendulumClock_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GlowingLumosMoth_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_GlowingLumosMoth_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/GlowingLumosMoth_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Hippogriff_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_Hippogriff_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/Hippogriff_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "HoppingPot_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_HoppingPot_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/HoppingPot_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "IdentificationStation_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_IdentificationStation_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/IdentificationStation_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MagicChoppingIngredients_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_MagicChoppingIngredients_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/MagicChoppingIngredients_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MagicChoppingStation_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_MagicChoppingStation_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/MagicChoppingStation_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MagicMaterialRefinerTools_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_MagicMaterialRefinerTools_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/MagicMaterialRefinerTools_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "OrangeButterfly_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_OrangeButterfly_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/OrangeButterfly_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "OutdoorDiricawlBird_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_OutdoorDiricawlBird_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/OutdoorDiricawlBird_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "OutdoorFwooperBird_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_OutdoorFwooperBird_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/OutdoorFwooperBird_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SanctuaryToyBox_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_SanctuaryToyBox_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/SanctuaryToyBox_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfWrappingPaper_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_SelfWrappingPaper_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/SelfWrappingPaper_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ShopCounterHandBell_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_ShopCounterHandBell_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/ShopCounterHandBell_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StirCrazyTeaSpoon_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StirCrazyTeaSpoon_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StirCrazyTeaSpoon_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetRabbit_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetRabbit_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetRabbit_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetRat_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetRat_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetRat_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetRaven_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetRaven_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetRaven_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetSquirrel_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetSquirrel_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetSquirrel_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "TeaShopTeaCup_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_TeaShopTeaCup_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/TeaShopTeaCup_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ThestralStreetCarriage_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_ThestralStreetCarriage_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/ThestralStreetCarriage_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "VillageGiantToad_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_VillageGiantToad_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/VillageGiantToad_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "WizardingDeck_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_WizardingDeck_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/WizardingDeck_Animated_Blender_4_3/");
 			
 		}
 		//{
@@ -114,6 +139,9 @@ HRESULT CLevelHogwartWorld::Initialize()
 		pNpcManager->SetSpawnCallback(
 			[hTarget = *hPlayer](const E::NPC_PLACEMENT_DESC &Placement)
 			{
+				if (Placement.eRuntimeType == E::NPC_RUNTIME_TYPE::GPU_CROWD_AMBIENT)
+					return E::NPC_PLACEMENT_RESULT{
+						Placement.iPlacementId, false, {}, "GPU Crowd runtime is not implemented."};
 				if (Placement.sPrototypeTag != MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldNpc) &&
 					Placement.sPrototypeTag !=
 						MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_WorldAnimal))
@@ -144,119 +172,6 @@ HRESULT CLevelHogwartWorld::Initialize()
 				return E::NPC_PLACEMENT_RESULT{Placement.iPlacementId, true, *hNpc, "Spawn succeeded."};
 			});
 	}
-	if (auto *pAnimatedManager = gameInstance.GetAnimatedObjectPlacementManager())
-	{
-		pAnimatedManager->ClearOptions();
-		pAnimatedManager->SetPickingQueryMask(ETOUI(COLLISION_LAYER::WORLD_STATIC));
-		static constexpr const char *AnimatedObjectModels[] = {
-			"AnimatedGlobe_Animated",		 "BalloonLauncher_Animated",	 "CottonCandyDisplay_Animated",
-			"DeathdayParty_Animated",		 "DragonBush_Animated",			 "EnchantedScarecrow_Animated",
-			"EnchantedWateringCan_Animated", "HungryForRubbish_Animated",	 "LivingBooks_Animated",
-			"MagicKiteBattle_Animated",		 "ManicStreetSigns_Animated",	 "MarionetteCandyBooth_Animated",
-			"MirrorMirror_Animated",		 "NifflerTightropeToy_Animated", "OneManBand_Animated",
-			"PaperAndQuill_Animated",		 "PlantParty_Animated",			 "PlayingWithFire_Animated",
-			"RollUpRollUpCart_Animated",	 "SelfCheckingBooks_Animated",	 "SelfPruningTools_Animated",
-			"SelfShufflingCards_Animated",	 "SelfWrappingPresent_Animated", "Snowman_Animated",
-			"StirCrazyKitchen_Animated"};
-		for (const char *modelName : AnimatedObjectModels)
-		{
-			E::ANIMATED_OBJECT_PLACEMENT_DESC option{};
-			option.sPrototypeGroupTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-			option.sPrototypeTag = MagicEnumToStringView(PROTO_GAMEOBJECT::Prototype_GameObject_AnimatedWorldObject);
-			option.sLayerTag = "01_AnimatedObject";
-			option.sModelGroupTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-			option.sModelResourceTag = "Model_Resource_AnimatedObject_" + _string{modelName};
-			std::vector<_string> animationNames{};
-			const std::filesystem::path animationFolder =
-				std::filesystem::path{"./Resources/SampleClient/Models/AnimatedObject"} / modelName;
-			if (std::filesystem::exists(animationFolder))
-				for (const auto &entry : std::filesystem::directory_iterator(animationFolder))
-					if (entry.is_regular_file() && entry.path().extension() == ".bin" &&
-						entry.path().stem().string().starts_with("AN_"))
-						animationNames.emplace_back(entry.path().filename().string());
-			std::ranges::sort(animationNames);
-			if (animationNames.empty())
-				continue;
-			option.sAnimationName = animationNames.front();
-			pAnimatedManager->RegisterOption(modelName, option, animationNames);
-		}
-		pAnimatedManager->SetSpawnCallback(
-			[](const E::ANIMATED_OBJECT_PLACEMENT_DESC &placement)
-			{
-				const _string tagPrefix = "Model_Resource_AnimatedObject_";
-				if (!placement.sModelResourceTag.starts_with(tagPrefix))
-					return E::ANIMATED_OBJECT_PLACEMENT_RESULT{
-						placement.iPlacementId, false, {}, "Invalid animated-object resource tag."};
-				if (!E::CGameInstance::Get().GetResourceFirst<E::CResModel>(placement.sModelGroupTag,
-																			placement.sModelResourceTag))
-				{
-					return E::ANIMATED_OBJECT_PLACEMENT_RESULT{
-						placement.iPlacementId,
-						false,
-						{},
-						"AnimatedObject resource was not preloaded by the level loader."};
-				}
-				CAnimatedWorldObject::DESC desc{};
-				desc.sObjectTag = "AnimatedObjectPlacement_" + std::to_string(placement.iPlacementId);
-				desc.sModelGroupTag = placement.sModelGroupTag;
-				desc.sModelResourceTag = placement.sModelResourceTag;
-				desc.vPosition = placement.vPosition;
-				desc.vRotation = placement.vRotation;
-				// 원본 FBX가 미터 기준에서 한 번 더 0.01 배율로 export되어 정점 크기가
-				// 0.001~0.03 수준이다. 에디터의 Scale 1을 월드 기준 크기로 보정한다.
-				desc.vScale = {placement.vScale.x * 100.f, placement.vScale.y * 100.f, placement.vScale.z * 100.f};
-				desc.sAnimationName = placement.sAnimationName;
-				desc.bAutoPlay = placement.bAutoPlay;
-				desc.bLoop = placement.bLoop;
-				desc.fAnimationSpeed = placement.fAnimationSpeed;
-				desc.fStartRatio = placement.fStartRatio;
-				const auto handle = E::CGameInstance::Get().AddGameObjectToLayer(
-					placement.sPrototypeGroupTag, placement.sPrototypeTag, placement.sLayerTag, &desc);
-				if (!handle)
-					return E::ANIMATED_OBJECT_PLACEMENT_RESULT{placement.iPlacementId, false, {}, "Spawn failed."};
-				auto *object = E::CGameInstance::Get().GetGameObjectByHandleT<CAnimatedWorldObject>(*handle);
-				if (!object)
-					return E::ANIMATED_OBJECT_PLACEMENT_RESULT{
-						placement.iPlacementId, false, {}, "Spawned object type mismatch."};
-				return E::ANIMATED_OBJECT_PLACEMENT_RESULT{placement.iPlacementId, true, *handle, "Spawn succeeded."};
-			});
-		pAnimatedManager->SetTestCallback(
-			[](const E::CHandle &handle,
-			   const E::ANIMATED_OBJECT_PLACEMENT_DESC &placement,
-			   E::CAnimatedObjectPlacementManager::TEST_COMMAND command)
-			{
-				auto *object = E::CGameInstance::Get().GetGameObjectByHandleT<CAnimatedWorldObject>(handle);
-				if (!object)
-					return false;
-				switch (command)
-				{
-				case E::CAnimatedObjectPlacementManager::TEST_COMMAND::PLAY:
-					return object->PlayAnimation(
-						placement.sAnimationName, placement.bLoop, placement.fAnimationSpeed, placement.fStartRatio);
-				case E::CAnimatedObjectPlacementManager::TEST_COMMAND::PAUSE:
-					object->SetAnimationPaused(true);
-					return true;
-				case E::CAnimatedObjectPlacementManager::TEST_COMMAND::RESUME:
-					object->SetAnimationPaused(false);
-					return true;
-				case E::CAnimatedObjectPlacementManager::TEST_COMMAND::STOP:
-					object->StopAnimation();
-					return true;
-				case E::CAnimatedObjectPlacementManager::TEST_COMMAND::UPDATE_TRANSFORM:
-					object->ApplyTransform(
-						placement.vPosition,
-						placement.vRotation,
-						{
-							placement.vScale.x * 100.f,
-							placement.vScale.y * 100.f,
-							placement.vScale.z * 100.f
-						});
-					return true;
-				}
-				return false;
-			});
-	}
-
 	if (FAILED(SpawnPlayerCape(*hPlayer)))
 		return E_FAIL;
 
