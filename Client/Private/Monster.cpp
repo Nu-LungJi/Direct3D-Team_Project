@@ -791,7 +791,7 @@ void CMonster::Find_Target()
 
 	PX_OVERLAP_DESC Desc{};
 	// 몬스터 주변 탐색 범위
-	Desc.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 2000.f};
+	Desc.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 300.f};
 	Desc.tPose = {.vPosition = GetTransform().GetPosition()};
 
 	// 플레이어 본체와 NPC 본체만 검색

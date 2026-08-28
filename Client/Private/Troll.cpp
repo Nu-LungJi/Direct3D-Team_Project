@@ -62,6 +62,8 @@ HRESULT CTroll::InitializePrototype(void* pArg)
 HRESULT CTroll::Initialize(void* pArg)
 {
 	auto MonDesc = static_cast<TROLL_DESC*>(pArg);
+	MonDesc->fCCTRadius = 1.25f;
+	MonDesc->fCCTHeight = 4.f;
 	if (FAILED(__super::Initialize(pArg)))
 	{
 		return E_FAIL;
