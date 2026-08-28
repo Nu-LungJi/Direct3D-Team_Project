@@ -220,6 +220,7 @@ private:
 	_float m_fRaceMiniGameElapsed{};
 	uint32_t m_iRaceMiniGameCoinCount{40};
 	_bool m_bRaceReturnPositionApplied{};
+	_bool m_bRaceResultFadeOutStarted{};
 	_float m_fRaceReturnElapsed{};
 
 	enum class ASSIO_SCORE_PHASE : uint8_t

@@ -988,7 +988,11 @@ void UIManager::StartRaceMiniGame()
 {
 	ClearRaceMiniGameUI();
 	m_bRaceReturnPositionApplied = false;
+	m_bRaceResultFadeOutStarted = false;
 	m_fRaceReturnElapsed = 0.f;
+	// Hide only the existing HUD before creating the race UI. The countdown,
+	// RaceBoard and result Flag created below must remain visible.
+	PlayFadeOutAll2DUI(0.f, 0.35f);
 	FadeOutQuest(0.3f);
 	m_fRaceMiniGameElapsed = 0.f;
 	m_iRaceMiniGameCoinCount = 0u;
@@ -1101,7 +1105,6 @@ void UIManager::FinishRaceMiniGame()
 
 	m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RESULT;
 	PlayRaceRootsFadeIn(m_RaceResultRoots);
-	FadeInQuest(0.5f);
 }
 
 void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
@@ -1120,6 +1123,21 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 	if (m_eRaceMiniGamePhase == RACE_MINIGAME_PHASE::RETURNING_TO_SHOP)
 	{
 		m_fRaceReturnElapsed += std::max(0.f, fTimeDelta);
+
+		// BlackBG FadeIn starts after the result hold. Fade the Flag result UI
+		// at exactly the same time so it disappears beneath the black screen.
+		if (!m_bRaceResultFadeOutStarted &&
+			m_fRaceReturnElapsed >= RESULT_HOLD_DURATION)
+		{
+			m_bRaceResultFadeOutStarted = true;
+			for (const CHandle root : m_RaceResultRoots)
+			{
+				if (GetSafeUI(root))
+					PlayFadeOutDelete(root, 0.f, RETURN_FADE_DURATION);
+			}
+			m_RaceResultRoots.clear();
+			m_hRaceResultCoinText.reset();
+		}
 
 		if (m_fRaceReturnElapsed <
 			RESULT_HOLD_DURATION + RETURN_FADE_DURATION)
@@ -1153,6 +1171,9 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 
 			m_bRaceReturnPositionApplied = true;
 			CreateFadeOut(0.f, RETURN_FADE_DURATION);
+			// Restore the original HUD while the black screen fades away.
+			PlayFadeInAll2DUI(0.f, RETURN_FADE_DURATION);
+			FadeInQuest(RETURN_FADE_DURATION);
 		}
 
 		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RESULT;
@@ -1194,6 +1215,7 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 		FinishRaceMiniGame();
 		m_fRaceReturnElapsed = 0.f;
 		m_bRaceReturnPositionApplied = false;
+		m_bRaceResultFadeOutStarted = false;
 		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RETURNING_TO_SHOP;
 		CreateFadeIn(RESULT_HOLD_DURATION, RETURN_FADE_DURATION);
 	}
