@@ -269,9 +269,9 @@ void CButton::PlayEffect(uint32_t uiState)
 
 	if (uiState & ETOUI(UI_STATE::CLICK))
 	{
-		if (!m_bSpellUnlocked)
-			return;
-
+		// Spell lock is progression/visual information only. Locked spells keep
+		// their lock overlay and disabled hover effect, but remain selectable so
+		// they can be assigned to a shortcut slot and used from that slot.
 		if (OnClicked) {
 			ClearEffectTweens();
 			OnClicked(this);
