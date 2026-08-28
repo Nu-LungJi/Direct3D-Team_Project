@@ -303,9 +303,16 @@ void CTroll::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	if (*pbEffect)
 	{
 		_float4x4 mat;
+		_matrix BoneMat = XMMatrixIdentity();
 		int32_t iBoneIndex = m_SkillHandle[ETOUI(iSkillNum)].iBoneIndex;
-		_matrix matBone = XMLoadFloat4x4(Get_CombineBoneMatrix(iBoneIndex));
-		XMStoreFloat4x4(&mat, matBone * GetTransform().GetLoadedWorldMatrix());
+		if (-1 != iBoneIndex)
+		{
+			BoneMat = XMLoadFloat4x4(Get_CombineBoneMatrix(iBoneIndex));
+			for (uint32_t i = 0; i < 3; ++i)
+				BoneMat.r[i] = XMVector3Normalize(BoneMat.r[i]);
+		}
+
+		XMStoreFloat4x4(&mat, BoneMat * GetTransform().GetLoadedWorldMatrix());
 		CGameInstance::Get().Spawn(m_EffectNames[iSkillNum], mat);
 		Get_BlackBoard()->Set_Value<_bool>(EDG_KEY::EDGEFFECT, false);
 	}
