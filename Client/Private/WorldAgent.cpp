@@ -208,6 +208,7 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 
 			if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 			{
+				MessageBoxA(g_hWnd, WorldAgentDesc->ReSourceTag.c_str(), "hm", MB_OK);
 				return E_FAIL;
 			};
 		}
@@ -232,8 +233,8 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 		}
 		m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 		m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
-		m_pModelAnimator->Play_Anim(0, true,Randf(0.1f,1.f));
-
+		//m_pModelAnimator->Play_Anim(0, true,Randf(0.1f,1.f));
+		m_vPos = WorldAgentDesc->vPos;
 		GetTransform().SetPosition(XMLoadFloat3(&WorldAgentDesc->vPos));
 		if(nullptr != m_pCharacterController)
 			GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
@@ -318,6 +319,7 @@ void CWorldAgent::LateUpdate(E::_float fTimeDelta)
 		const _float3 vControllerPosition = m_pCharacterController->GetPosition();
 		GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	}
+
 	GetTransform().Update();
 
 	const auto& pModel = m_pComModelInstance->GetModel();

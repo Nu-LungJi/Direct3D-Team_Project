@@ -680,8 +680,16 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 	{
 		// NpcSpawnIdle/NpcSpawnWalk에서 실제 사용하는 NPC만 선로드한다.
 		// 리소스 폴더의 Viector 오타는 런타임 태그와 분리해 여기서만 보정한다.
-		{ "Model_Resource_NPC_VictorRookwood", "ViectorRookwood_lsy" },
 		{ "Model_Resource_NPC_GerboldOllivander", "GerboldOllivander" },
+		{ "Model_Resource_NPC_VictorRookwood", "VictorRookwood_lsy" },
+		{ "Model_Resource_NPC_LeopoldBabcocke", "LeopoldBabcocke" },
+		{ "Model_Resource_NPC_SolomonSallow", "SolomonSallow" },
+		{ "Model_Resource_NPC_TownCrier", "TownCrier" },
+		{ "Model_Resource_NPC_CrispinDunn", "CrispinDunn" },
+		{ "Model_Resource_NPC_AugustusHill", "AugustusHill" },
+		{ "Model_Resource_NPC_AdelaideOakes", "AdelaideOakes" },
+		{ "Model_Resource_NPC_AnneSallow", "AnneSallow" },
+		{ "Model_Resource_NPC_MirabelGarlick", "MirabelGarlick" },
 	};
 	for (const auto& Entry : NpcModels)
 	{
@@ -695,6 +703,7 @@ HRESULT CLevelHogwartWorldLoader::NpcLoad_InWorker()
 				XMMatrixRotationY(XMConvertToRadians(180.f));
 			if (FAILED(res->Load(Desc)))
 			{
+				MessageBoxA(g_hWnd, ModelPath.c_str(), "hm", MB_OK | MB_ICONERROR);
 				MSG_BOX("HOGWART Failed NPC model resource");
 				return E_FAIL;
 			}
