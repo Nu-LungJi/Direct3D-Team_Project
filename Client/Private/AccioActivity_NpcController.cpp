@@ -560,6 +560,7 @@ void CAccioActivity_NpcController::ShowFirstDialogueLine()
 	m_eConversationPhase = CONVERSATION_PHASE::TALKING;
 	const auto& line = m_ActiveDialogue[m_iDialogueIndex];
 	SetDialogueExpression(line);
+	HandleDialogueLineSound(line);
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_sSpeakerName, line.Text);
 }
 
@@ -580,7 +581,31 @@ void CAccioActivity_NpcController::AdvanceDialogue()
 
 	const auto& line = m_ActiveDialogue[m_iDialogueIndex];
 	SetDialogueExpression(line);
+	HandleDialogueLineSound(line);
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_sSpeakerName, line.Text);
+}
+
+void CAccioActivity_NpcController::HandleDialogueLineSound(
+	const DIALOGUE_LINE& line) const
+{
+	(void)line;
+
+	switch (m_eDialoguePurpose)
+	{
+	case DIALOGUE_PURPOSE::START_MATCH:
+		// [LSY][TODO][AccioDialogueSound]
+		// 경기 시작 전 NPC 대화 음성: m_iDialogueIndex와 line에 맞는 사운드를 재생한다.
+		break;
+
+	case DIALOGUE_PURPOSE::MATCH_RESULT:
+		// [LSY][TODO][AccioDialogueSound]
+		// 경기 결과 NPC 대화 음성: 승리/패배/무승부 대사 목록의 현재 줄 사운드를 재생한다.
+		break;
+
+	case DIALOGUE_PURPOSE::NONE:
+	default:
+		break;
+	}
 }
 
 void CAccioActivity_NpcController::CancelDialogue()

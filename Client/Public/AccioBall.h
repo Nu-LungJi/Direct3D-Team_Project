@@ -122,6 +122,11 @@ private:
 	void PlayCollisionSound(
 		const _float3& vImpactPosition,
 		_float fImpulse) const;
+	void UpdateRollingSound(_float fTimeDelta);
+	void StopRollingSound(_float fFadeOutDuration = 0.12f);
+	void PlayRollingPulse() const;
+	_bool IsSoundAllowedOnPlayArea() const;
+	_bool ShouldPlayRollingPulse() const;
 
 private:
 	CComStaticModelInstance* m_pComModelInstance{};
@@ -143,12 +148,17 @@ private:
 	_float m_fAutoSleepDelay{ 0.3f };
 	_float m_fAutoSleepElapsed{};
 	_float m_fCollisionSoundCooldown{};
+	_float m_fRollingPulseElapsed{};
+	SOUND_ID m_iRollingSoundID{ INVALID_SOUND_ID };
 	_bool m_bSettled{};
 	CHandle m_hController{};
 	CHandle m_hActivity{};
 	_float3 m_vInitialPosition{};
 	_float4 m_vInitialRotation{ 0.f, 0.f, 0.f, 1.f };
 	COLOR m_eColor{ COLOR::NONE };
+
+private:
+	void Free() override;
 };
 
 NS_END

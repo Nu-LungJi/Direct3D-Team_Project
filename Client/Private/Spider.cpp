@@ -57,6 +57,18 @@ HRESULT CSpider::InitializePrototype(void* pArg)
 HRESULT CSpider::Initialize(void* pArg)
 {
 	auto MonDesc = static_cast<SPIDER_DESC*>(pArg);
+	// 세로로 긴 기본 인간형 CCT 대신 넓게 퍼진 거미 몸체를 감싸도록
+	// 반지름을 키운다. PhysX Capsule의 height는 양 끝 반구를 제외한
+	// 원통 길이이므로 전체 높이는 height + radius * 2가 된다.
+	// 리소스 로더의 6배 PreTransform을 적용한 바인드 메시 높이는 약 5.6이다.
+	// 다리 끝까지 세로 Capsule 하나로 감싸면 지나치게 커지므로 중앙 몸체를
+	// 기준으로 지름 5, 전체 높이 5.6에 가깝게 맞춘다.
+	MonDesc->fCCTRadius = 2.5f;
+	MonDesc->fCCTHeight = 0.6f;
+	MonDesc->vCCTCenterOffset = {
+		0.f,
+		MonDesc->fCCTHeight * 0.5f + MonDesc->fCCTRadius,
+		0.f };
 	if (FAILED(__super::Initialize(pArg)))
 	{
 		return E_FAIL;

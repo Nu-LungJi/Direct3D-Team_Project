@@ -139,6 +139,11 @@ public:
 	std::optional<_float> GetDistanceToPlayAreaEdge(
 		const CAccioBall& ball,
 		const _float3& vPushDirection) const;
+	_bool IsBallOnPlayArea(const CAccioBall& ball) const;
+	_bool IsActiveBall(const CHandle& hBall) const
+	{
+		return hBall != CHandle{} && hBall == m_hActiveBall;
+	}
 	void SetParticipantHandle(PARTICIPANT eParticipant, const CHandle& hObject);
 	_bool StartMatch();
 	_bool ResetMatch(_bool bResetBalls);
@@ -168,7 +173,6 @@ private:
 	_bool ValidateRegisteredBalls() const;
 	void ReleaseActiveBallControl();
 	_bool AreInPlayBallsSettled() const;
-	_bool IsBallOnPlayArea(const CAccioBall& ball) const;
 	_bool IsPointInsideScoreZone(
 		const _float3& vWorldPosition,
 		const ACCIO_ACTIVITY_BOX_COLLIDER_DESC& zone) const;

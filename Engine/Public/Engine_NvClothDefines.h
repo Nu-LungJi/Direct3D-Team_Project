@@ -74,6 +74,16 @@ namespace Engine
 		float fFluidDensity{ 1.f };
 	};
 
+	struct NVCLOTH_PHASE_STIFFNESS_DESC
+	{
+		// [LSY] 음수는 NVCLOTH_CLOTH_DESC::fPhaseStiffness를 사용한다.
+		// 값이 지정되면 Fabric 쿠커가 분류한 제약 종류별로 강성을 덮어쓴다.
+		float fVertical{ -1.f };
+		float fHorizontal{ -1.f };
+		float fBending{ -1.f };
+		float fShearing{ -1.f };
+	};
+
 	struct NVCLOTH_CLOTH_DESC
 	{
 		// [LSY] 이 Cloth 인스턴스가 공유할 쿠킹 결과다.
@@ -113,6 +123,10 @@ namespace Engine
 
 		// [LSY] Fabric의 각 Phase에 적용할 기본 제약 강성이다.
 		float fPhaseStiffness{ 1.f };
+
+		// [LSY] 필요할 때만 수직·수평·굽힘·전단 제약 강성을 개별 지정한다.
+		// 지정하지 않은 항목은 위 기본 제약 강성을 그대로 사용한다.
+		NVCLOTH_PHASE_STIFFNESS_DESC tPhaseStiffness{};
 
 		// [LSY] 압축·신장 한계를 벗어난 제약에 추가로 적용할 강성 배율이다.
 		float fPhaseStiffnessMultiplier{ 1.f };
