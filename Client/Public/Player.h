@@ -360,11 +360,11 @@ private:
 
 private:
 	// [LSY] 몬스터 락온 거리와 무관하게 아씨오 공을 더 먼 거리에서 선택하고 유지한다.
-	static constexpr _float DEFAULT_TARGET_ACQUIRE_RANGE = 25.f;
-	static constexpr _float DEFAULT_TARGET_KEEP_RANGE = 40.f;
-	static constexpr _float ACCIO_BALL_TARGET_ACQUIRE_RANGE = 60.f;
-	static constexpr _float ACCIO_BALL_TARGET_KEEP_RANGE = 80.f;
-	static constexpr uint32_t TARGET_QUERY_MAX_HITS = 32;
+	static constexpr _float DEFAULT_TARGET_ACQUIRE_RANGE = 100.f;
+	static constexpr _float DEFAULT_TARGET_KEEP_RANGE = 120.f;
+	static constexpr _float ACCIO_BALL_TARGET_ACQUIRE_RANGE = 120.f;
+	static constexpr _float ACCIO_BALL_TARGET_KEEP_RANGE = 150.f;
+	static constexpr uint32_t TARGET_QUERY_MAX_HITS = 128;
 	static constexpr uint32_t ACCIO_BALL_TARGET_QUERY_MAX_HITS = 128;
 
 	CHandle m_hAutoTarget{};
@@ -373,6 +373,10 @@ private:
 	CHandle m_hPendingObjectAccioTarget{};
 	CHandle m_hMonsterHPUITarget{};
 	std::optional<CHandle> m_hPendingAncientThrowTarget{};
+	_float m_fAncientMagicChainCooldown{};
+	_float m_fAncientMagicInputRemainTime{};
+	static constexpr _float ANCIENT_MAGIC_CHAIN_COOLDOWN = 0.15f;
+	static constexpr _float ANCIENT_MAGIC_INPUT_BUFFER_TIME = 0.55f;
 	CHandle m_hAncientMagicButtonTarget{};
 	CHandle m_hAncientThrowButtonTarget{};
 	StringID m_LevelTag;
@@ -429,6 +433,8 @@ private:
 	_float m_fControlHoldTime{};
 	_bool m_bDashTriggered{};
 	std::array<_float, 4> m_SkillSlotCooldowns{};
+	uint32_t m_iBufferedSkillSlot{};
+	_float m_fBufferedSkillInputRemainTime{};
 
 
 private:

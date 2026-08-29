@@ -57,6 +57,7 @@ public:
 	uint32_t GetSpellType(uint32_t SlotNumber); // 1234 슬롯 마법 타입 UI_ENUM에 스펠타입 있음
 	_float GetSpellCooldownDuration(uint32_t SlotNumber);
 	void UseSpell(uint32_t SlotNumber);
+	void SetSpellCooldownRatio(uint32_t SlotNumber, _float fReadyRatio);
 	void SetSpellUnlocked(SPELL_TYPE spellType, _bool unlocked);
 	_bool IsSpellUnlocked(SPELL_TYPE spellType) const;
 

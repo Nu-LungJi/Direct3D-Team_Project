@@ -44,7 +44,7 @@ private:
 	static constexpr _float RECOVERY_INPUT_EXIT_RATIO = 0.35f;
 	static constexpr _float ANCIENT_THROW_FACING_END_RATIO = 0.2f;
 	static constexpr _float ANCIENT_THROW_PULL_END_ANIM_RATIO = 0.1f;
-	static constexpr _float ANCIENT_THROW_STATE_RELEASE_RATIO = 0.85f;
+	static constexpr _float ANCIENT_THROW_STATE_RELEASE_RATIO = 0.65f;
 	static constexpr _float ANCIENT_THROW_INPUT_RELEASE_RATIO = 0.35f;
 	static constexpr _float ANCIENT_THROW_SLOW_HOLD_DURATION = 0.5f;
 	static constexpr _float ANCIENT_THROW_BLUR_INTENSITY = 3.f;
