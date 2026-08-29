@@ -87,6 +87,7 @@ public:
 	void DeleteQuest();
 	void FadeOutQuest(float playtime = 0.3f);
 	void FadeInQuest(float playtime = 0.5f);
+	_bool IsQuestFadeSuppressed() const { return m_bQuestFadeSuppressed; }
 	void SetQuestFadeInDeferred(_bool deferred)
 	{
 		m_bQuestFadeInDeferred = deferred;

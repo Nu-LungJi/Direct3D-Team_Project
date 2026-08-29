@@ -47,6 +47,7 @@ private:
 private:
 	_bool m_bCreatePlayScreenUI{ false };
 	_bool m_bBossQuestCreated{ false };
+	_bool m_bBossQuestFadeInPending{ false };
 	_bool m_bBossIntroPlaying{ false };
 	_bool m_bBossIntroFinished{ false };
 	_bool m_bBossDefeated{ false };

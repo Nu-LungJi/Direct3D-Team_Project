@@ -50,6 +50,7 @@
 #include "Monster.h"
 #include "ComSound.h"
 #include "ClientEvents.h"
+#include "UIManager.h"
 
 #include "Player_RevelioSkill_State.h"
 #include "Player_Magic_Bullet.h"
@@ -3241,6 +3242,7 @@ void CPlayer::HandleDeath()
 	if (m_pRagdollController)
 		m_pRagdollController->RequestFromCurrentMotion();
 
+	GET_SINGLE(UIManager)->FadeOutQuest(0.3f);
 	CGameInstance::Get().EventPublish(FPlayerDied{ .hPlayer = GetHandle(), .fLevelBgmFadeDuration = 3.f });
 }
 

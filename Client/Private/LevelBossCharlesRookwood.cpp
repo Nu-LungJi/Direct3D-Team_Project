@@ -97,6 +97,14 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 
 void CLevelBossCharlesRookwood::Update(E::_float fTimeDelta)
 {
+	// 사망 화면의 다시 시도로 진입한 경우, 새 레벨에서 퀘스트 루트가
+	// 생성된 다음 프레임에만 다시 나타낸다.
+	if (m_bBossQuestFadeInPending)
+	{
+		m_bBossQuestFadeInPending = false;
+		GET_SINGLE(UIManager)->FadeInQuest(0.5f);
+	}
+
 	{
 		if (!m_bCreatePlayScreenUI)
 		{
@@ -114,6 +122,8 @@ void CLevelBossCharlesRookwood::Update(E::_float fTimeDelta)
 		m_bBossQuestCreated = true;
 		GET_SINGLE(UIManager)->CreateOrChangeQuest(
 			"고대 유적 돌파하기");
+		m_bBossQuestFadeInPending =
+			GET_SINGLE(UIManager)->IsQuestFadeSuppressed();
 	}
 
 	// TombBossIntro는 행동 트리에서 비동기로 재생된다. 첫 보스 시네마틱의
