@@ -7,6 +7,7 @@
 #include "Resources.h"
 #include "ComBeHavior.h"
 #include "GameInstance.h"
+#include "CameraObject.h"
 #include "ComCollider.h"
 #include "ComPxCharacterController.h"
 #include "ComCharacterMoveIntent.h"
@@ -109,6 +110,19 @@ void CWorldAnimal::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
 
+}
+
+_bool CWorldAnimal::ShouldUpdateAnimation() const
+{
+	const auto* pCamera = CGameInstance::Get().GetActiveCamera();
+	if (!pCamera)
+		return true;
+
+	BoundingBox WorldBounds{};
+	if (!GetShadowBounds(WorldBounds))
+		return true;
+
+	return pCamera->IntersectsViewVolume(WorldBounds);
 }
 
 HRESULT CWorldAnimal::Render_Instanced(

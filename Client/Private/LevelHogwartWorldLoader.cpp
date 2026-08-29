@@ -857,15 +857,16 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 		}
 	}
 
-	static constexpr const char* Blender43Skeletons[] =
+	static constexpr const char* AnimalSkeletons[] =
 	{
+		// 배치 목록에는 노출하지 않지만, 동일한 AN 파일명을 공유하는 기존
+		// Animal 리소스의 애니메이션 호환성을 위해 먼저 로드한다.
 		"BlueButterfly_Animated_Blender_4_3", "CaptureBag_Animated_Blender_4_3",
 		"ChompingCabbage_Animated_Blender_4_3", "DisillusionmentChest_Animated_Blender_4_3",
 		"FlyingMagicPaper_Animated_Blender_4_3", "GACTreasureChest_Animated_Blender_4_3",
 		"GiantPendulumClock_Animated_Blender_4_3", "GlowingLumosMoth_Animated_Blender_4_3",
 		"Hippogriff_Animated_Blender_4_3", "HoppingPot_Animated_Blender_4_3",
-		"IdentificationStation_Animated_Blender_4_3", /*"MagicChoppingIngredients_Animated_Blender_4_3",
-		"MagicChoppingStation_Animated_Blender_4_3", "MagicMaterialRefinerTools_Animated_Blender_4_3",*/
+		"IdentificationStation_Animated_Blender_4_3",
 		"OrangeButterfly_Animated_Blender_4_3", "OutdoorDiricawlBird_Animated_Blender_4_3",
 		"OutdoorFwooperBird_Animated_Blender_4_3", "SanctuaryToyBox_Animated_Blender_4_3",
 		"SelfWrappingPaper_Animated_Blender_4_3", "ShopCounterHandBell_Animated_Blender_4_3",
@@ -877,9 +878,15 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 		"BlueButterfly", "GlowingLumosMoth", "LeapingMushroom",
 		"OrangeButterfly", "PlantParty_Plant_01", "PlantParty_Plant_02",
 		"PlantParty_Plant_03", "PlantParty_Plant_04", "PlantParty_Plant_05",
-		"VenomousTentaculaBush", "VenomousTentaculaFlower"
+		"VenomousTentaculaBush", "VenomousTentaculaFlower",
+		"CottonCandyBowl", "CottonCandyWindow", "EnchantedWateringCan",
+		"GoldenSnitch", "HonkingDaffodils", "MagicPaperAndQuill",
+		"MarionetteCandyBooth", "NifflerTightropeToy", "PoltergeistHand",
+		"SelfPruningSecateurs", "SelfPruningShears", "SelfShufflingCards",
+		"SelfWrappingBox", "SelfWrappingPaper", "SelfWrappingPresent",
+		"ToyProfessorInTheBox", "ZonkosJackInTheBox"
 	};
-	for (const char* modelName : Blender43Skeletons)
+	for (const char* modelName : AnimalSkeletons)
 	{
 		const _string folder = modelName;
 		const _string resourceTag = "Model_Resource_" + folder;

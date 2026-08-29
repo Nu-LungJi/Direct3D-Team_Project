@@ -30,6 +30,7 @@ public:
 public:
 	void						Set_Gravity(_bool bGravity);
 private:
+	_bool						ShouldUpdateAnimation() const override;
 	HRESULT					Bind_InstanceBuffer_CS(ID3D11DeviceContext* pContext);
 	HRESULT					Bind_FinalBoneUAV_CS(ID3D11DeviceContext* pContext);
 	HRESULT					Bind_FinalBoneSRV_VS(ID3D11DeviceContext* pContext);
