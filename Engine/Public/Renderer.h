@@ -34,6 +34,7 @@ private:		// Initialize
 	HRESULT		InitializeFullscreen();
 	HRESULT		InitializeBaseTarget();
 	HRESULT		InitializeTargetPBR();
+	HRESULT		InitializeDecalSurface();
 	HRESULT		InitializeBlendTarget();
 	HRESULT		InitializePostProcess();
 	HRESULT		InitializeUserInterface();
@@ -64,6 +65,8 @@ private:		// Render Setting
 	HRESULT		Render_Alpha();
 	HRESULT		Render_Effect();
 	HRESULT		Render_VolumetricEffect();
+	HRESULT		Render_DecalSurface();
+	HRESULT		Render_PlanarEffectReflection();
 	HRESULT		Render_PostProcess();
 	HRESULT		Render_UI3D();
 	HRESULT		Render_UserInterface();
@@ -126,6 +129,7 @@ private:		// Unbind Shader Resource / Shader / UAV / Render Target
 
 	VOID		Convert_Rasterizer_NoCull();
 	VOID		Convert_Rasterizer_BackCull();
+	VOID		Convert_Rasterizer_FrontCull();
 
 public:			// Shader Resource Generator
 	TEXTURE3D	Generate_Texture3D(DXGI_FORMAT _TexFormat, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight, uint32_t _TexDepth);
@@ -171,6 +175,12 @@ public:
 	const _float&	Get_ChromaticIntensity()	{ return m_pPostProcessBuffer.g_fChromaticIntensity;	}
 	const _float&	Get_VignetteIntensity()		{ return m_pPostProcessBuffer.g_fVignetteIntensity;		}
 
+public:
+	VOID			Set_PlanarReflection(PLANAR_REFLECTION_DESC _DESC) { m_pPlanarReflectionDesc = _DESC;  m_bPlanarReflectionRegisteredThisFrame = true; }
+	VOID Begin_PlanarReflectionFrame() { m_bPlanarReflectionRegisteredThisFrame = false; }
+private:
+	HRESULT			Bind_PlanarCameraAttribute(CCameraObject* _ActiveCam);
+	HRESULT			Bind_PlanarConstantBuffer();
 private:
 	ComPtr<ID3D11Device>		m_pDevice{};
 	ComPtr<ID3D11DeviceContext> m_pContext{};
@@ -213,6 +223,13 @@ private:
 
 	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetPreviousRenderView{};
 
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetDecalSurface{};
+	SPtr<CResDynamicTexture2D>	m_pResDynTexTargetReflection{};
+	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetSSRSurface{};
+
+	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetPlanarReflection{};
+	SPtr<CResDynamicTexture2D>  m_pResDynTexTargetPlanarDepth{};
+
 	// 3DUI
 	_float4x4					m_UI3DPanelWorld{};
 	_bool						m_bUI3DPanelActive{ false };
@@ -253,6 +270,10 @@ private:
 	SPtr<CResComputeShader>		m_pLensFlareComputeShader{};
 	SPtr<CResComputeShader>		m_pPostProcessComputeShader{};
 
+	SPtr<CResComputeShader>		m_pReflectionComputeShader{};
+
+	SPtr<CResComputeShader>		m_pPlanarReflectionComputeShader{};
+
 private:
 	ComPtr<ID3D11Texture2D>				m_pBackBufferTexture{};
 	ComPtr<ID3D11ShaderResourceView>	m_pBackBufferSRV{};
@@ -265,6 +286,7 @@ private:
 	ComPtr<ID3D11RenderTargetView> m_pBackBufferRTV{};
 	ComPtr<ID3D11DepthStencilView> m_pBackBufferDSV{};
 	SPtr<CResViewPort> m_pBackBufferViewPort{};
+	SPtr<CResViewPort> m_pBackBufferDownScaleViewPort{};
 
 private:
 	SPtr<CResVertexShader>	m_pFullscreenVS{};
@@ -279,10 +301,10 @@ private:
 	_bool			m_bApplyEnvLight	= { true };		// 환경광 ON-OFF
 	_bool			m_bApplyFilter		= { true };		// 필터 적용 ON-OFF
 	_bool			m_bMotionBlurEnabled{};
-	_bool			m_bApplyVolumetricFog	= { false };	// 볼류메트릭 효과 ON-OFF
+	_bool			m_bApplyVolumetricFog	= { true };	// 볼류메트릭 효과 ON-OFF
 	_bool			m_bApplyVolumetricCloud		= { false };	// 볼류메트릭 클라우드 ON-OFF
 	_bool			m_bApplyVolumetricCloudTAA = { false };	// 볼류메트릭 클라우드 ON-OFF
-	_bool			m_bApplyShadow		= { false };	// 그림자 ON-OFF
+	_bool			m_bApplyShadow		= { true };	// 그림자 ON-OFF
 
 private:		// ChromaticRing
 	_float2			m_fScreenPosition{};
@@ -377,6 +399,10 @@ private:
 
 	_bool						m_bRenderDebugScreen = { false };
 #endif
+	SPtr<CResCBuffer>		m_pPlanarReflectionCBuffer{};
+	XMFLOAT4X4				m_mPlanarReflectionViewProj{};
+	PLANAR_REFLECTION_DESC	m_pPlanarReflectionDesc{};
+	bool					m_bPlanarReflectionRegisteredThisFrame = false;
 
 public:
 	static UPtr<CRenderer> Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext);

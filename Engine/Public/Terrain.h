@@ -89,6 +89,11 @@ public:
 	HRESULT SaveTerrain(const _string& metadataPath) const;
 	HRESULT LoadTerrain(const _string& metadataPath, std::optional<CHandle> physicsTarget = std::nullopt);
 	void SetPhysicsTarget(std::optional<CHandle> target);
+
+	/*----------- 광윤 추가 -----------*/ // Scatter할 때 터레인의 법선벡터에 따라 오브젝트가 회전하여 배치하게끔 함
+	_bool  TryGetLocalSurface(_float localX, _float localZ, _float& outHeight, _float3& outNormal) const;
+	/*---------------------------------*/
+
 private:
 	std::optional<TERRAIN_CHUNK_COORD> GetChunkCoordFromLocalPosition(const _float3& localPosition) const;
 	HRESULT LoadHeightMap(const DESC& desc);

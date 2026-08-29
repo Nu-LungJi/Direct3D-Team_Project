@@ -246,3 +246,14 @@ float3 FresnelSchlick(float CTH, float3 MBR)
 	float ClampCTH = clamp(CTH, 0.f, 1.f);
 	return MBR + (1.f - MBR) * pow(clamp(1.f - ClampCTH, 0.f, 1.f), 5.f);
 }
+
+float3 DecodeOctNormal(float2 _OctNormal)
+{
+	float2 e = _OctNormal * 2.f - 1.f;
+	
+	float3 n = float3(e.x, e.y, 1.f - abs(e.x) - abs(e.y));
+	float t = saturate(-n.z);
+	n.xy += (n.xy >= 0.f) ? -t : t;
+
+	return normalize(n);
+}

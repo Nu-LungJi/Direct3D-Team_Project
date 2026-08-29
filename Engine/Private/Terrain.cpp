@@ -678,6 +678,25 @@ void CTerrain::ClearPhysicsChunks()
 	m_pTerrainPhysicsMaterial.reset();
 }
 
+_bool CTerrain::TryGetLocalSurface(_float localX, _float localZ, _float& outHeight, _float3& outNormal) const {
+	if (!TryGetLocalHeight(localX, localZ, outHeight))	return false;
+
+	const _float s		= m_fVertexSpacing;
+	const _float maxX	= (m_iVertexCountX - 1) * s;
+	const _float maxZ	= (m_iVertexCountZ - 1) * s;
+
+	float hL, hR, hD, hU;
+	if (!TryGetLocalHeight(std::clamp(localX - s, 0.f, maxX), localZ, hL) ||
+		!TryGetLocalHeight(std::clamp(localX + s, 0.f, maxX), localZ, hR) ||
+		!TryGetLocalHeight(localX, std::clamp(localZ - s, 0.f, maxZ), hD) ||
+		!TryGetLocalHeight(localX, std::clamp(localZ + s, 0.f, maxZ), hU))
+		return false;
+
+	XMStoreFloat3(&outNormal, XMVector3Normalize(XMVectorSet(hL - hR, 2.f * s, hD - hU, 0.f)));
+
+	return true;
+}
+
 HRESULT CTerrain::PrependTerrain(bool negativeX)
 {
 	if (m_iChunkQuadCount == 0 ||
@@ -944,8 +963,11 @@ HRESULT CTerrain::Render(ID3D11DeviceContext* context, const RENDER_CTX& renderC
 	{
 		CB_MATERIAL material{};
 		material.EmissiveColor = { 1.f, 0.f, 0.f };
-		material.EmissiveIntensity = 1.f;
+		material.EmissiveIntensity = 0.f;
 		material.ObjectAlpha = 1.f;
+		material.MetallicIntensity = 0.f;
+		material.RoughnessIntensity = 3.f;
+
 		memcpy(mapped.pData, &material, sizeof(material));
 		context->Unmap(materialBuffer->GetCBuffer().Get(), 0);
 	}

@@ -2035,12 +2035,12 @@
     <ClCompile Include="..\Private\MapRuntimeObjectFactory.cpp">
       <Filter>GameObject\Manager\MapRuntimeObjectFactory</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\OctreeNode.cpp">
-      <Filter>GameObject\Manager\MapChunk\Octree</Filter>
-    </ClCompile>
     <ClCompile Include="..\Private\OctreeNode.cpp" />
     <ClCompile Include="..\private\WayPointManager.cpp">
       <Filter>WayPoint</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\OctreeNode.cpp">
+      <Filter>GameObject\Manager\MapChunk\Octree</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2250,9 +2250,12 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMapMesh_InstancedShadow.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
-	<FxCompile Include="..\ShaderFiles\UI\ScoreAura.hlsl">
-	  <Filter>ShaderFiles\UIShader</Filter>
-	</FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\ScoreAura.hlsl">
+      <Filter>ShaderFiles\UIShader</Filter>
+    </FxCompile>
+    <FxCompile Include="..\ShaderFiles\Decal\CS_SSR.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">

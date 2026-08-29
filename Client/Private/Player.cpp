@@ -2547,6 +2547,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 	if (m_pComSound)
 		m_pComSound->Update();
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::REFLECTION, this);
 }
 
 void CPlayer::UpdateAttachedEffects()

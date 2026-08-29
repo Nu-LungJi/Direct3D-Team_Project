@@ -17,6 +17,7 @@
 #include "NvClothCape.h"
 
 #include "BossTMB.h"
+#include "RWB_Floor.h"
 
 #include "UIManager.h"
 #include "UIController.h"
@@ -91,6 +92,16 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 		return E_FAIL;
 
 	SubscribePlayerDeath(*hPlayer);
+
+	{
+		CRWB_Floor::DESC Floordesc{};
+		Floordesc.sObjectTag = "BOSS_CHARLES_ROOKWOOD_RWB_FLOOR";
+		Floordesc.vInitialPosition = _float3(-28.3f, 12.7f, 33.f);
+		Floordesc.vInitialRotation = _float3(0.f, 0.f, 0.f);
+		Floordesc.vInitialScale = _float3(1.f, 1.f, 1.f);
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_RWBFloor, "RockWoodBoss_RWB_Floor", &Floordesc))
+			return E_FAIL;
+	}
 
 	return S_OK;
 }

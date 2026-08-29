@@ -17,7 +17,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "PlayerThirdPersonCamera.h"
 #include "Troll.h"
-#include "UIController.h"
+#include "UIController.h" 
 #include "UIManager.h"
 #include "UiCamera.h"
 #include "WorldAgent.h"
@@ -40,6 +40,7 @@
 #include "../../EngineSDK/Inc/Terrain.h"
 #include "Water.h"
 #include "WaterWheel.h"
+#include "DecalVolume.h"
 #include "WayPointManager.h"
 NS_USING(Client)
 
@@ -612,15 +613,28 @@ HRESULT CLevelHogwartWorld::Initialize()
 		return E_FAIL;
 
 	{
-		CWaterWheel::DESC desc{};
-		desc.sObjectTag = "HOGWART_WORLD_WATERWHEEL";
-		desc.vInitialPosition = _float3(478.4f, 92.577f, 322.32f);
-		desc.vInitialRotation = _float3(0.f, 48.f, 0.f);
-		desc.vInitialScale = _float3(3.f, 3.f, 3.f);
+		CWaterWheel::DESC Wheeldesc{};
+		Wheeldesc.sObjectTag = "HOGWART_WORLD_WATERWHEEL";
+		Wheeldesc.vInitialPosition = _float3(478.4f, 92.577f, 322.32f);
+		Wheeldesc.vInitialRotation = _float3(0.f, 48.f, 0.f);
+		Wheeldesc.vInitialScale = _float3(3.f, 3.f, 3.f);
 		if (!E::CGameInstance::Get().AddGameObjectToLayer(
-				LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WaterWheel, "Hogsmeade_WaterWheel", &desc))
+				LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WaterWheel, "Hogsmeade_WaterWheel", &Wheeldesc))
 			return E_FAIL;
 	}
+	//{
+	//	CDecalVolume::DECAL_VOLUME_DESC Puddledesc{};
+	//	Puddledesc.vPosition = _float3(66.f, -30.f, -370.f);
+	//	Puddledesc.vRotation = _float3(0.f, 0.f, 0.f);
+	//	Puddledesc.vScale = _float3(10.f, 10.f, 10.f);
+	//	Puddledesc.fOpacity = 1.f;
+	//	Puddledesc.fNormalThreshold = 0.7f;
+	//	Puddledesc.fEdgeSoftness = 0.08f;
+	//	Puddledesc.sMaterialPath = "./DecalMaterials/HogsmeadePuddle.json";
+	//	if (!E::CGameInstance::Get().AddGameObjectToLayer(
+	//		LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_PuddleDecal, "Hogsmeade_Puddle", &Puddledesc))
+	//		return E_FAIL;
+	//}
 
 	GET_SINGLE(UIManager)->SetRaceReturnToShopCallback([this]()
 	{
@@ -1592,8 +1606,8 @@ HRESULT CLevelHogwartWorld::Initialize_VolumetricFog()
 	FogOption.g_fFogMaxHeight = 600.f;
 	FogOption.g_fFogHeightFallOff = 0.1f;
 
-	FogOption.g_fFogStartDistance = 250.f;
-	FogOption.g_fFogEndDistance = 500.f;
+	FogOption.g_fFogStartDistance = 0.f;
+	FogOption.g_fFogEndDistance = 250.f;
 
 	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
 
@@ -1615,12 +1629,33 @@ HRESULT CLevelHogwartWorld::Initialize_EnviromentLight()
 }
 
 HRESULT CLevelHogwartWorld::Initialize_LoopEffect()
-{
+{	
+	CGameInstance::Get().Spawn("CGY_HogwartSteam.json", XMMatrixScaling(2.5f, 2.5f, 2.5f)* XMMatrixTranslation(106.42f, -7.5f, -212.875f),  _vector {}, true);
+	CGameInstance::Get().Spawn("CGY_HogwartSteam2.json", XMMatrixScaling(3.2f, 3.2f, 3.2f)* XMMatrixTranslation(110.28f, -7.0f, -201.295f),  _vector {}, true);
+	//CGameInstance::Get().Spawn("CGY_HogwartSteam.json", XMMatrixScaling(2.7f, 2.7f, 2.7f)* XMMatrixTranslation(110.41f, -6.95f, -215.515f), _vector{}, true);
+	//{
+	//	_float4x4 SteamFirst{}, SteamSecond{}, SteamThird{};
+	//
+	//	XMStoreFloat4x4(&SteamFirst, XMMatrixScaling(2.5f, 2.5f, 2.5f) * XMMatrixTranslation(106.42f, -7.5f, -212.875f));
+	//	XMStoreFloat4x4(&SteamSecond, XMMatrixScaling(3.2f, 3.2f, 3.2f) * XMMatrixTranslation(110.28f, -7.0f, -201.295f));
+	//	XMStoreFloat4x4(&SteamThird, XMMatrixScaling(2.7f, 2.7f, 2.7f) * XMMatrixTranslation(110.41f, -6.95f, -215.515f));
+	//
+	//	CGameInstance::Get().PlayEffect("HogwartSteam_A", SteamFirst);
+	//	CGameInstance::Get().PlayEffect("HogwartSteam_B", SteamSecond);
+	//	CGameInstance::Get().PlayEffect("HogwartSteam_C", SteamThird);
+	//}
 
-	CGameInstance::Get().Spawn("CGY_HogwartSteam.json",
-							   XMMatrixTranslation(106.42f, -7.5f, -212.875f) * XMMatrixScaling(2.5f, 2.5f, 2.5f),
-							   _vector{},
-							   true);
+	//{
+	//	_float4x4 SteamFirst{}, SteamSecond{}, SteamThird{};
+	//
+	//	XMStoreFloat4x4(&SteamFirst, XMMatrixScaling(2.5f, 2.5f, 2.5f) * XMMatrixTranslation(106.42f, -7.5f, -212.875f));
+	//	XMStoreFloat4x4(&SteamSecond, XMMatrixScaling(3.2f, 3.2f, 3.2f) * XMMatrixTranslation(110.28f, -7.0f, -201.295f));
+	//	XMStoreFloat4x4(&SteamThird, XMMatrixScaling(2.7f, 2.7f, 2.7f) * XMMatrixTranslation(110.41f, -6.95f, -215.515f));
+	//
+	//	CGameInstance::Get().PlayEffect("ChimneySteam_A", SteamFirst);
+	//	CGameInstance::Get().PlayEffect("ChimneySteam_B", SteamSecond);
+	//	CGameInstance::Get().PlayEffect("ChimneySteam_C", SteamThird);
+	//}
 
 	return S_OK;
 }

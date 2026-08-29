@@ -13,7 +13,7 @@ public:
 private:
 	static HRESULT		LoadPlayerCape();
 	static HRESULT		MonsterLoad_InWorker();
-
+	static HRESULT		LoadBossCharlesRookwood_ExtraAsset();
 private:
 	static _bool UILoad();
 };

@@ -447,6 +447,8 @@ void CGameInstance::UpdateGUI()
 
 void CGameInstance::UpdateEngine(_float fTimeDelta)
 {
+	m_pRenderer->Begin_PlanarReflectionFrame();
+
 	const _float fUnscaledDelta = m_pTimeManager
 		? m_pTimeManager->GetUnscaledDelta()
 		: fTimeDelta;
@@ -1411,7 +1413,9 @@ const _float&	CGameInstance::Get_DistortionIntensity() { return m_pRenderer->Get
 const _float&	CGameInstance::Get_ChromaticIntensity() { return m_pRenderer->Get_ChromaticIntensity(); }
 const _float&	CGameInstance::Get_VignetteIntensity() { return m_pRenderer->Get_VignetteIntensity(); }
 
-#pragma endregion
+VOID			CGameInstance::Set_PlanarReflection(PLANAR_REFLECTION_DESC _DESC) { m_pRenderer->Set_PlanarReflection(_DESC); }
+VOID			CGameInstance::Begin_PlanarReflectionFrame() { m_pRenderer->Begin_PlanarReflectionFrame(); }
+#pragma endregion 
 
 #pragma region ANIMEDIT_MANAGER
 HRESULT CGameInstance::SetupTestModel() {

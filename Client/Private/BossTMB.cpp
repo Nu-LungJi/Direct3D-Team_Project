@@ -247,6 +247,8 @@ void CBossTMB::Update(E::_float fTimeDelta)
 void CBossTMB::LateUpdate(E::_float fTimeDelta)
 {
 	__super::LateUpdate(fTimeDelta);
+
+	CGameInstance::Get().AddRenderObject(RENDERGROUP::REFLECTION, this);
 }
 
 void CBossTMB::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
