@@ -26,10 +26,14 @@ namespace
 {
 	constexpr const _char* ASSIO_UI_START_SOUND_PATH =
 		"./Resources/SampleClient/Sound/AccioActivity/UI/AccioUI_Start.wav";
-	constexpr const _char* ASSIO_UI_END_SOUND_PATH =
-		"./Resources/SampleClient/Sound/AccioActivity/UI/AccioUI_End.wav";
+	constexpr const _char* MINIGAME_FINISH_SOUND_PATH =
+		"./Resources/SampleClient/Sound/UI/Finish.wav";
+	constexpr const _char* RACE_GO_SOUND_PATH =
+		"./Resources/SampleClient/Sound/UI/Go.wav";
+	constexpr const _char* RACE_TIMER_SOUND_PATH =
+		"./Resources/SampleClient/Sound/UI/Timer.wav";
 
-	void PlayAssioUISound(const _char* pSoundPath, _float fVolume)
+	void PlayUISound(const _char* pSoundPath, _float fVolume)
 	{
 		if (auto* pSoundManager = E::CGameInstance::Get().GetSoundManager())
 		{
@@ -422,7 +426,7 @@ _bool UIManager::AssioMiniGameStart(
 	m_bAssioFinalScore = false;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
 	m_bAssioMiniGameActive = true;
-	PlayAssioUISound(ASSIO_UI_START_SOUND_PATH, 0.75f);
+	PlayUISound(ASSIO_UI_START_SOUND_PATH, 0.75f);
 
 	if (auto* text = dynamic_cast<CTextBox*>(
 		GetSafeUI(*m_hAssioPlayerScoreText)))
@@ -1037,7 +1041,7 @@ void UIManager::LoadAssioResult()
 		PlayFadeInAll2DUI(0.f, 0.5f);
 		return;
 	}
-	PlayAssioUISound(ASSIO_UI_END_SOUND_PATH, 0.8f);
+	PlayUISound(MINIGAME_FINISH_SOUND_PATH, 0.8f);
 
 	const _bool bDraw = m_iAssioPlayerScore == m_iAssioNpcScore;
 	const _bool playerWon = m_iAssioPlayerScore > m_iAssioNpcScore;
@@ -1221,6 +1225,8 @@ void UIManager::FinishRaceMiniGame()
 	m_hRaceBoardCoinText.reset();
 
 	m_RaceResultRoots = LoadPrefab("Flag");
+	if (!m_RaceResultRoots.empty())
+		PlayUISound(MINIGAME_FINISH_SOUND_PATH, 0.8f);
 	m_hRaceResultCoinText.reset();
 	if (auto* trophy = FindUIByNameRecursive(
 		m_RaceResultRoots, "Trophy"))
@@ -1587,8 +1593,21 @@ void UIManager::UpdateRaceStartTimer(_float fTimeDelta)
 		return std::sin(saturate(secondPhase / 0.2f) * XM_PI) * 0.09f;
 	};
 
+	const _float previousElapsed = m_fRaceStartTimerElapsed;
 	m_fRaceStartTimerElapsed += fTimeDelta;
 	const _float elapsed = m_fRaceStartTimerElapsed;
+	// 각 숫자 구간 시작 후 0.1초가 프레임 두근거림의 최저 스케일 지점이다.
+	// 3, 2, 1 모두 그 지점을 처음 통과할 때 Timer 사운드를 한 번 재생한다.
+	constexpr _float timerSoundOffset = 0.1f;
+	for (uint32_t countIndex = 0u; countIndex < 3u; ++countIndex)
+	{
+		const _float soundTime = countDuration * countIndex + timerSoundOffset;
+		if (previousElapsed < soundTime && elapsed >= soundTime)
+			PlayUISound(RACE_TIMER_SOUND_PATH, 0.85f);
+	}
+	// 3, 2, 1 이후 GO가 처음 표시되는 프레임에 한 번만 재생한다.
+	if (previousElapsed < countTotal && elapsed >= countTotal)
+		PlayUISound(RACE_GO_SOUND_PATH, 0.85f);
 	if (elapsed >= totalDuration)
 	{
 		for (const CHandle root : m_RaceStartTimerRoots)
