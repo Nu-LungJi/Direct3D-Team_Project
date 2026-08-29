@@ -480,8 +480,8 @@ HRESULT CLevelBossCharlesRookwood::Initialize_VolumetricFog(){
 	FogOption.g_fFogMaxHeight		= 500.f;
 	FogOption.g_fFogHeightFallOff	= 0.05f;
 
-	FogOption.g_fFogStartDistance	= 150.f;
-	FogOption.g_fFogEndDistance		= 400.f;
+	FogOption.g_fFogStartDistance	= 300.f;
+	FogOption.g_fFogEndDistance		= 500.f;
 
 	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
 
