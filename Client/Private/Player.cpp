@@ -1656,12 +1656,15 @@ void CPlayer::UpdateSkillSlotCooldowns(_float fTimeDelta)
 
 _bool CPlayer::TryUsePotion()
 {
+	constexpr int32_t POTION_HEAL_AMOUNT = 400;
+
 	auto* pUIController =
 		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
-	if (!pUIController || !m_pStateMachine ||
+	if (!pUIController || !pUIController->HasPotion() || !m_pStateMachine ||
 		!m_pStateMachine->RequestState(PLAYER_STATE::POTION))
 		return false;
 
+	m_iHp = std::min(m_iHp + POTION_HEAL_AMOUNT, m_iMaxHp);
 	pUIController->UsePotion();
 	CGameInstance::Get().GetSoundManager()->Play2D(
 		"./Resources/SampleClient/Sound/UI/Potion.wav", SOUND_PLAY_DESC{
