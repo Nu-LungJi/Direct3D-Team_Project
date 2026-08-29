@@ -18,7 +18,7 @@ namespace
 		"ShopWand1", "ShopWandCompleteShape", "ShopWand3", "ShopWand4"
 	};
 	constexpr _float PAGE_FADE_IN_DURATION = 0.18f;
-	constexpr _float SHOP_OPEN_FADE_IN_DURATION = 0.3f;
+	constexpr _float SHOP_OPEN_FADE_IN_DURATION = 0.5f;
 	constexpr int WAND_SHOP_MIN_ROOT_WEIGHT = 800;
 	constexpr _float PURCHASE_HOLD_DURATION = 1.2f;
 	constexpr int PURCHASE_BUTTON_WEIGHT = 900;
@@ -347,6 +347,8 @@ void CWandShop::Close(UIManager& manager)
 {
 	E::CGameInstance::Get().ClearUI3DPanel();
 	manager.m_bWandShopWorldMode = false;
+	manager.m_fWandShopPanelAppearElapsed = 0.f;
+	manager.m_fWandShopPanelAppearScale = 1.f;
 	auto deleteRoots = [&manager](std::vector<CHandle>& roots)
 	{
 		for (const CHandle handle : roots)
@@ -420,9 +422,7 @@ void CWandShop::PlayPageFadeIn(
 					}, nullptr, EEaseType::EaseOutQuad);
 			}
 			else
-			{
 				ui->SetAlpha(targetAlpha);
-			}
 			continue;
 		}
 
@@ -442,9 +442,7 @@ void CWandShop::PlayPageFadeIn(
 					}, nullptr, EEaseType::EaseOutQuad);
 			}
 			else
-			{
 				target->SetAlpha(targetAlpha);
-			}
 		};
 	}
 }
