@@ -693,6 +693,20 @@ void CShopNpc::SuspendGameplayForRagdoll()
 	if (m_bRagdollGameplaySuspended)
 		return;
 
+	if (!m_bDeathVoicePlayed)
+	{
+		CGameInstance::Get().GetSoundManager()->Play2D(
+			"./Resources/SampleClient/Sound/NPC/Ollivander/Death/Ollivander_Death.mp3",
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+		m_bDeathVoicePlayed = true;
+	}
+
 	// 대화 카메라, 입력 잠금, 선택지와 상점 UI가 랙돌 뒤에 남지 않게 정리한다.
 	CancelDialogue();
 	StopDialogueCameraOnlyForTest();
@@ -750,8 +764,11 @@ _bool CShopNpc::RequestRagdollActivation(
 
 _bool CShopNpc::ResetRagdoll()
 {
-	return m_pRagdollController &&
-		m_pRagdollController->Reset();
+	if (!m_pRagdollController || !m_pRagdollController->Reset())
+		return false;
+
+	m_bDeathVoicePlayed = false;
+	return true;
 }
 
 _bool CShopNpc::IsRagdollActive() const

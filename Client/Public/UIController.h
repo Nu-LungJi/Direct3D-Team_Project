@@ -63,6 +63,7 @@ public:
 	void SetPotionCount(_float cnt); // 포션 개수 세팅
 	void AddPotionCount(_float cnt); // 포션 개수 플마
 	void UsePotion(); // 포션 1개 사용
+	_bool HasPotion() const { return m_iPotionCNT > 0; }
 
 	// ********** PickIcon -> 스펠 피킹용
 	void SetTargetIcon(uint32_t type) { m_TargetSpellType = type; }

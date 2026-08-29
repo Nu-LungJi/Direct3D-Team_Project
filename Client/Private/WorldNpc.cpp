@@ -117,7 +117,7 @@ HRESULT CWorldNpc::Initialize(void* pArg)
 		SOUND_3D_DESC{
 			.vPosition = GetTransform().GetPosition(),
 			.fMinDistance = 5.f,
-			.fMaxDistance = 30.f,
+			.fMaxDistance = 20.f,
 			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
 		},
 		SOUND_PLAY_DESC{

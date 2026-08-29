@@ -1035,19 +1035,18 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		//m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
 		m_pComMoveIntent->RequestWarp(m_vInitialPosition);
 	}
-	//if (CGameInstance::Get().KeyDown(DIK_HOME)) {
-	//	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/NPC/StupidCat.mp3", SOUND_PLAY_DESC{
-	//			.sBusID = SOUND_BUS::SFX,
-	//			.fVolume = 1.f,
-	//			.fPitch = 1.f,
-	//			.iPriority = 64,
-	//			.bLoop = false
-	//		});
-	//}
-	//{
-	//	//m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
-	//	m_pComMoveIntent->RequestWarp(m_vInitialPosition);
-	//}
+	if (CGameInstance::Get().KeyDown(DIK_HOME)) {
+		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/NPC/StupidCat.mp3", SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+	}
+	{
+		//m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
+	}
 	if (m_pStateMachine &&m_pComCharacterMotor &&m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&m_pComCharacterMotor->IsGrounded() &&CGameInstance::Get().KeyDown(DIK_SPACE))
 	{
 		m_pStateMachine->RequestState(PLAYER_STATE::JUMP);
@@ -1656,12 +1655,15 @@ void CPlayer::UpdateSkillSlotCooldowns(_float fTimeDelta)
 
 _bool CPlayer::TryUsePotion()
 {
+	constexpr int32_t POTION_HEAL_AMOUNT = 400;
+
 	auto* pUIController =
 		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
-	if (!pUIController || !m_pStateMachine ||
+	if (!pUIController || !pUIController->HasPotion() || !m_pStateMachine ||
 		!m_pStateMachine->RequestState(PLAYER_STATE::POTION))
 		return false;
 
+	m_iHp = std::min(m_iHp + POTION_HEAL_AMOUNT, m_iMaxHp);
 	pUIController->UsePotion();
 	CGameInstance::Get().GetSoundManager()->Play2D(
 		"./Resources/SampleClient/Sound/UI/Potion.wav", SOUND_PLAY_DESC{

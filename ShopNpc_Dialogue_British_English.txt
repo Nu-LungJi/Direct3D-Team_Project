@@ -1,0 +1,44 @@
+GERBOLD OLLIVANDER — BRITISH ENGLISH DIALOGUE
+==============================================
+
+[FIRST VISIT]
+
+Gerbold Ollivander: Ah, Professor Sharp. You have arrived.
+Gerbold Ollivander: I have rather a lot on my hands... Do bear with me a moment!
+Gerbold Ollivander: You have brought the money, I trust?
+
+Choices:
+  1) Yes
+  2) No
+
+Gerbold Ollivander: Ah, it seems you are a little short of money... I hear they are holding a small tournament at Hogwarts Castle. You had best make your way there!
+
+
+[RETURNING WITH THE MONEY]
+
+Gerbold Ollivander: Ah, you have managed to gather all the money!
+Gerbold Ollivander: Right then—go on and choose yourself a wand!
+
+
+[AFTER PURCHASING A WAND]
+
+Gerbold Ollivander: Oh, what a splendid wand. Shall we learn a spell together whilst we are at it?
+
+
+[AFTER THE SPELL LESSON]
+
+Gerbold Ollivander: That is not a spell to be used carelessly. Do be careful!
+
+
+[INDEX]
+
+0. Ah, Professor Sharp. You have arrived.
+1. I have rather a lot on my hands... Do bear with me a moment!
+2. You have brought the money, I trust?
+3. Ah, it seems you are a little short of money... I hear they are holding a small tournament at Hogwarts Castle. You had best make your way there!
+4. Ah, you have managed to gather all the money!
+5. Right then—go on and choose yourself a wand!
+6. Oh, what a splendid wand. Shall we learn a spell together whilst we are at it?
+7. That is not a spell to be used carelessly. Do be careful!
+
+Note: Both Yes and No currently lead to line 3.

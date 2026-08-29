@@ -360,14 +360,28 @@ void CInteractiveNpc::ShowCurrentDialogueLine()
 		SetExpression(line.ExpressionAnim, line.LoopExpression);
 	}
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_SpeakerName, line.Text);
+	if (!line.VoiceSoundPath.empty())
+	{
+		CGameInstance::Get().GetSoundManager()->Play2D(
+			line.VoiceSoundPath,
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+	}
 	// UTF-8 코드포인트 수를 기준으로 실제 발화 구간만 추정한다.
 	size_t characterCount = 0u;
 	for (unsigned char character : line.Text)
 		if ((character & 0xC0u) != 0x80u)
 			++characterCount;
-	m_fDialogueSpeechRemaining = std::clamp(
-		0.4f + static_cast<_float>(characterCount) * 0.12f,
-		1.2f, 5.f);
+	m_fDialogueSpeechRemaining = line.VoiceDuration > 0.f
+		? line.VoiceDuration
+		: std::clamp(
+			0.4f + static_cast<_float>(characterCount) * 0.12f,
+			1.2f, 5.f);
 	SyncInteractionPrompt(false);
 	if (m_bHideDialogueInteractionPrompt && !line.Choices.empty())
 	{
