@@ -14,6 +14,7 @@
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
 #include "NvClothCape.h"
+#include "PropBarrel.h"
 #include "UIController.h"
 
 #include "EnderDragon.h"
@@ -59,6 +60,8 @@ HRESULT CLevelLastBossRanrok::Initialize()
 		return E_FAIL;
 
 	if (FAILED(SpawnStaticCollision()))
+		return E_FAIL;
+	if (FAILED(SpawnPropBarrels()))
 		return E_FAIL;
 
 	if (FAILED(SpawnFlyCamera()))
@@ -350,6 +353,37 @@ HRESULT CLevelLastBossRanrok::SpawnStaticCollision()
 
 	if (handles.empty())
 		return E_FAIL;
+
+	return S_OK;
+}
+
+HRESULT CLevelLastBossRanrok::SpawnPropBarrels()
+{
+	static constexpr std::array<_float3, 4> BARREL_POSITIONS{
+		_float3{ -106.4f, 295.3f, -89.f },
+		_float3{ -58.3f, 257.6f, 123.4f },
+		_float3{ 46.5f, 221.9f, 59.f },
+		_float3{ 62.5f, 225.f, -17.6f }
+	};
+
+	for (size_t i = 0; i < BARREL_POSITIONS.size(); ++i)
+	{
+		CPropBarrel::DESC desc{};
+		desc.sObjectTag =
+			"RanrokBoss_PropBarrel_" + std::to_string(i);
+		desc.sResourceGroup = "PERMANENT";
+		desc.vInitialPosition = BARREL_POSITIONS[i];
+
+		if (!CGameInstance::Get().AddGameObjectToLayer(
+			"PERMANENT",
+			PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
+			"PropBarrel",
+			&desc))
+		{
+			DEBUG_LOG("[LastBossRanrok] Failed to spawn PropBarrel.\n");
+			return E_FAIL;
+		}
+	}
 
 	return S_OK;
 }
