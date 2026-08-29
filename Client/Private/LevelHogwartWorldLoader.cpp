@@ -75,13 +75,19 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
 				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("Lightning")))
+				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AvadaKedavra")))
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcEntrance")))
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcDialogueCloseUp")))
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcWandBox")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcSpellLesson")))
 				return false;
 
 			if (auto texture = E::CGameInstance::Get().AddResource(
@@ -166,6 +172,8 @@ std::future<bool> CLevelHogwartWorldLoader::UnLoad()
 			E::CGameInstance::Get().DelResource(LEVEL::HOGWART_WORLD);
 			return true;
 		});
+
+
 }
 
 HRESULT CLevelHogwartWorldLoader::LoadPhysicsDoorResources()
@@ -531,7 +539,9 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
 				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
 				"./Resources/SampleClient/Textures/UI/UITexture/WandShop",
-				"./Resources/SampleClient/Textures/UI/UITexture/MiniGame"
+				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame",
+				"./Resources/SampleClient/Textures/UI/UITexture/MiniGame",
+				"./Resources/SampleClient/Textures/UI/FlipBook"
 			};
 
 			for (const auto& targetDir : targetDirectories)
@@ -572,6 +582,13 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 			return false;
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_HOGWART_WORLD", "Prototype_GameObject_UIController", CUIController::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(
+			"LEVEL_HOGWART_WORLD",
+			"Prototype_GameObject_SpellMiniGame",
+			CSpellMiniGame::Create())))
 		{
 			return false;
 		}
@@ -801,6 +818,25 @@ HRESULT CLevelHogwartWorldLoader::AnimatedObjectLoad_InWorker()
 
 HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 {
+	{
+		const _string resourceTag =
+			"Model_Resource_Ollivander_WandBox_Full_Selection";
+		const _string modelPath =
+			"./Resources/SampleClient/Models/Skeleton/"
+			"Ollivander_WandBox_Full_Selection/"
+			"SK_Ollivanders_WandBox_Full_Selection.bin";
+		auto model = CGameInstance::Get().AddResourceT<E::CResModel>(
+			LEVEL::HOGWART_WORLD, resourceTag, CResModel::Create(modelPath));
+		if (!model)
+			return E_FAIL;
+		E::CResModel::DESC desc{};
+		// The supplied BIN is already authored at gameplay scale. Applying the
+		// generic Blender x100 correction makes the hand prop enormous.
+		desc.PreTransformMatrix = XMMatrixIdentity();
+		if (FAILED(model->Load(desc)) || model->GetAnimations().empty())
+			return E_FAIL;
+	}
+
 	struct MODEL_ANIMAL
 	{ _string ResName{};					_string PathName{};				_float3 vScale{3.f,3.f,3.f}; };
 	MODEL_ANIMAL resAnimal[]{ 
@@ -824,15 +860,16 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 		}
 	}
 
-	static constexpr const char* Blender43Skeletons[] =
+	static constexpr const char* AnimalSkeletons[] =
 	{
+		// 배치 목록에는 노출하지 않지만, 동일한 AN 파일명을 공유하는 기존
+		// Animal 리소스의 애니메이션 호환성을 위해 먼저 로드한다.
 		"BlueButterfly_Animated_Blender_4_3", "CaptureBag_Animated_Blender_4_3",
 		"ChompingCabbage_Animated_Blender_4_3", "DisillusionmentChest_Animated_Blender_4_3",
 		"FlyingMagicPaper_Animated_Blender_4_3", "GACTreasureChest_Animated_Blender_4_3",
 		"GiantPendulumClock_Animated_Blender_4_3", "GlowingLumosMoth_Animated_Blender_4_3",
 		"Hippogriff_Animated_Blender_4_3", "HoppingPot_Animated_Blender_4_3",
-		"IdentificationStation_Animated_Blender_4_3", /*"MagicChoppingIngredients_Animated_Blender_4_3",
-		"MagicChoppingStation_Animated_Blender_4_3", "MagicMaterialRefinerTools_Animated_Blender_4_3",*/
+		"IdentificationStation_Animated_Blender_4_3",
 		"OrangeButterfly_Animated_Blender_4_3", "OutdoorDiricawlBird_Animated_Blender_4_3",
 		"OutdoorFwooperBird_Animated_Blender_4_3", "SanctuaryToyBox_Animated_Blender_4_3",
 		"SelfWrappingPaper_Animated_Blender_4_3", "ShopCounterHandBell_Animated_Blender_4_3",
@@ -840,9 +877,19 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 		"StreetRat_Animated_Blender_4_3", "StreetRaven_Animated_Blender_4_3",
 		"StreetSquirrel_Animated_Blender_4_3", "TeaShopTeaCup_Animated_Blender_4_3",
 		"ThestralStreetCarriage_Animated_Blender_4_3", "VillageGiantToad_Animated_Blender_4_3",
-		"WizardingDeck_Animated_Blender_4_3"
+		"WizardingDeck_Animated_Blender_4_3",
+		"BlueButterfly", "GlowingLumosMoth", "LeapingMushroom",
+		"OrangeButterfly", "PlantParty_Plant_01", "PlantParty_Plant_02",
+		"PlantParty_Plant_03", "PlantParty_Plant_04", "PlantParty_Plant_05",
+		"VenomousTentaculaBush", "VenomousTentaculaFlower",
+		"CottonCandyBowl", "CottonCandyWindow", "EnchantedWateringCan",
+		"GoldenSnitch", "HonkingDaffodils", "MagicPaperAndQuill",
+		"MarionetteCandyBooth", "NifflerTightropeToy", "PoltergeistHand",
+		"SelfPruningSecateurs", "SelfPruningShears", "SelfShufflingCards",
+		"SelfWrappingBox", "SelfWrappingPaper", "SelfWrappingPresent",
+		"ToyProfessorInTheBox", "ZonkosJackInTheBox"
 	};
-	for (const char* modelName : Blender43Skeletons)
+	for (const char* modelName : AnimalSkeletons)
 	{
 		const _string folder = modelName;
 		const _string resourceTag = "Model_Resource_" + folder;

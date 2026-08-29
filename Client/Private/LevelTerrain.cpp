@@ -1287,6 +1287,8 @@ HRESULT CLevelTerrain::SpawnAccioActivitySet(
 
 	CAccioActivity_Base::DESC baseDesc{};
 	baseDesc.sObjectTag = "AccioActivity_Base";
+	baseDesc.PlayerDisplayName = "이솝 샤프";
+	baseDesc.NpcDisplayName = "저스티스 훈";
 	baseDesc.vInitialPosition = setDesc.vOrigin;
 	baseDesc.vInitialRotation = vSetRotation;
 	const auto hBase = CGameInstance::Get().AddGameObjectToLayer(
@@ -1391,19 +1393,21 @@ HRESULT CLevelTerrain::SpawnAccioActivitySet(
 	npcControllerDesc.hActivity = *hBase;
 	npcControllerDesc.hPlatform = *hPlatform;
 	npcControllerDesc.hInteractionPlayer = m_hPlayer;
-	npcControllerDesc.SpeakerName = "호그와트 학생";
+	npcControllerDesc.SpeakerName = baseDesc.NpcDisplayName;
 	npcControllerDesc.fInteractionDistance = 10.f;
 	npcControllerDesc.Dialogue =
 	{
 		{
 			"준비됐어? 아씨오로 공을 끌어 점수를 겨뤄 보자.",
 			{},
-			true
+			true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_INTRO_01.mp3"
 		},
 		{
 			"높은 점수 구역에 공을 멈추면 이겨. 네가 먼저 시작해.",
 			{},
-			true
+			true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_INTRO_02.mp3"
 		}
 	};
 	npcControllerDesc.PlayerWinDialogue =
@@ -1411,7 +1415,8 @@ HRESULT CLevelTerrain::SpawnAccioActivitySet(
 		{
 			"잘했어. 이번 승부는 네가 이겼네.",
 			{},
-			true
+			true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_PLAYER_WIN_01.mp3"
 		},
 		{
 			"다음에는 내가 이길 거야.",
@@ -1424,7 +1429,8 @@ HRESULT CLevelTerrain::SpawnAccioActivitySet(
 		{
 			"이번 승부는 내가 이겼네.",
 			{},
-			true
+			true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_NPC_WIN_01.mp3"
 		},
 		{
 			"다시 도전하고 싶으면 언제든 말해.",
@@ -1437,7 +1443,8 @@ HRESULT CLevelTerrain::SpawnAccioActivitySet(
 		{
 			"무승부네. 꽤 좋은 승부였어.",
 			{},
-			true
+			true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_DRAW_01.mp3"
 		}
 	};
 	// [LSY] 매치 전 NPC는 플랫폼 오른쪽 끝에서 조금 안쪽에 서서 왼쪽을 바라본다.
@@ -2181,6 +2188,7 @@ std::optional<CHandle> CLevelTerrain::SpawnPlayer()
 		.iSimulationMask = PX_ALL_LAYERS,
 		.iQueryMask =
 			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 			ETOUI(COLLISION_LAYER::DOOR_DYNAMIC) |
 			ETOUI(COLLISION_LAYER::DOOR_HINGE_BLOCKER) |
 			ETOUI(COLLISION_LAYER::ENEMY_BODY)

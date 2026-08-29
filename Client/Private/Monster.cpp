@@ -287,8 +287,10 @@ HRESULT CMonster::Initialize(void* pArg)
 				return E_FAIL;
 			};
 		}
+		ReadySound();
 		auto* pBB = Get_BlackBoard();
 		pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
+		pBB->Set_Value <std::unordered_map<_string, std::vector<_string>>>(PUBLIC_KEY::SOUNDTABLE, m_SoundTable);
 		CGameInstance::Get().EventSubscribe<FAncientMagicStart>(GetHandle(), [=]() { Stuck(); });
 		GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 		GetTransform().Update();
@@ -929,10 +931,7 @@ SOUND_ID  CMonster::Play_Sound(const MONSOUND& MonSound)
 		Sounds,
 		MonSound.SoundPlay
 	);
-	if (id == INVALID_SOUND_ID)
-	{
-		MSG_BOX("INVALID_SOUND_ID");
-	}
+
 	return id;
 }
 
@@ -942,29 +941,6 @@ void CMonster::Skill_Finished()
 	m_CurEffectName.clear();
 	m_eLastSkillTable = ATTMON::END;
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT) | ETOUI(CBTRoot::BTFLAG::ATTACK) | ETOUI(CBTRoot::BTFLAG::ENDHIT) |ETOUI(CBTRoot::BTFLAG::THROW),FLAGTYPE::DEL);
-}
-
-void CMonster::Get_SoundKey(_string& CurSoundName)
-{
-	_string Key = "";
-	if (ImGui::BeginCombo("SoundTable",CurSoundName.c_str()))
-	{
-		for (auto&[key, value] : m_SoundTable)
-		{
-			_bool bSelect = key == CurSoundName;
-			if (ImGui::Selectable(key.c_str(), bSelect))
-			{
-				CurSoundName = key;
-				break;
-			}
-
-			if(bSelect)
-				ImGui::SetItemDefaultFocus();
-		}
-
-		ImGui::EndCombo();
-	}
-	return;
 }
 
 const _float4x4* CMonster::Get_CombineBoneMatrix(int32_t iBoneIndex)
@@ -1008,51 +984,53 @@ int32_t CMonster::Find_AnimIndex(const _string& AnimName)
 }
 void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 {
-	int32_t iRand = 0;
+	int32_t baseDamage = 0;
 	switch (eType)
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
-		iRand = RandInt(3, 10);
-		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), false);
+		baseDamage = RandInt(3, 10);
 		break;
 	case PLAYER_SKILL_TYPE::ACCIO:
-		iRand = RandInt(8, 15);
-		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
+		baseDamage = RandInt(8, 15);
 		break;
 	case PLAYER_SKILL_TYPE::DEPULSO:
-		iRand = RandInt(11, 20);
-		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
+		baseDamage = RandInt(11, 20);
 		break;
 	case PLAYER_SKILL_TYPE::DESCENDO:
-		iRand = RandInt(15, 25);
-		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
+		baseDamage = RandInt(15, 25);
 		break;
 	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
-		iRand = RandInt(20, 28);
-		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
+		baseDamage = RandInt(20, 28);
 		break;
 	case PLAYER_SKILL_TYPE::PROTEGO:
-		m_iHp -= 8.f;
+		baseDamage = 8;
 		break;
 	case PLAYER_SKILL_TYPE::DESTORY:
-		iRand = RandInt(23, 28);
-		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
+		baseDamage = RandInt(23, 28);
 		break;
 	case PLAYER_SKILL_TYPE::ABRA:
-		iRand = RandInt(40, 65);
-		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
+		baseDamage = RandInt(40, 65);
 		break;
 	case PLAYER_SKILL_TYPE::CONFRIGO:
-		iRand = RandInt(9, 23);
-		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
+		baseDamage = RandInt(9, 23);
 		break;
 	case PLAYER_SKILL_TYPE::BOMBARDA:
-		iRand = RandInt(16, 28);
-		GET_SINGLE(UIManager)->CreateDamageFont(iRand, GetHandle(), true);
+		baseDamage = RandInt(16, 28);
 		break;
-
+	default:
+		break;
 	}
-	m_iHp -= iRand;
+
+	if (baseDamage <= 0)
+		return;
+
+	const _bool isCritical = RandInt(0, 1) == 1;
+	const int32_t finalDamage = isCritical ?
+		static_cast<int32_t>(std::lround(baseDamage * 1.5f)) :
+		baseDamage;
+	GET_SINGLE(UIManager)->CreateDamageFont(
+		static_cast<uint32_t>(finalDamage), GetHandle(), isCritical);
+	m_iHp -= finalDamage;
 }
 
 void CMonster::Update_HurtBox()

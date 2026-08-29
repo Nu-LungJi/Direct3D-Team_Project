@@ -19,6 +19,7 @@ namespace PUBLIC_KEY
 	inline const StringID MONSTATE{ "MonState" };
 	inline const StringID TARGETHANDLE { "TargetHandle" };
 	inline const StringID ANIMNAME{ "AnimationName" };
+	inline const StringID SOUNDTABLE{ "SoundTable" };
 }
 namespace NPC_KEY
 {

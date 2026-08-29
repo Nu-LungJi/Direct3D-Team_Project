@@ -5,6 +5,7 @@
 #include "GameInstance.h"
 #include "Player.h"
 #include "Player_Weapon.h"
+#include "TextBox.h"
 #include "TextureUI.h"
 #include "TweenComponent.h"
 #include "UIManager.h"
@@ -17,6 +18,7 @@ namespace
 		"ShopWand1", "ShopWandCompleteShape", "ShopWand3", "ShopWand4"
 	};
 	constexpr _float PAGE_FADE_IN_DURATION = 0.18f;
+	constexpr _float SHOP_OPEN_FADE_IN_DURATION = 0.5f;
 	constexpr int WAND_SHOP_MIN_ROOT_WEIGHT = 800;
 	constexpr _float PURCHASE_HOLD_DURATION = 1.2f;
 	constexpr int PURCHASE_BUTTON_WEIGHT = 900;
@@ -90,6 +92,8 @@ void CWandShop::RegisterLoadedPage(const std::string& prefabName,
 	ClassifyRoots(roots);
 	CGeneralButton::SetCurrentWandShopPage(m_iCurrentPage);
 	CGeneralButton::RefreshWandShopCommonUI(m_iCurrentPage);
+	// 최초 상점 로드에서는 공통 프레임과 1페이지 내용을 함께 나타낸다.
+	PlayPageFadeIn(roots, SHOP_OPEN_FADE_IN_DURATION);
 }
 
 _bool CWandShop::IsOpen() const
@@ -110,6 +114,8 @@ void CWandShop::CreatePurchasePrompt()
 
 	m_PurchasePromptRoots.clear();
 	m_PurchaseGauge.reset();
+	m_PurchaseCoinText.reset();
+	m_iDisplayedCoinCount = UINT32_MAX;
 	m_fPurchaseHoldProgress = 0.f;
 
 	auto promptRoots = GET_SINGLE(UIManager)->LoadPrefab(
@@ -120,6 +126,7 @@ void CWandShop::CreatePurchasePrompt()
 
 	CUIObject* button = nullptr;
 	CTextureUI* gauge = nullptr;
+	CTextBox* coinText = nullptr;
 	for (const CHandle rootHandle : promptRoots)
 	{
 		auto* root = GetSafeUI(rootHandle);
@@ -135,10 +142,19 @@ void CWandShop::CreatePurchasePrompt()
 			auto* child = GetSafeUI(childHandle);
 			if (!child)
 				continue;
+			child->GetUIInfo().Weight = PURCHASE_CHILD_WEIGHT;
 			child->SetInputLcok(true);
+			if (std::string_view(root->GetName()) == "CoinImage" &&
+				(std::string_view(child->GetName()) == "CoinText" ||
+				 std::string_view(child->GetName()) == "Coin"))
+			{
+				coinText = E::CGameInstance::Get().
+					GetGameObjectByHandleT<CTextBox>(childHandle);
+				if (coinText)
+					m_PurchaseCoinText = childHandle;
+			}
 			if (std::string_view(child->GetName()) == "Text")
 			{
-				child->GetUIInfo().Weight = PURCHASE_CHILD_WEIGHT;
 				continue;
 			}
 			if (std::string_view(child->GetName()) != "BTFrame")
@@ -148,7 +164,6 @@ void CWandShop::CreatePurchasePrompt()
 			if (gauge)
 			{
 				m_PurchaseGauge = childHandle;
-				gauge->GetUIInfo().Weight = PURCHASE_CHILD_WEIGHT;
 				gauge->SetPathProgressMode(true);
 				gauge->SetPathProgressType(2u);
 				gauge->SetPathProgress(0.f);
@@ -170,11 +185,32 @@ void CWandShop::CreatePurchasePrompt()
 		return;
 	}
 	m_PurchasePromptRoots = std::move(promptRoots);
+	SetPurchasePromptVisible(m_iCurrentPage == 0u);
+	if (m_iCurrentPage == 0u)
+		PlayPageFadeIn(
+			m_PurchasePromptRoots, SHOP_OPEN_FADE_IN_DURATION);
+	RefreshPurchaseCoinText();
 }
 
 void CWandShop::Update(UIManager& manager, _float fTimeDelta)
 {
-	if (!IsOpen() || !m_PurchaseGauge)
+	if (!IsOpen())
+		return;
+	if (m_iCurrentPage != 0u)
+	{
+		m_fPurchaseHoldProgress = 0.f;
+		if (m_PurchaseGauge)
+		{
+			if (auto* gauge = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CTextureUI>(*m_PurchaseGauge))
+			{
+				gauge->SetPathProgress(0.f);
+			}
+		}
+		return;
+	}
+	RefreshPurchaseCoinText();
+	if (!m_PurchaseGauge)
 		return;
 	auto* gauge = E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextureUI>(*m_PurchaseGauge);
@@ -205,8 +241,64 @@ void CWandShop::Update(UIManager& manager, _float fTimeDelta)
 		CompletePurchase(manager);
 }
 
+void CWandShop::RefreshPurchaseCoinText()
+{
+	if (!m_PurchaseCoinText)
+		return;
+
+	auto* textBox = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextBox>(*m_PurchaseCoinText);
+	if (!textBox)
+	{
+		m_PurchaseCoinText.reset();
+		return;
+	}
+
+	const uint32_t coinCount =
+		GET_SINGLE(UIManager)->GetRaceMiniGameCoinCount();
+	if (m_iDisplayedCoinCount == coinCount)
+		return;
+
+	m_iDisplayedCoinCount = coinCount;
+	textBox->SetwText(std::to_wstring(coinCount));
+}
+
+void CWandShop::SetPurchasePromptVisible(_bool visible)
+{
+	const auto SetActiveRecursive = [](
+		auto&& self, CHandle handle, _bool active) -> void
+	{
+		auto* ui = GetSafeUI(handle);
+		if (!ui)
+			return;
+
+		ui->SetActive(active);
+		for (const CHandle childHandle : ui->GetChildren())
+			self(self, childHandle, active);
+	};
+
+	for (const CHandle handle : m_PurchasePromptRoots)
+		SetActiveRecursive(SetActiveRecursive, handle, visible);
+
+	if (visible)
+	{
+		RefreshPurchaseCoinText();
+		return;
+	}
+
+	m_fPurchaseHoldProgress = 0.f;
+	if (!m_PurchaseGauge)
+		return;
+	if (auto* gauge = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextureUI>(*m_PurchaseGauge))
+	{
+		gauge->SetPathProgress(0.f);
+	}
+}
+
 void CWandShop::CompletePurchase(UIManager& manager)
 {
+
 	if (const auto* playerLayer =
 		E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
 	{
@@ -220,20 +312,43 @@ void CWandShop::CompletePurchase(UIManager& manager)
 			auto* weapon = E::CGameInstance::Get().
 				GetGameObjectByHandleT<CPlayer_Weapon>(
 					player->GetWeaponHandle());
-			if (weapon)
-				weapon->EquipWand2();
+			if (weapon && SUCCEEDED(weapon->EquipWand2()))
+				manager.SetPurchasedWandEquipped(true);
 
 			break;
 		}
 	}
 
+	if (auto* soundManager = E::CGameInstance::Get().GetSoundManager())
+	{
+		soundManager->Play2D(
+			"./Resources/SampleClient/Sound/UI/Purchase.wav",
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::UI,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+	}
+
+	m_bPurchaseCompleted = true;
 	Close(manager);
+}
+
+_bool CWandShop::ConsumePurchaseCompleted()
+{
+	const _bool completed = m_bPurchaseCompleted;
+	m_bPurchaseCompleted = false;
+	return completed;
 }
 
 void CWandShop::Close(UIManager& manager)
 {
 	E::CGameInstance::Get().ClearUI3DPanel();
 	manager.m_bWandShopWorldMode = false;
+	manager.m_fWandShopPanelAppearElapsed = 0.f;
+	manager.m_fWandShopPanelAppearScale = 1.f;
 	auto deleteRoots = [&manager](std::vector<CHandle>& roots)
 	{
 		for (const CHandle handle : roots)
@@ -248,6 +363,8 @@ void CWandShop::Close(UIManager& manager)
 	deleteRoots(m_PageRoots);
 	deleteRoots(m_CommonRoots);
 	m_PurchaseGauge.reset();
+	m_PurchaseCoinText.reset();
+	m_iDisplayedCoinCount = UINT32_MAX;
 	m_fPurchaseHoldProgress = 0.f;
 	m_iCurrentPage = UINT32_MAX;
 	m_iRootWeightOffset = 0;
@@ -276,8 +393,11 @@ _bool CWandShop::HasLivePageRoots() const
 		[](CHandle handle) { return GetSafeUI(handle) != nullptr; });
 }
 
-void CWandShop::PlayPageFadeIn(const std::vector<CHandle>& roots) const
+void CWandShop::PlayPageFadeIn(
+	const std::vector<CHandle>& roots,
+	_float duration) const
 {
+	duration = std::max(0.f, duration);
 	for (const CHandle handle : roots)
 	{
 		auto* ui = GetSafeUI(handle);
@@ -285,15 +405,16 @@ void CWandShop::PlayPageFadeIn(const std::vector<CHandle>& roots) const
 			continue;
 		const _float targetAlpha = ui->GetAlpha();
 		ui->SetAlpha(0.f);
-		ui->Appear = [handle, targetAlpha](CUIObject*)
+
+		// FillButton의 Button/CoinImage 루트는 마우스 입력을 막기 위해
+		// InputLock 상태다. ButtonComponent는 InputLock이면 APPEAR 상태도
+		// 전달하지 않으므로 이 경우에는 로드 직후 Tween을 직접 시작한다.
+		if (ui->GetInputLcok())
 		{
-			auto* target = GetSafeUI(handle);
-			if (!target)
-				return;
-			target->SetAlpha(0.f);
-			if (auto* tween = target->GetTweenCom())
+			if (auto* tween = ui->GetTweenCom())
 			{
-				tween->PlayTween(0.f, targetAlpha, PAGE_FADE_IN_DURATION,
+				tween->ClearTweens();
+				tween->PlayTween(0.f, targetAlpha, duration,
 					[handle](_float value)
 					{
 						if (auto* current = GetSafeUI(handle))
@@ -301,9 +422,27 @@ void CWandShop::PlayPageFadeIn(const std::vector<CHandle>& roots) const
 					}, nullptr, EEaseType::EaseOutQuad);
 			}
 			else
+				ui->SetAlpha(targetAlpha);
+			continue;
+		}
+
+		ui->Appear = [handle, targetAlpha, duration](CUIObject*)
+		{
+			auto* target = GetSafeUI(handle);
+			if (!target)
+				return;
+			target->SetAlpha(0.f);
+			if (auto* tween = target->GetTweenCom())
 			{
-				target->SetAlpha(targetAlpha);
+				tween->PlayTween(0.f, targetAlpha, duration,
+					[handle](_float value)
+					{
+						if (auto* current = GetSafeUI(handle))
+							current->SetAlpha(value);
+					}, nullptr, EEaseType::EaseOutQuad);
 			}
+			else
+				target->SetAlpha(targetAlpha);
 		};
 	}
 }
@@ -332,6 +471,7 @@ void CWandShop::OpenPage(UIManager& manager, uint32_t pageIndex)
 
 	m_iCurrentPage = pageIndex;
 	CGeneralButton::SetCurrentWandShopPage(pageIndex);
+	SetPurchasePromptVisible(pageIndex == 0u);
 	m_PageRoots = manager.LoadPrefabFiltered(
 		std::string(PAGE_PREFABS[pageIndex]),
 		"./Resources/SampleClient/UIData/RTT/",
@@ -342,5 +482,5 @@ void CWandShop::OpenPage(UIManager& manager, uint32_t pageIndex)
 		});
 	ApplyRootWeightOffset(m_PageRoots, false);
 	CGeneralButton::RefreshWandShopCommonUI(pageIndex);
-	PlayPageFadeIn(m_PageRoots);
+	PlayPageFadeIn(m_PageRoots, PAGE_FADE_IN_DURATION);
 }

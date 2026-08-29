@@ -53,6 +53,51 @@ CLevelHogwartWorld::CLevelHogwartWorld() : CLevel{ETOUI(LEVEL::HOGWART_WORLD)}
 {
 }
 
+void CLevelHogwartWorld::ChangeBGM(
+	const _string& strSoundPath,
+	_float fTargetVolume,
+	_float fFadeDuration)
+{
+	auto* pSoundManager = E::CGameInstance::Get().GetSoundManager();
+	if (nullptr == pSoundManager || strSoundPath.empty())
+		return;
+
+	const _float fSafeFadeDuration = std::max(0.f, fFadeDuration);
+	const _float fSafeTargetVolume = std::max(0.f, fTargetVolume);
+
+	if (m_iBGM != INVALID_SOUND_ID &&
+		pSoundManager->IsValidSound(m_iBGM) &&
+		m_strCurrentBGMPath == strSoundPath)
+	{
+		pSoundManager->FadeTo(
+			m_iBGM, fSafeTargetVolume, fSafeFadeDuration);
+		return;
+	}
+
+	if (m_iBGM != INVALID_SOUND_ID &&
+		pSoundManager->IsValidSound(m_iBGM))
+	{
+		pSoundManager->FadeOutAndStop(
+			m_iBGM, fSafeFadeDuration);
+	}
+
+	m_iBGM = pSoundManager->Play2D(
+		strSoundPath,
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::BGM,
+			.fVolume = fSafeTargetVolume,
+			.fPitch = 1.f,
+			.fFadeInDuration = fSafeFadeDuration,
+			.iPriority = 64,
+			.bLoop = true
+		});
+
+	if (m_iBGM != INVALID_SOUND_ID)
+		m_strCurrentBGMPath = strSoundPath;
+	else
+		m_strCurrentBGMPath.clear();
+}
+
 HRESULT CLevelHogwartWorld::Initialize()
 {
 	auto &gameInstance = E::CGameInstance::Get();
@@ -100,35 +145,34 @@ HRESULT CLevelHogwartWorld::Initialize()
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Spider",NpcOption.sModelGroupTag, "Model_Resource_Spider");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Cat", NpcOption.sModelGroupTag, "Model_Resource_Cat","./Resources/SampleClient/Models/Skeleton/Cat/");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Bird_Kestrel", NpcOption.sModelGroupTag, "Model_Resource_Bird_Kestrel", "./Resources/SampleClient/Models/Skeleton/Birds_Kestrel/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "BlueButterfly_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_BlueButterfly_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/BlueButterfly_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "CaptureBag_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_CaptureBag_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/CaptureBag_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ChompingCabbage_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_ChompingCabbage_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/ChompingCabbage_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "DisillusionmentChest_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_DisillusionmentChest_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/DisillusionmentChest_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "FlyingMagicPaper_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_FlyingMagicPaper_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/FlyingMagicPaper_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GACTreasureChest_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_GACTreasureChest_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/GACTreasureChest_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GiantPendulumClock_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_GiantPendulumClock_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/GiantPendulumClock_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GlowingLumosMoth_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_GlowingLumosMoth_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/GlowingLumosMoth_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Hippogriff_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_Hippogriff_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/Hippogriff_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "HoppingPot_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_HoppingPot_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/HoppingPot_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "IdentificationStation_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_IdentificationStation_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/IdentificationStation_Animated_Blender_4_3/");
-			/*pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MagicChoppingIngredients_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_MagicChoppingIngredients_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/MagicChoppingIngredients_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MagicChoppingStation_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_MagicChoppingStation_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/MagicChoppingStation_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MagicMaterialRefinerTools_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_MagicMaterialRefinerTools_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/MagicMaterialRefinerTools_Animated_Blender_4_3/");*/
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "OrangeButterfly_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_OrangeButterfly_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/OrangeButterfly_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "OutdoorDiricawlBird_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_OutdoorDiricawlBird_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/OutdoorDiricawlBird_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "OutdoorFwooperBird_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_OutdoorFwooperBird_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/OutdoorFwooperBird_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SanctuaryToyBox_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_SanctuaryToyBox_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/SanctuaryToyBox_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfWrappingPaper_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_SelfWrappingPaper_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/SelfWrappingPaper_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ShopCounterHandBell_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_ShopCounterHandBell_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/ShopCounterHandBell_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StirCrazyTeaSpoon_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StirCrazyTeaSpoon_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StirCrazyTeaSpoon_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetRabbit_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetRabbit_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetRabbit_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetRat_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetRat_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetRat_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetRaven_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetRaven_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetRaven_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetSquirrel_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetSquirrel_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetSquirrel_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "TeaShopTeaCup_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_TeaShopTeaCup_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/TeaShopTeaCup_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ThestralStreetCarriage_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_ThestralStreetCarriage_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/ThestralStreetCarriage_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "VillageGiantToad_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_VillageGiantToad_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/VillageGiantToad_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "WizardingDeck_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_WizardingDeck_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/WizardingDeck_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "BlueButterfly", NpcOption.sModelGroupTag, "Model_Resource_BlueButterfly", "./Resources/SampleClient/Models/Skeleton/BlueButterfly/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GlowingLumosMoth", NpcOption.sModelGroupTag, "Model_Resource_GlowingLumosMoth", "./Resources/SampleClient/Models/Skeleton/GlowingLumosMoth/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "LeapingMushroom", NpcOption.sModelGroupTag, "Model_Resource_LeapingMushroom", "./Resources/SampleClient/Models/Skeleton/LeapingMushroom/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "OrangeButterfly", NpcOption.sModelGroupTag, "Model_Resource_OrangeButterfly", "./Resources/SampleClient/Models/Skeleton/OrangeButterfly/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PlantParty_Plant_01", NpcOption.sModelGroupTag, "Model_Resource_PlantParty_Plant_01", "./Resources/SampleClient/Models/Skeleton/PlantParty_Plant_01/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PlantParty_Plant_02", NpcOption.sModelGroupTag, "Model_Resource_PlantParty_Plant_02", "./Resources/SampleClient/Models/Skeleton/PlantParty_Plant_02/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PlantParty_Plant_03", NpcOption.sModelGroupTag, "Model_Resource_PlantParty_Plant_03", "./Resources/SampleClient/Models/Skeleton/PlantParty_Plant_03/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PlantParty_Plant_04", NpcOption.sModelGroupTag, "Model_Resource_PlantParty_Plant_04", "./Resources/SampleClient/Models/Skeleton/PlantParty_Plant_04/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PlantParty_Plant_05", NpcOption.sModelGroupTag, "Model_Resource_PlantParty_Plant_05", "./Resources/SampleClient/Models/Skeleton/PlantParty_Plant_05/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "VenomousTentaculaBush", NpcOption.sModelGroupTag, "Model_Resource_VenomousTentaculaBush", "./Resources/SampleClient/Models/Skeleton/VenomousTentaculaBush/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "VenomousTentaculaFlower", NpcOption.sModelGroupTag, "Model_Resource_VenomousTentaculaFlower", "./Resources/SampleClient/Models/Skeleton/VenomousTentaculaFlower/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "CottonCandyBowl", NpcOption.sModelGroupTag, "Model_Resource_CottonCandyBowl", "./Resources/SampleClient/Models/Skeleton/CottonCandyBowl/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "CottonCandyWindow", NpcOption.sModelGroupTag, "Model_Resource_CottonCandyWindow", "./Resources/SampleClient/Models/Skeleton/CottonCandyWindow/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "EnchantedWateringCan", NpcOption.sModelGroupTag, "Model_Resource_EnchantedWateringCan", "./Resources/SampleClient/Models/Skeleton/EnchantedWateringCan/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GoldenSnitch", NpcOption.sModelGroupTag, "Model_Resource_GoldenSnitch", "./Resources/SampleClient/Models/Skeleton/GoldenSnitch/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "HonkingDaffodils", NpcOption.sModelGroupTag, "Model_Resource_HonkingDaffodils", "./Resources/SampleClient/Models/Skeleton/HonkingDaffodils/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MagicPaperAndQuill", NpcOption.sModelGroupTag, "Model_Resource_MagicPaperAndQuill", "./Resources/SampleClient/Models/Skeleton/MagicPaperAndQuill/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MarionetteCandyBooth", NpcOption.sModelGroupTag, "Model_Resource_MarionetteCandyBooth", "./Resources/SampleClient/Models/Skeleton/MarionetteCandyBooth/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NifflerTightropeToy", NpcOption.sModelGroupTag, "Model_Resource_NifflerTightropeToy", "./Resources/SampleClient/Models/Skeleton/NifflerTightropeToy/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PoltergeistHand", NpcOption.sModelGroupTag, "Model_Resource_PoltergeistHand", "./Resources/SampleClient/Models/Skeleton/PoltergeistHand/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfPruningSecateurs", NpcOption.sModelGroupTag, "Model_Resource_SelfPruningSecateurs", "./Resources/SampleClient/Models/Skeleton/SelfPruningSecateurs/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfPruningShears", NpcOption.sModelGroupTag, "Model_Resource_SelfPruningShears", "./Resources/SampleClient/Models/Skeleton/SelfPruningShears/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfShufflingCards", NpcOption.sModelGroupTag, "Model_Resource_SelfShufflingCards", "./Resources/SampleClient/Models/Skeleton/SelfShufflingCards/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfWrappingBox", NpcOption.sModelGroupTag, "Model_Resource_SelfWrappingBox", "./Resources/SampleClient/Models/Skeleton/SelfWrappingBox/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfWrappingPaper", NpcOption.sModelGroupTag, "Model_Resource_SelfWrappingPaper", "./Resources/SampleClient/Models/Skeleton/SelfWrappingPaper/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfWrappingPresent", NpcOption.sModelGroupTag, "Model_Resource_SelfWrappingPresent", "./Resources/SampleClient/Models/Skeleton/SelfWrappingPresent/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ToyProfessorInTheBox", NpcOption.sModelGroupTag, "Model_Resource_ToyProfessorInTheBox", "./Resources/SampleClient/Models/Skeleton/ToyProfessorInTheBox/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ZonkosJackInTheBox", NpcOption.sModelGroupTag, "Model_Resource_ZonkosJackInTheBox", "./Resources/SampleClient/Models/Skeleton/ZonkosJackInTheBox/");
 			
 		}
 		//{
@@ -177,6 +221,17 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 				return E::NPC_PLACEMENT_RESULT{Placement.iPlacementId, true, *hNpc, "Spawn succeeded."};
 			});
+
+		if (FAILED(pNpcManager->Load(
+				"./Resources/json/NPC/Level_HogwartWorld.json")))
+		{
+			return E_FAIL;
+		}
+		if (FAILED(pNpcManager->LoadAdditional(
+				"./Resources/json/NPC/Level_HogwartWorld_AnimObj.json")))
+		{
+			return E_FAIL;
+		}
 	}
 	if (FAILED(SpawnPlayerCape(*hPlayer)))
 		return E_FAIL;
@@ -198,9 +253,6 @@ HRESULT CLevelHogwartWorld::Initialize()
 	{
 		return E_FAIL;
 	}
-
-	if (FAILED(SpawnPropBarrelPyramid()))
-		return E_FAIL;
 
 	{
 		// 상점 NPC
@@ -229,13 +281,14 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.Repeatable = true;
 		Desc.AutoStartOnEnter = true;
 		Desc.AutoAdvanceOpeningLineCount = 2u;
-		// 입장 시네마틱 10초 동안 첫 두 대사를 각각 5초씩 자동 표시한다.
+		// 입장 첫 대사는 빠르게 넘기고, 이후 자동 대사는 기본 시간을 사용한다.
 		Desc.OpeningLineAutoAdvanceDelay = 5.f;
 		Desc.HideDialogueInteractionPrompt = true;
 		Desc.FadeDuration = 0.6f;
 		Desc.FadeHoldDuration = 0.25f;
 		Desc.IdleExpressionAnim = "AN_BODY__Idle__Hu_BM_Idle_Casual_Loop.bin";
 		Desc.WorldSpaceShop = false;
+		Desc.SecondSpellMiniGame = true;
 		Desc.RepositionPlayerForDialogue = false;
 		Desc.ResolveStartDialogueIndex = []()
 		{
@@ -252,7 +305,15 @@ HRESULT CLevelHogwartWorld::Initialize()
 				CInteractiveNpc::DIALOGUE_ACTION::NONE,
 				false,
 				true,
-				"ShopNpcEntrance"
+				"ShopNpcEntrance",
+				true,
+				3.6f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_01.mp3",
+				3.47f
 			},
 			{
 				"일이 많아서.. 잠시만 기다려주십쇼!",
@@ -263,7 +324,15 @@ HRESULT CLevelHogwartWorld::Initialize()
 				CInteractiveNpc::DIALOGUE_ACTION::NONE,
 				false,
 				true,
-				"ShopNpcEntrance"
+				"ShopNpcEntrance",
+				true,
+				5.45f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_02.mp3",
+				5.32f
 			},
 			{
 				"돈은 준비되셨죠?",
@@ -279,15 +348,34 @@ HRESULT CLevelHogwartWorld::Initialize()
 				CInteractiveNpc::DIALOGUE_ACTION::NONE,
 				true,
 				false,
-				"ShopNpcDialogueCloseUp"
+				"ShopNpcDialogueCloseUp",
+				false,
+				3.f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_03.mp3",
+				3.16f
 			},
 			{
-				"아, 돈이 없네요... 호그와트 성에 돈이 있다고 하던데, 그곳으로 가보시죠!",
+				"아, 돈이 부족하시네요... 호그와트 성에서 작은 대회를 연다고 하던데, 그곳으로 가보시죠!",
 				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
 				true,
 				{},
 				{},
-				CInteractiveNpc::DIALOGUE_ACTION::MOVE_TO_DESTINATION
+				CInteractiveNpc::DIALOGUE_ACTION::MOVE_TO_DESTINATION,
+				false,
+				false,
+				"",
+				true,
+				9.15f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_04.mp3",
+				9.01f
 			},
 			{
 				"오우, 돈을 다 모아오셨군요!",
@@ -300,7 +388,13 @@ HRESULT CLevelHogwartWorld::Initialize()
 				false,
 				"ShopNpcDialogueCloseUp",
 				true,
-				3.f
+				4.f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_05.mp3",
+				3.89f
 			},
 			{
 				"그럼 자, 여기 지팡이를 한번 골라보십쇼!",
@@ -313,7 +407,51 @@ HRESULT CLevelHogwartWorld::Initialize()
 				false,
 				"ShopNpcDialogueCloseUp",
 				true,
-				3.5f
+				3.95f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_06.mp3",
+				3.81f
+			},
+			{
+				"오 정말 멋진 지팡이군요. 마법도 하나 같이 배워볼까요?",
+				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::START_SPELL_MINIGAME,
+				true,
+				false,
+				"ShopNpcDialogueCloseUp",
+				true,
+				6.1f,
+				"ShopNpcSpellLesson",
+				true,
+				true,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_07.mp3",
+				5.95f
+			},
+			{
+				"그 마법은 함부로 쓰면 안되는 마법입니다. 조심하세요!",
+				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::NONE,
+				false,
+				false,
+				"ShopNpcDialogueCloseUp",
+				true,
+				5.f,
+				"",
+				false,
+				false,
+				true,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_08.mp3",
+				4.91f
 			}
 		};
 		// 기존 호그와트 쪽 액티비티 시작 지점을 이동 목적지로 사용한다.
@@ -324,7 +462,16 @@ HRESULT CLevelHogwartWorld::Initialize()
 			"AN_BODY__Meeting__Shot_180_GerboldOllivander.bin";
 		Desc.OnMoveDestinationApplied = [this, hPlayer = *hPlayer]()
 		{
+			ChangeBGM(
+				"./Resources/SampleClient/Sound/HogsMeade/Ambient/HogwartBgm3.wav",
+				0.5f,
+				1.f);
+
 			RequestSummonersCourtSpawn(hPlayer);
+			GET_SINGLE(UIManager)->CreateOrChangeQuest(
+				"미니게임 참여하기");
+			GET_SINGLE(UIManager)->SetMiniMapObjectiveActive(
+				"Hogwart_MiniGameNpcQuest", true);
 		};
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
@@ -339,12 +486,12 @@ HRESULT CLevelHogwartWorld::Initialize()
 		CInteractiveNpc::DESC Desc{};
 		Desc.sObjectTag = "Hogsmeade_MiniGameNpc_Professor";
 		Desc.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-		Desc.ReSourceTag = "PLAYER_MODEL_RESROUCE";
+		Desc.ReSourceTag = "Model_Resource_NPC_VictorRookwood";
 		Desc.BeHaviorTag = "NPC1";
 		Desc.resBeHaviorMajor = "BTJSON";
 		Desc.resBeHaviorMinor = "NPC1";
 		Desc.TargetHandle = *hPlayer;
-		Desc.vPos = { 1895.461f, 35.9f, 268.991f };
+		Desc.vPos = { 1895.461f, 34.4f, 268.991f };
 		Desc.vStartPos = Desc.vPos;
 		Desc.vRot = {/*33.5f*/0.f, 24.5f, 0.f };
 		Desc.vScale = { 1.f, 1.f, 1.f };
@@ -374,7 +521,15 @@ HRESULT CLevelHogwartWorld::Initialize()
 				{
 					{
 						"소환사의 코트", 4,
-						CInteractiveNpc::DIALOGUE_ACTION::CONTINUE_DIALOGUE
+						CInteractiveNpc::DIALOGUE_ACTION::CONTINUE_DIALOGUE,
+						[]()
+						{
+							GET_SINGLE(UIManager)->CreateOrChangeQuest(
+								"소환사의 코트 참여하기");
+							GET_SINGLE(UIManager)->SetMiniMapObjectiveActive(
+								"Hogwart_AccioStudentQuest", true);
+							return 4u;
+						}
 					},
 					{
 						"부릉! 브룸!", 2,
@@ -411,7 +566,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 			{ 1953.605f, 60.391f, -188.274f } // 1: 코인
 		};
 		Desc.CoinMoveRotationEuler = { 2.034f, 13.171f, 0.f };
-		Desc.MoveFadeHoldDuration = 10.f;
+		Desc.MoveFadeHoldDuration = 20.f;
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
 
@@ -483,13 +638,21 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	GET_SINGLE(UIManager)->SetRaceReturnToShopCallback([this]()
 	{
+		ChangeBGM(
+			"./Resources/SampleClient/Sound/HogsMeade/Ambient/Roads_Lead_to_Hogsmeade.mp3",
+			0.2f,
+			1.f);
+
 		RequestSummonersCourtDespawn();
 	});
 
 	// 레벨 진입 후 3초 동안 검은 화면을 유지하고,
 	// 이후 2초 동안 검은 UI를 사라지게 해 게임 화면을 드러낸다.
 	GET_SINGLE(UIManager)->CreateFadeOut(3.f, 2.f);
-
+	ChangeBGM(
+		"./Resources/SampleClient/Sound/HogsMeade/Ambient/Roads_Lead_to_Hogsmeade.mp3",
+		0.2f,
+		1.f);
 	return S_OK;
 }
 
@@ -511,8 +674,16 @@ void CLevelHogwartWorld::Update(E::_float fTimeDelta)
 		m_bCreatePlayScreenUI = hUIController.has_value();
 	}
 
+	if (m_bCreatePlayScreenUI && !m_bQuestCreated)
+	{
+		m_bQuestCreated = true;
+		GET_SINGLE(UIManager)->CreateOrChangeQuest(
+			"호그스미스 둘러보기");
+	}
+
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 	UpdateDebugWarp();
+
 }
 
 void CLevelHogwartWorld::UpdateDebugWarp()
@@ -670,6 +841,7 @@ std::optional<CHandle> CLevelHogwartWorld::SpawnPlayer()
 		.iSimulationMask = PX_ALL_LAYERS,
 		.iQueryMask =
 			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 			ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 			ETOUI(COLLISION_LAYER::DOOR_DYNAMIC) |
 			ETOUI(COLLISION_LAYER::DOOR_HINGE_BLOCKER)
@@ -762,6 +934,8 @@ HRESULT CLevelHogwartWorld::SpawnAccioActivity(
 	CAccioActivity_Base::DESC baseDesc{};
 	baseDesc.sObjectTag = "HogwartWorld_AccioActivity_Base";
 	baseDesc.sResourceGroup = LEVEL::HOGWART_WORLD;
+	baseDesc.PlayerDisplayName = "이솝 샤프";
+	baseDesc.NpcDisplayName = "저스티스 훈";
 	baseDesc.vInitialPosition = vOrigin;
 	baseDesc.vInitialRotation = vSetRotation;
 	baseDesc.vInitialScale = {
@@ -882,24 +1056,29 @@ HRESULT CLevelHogwartWorld::SpawnAccioActivity(
 	npcControllerDesc.hActivity = *hBase;
 	npcControllerDesc.hPlatform = *hPlatform;
 	npcControllerDesc.hInteractionPlayer = hPlayer;
-	npcControllerDesc.SpeakerName = "호그와트 학생";
+	npcControllerDesc.SpeakerName = baseDesc.NpcDisplayName;
 	npcControllerDesc.fInteractionDistance = 10.f;
 	npcControllerDesc.Dialogue =
 	{
-		{ "준비됐어? 아씨오로 공을 끌어 점수를 겨뤄 보자.", {}, true },
-		{ "높은 점수 구역에 공을 멈추면 이겨. 네가 먼저 시작해.", {}, true }
+		{ "준비됐어? 아씨오로 공을 끌어 점수를 겨뤄 보자.", {}, true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_INTRO_01.mp3" },
+		{ "높은 점수 구역에 공을 멈추면 이겨. 네가 먼저 시작해.", {}, true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_INTRO_02.mp3" }
 	};
 	npcControllerDesc.PlayerWinDialogue =
 	{
-		{ "잘했어. 이번 승부는 네가 이겼네.", {}, true }
+		{ "잘했어. 이번 승부는 네가 이겼네.", {}, true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_PLAYER_WIN_01.mp3" }
 	};
 	npcControllerDesc.NpcWinDialogue =
 	{
-		{ "이번 승부는 내가 이겼네. 다시 도전해 봐.", {}, true }
+		{ "이번 승부는 내가 이겼네. 다시 도전해 봐.", {}, true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_NPC_WIN_01.mp3" }
 	};
 	npcControllerDesc.DrawDialogue =
 	{
-		{ "무승부네. 꽤 좋은 승부였어.", {}, true }
+		{ "무승부네. 꽤 좋은 승부였어.", {}, true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_DRAW_01.mp3" }
 	};
 
 	constexpr _float fNpcSpawnClearance = 0.5f;
@@ -1034,52 +1213,64 @@ HRESULT CLevelHogwartWorld::SpawnPlayerCape(CHandle hPlayer)
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorld::SpawnPropBarrelPyramid()
+HRESULT CLevelHogwartWorld::SpawnPropBarrelBlock()
 {
-	// 전달받은 위치를 바닥 줄의 오른쪽 끝으로 두고 왼쪽으로 펼친다.
-	const _float3 vRightBasePosition{ 273.554f, 38.809f, 130.496f };
-	// 배럴을 세운 크기에 맞춰 초기 Convex가 서로 겹치지 않게 여유를 둔다.
-	const _float fHorizontalSpacing = 4.4f;
-	const _float fVerticalSpacing = 4.6f;
-	const uint32_t iRowCounts[]{ 5u, 3u, 1u };
-	const _float fPyramidCenterX =
-		vRightBasePosition.x - fHorizontalSpacing * 2.f;
+	if (m_bPropBarrelBlockSpawned)
+		return S_OK;
 
+	// 지정한 두 좌표를 바닥 줄의 정확한 양 끝점으로 사용한다.
+	const _float3 vBaseStart{ 270.173f, 39.265f, 121.917f };
+	const _float3 vBaseEnd{ 280.773f, 39.376f, 134.895f };
+	const _float fBaseHeightOffset = 1.f;
+	const _float fHorizontalSpacingScale = 1.05f;
+	const _float fVerticalSpacing = 3.9f;
+	// 기존 6열 간격은 유지하되 오른쪽 끝 열만 제외한다.
+	constexpr uint32_t iOriginalColumnCount = 6u;
+	constexpr uint32_t iColumnCount = 5u;
+	constexpr uint32_t iRowCount = 3u;
+
+	std::vector<CHandle> SpawnedHandles{};
+	SpawnedHandles.reserve(iColumnCount * iRowCount);
 	uint32_t iBarrelIndex{};
-	for (uint32_t iRow = 0; iRow < std::size(iRowCounts); ++iRow)
+	for (uint32_t iRow = 0; iRow < iRowCount; ++iRow)
 	{
-		const uint32_t iBarrelCount = iRowCounts[iRow];
-		const _float fHalfRow =
-			static_cast<_float>(iBarrelCount - 1u) * 0.5f;
-
-		for (uint32_t iColumn = 0; iColumn < iBarrelCount; ++iColumn)
+		for (uint32_t iColumn = 0; iColumn < iColumnCount; ++iColumn)
 		{
+			const _float fColumnRatio = static_cast<_float>(iColumn) /
+				static_cast<_float>(iOriginalColumnCount - 1u) *
+				fHorizontalSpacingScale;
 			CPropBarrel::DESC Desc{};
 			Desc.sObjectTag =
-				"Hogwart_PropBarrel_Pyramid_" + std::to_string(iBarrelIndex++);
+				"Hogwart_PropBarrel_Block_" + std::to_string(iBarrelIndex++);
 			Desc.sResourceGroup = "PERMANENT";
 			Desc.vInitialRotation = { 90.f, 0.f, 0.f };
-			// 위쪽 배럴이 자리를 잡는 동안 발생하는 초기 접촉으로는 파괴하지 않는다.
+			// 다이나믹 상태로 배치하되 첫 충돌 전까지 현재 자세에서 잠재운다.
+			Desc.bStartSleeping = true;
 			Desc.fCollisionDestroyGraceTime = 2.f;
 			Desc.vInitialPosition =
 			{
-				fPyramidCenterX +
-					(static_cast<_float>(iColumn) - fHalfRow) * fHorizontalSpacing,
-				vRightBasePosition.y + static_cast<_float>(iRow) * fVerticalSpacing,
-				vRightBasePosition.z
+				vBaseStart.x + (vBaseEnd.x - vBaseStart.x) * fColumnRatio,
+				vBaseStart.y + (vBaseEnd.y - vBaseStart.y) * fColumnRatio +
+					fBaseHeightOffset +
+					static_cast<_float>(iRow) * fVerticalSpacing,
+				vBaseStart.z + (vBaseEnd.z - vBaseStart.z) * fColumnRatio
 			};
 
-			if (!CGameInstance::Get().AddGameObjectToLayer(
+			const auto hBarrel = CGameInstance::Get().AddGameObjectToLayer(
 				"PERMANENT",
 				PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
 				"PropBarrel",
-				&Desc))
+				&Desc);
+			if (!hBarrel)
 			{
+				DespawnRuntimeObjects(SpawnedHandles);
 				return E_FAIL;
 			}
+			SpawnedHandles.push_back(*hBarrel);
 		}
 	}
 
+	m_bPropBarrelBlockSpawned = true;
 	return S_OK;
 }
 
@@ -1269,12 +1460,17 @@ HRESULT CLevelHogwartWorld::SpawnMonster(std::optional<CHandle> hPlayer)
 	CMon_Spawner::MON_SPAWNER_DESC MonS{};
 	MonS.sObjectTag = "MonSpawn";
 	MonS.handle = hPlayer.value();
+	MonS.OnBeforeTrollSpawn = [this]()
+	{
+		return SpawnPropBarrelBlock();
+	};
 	if (!CGameInstance::Get().AddGameObjectToLayer(
 			LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_MonSpawner, "00.MonSpawn", &MonS))
 	{
 		return E_FAIL;
 	}
 
+	return S_OK;
 }
 HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 {
@@ -1478,6 +1674,17 @@ UPtr<CLevelHogwartWorld> CLevelHogwartWorld::Create()
 
 void CLevelHogwartWorld::Free()
 {
+	if (auto* pSoundManager =
+		E::CGameInstance::Get().GetSoundManager())
+	{
+		if (m_iBGM != INVALID_SOUND_ID &&
+			pSoundManager->IsValidSound(m_iBGM))
+		{
+			pSoundManager->FadeOutAndStop(m_iBGM, 0.5f);
+		}
+	}
+	m_iBGM = INVALID_SOUND_ID;
+	m_strCurrentBGMPath.clear();
 	GET_SINGLE(UIManager)->SetRaceReturnToShopCallback({});
 	if (auto *pNpcManager = E::CGameInstance::Get().GetNpcPlacementManager())
 		pNpcManager->ClearNpcOptions();

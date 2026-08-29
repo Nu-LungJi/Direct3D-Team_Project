@@ -88,14 +88,12 @@ void CEdg_Phase::Enter(CStateMachine* pStateMachine)
 
 	if (m_ePhase != DRAGON_PHASE::PHASE3)
 	{
-		
-		//Cast<CEnderDragon_State>(pStateMachine)->Get();
-		//MONSOUND Sound_Desc{};
-		//_float3 vPos = pDragon->GetTransform().GetPosition();
-		//Sound_Desc.SoundKey = "Phase";
-		//Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
-		//Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
-		//pDragon->Play_Sound(Sound_Desc);
+		MONSOUND Sound_Desc{};
+		_float3 vPos = pDragon->GetTransform().GetPosition();
+		Sound_Desc.SoundKey = "Phase";
+		Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
+		Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+		pDragon->Play_Sound(Sound_Desc);
 
 	}
 }
@@ -224,6 +222,16 @@ _bool CEdg_Phase::MovePhase3(CEnderDragon* pDragon, _float fTimeDelta)
 
 	if (m_PhasePos[ETOUI(m_ePhase)].empty()) return true;
 
+	MONSOUND Sound_Desc{};
+	_float3 vPos = pDragon->GetTransform().GetPosition();
+	Sound_Desc.SoundKey = "WingMove";
+	Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
+	Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+	auto* pSound = CGameInstance::Get().GetSoundManager();
+
+	if(!pSound->IsPlaying(m_SoundID))
+		m_SoundID = pDragon->Play_Sound(Sound_Desc);
+	
 
 	_vector vNextPos = XMLoadFloat3(&m_PhasePos[ETOUI(m_ePhase)].front());
 	_vector vCurPos = XMLoadFloat3(&pDragon->GetTransform().GetPosition());

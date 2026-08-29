@@ -11,6 +11,7 @@
 #include "DbgLineRender.h"
 #include "GameInstance.h"
 #include "Player.h"
+#include "SoundManager.h"
 #include "UIManager.h"
 
 NS_USING(Client)
@@ -391,7 +392,8 @@ void CAccioActivity_NpcController::UpdateDialogue(_float fTimeDelta)
 		UpdateDialogueIntro(fTimeDelta);
 		const _bool bCanAdvanceDialogue =
 			m_eConversationPhase == CONVERSATION_PHASE::TALKING;
-		SyncInteractionPrompt(bCanAdvanceDialogue);
+		// 대화 진행용 F 입력은 유지하지만 액티브 버튼 UI는 숨긴다.
+		SyncInteractionPrompt(false);
 		if (!bCanAdvanceDialogue || !CGameInstance::Get().KeyDown(DIK_F))
 			return;
 
@@ -404,6 +406,9 @@ void CAccioActivity_NpcController::UpdateDialogue(_float fTimeDelta)
 	if (eMatchState == CAccioActivity_Base::MATCH_STATE::MATCH_END)
 	{
 		SyncInteractionPrompt(false);
+		// 최종 점수와 승패 UI가 모두 끝난 뒤 결과 대화를 시작한다.
+		if (GET_SINGLE(UIManager)->IsAssioMiniGameActive())
+			return;
 		if (!m_bMatchEndDialogueCompleted &&
 			m_bAtSideStandby && m_eState == STATE::IDLE)
 		{
@@ -466,6 +471,11 @@ void CAccioActivity_NpcController::BeginDialogueSequence(
 	m_ActiveDialogue = dialogue;
 	m_eDialoguePurpose = ePurpose;
 	m_bTalking = true;
+	if (ePurpose == DIALOGUE_PURPOSE::START_MATCH)
+	{
+		GET_SINGLE(UIManager)->SetMiniMapObjectiveActive(
+			"Hogwart_AccioStudentQuest", false);
+	}
 	m_iDialogueIndex = 0u;
 	m_fDialogueIntroElapsed = 0.f;
 	m_eConversationPhase = CONVERSATION_PHASE::FADING_OUT;
@@ -552,6 +562,7 @@ void CAccioActivity_NpcController::ShowFirstDialogueLine()
 	m_eConversationPhase = CONVERSATION_PHASE::TALKING;
 	const auto& line = m_ActiveDialogue[m_iDialogueIndex];
 	SetDialogueExpression(line);
+	HandleDialogueLineSound(line);
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_sSpeakerName, line.Text);
 }
 
@@ -572,11 +583,52 @@ void CAccioActivity_NpcController::AdvanceDialogue()
 
 	const auto& line = m_ActiveDialogue[m_iDialogueIndex];
 	SetDialogueExpression(line);
+	HandleDialogueLineSound(line);
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_sSpeakerName, line.Text);
+}
+
+void CAccioActivity_NpcController::HandleDialogueLineSound(
+	const DIALOGUE_LINE& line)
+{
+	StopDialogueSound();
+	if (line.SoundPath.empty())
+		return;
+
+	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager())
+	{
+		m_iDialogueSoundID = pSoundManager->Play2D(
+			line.SoundPath,
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 48,
+				.bLoop = false
+			},
+			SOUND_LOAD_TYPE::STREAM);
+	}
+}
+
+void CAccioActivity_NpcController::StopDialogueSound(
+	_float fFadeOutDuration)
+{
+	if (m_iDialogueSoundID == INVALID_SOUND_ID)
+		return;
+
+	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager())
+	{
+		if (fFadeOutDuration > 0.f)
+			pSoundManager->FadeOutAndStop(
+				m_iDialogueSoundID, fFadeOutDuration);
+		else
+			pSoundManager->Stop(m_iDialogueSoundID);
+	}
+	m_iDialogueSoundID = INVALID_SOUND_ID;
 }
 
 void CAccioActivity_NpcController::CancelDialogue()
 {
+	StopDialogueSound();
 	m_bTalking = false;
 	m_ActiveDialogue.clear();
 	m_eDialoguePurpose = DIALOGUE_PURPOSE::NONE;
@@ -595,6 +647,7 @@ void CAccioActivity_NpcController::CancelDialogue()
 
 void CAccioActivity_NpcController::FinishDialogue()
 {
+	StopDialogueSound();
 	const DIALOGUE_PURPOSE eFinishedPurpose = m_eDialoguePurpose;
 	m_bTalking = false;
 	if (eFinishedPurpose == DIALOGUE_PURPOSE::START_MATCH)
@@ -612,13 +665,13 @@ void CAccioActivity_NpcController::FinishDialogue()
 		pNpcCharacter->SetAction(CAccioActivity_NpcCharacter::ACTION::IDLE);
 	EndDialogueCamera();
 	SetPlayerMovementLocked(false);
-	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
-		0.f, m_fDialogueFadeDuration);
 
 	auto* pActivity = CGameInstance::Get().
 		GetGameObjectByHandleT<CAccioActivity_Base>(m_hActivity);
 	if (eFinishedPurpose == DIALOGUE_PURPOSE::MATCH_RESULT)
 	{
+		GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
+			0.f, m_fDialogueFadeDuration);
 		// [LSY] 결과 확인 후 공과 점수를 준비 상태로 되돌려 NPC에게 다시 말을 걸 수 있게 한다.
 		if (pActivity && pActivity->ResetMatch(true))
 		{
@@ -630,14 +683,20 @@ void CAccioActivity_NpcController::FinishDialogue()
 		return;
 	}
 	if (eFinishedPurpose != DIALOGUE_PURPOSE::START_MATCH)
+	{
+		GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
+			0.f, m_fDialogueFadeDuration);
+		return;
+	}
+
+	if (pActivity && pActivity->StartMatch())
 		return;
 
-	if (!pActivity || !pActivity->StartMatch())
-	{
-		// [LSY] 경기 시작 실패 시 F 상호작용을 다시 열어 재시도할 수 있게 한다.
-		m_bDialogueCompleted = false;
-		DEBUG_LOG("[AccioActivity] Dialogue finished, but StartMatch failed.\n");
-	}
+	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
+		0.f, m_fDialogueFadeDuration);
+	// [LSY] 경기 시작 실패 시 F 상호작용을 다시 열어 재시도할 수 있게 한다.
+	m_bDialogueCompleted = false;
+	DEBUG_LOG("[AccioActivity] Dialogue finished, but StartMatch failed.\n");
 }
 
 void CAccioActivity_NpcController::BeginDialogueCamera()
@@ -1533,7 +1592,7 @@ void CAccioActivity_NpcController::UpdateAccioEffects(_float fTimeDelta)
 			m_fPullEffectBlend = 0.f;
 			const CHandle hOwner = GetHandle();
 			m_iPullEffectID = CGameInstance::Get().PlayEffect(
-				"AccioBallPull",
+				"AccioBallPullNpc",
 				wandWorld,
 				XMVectorSetW(XMLoadFloat3(&vEnd), 1.f),
 				[hOwner](EFFECT_INSTANCE_ID iEffectID, EFFECT_FINISH_REASON)
@@ -1955,9 +2014,24 @@ UPtr<CPrototype> CAccioActivity_NpcController::Clone(void* pArg)
 
 void CAccioActivity_NpcController::Free()
 {
+	const auto* pActivity = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_Base>(m_hActivity);
+	const _bool bRestoreAssioUi =
+		m_bTalking ||
+		GET_SINGLE(UIManager)->IsAssioMiniGameActive() ||
+		(pActivity &&
+			pActivity->GetMatchState() != CAccioActivity_Base::MATCH_STATE::READY);
+
 	SyncInteractionPrompt(false);
 	EndDialogueCamera();
 	SetPlayerMovementLocked(false);
+	StopDialogueSound(0.f);
 	StopAccioEffects();
+	if (bRestoreAssioUi)
+	{
+		// [LSY] 런타임 디스폰이나 레벨 정리로 경기가 중단돼도
+		// Coat/결과 UI와 시작 전에 숨긴 HUD를 함께 복원한다.
+		GET_SINGLE(UIManager)->AssioMiniGameFinish();
+	}
 	CGameObject::Free();
 }

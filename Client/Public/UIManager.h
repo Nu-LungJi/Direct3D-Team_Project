@@ -7,8 +7,6 @@
 
 NS_BEGIN(Client)
 
-static constexpr bool isPurchaseWand{ false };
-
 static Engine::CUIObject* GetSafeUI(CHandle handle)
 {
 	return E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(handle);
@@ -58,6 +56,10 @@ public:
 	void SaveSpellSlot(uint32_t slotNumber, uint32_t spellType);
 	_bool HasInitializedSpellSlots() const { return m_bSpellSlotsInitialized; }
 
+	/********구매한 완드 영속 상태********/
+	void SetPurchasedWandEquipped(_bool equipped) { m_bPurchasedWandEquipped = equipped; }
+	_bool IsPurchasedWandEquipped() const { return m_bPurchasedWandEquipped; }
+
 	/********데미지 폰트***********/
 	void CreateDamageFont(uint32_t damage, CHandle targetMonster,_bool isCritical = false);
 
@@ -79,9 +81,21 @@ public:
 	/********퀘스트 안내***********/
 	// Quest UI가 없으면 생성하고, 이미 표시 중이면 텍스트 전환 모션으로 교체한다.
 	void CreateOrChangeQuest(const std::string& questText);
+	void SetQuestColoredSuffix(
+		const std::string& suffix,
+		const _float3& color = { 0.39215687f, 1.f, 0.39215687f });
 	void DeleteQuest();
 	void FadeOutQuest(float playtime = 0.3f);
 	void FadeInQuest(float playtime = 0.5f);
+	void SetQuestFadeInDeferred(_bool deferred)
+	{
+		m_bQuestFadeInDeferred = deferred;
+	}
+	_bool IsQuestFadeInDeferred() const
+	{
+		return m_bQuestFadeInDeferred;
+	}
+	_bool SetMiniMapObjectiveActive(const std::string& key, _bool active);
 
 	/********레이스 시작 타이머***********/
 	void StartRaceStartTimer();
@@ -101,9 +115,17 @@ public:
 	}
 
 	/********소환사의 코트 미니게임**********/
-	void AssioMiniGameStart();
+	_bool AssioMiniGameStart(
+		_bool bPlayerStarts = true,
+		const _string& PlayerDisplayName = "이솝 샤프",
+		const _string& NpcDisplayName = "저스티스 훈");
 	void AssioMiniGameFinish();
-	void AddScore(int score, _bool isFinalScore = false);
+	_bool AddScore(
+		int iTurnScore,
+		int iPlayerTotalScore,
+		int iNpcTotalScore,
+		_bool bPlayerTurn,
+		_bool bFinalScore = false);
 	void TurnTitleFadeOut(float playtime = 0.3f);
 	_bool IsAssioMiniGameActive() const { return m_bAssioMiniGameActive; }
 	_bool CanAddAssioScore() const
@@ -124,6 +146,10 @@ public:
 	void OpenWandShopPage(uint32_t pageIndex);
 	void CloseWandShop();
 	_bool IsWandShopOpen() const { return m_WandShop.IsOpen(); }
+	_bool ConsumeWandPurchaseCompleted()
+	{
+		return m_WandShop.ConsumePurchaseCompleted();
+	}
 	_float2 GetUIInteractionMousePosition() const;
 	_bool IsWandShopWorldMode() const { return m_bWandShopWorldMode; }
 
@@ -169,6 +195,7 @@ private:
 	}();
 	std::array<uint32_t, 4> m_SavedSpellSlots{};
 	_bool m_bSpellSlotsInitialized{ false };
+	_bool m_bPurchasedWandEquipped{ false };
 
 	// 애니메이션 함수, 실행 함수들 이름
 	std::vector<std::string> m_vEventNames;
@@ -190,6 +217,7 @@ private:
 	std::optional<CHandle> m_hQuestTargetIcon{};
 	std::string m_CurrentQuestText{};
 	_bool m_bQuestFadeSuppressed{};
+	_bool m_bQuestFadeInDeferred{};
 	_float2 m_QuestTextBaseLocalPos{};
 	_float2 m_QuestTargetIconBaseLocalPos{};
 	_float m_fDialogueTargetWidth{};
@@ -226,6 +254,7 @@ private:
 	_float m_fRaceMiniGameElapsed{};
 	uint32_t m_iRaceMiniGameCoinCount{40};
 	_bool m_bRaceReturnPositionApplied{};
+	_bool m_bRaceResultFadeOutStarted{};
 	_float m_fRaceReturnElapsed{};
 	std::function<void()> m_OnRaceReturnToShop{};
 
@@ -235,6 +264,7 @@ private:
 		APPEAR,
 		HOLD,
 		MOVE,
+		IMPACT_HOLD,
 		TURN_CHANGE,
 		RESULT_COAT_FADE_OUT,
 		RESULT_HOLD,
@@ -253,6 +283,8 @@ private:
 	std::optional<CHandle> m_hAssioCenterScoreText{};
 	std::optional<CHandle> m_hAssioTurnTitle{};
 	std::optional<CHandle> m_hAssioTargetScoreText{};
+	_wstring m_AssioPlayerDisplayName{ L"이솝 샤프" };
+	_wstring m_AssioNpcDisplayName{ L"저스티스 훈" };
 	_float2 m_AssioCenterScoreBasePosition{};
 	_float2 m_AssioCenterScoreMoveStart{};
 	_float2 m_AssioCenterScoreMoveTarget{};
@@ -271,6 +303,8 @@ private:
 	int m_iAssioPlayerScore{};
 	int m_iAssioNpcScore{};
 	int m_iAssioPendingScore{};
+	int m_iAssioPendingPlayerScore{};
+	int m_iAssioPendingNpcScore{};
 	_bool m_bAssioTargetIsPlayer{};
 	_bool m_bAssioCurrentTurnIsPlayer{ true };
 	_bool m_bAssioTurnTitleFadeInStarted{};
@@ -283,6 +317,8 @@ private:
 	_float4x4 m_WandShopPanelWorld{};
 	_float3 m_vWandShopPanelWorldPosition{};
 	_float2 m_vWandShopPanelWorldScale{};
+	_float m_fWandShopPanelAppearElapsed{};
+	_float m_fWandShopPanelAppearScale{ 1.f };
 	_float2 m_WandShopPanelMousePosition{ -FLT_MAX, -FLT_MAX };
 	_bool m_bWandShopPanelMouseHit{ false };
 
@@ -300,6 +336,8 @@ private:
 	void PlayRaceRootsFadeIn(const std::vector<CHandle>& roots,
 		_float playtime = 0.3f);
 	void UpdateAssioMiniGame(_float fTimeDelta);
+	void PlayAssioScoreImpactEffect();
+	void CompleteAssioScoreImpact();
 	void BeginAssioTurnChange();
 	void BeginAssioResult();
 	void LoadAssioResult();

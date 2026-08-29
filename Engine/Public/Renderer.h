@@ -166,6 +166,7 @@ public:
 public:
 	VOID			Set_RadialBlurIntensity(const _float _Intensity)	{ m_pPostProcessBuffer.g_fBlurIntensity			= _Intensity; }
 	VOID			Set_MotionBlurEnabled(_bool bEnabled)			{ m_bMotionBlurEnabled = bEnabled; }
+	VOID			Set_ShadowEnabled(_bool bEnabled)				{ m_bApplyShadow = bEnabled; }
 	VOID			Set_DistortionIntensity(const _float _Intensity)	{ m_pPostProcessBuffer.g_fDistortionIntensity	= _Intensity; }
 	VOID			Set_ChromaticIntensity(const _float _Intensity)		{ m_pPostProcessBuffer.g_fChromaticIntensity	= _Intensity; }
 	VOID			Set_VignetteIntensity(const _float _Intensity)		{ m_pPostProcessBuffer.g_fVignetteIntensity		= _Intensity; }

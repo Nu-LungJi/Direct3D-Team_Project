@@ -136,7 +136,8 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 	const _bool playerInRange = IsPlayerInRange();
 	if (!playerInRange && m_bRepeatable && m_eState == STATE::IDLE)
 		m_bAutoStartTriggered = false;
-	if (m_bAutoStartOnEnter && !m_bAutoStartTriggered &&
+	if (!m_bInteractionPermanentlyDisabled &&
+		m_bAutoStartOnEnter && !m_bAutoStartTriggered &&
 		playerInRange && m_eState == STATE::IDLE &&
 		(!m_bCompleted || m_bRepeatable))
 	{
@@ -144,7 +145,8 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 		BeginDialogue();
 		return;
 	}
-	const _bool canStartDialogue = playerInRange &&
+	const _bool canStartDialogue = !m_bInteractionPermanentlyDisabled &&
+		playerInRange &&
 		(!m_bCompleted || m_bRepeatable) &&
 		m_eState == STATE::IDLE;
 	// 대화가 시작된 뒤에는 암전 중 위치 보정이나 물리 높이 차이 때문에
@@ -153,7 +155,9 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 		m_eState == STATE::TALKING &&
 		m_eConversationPhase == CONVERSATION_PHASE::TALKING;
 
-	SyncInteractionPrompt(canStartDialogue || canAdvanceDialogue);
+	// 대화 중에는 진행 입력을 계속 받되 F 액티브 버튼은 화면에
+	// 다시 생성하지 않는다. 시작 가능한 상태에서만 프롬프트를 표시한다.
+	SyncInteractionPrompt(canStartDialogue);
 
 	if ((canStartDialogue || canAdvanceDialogue) &&
 		E::CGameInstance::Get().KeyDown(DIK_F))
@@ -171,10 +175,16 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 
 void CInteractiveNpc::BeginDialogue()
 {
-	if (m_bTalking || m_Dialogue.empty() || (m_bCompleted && !m_bRepeatable))
+	if (m_bInteractionPermanentlyDisabled || m_bTalking || m_Dialogue.empty() ||
+		(m_bCompleted && !m_bRepeatable))
 		return;
 
 	m_bTalking = true;
+	if (GetObjectTag() == "Hogsmeade_MiniGameNpc_Professor")
+	{
+		GET_SINGLE(UIManager)->SetMiniMapObjectiveActive(
+			"Hogwart_MiniGameNpcQuest", false);
+	}
 	if (m_DebugStartDialogueIndex.has_value())
 	{
 		m_iDialogueIndex = *m_DebugStartDialogueIndex;
@@ -189,6 +199,7 @@ void CInteractiveNpc::BeginDialogue()
 	if (m_iDialogueIndex >= m_Dialogue.size())
 		m_iDialogueIndex = 0u;
 	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
+	m_bLineAnimationStartedDuringFade = false;
 	SetPlayerMovementLocked(true);
 	SyncInteractionPrompt(false);
 	m_eConversationPhase = CONVERSATION_PHASE::FADING_OUT;
@@ -216,11 +227,33 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 			return;
 		m_fIntroElapsed = -m_fFadeHoldDuration;
 		const auto& line = m_Dialogue[m_iDialogueIndex];
-		if (!line.CinematicName.empty() && line.CinematicName != m_DialogueCinematicName)
+		if (m_ePendingFadeAction != DIALOGUE_ACTION::NONE)
+		{
+			if (!line.ActionCinematicName.empty())
+			{
+				SwitchDialogueCamera(
+					line.ActionCinematicName,
+					line.ActionCinematicTargetsPlayer);
+			}
+
+			// 화면이 완전히 검은 동안 카메라, 미니게임 객체, 월드 정지 등
+			// 액션에 필요한 모든 초기화를 끝낸 뒤 밝아지는 페이드를 시작한다.
+			const DIALOGUE_ACTION action = m_ePendingFadeAction;
+			m_ePendingFadeAction = DIALOGUE_ACTION::NONE;
+			ExecuteDialogueAction(action);
+			m_bActionSetupCompletedUnderFade = true;
+			m_bLineAnimationStartedDuringFade = false;
+		}
+		else if (!line.CinematicName.empty() &&
+			line.CinematicName != m_DialogueCinematicName)
+		{
 			SwitchDialogueCamera(line.CinematicName);
+		}
 		SetRootMotionActive(line.UseRootMotion);
 		SetRootMotionRotationActive(line.UseRootMotion);
 		SetExpression(line.ExpressionAnim, line.LoopExpression);
+		if (!m_bActionSetupCompletedUnderFade)
+			m_bLineAnimationStartedDuringFade = true;
 		GET_SINGLE(UIManager)->CreateFadeOut(
 			m_fFadeHoldDuration, m_fFadeDuration);
 		m_eConversationPhase = CONVERSATION_PHASE::LINE_FADING_IN;
@@ -230,6 +263,12 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 	{
 		if (m_fIntroElapsed < m_fFadeDuration)
 			return;
+		if (m_bActionSetupCompletedUnderFade)
+		{
+			m_bActionSetupCompletedUnderFade = false;
+			m_eConversationPhase = CONVERSATION_PHASE::TALKING;
+			return;
+		}
 		ShowCurrentDialogueLine();
 		return;
 	}
@@ -240,15 +279,27 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 		m_fIntroElapsed = 0.f;
 
 		BeginDialogueCamera();
+		if (m_iDialogueIndex < m_Dialogue.size())
+		{
+			const auto& line = m_Dialogue[m_iDialogueIndex];
+			SetRootMotionActive(line.UseRootMotion);
+			SetRootMotionRotationActive(line.UseRootMotion);
+			SetExpression(line.ExpressionAnim, line.LoopExpression);
+			m_bLineAnimationStartedDuringFade = true;
+		}
+		const _float fadeOutDuration =
+			m_TemporaryFadeOutDuration.value_or(m_fFadeDuration);
 		GET_SINGLE(UIManager)->CreateFadeOut(
-			m_fFadeHoldDuration, m_fFadeDuration);
+			m_fFadeHoldDuration, fadeOutDuration);
 
 		m_fIntroElapsed = -m_fFadeHoldDuration;
 		m_eConversationPhase = CONVERSATION_PHASE::FADING_IN;
 		return;
 	}
 
-	if (m_fIntroElapsed < m_fFadeDuration)
+	const _float fadeOutDuration =
+		m_TemporaryFadeOutDuration.value_or(m_fFadeDuration);
+	if (m_fIntroElapsed < fadeOutDuration)
 		return;
 	ShowFirstDialogueLine();
 }
@@ -256,6 +307,19 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 
 void CInteractiveNpc::ShowFirstDialogueLine()
 {
+	// 구매 후 대화 재진입에만 사용한 빠른 화면 전환 속도를 복구한다.
+	// 이후 대사/미니게임 전환은 NPC 설명자의 원래 FadeDuration을 사용한다.
+	if (m_TemporaryFadeDurationRestore)
+	{
+		m_fFadeDuration = *m_TemporaryFadeDurationRestore;
+		m_TemporaryFadeDurationRestore.reset();
+	}
+	if (m_TemporaryFadeHoldDurationRestore)
+	{
+		m_fFadeHoldDuration = *m_TemporaryFadeHoldDurationRestore;
+		m_TemporaryFadeHoldDurationRestore.reset();
+	}
+	m_TemporaryFadeOutDuration.reset();
 	m_eState = STATE::TALKING;
 	ShowCurrentDialogueLine();
 }
@@ -271,6 +335,12 @@ void CInteractiveNpc::BeginLineTransition()
 	GET_SINGLE(UIManager)->CreateFadeIn(0.f, m_fFadeDuration);
 }
 
+void CInteractiveNpc::BeginActionTransition(DIALOGUE_ACTION action)
+{
+	m_ePendingFadeAction = action;
+	BeginLineTransition();
+}
+
 void CInteractiveNpc::ShowCurrentDialogueLine()
 {
 	if (m_iDialogueIndex >= m_Dialogue.size())
@@ -279,18 +349,39 @@ void CInteractiveNpc::ShowCurrentDialogueLine()
 	m_fOpeningLineElapsed = 0.f;
 	m_eConversationPhase = CONVERSATION_PHASE::TALKING;
 	const auto& line = m_Dialogue[m_iDialogueIndex];
-	SetRootMotionActive(line.UseRootMotion);
-	SetRootMotionRotationActive(line.UseRootMotion);
-	SetExpression(line.ExpressionAnim, line.LoopExpression);
+	if (m_bLineAnimationStartedDuringFade)
+	{
+		m_bLineAnimationStartedDuringFade = false;
+	}
+	else
+	{
+		SetRootMotionActive(line.UseRootMotion);
+		SetRootMotionRotationActive(line.UseRootMotion);
+		SetExpression(line.ExpressionAnim, line.LoopExpression);
+	}
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_SpeakerName, line.Text);
+	if (!line.VoiceSoundPath.empty())
+	{
+		CGameInstance::Get().GetSoundManager()->Play2D(
+			line.VoiceSoundPath,
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+	}
 	// UTF-8 코드포인트 수를 기준으로 실제 발화 구간만 추정한다.
 	size_t characterCount = 0u;
 	for (unsigned char character : line.Text)
 		if ((character & 0xC0u) != 0x80u)
 			++characterCount;
-	m_fDialogueSpeechRemaining = std::clamp(
-		0.4f + static_cast<_float>(characterCount) * 0.12f,
-		1.2f, 5.f);
+	m_fDialogueSpeechRemaining = line.VoiceDuration > 0.f
+		? line.VoiceDuration
+		: std::clamp(
+			0.4f + static_cast<_float>(characterCount) * 0.12f,
+			1.2f, 5.f);
 	SyncInteractionPrompt(false);
 	if (m_bHideDialogueInteractionPrompt && !line.Choices.empty())
 	{
@@ -357,6 +448,18 @@ void CInteractiveNpc::AdvanceDialogue()
 
 	if (currentLine.ActionOnAdvance != DIALOGUE_ACTION::NONE)
 	{
+		if (currentLine.FadeBeforeAction)
+		{
+			BeginActionTransition(currentLine.ActionOnAdvance);
+			return;
+		}
+		if (currentLine.ActionOnAdvance == DIALOGUE_ACTION::START_SPELL_MINIGAME &&
+			!currentLine.ActionCinematicName.empty())
+		{
+			SwitchDialogueCamera(
+				currentLine.ActionCinematicName,
+				currentLine.ActionCinematicTargetsPlayer);
+		}
 		ExecuteDialogueAction(currentLine.ActionOnAdvance);
 		return;
 	}
@@ -368,6 +471,8 @@ void CInteractiveNpc::AdvanceDialogue()
 
 	if (m_iDialogueIndex >= m_Dialogue.size())
 	{
+		if (currentLine.DisableInteractionAfterAdvance)
+			m_bInteractionPermanentlyDisabled = true;
 		FinishDialogue();
 		return;
 	}
@@ -434,7 +539,20 @@ void CInteractiveNpc::ExecuteDialogueAction(DIALOGUE_ACTION action)
 
 	case DIALOGUE_ACTION::START_SPELL_MINIGAME:
 		if (StartSpellMiniGame())
-			FinishDialogue();
+		{
+			m_bResumeDialogueAfterSpellMiniGame =
+				m_iDialogueIndex + 1u < m_Dialogue.size();
+			if (m_bResumeDialogueAfterSpellMiniGame)
+			{
+				++m_iDialogueIndex;
+				GET_SINGLE(UIManager)->ClearDialoguePopups(false);
+				SyncInteractionPrompt(false);
+			}
+			else
+			{
+				FinishDialogue();
+			}
+		}
 		break;
 
 	case DIALOGUE_ACTION::START_COIN_MINIGAME:
@@ -479,8 +597,26 @@ void CInteractiveNpc::RestartDialogueForTest()
 	BeginDialogue();
 }
 
-void CInteractiveNpc::RestartDialogueAtIndexForTest(size_t dialogueIndex)
+void CInteractiveNpc::RestartDialogueAtIndexForTest(
+	size_t dialogueIndex,
+	_float temporaryFadeDuration,
+	_float temporaryFadeHoldDuration,
+	_float temporaryFadeOutDuration)
 {
+	if (temporaryFadeDuration >= 0.f)
+	{
+		if (!m_TemporaryFadeDurationRestore)
+			m_TemporaryFadeDurationRestore = m_fFadeDuration;
+		m_fFadeDuration = temporaryFadeDuration;
+	}
+	if (temporaryFadeHoldDuration >= 0.f)
+	{
+		if (!m_TemporaryFadeHoldDurationRestore)
+			m_TemporaryFadeHoldDurationRestore = m_fFadeHoldDuration;
+		m_fFadeHoldDuration = temporaryFadeHoldDuration;
+	}
+	if (temporaryFadeOutDuration >= 0.f)
+		m_TemporaryFadeOutDuration = temporaryFadeOutDuration;
 	m_DebugStartDialogueIndex = dialogueIndex;
 	RestartDialogueForTest();
 }
@@ -542,6 +678,17 @@ void CInteractiveNpc::CancelDialogue()
 	EndDialogueCamera();
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
+	if (m_TemporaryFadeDurationRestore)
+	{
+		m_fFadeDuration = *m_TemporaryFadeDurationRestore;
+		m_TemporaryFadeDurationRestore.reset();
+	}
+	if (m_TemporaryFadeHoldDurationRestore)
+	{
+		m_fFadeHoldDuration = *m_TemporaryFadeHoldDurationRestore;
+		m_TemporaryFadeHoldDurationRestore.reset();
+	}
+	m_TemporaryFadeOutDuration.reset();
 	m_eConversationPhase = CONVERSATION_PHASE::IDLE;
 	m_eState = STATE::IDLE;
 }
@@ -554,6 +701,8 @@ void CInteractiveNpc::FinishDialogue()
 	m_fDialogueSpeechRemaining = 0.f;
 	m_bCompleted = true;
 	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
+	if (m_bInteractionPermanentlyDisabled)
+		SyncInteractionPrompt(false);
 	SetExpression(m_IdleExpressionAnim, true);
 	m_eConversationPhase = CONVERSATION_PHASE::IDLE;
 
@@ -561,11 +710,29 @@ void CInteractiveNpc::FinishDialogue()
 	if (m_eState == STATE::MOVING || m_eState == STATE::MINIGAME)
 		return;
 
-	if (!KeepDialogueCameraOnFinish())
-		EndDialogueCamera();
-	SetPlayerMovementLocked(false);
-	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
-	m_eState = STATE::IDLE;
+	const _bool keepDialoguePresentation = KeepDialogueCameraOnFinish();
+	if (!keepDialoguePresentation)
+	{
+		EndDialogueCamera(
+			m_bInteractionPermanentlyDisabled ? 1.25f : 0.f);
+		SetPlayerMovementLocked(false);
+		GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
+	}
+	// 완드 상자 연출 -> 상점 -> 구매 후속 대화가 이어지는 동안에는
+	// 최초 대화에서 숨긴 HUD와 플레이어 입력 잠금을 그대로 유지한다.
+	// 구매 후 마지막 NPC 대화가 끝나 KeepDialogueCameraOnFinish()가
+	// false가 되었을 때 위 복원 경로가 정확히 한 번 실행된다.
+	if (keepDialoguePresentation)
+	{
+		// 임시 대화 종료를 새 상호작용 가능 상태로 취급하지 않도록 하여
+		// 완드 시네마틱과 상점 진행 중 F 프롬프트가 재생성되지 않게 한다.
+		SyncInteractionPrompt(false);
+		m_eState = STATE::DIALOGUE_INTRO;
+	}
+	else
+	{
+		m_eState = STATE::IDLE;
+	}
 }
 
 
@@ -619,7 +786,9 @@ void CInteractiveNpc::BeginDialogueCamera()
 			StringID{ m_DialogueCinematicName }, GetHandle(), options) == S_OK;
 }
 
-void CInteractiveNpc::SwitchDialogueCamera(const _string& cinematicName)
+void CInteractiveNpc::SwitchDialogueCamera(
+	const _string& cinematicName,
+	_bool targetPlayer)
 {
 	if (cinematicName.empty())
 		return;
@@ -632,16 +801,18 @@ void CInteractiveNpc::SwitchDialogueCamera(const _string& cinematicName)
 	options.eReturnMode = ECinematicReturnMode::Immediate;
 	m_bDialogueCinematicPlaying =
 		E::CGameInstance::Get().PlayCinematic(
-			StringID{ m_DialogueCinematicName }, GetHandle(), options) == S_OK;
+			StringID{ m_DialogueCinematicName },
+			targetPlayer ? m_hInteractionPlayer : GetHandle(),
+			options) == S_OK;
 }
 
 
-void CInteractiveNpc::EndDialogueCamera()
+void CInteractiveNpc::EndDialogueCamera(_float fReturnBlendDuration)
 {
 	if (!m_bDialogueCinematicPlaying)
 		return;
 
-	E::CGameInstance::Get().StopCinematic();
+	E::CGameInstance::Get().StopCinematic(fReturnBlendDuration);
 	m_bDialogueCinematicPlaying = false;
 }
 
@@ -699,7 +870,10 @@ _bool CInteractiveNpc::StartCoinMiniGame()
 	m_eActiveMiniGame = ACTIVE_MINIGAME::COIN;
 	SpawnCoinCollision();
 	if (StartMoveToDestination(1u))
+	{
+		E::CGameInstance::Get().Set_ShadowEnabled(false);
 		return true;
+	}
 
 	m_eActiveMiniGame = ACTIVE_MINIGAME::NONE;
 	return false;
@@ -744,6 +918,21 @@ void CInteractiveNpc::UpdateMiniGameState()
 			return;
 
 		EndMiniGameWorldPause();
+		if (m_bResumeDialogueAfterSpellMiniGame &&
+			m_iDialogueIndex < m_Dialogue.size())
+		{
+			m_bResumeDialogueAfterSpellMiniGame = false;
+			const auto& line = m_Dialogue[m_iDialogueIndex];
+			if (!line.CinematicName.empty() &&
+				line.CinematicName != m_DialogueCinematicName)
+			{
+				SwitchDialogueCamera(line.CinematicName);
+			}
+			m_eActiveMiniGame = ACTIVE_MINIGAME::NONE;
+			m_eState = STATE::TALKING;
+			ShowCurrentDialogueLine();
+			return;
+		}
 		EndDialogueCamera();
 		SetPlayerMovementLocked(false);
 		GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);

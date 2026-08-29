@@ -119,19 +119,32 @@ void CLevelCharlesRookwood::Update(E::_float fTimeDelta)
 					"UIController",
 					&Desc);
 			GET_SINGLE(UIManager)->SetUIController(uiControllerHandle);
+		}
+	}
 
-			if (uiControllerHandle)
-			{
-				GET_SINGLE(UIManager)->CreateOrChangeQuest(
-					"퍼시벌 랙햄의 시험을 완료하기");
-				E::CGameInstance::Get().EventPublish(
-					FQuestUIGroupChanged{
-						.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_01,
-						.Active = true,
-						.QuestText = "퍼시벌 랙햄의 시험을 완료하기",
-						.UpdateQuestWidget = false
-					});
-			}
+	if (m_bCreatePlayScreenUI && !m_bInitialQuestShown)
+	{
+		m_fInitialQuestDelay += std::max(0.f, fTimeDelta);
+		if (m_fInitialQuestDelay >= INITIAL_QUEST_DELAY)
+		{
+			m_bInitialQuestShown = true;
+			GET_SINGLE(UIManager)->CreateOrChangeQuest(
+				"주변 둘러보기");
+		}
+	}
+	else if (m_bInitialQuestShown && !m_bInitialQuestMinimapActivated)
+	{
+		m_fInitialQuestMinimapDelay += std::max(0.f, fTimeDelta);
+		if (m_fInitialQuestMinimapDelay >= INITIAL_QUEST_APPEAR_DURATION)
+		{
+			m_bInitialQuestMinimapActivated = true;
+			E::CGameInstance::Get().EventPublish(
+				FQuestUIGroupChanged{
+					.Group = QUEST_UI_GROUP::ROOKWOOD_TRIAL_01,
+					.Active = true,
+					.QuestText = "주변 둘러보기",
+					.UpdateQuestWidget = false
+				});
 		}
 	}
 
@@ -265,6 +278,7 @@ std::optional<CHandle> CLevelCharlesRookwood::SpawnPlayer()
 		.iSimulationMask = PX_ALL_LAYERS,
 		.iQueryMask =
 			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 			ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 			ETOUI(COLLISION_LAYER::ENEMY_BODY)
 	};

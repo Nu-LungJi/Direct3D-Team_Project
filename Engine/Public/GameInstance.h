@@ -324,7 +324,7 @@ public:
 	HRESULT LoadCinematic(const std::string& CinematicName);
 	HRESULT PlayCinematic(const StringID& CinematicID, const FCinematicPlayOptions& Options = {});
 	HRESULT PlayCinematic(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options = {});
-	void StopCinematic();
+	void StopCinematic(_float fReturnBlendDuration = 0.f);
 	_bool IsCinematicPlaying() const;
 	_float GetCinematicPlayTime() const;
 	void SetCinematicCollisionQueryMask(uint32_t iQueryMask);
@@ -362,6 +362,7 @@ public:
 
 	VOID			Set_RadialBlurIntensity(const _float _Intensity);
 	VOID			Set_MotionBlurEnabled(_bool bEnabled);
+	VOID			Set_ShadowEnabled(_bool bEnabled);
 	VOID			Set_DistortionIntensity(const _float _Intensity);
 	VOID			Set_ChromaticIntensity(const _float _Intensity);
 	VOID			Set_VignetteIntensity(const _float _Intensity);

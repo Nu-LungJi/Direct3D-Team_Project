@@ -63,6 +63,16 @@ public:
 		// 이 대사를 키 입력 없이 다음 대사/액션으로 진행한다.
 		_bool AutoAdvance{};
 		_float AutoAdvanceDelay{ 3.f };
+		// 현재 대사의 액션을 실행하기 직전에 전환할 시네마틱.
+		_string ActionCinematicName{};
+		_bool ActionCinematicTargetsPlayer{};
+		_bool FadeBeforeAction{};
+		// 이 대사를 끝낸 뒤 Repeatable 설정과 관계없이 상호작용을 종료한다.
+		_bool DisableInteractionAfterAdvance{};
+		// 비어 있지 않으면 대사가 표시될 때 함께 재생할 음성 파일.
+		_string VoiceSoundPath{};
+		// 입 모프를 음성 길이에 맞춰 유지한다. 0이면 텍스트 길이로 추정한다.
+		_float VoiceDuration{};
 	};
 
 	struct DESC : public WORLD_AGENT_DESC
@@ -150,7 +160,11 @@ protected:
 	virtual void OpenShop();
 	// 에디터 GUI에서 완료 여부와 자동 시작 여부를 초기화하고 첫 대사를 다시 시험한다.
 	void RestartDialogueForTest();
-	void RestartDialogueAtIndexForTest(size_t dialogueIndex);
+	void RestartDialogueAtIndexForTest(
+		size_t dialogueIndex,
+		_float temporaryFadeDuration = -1.f,
+		_float temporaryFadeHoldDuration = -1.f,
+		_float temporaryFadeOutDuration = -1.f);
 	// NPC와 플레이어 Transform을 건드리지 않고 지정한 시네마틱 카메라만 시험한다.
 	void PlayDialogueCameraOnlyForTest(const _string& cinematicName);
 	void StopDialogueCameraOnlyForTest();
@@ -159,6 +173,15 @@ protected:
 	virtual _bool KeepDialogueCameraOnFinish() const { return false; }
 	// 현재 NPC 로컬 좌표의 오프셋에 플레이어를 놓고 NPC 얼굴을 바라보게 한다.
 	void PlacePlayerFacingNpc(const _float3& localOffset);
+	// 파생 NPC가 자신의 이동 연출에만 암전 유지시간을 조정할 수 있게 한다.
+	void SetMoveFadeHoldDuration(_float duration)
+	{
+		m_fMoveFadeHoldDuration = std::max(0.f, duration);
+	}
+	_float GetMoveFadeHoldDuration() const
+	{
+		return m_fMoveFadeHoldDuration;
+	}
 
 private:
 	// 이름으로 표정 또는 대화 애니메이션을 재생한다.
@@ -169,14 +192,17 @@ private:
 	// 암전, 플레이어 이동, 카메라 전환, 화면 복귀 순서를 갱신한다.
 	void UpdateDialogueIntro(_float fTimeDelta);
 	void BeginLineTransition();
+	void BeginActionTransition(DIALOGUE_ACTION action);
 	void ShowCurrentDialogueLine();
 	// 첫 대사와 해당 표정 애니메이션을 화면에 표시한다.
 	void ShowFirstDialogueLine();
 	// 플레이어를 NPC 앞에 배치하고 대화용 시네마틱 카메라를 시작한다.
 	void BeginDialogueCamera();
-	void SwitchDialogueCamera(const _string& cinematicName);
+	void SwitchDialogueCamera(
+		const _string& cinematicName,
+		_bool targetPlayer = false);
 	// 대화용 시네마틱을 종료하고 기존 플레이어 카메라로 복귀한다.
-	void EndDialogueCamera();
+	void EndDialogueCamera(_float fReturnBlendDuration = 0.f);
 	// 대화 중 플레이어 이동 입력의 잠금 상태를 변경한다.
 	void SetPlayerMovementLocked(_bool locked);
 	_bool StartMoveToDestination(size_t destinationIndex);
@@ -211,11 +237,13 @@ private:
 	_bool m_bRepeatable{};
 	_bool m_bTalking{};
 	_bool m_bCompleted{};
+	_bool m_bInteractionPermanentlyDisabled{};
 	_bool m_bPromptVisible{};
 	_bool m_bMovingToDestination{};
 	_bool m_bMovePositionApplied{};
 	_bool m_bOwnsWorldPause{};
 	_bool m_bDialogueCinematicPlaying{};
+	_bool m_bResumeDialogueAfterSpellMiniGame{};
 	_bool m_bAutoStartOnEnter{};
 	_bool m_bAutoStartTriggered{};
 	size_t m_iAutoAdvanceOpeningLineCount{};
@@ -227,7 +255,10 @@ private:
 	CHandle m_hInteractionPlayer{};
 	STATE m_eState{ STATE::IDLE };
 	_float m_fFadeDuration{ 0.35f };
+	std::optional<_float> m_TemporaryFadeDurationRestore{};
 	_float m_fFadeHoldDuration{ 0.2f };
+	std::optional<_float> m_TemporaryFadeHoldDurationRestore{};
+	std::optional<_float> m_TemporaryFadeOutDuration{};
 	_float m_fMoveFadeInDuration{ 2.f };
 	_float m_fMoveFadeHoldDuration{ 10.f };
 	_float m_fMoveFadeOutDuration{ 1.f };
@@ -245,6 +276,9 @@ private:
 	_float m_fMoveStopDistance{ 0.2f };
 	CHandle m_hAccioActivity{};
 	DIALOGUE_ACTION m_ePendingDialogueAction{ DIALOGUE_ACTION::NONE };
+	DIALOGUE_ACTION m_ePendingFadeAction{ DIALOGUE_ACTION::NONE };
+	_bool m_bActionSetupCompletedUnderFade{};
+	_bool m_bLineAnimationStartedDuringFade{};
 
 	enum class ACTIVE_MINIGAME
 	{

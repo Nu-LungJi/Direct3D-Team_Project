@@ -42,6 +42,8 @@ public:
 	struct DESC : public CAccioActivityPartBase::DESC
 	{
 		_bool bNpcStartsFirst{ false };
+		_string PlayerDisplayName{ "이솝 샤프" };
+		_string NpcDisplayName{ "저스티스 훈" };
 		std::array<ACCIO_ACTIVITY_BOX_COLLIDER_DESC, 4> BoxColliders{
 			ACCIO_ACTIVITY_BOX_COLLIDER_DESC{
 				.vHalfExtents = { 11.75f, 1.f, 0.45f },
@@ -57,20 +59,20 @@ public:
 				.vLocalOffset = { 0.f, 1.45f, 6.9f } }
 		};
 		ACCIO_ACTIVITY_BOX_COLLIDER_DESC Score10Trigger{
-			.vHalfExtents = { 11.f, 2.f, 6.7f },
+			.vHalfExtents = { 11.15f, 2.f, 6.7f },
 			.vLocalOffset = { 0.f, 3.f, 18.2f }
 		};
 		ACCIO_ACTIVITY_BOX_COLLIDER_DESC Score20Trigger{
-			.vHalfExtents = { 11.f, 2.f, 5.75f },
+			.vHalfExtents = { 11.15f, 2.f, 5.75f },
 			.vLocalOffset = { 0.f, 3.f, 5.75f }
 		};
 		ACCIO_ACTIVITY_BOX_COLLIDER_DESC Score30Trigger{
-			.vHalfExtents = { 11.f, 2.f, 4.5f },
+			.vHalfExtents = { 11.15f, 2.f, 4.5f },
 			.vLocalOffset = { 0.f, 3.f, -4.5f }
 		};
 		ACCIO_ACTIVITY_BOX_COLLIDER_DESC Score50Trigger{
-			.vHalfExtents = { 11.f, 2.f, 3.35f },
-			.vLocalOffset = { 0.f, 3.f, -12.35f }
+			.vHalfExtents = { 11.15f, 2.f, 3.395f },
+			.vLocalOffset = { 0.f, 3.f, -12.395f }
 		};
 		PX_FILTER_DESC tPhysicsFilter{
 			.iLayer = ETOUI(COLLISION_LAYER::WORLD_STATIC),
@@ -139,6 +141,11 @@ public:
 	std::optional<_float> GetDistanceToPlayAreaEdge(
 		const CAccioBall& ball,
 		const _float3& vPushDirection) const;
+	_bool IsBallOnPlayArea(const CAccioBall& ball) const;
+	_bool IsActiveBall(const CHandle& hBall) const
+	{
+		return hBall != CHandle{} && hBall == m_hActiveBall;
+	}
 	void SetParticipantHandle(PARTICIPANT eParticipant, const CHandle& hObject);
 	_bool StartMatch();
 	_bool ResetMatch(_bool bResetBalls);
@@ -168,7 +175,6 @@ private:
 	_bool ValidateRegisteredBalls() const;
 	void ReleaseActiveBallControl();
 	_bool AreInPlayBallsSettled() const;
-	_bool IsBallOnPlayArea(const CAccioBall& ball) const;
 	_bool IsPointInsideScoreZone(
 		const _float3& vWorldPosition,
 		const ACCIO_ACTIVITY_BOX_COLLIDER_DESC& zone) const;
@@ -217,10 +223,13 @@ private:
 	CHandle m_hActiveBall{};
 	MATCH_STATE m_eMatchState{ MATCH_STATE::READY };
 	_bool m_bNpcStartsFirst{ false };
+	_string m_PlayerDisplayName{ "이솝 샤프" };
+	_string m_NpcDisplayName{ "저스티스 훈" };
 	uint32_t m_iCurrentRound{};
 	uint32_t m_iMaxRounds{ 3u };
 	int32_t m_iBlueScore{};
 	int32_t m_iRedScore{};
+	_bool m_bScoreUiSubmitted{};
 };
 
 NS_END

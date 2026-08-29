@@ -97,76 +97,36 @@ void CUIController::Update(E::_float fTimeDelta)
 	UpdateRookwoodBridgeProgression();
 	UpdateRookwoodPortalProgression();
 
-	// 소환사의 코트 미니게임 UI 확인용 디버그 입력.
-	static uint32_t assioDebugScoreCount = 0u;
+	// 소환사의 코트 미니게임 UI 시작 확인용 디버그 입력.
 	if (E::CGameInstance::Get().KeyDown(DIK_F3))
-	{
-		GET_SINGLE(UIManager)->AssioMiniGameStart();
-		assioDebugScoreCount = 0u;
-	}
-	if (E::CGameInstance::Get().KeyDown(DIK_SPACE) &&
-		GET_SINGLE(UIManager)->CanAddAssioScore())
-	{
-		++assioDebugScoreCount;
-		const _bool isFinalScore = assioDebugScoreCount >= 4u;
-		GET_SINGLE(UIManager)->AddScore(30, isFinalScore);
-	}
+		GET_SINGLE(UIManager)->AssioMiniGameStart(true);
 
 	// World-space RTT wand-shop debug entry.
 	if (E::CGameInstance::Get().KeyDown(DIK_F4))
 	{
-		//CPlayer* player = nullptr;
-		//CHandle playerHandle{};
-		//if (const auto* playerLayer = E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
-		//{
-		//	for (const CHandle handle : *playerLayer)
-		//	{
-		//		player = E::CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(handle);
-		//		if (player)
-		//		{
-		//			playerHandle = handle;
-		//			break;
-		//		}
-		//	}
-		//}
-
-		//if (player)
-		//{
-		//	GET_SINGLE(UIManager)->OpenWandShopWorld(
-		//		playerHandle,
-		//		{ 0.f, 1.6f, 3.f },
-		//		{ 0.f, 0.f, 0.f });
-		//}
-		GET_SINGLE(UIManager)->LoadPrefab("AccioSuccess");
-	}
-
-	// 대화 선택 UI와 콜백 연결 확인용 디버그 입력.
-	if (E::CGameInstance::Get().KeyDown(DIK_F5))
-	{
-		const CHandle controllerHandle = GetHandle();
-		GET_SINGLE(UIManager)->PlayFadeOutAll2DUI(0.f, 0.25f);
-		GET_SINGLE(UIManager)->CreateChoiceUI(
+		CPlayer* player = nullptr;
+		CHandle playerHandle{};
+		if (const auto* playerLayer = E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
+		{
+			for (const CHandle handle : *playerLayer)
 			{
-				"스펠 미니게임 1 시작",
-				"레이스 미니게임 시작"
-			},
-			[controllerHandle](size_t choiceIndex)
-			{
-				GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.2f, 0.3f);
+				player = E::CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(handle);
+				if (player)
+				{
+					playerHandle = handle;
+					break;
+				}
+			}
+		}
 
-				if (choiceIndex == 0u)
-				{
-					if (auto* controller = E::CGameInstance::Get().
-						GetGameObjectByHandleT<CUIController>(controllerHandle))
-					{
-						controller->StartSpellMiniGame(false);
-					}
-				}
-				else if (choiceIndex == 1u)
-				{
-					GET_SINGLE(UIManager)->StartRaceMiniGame();
-				}
-			});
+		if (player)
+		{
+			GET_SINGLE(UIManager)->OpenWandShopWorld(
+				playerHandle,
+				{ 0.f, 1.6f, 3.f },
+				{ 0.f, 0.f, 0.f });
+		}
+		//GET_SINGLE(UIManager)->LoadPrefab("AccioSuccess");
 	}
 
 	if (m_hSpellMiniGame && !E::CGameInstance::Get().
@@ -515,6 +475,9 @@ void CUIController::FadeOutQuestForSpellMiniGame()
 
 void CUIController::FadeInQuestAfterSpellMiniGame()
 {
+	if (GET_SINGLE(UIManager)->IsQuestFadeInDeferred())
+		return;
+
 	GET_SINGLE(UIManager)->FadeInQuest(0.5f);
 
 	if (!m_hQuestRoot)
@@ -664,17 +627,17 @@ std::string CUIController::GetQuestDisplayText(QUEST_UI_GROUP group) const
 	switch (group)
 	{
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_01:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_TRIAL_02:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_02:
 		return "두 번째 전투 구역으로 이동하기";
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_03:
 		return "세 번째 전투 구역으로 이동하기";
 	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_PORTAL:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	default:
 		return {};
 	}
@@ -916,7 +879,7 @@ void CUIController::UpdateRookwoodQuestProgression()
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_02,
 		true,
-		"퍼시벌 랙햄의 시험을 완료하기",
+		"고대 유적 돌파하기",
 		true, false);
 }
 
@@ -1002,14 +965,14 @@ void CUIController::UpdateRookwoodSecondBattleCompletion()
 
 	m_bRookwoodSecondBattleCompleted = true;
 	GET_SINGLE(UIManager)->CreateOrChangeQuest(
-		"퍼시벌 랙햄의 시험을 완료하기");
+		"고대 유적 돌파하기");
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_02,
 		false, {}, true, false);
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_03,
 		true,
-		"퍼시벌 랙햄의 시험을 완료하기",
+		"고대 유적 돌파하기",
 		true, false);
 }
 
@@ -1098,14 +1061,14 @@ void CUIController::UpdateRookwoodThirdBattleCompletion()
 
 	m_bRookwoodThirdBattleCompleted = true;
 	GET_SINGLE(UIManager)->CreateOrChangeQuest(
-		"퍼시벌 랙햄의 시험을 완료하기");
+		"고대 유적 돌파하기");
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_03,
 		false, {}, true, false);
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE,
 		true,
-		"퍼시벌 랙햄의 시험을 완료하기",
+		"고대 유적 돌파하기",
 		true, false);
 }
 
@@ -1594,6 +1557,16 @@ uint32_t CUIController::GetSpellType(uint32_t SlotNumber)
 	}
 
 	return spellType;
+}
+
+_float CUIController::GetSpellCooldownDuration(uint32_t SlotNumber)
+{
+	if (SlotNumber < 1u || SlotNumber > 4u)
+		return 0.f;
+
+	auto* pSpellSlot = static_cast<CSpellMeter*>(
+		SafeGetOBJ(m_SpellSlot[SlotNumber - 1u]));
+	return pSpellSlot ? pSpellSlot->GetCooldownDuration() : 0.f;
 }
 
 void CUIController::UseSpell(uint32_t SlotNumber)

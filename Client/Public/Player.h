@@ -65,6 +65,7 @@ public:
 			// [LSY] 적 CCT와는 충돌하되 전투용 HurtBox는 이동 Query에서 제외한다.
 			.iQueryMask =
 				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+				ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
 				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 				ETOUI(COLLISION_LAYER::DOOR_DYNAMIC) |
@@ -427,7 +428,6 @@ private:
 
 	_float m_fControlHoldTime{};
 	_bool m_bDashTriggered{};
-	static constexpr _float SKILL_SLOT_COOLDOWN = 5.f;
 	std::array<_float, 4> m_SkillSlotCooldowns{};
 
 

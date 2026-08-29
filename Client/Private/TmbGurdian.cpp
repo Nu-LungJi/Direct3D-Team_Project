@@ -659,7 +659,6 @@ HRESULT CTmbGurdian::Initialize(void* pArg)
 	if (FAILED(Ready_Fsm(MonDesc->LevelTag)))
 		return E_FAIL;
 	Ready_BBKeyValue();
-	ReadySound();
 	return S_OK;
 }
 void	CTmbGurdian::Ready_BBKeyValue()

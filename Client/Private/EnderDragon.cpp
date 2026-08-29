@@ -161,7 +161,6 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
 	InitializeEffects();
-	ReadySound();
 	m_pComSphereCol->SetQueryEnabled(true);
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_targetSocket");
 	m_iLeft1WingParticleBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("indexmiddlewing_03_left");
@@ -200,6 +199,22 @@ void CEnderDragon::ReadySound()
 	m_SoundTable["Ground"] = {
 	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragon_conjured_akb__MaybeGround.wav"
 	};
+	m_SoundTable["Dead1"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragons_akb__Dead1.wav"
+	};
+	m_SoundTable["Dead2"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragons_akb__Dead2.wav"
+	};
+	m_SoundTable["Dead3"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragon_conjured_akb__DieorHit.wav"
+	};
+	m_SoundTable["ReadyBall"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/ranrok_dragon_projectile_start_Play.wav"
+	};
+	m_SoundTable["ReadyBreath"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/drgn_cnjrd_atk_FloorSpikes_FireBreath.wav"
+	};
+	
 }
 HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
 {
@@ -727,6 +742,13 @@ void CEnderDragon::Set_StateFinished(_bool bFinished)
 
 	pBB->Set_Value(EDG_KEY::BSTATE_FINISHED, bFinished);
 }
+
+_bool CEnderDragon::IsSpawnPresentationFinished() const
+{
+	return Is_Spawn() && m_pFsm &&
+		m_pFsm->GetCurState() == MON_STATE::COMBAT;
+}
+
 _bool CEnderDragon::Is_StateFinished()
 {
 	//스테이트가 끝났는지 확인
@@ -753,7 +775,7 @@ _string CEnderDragon::Get_SkillName(ATTMON SkillNode)
 
 _bool CEnderDragon::Check_Table(PLAYER_SKILL_TYPE eType)
 {
-	if (m_iHp <= 0 && m_pFsm->GetCurState() == MON_STATE::DEAD)
+	if (m_iHp <= 0 && m_pFsm->GetCurState() == MON_STATE::DEAD || m_pFsm->GetCurState() == MON_STATE::PHASE_CHANGE)
 		return false;
 
 	if (eType == PLAYER_SKILL_TYPE::END || eType == PLAYER_SKILL_TYPE::DEFAULT)

@@ -305,6 +305,7 @@ void CGeneralButton::HandleExit()
 void CGeneralButton::HandleClick()
 {
 	EnsureBaseScaleCaptured();
+	PlayButtonSelectSound();
 	if (m_eButtonType == GENERAL_BUTTON_TYPE::WAND_SLIDER_ARROW)
 	{
 		ChangeWandSliderOption();
@@ -367,6 +368,23 @@ void CGeneralButton::HandleClick()
 		ExecuteCommand();
 		break;
 	}
+}
+
+void CGeneralButton::PlayButtonSelectSound() const
+{
+	auto* soundManager = E::CGameInstance::Get().GetSoundManager();
+	if (!soundManager)
+		return;
+
+	soundManager->Play2D(
+		"./Resources/SampleClient/Sound/UI/ButtonSelect.wav",
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::UI,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = false
+		});
 }
 
 void CGeneralButton::EnsureBaseScaleCaptured()

@@ -2,6 +2,7 @@
 #include "Client_Defines.h"
 #include "StateMachine.h"
 #include "Troll.h"
+#include "Mon_State.h"
 NS_BEGIN(Client)
 class CTroll_Hit : public CState
 {

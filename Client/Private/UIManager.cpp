@@ -18,11 +18,38 @@
 #include "VideoObject.h"
 #include "Monster.h"
 #include "Player.h"
+#include "SoundManager.h"
 
 NS_USING(Client)
 
 namespace
 {
+	constexpr const _char* ASSIO_UI_START_SOUND_PATH =
+		"./Resources/SampleClient/Sound/AccioActivity/UI/AccioUI_Start.wav";
+	constexpr const _char* MINIGAME_FINISH_SOUND_PATH =
+		"./Resources/SampleClient/Sound/UI/Finish.wav";
+	constexpr const _char* RACE_GO_SOUND_PATH =
+		"./Resources/SampleClient/Sound/UI/Go.wav";
+	constexpr const _char* RACE_TIMER_SOUND_PATH =
+		"./Resources/SampleClient/Sound/UI/Timer.wav";
+	constexpr _float WAND_SHOP_PANEL_APPEAR_DURATION = 0.5f;
+
+	void PlayUISound(const _char* pSoundPath, _float fVolume)
+	{
+		if (auto* pSoundManager = E::CGameInstance::Get().GetSoundManager())
+		{
+			pSoundManager->Play2D(
+				pSoundPath,
+				SOUND_PLAY_DESC{
+					.sBusID = SOUND_BUS::UI,
+					.fVolume = fVolume,
+					.fPitch = 1.f,
+					.iPriority = 70,
+					.bLoop = false
+				});
+		}
+	}
+
 	void SetRenderGroupRecursive(CHandle handle, E::RENDERGROUP renderGroup)
 	{
 		auto* ui = E::CGameInstance::Get().GetGameObjectByHandleT<E::CUIObject>(handle);
@@ -192,6 +219,18 @@ void UIManager::SaveSpellSlot(uint32_t slotNumber, uint32_t spellType)
 
 void UIManager::Update(_float fTimeDelta)
 {
+	if (m_bWandShopWorldMode && m_fWandShopPanelAppearScale < 1.f)
+	{
+		m_fWandShopPanelAppearElapsed = std::min(
+			WAND_SHOP_PANEL_APPEAR_DURATION,
+			m_fWandShopPanelAppearElapsed +
+			E::CGameInstance::Get().GetUnscaledDelta());
+		const _float ratio = WAND_SHOP_PANEL_APPEAR_DURATION > 0.f
+			? m_fWandShopPanelAppearElapsed / WAND_SHOP_PANEL_APPEAR_DURATION
+			: 1.f;
+		// UI 내부 좌표는 건드리지 않고 RTT 패널만 부드럽게 확대한다.
+		m_fWandShopPanelAppearScale = 1.f - (1.f - ratio) * (1.f - ratio);
+	}
 	UpdateWandShopWorldBillboard();
 	UpdateWandShopWorldMousePosition();
 	UpdateActiveButtons();
@@ -206,6 +245,8 @@ void UIManager::Update(_float fTimeDelta)
 
 void UIManager::UpdateWandShopWorldBillboard()
 {
+	constexpr _float PANEL_UPWARD_TILT_DEGREES = 5.f;
+
 	if (!m_bWandShopWorldMode)
 		return;
 
@@ -221,19 +262,26 @@ void UIManager::UpdateWandShopWorldBillboard()
 	if (XMVectorGetX(XMVector3LengthSq(panelLook)) <= 0.0001f)
 		return;
 
-	panelLook = XMVector3Normalize(panelLook);
 	const _vector worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	panelLook = XMVector3Normalize(panelLook);
+	panelLook = XMVector3Normalize(
+		panelLook + worldUp * tanf(XMConvertToRadians(
+			PANEL_UPWARD_TILT_DEGREES)));
+	// The RTT quad faces back toward the camera. Build its screen-right axis
+	// from look x up so the UI texture is not mirrored horizontally.
 	const _vector panelRight = XMVector3Normalize(
-		XMVector3Cross(worldUp, panelLook));
+		XMVector3Cross(panelLook, worldUp));
+	const _vector panelUp = XMVector3Normalize(
+		XMVector3Cross(panelRight, panelLook));
 	const _matrix panelPose{
 		XMVectorSetW(panelRight, 0.f),
-		worldUp,
+		XMVectorSetW(panelUp, 0.f),
 		XMVectorSetW(panelLook, 0.f),
 		XMVectorSetW(panelPosition, 1.f)
 	};
 	const _matrix panelWorld = XMMatrixScaling(
-		m_vWandShopPanelWorldScale.x,
-		m_vWandShopPanelWorldScale.y,
+		m_vWandShopPanelWorldScale.x * m_fWandShopPanelAppearScale,
+		m_vWandShopPanelWorldScale.y * m_fWandShopPanelAppearScale,
 		1.f) * panelPose;
 
 	XMStoreFloat4x4(&m_WandShopPanelWorld, panelWorld);
@@ -241,9 +289,14 @@ void UIManager::UpdateWandShopWorldBillboard()
 		m_WandShopPanelWorld, true, false);
 }
 
-void UIManager::AssioMiniGameStart()
+_bool UIManager::AssioMiniGameStart(
+	_bool bPlayerStarts,
+	const _string& PlayerDisplayName,
+	const _string& NpcDisplayName)
 {
 	ClearAssioMiniGameUI();
+	m_AssioPlayerDisplayName = StringToWUTF8(PlayerDisplayName);
+	m_AssioNpcDisplayName = StringToWUTF8(NpcDisplayName);
 	// 미니게임 UI를 만들기 전에 기존 UI만 복원 목록에 저장해 숨긴다.
 	// 이후 생성되는 Coat UI는 전체 UI FadeOut 대상에 포함되지 않는다.
 	PlayFadeOutAll2DUI(0.f, 0.35f);
@@ -320,7 +373,7 @@ void UIManager::AssioMiniGameStart()
 	{
 		ClearAssioMiniGameUI();
 		PlayFadeInAll2DUI(0.f, 0.35f);
-		return;
+		return false;
 	}
 
 	auto* playerRoot = GetSafeUI(*m_hAssioPlayerScoreRoot);
@@ -332,8 +385,21 @@ void UIManager::AssioMiniGameStart()
 	{
 		ClearAssioMiniGameUI();
 		PlayFadeInAll2DUI(0.f, 0.35f);
-		return;
+		return false;
 	}
+
+	const auto ApplyParticipantName = [](const CHandle& hRoot,
+		const _wstring& DisplayName)
+	{
+		const std::vector<CHandle> roots{ hRoot };
+		if (auto* nameText = dynamic_cast<CTextBox*>(
+			FindUIByNameRecursive(roots, "BF20")))
+		{
+			nameText->SetwText(DisplayName);
+		}
+	};
+	ApplyParticipantName(*m_hAssioPlayerScoreRoot, m_AssioPlayerDisplayName);
+	ApplyParticipantName(*m_hAssioNpcScoreRoot, m_AssioNpcDisplayName);
 
 	// Coat 프리팹에서 현재 턴/대기 턴의 원래 배치를 보관한다.
 	m_AssioActiveTurnPosition = playerRoot->GetPos();
@@ -347,18 +413,40 @@ void UIManager::AssioMiniGameStart()
 	m_fAssioActiveFrameAlpha = playerFrame->GetAlphaRatio();
 	m_fAssioInactiveFrameAlpha = npcFrame->GetAlphaRatio();
 	m_fAssioTurnTitleBaseAlpha = turnTitle->GetAlpha();
-	m_bAssioCurrentTurnIsPlayer =
-		playerFrame->GetAlpha() >= npcFrame->GetAlpha();
+	m_bAssioCurrentTurnIsPlayer = bPlayerStarts;
 	m_bAssioTurnTitleFadeInStarted = false;
 	m_bAssioTurnTitleWasAlreadyHidden = false;
+	auto ApplyInitialTurnLayout = [this](
+		CUIObject* root, CUIObject* frame, _bool bActive)
+	{
+		root->SetPos(bActive ?
+			m_AssioActiveTurnPosition : m_AssioInactiveTurnPosition);
+		root->SetScaleRatio(bActive ?
+			m_fAssioActiveTurnScale : m_fAssioInactiveTurnScale);
+		root->SetAlpha(bActive ?
+			m_fAssioActiveTurnAlpha : m_fAssioInactiveTurnAlpha);
+		frame->SetAlphaRatio(bActive ?
+			m_fAssioActiveFrameAlpha : m_fAssioInactiveFrameAlpha);
+		root->CalcUICoord();
+	};
+	ApplyInitialTurnLayout(playerRoot, playerFrame, bPlayerStarts);
+	ApplyInitialTurnLayout(npcRoot, npcFrame, !bPlayerStarts);
+	if (auto* title = dynamic_cast<CTextBox*>(turnTitle))
+	{
+		title->SetwText((bPlayerStarts ?
+			m_AssioPlayerDisplayName : m_AssioNpcDisplayName) + L"의 턴");
+	}
 
 	m_iAssioPlayerScore = 0;
 	m_iAssioNpcScore = 0;
 	m_iAssioPendingScore = 0;
+	m_iAssioPendingPlayerScore = 0;
+	m_iAssioPendingNpcScore = 0;
 	m_fAssioScorePhaseElapsed = 0.f;
 	m_bAssioFinalScore = false;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
 	m_bAssioMiniGameActive = true;
+	PlayUISound(ASSIO_UI_START_SOUND_PATH, 0.75f);
 
 	if (auto* text = dynamic_cast<CTextBox*>(
 		GetSafeUI(*m_hAssioPlayerScoreText)))
@@ -372,7 +460,8 @@ void UIManager::AssioMiniGameStart()
 		*m_hAssioPlayerScoreRoot,
 		*m_hAssioNpcScoreRoot,
 		*m_hAssioTurnTitle
-	}, 0.35f);
+	}, 1.f);
+	return true;
 }
 
 void UIManager::AssioMiniGameFinish()
@@ -412,29 +501,45 @@ void UIManager::TurnTitleFadeOut(float playtime)
 	}
 }
 
-void UIManager::AddScore(int score, _bool isFinalScore)
+_bool UIManager::AddScore(
+	int iTurnScore,
+	int iPlayerTotalScore,
+	int iNpcTotalScore,
+	_bool bPlayerTurn,
+	_bool bFinalScore)
 {
 	if (!m_bAssioMiniGameActive ||
 		m_eAssioScorePhase != ASSIO_SCORE_PHASE::NONE ||
 		!m_hAssioCenterScore || !m_hAssioCenterScoreText)
 	{
-		return;
+		return false;
 	}
-	m_iAssioPendingScore = score;
+	m_iAssioPendingScore = std::max(0, iTurnScore);
+	m_iAssioPendingPlayerScore = std::max(0, iPlayerTotalScore);
+	m_iAssioPendingNpcScore = std::max(0, iNpcTotalScore);
+	m_bAssioCurrentTurnIsPlayer = bPlayerTurn;
 	if (!ResolveAssioCurrentTurn())
 	{
 		m_iAssioPendingScore = 0;
-		return;
+		m_iAssioPendingPlayerScore = 0;
+		m_iAssioPendingNpcScore = 0;
+		return false;
 	}
 
 	auto* center = GetSafeUI(*m_hAssioCenterScore);
 	auto* centerText = dynamic_cast<CTextBox*>(
 		GetSafeUI(*m_hAssioCenterScoreText));
 	if (!center || !centerText)
-		return;
-	m_bAssioFinalScore = isFinalScore;
+	{
+		m_iAssioPendingScore = 0;
+		m_iAssioPendingPlayerScore = 0;
+		m_iAssioPendingNpcScore = 0;
+		m_hAssioTargetScoreText.reset();
+		return false;
+	}
+	m_bAssioFinalScore = bFinalScore;
 
-	centerText->SetwText(std::to_wstring(score));
+	centerText->SetwText(std::to_wstring(m_iAssioPendingScore));
 	center->SetPos(m_AssioCenterScoreBasePosition);
 	center->SetScaleRatio(0.f);
 	center->SetAlpha(0.f);
@@ -443,6 +548,7 @@ void UIManager::AddScore(int score, _bool isFinalScore)
 	m_AssioCenterScoreMoveStart = m_AssioCenterScoreBasePosition;
 	m_fAssioScorePhaseElapsed = 0.f;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::APPEAR;
+	return true;
 }
 
 _bool UIManager::ResolveAssioCurrentTurn()
@@ -471,12 +577,8 @@ _bool UIManager::ResolveAssioCurrentTurn()
 
 	if (auto* target = GetSafeUI(*m_hAssioTargetScoreText))
 	{
-		const int currentScore = targetPlayer ?
-			m_iAssioPlayerScore : m_iAssioNpcScore;
-		const int64_t previewValue = static_cast<int64_t>(currentScore) +
-			static_cast<int64_t>(m_iAssioPendingScore);
-		const int previewScore = static_cast<int>(std::clamp<int64_t>(
-			previewValue, 0, std::numeric_limits<int>::max()));
+		const int previewScore = targetPlayer ?
+			m_iAssioPendingPlayerScore : m_iAssioPendingNpcScore;
 		const std::wstring previewText = std::to_wstring(previewScore);
 		const _float textScale = target->GetUIInfo().SizeX *
 			target->GetScaleRatio();
@@ -530,7 +632,11 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 			m_bAssioFinalScore = false;
 			m_bAssioMiniGameActive = false;
 			m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
-			PlayFadeInAll2DUI(0.f, 0.5f);
+			// 이어지는 NPC 승패 결과 대화가 끝날 때까지 기존 HUD를 숨겨 둔다.
+			// 여기서 먼저 FadeIn하면 결과 대화가 같은 프레임에 다시 FadeOut하며
+			// 복원 대상 Alpha를 0으로 저장해, 특히 패배 대화 뒤 HUD가 돌아오지 않는다.
+			// 결과 대화 종료 시 CAccioActivity_NpcController::FinishDialogue()가
+			// PlayFadeInAll2DUI()를 호출해 미니게임 시작 전 상태로 복원한다.
 		}
 		return;
 	}
@@ -543,6 +649,18 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 	if (!center || !targetScore)
 	{
 		m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
+		return;
+	}
+
+	if (m_eAssioScorePhase == ASSIO_SCORE_PHASE::IMPACT_HOLD)
+	{
+		// Normally the ring FadeOut completion callback advances immediately.
+		// Keep only a fallback in case the transient effect could not be created.
+		constexpr _float IMPACT_FALLBACK_DURATION = 0.8f;
+		if (m_fAssioScorePhaseElapsed < IMPACT_FALLBACK_DURATION)
+			return;
+
+		CompleteAssioScoreImpact();
 		return;
 	}
 
@@ -571,8 +689,8 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 			if (auto* title = dynamic_cast<CTextBox*>(
 				GetSafeUI(*m_hAssioTurnTitle)))
 			{
-				title->SetwText(nextTurnIsPlayer ?
-					L"이솝 샤프의 턴" : L"저스티스 훈의 턴");
+				title->SetwText((nextTurnIsPlayer ?
+					m_AssioPlayerDisplayName : m_AssioNpcDisplayName) + L"의 턴");
 				title->SetAlpha(0.f);
 				if (auto* tween = title->GetTweenCom())
 				{
@@ -687,22 +805,212 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 	if (ratio < 1.f)
 		return;
 
-	int& currentScore = m_bAssioTargetIsPlayer ?
-		m_iAssioPlayerScore : m_iAssioNpcScore;
-	const int64_t updatedScore = static_cast<int64_t>(currentScore) +
-		static_cast<int64_t>(m_iAssioPendingScore);
-	currentScore = static_cast<int>(std::clamp<int64_t>(
-		updatedScore, 0, std::numeric_limits<int>::max()));
-	if (auto* text = dynamic_cast<CTextBox*>(targetScore))
-		text->SetwText(std::to_wstring(currentScore));
-
-	// TODO: UpdateAssioFinalScore(...); // 최종 점수갱신
+	m_iAssioPlayerScore = m_iAssioPendingPlayerScore;
+	m_iAssioNpcScore = m_iAssioPendingNpcScore;
+	if (auto* text = dynamic_cast<CTextBox*>(
+		GetSafeUI(*m_hAssioPlayerScoreText)))
+	{
+		text->SetwText(std::to_wstring(m_iAssioPlayerScore));
+	}
+	if (auto* text = dynamic_cast<CTextBox*>(
+		GetSafeUI(*m_hAssioNpcScoreText)))
+	{
+		text->SetwText(std::to_wstring(m_iAssioNpcScore));
+	}
 
 	center->SetAlpha(0.f);
 	center->SetScaleRatio(0.f);
 	center->SetPos(m_AssioCenterScoreBasePosition);
 	center->CalcUICoord();
 	m_iAssioPendingScore = 0;
+	m_fAssioScorePhaseElapsed = 0.f;
+	m_eAssioScorePhase = ASSIO_SCORE_PHASE::IMPACT_HOLD;
+	PlayAssioScoreImpactEffect();
+}
+
+void UIManager::PlayAssioScoreImpactEffect()
+{
+	if (!m_hAssioTargetScoreText)
+		return;
+
+	auto* targetScore = GetSafeUI(*m_hAssioTargetScoreText);
+	const auto& targetRoot = m_bAssioTargetIsPlayer ?
+		m_hAssioPlayerScoreRoot : m_hAssioNpcScoreRoot;
+	if (!targetScore || !targetRoot)
+		return;
+	auto* scoreRootUI = GetSafeUI(*targetRoot);
+	if (!scoreRootUI)
+		return;
+
+	const std::vector<CHandle> scoreRoot{ *targetRoot };
+	auto* auraTemplate = FindUIByNameRecursive(scoreRoot, "ScoreAura");
+	if (!auraTemplate)
+		return;
+
+	// Keep the impact attached to the score row. The row starts moving as soon
+	// as the turn changes, so a root-level effect would remain at the old spot.
+	const _float parentScale = std::max(0.001f,
+		scoreRootUI->GetScaleRatio());
+	const _float2 rootPosition = scoreRootUI->GetPos();
+	const _float2 effectLocalPosition{
+		(m_AssioCenterScoreMoveTarget.x - rootPosition.x) / parentScale,
+		(m_AssioCenterScoreMoveTarget.y - rootPosition.y) / parentScale
+	};
+	// The prefab aura is intentionally large. The impact begins at roughly half
+	// that size so it hugs the score glyphs instead of covering the whole row.
+	const _float ringWidth = auraTemplate->GetSize().x * 0.55f;
+	const _float ringHeight = auraTemplate->GetSize().y * 0.55f;
+	const uint32_t effectWeight = static_cast<uint32_t>(std::max(
+		0, targetScore->GetWeight() + 2));
+
+	CUIObject::UIOBJECT_DESC ringDesc{};
+	ringDesc.sObjectTag = "AssioScoreImpactRing";
+	ringDesc.Name = ringDesc.sObjectTag;
+	ringDesc.fX = m_AssioCenterScoreMoveTarget.x;
+	ringDesc.fY = m_AssioCenterScoreMoveTarget.y;
+	ringDesc.fSizeX = std::max(1.f, ringWidth);
+	ringDesc.fSizeY = std::max(1.f, ringHeight);
+	ringDesc.fAlpha = 0.85f;
+	ringDesc.ResTag = "TEX_UI_T_ScoreAuraRing";
+	ringDesc.ResWeight = effectWeight + 1u;
+	ringDesc.UIType = ETOUI(UI_TYPE::TEXUI);
+	const auto ringHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+		m_CurrentLevel,
+		"Prototype_GameObject_TextureUI",
+		"Layer_UI",
+		&ringDesc);
+	if (ringHandle)
+	{
+		auto* ring = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CTextureUI>(*ringHandle);
+		if (ring)
+		{
+			const CHandle safeHandle = *ringHandle;
+			ring->SetParent(*targetRoot);
+			scoreRootUI->AddChildren(safeHandle);
+			auto& ringInfo = ring->GetUIInfo();
+			ringInfo.LocalX = effectLocalPosition.x;
+			ringInfo.LocalY = effectLocalPosition.y;
+			ringInfo.WeightOffset = targetScore->GetUIInfo().WeightOffset + 3;
+			ring->SetColor({ 0.35f, 0.95f, 0.65f });
+			ring->SetLocalScaleRatio(1.f);
+			ring->SetAlphaRatio(0.85f);
+			ring->CalcUICoord();
+			ring->Appear = [safeHandle](CUIObject*)
+			{
+				auto* current = GetSafeUI(safeHandle);
+				if (!current)
+					return;
+				if (auto* tween = current->GetTweenCom())
+				{
+					tween->PlayTween(
+						0.8f, 1.5f, 0.2f,
+						[safeHandle](_float value)
+						{
+							if (auto* ui = GetSafeUI(safeHandle))
+							{
+								ui->SetLocalScaleRatio(value);
+								ui->CalcUICoord();
+							}
+						}, nullptr, EEaseType::EaseOutQuad);
+					tween->PlayTween(
+						0.85f, 0.f, 0.2f,
+						[safeHandle](_float value)
+						{
+							if (auto* ui = GetSafeUI(safeHandle))
+								ui->SetAlphaRatio(value);
+						}, [safeHandle]()
+						{
+							GET_SINGLE(UIManager)->DeleteUIRecursive(safeHandle);
+							GET_SINGLE(UIManager)->CompleteAssioScoreImpact();
+						}, EEaseType::EaseOutQuad);
+				}
+			};
+		}
+	}
+
+	CEffectUI::FLIPBOOK_DESC smokeDesc{};
+	smokeDesc.sObjectTag = "AssioScoreImpactSmoke";
+	smokeDesc.Name = smokeDesc.sObjectTag;
+	smokeDesc.fX = m_AssioCenterScoreMoveTarget.x;
+	smokeDesc.fY = m_AssioCenterScoreMoveTarget.y;
+	smokeDesc.fSizeX = std::max(1.f, ringWidth * 0.76f);
+	smokeDesc.fSizeY = std::max(1.f, ringHeight * 0.76f);
+	smokeDesc.fAlpha = 0.55f;
+	smokeDesc.ResTag = "TEX_VFX_T_SmokeMedium_8x8_D";
+	smokeDesc.ResWeight = effectWeight;
+	smokeDesc.UIType = ETOUI(UI_TYPE::FLIPBOOK);
+	smokeDesc.cellsize = 1024u;
+	smokeDesc.Padding = 2u;
+	smokeDesc.TotalFrame = 64u;
+	smokeDesc.Columns = 8u;
+	smokeDesc.Rows = 8u;
+	smokeDesc.Duration = 0.65f;
+	const auto smokeHandle = E::CGameInstance::Get().AddGameObjectToLayer(
+		m_CurrentLevel,
+		"Prototype_GameObject_EffectUI",
+		"Layer_UI",
+		&smokeDesc);
+	if (smokeHandle)
+	{
+		auto* smoke = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CEffectUI>(*smokeHandle);
+		if (smoke)
+		{
+			const CHandle safeHandle = *smokeHandle;
+			smoke->SetParent(*targetRoot);
+			scoreRootUI->AddChildren(safeHandle);
+			auto& smokeInfo = smoke->GetUIInfo();
+			smokeInfo.LocalX = effectLocalPosition.x;
+			smokeInfo.LocalY = effectLocalPosition.y;
+			smokeInfo.WeightOffset = targetScore->GetUIInfo().WeightOffset + 2;
+			smoke->SetColor({ 0.35f, 0.85f, 0.60f });
+			smoke->SetAdditiveBlend(true);
+			smoke->SetLocalScaleRatio(0.96f);
+			smoke->SetAlphaRatio(0.52f);
+			smoke->CalcUICoord();
+			smoke->Appear = [safeHandle](CUIObject*)
+			{
+				auto* current = GetSafeUI(safeHandle);
+				if (!current)
+					return;
+				if (auto* tween = current->GetTweenCom())
+				{
+					tween->PlayTween(
+						0.8f, 1.5f, 0.2f,
+						[safeHandle](_float value)
+						{
+							if (auto* ui = GetSafeUI(safeHandle))
+							{
+								ui->SetLocalScaleRatio(value);
+								ui->CalcUICoord();
+							}
+						}, nullptr, EEaseType::EaseOutQuad);
+					tween->PlayTween(
+						0.52f, 0.f, 0.2f,
+						[safeHandle](_float value)
+						{
+							if (auto* ui = GetSafeUI(safeHandle))
+								ui->SetAlphaRatio(value);
+						}, [safeHandle]()
+						{
+							GET_SINGLE(UIManager)->DeleteUIRecursive(safeHandle);
+						}, EEaseType::EaseOutQuad);
+				}
+			};
+		}
+	}
+}
+
+void UIManager::CompleteAssioScoreImpact()
+{
+	if (!m_bAssioMiniGameActive ||
+		m_eAssioScorePhase != ASSIO_SCORE_PHASE::IMPACT_HOLD)
+	{
+		return;
+	}
+
+	m_fAssioScorePhaseElapsed = 0.f;
 	if (m_bAssioFinalScore)
 		BeginAssioResult();
 	else
@@ -753,68 +1061,32 @@ void UIManager::LoadAssioResult()
 		PlayFadeInAll2DUI(0.f, 0.5f);
 		return;
 	}
+	PlayUISound(MINIGAME_FINISH_SOUND_PATH, 0.8f);
 
-	// 동점일 때는 플레이어를 우선한다.
-	const _bool playerWon = m_iAssioPlayerScore >= m_iAssioNpcScore;
-	const wchar_t* winnerName = playerWon ? L"이솝 샤프" : L"저스티스 훈";
+	const _bool bDraw = m_iAssioPlayerScore == m_iAssioNpcScore;
+	const _bool playerWon = m_iAssioPlayerScore > m_iAssioNpcScore;
+	// 승패와 관계없이 소환사의 코트가 끝나면 다음 미니게임으로 진행한다.
+	CreateOrChangeQuest("부릉! 브룸! 참여하기");
+
+	const _wstring winnerName = bDraw ? L"무승부" :
+		(playerWon ? m_AssioPlayerDisplayName : m_AssioNpcDisplayName);
 	const int winnerScore = playerWon ? m_iAssioPlayerScore : m_iAssioNpcScore;
 	if (auto* winName = dynamic_cast<CTextBox*>(
 		FindUIByNameRecursive(m_AssioResultRoots, "WinName")))
 	{
 		winName->SetwText(winnerName);
 	}
+	if (auto* resultText = dynamic_cast<CTextBox*>(
+		FindUIByNameRecursive(m_AssioResultRoots, "Text")))
+	{
+		resultText->SetwText(bDraw ?
+			L"소환사 코트 무승부" : L"소환사 코트의 승자");
+	}
 	if (auto* score = dynamic_cast<CTextBox*>(
 		FindUIByNameRecursive(m_AssioResultRoots, "Score")))
 	{
 		score->SetwText(std::to_wstring(winnerScore));
 	}
-	if (auto* gameOverMask = FindUIByNameRecursive(
-		m_AssioResultRoots, "GameOverMask"))
-	{
-		const CHandle maskHandle = gameOverMask->GetHandle();
-		const _float baseLocalScale = gameOverMask->GetLocalScaleRatio();
-		gameOverMask->SetLocalScaleRatio(baseLocalScale);
-		gameOverMask->CalcUICoord();
-		if (auto* tween = gameOverMask->GetTweenCom())
-		{
-			tween->ClearTweens();
-			constexpr _float GROW_DURATION = 0.35f;
-			constexpr _float RETURN_DURATION = 0.45f;
-			const _float enlargedScale = baseLocalScale * 1.2f;
-			tween->PlayTween(
-				baseLocalScale,
-				enlargedScale,
-				GROW_DURATION,
-				[maskHandle](_float value)
-				{
-					if (auto* current = GetSafeUI(maskHandle))
-					{
-						current->SetLocalScaleRatio(value);
-						current->CalcUICoord();
-					}
-				}, nullptr, EEaseType::EaseOutQuad);
-			tween->PlayTween(
-				enlargedScale,
-				baseLocalScale,
-				RETURN_DURATION,
-				[maskHandle, enlargedScale, baseLocalScale](_float value)
-				{
-					if (auto* current = GetSafeUI(maskHandle))
-					{
-						const _float range = std::max(
-							enlargedScale - baseLocalScale, FLT_EPSILON);
-						const _float linearRatio = std::clamp(
-							(enlargedScale - value) / range, 0.f, 1.f);
-						const _float easeInRatio = linearRatio * linearRatio;
-						current->SetLocalScaleRatio(std::lerp(
-							enlargedScale, baseLocalScale, easeInRatio));
-						current->CalcUICoord();
-					}
-				}, nullptr, EEaseType::Linear,
-				GROW_DURATION);
-		}
-	}
-
 	PlayRaceRootsFadeIn(m_AssioResultRoots, 0.35f);
 	m_fAssioScorePhaseElapsed = 0.f;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::RESULT_HOLD;
@@ -834,6 +1106,8 @@ void UIManager::ClearAssioGameplayHandles()
 	m_hAssioTurnTitle.reset();
 	m_hAssioTargetScoreText.reset();
 	m_iAssioPendingScore = 0;
+	m_iAssioPendingPlayerScore = 0;
+	m_iAssioPendingNpcScore = 0;
 	m_bAssioTurnTitleFadeInStarted = false;
 	m_bAssioTurnTitleWasAlreadyHidden = false;
 }
@@ -873,7 +1147,11 @@ void UIManager::StartRaceMiniGame()
 {
 	ClearRaceMiniGameUI();
 	m_bRaceReturnPositionApplied = false;
+	m_bRaceResultFadeOutStarted = false;
 	m_fRaceReturnElapsed = 0.f;
+	// Hide only the existing HUD before creating the race UI. The countdown,
+	// RaceBoard and result Flag created below must remain visible.
+	PlayFadeOutAll2DUI(0.f, 0.35f);
 	FadeOutQuest(0.3f);
 	m_fRaceMiniGameElapsed = 0.f;
 	m_iRaceMiniGameCoinCount = 0u;
@@ -967,7 +1245,44 @@ void UIManager::FinishRaceMiniGame()
 	m_hRaceBoardCoinText.reset();
 
 	m_RaceResultRoots = LoadPrefab("Flag");
+	if (!m_RaceResultRoots.empty())
+		PlayUISound(MINIGAME_FINISH_SOUND_PATH, 0.8f);
 	m_hRaceResultCoinText.reset();
+	if (auto* trophy = FindUIByNameRecursive(
+		m_RaceResultRoots, "Trophy"))
+	{
+		const CHandle trophyHandle = trophy->GetHandle();
+		const _float trophyBaseScale = trophy->GetScaleRatio();
+		trophy->SetScaleRatio(0.f);
+		trophy->CalcUICoord();
+		trophy->Appear = [trophyHandle, trophyBaseScale](CUIObject*)
+		{
+			auto* current = GetSafeUI(trophyHandle);
+			if (!current)
+				return;
+
+			current->SetScaleRatio(0.f);
+			current->CalcUICoord();
+			if (auto* tween = current->GetTweenCom())
+			{
+				tween->PlayTween(
+					0.f, trophyBaseScale, 1.f,
+					[trophyHandle](_float value)
+					{
+						if (auto* target = GetSafeUI(trophyHandle))
+						{
+							target->SetScaleRatio(value);
+							target->CalcUICoord();
+						}
+					}, nullptr, EEaseType::EaseOutQuad);
+			}
+			else
+			{
+				current->SetScaleRatio(trophyBaseScale);
+				current->CalcUICoord();
+			}
+		};
+	}
 	if (auto* coin = FindUIByNameRecursive(
 		m_RaceResultRoots, "CoinCnt"))
 	{
@@ -986,7 +1301,6 @@ void UIManager::FinishRaceMiniGame()
 
 	m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RESULT;
 	PlayRaceRootsFadeIn(m_RaceResultRoots);
-	FadeInQuest(0.5f);
 }
 
 void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
@@ -994,6 +1308,7 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 	constexpr _float RACE_DURATION = 120.f;
 	constexpr _float RESULT_HOLD_DURATION = 5.f;
 	constexpr _float RETURN_FADE_DURATION = 1.f;
+	constexpr _float RETURN_BLACK_HOLD_DURATION = 10.f;
 
 	if (m_eRaceMiniGamePhase == RACE_MINIGAME_PHASE::COUNTDOWN)
 	{
@@ -1006,6 +1321,21 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 	{
 		m_fRaceReturnElapsed += std::max(0.f, fTimeDelta);
 
+		// BlackBG FadeIn starts after the result hold. Fade the Flag result UI
+		// at exactly the same time so it disappears beneath the black screen.
+		if (!m_bRaceResultFadeOutStarted &&
+			m_fRaceReturnElapsed >= RESULT_HOLD_DURATION)
+		{
+			m_bRaceResultFadeOutStarted = true;
+			for (const CHandle root : m_RaceResultRoots)
+			{
+				if (GetSafeUI(root))
+					PlayFadeOutDelete(root, 0.f, RETURN_FADE_DURATION);
+			}
+			m_RaceResultRoots.clear();
+			m_hRaceResultCoinText.reset();
+		}
+
 		if (m_fRaceReturnElapsed <
 			RESULT_HOLD_DURATION + RETURN_FADE_DURATION)
 			return;
@@ -1013,8 +1343,8 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 		if (!m_bRaceReturnPositionApplied)
 		{
 
-			// 코인 게임 종료 후 복귀할 상점 좌표. 실제 상점 좌표로 교체한다.
-			const _float3 vShopPosition{ 127.833f, 4.5f, -87.941f };
+			// 빗자루 미니게임 종료 후 복귀할 상점 좌표.
+			const _float3 vShopPosition{ 146.642f, 1.610f, -99.298f };
 			const _float3 vShopLookAt{ 108.5f, 2.5f, -82.f };
 
 			CPlayer* pPlayer = nullptr;
@@ -1035,12 +1365,26 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 				pPlayer->SetFlyRequested(false);
 				pPlayer->SetDialoguePose(vShopPosition, vShopLookAt);
 			}
+			E::CGameInstance::Get().Set_ShadowEnabled(true);
 			if (m_OnRaceReturnToShop)
 				m_OnRaceReturnToShop();
 
+			CreateOrChangeQuest("지팡이 구매하기");
 			m_bRaceReturnPositionApplied = true;
-			CreateFadeOut(0.f, RETURN_FADE_DURATION);
 		}
+
+		// Fade In이 끝난 검은 화면에서 이동과 비행 상태 정리를 먼저
+		// 완료한 뒤 10초간 유지하고, 그 다음 Fade Out으로 화면을 연다.
+		if (m_fRaceReturnElapsed < RESULT_HOLD_DURATION +
+			RETURN_FADE_DURATION + RETURN_BLACK_HOLD_DURATION)
+		{
+			return;
+		}
+
+		CreateFadeOut(0.f, RETURN_FADE_DURATION);
+		// Restore the original HUD while the black screen fades away.
+		PlayFadeInAll2DUI(0.f, RETURN_FADE_DURATION);
+		FadeInQuest(RETURN_FADE_DURATION);
 
 		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RESULT;
 		return;
@@ -1081,6 +1425,7 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 		FinishRaceMiniGame();
 		m_fRaceReturnElapsed = 0.f;
 		m_bRaceReturnPositionApplied = false;
+		m_bRaceResultFadeOutStarted = false;
 		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RETURNING_TO_SHOP;
 		CreateFadeIn(RESULT_HOLD_DURATION, RETURN_FADE_DURATION);
 	}
@@ -1269,8 +1614,21 @@ void UIManager::UpdateRaceStartTimer(_float fTimeDelta)
 		return std::sin(saturate(secondPhase / 0.2f) * XM_PI) * 0.09f;
 	};
 
+	const _float previousElapsed = m_fRaceStartTimerElapsed;
 	m_fRaceStartTimerElapsed += fTimeDelta;
 	const _float elapsed = m_fRaceStartTimerElapsed;
+	// 각 숫자 구간 시작 후 0.1초가 프레임 두근거림의 최저 스케일 지점이다.
+	// 3, 2, 1 모두 그 지점을 처음 통과할 때 Timer 사운드를 한 번 재생한다.
+	constexpr _float timerSoundOffset = 0.1f;
+	for (uint32_t countIndex = 0u; countIndex < 3u; ++countIndex)
+	{
+		const _float soundTime = countDuration * countIndex + timerSoundOffset;
+		if (previousElapsed < soundTime && elapsed >= soundTime)
+			PlayUISound(RACE_TIMER_SOUND_PATH, 0.85f);
+	}
+	// 3, 2, 1 이후 GO가 처음 표시되는 프레임에 한 번만 재생한다.
+	if (previousElapsed < countTotal && elapsed >= countTotal)
+		PlayUISound(RACE_GO_SOUND_PATH, 0.85f);
 	if (elapsed >= totalDuration)
 	{
 		for (const CHandle root : m_RaceStartTimerRoots)
@@ -1355,6 +1713,8 @@ void UIManager::UpdateWandShopWorldMousePosition()
 	m_bWandShopPanelMouseHit = false;
 	m_WandShopPanelMousePosition = { -FLT_MAX, -FLT_MAX };
 	if (!m_bWandShopWorldMode)
+		return;
+	if (m_fWandShopPanelAppearScale <= 0.001f)
 		return;
 
 	// Picking must use the same active camera that projects and billboards the
@@ -2529,7 +2889,15 @@ void UIManager::CreateFadeIn(float delay, float playtime)
 	}
 
 	if (auto* pBG = GetSafeUI(hBG))
+	{
 		pBG->GetTweenCom()->ClearTweens();
+		if (delay <= 0.f && playtime <= 0.f)
+		{
+			pBG->SetInputLcok(true);
+			pBG->SetAlpha(1.f);
+			return;
+		}
+	}
 	PlayOnlyFadeIn(hBG, delay, playtime);
 }
 
@@ -2564,18 +2932,19 @@ void UIManager::CreateFadeInSceneChange(float delay, float playtime, LEVEL level
 
 void UIManager::CreateDamageFont(uint32_t damage, CHandle targetMonster, _bool isCritical)
 {
-	auto* pMonster =
-		E::CGameInstance::Get()
-		.GetGameObjectByHandleT<CMonster>(targetMonster);
+	auto* pTarget = E::CGameInstance::Get().
+		GetGameObjectByHandle(targetMonster);
+	auto* pMonster = dynamic_cast<CMonster*>(pTarget);
 
 	auto* pCamera =
 		E::CGameInstance::Get().GetActiveCamera();
 
-	if (!pMonster || !pCamera || damage == 0)
+	if (!pTarget || !pCamera || damage == 0)
 		return;
 
-	const _float3 worldPosition =
-		pMonster->GetHurtBoxPosition();
+	const _float3 worldPosition = pMonster ?
+		pMonster->GetHurtBoxPosition() :
+		pTarget->GetTransform().GetPosition();
 
 	const _float2 screenSize =
 		E::CGameInstance::Get().GetClientScreenSize();
@@ -2659,14 +3028,17 @@ void UIManager::CreateDamageFont(uint32_t damage, CHandle targetMonster, _bool i
 
 	if (isCritical)
 	{
-		pDamageFont->SetColor({ 0.72f, 0.64f, 0.40f });
+		pDamageFont->SetColor({
+			0.862745106f, 0.725490212f, 0.411764711f });
 		pDamageFont->SetSize({ 0.9f, 0.9f });
 		pDamageFont->SetScaleRatio(1.25f);
 	}
 	else
 	{
 		pDamageFont->SetColor({ 1.f, 1.f, 1.f });
-		pDamageFont->SetSize({ 0.72f, 0.72f });
+		// Root text rendering uses SizeX as the actual SpriteFont scale.
+		// Apply the requested 70% reduction to the previous 0.72 size here.
+		pDamageFont->SetSize({ 0.504f, 0.504f });
 		pDamageFont->SetScaleRatio(1.f);
 	}
 
@@ -3352,6 +3724,8 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 		GetGameObjectByHandleT<CTextBox>(*m_hQuestText) : nullptr;
 	auto* targetIcon = m_hQuestTargetIcon ?
 		GetSafeUI(*m_hQuestTargetIcon) : nullptr;
+	if (text)
+		text->ClearColoredSuffix();
 
 	if (!root || !text)
 	{
@@ -3398,15 +3772,46 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 		// TextureUI는 최초 APPEAR 처리에서 tween을 초기화한다. 최초 프레임의
 		// APPEAR 콜백에서 FadeIn을 시작해야 알파 0에 고정되지 않는다.
 		const CHandle rootHandle = *m_hQuestRoot;
-		root->Appear = [rootHandle](CUIObject*)
+		const _float2 rootBasePosition = root->GetPos();
+		root->Appear = [rootHandle, rootBasePosition](CUIObject*)
 		{
 			if (auto* questRoot = GetSafeUI(rootHandle))
 			{
 				questRoot->SetAlpha(0.f);
 				if (!GET_SINGLE(UIManager)->m_bQuestFadeSuppressed)
 				{
-					GET_SINGLE(UIManager)->PlayFadeIn(
-						rootHandle, 0.f, 0.3f);
+					constexpr _float enterOffsetX = 24.f;
+					constexpr _float enterDuration = 0.3f;
+					questRoot->SetPos({
+						rootBasePosition.x - enterOffsetX,
+						rootBasePosition.y
+					});
+					questRoot->CalcUICoord();
+
+					GET_SINGLE(UIManager)->PlayOnlyFadeIn(
+						rootHandle, 0.f, enterDuration);
+					if (auto* tween = questRoot->GetTweenCom())
+					{
+						tween->PlayTween(
+							rootBasePosition.x - enterOffsetX,
+							rootBasePosition.x,
+							enterDuration,
+							[rootHandle, rootBasePosition](_float x)
+							{
+								if (auto* currentRoot = GetSafeUI(rootHandle))
+								{
+									currentRoot->SetPos({ x, rootBasePosition.y });
+									currentRoot->CalcUICoord();
+								}
+							},
+							nullptr,
+							EEaseType::EaseOutQuad);
+					}
+				}
+				else
+				{
+					questRoot->SetPos(rootBasePosition);
+					questRoot->CalcUICoord();
 				}
 			}
 		};
@@ -3537,6 +3942,23 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 	}
 }
 
+void UIManager::SetQuestColoredSuffix(
+	const std::string& suffix,
+	const _float3& color)
+{
+	if (!m_hQuestText)
+		return;
+
+	if (auto* text = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextBox>(*m_hQuestText))
+	{
+		if (suffix.empty())
+			text->ClearColoredSuffix();
+		else
+			text->SetColoredSuffix(StringToWUTF8(suffix), color);
+	}
+}
+
 void UIManager::DeleteQuest()
 {
 	if (m_hQuestRoot && GetSafeUI(*m_hQuestRoot))
@@ -3574,6 +3996,9 @@ void UIManager::FadeOutQuest(float playtime)
 
 void UIManager::FadeInQuest(float playtime)
 {
+	if (m_bQuestFadeInDeferred)
+		return;
+
 	m_bQuestFadeSuppressed = false;
 	if (!m_hQuestRoot)
 		return;
@@ -3592,6 +4017,24 @@ void UIManager::FadeInQuest(float playtime)
 			if (auto* quest = GetSafeUI(questHandle))
 				quest->SetAlpha(value);
 		}, nullptr, EEaseType::EaseOutQuad);
+}
+
+_bool UIManager::SetMiniMapObjectiveActive(
+	const std::string& key, _bool active)
+{
+	const auto* uiLayer = E::CGameInstance::Get().
+		GetGameObjectLayer("Layer_UI");
+	if (!uiLayer)
+		return false;
+
+	for (const CHandle handle : *uiLayer)
+	{
+		auto* miniMap = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CMiniMap>(handle);
+		if (miniMap && miniMap->SetObjectiveActive(key, active))
+			return true;
+	}
+	return false;
 }
 
 void UIManager::UpdateNPCSpeechBubbles(_float fTimeDelta)
@@ -4138,6 +4581,8 @@ void UIManager::OpenWandShop()
 	if (m_WandShop.IsOpen())
 		return;
 	m_bWandShopWorldMode = false;
+	m_fWandShopPanelAppearElapsed = 0.f;
+	m_fWandShopPanelAppearScale = 1.f;
 	E::CGameInstance::Get().ClearUI3DPanel();
 
 	CGeneralButton::ResetWandShopSelection();
@@ -4221,6 +4666,8 @@ void UIManager::OpenWandShopWorld(
 	XMStoreFloat4x4(&storedPanelWorld, panelWorld);
 
 	m_bWandShopWorldMode = true;
+	m_fWandShopPanelAppearElapsed = 0.f;
+	m_fWandShopPanelAppearScale = 0.f;
 	m_WandShopPanelWorld = storedPanelWorld;
 	// Replace the initial NPC-relative rotation immediately with an upright
 	// billboard facing whichever camera is currently active.
@@ -4236,6 +4683,8 @@ void UIManager::CloseWandShop()
 {
 	m_WandShop.Close(*this);
 	m_bWandShopWorldMode = false;
+	m_fWandShopPanelAppearElapsed = 0.f;
+	m_fWandShopPanelAppearScale = 1.f;
 	E::CGameInstance::Get().ClearUI3DPanel();
 }
 

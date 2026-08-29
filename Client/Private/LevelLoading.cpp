@@ -56,7 +56,15 @@ HRESULT CLevelLoading::Initialize()
 		"00_ENGINE_CINEMATIC_CAMERA"
 	});
 
-	GET_SINGLE(UIManager)->CreateFadeOut(1.f, 2.f);
+	// 트롤 처치 후 란록 레벨로 넘어갈 때는 이전 레벨에서 만든 암전을
+	// 로딩 도중에도 그대로 유지한다. 최종 란록 레벨의 Initialize가
+	// 완료된 뒤 그 레벨의 FadeOut으로 한 번만 화면을 다시 연다.
+	const _bool bKeepTrollTransitionBlack =
+		m_ePreviousLevelIndex.has_value() &&
+		*m_ePreviousLevelIndex == LEVEL::HOGWART_WORLD &&
+		m_eNextLevelIndex == LEVEL::LAST_BOSS_RANROK;
+	if (!bKeepTrollTransitionBlack)
+		GET_SINGLE(UIManager)->CreateFadeOut(1.f, 2.f);
 
 	{
 		E::CCameraObject::CAMERA_DESC Desc{};
@@ -129,11 +137,11 @@ void CLevelLoading::Update(E::_float fTimeDelta)
 			m_bLoadUiResource = true;
 			break;
 		case LEVEL::HOGWART_WORLD:
-			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon1");
+			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon3");
 			m_bLoadUiResource = true;
 			break;
 		case LEVEL::LAST_BOSS_RANROK:
-			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon2");
+			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon4");
 			m_bLoadUiResource = true;
 			break;
 		default:

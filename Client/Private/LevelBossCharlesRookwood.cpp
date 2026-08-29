@@ -124,7 +124,7 @@ void CLevelBossCharlesRookwood::Update(E::_float fTimeDelta)
 	{
 		m_bBossQuestCreated = true;
 		GET_SINGLE(UIManager)->CreateOrChangeQuest(
-			"퍼시벌 랙햄의 시험을 완료하기");
+			"고대 유적 돌파하기");
 	}
 
 	// TombBossIntro는 행동 트리에서 비동기로 재생된다. 첫 보스 시네마틱의
@@ -303,6 +303,7 @@ std::optional<CHandle> CLevelBossCharlesRookwood::SpawnPlayer()
 	.iSimulationMask = PX_ALL_LAYERS,
 	.iQueryMask =
 		ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+		ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 		ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 		ETOUI(COLLISION_LAYER::ENEMY_BODY)
 	};
@@ -408,7 +409,7 @@ HRESULT CLevelBossCharlesRookwood::PlayBGM()
 	m_bmgID = pSoundManager->Play2D(sSoundPath,
 		E::SOUND_PLAY_DESC{
 			.sBusID = SOUND_BUS::BGM,
-			.fVolume = 1.f,
+			.fVolume = 0.6f,
 			.fPitch = 1.f,
 			.fFadeInDuration = 1.f,
 			.iPriority = 64,

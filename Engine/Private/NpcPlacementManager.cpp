@@ -407,6 +407,34 @@ HRESULT CNpcPlacementManager::Load(const _string& sFilePath)
 	return S_OK;
 }
 
+HRESULT CNpcPlacementManager::LoadAdditional(const _string& sFilePath)
+{
+	if (sFilePath.empty()) return E_INVALIDARG;
+
+	NPC_PLACEMENT_FILE File{};
+	if (FAILED(CGameInstance::Get().JsonDeSerialize(
+			sFilePath, File, "NpcPlacements")) || File.iVersion != 1)
+	{
+		return E_FAIL;
+	}
+
+	std::unordered_set<uint64_t> PlacementIds{};
+	for (const auto& Desc : File.Placements)
+	{
+		if (Desc.iPlacementId == 0 ||
+			!PlacementIds.emplace(Desc.iPlacementId).second ||
+			!ValidatePlacement(Desc).empty())
+		{
+			return E_FAIL;
+		}
+	}
+
+	for (auto& Desc : File.Placements)
+		AddPlacement(std::move(Desc));
+
+	return S_OK;
+}
+
 void CNpcPlacementManager::DrawPlacementEditor(NPC_PLACEMENT_DESC& Desc, size_t iIndex)
 {
 	auto* pCam = CGameInstance::Get().GetActiveCamera();

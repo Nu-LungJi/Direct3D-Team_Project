@@ -14,6 +14,7 @@
 #include "Player.h"
 #include "PlayerThirdPersonCamera.h"
 #include "NvClothCape.h"
+#include "PropBarrel.h"
 #include "UIController.h"
 
 #include "EnderDragon.h"
@@ -59,6 +60,8 @@ HRESULT CLevelLastBossRanrok::Initialize()
 		return E_FAIL;
 
 	if (FAILED(SpawnStaticCollision()))
+		return E_FAIL;
+	if (FAILED(SpawnPropBarrels()))
 		return E_FAIL;
 
 	if (FAILED(SpawnFlyCamera()))
@@ -111,15 +114,21 @@ void CLevelLastBossRanrok::Update(E::_float fTimeDelta)
 	if (m_bCreatePlayScreenUI && !m_bQuestCreated)
 	{
 		m_bQuestCreated = true;
-		GET_SINGLE(UIManager)->CreateOrChangeQuest("란록 퇴치하기");
+		GET_SINGLE(UIManager)->CreateOrChangeQuest("수상한 기운이,,, 느껴진다...");
 	}
 
 	if (m_bQuestCreated && !m_bDragonDefeated && m_hEnderDragon)
 	{
 		auto* dragon = CGameInstance::Get().
 			GetGameObjectByHandleT<CEnderDragon>(*m_hEnderDragon);
-		if (!dragon || dragon->GetPendingDestroy() ||
-			dragon->Get_CurrentHp() <= 0)
+		if (dragon && !m_bDragonSpawnQuestUpdated &&
+			dragon->IsSpawnPresentationFinished())
+		{
+			m_bDragonSpawnQuestUpdated = true;
+			GET_SINGLE(UIManager)->CreateOrChangeQuest("란록 퇴치하기");
+		}
+
+		if (dragon && dragon->IsDeathPresentationFinished())
 		{
 			m_bDragonDefeated = true;
 			GET_SINGLE(UIManager)->CreateOrChangeQuest("취업 성공하기");
@@ -256,6 +265,7 @@ std::optional<CHandle> CLevelLastBossRanrok::SpawnPlayer()
 		.iSimulationMask = PX_ALL_LAYERS,
 		.iQueryMask =
 			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 			ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 			ETOUI(COLLISION_LAYER::ENEMY_BODY)
 	};
@@ -354,6 +364,37 @@ HRESULT CLevelLastBossRanrok::SpawnStaticCollision()
 	return S_OK;
 }
 
+HRESULT CLevelLastBossRanrok::SpawnPropBarrels()
+{
+	static constexpr std::array<_float3, 4> BARREL_POSITIONS{
+		_float3{ -106.4f, 295.3f, -89.f },
+		_float3{ -58.3f, 257.6f, 123.4f },
+		_float3{ 46.5f, 221.9f, 59.f },
+		_float3{ 62.5f, 225.f, -17.6f }
+	};
+
+	for (size_t i = 0; i < BARREL_POSITIONS.size(); ++i)
+	{
+		CPropBarrel::DESC desc{};
+		desc.sObjectTag =
+			"RanrokBoss_PropBarrel_" + std::to_string(i);
+		desc.sResourceGroup = "PERMANENT";
+		desc.vInitialPosition = BARREL_POSITIONS[i];
+
+		if (!CGameInstance::Get().AddGameObjectToLayer(
+			"PERMANENT",
+			PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
+			"PropBarrel",
+			&desc))
+		{
+			DEBUG_LOG("[LastBossRanrok] Failed to spawn PropBarrel.\n");
+			return E_FAIL;
+		}
+	}
+
+	return S_OK;
+}
+
 HRESULT CLevelLastBossRanrok::SpawnLightPlacement()
 {
 	CLightPlacementObject::DESC desc{};
@@ -397,7 +438,7 @@ HRESULT CLevelLastBossRanrok::PlayBGM()
 	m_bmgID = pSoundManager->Play2D(sSoundPath,
 		E::SOUND_PLAY_DESC{
 			.sBusID = SOUND_BUS::BGM,
-			.fVolume = 0.2f,
+			.fVolume = 0.5f,
 			.fPitch = 1.f,
 			.fFadeInDuration = 1.f,
 			.iPriority = 64,

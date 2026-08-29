@@ -25,7 +25,7 @@ public:
 private:
 	std::optional<CHandle> SpawnPlayer();
 	HRESULT SpawnPlayerCape(CHandle hPlayer);
-	HRESULT SpawnPropBarrelPyramid();
+	HRESULT SpawnPropBarrelBlock();
 	HRESULT SpawnTerrain(std::optional<CHandle> hPlayer);
 	HRESULT SpawnNaviMesh(class E::CTerrain* pTerrain);
 	HRESULT SpawnFlyCamera();
@@ -54,6 +54,10 @@ private:
 	HRESULT SpawnSummonersCourtIfNeeded(CHandle hPlayer);
 	void RequestSummonersCourtDespawn();
 	void UpdateRequestedSummonersCourtDespawn();
+	void ChangeBGM(
+		const _string& strSoundPath,
+		_float fTargetVolume,
+		_float fFadeDuration = 1.f);
 
 	void UpdateDebugWarp();
 
@@ -71,12 +75,16 @@ public:
 
 private:
 	_bool m_bCreatePlayScreenUI = false;
+	_bool m_bPropBarrelBlockSpawned{};
+	_bool m_bQuestCreated = false;
 
 	CHandle m_hDebugPlayer{};
 	std::optional<CHandle> m_hPendingSummonersCourtPlayer{};
 	_bool m_bSummonersCourtDespawnRequested{};
 	std::vector<CHandle> m_AccioActivityHandles{};
 	std::vector<CHandle> m_CoinCollisionHandles{};
+	SOUND_ID m_iBGM{ INVALID_SOUND_ID };
+	_string m_strCurrentBGMPath{};
 
 private:
 	void Free() override;

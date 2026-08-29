@@ -25,6 +25,7 @@ public:
 		CHandle ParentHandle{};
 		int32_t iBoneIndex{ -1 };
 		int32_t iSpawnBoneIndex{ -1 };
+		_bool bRestorePurchasedPlayerWand{ false };
 	}WEAPON_DESC;
 
 private:
@@ -68,6 +69,8 @@ private:
 	int32_t				m_iMuzzleSocketBoneIndex{ -1 };
 	_float				m_fAngle{ 0 };
 	_bool				m_bThrow{ false };
+	_bool				m_bWand2Equipped{ false };
+	_float				m_fWandSmokeSpawnTime{ 0.f };
 
 public:
 	_float4x4 GetSpawnWorldMatrix() const;

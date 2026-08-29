@@ -32,6 +32,7 @@ public:
 	uint32_t GetSpellType() { return m_SpellType; }
 	void SetFillAmount(_float amount) { m_fCurrentAmount = std::clamp(amount, 0.f, 1.f); }
 	_float GetFillAmount() const { return m_fCurrentAmount; }
+	_float GetCooldownDuration() const { return m_CoolTime; }
 	void SetResTagDirtyFlag(_bool flag) { m_ResTag_DirtyFlag = flag; }
 	void StartCooldown();
 private:

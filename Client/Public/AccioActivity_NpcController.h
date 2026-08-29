@@ -41,6 +41,7 @@ public:
 		_string Text{};
 		_string ExpressionAnim{};
 		_bool LoopExpression{ true };
+		_string SoundPath{};
 	};
 
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
@@ -142,6 +143,8 @@ private:
 	void EndDialogueCamera();
 	void SetPlayerMovementLocked(_bool bLocked);
 	void SetDialogueExpression(const DIALOGUE_LINE& line);
+	void HandleDialogueLineSound(const DIALOGUE_LINE& line);
+	void StopDialogueSound(_float fFadeOutDuration = 0.05f);
 	void ResolveInteractionPlayer();
 	_bool IsInteractionPlayerInRange();
 	void SyncInteractionPrompt(_bool bShow);
@@ -256,6 +259,7 @@ private:
 	_bool m_bInteractionPromptVisible{};
 	_bool m_bDialogueCinematicPlaying{};
 	_bool m_bDebugDraw{ true };
+	SOUND_ID m_iDialogueSoundID{ INVALID_SOUND_ID };
 	EFFECT_INSTANCE_ID m_iPullEffectID{ INVALID_EFFECT_INSTANCE_ID };
 	EFFECT_INSTANCE_ID m_iGrabEffectID{ INVALID_EFFECT_INSTANCE_ID };
 	_float m_fPullEffectBlend{};

@@ -55,6 +55,7 @@ public:
 	// ********* SpellSlot
 	void SetSpellType(uint32_t SlotNumber, uint32_t SpellType); 
 	uint32_t GetSpellType(uint32_t SlotNumber); // 1234 슬롯 마법 타입 UI_ENUM에 스펠타입 있음
+	_float GetSpellCooldownDuration(uint32_t SlotNumber);
 	void UseSpell(uint32_t SlotNumber);
 	void SetSpellUnlocked(SPELL_TYPE spellType, _bool unlocked);
 	_bool IsSpellUnlocked(SPELL_TYPE spellType) const;
@@ -63,6 +64,7 @@ public:
 	void SetPotionCount(_float cnt); // 포션 개수 세팅
 	void AddPotionCount(_float cnt); // 포션 개수 플마
 	void UsePotion(); // 포션 1개 사용
+	_bool HasPotion() const { return m_iPotionCNT > 0; }
 
 	// ********** PickIcon -> 스펠 피킹용
 	void SetTargetIcon(uint32_t type) { m_TargetSpellType = type; }

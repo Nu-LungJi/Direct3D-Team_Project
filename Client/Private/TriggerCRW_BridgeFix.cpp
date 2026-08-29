@@ -20,7 +20,7 @@ void CTriggerCRW_BridgeFix::Update(_float fTimeDelta)
 		{
 			m_bQuestAdvanced = true;
 			GET_SINGLE(UIManager)->CreateOrChangeQuest(
-				"퍼시벌 랙햄의 시험을 완료하기");
+				"고대 유적 돌파하기");
 			CGameInstance::Get().EventPublish(
 				FQuestUIGroupChanged{
 					.Group = QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE,
@@ -32,7 +32,7 @@ void CTriggerCRW_BridgeFix::Update(_float fTimeDelta)
 				FQuestUIGroupChanged{
 					.Group = QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_PORTAL,
 					.Active = true,
-					.QuestText = "퍼시벌 랙햄의 시험을 완료하기",
+					.QuestText = "고대 유적 돌파하기",
 					.UpdateMinimap = true,
 					.UpdateQuestWidget = false
 				});
