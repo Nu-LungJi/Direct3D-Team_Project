@@ -110,6 +110,10 @@ public:
 	void						Set_AttTable(ATTMON eType, _float2 fSkillRatio) override;
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
 	void						Set_WingParticlesEnabled(_bool bEnabled) { m_bWingParticlesEnabled = bEnabled; if (!bEnabled) m_fWingParticleSpawnAcc = 0.f; }
+	// 등장 이동과 포효 애니메이션까지 끝나 실제 전투 상태에 진입했는지 반환한다.
+	_bool						IsSpawnPresentationFinished() const;
+	// 사망 애니메이션과 마지막 디졸브 연출이 모두 끝났는지 반환한다.
+	_bool						IsDeathPresentationFinished() const { return m_bEndGame; }
 	EDG_SKILL_INFO&				Get_SkillInfo(DRAGON_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
 	const _string&				Get_SkillNmae(DRAGON_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
 	void						Heal(uint32_t iHp) { m_iHp += iHp; if (m_iHp >= m_iMaxHp) m_iHp = m_iMaxHp; }

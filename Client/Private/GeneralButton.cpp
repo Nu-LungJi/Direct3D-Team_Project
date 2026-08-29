@@ -250,7 +250,6 @@ void CGeneralButton::HandleEnter()
 
 	EnsureBaseScaleCaptured();
 	m_bHovering = true;
-	PlayButtonSelectSound();
 
 	switch (m_eButtonType)
 	{

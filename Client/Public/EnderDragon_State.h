@@ -25,7 +25,7 @@ public:
 	
 	void		ApplyStateRequest()override;
 	void		PriorityUpdate(_float fTimeDelta)override;
-	MON_STATE	GetCurState() { return m_eCurState; }
+	MON_STATE	GetCurState() const { return m_eCurState; }
 private:
 	_bool		IsRegistered(MON_STATE eState) override;
 public:

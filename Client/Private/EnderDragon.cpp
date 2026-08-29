@@ -742,6 +742,13 @@ void CEnderDragon::Set_StateFinished(_bool bFinished)
 
 	pBB->Set_Value(EDG_KEY::BSTATE_FINISHED, bFinished);
 }
+
+_bool CEnderDragon::IsSpawnPresentationFinished() const
+{
+	return Is_Spawn() && m_pFsm &&
+		m_pFsm->GetCurState() == MON_STATE::COMBAT;
+}
+
 _bool CEnderDragon::Is_StateFinished()
 {
 	//스테이트가 끝났는지 확인
