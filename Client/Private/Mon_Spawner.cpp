@@ -116,6 +116,24 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 			m_bSpiderEncounterStarted = true;
 			UpdateSpiderQuestProgress();
 		}
+
+		auto* pSoundManager =
+			E::CGameInstance::Get().GetSoundManager();
+
+		if (pSoundManager)
+		{
+			pSoundManager->StopBus(SOUND_BUS::BGM);
+
+			pSoundManager->Play2D(
+				"./Resources/SampleClient/Sound/HogsMeade/Ambient/CombatBgm2.wav",
+				SOUND_PLAY_DESC{
+					.sBusID = SOUND_BUS::BGM,
+					.fVolume = 0.5f,
+					.fPitch = 1.f,
+					.iPriority = 64,
+					.bLoop = true
+				});
+		}
 	}
 
 	UpdateTrollQuestAfterCinematic();

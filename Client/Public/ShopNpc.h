@@ -58,6 +58,7 @@ private:
 
 	UPtr<CNpcRagdollController> m_pRagdollController{};
 	_bool m_bRagdollGameplaySuspended{};
+	_bool m_bDeathVoicePlayed{};
 	_bool m_bWorldSpaceShop{};
 	_float3 m_vShopPanelPositionOffset{ 0.f, 1.6f, 1.2f };
 	_float3 m_vShopPanelRotationOffsetDegrees{};

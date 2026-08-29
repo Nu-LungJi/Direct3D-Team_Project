@@ -208,6 +208,13 @@ void CEnderDragon::ReadySound()
 	m_SoundTable["Dead3"] = {
 	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragon_conjured_akb__DieorHit.wav"
 	};
+	m_SoundTable["ReadyBall"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/ranrok_dragon_projectile_start_Play.wav"
+	};
+	m_SoundTable["ReadyBreath"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/drgn_cnjrd_atk_FloorSpikes_FireBreath.wav"
+	};
+	
 }
 HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
 {
