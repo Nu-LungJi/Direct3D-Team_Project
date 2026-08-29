@@ -124,7 +124,6 @@ HRESULT CTroll::Initialize(void* pArg)
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
 	m_pModelAnimator->Play_Anim(0, false);
-	ReadySound();
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	m_pComSphereCol->SetQueryEnabled(true);
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Chest");
@@ -220,12 +219,15 @@ void CTroll::ReadySound()
 	m_SoundTable["ChageHit"] = { "./Resources/SampleClient/Sound/Troll/Charge/troll_charge_attack_hit.wav", };
 
 	m_SoundTable["Swing"] = { "./Resources/SampleClient/Sound/Troll/Club/troll_club_swing.wav", };
+	m_SoundTable["Smash"] = { "./Resources/SampleClient/Sound/Troll/Club/troll_armored_overhead_smash_impact.wav", };
+
 	m_SoundTable["Walk"] = { 
 		"./Resources/SampleClient/Sound/Troll/Footsteps/Troll_Foot_Impact_91691935.wav", 
 	"./Resources/SampleClient/Sound/Troll/Footsteps/Troll_Foot_Impact_902343883.wav", 
 	"./Resources/SampleClient/Sound/Troll/Footsteps/Troll_Foot_Impact_241239946.wav",  };
 
-	
+	m_SoundTable["Dead"] = {
+		"./Resources/SampleClient/Sound/Troll/troll_aggro_roar.wav", };
 }
 HRESULT CTroll::Ready_Fsm(const _string& LevelTag)
 {

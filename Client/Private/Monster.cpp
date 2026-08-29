@@ -287,8 +287,10 @@ HRESULT CMonster::Initialize(void* pArg)
 				return E_FAIL;
 			};
 		}
+		ReadySound();
 		auto* pBB = Get_BlackBoard();
 		pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
+		pBB->Set_Value <std::unordered_map<_string, std::vector<_string>>>(PUBLIC_KEY::SOUNDTABLE, m_SoundTable);
 		CGameInstance::Get().EventSubscribe<FAncientMagicStart>(GetHandle(), [=]() { Stuck(); });
 		GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 		GetTransform().Update();
@@ -929,10 +931,7 @@ SOUND_ID  CMonster::Play_Sound(const MONSOUND& MonSound)
 		Sounds,
 		MonSound.SoundPlay
 	);
-	if (id == INVALID_SOUND_ID)
-	{
-		MSG_BOX("INVALID_SOUND_ID");
-	}
+
 	return id;
 }
 
@@ -942,29 +941,6 @@ void CMonster::Skill_Finished()
 	m_CurEffectName.clear();
 	m_eLastSkillTable = ATTMON::END;
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::EFFECT) | ETOUI(CBTRoot::BTFLAG::ATTACK) | ETOUI(CBTRoot::BTFLAG::ENDHIT) |ETOUI(CBTRoot::BTFLAG::THROW),FLAGTYPE::DEL);
-}
-
-void CMonster::Get_SoundKey(_string& CurSoundName)
-{
-	_string Key = "";
-	if (ImGui::BeginCombo("SoundTable",CurSoundName.c_str()))
-	{
-		for (auto&[key, value] : m_SoundTable)
-		{
-			_bool bSelect = key == CurSoundName;
-			if (ImGui::Selectable(key.c_str(), bSelect))
-			{
-				CurSoundName = key;
-				break;
-			}
-
-			if(bSelect)
-				ImGui::SetItemDefaultFocus();
-		}
-
-		ImGui::EndCombo();
-	}
-	return;
 }
 
 const _float4x4* CMonster::Get_CombineBoneMatrix(int32_t iBoneIndex)

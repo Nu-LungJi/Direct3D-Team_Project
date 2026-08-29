@@ -116,6 +116,7 @@ public:
 protected:
 	virtual	void				Damaged(PLAYER_SKILL_TYPE eType);
 	virtual void				Stuck();
+	virtual void				ReadySound() {};
 private:
 	void						Update_Animation(_float fTimeDelta);
 

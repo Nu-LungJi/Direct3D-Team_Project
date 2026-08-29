@@ -24,10 +24,20 @@ void CMon_Dead::Enter(CStateMachine* pStateMachine)
 	if (nullptr == pMonster) return;
 	auto pAnimator = pMonster->Get_Animator();
 	if (nullptr == pAnimator) return;
-	if (m_iIndex == -1) return;
+
 
 	pMonster->Destory_Child();
-	pAnimator->Play_Anim(m_iIndex, false, 0.1f);
+	if (m_iIndex != -1)
+	{
+		pAnimator->Play_Anim(m_iIndex, false, 0.1f);
+		MONSOUND Sound_Desc{};
+		_float3 vPos = pMonster->GetTransform().GetPosition();
+		Sound_Desc.SoundKey = "Dead";
+		Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
+		Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+		pMonster->Play_Sound(Sound_Desc);
+	}
+
 }
 
 void CMon_Dead::Exit(CStateMachine* pStateMachine)

@@ -21,6 +21,7 @@ private:
 	HRESULT		Initialize();
 private:
 	_float		m_fTick{};
+	_bool		m_bSound{true};
 public:
 	static SPtr<CEdg_Dead> Create();
 };

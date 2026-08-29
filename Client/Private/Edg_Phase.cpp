@@ -89,13 +89,12 @@ void CEdg_Phase::Enter(CStateMachine* pStateMachine)
 	if (m_ePhase != DRAGON_PHASE::PHASE3)
 	{
 		
-		//Cast<CEnderDragon_State>(pStateMachine)->Get();
-		//MONSOUND Sound_Desc{};
-		//_float3 vPos = pDragon->GetTransform().GetPosition();
-		//Sound_Desc.SoundKey = "Phase";
-		//Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
-		//Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
-		//pDragon->Play_Sound(Sound_Desc);
+		MONSOUND Sound_Desc{};
+		_float3 vPos = pDragon->GetTransform().GetPosition();
+		Sound_Desc.SoundKey = "Phase";
+		Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
+		Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+		pDragon->Play_Sound(Sound_Desc);
 
 	}
 }
