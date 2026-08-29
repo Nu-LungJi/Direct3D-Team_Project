@@ -501,6 +501,13 @@ _bool CPlayer_AvadaKedavraSkill_State::ResolveTargetPosition(
 
 	if (auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(hTarget))
 	{
+		if (const auto* pSkillTarget = Engine::Cast<CSkillTarget>(pTarget);
+			pSkillTarget &&
+			pSkillTarget->TryGetSkillTargetPosition(OutTargetPosition))
+		{
+			return true;
+		}
+
 		OutTargetPosition = pTarget->GetTransform().GetPosition();
 		return true;
 	}

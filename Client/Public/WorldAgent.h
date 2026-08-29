@@ -25,6 +25,8 @@ NS_END
 
 
 NS_BEGIN(Client)
+class CNpcRagdollController;
+
 class CWorldAgent : public CAnimationObject, public CSkillTarget
 {
 public:
@@ -69,6 +71,7 @@ public:
 protected:
 	CWorldAgent();
 	~CWorldAgent() override;
+	friend class CNpcRagdollController;
 
 public:
 	void UpdateGUI();
@@ -92,6 +95,7 @@ public:
 	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
 public:
 	virtual _bool				Check_Table(PLAYER_SKILL_TYPE eType) { return true; };
+	_bool						CanBePlayerCombatTarget() const override { return false; }
 
 	const int32_t				Get_CurrentHp() const { return m_iHp; }
 	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }

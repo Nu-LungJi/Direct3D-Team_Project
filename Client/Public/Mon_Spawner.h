@@ -35,6 +35,8 @@ private:
 	void						Debug_Point();
 	void						Picking();
 	void						Picking_TerrainMon();
+	void						UpdateSpiderQuestProgress();
+	void						UpdateTrollQuestAfterCinematic();
 private:
 	std::vector<CHandle>		m_Monsters;
 	_string						m_LeveTag{};
@@ -44,6 +46,11 @@ private:
 	_bool						m_bPick{ false };
 	_bool						m_bTrollSpawnPrepared{ false };
 	_bool						m_bTroll{ false };
+	_bool						m_bSpiderEncounterStarted{ false };
+	_bool						m_bWaitingForTrollCinematic{ false };
+	_bool						m_bTrollCinematicObserved{ false };
+	size_t						m_iTotalSpiderCount{};
+	size_t						m_iLastReportedDefeated{ std::numeric_limits<size_t>::max() };
 public:
 	static E::UPtr<CMon_Spawner> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

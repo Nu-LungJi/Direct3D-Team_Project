@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "WorldNpc.h"
+#include "NpcRagdollController.h"
 #include "Client_Resources.h"
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
@@ -27,6 +28,11 @@ CWorldNpc::CWorldNpc()
 {
 }
 
+CWorldNpc::CWorldNpc(const CWorldNpc& Prototype)
+	: CWorldAgent{ Prototype }
+{
+}
+
 CWorldNpc::~CWorldNpc()
 {
 	if (auto* pSoundManager =
@@ -40,7 +46,8 @@ CWorldNpc::~CWorldNpc()
 void CWorldNpc::UpdateGUI()
 {
 	__super::UpdateGUI();
-
+	if (m_pRagdollController)
+		m_pRagdollController->UpdateGUI();
 }
 
 HRESULT CWorldNpc::InitializePrototype(void* pArg)
@@ -79,6 +86,7 @@ HRESULT CWorldNpc::Initialize(void* pArg)
 
 	GetTransform().SetQuaternion(vFinalRot);
 	GetTransform().SetScale(NpcDesc->vScale);
+	GetTransform().Update();
 
 	if(nullptr != m_pComSphereCol)
 		m_pComSphereCol->SetQueryEnabled(true);
@@ -156,6 +164,25 @@ void CWorldNpc::PriorityUpdate(E::_float fTimeDelta)
 		SetPendingDestroy();
 		return;
 	}
+
+	// CWorldAgent는 사망 NPC를 즉시 PendingDestroy 처리한다.
+	// 그보다 먼저 랙돌 전환을 예약하고 일반 AI 루프 진입을 막는다.
+	const _bool bDeathRequested =
+		m_iHp <= 0 ||
+		(m_pBeHavior &&
+			m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)));
+	if (bDeathRequested && m_pRagdollController &&
+		!m_pRagdollController->IsTransitioning())
+	{
+		m_pRagdollController->RequestFromCurrentMotion();
+	}
+
+	if (m_pRagdollController &&
+		m_pRagdollController->PrePriorityUpdate())
+	{
+		return;
+	}
+
 	__super::PriorityUpdate(fTimeDelta);
 }
 int32_t CWorldNpc::Find_AnimIndex(const _string& AnimName)
@@ -177,7 +204,8 @@ int32_t CWorldNpc::Find_AnimIndex(const _string& AnimName)
 void CWorldNpc::Update(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;
-	__super::Update(fTimeDelta);
+	if (!IsRagdollActive())
+		__super::Update(fTimeDelta);
 
 	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
 	if (nullptr == pSoundManager || m_iSoundID == INVALID_SOUND_ID)
@@ -200,14 +228,64 @@ void CWorldNpc::FixedUpdate(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;
 
+	if (m_pRagdollController &&
+		m_pRagdollController->PreFixedUpdate())
+	{
+		return;
+	}
+
 	if(nullptr != m_pCharacterMotor)
-	m_pCharacterMotor->FixedUpdate(fTimeDelta);
+		m_pCharacterMotor->FixedUpdate(fTimeDelta);
+
+	if (m_pRagdollController)
+		m_pRagdollController->PostFixedUpdate();
 }
 void CWorldNpc::LateUpdate(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;
+
+	// 활성 랙돌에서는 CWorldAgent::LateUpdate가 CCT 발 위치로 Transform을
+	// 다시 덮지 않도록 렌더 등록만 수행한다.
+	if (IsRagdollActive())
+	{
+		GetTransform().Update();
+		if (m_pComModelInstance &&
+			m_pModelAnimator &&
+			m_pComModelInstance->GetModel() &&
+			!m_pComModelInstance->GetModel()->GetAnimations().empty())
+		{
+			CGameInstance::Get().Add_Instance(
+				m_pComModelInstance,
+				m_pModelAnimator,
+				*GetTransform().GetCombinedWorldMatrix());
+		}
+		return;
+	}
+
 	__super::LateUpdate(fTimeDelta);
 
+}
+
+_bool CWorldNpc::RequestRagdollActivation(
+	const _float3& vLinearVelocity,
+	const _float3& vAngularVelocityRadians)
+{
+	return m_pRagdollController &&
+		m_pRagdollController->RequestActivation(
+			vLinearVelocity,
+			vAngularVelocityRadians);
+}
+
+_bool CWorldNpc::ResetRagdoll()
+{
+	return m_pRagdollController &&
+		m_pRagdollController->Reset();
+}
+
+_bool CWorldNpc::IsRagdollActive() const
+{
+	return m_pRagdollController &&
+		m_pRagdollController->IsActive();
 }
 
 
