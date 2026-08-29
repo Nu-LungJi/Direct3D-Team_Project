@@ -34,6 +34,9 @@ public:
 public:
 	static E::UPtr<CWorldNpc> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
+private:
+	SOUND_ID					m_iSoundID{ INVALID_SOUND_ID };
 };
 
 NS_END

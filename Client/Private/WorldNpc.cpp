@@ -29,6 +29,12 @@ CWorldNpc::CWorldNpc()
 
 CWorldNpc::~CWorldNpc()
 {
+	if (auto* pSoundManager =
+		E::CGameInstance::Get().GetSoundManager())
+	{
+		pSoundManager->Stop(m_iSoundID);
+	}
+
 }
 
 void CWorldNpc::UpdateGUI()
@@ -77,6 +83,42 @@ HRESULT CWorldNpc::Initialize(void* pArg)
 	if(nullptr != m_pComSphereCol)
 		m_pComSphereCol->SetQueryEnabled(true);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
+
+	_string soundPath{};
+	uint32_t iRand = RandInt(0, 3);
+	switch (iRand) {
+	case 0:
+		soundPath = "./Resources/SampleClient/Sound/NPC/NpcTalk1.mp3";
+		break;
+	case 1:
+		soundPath = "./Resources/SampleClient/Sound/NPC/NpcTalk2.mp3";
+
+		break;
+	case 2:
+		soundPath = "./Resources/SampleClient/Sound/NPC/NpcTalk3.mp3";
+		break;
+	case 3:
+		soundPath = "./Resources/SampleClient/Sound/NPC/NpcTalk4.mp3";
+		break;
+	default:
+		break;
+	}
+	m_iSoundID = CGameInstance::Get().GetSoundManager()->Play3D(
+		soundPath,
+		SOUND_3D_DESC{
+			.vPosition = GetTransform().GetPosition(),
+			.fMinDistance = 5.f,
+			.fMaxDistance = 30.f,
+			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		},
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::SFX,
+			.fVolume = 0.75f,
+			.fPitch = 1.f,
+			.iPriority = 96,
+			.bLoop = true
+		});
+
 	return S_OK;
 }
 HRESULT CWorldNpc::Ready_Fsm(const _string& LevelTag)
@@ -136,6 +178,21 @@ void CWorldNpc::Update(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;
 	__super::Update(fTimeDelta);
+
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (nullptr == pSoundManager || m_iSoundID == INVALID_SOUND_ID)
+		return;
+
+	if (!pSoundManager->IsValidSound(m_iSoundID) ||
+		!pSoundManager->IsPlaying(m_iSoundID))
+	{
+		m_iSoundID = INVALID_SOUND_ID;
+		return;
+	}
+
+	pSoundManager->Set3DAttributes(
+		m_iSoundID,
+		GetTransform().GetPosition());
 
 }
 
