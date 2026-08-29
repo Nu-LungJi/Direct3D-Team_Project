@@ -115,7 +115,10 @@ public:
 	}
 
 	/********소환사의 코트 미니게임**********/
-	void AssioMiniGameStart(_bool bPlayerStarts = true);
+	_bool AssioMiniGameStart(
+		_bool bPlayerStarts = true,
+		const _string& PlayerDisplayName = "이솝 샤프",
+		const _string& NpcDisplayName = "저스티스 훈");
 	void AssioMiniGameFinish();
 	_bool AddScore(
 		int iTurnScore,
@@ -280,6 +283,8 @@ private:
 	std::optional<CHandle> m_hAssioCenterScoreText{};
 	std::optional<CHandle> m_hAssioTurnTitle{};
 	std::optional<CHandle> m_hAssioTargetScoreText{};
+	_wstring m_AssioPlayerDisplayName{ L"이솝 샤프" };
+	_wstring m_AssioNpcDisplayName{ L"저스티스 훈" };
 	_float2 m_AssioCenterScoreBasePosition{};
 	_float2 m_AssioCenterScoreMoveStart{};
 	_float2 m_AssioCenterScoreMoveTarget{};

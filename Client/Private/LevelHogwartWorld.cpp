@@ -920,6 +920,8 @@ HRESULT CLevelHogwartWorld::SpawnAccioActivity(
 	CAccioActivity_Base::DESC baseDesc{};
 	baseDesc.sObjectTag = "HogwartWorld_AccioActivity_Base";
 	baseDesc.sResourceGroup = LEVEL::HOGWART_WORLD;
+	baseDesc.PlayerDisplayName = "이솝 샤프";
+	baseDesc.NpcDisplayName = "저스티스 훈";
 	baseDesc.vInitialPosition = vOrigin;
 	baseDesc.vInitialRotation = vSetRotation;
 	baseDesc.vInitialScale = {
@@ -1040,24 +1042,29 @@ HRESULT CLevelHogwartWorld::SpawnAccioActivity(
 	npcControllerDesc.hActivity = *hBase;
 	npcControllerDesc.hPlatform = *hPlatform;
 	npcControllerDesc.hInteractionPlayer = hPlayer;
-	npcControllerDesc.SpeakerName = "호그와트 학생";
+	npcControllerDesc.SpeakerName = baseDesc.NpcDisplayName;
 	npcControllerDesc.fInteractionDistance = 10.f;
 	npcControllerDesc.Dialogue =
 	{
-		{ "준비됐어? 아씨오로 공을 끌어 점수를 겨뤄 보자.", {}, true },
-		{ "높은 점수 구역에 공을 멈추면 이겨. 네가 먼저 시작해.", {}, true }
+		{ "준비됐어? 아씨오로 공을 끌어 점수를 겨뤄 보자.", {}, true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_INTRO_01.mp3" },
+		{ "높은 점수 구역에 공을 멈추면 이겨. 네가 먼저 시작해.", {}, true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_INTRO_02.mp3" }
 	};
 	npcControllerDesc.PlayerWinDialogue =
 	{
-		{ "잘했어. 이번 승부는 네가 이겼네.", {}, true }
+		{ "잘했어. 이번 승부는 네가 이겼네.", {}, true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_PLAYER_WIN_01.mp3" }
 	};
 	npcControllerDesc.NpcWinDialogue =
 	{
-		{ "이번 승부는 내가 이겼네. 다시 도전해 봐.", {}, true }
+		{ "이번 승부는 내가 이겼네. 다시 도전해 봐.", {}, true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_NPC_WIN_01.mp3" }
 	};
 	npcControllerDesc.DrawDialogue =
 	{
-		{ "무승부네. 꽤 좋은 승부였어.", {}, true }
+		{ "무승부네. 꽤 좋은 승부였어.", {}, true,
+			"./Resources/SampleClient/Sound/AccioActivity/Npc/ACCIO_DRAW_01.mp3" }
 	};
 
 	constexpr _float fNpcSpawnClearance = 0.5f;
