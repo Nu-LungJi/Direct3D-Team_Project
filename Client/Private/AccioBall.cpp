@@ -30,7 +30,14 @@ namespace
 			sizeof(ACCIO_BALL_IMPACT_SOUND_PATHS[0]));
 	constexpr _float ACCIO_BALL_IMPACT_MIN_IMPULSE = 0.35f;
 	constexpr _float ACCIO_BALL_IMPACT_FULL_VOLUME_IMPULSE = 18.f;
-	constexpr _float ACCIO_BALL_IMPACT_SOUND_COOLDOWN = 0.12f;
+	constexpr _float ACCIO_BALL_IMPACT_SOUND_COOLDOWN = 0.3f;
+	constexpr const _char* ACCIO_BALL_ROLL_SOUND_PATH =
+		"./Resources/SampleClient/Sound/AccioActivity/Ball/AccioBall_Roll_Loop.wav";
+	constexpr const _char* ACCIO_BALL_ROLL_PULSE_SOUND_PATH =
+		"./Resources/SampleClient/Sound/AccioActivity/Ball/AccioBall_Roll_Pulse.wav";
+	constexpr _float ACCIO_BALL_ROLL_SOUND_START_SPEED = 0.35f;
+	constexpr _float ACCIO_BALL_ROLL_SOUND_STOP_SPEED = 0.18f;
+	constexpr _float ACCIO_BALL_ROLL_PULSE_INTERVAL = 0.95f;
 }
 
 CAccioBall::CAccioBall() = default;
@@ -182,6 +189,7 @@ void CAccioBall::FixedUpdate(_float fTimeDelta)
 	m_fCollisionSoundCooldown = std::max(
 		0.f,
 		m_fCollisionSoundCooldown - std::max(fTimeDelta, 0.f));
+	UpdateRollingSound(fTimeDelta);
 
 	if (m_hController != CHandle{})
 	{
@@ -379,6 +387,7 @@ void CAccioBall::OnSleep()
 {
 	m_bSettled = true;
 	m_fAutoSleepElapsed = 0.f;
+	StopRollingSound();
 }
 
 void CAccioBall::OnCollisionEnter(
@@ -387,11 +396,16 @@ void CAccioBall::OnCollisionEnter(
 {
 	if (m_fCollisionSoundCooldown > 0.f || info.iContactCount == 0u)
 		return;
+	if (!IsSoundAllowedOnPlayArea())
+		return;
 
 	// 공끼리 충돌하면 양쪽 객체에 콜백이 오므로 한쪽에서만 재생한다.
+	CAccioBall* pOtherBall = nullptr;
 	if (pObj && pObj->IsA(CAccioBall::StaticType))
 	{
-		const auto* pOtherBall = static_cast<const CAccioBall*>(pObj);
+		pOtherBall = static_cast<CAccioBall*>(pObj);
+		if (!pOtherBall->IsSoundAllowedOnPlayArea())
+			return;
 		if (std::less<const CAccioBall*>{}(pOtherBall, this))
 			return;
 	}
@@ -407,6 +421,12 @@ void CAccioBall::OnCollisionEnter(
 
 	PlayCollisionSound(info.Contacts[0].vWorldPosition, fTotalImpulse);
 	m_fCollisionSoundCooldown = ACCIO_BALL_IMPACT_SOUND_COOLDOWN;
+	if (pOtherBall)
+	{
+		pOtherBall->m_fCollisionSoundCooldown = std::max(
+			pOtherBall->m_fCollisionSoundCooldown,
+			ACCIO_BALL_IMPACT_SOUND_COOLDOWN);
+	}
 }
 
 void CAccioBall::PlayCollisionSound(
@@ -439,6 +459,133 @@ void CAccioBall::PlayCollisionSound(
 			.iPriority = 72,
 			.bLoop = false
 		});
+}
+
+void CAccioBall::UpdateRollingSound(_float fTimeDelta)
+{
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (!pSoundManager || !m_pComPxRigidBody ||
+		m_pComPxRigidBody->IsSleeping() ||
+		!IsSoundAllowedOnPlayArea())
+	{
+		StopRollingSound();
+		return;
+	}
+
+	const _float3 vVelocity = m_pComPxRigidBody->GetLinearVelocity();
+	const _float fHorizontalSpeedSq =
+		vVelocity.x * vVelocity.x + vVelocity.z * vVelocity.z;
+	const _bool bRollingSoundValid =
+		m_iRollingSoundID != INVALID_SOUND_ID &&
+		pSoundManager->IsValidSound(m_iRollingSoundID);
+
+	if (!bRollingSoundValid)
+	{
+		m_iRollingSoundID = INVALID_SOUND_ID;
+		if (fHorizontalSpeedSq <
+			ACCIO_BALL_ROLL_SOUND_START_SPEED *
+			ACCIO_BALL_ROLL_SOUND_START_SPEED)
+		{
+			return;
+		}
+
+		m_iRollingSoundID = pSoundManager->Play3D(
+			ACCIO_BALL_ROLL_SOUND_PATH,
+			SOUND_3D_DESC{
+				.vPosition = m_pComPxRigidBody->GetPosition(),
+				.vVelocity = vVelocity,
+				.fMinDistance = 2.f,
+				.fMaxDistance = 45.f,
+				.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+			},
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 0.38f,
+				.fPitch = 1.f,
+				.fFadeInDuration = 0.08f,
+				.iPriority = 74,
+				.bLoop = true
+			});
+		m_fRollingPulseElapsed = 0.f;
+		return;
+	}
+
+	pSoundManager->Set3DAttributes(
+		m_iRollingSoundID,
+		m_pComPxRigidBody->GetPosition(),
+		vVelocity);
+	if (fHorizontalSpeedSq <=
+		ACCIO_BALL_ROLL_SOUND_STOP_SPEED *
+		ACCIO_BALL_ROLL_SOUND_STOP_SPEED)
+	{
+		StopRollingSound();
+		return;
+	}
+
+	if (!ShouldPlayRollingPulse())
+	{
+		m_fRollingPulseElapsed = 0.f;
+		return;
+	}
+
+	m_fRollingPulseElapsed += std::max(fTimeDelta, 0.f);
+	if (m_fRollingPulseElapsed >= ACCIO_BALL_ROLL_PULSE_INTERVAL)
+	{
+		m_fRollingPulseElapsed = std::fmod(
+			m_fRollingPulseElapsed,
+			ACCIO_BALL_ROLL_PULSE_INTERVAL);
+		PlayRollingPulse();
+	}
+}
+
+void CAccioBall::StopRollingSound(_float fFadeOutDuration)
+{
+	if (m_iRollingSoundID == INVALID_SOUND_ID)
+	{
+		m_fRollingPulseElapsed = 0.f;
+		return;
+	}
+
+	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager())
+	{
+		if (fFadeOutDuration > 0.f)
+			pSoundManager->FadeOutAndStop(
+				m_iRollingSoundID, fFadeOutDuration);
+		else
+			pSoundManager->Stop(m_iRollingSoundID);
+	}
+	m_iRollingSoundID = INVALID_SOUND_ID;
+	m_fRollingPulseElapsed = 0.f;
+}
+
+void CAccioBall::PlayRollingPulse() const
+{
+	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager())
+	{
+		pSoundManager->Play2D(
+			ACCIO_BALL_ROLL_PULSE_SOUND_PATH,
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 0.42f,
+				.fPitch = 1.f,
+				.iPriority = 73,
+				.bLoop = false
+			});
+	}
+}
+
+_bool CAccioBall::IsSoundAllowedOnPlayArea() const
+{
+	const auto* pActivity = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_Base>(m_hActivity);
+	return !pActivity || pActivity->IsBallOnPlayArea(*this);
+}
+
+_bool CAccioBall::ShouldPlayRollingPulse() const
+{
+	const auto* pActivity = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_Base>(m_hActivity);
+	return !pActivity || pActivity->IsActiveBall(GetHandle());
 }
 
 _bool CAccioBall::ApplyTorque(const _float3& vTorque)
@@ -657,6 +804,7 @@ _bool CAccioBall::SetMotionTuning(
 
 _bool CAccioBall::ResetToInitialPose()
 {
+	StopRollingSound(0.f);
 	m_hController = CHandle{};
 	m_bSettled = false;
 	m_fAutoSleepElapsed = 0.f;
@@ -690,4 +838,10 @@ UPtr<CPrototype> CAccioBall::Clone(void* pArg)
 	if (FAILED(pInstance->Initialize(pArg)))
 		return nullptr;
 	return pInstance;
+}
+
+void CAccioBall::Free()
+{
+	StopRollingSound(0.f);
+	CGameObject::Free();
 }

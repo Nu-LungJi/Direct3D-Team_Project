@@ -49,19 +49,27 @@ HRESULT CAnimatedWorldObject::Initialize(void* pArg)
 			"PERMANENT", "Prototype_Component_Animator", "Com_AnimatedObjectAnimator", &animator, &m_pAnimator)))
 		return E_FAIL;
 
-	CComBeHavior::BEHAVIOR_DESC behaviorDesc{};
-	behaviorDesc.OwnerName = "Com_AnimatedObjectBT";
-	behaviorDesc.resBeHaviorMajor = desc->sBehaviorMajorTag;
-	behaviorDesc.resBeHaviorMinor = desc->sBehaviorMinorTag;
-	if (FAILED(AddComponentFromProto(
-			"BEHAVIOR",
-			"Prototype_Component_BeHavior",
-			"Com_AnimatedObjectBT",
-			&behaviorDesc,
-			&m_pBehavior)))
+	if (!desc->sBehaviorMajorTag.empty() || !desc->sBehaviorMinorTag.empty())
 	{
-		return E_FAIL;
+		CComBeHavior::BEHAVIOR_DESC behaviorDesc{};
+		behaviorDesc.OwnerName = "Com_AnimatedObjectBT";
+		behaviorDesc.resBeHaviorMajor = desc->sBehaviorMajorTag;
+		behaviorDesc.resBeHaviorMinor = desc->sBehaviorMinorTag;
+		if (FAILED(AddComponentFromProto(
+				"BEHAVIOR",
+				"Prototype_Component_BeHavior",
+				"Com_AnimatedObjectBT",
+				&behaviorDesc,
+				&m_pBehavior)))
+			return E_FAIL;
 	}
+	m_ParentHandle = desc->ParentHandle;
+	m_iParentBoneIndex = desc->iParentBoneIndex;
+	m_bLockLocalRotation = desc->bLockLocalRotation;
+	m_vLockedLocalRotation = desc->vRotation;
+	m_fDissolveAppearDuration = std::max(desc->fDissolveAppearDuration, 0.f);
+	m_fDissolveAppearElapsed = 0.f;
+	m_fDissolveIntensity = m_fDissolveAppearDuration > 0.f ? 1.f : 0.f;
 
 	m_pAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pAnimator->Build_BoneMatrices_CPU(0.f);
@@ -71,7 +79,11 @@ HRESULT CAnimatedWorldObject::Initialize(void* pArg)
 							 XMMatrixRotationY(XMConvertToRadians(desc->vRotation.y)) *
 							 XMMatrixRotationZ(XMConvertToRadians(desc->vRotation.z));
 	GetTransform().SetQuaternion(XMQuaternionRotationMatrix(rotation));
+	if (m_bLockLocalRotation)
+		GetTransform().SetRotationEuler(m_vLockedLocalRotation);
 	GetTransform().Update();
+	if (m_bLockLocalRotation)
+		GetTransform().SetRotationEuler(m_vLockedLocalRotation);
 	if (!PlayAnimation(desc->sAnimationName, desc->bLoop, desc->fAnimationSpeed, desc->fStartRatio))
 		return E_FAIL;
 	if (!desc->bAutoPlay)
@@ -88,6 +100,12 @@ void CAnimatedWorldObject::PriorityUpdate(E::_float delta)
 void CAnimatedWorldObject::Update(E::_float delta)
 {
 	CAnimationObject::Update(delta);
+	if (m_fDissolveAppearDuration > 0.f && m_fDissolveIntensity > 0.f)
+	{
+		m_fDissolveAppearElapsed += std::max(delta, 0.f);
+		m_fDissolveIntensity = 1.f - std::clamp(
+			m_fDissolveAppearElapsed / m_fDissolveAppearDuration, 0.f, 1.f);
+	}
 	if (m_pAnimator && m_pModelInstance && !m_pModelInstance->GetModel()->GetAnimations().empty())
 		m_pAnimator->Update(delta);
 	if (m_pBehavior)
@@ -95,11 +113,44 @@ void CAnimatedWorldObject::Update(E::_float delta)
 }
 void CAnimatedWorldObject::LateUpdate(E::_float)
 {
+	if (m_ParentHandle.IsValid())
+	{
+		if (auto* parent = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
+		{
+			_matrix parentWorld = parent->GetTransform().GetLoadedWorldMatrix();
+			if (m_iParentBoneIndex >= 0)
+			{
+				if (auto* parentModel = parent->GetComponent<CComModelInstance>("ComCModelIntance"))
+				{
+					const auto& bones = parentModel->Get_CombinedBoneMatrices();
+					if (static_cast<size_t>(m_iParentBoneIndex) < bones.size())
+					{
+						_matrix socket = XMLoadFloat4x4(&bones[m_iParentBoneIndex]);
+						for (uint32_t axis = 0; axis < 3; ++axis)
+							socket.r[axis] = XMVector3Normalize(socket.r[axis]);
+						parentWorld = socket * parentWorld;
+					}
+				}
+			}
+			_float4x4 storedParent{};
+			XMStoreFloat4x4(&storedParent, parentWorld);
+			GetTransform().SetParentWorldMatrix(storedParent);
+		}
+	}
+	if (m_bLockLocalRotation)
+		GetTransform().SetRotationEuler(m_vLockedLocalRotation);
 	GetTransform().Update();
+	if (m_bLockLocalRotation)
+		GetTransform().SetRotationEuler(m_vLockedLocalRotation);
 	if (!m_pModelInstance || !m_pAnimator || !m_pModelInstance->GetModel() ||
 		m_pModelInstance->GetModel()->GetAnimations().empty())
 		return;
-	CGameInstance::Get().Add_Instance(m_pModelInstance, m_pAnimator, *GetTransform().GetCombinedWorldMatrix());
+	uint32_t dissolveBits{};
+	static_assert(sizeof(dissolveBits) == sizeof(m_fDissolveIntensity));
+	memcpy(&dissolveBits, &m_fDissolveIntensity, sizeof(dissolveBits));
+	CGameInstance::Get().Add_Instance(
+		m_pModelInstance, m_pAnimator,
+		*GetTransform().GetCombinedWorldMatrix(), dissolveBits);
 	m_bSubmittedThisFrame = true;
 	++m_iInstanceSubmitCount;
 }

@@ -49,6 +49,8 @@ typedef struct monsound
 
 	_bool			 bOnlyOne{ false };
 	_bool			 bPlayed{};
+	_bool			 bStopAbort{false};
+	_bool			 bRunReset{false};
 	SOUND_ID iSoundID{ INVALID_SOUND_ID };
 }MONSOUND;
 

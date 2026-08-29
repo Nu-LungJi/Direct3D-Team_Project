@@ -1288,9 +1288,9 @@ HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID, const CHandle&
 {
 	return m_pCameraManager->PlayCinematic(CinematicID, TargetHandle, Options);
 }
-void CGameInstance::StopCinematic()
+void CGameInstance::StopCinematic(_float fReturnBlendDuration)
 {
-	m_pCameraManager->StopCinematic();
+	m_pCameraManager->StopCinematic(fReturnBlendDuration);
 }
 _bool CGameInstance::IsCinematicPlaying() const
 {
