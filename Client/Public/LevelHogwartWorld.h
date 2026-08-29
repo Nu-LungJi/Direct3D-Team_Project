@@ -54,6 +54,10 @@ private:
 	HRESULT SpawnSummonersCourtIfNeeded(CHandle hPlayer);
 	void RequestSummonersCourtDespawn();
 	void UpdateRequestedSummonersCourtDespawn();
+	void ChangeBGM(
+		const _string& strSoundPath,
+		_float fTargetVolume,
+		_float fFadeDuration = 1.f);
 
 	void UpdateDebugWarp();
 
@@ -79,6 +83,8 @@ private:
 	_bool m_bSummonersCourtDespawnRequested{};
 	std::vector<CHandle> m_AccioActivityHandles{};
 	std::vector<CHandle> m_CoinCollisionHandles{};
+	SOUND_ID m_iBGM{ INVALID_SOUND_ID };
+	_string m_strCurrentBGMPath{};
 
 private:
 	void Free() override;
