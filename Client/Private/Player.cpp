@@ -50,6 +50,7 @@
 #include "Monster.h"
 #include "ComSound.h"
 #include "ClientEvents.h"
+#include "UIManager.h"
 
 #include "Player_RevelioSkill_State.h"
 #include "Player_Magic_Bullet.h"
@@ -780,6 +781,14 @@ _bool CPlayer::IsRagdollTransitioning() const
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
+	const _float fUnscaledDelta = std::max(
+		0.f, CGameInstance::Get().GetUnscaledDelta());
+	m_fAncientMagicChainCooldown = std::max(
+		0.f, m_fAncientMagicChainCooldown - fUnscaledDelta);
+	if (m_fAncientMagicInputRemainTime > 0.f)
+		m_fAncientMagicInputRemainTime = std::max(
+			0.f, m_fAncientMagicInputRemainTime - fUnscaledDelta);
+
 	if (m_iAttackIndicatorParticleOwner != INVALID_PARTICLE_OWNER_ID)
 	{
 		m_fAttackIndicatorRemainTime = std::max(
@@ -848,6 +857,28 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		m_fCurrentMoveSpeed = 0.f;
 		m_bRootMotionTranslationActive = false;
 		m_bRootMotionRotationActive = false;
+		if (m_pComMoveIntent)
+			m_pComMoveIntent->ClearMoveIntent();
+		return;
+	}
+
+	// 대화형 스펠 미니게임은 UI가 동일한 키와 마우스 입력을 사용한다.
+	// Fly/Attack 상태도 자체 Update 안에서 직접 입력을 읽으므로 상태 머신을
+	// 포함한 플레이어 입력 갱신 전체를 차단해야 한다.
+	if (m_bGameplayInputLocked)
+	{
+		m_bRawMoveInput = false;
+		m_bSprintRequested = false;
+		m_bWalkRequested = false;
+		m_vRawMoveDirection = {};
+		m_fCurrentMoveSpeed = 0.f;
+		m_fControlHoldTime = 0.f;
+		m_bDashTriggered = false;
+		m_iBufferedSkillSlot = 0u;
+		m_fBufferedSkillInputRemainTime = 0.f;
+		m_fAncientMagicInputRemainTime = 0.f;
+		m_hPendingObjectAccioTarget = CHandle{};
+
 		if (m_pComMoveIntent)
 			m_pComMoveIntent->ClearMoveIntent();
 		return;
@@ -996,7 +1027,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 	}
 
-	if (m_bMovementLocked)
+	if (m_bMovementLocked || m_bGameplayInputLocked)
 	{
 		m_fCurrentMoveSpeed = 0.f;
 		m_pComMoveIntent->ClearMoveIntent();
@@ -1438,15 +1469,29 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_E))
+		m_fAncientMagicInputRemainTime = ANCIENT_MAGIC_INPUT_BUFFER_TIME;
+
+	if (m_pStateMachine &&
+		m_fAncientMagicInputRemainTime > 0.f &&
+		m_fAncientMagicChainCooldown <= 0.f)
 	{
 		auto* pEnemyTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
 		if (pEnemyTarget && !pEnemyTarget->GetPendingDestroy())
 		{
 			m_hPendingAncientThrowTarget = FindAncientThrowTarget();
-			if (m_hPendingAncientThrowTarget &&
-				!m_pStateMachine->RequestState(PLAYER_STATE::ANCIENT_ATTACK_SKILL))
+			if (m_hPendingAncientThrowTarget)
 			{
-				m_hPendingAncientThrowTarget.reset();
+				if (m_pStateMachine->RequestState(PLAYER_STATE::ANCIENT_ATTACK_SKILL))
+				{
+					m_fAncientMagicChainCooldown = ANCIENT_MAGIC_CHAIN_COOLDOWN;
+					m_fAncientMagicInputRemainTime = 0.f;
+				}
+				else
+				{
+					// 현재 고대마법 동작이 끝날 때까지 입력 버퍼는 유지하되,
+					// 아직 사용하지 않은 다음 투척물 핸들은 매 프레임 다시 조회한다.
+					m_hPendingAncientThrowTarget.reset();
+				}
 			}
 		}
 	}
@@ -1464,10 +1509,29 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		RequestAvadaFacialPreview();
 
 	if (!m_bFlyRequested) {
-		if (CGameInstance::Get().KeyDown(DIK_1)) TryUseSkillSlot(1);
-		else if (CGameInstance::Get().KeyDown(DIK_2)) TryUseSkillSlot(2);
-		else if (CGameInstance::Get().KeyDown(DIK_3)) TryUseSkillSlot(3);
-		else if (CGameInstance::Get().KeyDown(DIK_4)) TryUseSkillSlot(4);
+		uint32_t iRequestedSkillSlot{};
+		if (CGameInstance::Get().KeyDown(DIK_1)) iRequestedSkillSlot = 1u;
+		else if (CGameInstance::Get().KeyDown(DIK_2)) iRequestedSkillSlot = 2u;
+		else if (CGameInstance::Get().KeyDown(DIK_3)) iRequestedSkillSlot = 3u;
+		else if (CGameInstance::Get().KeyDown(DIK_4)) iRequestedSkillSlot = 4u;
+
+		if (iRequestedSkillSlot != 0u)
+		{
+			m_iBufferedSkillSlot = iRequestedSkillSlot;
+			m_fBufferedSkillInputRemainTime = SKILL_INPUT_BUFFER_TIME;
+		}
+
+		if (m_iBufferedSkillSlot != 0u)
+		{
+			m_fBufferedSkillInputRemainTime = std::max(
+				0.f, m_fBufferedSkillInputRemainTime - std::max(0.f, fTimeDelta));
+			if (TryUseSkillSlot(m_iBufferedSkillSlot) ||
+				m_fBufferedSkillInputRemainTime <= 0.f)
+			{
+				m_iBufferedSkillSlot = 0u;
+				m_fBufferedSkillInputRemainTime = 0.f;
+			}
+		}
 
 		// L 키는 빌드 구성과 무관한 정식 루모스 토글 입력이다.
 		// Lumos 상태가 현재 활성 여부에 따라 Start/Hold 또는 Stop을 선택한다.
@@ -1636,6 +1700,12 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 		return false;
 	}
 
+	const _bool bRequiresTarget =
+		eSpellType != SPELL_TYPE::REPARO &&
+		eSpellType != SPELL_TYPE::LUMOS;
+	if (bRequiresTarget && !CPlayer_SkillStateBase::HasTargetInRange(*this))
+		return false;
+
 	if (!m_pStateMachine->RequestState(eSkillState))
 		return false;
 
@@ -1650,8 +1720,23 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 
 void CPlayer::UpdateSkillSlotCooldowns(_float fTimeDelta)
 {
-	for (auto& fCooldown : m_SkillSlotCooldowns)
+	auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+	for (size_t i = 0; i < m_SkillSlotCooldowns.size(); ++i)
+	{
+		auto& fCooldown = m_SkillSlotCooldowns[i];
 		fCooldown = std::max(0.f, fCooldown - std::max(0.f, fTimeDelta));
+		if (!pUIController)
+			continue;
+
+		const uint32_t iSlotNumber = static_cast<uint32_t>(i) + 1u;
+		const _float fCooldownDuration =
+			pUIController->GetSpellCooldownDuration(iSlotNumber);
+		const _float fReadyRatio = fCooldownDuration > 0.f
+			? 1.f - fCooldown / fCooldownDuration : 1.f;
+		pUIController->SetSpellCooldownRatio(
+			iSlotNumber, fReadyRatio);
+	}
 }
 
 _bool CPlayer::TryUsePotion()
@@ -1831,7 +1916,7 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 			return;
 	}
 
-	if (m_bMovementLocked)
+	if (m_bMovementLocked || m_bGameplayInputLocked)
 	{
 		m_pComMoveIntent->ClearMoveIntent();
 
@@ -1946,6 +2031,31 @@ void CPlayer::SetDialoguePose(const _float3& vPosition, const _float3& vLookAt)
 		m_pComCharacterMotor->SetVelocity({});
 	if (m_pComMoveIntent)
 		m_pComMoveIntent->ClearMoveIntent();
+}
+
+void CPlayer::SetDialoguePoseOnGround(
+	const _float3& vPosition,
+	_float fGroundY,
+	const _float3& vLookAt)
+{
+	_float3 groundedPosition = vPosition;
+	groundedPosition.y = fGroundY;
+
+	// Transform 원점과 PhysX CCT 발바닥은 같은 위치가 아니다.
+	// 현재 정상적으로 서 있는 상태의 차이를 유지해 지면 아래로 박히지 않게 한다.
+	if (m_pComCharacterController)
+	{
+		const _float3 currentPosition = GetTransform().GetPosition();
+		const _float3 currentFootPosition =
+			m_pComCharacterController->GetFootPosition();
+		const _float originToFoot =
+			currentPosition.y - currentFootPosition.y;
+
+		if (std::isfinite(originToFoot))
+			groundedPosition.y += originToFoot;
+	}
+
+	SetDialoguePose(groundedPosition, vLookAt);
 }
 
 void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
@@ -2287,7 +2397,8 @@ void CPlayer::Update(E::_float fTimeDelta)
 		m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
 
 		m_pModelAnimator->Update(fTimeDelta);
-		bApplyRootMotionTranslation = m_bRootMotionTranslationActive;
+		bApplyRootMotionTranslation =
+			m_bRootMotionTranslationActive && !m_bGameplayInputLocked;
 		const _float3 vRootMotionDelta =
 			m_pModelAnimator->GetRootMotionDelta();
 
@@ -2301,7 +2412,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 			&vRootMotionWorldDisplacement,
 			vWorldDelta);
 
-		if (m_bRootMotionRotationActive)
+		if (m_bRootMotionRotationActive && !m_bGameplayInputLocked)
 		{
 			const _float4 vRootMotionRotationDelta =
 				m_pModelAnimator->GetRootMotionRotationDelta();
@@ -2322,6 +2433,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 	// 재생 비율과 종료 상태로 Turn 회전을 맞출 수 있다.
 	if (!CGameInstance::Get().IsAnimationEditorTarget(GetHandle()) &&
 		m_pStateMachine &&
+		!m_bGameplayInputLocked &&
 		!IsRagdollTransitioning())
 		m_pStateMachine->Update(fTimeDelta);
 
@@ -2496,6 +2608,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 {
 	if (!CGameInstance::Get().IsAnimationEditorTarget(GetHandle()) &&
 		m_pStateMachine &&
+		!m_bGameplayInputLocked &&
 		!IsRagdollTransitioning())
 		m_pStateMachine->LateUpdate(fTimeDelta);
 
@@ -3243,6 +3356,7 @@ void CPlayer::HandleDeath()
 	if (m_pRagdollController)
 		m_pRagdollController->RequestFromCurrentMotion();
 
+	GET_SINGLE(UIManager)->FadeOutQuest(0.3f);
 	CGameInstance::Get().EventPublish(FPlayerDied{ .hPlayer = GetHandle(), .fLevelBgmFadeDuration = 3.f });
 }
 

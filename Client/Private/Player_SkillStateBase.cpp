@@ -55,6 +55,11 @@ _bool CPlayer_SkillStateBase::RequestLocomotion(CStateMachine* pStateMachine) co
 
 _bool CPlayer_SkillStateBase::HasTarget(const CPlayer& player) const
 {
+	return HasTargetInRange(player);
+}
+
+_bool CPlayer_SkillStateBase::HasTargetInRange(const CPlayer& player)
+{
 	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(
 		player.GetTargetHandle());
 	if (!pTarget)

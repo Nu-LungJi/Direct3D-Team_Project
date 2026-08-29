@@ -505,6 +505,14 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.InteractionDistance = 3.f;
 		Desc.Repeatable = true;
 		Desc.IdleExpressionAnim = "AN_ProfessorSharp_MasterRig_Hu_HUD_Idle_Casual_Loop_anm.bin";
+		Desc.PlayerDialogueGroundY = 34.4f;
+		Desc.AutoAimDialogueCamera = true;
+		Desc.DialogueCameraWorldPosition =
+			_float3{ 1896.946f, 40.f, 272.427f };
+		Desc.DialogueCameraWorldRotationEuler =
+			_float3{ 21.512f, -154.f, 0.f };
+		Desc.DialogueCameraTargetHeight = 2.f;
+		Desc.DialogueCameraFovY = 50.f;
 
 		Desc.Dialogue = {// 0
 						 {"어서 와, 대회에 참가하려고?",

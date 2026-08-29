@@ -42,6 +42,7 @@ public:
 	void CreateDeathScene(); // 죽는 화면
 	_bool StartSpellMiniGame(_bool secondGame = false); // 스펠 미니게임 시작
 	void StopSpellMiniGame();
+	void SetWandShopCursorVisible(_bool bVisible);
 
 	// ******** HP
 	void SetHPMax(_float maxHP);  // 최대 hp
@@ -57,6 +58,7 @@ public:
 	uint32_t GetSpellType(uint32_t SlotNumber); // 1234 슬롯 마법 타입 UI_ENUM에 스펠타입 있음
 	_float GetSpellCooldownDuration(uint32_t SlotNumber);
 	void UseSpell(uint32_t SlotNumber);
+	void SetSpellCooldownRatio(uint32_t SlotNumber, _float fReadyRatio);
 	void SetSpellUnlocked(SPELL_TYPE spellType, _bool unlocked);
 	_bool IsSpellUnlocked(SPELL_TYPE spellType) const;
 
@@ -155,6 +157,7 @@ private:
 	//*********내부함수*************//
 private:
 	CUIObject* SafeGetOBJ(CHandle pHandle);
+	void RefreshPlayerGameplayInputLock();
 	void ApplySpellLockStates();
 	void RefreshSpellLockVisual(size_t spellButtonIndex);
 

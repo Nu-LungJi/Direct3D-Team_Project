@@ -97,10 +97,21 @@ public:
 		_float FadeHoldDuration{ 0.2f };
 		// NPC 로컬 축 기준: x=오른쪽, y=높이, z=앞쪽.
 		_float3 PlayerDialogueOffset{ -0.8f, 0.f, 2.2f };
+		// 값이 있으면 해당 월드 Y를 지면 높이로 사용해 플레이어 CCT 발바닥을 맞춘다.
+		std::optional<_float> PlayerDialogueGroundY{};
 		// false면 플레이어 위치/회전은 유지하고 시네마틱 카메라만 재생한다.
 		_bool RepositionPlayerForDialogue{ true };
 		// Resources/json/Cinematics에서 불러와 재생할 대화 카메라 JSON 이름.
 		_string DialogueCinematicName{ "InteractiveNpcDialogue" };
+		// 고정 JSON 회전 대신 NPC 로컬 위치에서 NPC 얼굴을 자동으로 바라보게 한다.
+		_bool AutoAimDialogueCamera{};
+		_float3 DialogueCameraOffset{ 2.8f, 2.6f, 4.2f };
+		// 값이 있으면 NPC 로컬 오프셋 대신 이 월드 위치를 직접 사용한다.
+		std::optional<_float3> DialogueCameraWorldPosition{};
+		// 값이 있으면 자동 조준 대신 지정한 월드 Euler 회전을 사용한다.
+		std::optional<_float3> DialogueCameraWorldRotationEuler{};
+		_float DialogueCameraTargetHeight{ 2.f };
+		_float DialogueCameraFovY{ 50.f };
 		// 0: 아씨오 미니게임, 1: 코인 미니게임 시작 위치.
 		std::vector<_float3> MoveDestination{};
 		// 코인 미니게임 도착 시 플레이어에게 적용할 월드 Euler 각도(도 단위).
@@ -169,7 +180,7 @@ protected:
 	void PlayDialogueCameraOnlyForTest(const _string& cinematicName);
 	void StopDialogueCameraOnlyForTest();
 	// 특정 대화 카메라가 시작되기 직전 파생 NPC가 전용 포즈를 적용하는 지점.
-	virtual void PrepareDialogueCamera(const _string& cinematicName) {}
+	virtual void PrepareDialogueCamera(const _string& cinematicName);
 	virtual _bool KeepDialogueCameraOnFinish() const { return false; }
 	// 현재 NPC 로컬 좌표의 오프셋에 플레이어를 놓고 NPC 얼굴을 바라보게 한다.
 	void PlacePlayerFacingNpc(const _float3& localOffset);
@@ -266,8 +277,15 @@ private:
 	_float m_fIntroElapsed{}; 
 	_float m_fMoveOutcomeElapsed{};
 	_float3 m_vPlayerDialogueOffset{ -0.8f, 0.f, 2.2f };
+	std::optional<_float> m_fPlayerDialogueGroundY{};
 	_bool m_bRepositionPlayerForDialogue{ true };
 	_string m_DialogueCinematicName{ "InteractiveNpcDialogue" };
+	_bool m_bAutoAimDialogueCamera{};
+	_float3 m_vDialogueCameraOffset{ 2.8f, 2.6f, 4.2f };
+	std::optional<_float3> m_vDialogueCameraWorldPosition{};
+	std::optional<_float3> m_vDialogueCameraWorldRotationEuler{};
+	_float m_fDialogueCameraTargetHeight{ 2.f };
+	_float m_fDialogueCameraFovY{ 50.f };
 	std::vector<_float3> m_MoveDestinations{};
 	_string m_MoveOutcomeAnimation{};
 	_float3 m_vMoveDestination{};

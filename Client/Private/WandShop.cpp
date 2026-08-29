@@ -345,6 +345,7 @@ _bool CWandShop::ConsumePurchaseCompleted()
 
 void CWandShop::Close(UIManager& manager)
 {
+	manager.SetWandShopCursorVisible(false);
 	E::CGameInstance::Get().ClearUI3DPanel();
 	manager.m_bWandShopWorldMode = false;
 	manager.m_fWandShopPanelAppearElapsed = 0.f;

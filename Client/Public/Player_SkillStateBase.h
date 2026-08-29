@@ -12,6 +12,7 @@ class CPlayer_SkillStateBase : public CState
 public:
 	DECLARE_DERIVED_TYPE(CPlayer_SkillStateBase, CState)
 
+	static _bool HasTargetInRange(const CPlayer& player);
 	static _bool HasValidTarget(const CPlayer& player);
 
 protected:
