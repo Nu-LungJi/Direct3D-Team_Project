@@ -2224,6 +2224,15 @@ void CPlayer::Update(E::_float fTimeDelta)
 	m_fDoorPushContactRemainTime = std::max(
 		0.f,
 		m_fDoorPushContactRemainTime - fTimeDelta);
+	if (CGameInstance::Get().KeyDown(DIK_HOME)) {
+		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/NPC/StupidCat.mp3", SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+	}
 
 	if (nullptr == CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
 	{

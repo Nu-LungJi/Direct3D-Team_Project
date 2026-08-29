@@ -35,6 +35,12 @@ CWorldNpc::CWorldNpc(const CWorldNpc& Prototype)
 
 CWorldNpc::~CWorldNpc()
 {
+	if (auto* pSoundManager =
+		E::CGameInstance::Get().GetSoundManager())
+	{
+		pSoundManager->Stop(m_iSoundID);
+	}
+
 }
 
 void CWorldNpc::UpdateGUI()
@@ -86,9 +92,40 @@ HRESULT CWorldNpc::Initialize(void* pArg)
 		m_pComSphereCol->SetQueryEnabled(true);
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 
-	m_pRagdollController = CNpcRagdollController::Create(*this);
-	if (!m_pRagdollController)
-		return E_FAIL;
+	_string soundPath{};
+	uint32_t iRand = RandInt(0, 3);
+	switch (iRand) {
+	case 0:
+		soundPath = "./Resources/SampleClient/Sound/NPC/NpcTalk1.mp3";
+		break;
+	case 1:
+		soundPath = "./Resources/SampleClient/Sound/NPC/NpcTalk2.mp3";
+
+		break;
+	case 2:
+		soundPath = "./Resources/SampleClient/Sound/NPC/NpcTalk3.mp3";
+		break;
+	case 3:
+		soundPath = "./Resources/SampleClient/Sound/NPC/NpcTalk4.mp3";
+		break;
+	default:
+		break;
+	}
+	m_iSoundID = CGameInstance::Get().GetSoundManager()->Play3D(
+		soundPath,
+		SOUND_3D_DESC{
+			.vPosition = GetTransform().GetPosition(),
+			.fMinDistance = 5.f,
+			.fMaxDistance = 30.f,
+			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		},
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::SFX,
+			.fVolume = 0.75f,
+			.fPitch = 1.f,
+			.iPriority = 96,
+			.bLoop = true
+		});
 
 	return S_OK;
 }
@@ -170,10 +207,21 @@ void CWorldNpc::Update(E::_float fTimeDelta)
 	if (!IsRagdollActive())
 		__super::Update(fTimeDelta);
 
-	// 비활성 시 현재 애니메이션 포즈를 캐시하고, 활성 시 PhysX 포즈를 본에 기록한다.
-	GetTransform().Update();
-	if (m_pRagdollController)
-		m_pRagdollController->UpdatePoseBridge();
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (nullptr == pSoundManager || m_iSoundID == INVALID_SOUND_ID)
+		return;
+
+	if (!pSoundManager->IsValidSound(m_iSoundID) ||
+		!pSoundManager->IsPlaying(m_iSoundID))
+	{
+		m_iSoundID = INVALID_SOUND_ID;
+		return;
+	}
+
+	pSoundManager->Set3DAttributes(
+		m_iSoundID,
+		GetTransform().GetPosition());
+
 }
 
 void CWorldNpc::FixedUpdate(E::_float fTimeDelta)
