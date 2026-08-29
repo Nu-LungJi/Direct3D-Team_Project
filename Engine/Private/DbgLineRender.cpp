@@ -1057,7 +1057,7 @@ void CDbgLineRender::AddPackedLineVertices(const void* pVertexData, size_t iVert
 
 HRESULT CDbgLineRender::Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx)
 {
-	//return S_OK;
+	return S_OK;
 
     const uint32_t depthSolidCount = static_cast<uint32_t>(m_DepthSolidVertices.size());
     const uint32_t noDepthSolidCount = static_cast<uint32_t>(m_NoDepthSolidVertices.size());
