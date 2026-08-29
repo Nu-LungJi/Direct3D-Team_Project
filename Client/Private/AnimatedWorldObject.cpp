@@ -65,6 +65,11 @@ HRESULT CAnimatedWorldObject::Initialize(void* pArg)
 	}
 	m_ParentHandle = desc->ParentHandle;
 	m_iParentBoneIndex = desc->iParentBoneIndex;
+	m_bLockLocalRotation = desc->bLockLocalRotation;
+	m_vLockedLocalRotation = desc->vRotation;
+	m_fDissolveAppearDuration = std::max(desc->fDissolveAppearDuration, 0.f);
+	m_fDissolveAppearElapsed = 0.f;
+	m_fDissolveIntensity = m_fDissolveAppearDuration > 0.f ? 1.f : 0.f;
 
 	m_pAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pAnimator->Build_BoneMatrices_CPU(0.f);
@@ -74,7 +79,11 @@ HRESULT CAnimatedWorldObject::Initialize(void* pArg)
 							 XMMatrixRotationY(XMConvertToRadians(desc->vRotation.y)) *
 							 XMMatrixRotationZ(XMConvertToRadians(desc->vRotation.z));
 	GetTransform().SetQuaternion(XMQuaternionRotationMatrix(rotation));
+	if (m_bLockLocalRotation)
+		GetTransform().SetRotationEuler(m_vLockedLocalRotation);
 	GetTransform().Update();
+	if (m_bLockLocalRotation)
+		GetTransform().SetRotationEuler(m_vLockedLocalRotation);
 	if (!PlayAnimation(desc->sAnimationName, desc->bLoop, desc->fAnimationSpeed, desc->fStartRatio))
 		return E_FAIL;
 	if (!desc->bAutoPlay)
@@ -91,6 +100,12 @@ void CAnimatedWorldObject::PriorityUpdate(E::_float delta)
 void CAnimatedWorldObject::Update(E::_float delta)
 {
 	CAnimationObject::Update(delta);
+	if (m_fDissolveAppearDuration > 0.f && m_fDissolveIntensity > 0.f)
+	{
+		m_fDissolveAppearElapsed += std::max(delta, 0.f);
+		m_fDissolveIntensity = 1.f - std::clamp(
+			m_fDissolveAppearElapsed / m_fDissolveAppearDuration, 0.f, 1.f);
+	}
 	if (m_pAnimator && m_pModelInstance && !m_pModelInstance->GetModel()->GetAnimations().empty())
 		m_pAnimator->Update(delta);
 	if (m_pBehavior)
@@ -122,11 +137,20 @@ void CAnimatedWorldObject::LateUpdate(E::_float)
 			GetTransform().SetParentWorldMatrix(storedParent);
 		}
 	}
+	if (m_bLockLocalRotation)
+		GetTransform().SetRotationEuler(m_vLockedLocalRotation);
 	GetTransform().Update();
+	if (m_bLockLocalRotation)
+		GetTransform().SetRotationEuler(m_vLockedLocalRotation);
 	if (!m_pModelInstance || !m_pAnimator || !m_pModelInstance->GetModel() ||
 		m_pModelInstance->GetModel()->GetAnimations().empty())
 		return;
-	CGameInstance::Get().Add_Instance(m_pModelInstance, m_pAnimator, *GetTransform().GetCombinedWorldMatrix());
+	uint32_t dissolveBits{};
+	static_assert(sizeof(dissolveBits) == sizeof(m_fDissolveIntensity));
+	memcpy(&dissolveBits, &m_fDissolveIntensity, sizeof(dissolveBits));
+	CGameInstance::Get().Add_Instance(
+		m_pModelInstance, m_pAnimator,
+		*GetTransform().GetCombinedWorldMatrix(), dissolveBits);
 	m_bSubmittedThisFrame = true;
 	++m_iInstanceSubmitCount;
 }

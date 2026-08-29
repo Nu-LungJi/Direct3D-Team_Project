@@ -293,11 +293,11 @@ HRESULT CCameraManager::PlayCinematic(
 		Options);
 }
 
-void CCameraManager::StopCinematic()
+void CCameraManager::StopCinematic(_float fReturnBlendDuration)
 {
 	if (m_pCinematicSystem)
 	{
-		m_pCinematicSystem->Stop();
+		m_pCinematicSystem->Stop(fReturnBlendDuration);
 	}
 }
 

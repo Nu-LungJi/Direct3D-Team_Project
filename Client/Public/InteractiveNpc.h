@@ -67,6 +67,8 @@ public:
 		_string ActionCinematicName{};
 		_bool ActionCinematicTargetsPlayer{};
 		_bool FadeBeforeAction{};
+		// 이 대사를 끝낸 뒤 Repeatable 설정과 관계없이 상호작용을 종료한다.
+		_bool DisableInteractionAfterAdvance{};
 	};
 
 	struct DESC : public WORLD_AGENT_DESC
@@ -183,7 +185,7 @@ private:
 		const _string& cinematicName,
 		_bool targetPlayer = false);
 	// 대화용 시네마틱을 종료하고 기존 플레이어 카메라로 복귀한다.
-	void EndDialogueCamera();
+	void EndDialogueCamera(_float fReturnBlendDuration = 0.f);
 	// 대화 중 플레이어 이동 입력의 잠금 상태를 변경한다.
 	void SetPlayerMovementLocked(_bool locked);
 	_bool StartMoveToDestination(size_t destinationIndex);
@@ -218,6 +220,7 @@ private:
 	_bool m_bRepeatable{};
 	_bool m_bTalking{};
 	_bool m_bCompleted{};
+	_bool m_bInteractionPermanentlyDisabled{};
 	_bool m_bPromptVisible{};
 	_bool m_bMovingToDestination{};
 	_bool m_bMovePositionApplied{};
@@ -255,6 +258,7 @@ private:
 	DIALOGUE_ACTION m_ePendingDialogueAction{ DIALOGUE_ACTION::NONE };
 	DIALOGUE_ACTION m_ePendingFadeAction{ DIALOGUE_ACTION::NONE };
 	_bool m_bActionSetupCompletedUnderFade{};
+	_bool m_bLineAnimationStartedDuringFade{};
 
 	enum class ACTIVE_MINIGAME
 	{

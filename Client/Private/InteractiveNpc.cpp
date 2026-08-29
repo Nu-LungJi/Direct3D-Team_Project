@@ -136,7 +136,8 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 	const _bool playerInRange = IsPlayerInRange();
 	if (!playerInRange && m_bRepeatable && m_eState == STATE::IDLE)
 		m_bAutoStartTriggered = false;
-	if (m_bAutoStartOnEnter && !m_bAutoStartTriggered &&
+	if (!m_bInteractionPermanentlyDisabled &&
+		m_bAutoStartOnEnter && !m_bAutoStartTriggered &&
 		playerInRange && m_eState == STATE::IDLE &&
 		(!m_bCompleted || m_bRepeatable))
 	{
@@ -144,7 +145,8 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 		BeginDialogue();
 		return;
 	}
-	const _bool canStartDialogue = playerInRange &&
+	const _bool canStartDialogue = !m_bInteractionPermanentlyDisabled &&
+		playerInRange &&
 		(!m_bCompleted || m_bRepeatable) &&
 		m_eState == STATE::IDLE;
 	// 대화가 시작된 뒤에는 암전 중 위치 보정이나 물리 높이 차이 때문에
@@ -171,7 +173,8 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 
 void CInteractiveNpc::BeginDialogue()
 {
-	if (m_bTalking || m_Dialogue.empty() || (m_bCompleted && !m_bRepeatable))
+	if (m_bInteractionPermanentlyDisabled || m_bTalking || m_Dialogue.empty() ||
+		(m_bCompleted && !m_bRepeatable))
 		return;
 
 	m_bTalking = true;
@@ -189,6 +192,7 @@ void CInteractiveNpc::BeginDialogue()
 	if (m_iDialogueIndex >= m_Dialogue.size())
 		m_iDialogueIndex = 0u;
 	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
+	m_bLineAnimationStartedDuringFade = false;
 	SetPlayerMovementLocked(true);
 	SyncInteractionPrompt(false);
 	m_eConversationPhase = CONVERSATION_PHASE::FADING_OUT;
@@ -231,6 +235,7 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 			m_ePendingFadeAction = DIALOGUE_ACTION::NONE;
 			ExecuteDialogueAction(action);
 			m_bActionSetupCompletedUnderFade = true;
+			m_bLineAnimationStartedDuringFade = false;
 		}
 		else if (!line.CinematicName.empty() &&
 			line.CinematicName != m_DialogueCinematicName)
@@ -240,6 +245,8 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 		SetRootMotionActive(line.UseRootMotion);
 		SetRootMotionRotationActive(line.UseRootMotion);
 		SetExpression(line.ExpressionAnim, line.LoopExpression);
+		if (!m_bActionSetupCompletedUnderFade)
+			m_bLineAnimationStartedDuringFade = true;
 		GET_SINGLE(UIManager)->CreateFadeOut(
 			m_fFadeHoldDuration, m_fFadeDuration);
 		m_eConversationPhase = CONVERSATION_PHASE::LINE_FADING_IN;
@@ -265,6 +272,14 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 		m_fIntroElapsed = 0.f;
 
 		BeginDialogueCamera();
+		if (m_iDialogueIndex < m_Dialogue.size())
+		{
+			const auto& line = m_Dialogue[m_iDialogueIndex];
+			SetRootMotionActive(line.UseRootMotion);
+			SetRootMotionRotationActive(line.UseRootMotion);
+			SetExpression(line.ExpressionAnim, line.LoopExpression);
+			m_bLineAnimationStartedDuringFade = true;
+		}
 		GET_SINGLE(UIManager)->CreateFadeOut(
 			m_fFadeHoldDuration, m_fFadeDuration);
 
@@ -310,9 +325,16 @@ void CInteractiveNpc::ShowCurrentDialogueLine()
 	m_fOpeningLineElapsed = 0.f;
 	m_eConversationPhase = CONVERSATION_PHASE::TALKING;
 	const auto& line = m_Dialogue[m_iDialogueIndex];
-	SetRootMotionActive(line.UseRootMotion);
-	SetRootMotionRotationActive(line.UseRootMotion);
-	SetExpression(line.ExpressionAnim, line.LoopExpression);
+	if (m_bLineAnimationStartedDuringFade)
+	{
+		m_bLineAnimationStartedDuringFade = false;
+	}
+	else
+	{
+		SetRootMotionActive(line.UseRootMotion);
+		SetRootMotionRotationActive(line.UseRootMotion);
+		SetExpression(line.ExpressionAnim, line.LoopExpression);
+	}
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_SpeakerName, line.Text);
 	// UTF-8 코드포인트 수를 기준으로 실제 발화 구간만 추정한다.
 	size_t characterCount = 0u;
@@ -411,6 +433,8 @@ void CInteractiveNpc::AdvanceDialogue()
 
 	if (m_iDialogueIndex >= m_Dialogue.size())
 	{
+		if (currentLine.DisableInteractionAfterAdvance)
+			m_bInteractionPermanentlyDisabled = true;
 		FinishDialogue();
 		return;
 	}
@@ -610,6 +634,8 @@ void CInteractiveNpc::FinishDialogue()
 	m_fDialogueSpeechRemaining = 0.f;
 	m_bCompleted = true;
 	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
+	if (m_bInteractionPermanentlyDisabled)
+		SyncInteractionPrompt(false);
 	SetExpression(m_IdleExpressionAnim, true);
 	m_eConversationPhase = CONVERSATION_PHASE::IDLE;
 
@@ -618,7 +644,10 @@ void CInteractiveNpc::FinishDialogue()
 		return;
 
 	if (!KeepDialogueCameraOnFinish())
-		EndDialogueCamera();
+	{
+		EndDialogueCamera(
+			m_bInteractionPermanentlyDisabled ? 1.25f : 0.f);
+	}
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
 	m_eState = STATE::IDLE;
@@ -696,12 +725,12 @@ void CInteractiveNpc::SwitchDialogueCamera(
 }
 
 
-void CInteractiveNpc::EndDialogueCamera()
+void CInteractiveNpc::EndDialogueCamera(_float fReturnBlendDuration)
 {
 	if (!m_bDialogueCinematicPlaying)
 		return;
 
-	E::CGameInstance::Get().StopCinematic();
+	E::CGameInstance::Get().StopCinematic(fReturnBlendDuration);
 	m_bDialogueCinematicPlaying = false;
 }
 

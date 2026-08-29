@@ -42,6 +42,8 @@ protected:
 	}
 
 private:
+	void SpawnWandBoxAtFirstHandShot();
+
 	_bool m_bWorldSpaceShop{};
 	_float3 m_vShopPanelPositionOffset{ 0.f, 1.6f, 1.2f };
 	_float3 m_vShopPanelRotationOffsetDegrees{};
@@ -71,9 +73,14 @@ private:
 	_bool m_bWandPresentationOwnsTimePause{};
 	_bool m_bWandPurchaseDialoguePending{};
 	E::CHandle m_hWandBox{};
-	_float3 m_vWandBoxLocalPosition{ 0.f, 0.f, 0.f };
-	_float3 m_vWandBoxLocalRotation{ 0.f, 0.f, 0.f };
-	_float3 m_vWandBoxLocalScale{ 1.f, 1.f, 1.f };
+	// Hand-socket local transform. The former NPC-root position
+	// (-1.2, 3.7, 0.8) is represented by the hand bone itself now.
+	_float3 m_vWandBoxLocalPosition{ -0.1f, 0.f, 0.1f };
+	_float3 m_vWandBoxLocalRotation{ 46.231f, 93.596f, -168.686f };
+	_float3 m_vWandBoxLocalScale{ 3.f, 3.f, 3.f };
+	_float m_fWandBoxAnimationElapsed{};
+	_bool m_bWandBoxAnimationPaused{};
+	int32_t m_iWandBoxAttachBoneIndex{ -1 };
 };
 
 NS_END

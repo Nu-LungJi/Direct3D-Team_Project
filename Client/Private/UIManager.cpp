@@ -1189,6 +1189,7 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 	constexpr _float RACE_DURATION = 120.f;
 	constexpr _float RESULT_HOLD_DURATION = 5.f;
 	constexpr _float RETURN_FADE_DURATION = 1.f;
+	constexpr _float RETURN_BLACK_HOLD_DURATION = 10.f;
 
 	if (m_eRaceMiniGamePhase == RACE_MINIGAME_PHASE::COUNTDOWN)
 	{
@@ -1223,8 +1224,8 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 		if (!m_bRaceReturnPositionApplied)
 		{
 
-			// 코인 게임 종료 후 복귀할 상점 좌표. 실제 상점 좌표로 교체한다.
-			const _float3 vShopPosition{ 127.833f, 4.5f, -87.941f };
+			// 빗자루 미니게임 종료 후 복귀할 상점 좌표.
+			const _float3 vShopPosition{ 146.642f, 1.610f, -99.298f };
 			const _float3 vShopLookAt{ 108.5f, 2.5f, -82.f };
 
 			CPlayer* pPlayer = nullptr;
@@ -1249,11 +1250,20 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 				m_OnRaceReturnToShop();
 
 			m_bRaceReturnPositionApplied = true;
-			CreateFadeOut(0.f, RETURN_FADE_DURATION);
-			// Restore the original HUD while the black screen fades away.
-			PlayFadeInAll2DUI(0.f, RETURN_FADE_DURATION);
-			FadeInQuest(RETURN_FADE_DURATION);
 		}
+
+		// Fade In이 끝난 검은 화면에서 이동과 비행 상태 정리를 먼저
+		// 완료한 뒤 10초간 유지하고, 그 다음 Fade Out으로 화면을 연다.
+		if (m_fRaceReturnElapsed < RESULT_HOLD_DURATION +
+			RETURN_FADE_DURATION + RETURN_BLACK_HOLD_DURATION)
+		{
+			return;
+		}
+
+		CreateFadeOut(0.f, RETURN_FADE_DURATION);
+		// Restore the original HUD while the black screen fades away.
+		PlayFadeInAll2DUI(0.f, RETURN_FADE_DURATION);
+		FadeInQuest(RETURN_FADE_DURATION);
 
 		m_eRaceMiniGamePhase = RACE_MINIGAME_PHASE::RESULT;
 		return;
