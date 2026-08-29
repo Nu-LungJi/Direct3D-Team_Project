@@ -64,6 +64,7 @@ public:
 	const std::vector<NPC_PLACEMENT_RESULT>& SpawnAll();
 	HRESULT Save(const _string& sFilePath) const;
 	HRESULT Load(const _string& sFilePath);
+	HRESULT LoadAdditional(const _string& sFilePath);
 
 private:
 	inline static constexpr std::array<const char*, 3> RUNTIME_TYPE_NAMES

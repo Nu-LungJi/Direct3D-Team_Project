@@ -144,35 +144,6 @@ HRESULT CLevelHogwartWorld::Initialize()
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Spider",NpcOption.sModelGroupTag, "Model_Resource_Spider");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Cat", NpcOption.sModelGroupTag, "Model_Resource_Cat","./Resources/SampleClient/Models/Skeleton/Cat/");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Bird_Kestrel", NpcOption.sModelGroupTag, "Model_Resource_Bird_Kestrel", "./Resources/SampleClient/Models/Skeleton/Birds_Kestrel/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "BlueButterfly_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_BlueButterfly_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/BlueButterfly_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "CaptureBag_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_CaptureBag_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/CaptureBag_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ChompingCabbage_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_ChompingCabbage_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/ChompingCabbage_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "DisillusionmentChest_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_DisillusionmentChest_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/DisillusionmentChest_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "FlyingMagicPaper_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_FlyingMagicPaper_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/FlyingMagicPaper_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GACTreasureChest_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_GACTreasureChest_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/GACTreasureChest_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GiantPendulumClock_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_GiantPendulumClock_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/GiantPendulumClock_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GlowingLumosMoth_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_GlowingLumosMoth_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/GlowingLumosMoth_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "Hippogriff_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_Hippogriff_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/Hippogriff_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "HoppingPot_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_HoppingPot_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/HoppingPot_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "IdentificationStation_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_IdentificationStation_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/IdentificationStation_Animated_Blender_4_3/");
-			/*pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MagicChoppingIngredients_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_MagicChoppingIngredients_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/MagicChoppingIngredients_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MagicChoppingStation_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_MagicChoppingStation_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/MagicChoppingStation_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MagicMaterialRefinerTools_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_MagicMaterialRefinerTools_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/MagicMaterialRefinerTools_Animated_Blender_4_3/");*/
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "OrangeButterfly_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_OrangeButterfly_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/OrangeButterfly_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "OutdoorDiricawlBird_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_OutdoorDiricawlBird_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/OutdoorDiricawlBird_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "OutdoorFwooperBird_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_OutdoorFwooperBird_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/OutdoorFwooperBird_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SanctuaryToyBox_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_SanctuaryToyBox_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/SanctuaryToyBox_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfWrappingPaper_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_SelfWrappingPaper_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/SelfWrappingPaper_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ShopCounterHandBell_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_ShopCounterHandBell_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/ShopCounterHandBell_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StirCrazyTeaSpoon_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StirCrazyTeaSpoon_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StirCrazyTeaSpoon_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetRabbit_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetRabbit_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetRabbit_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetRat_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetRat_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetRat_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetRaven_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetRaven_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetRaven_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "StreetSquirrel_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_StreetSquirrel_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/StreetSquirrel_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "TeaShopTeaCup_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_TeaShopTeaCup_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/TeaShopTeaCup_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ThestralStreetCarriage_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_ThestralStreetCarriage_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/ThestralStreetCarriage_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "VillageGiantToad_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_VillageGiantToad_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/VillageGiantToad_Animated_Blender_4_3/");
-			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "WizardingDeck_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_WizardingDeck_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/WizardingDeck_Animated_Blender_4_3/");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "BlueButterfly", NpcOption.sModelGroupTag, "Model_Resource_BlueButterfly", "./Resources/SampleClient/Models/Skeleton/BlueButterfly/");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GlowingLumosMoth", NpcOption.sModelGroupTag, "Model_Resource_GlowingLumosMoth", "./Resources/SampleClient/Models/Skeleton/GlowingLumosMoth/");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "LeapingMushroom", NpcOption.sModelGroupTag, "Model_Resource_LeapingMushroom", "./Resources/SampleClient/Models/Skeleton/LeapingMushroom/");
@@ -184,6 +155,23 @@ HRESULT CLevelHogwartWorld::Initialize()
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PlantParty_Plant_05", NpcOption.sModelGroupTag, "Model_Resource_PlantParty_Plant_05", "./Resources/SampleClient/Models/Skeleton/PlantParty_Plant_05/");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "VenomousTentaculaBush", NpcOption.sModelGroupTag, "Model_Resource_VenomousTentaculaBush", "./Resources/SampleClient/Models/Skeleton/VenomousTentaculaBush/");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "VenomousTentaculaFlower", NpcOption.sModelGroupTag, "Model_Resource_VenomousTentaculaFlower", "./Resources/SampleClient/Models/Skeleton/VenomousTentaculaFlower/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "CottonCandyBowl", NpcOption.sModelGroupTag, "Model_Resource_CottonCandyBowl", "./Resources/SampleClient/Models/Skeleton/CottonCandyBowl/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "CottonCandyWindow", NpcOption.sModelGroupTag, "Model_Resource_CottonCandyWindow", "./Resources/SampleClient/Models/Skeleton/CottonCandyWindow/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "EnchantedWateringCan", NpcOption.sModelGroupTag, "Model_Resource_EnchantedWateringCan", "./Resources/SampleClient/Models/Skeleton/EnchantedWateringCan/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GoldenSnitch", NpcOption.sModelGroupTag, "Model_Resource_GoldenSnitch", "./Resources/SampleClient/Models/Skeleton/GoldenSnitch/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "HonkingDaffodils", NpcOption.sModelGroupTag, "Model_Resource_HonkingDaffodils", "./Resources/SampleClient/Models/Skeleton/HonkingDaffodils/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MagicPaperAndQuill", NpcOption.sModelGroupTag, "Model_Resource_MagicPaperAndQuill", "./Resources/SampleClient/Models/Skeleton/MagicPaperAndQuill/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "MarionetteCandyBooth", NpcOption.sModelGroupTag, "Model_Resource_MarionetteCandyBooth", "./Resources/SampleClient/Models/Skeleton/MarionetteCandyBooth/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "NifflerTightropeToy", NpcOption.sModelGroupTag, "Model_Resource_NifflerTightropeToy", "./Resources/SampleClient/Models/Skeleton/NifflerTightropeToy/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PoltergeistHand", NpcOption.sModelGroupTag, "Model_Resource_PoltergeistHand", "./Resources/SampleClient/Models/Skeleton/PoltergeistHand/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfPruningSecateurs", NpcOption.sModelGroupTag, "Model_Resource_SelfPruningSecateurs", "./Resources/SampleClient/Models/Skeleton/SelfPruningSecateurs/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfPruningShears", NpcOption.sModelGroupTag, "Model_Resource_SelfPruningShears", "./Resources/SampleClient/Models/Skeleton/SelfPruningShears/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfShufflingCards", NpcOption.sModelGroupTag, "Model_Resource_SelfShufflingCards", "./Resources/SampleClient/Models/Skeleton/SelfShufflingCards/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfWrappingBox", NpcOption.sModelGroupTag, "Model_Resource_SelfWrappingBox", "./Resources/SampleClient/Models/Skeleton/SelfWrappingBox/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfWrappingPaper", NpcOption.sModelGroupTag, "Model_Resource_SelfWrappingPaper", "./Resources/SampleClient/Models/Skeleton/SelfWrappingPaper/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "SelfWrappingPresent", NpcOption.sModelGroupTag, "Model_Resource_SelfWrappingPresent", "./Resources/SampleClient/Models/Skeleton/SelfWrappingPresent/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ToyProfessorInTheBox", NpcOption.sModelGroupTag, "Model_Resource_ToyProfessorInTheBox", "./Resources/SampleClient/Models/Skeleton/ToyProfessorInTheBox/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ZonkosJackInTheBox", NpcOption.sModelGroupTag, "Model_Resource_ZonkosJackInTheBox", "./Resources/SampleClient/Models/Skeleton/ZonkosJackInTheBox/");
 			
 		}
 		//{
@@ -232,6 +220,17 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 				return E::NPC_PLACEMENT_RESULT{Placement.iPlacementId, true, *hNpc, "Spawn succeeded."};
 			});
+
+		if (FAILED(pNpcManager->Load(
+				"./Resources/json/NPC/Level_HogwartWorld.json")))
+		{
+			return E_FAIL;
+		}
+		if (FAILED(pNpcManager->LoadAdditional(
+				"./Resources/json/NPC/Level_HogwartWorld_AnimObj.json")))
+		{
+			return E_FAIL;
+		}
 	}
 	if (FAILED(SpawnPlayerCape(*hPlayer)))
 		return E_FAIL;
@@ -486,7 +485,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 		CInteractiveNpc::DESC Desc{};
 		Desc.sObjectTag = "Hogsmeade_MiniGameNpc_Professor";
 		Desc.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-		Desc.ReSourceTag = "PLAYER_MODEL_RESROUCE";
+		Desc.ReSourceTag = "Model_Resource_NPC_VictorRookwood";
 		Desc.BeHaviorTag = "NPC1";
 		Desc.resBeHaviorMajor = "BTJSON";
 		Desc.resBeHaviorMinor = "NPC1";

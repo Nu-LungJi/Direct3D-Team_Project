@@ -117,6 +117,7 @@ protected:
 	virtual	void				Damaged(PLAYER_SKILL_TYPE eType);
 	virtual void				Stuck();
 	virtual void				ReadySound() {};
+	virtual _bool				ShouldUpdateAnimation() const { return true; }
 private:
 	void						Update_Animation(_float fTimeDelta);
 

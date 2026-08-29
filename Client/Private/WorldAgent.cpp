@@ -285,7 +285,8 @@ void CWorldAgent::Update(E::_float fTimeDelta)
 	__super::Update(fTimeDelta);
 	if (nullptr != m_pComSound)
 		m_pComSound->Update();
-	Update_Animation(fTimeDelta);
+	if (ShouldUpdateAnimation())
+		Update_Animation(fTimeDelta);
 
 	m_pBeHavior->AbortNode();
 }
