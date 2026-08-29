@@ -362,6 +362,7 @@ public:
 
 	VOID			Set_RadialBlurIntensity(const _float _Intensity);
 	VOID			Set_MotionBlurEnabled(_bool bEnabled);
+	VOID			Set_ShadowEnabled(_bool bEnabled);
 	VOID			Set_DistortionIntensity(const _float _Intensity);
 	VOID			Set_ChromaticIntensity(const _float _Intensity);
 	VOID			Set_VignetteIntensity(const _float _Intensity);
@@ -371,6 +372,8 @@ public:
 	const _float&	Get_ChromaticIntensity();
 	const _float&	Get_VignetteIntensity();
 
+	VOID			Set_PlanarReflection(PLANAR_REFLECTION_DESC _DESC);
+	VOID			Begin_PlanarReflectionFrame();
 #pragma endregion
 
 

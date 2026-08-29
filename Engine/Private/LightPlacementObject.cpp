@@ -221,6 +221,8 @@ HRESULT CLightPlacementObject::SpawnLights(
 		light->Set_LightDirection(entry.vDirection);
 		light->Set_LightActivateState(entry.bActive);
 		light->Set_LightShadowCast(entry.bCastShadow);
+		light->Set_VolumetricIntensity(entry.fVolumetricIntensity);
+		light->Set_VolumetricScattering(entry.bScattering);
 		m_SpawnedLightHandles.push_back(*handle);
 	}
 

@@ -608,4 +608,13 @@ namespace Engine
 	
 
 	//----------------------------AnimationObject------------------------------------
+
+	struct PLANAR_REFLECTION_DESC
+	{
+		XMFLOAT3	FloorPoint;
+		_float		enabled;
+
+		XMFLOAT3	FloorNormal;
+		_float		padding;
+	};
 }

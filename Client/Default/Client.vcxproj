@@ -242,6 +242,11 @@
     <ClInclude Include="..\public\MON_Default.h" />
     <ClInclude Include="..\public\Mon_Godae.h" />
     <ClInclude Include="..\public\Mon_Spawner.h" />
+    <ClInclude Include="..\Public\Puddle.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\Public\RWB_Floor.h" />
     <ClInclude Include="..\public\WorldAgent.h" />
     <ClInclude Include="..\Public\Player_Fly_State.h" />
     <ClInclude Include="..\public\AccioBall.h" />
@@ -461,6 +466,11 @@
     <ClCompile Include="..\private\MON_Default.cpp" />
     <ClCompile Include="..\private\Mon_Godae.cpp" />
     <ClCompile Include="..\private\Mon_Spawner.cpp" />
+    <ClCompile Include="..\Private\Puddle.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Private\RWB_Floor.cpp" />
     <ClCompile Include="..\private\WorldAgent.cpp" />
     <ClCompile Include="..\Private\Player_Fly_State.cpp" />
     <ClCompile Include="..\private\AccioBall.cpp" />
@@ -639,6 +649,10 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\Bin\ShaderFiles\Decal\Shader_HogsmeadePuddle.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="..\Bin\ShaderFiles\Decal\Shader_RWBFloor.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Mesh.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Texture.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_EnderDragon.hlsl">

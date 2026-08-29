@@ -447,6 +447,8 @@ void CGameInstance::UpdateGUI()
 
 void CGameInstance::UpdateEngine(_float fTimeDelta)
 {
+	m_pRenderer->Begin_PlanarReflectionFrame();
+
 	const _float fUnscaledDelta = m_pTimeManager
 		? m_pTimeManager->GetUnscaledDelta()
 		: fTimeDelta;
@@ -1402,6 +1404,7 @@ VOID			CGameInstance::Set_VolumetricCloudOption(const CB_VOLUMECLOUD& _CloudOpti
 
 VOID			CGameInstance::Set_RadialBlurIntensity(const _float _Intensity) { m_pRenderer->Set_RadialBlurIntensity(_Intensity); }
 VOID			CGameInstance::Set_MotionBlurEnabled(_bool bEnabled) { m_pRenderer->Set_MotionBlurEnabled(bEnabled); }
+VOID			CGameInstance::Set_ShadowEnabled(_bool bEnabled) { m_pRenderer->Set_ShadowEnabled(bEnabled); }
 VOID			CGameInstance::Set_DistortionIntensity(const _float _Intensity) { m_pRenderer->Set_DistortionIntensity(_Intensity); }
 VOID			CGameInstance::Set_ChromaticIntensity(const _float _Intensity) { m_pRenderer->Set_ChromaticIntensity(_Intensity); }
 VOID			CGameInstance::Set_VignetteIntensity(const _float _Intensity) { m_pRenderer->Set_VignetteIntensity(_Intensity); }
@@ -1411,7 +1414,9 @@ const _float&	CGameInstance::Get_DistortionIntensity() { return m_pRenderer->Get
 const _float&	CGameInstance::Get_ChromaticIntensity() { return m_pRenderer->Get_ChromaticIntensity(); }
 const _float&	CGameInstance::Get_VignetteIntensity() { return m_pRenderer->Get_VignetteIntensity(); }
 
-#pragma endregion
+VOID			CGameInstance::Set_PlanarReflection(PLANAR_REFLECTION_DESC _DESC) { m_pRenderer->Set_PlanarReflection(_DESC); }
+VOID			CGameInstance::Begin_PlanarReflectionFrame() { m_pRenderer->Begin_PlanarReflectionFrame(); }
+#pragma endregion 
 
 #pragma region ANIMEDIT_MANAGER
 HRESULT CGameInstance::SetupTestModel() {

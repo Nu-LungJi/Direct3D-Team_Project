@@ -16,6 +16,7 @@
 #include "NvClothCape.h"
 #include "ResNvClothMesh.h"
 #include "WaterWheel.h"
+#include "DecalVolume.h"
 
 #include "UIController.h"
 #include "EffectUI.h"
@@ -73,6 +74,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("Lightning")))
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
 				return false;
@@ -994,6 +997,12 @@ HRESULT CLevelHogwartWorldLoader::LoadHogsmeade_ExtraAsset(){
 		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_WaterWheel, CWaterWheel::Create())))
 		{
 			MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_WaterWheel");
+			return E_FAIL;
+		}
+
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_PuddleDecal, CDecalVolume::Create())))
+		{
+			MSG_BOX("HOGWART_WORLD Failed Prototype_GameObject_PuddleDecal");
 			return E_FAIL;
 		}
 	}

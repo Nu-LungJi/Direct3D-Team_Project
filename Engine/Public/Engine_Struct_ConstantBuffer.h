@@ -338,4 +338,12 @@ namespace Engine
 		_float2	TextureSize;
 	};
 	static_assert(sizeof(CB_LENSFLARE) % 16 == 0);
+
+	struct CB_PLANAR_REFLECTION
+	{
+		_float4x4	g_mPlanarReflectionViewProj;
+		_float		g_fPlanarReflectionEnabled;
+		_float3		g_fPlanarPadding;
+	};
+	static_assert(sizeof(CB_PLANAR_REFLECTION) % 16 == 0);
 }

@@ -265,6 +265,7 @@ std::optional<CHandle> CLevelLastBossRanrok::SpawnPlayer()
 		.iSimulationMask = PX_ALL_LAYERS,
 		.iQueryMask =
 			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 			ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 			ETOUI(COLLISION_LAYER::ENEMY_BODY)
 	};
@@ -437,7 +438,7 @@ HRESULT CLevelLastBossRanrok::PlayBGM()
 	m_bmgID = pSoundManager->Play2D(sSoundPath,
 		E::SOUND_PLAY_DESC{
 			.sBusID = SOUND_BUS::BGM,
-			.fVolume = 0.2f,
+			.fVolume = 0.5f,
 			.fPitch = 1.f,
 			.fFadeInDuration = 1.f,
 			.iPriority = 64,

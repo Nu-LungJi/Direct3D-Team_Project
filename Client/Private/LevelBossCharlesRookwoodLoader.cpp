@@ -40,6 +40,7 @@
 #include "BossMace.h"
 #include "StarBurst.h"
 #include "MonEffectBall.h"
+#include "RWB_Floor.h"
 NS_USING(Client)
 
 std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
@@ -190,6 +191,11 @@ std::future<bool> CLevelBossCharlesRookwoodLoader::Load()
 				PROTO_GAMEOBJECT::Prototype_GameObject_PlayerStupefyBullet,
 				CPlayer_Stupefy_Bullet::Create())))
 				return false;
+
+			if (FAILED(LoadBossCharlesRookwood_ExtraAsset())) {
+				MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed LoadBossCharlesRookwood_ExtraAsset");
+				return false;
+			}
 
 			return  true;
 		});
@@ -405,4 +411,27 @@ _bool CLevelBossCharlesRookwoodLoader::UILoad()
 			return false;
 		}
 	}
+}
+HRESULT CLevelBossCharlesRookwoodLoader::LoadBossCharlesRookwood_ExtraAsset() {
+
+	{
+		if (auto res = CGameInstance::Get().AddResourceT<E::CResStaticModel>(LEVEL::BOSS_CHARLES_ROOKWOOD, "Static_RWBFloor_Resource",
+			CResStaticModel::Create("./Resources/SampleClient/Models/Static/Hogsmeade_ExtraAsset/SM_CGY_BossRockWood_Floor.bin"))) {
+
+			E::CResStaticModel::DESC pDesc{};
+			pDesc.PreTransformMatrix = XMMatrixScaling(0.03f, 0.03f, 0.03f);
+
+			if (FAILED(res->Load(pDesc)))
+			{
+				MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Static_RWBFloor Resource");
+				//return false;
+			}
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_RWBFloor, CRWB_Floor::Create())))
+		{
+			MSG_BOX("BOSS_CHARLES_ROOKWOOD Failed Prototype_GameObject_RWBFloor");
+			return E_FAIL;
+		}
+	}
+	return S_OK;
 }

@@ -840,6 +840,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="..\ShaderFiles\Decal\CS_SSR.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\Particle\CS_ChangeColorByOwner.hlsl" />
     <FxCompile Include="..\ShaderFiles\Particle\CS_TransformOwner.hlsl" />
     <FxCompile Include="..\ShaderFiles\PostProcess\PS_PostProcess_MotionBlur.hlsl" />
@@ -972,10 +976,10 @@
     <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-	<FxCompile Include="..\ShaderFiles\UI\RaceStartFlagWave.hlsl" />
-	<FxCompile Include="..\ShaderFiles\UI\ScoreAura.hlsl">
-	  <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-	</FxCompile>
+    <FxCompile Include="..\ShaderFiles\UI\RaceStartFlagWave.hlsl" />
+    <FxCompile Include="..\ShaderFiles\UI\ScoreAura.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\SpellPathProgress.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\TwoTone.hlsl" />

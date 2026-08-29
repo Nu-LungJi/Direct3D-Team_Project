@@ -31,6 +31,8 @@ VOID	CRenderer::Update(_float fTimeDelta) {
 	m_fDeltaTime = fTimeDelta;
 	m_fTimeAccumulation += fTimeDelta;
 	m_pCloudInfo.g_fWindTimeAccumulation += fTimeDelta;
+
+	if (CGameInstance::Get().KeyDown(DIK_PGDN))	m_bApplyShadow = !m_bApplyShadow;
 }
 
 HRESULT CRenderer::Initialize()
@@ -52,9 +54,11 @@ HRESULT CRenderer::Initialize()
 
 	if (FAILED(InitializeTargetPBR()))          return E_FAIL;
 
+	if (FAILED(InitializeDecalSurface()))		return E_FAIL;
+	
 	if (FAILED(InitializeBlendTarget()))        return E_FAIL;
 
-	if (FAILED(InitializePostProcess()))         return E_FAIL;
+	if (FAILED(InitializePostProcess()))        return E_FAIL;
 
 	if (FAILED(InitializeBloom()))				return E_FAIL;
 
@@ -187,6 +191,12 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_CloudTAA", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
+
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_SSR", "./ShaderFiles/Decal/CS_SSR.hlsl"))
+	{
+		if (FAILED(res->Load()))    return E_FAIL;
+	}
+
 	return S_OK;
 }
 
@@ -220,10 +230,29 @@ HRESULT CRenderer::InitializeBackBuffer()
 	m_pBackBufferRTV = CGameInstance::Get().GetBackBufferRTV();
 	m_pBackBufferViewPort = CGameInstance::Get().GetResourceFirst<CResViewPort>(TAG_RES_GRP_PERMANENT_VP, "VP_BackBuffer");
 
+	if (m_pBackBufferDownScaleViewPort = CGameInstance::Get().AddResourceT<CResViewPort>(TAG_RES_GRP_PERMANENT_VP, "VP_BackBufferHalf", CResViewPort::Create()))
+	{
+		D3D11_VIEWPORT ViewPortDesc;
+
+		_float2	ScreenSize = CGameInstance::Get().GetClientScreenSize();
+		ZeroMemory(&ViewPortDesc, sizeof(D3D11_VIEWPORT));
+		ViewPortDesc.TopLeftX = 0;
+		ViewPortDesc.TopLeftY = 0;
+		ViewPortDesc.Width = ScreenSize.x / 4.f * 3.f;
+		ViewPortDesc.Height = ScreenSize.y / 4.f * 3.f;
+		ViewPortDesc.MinDepth = 0.f;
+		ViewPortDesc.MaxDepth = 1.f;
+		if (FAILED(m_pBackBufferDownScaleViewPort->Load(ViewPortDesc)))
+		{
+			return E_FAIL;
+		}
+	}
+
 	if (nullptr == m_pBackBufferDSV)		{ MSG_BOX("Invalid : m_pBackBufferDSV");        return E_FAIL; }
 	if (nullptr == m_pBackBufferRTV)		{ MSG_BOX("Invalid : m_pBackBufferRTV");        return E_FAIL; }
 	if (nullptr == m_pBackBufferViewPort)	{ MSG_BOX("Invalid : m_pBackBufferViewPort");   return E_FAIL; }
 	if (nullptr == m_pBackBufferTexture)	{ MSG_BOX("Invalid : m_pBackBufferTexture");    return E_FAIL; }
+	if (nullptr == m_pBackBufferDownScaleViewPort) { MSG_BOX("Invalid : m_pBackBufferDownScaleViewPort");    return E_FAIL; }
 
 	// m_pRasterizer Setting - BackCull
 	m_pRasterizer = E::CGameInstance::GetConst().GetResourceFirst<E::CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_NOCULL);
@@ -309,6 +338,34 @@ HRESULT CRenderer::InitializeTargetPBR()
 	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/DefaultTex_Irridiance.dds"	 , nullptr, m_pSRVIrradianceMap.GetAddressOf()))) 		return E_FAIL;
 	if (FAILED(CreateDDSTextureFromFile(m_pDevice.Get(), L"./Resources/Engine/Texture/DefaultTexture/DefaultTex_PreFilterMap.dds", nullptr, m_pSRVPreFilteredMap.GetAddressOf()))) 		return E_FAIL;
 
+	return S_OK;
+}
+
+HRESULT CRenderer::InitializeDecalSurface(){
+
+	_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
+
+	m_pResDynTexTargetDecalSurface = Generate_RenderTarget("DynTex2D_DecalSurface", DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+	m_pResDynTexTargetReflection = Generate_UnorderedAccessView("DynTex2D_Reflection", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE);
+
+	if (!m_pResDynTexTargetDecalSurface || !m_pResDynTexTargetReflection) return E_FAIL;
+
+	m_pReflectionComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_SSR");
+	if (!m_pReflectionComputeShader) return E_FAIL;
+
+	m_pPlanarReflectionComputeShader = CGameInstance::Get().GetResourceFirst<CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_SSR");
+	if (!m_pPlanarReflectionComputeShader) return E_FAIL;
+	
+	m_pResDynTexTargetSSRSurface = Generate_RenderTarget("DynTex2D_Target_SSRSurface", DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
+	if (!m_pResDynTexTargetSSRSurface)	return E_FAIL;
+
+	m_pResDynTexTargetPlanarReflection = Generate_RenderTarget("DynTex2D_Planar_Reflection", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE, ScreenSize.x, ScreenSize.y);
+
+	m_pResDynTexTargetPlanarDepth = Generate_DepthStencil_RenderTarget("DynTex2D_Planar_Depth", DXGI_FORMAT_R24G8_TYPELESS, DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS, ScreenSize.x, ScreenSize.y);
+	
+	m_pPlanarReflectionCBuffer = CGameInstance::Get().AddResourceT<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, "CB_PLANAR_REFLECTION", CResCBuffer::Create());
+	if (!m_pPlanarReflectionCBuffer || FAILED(m_pPlanarReflectionCBuffer->Load(CResCBuffer::CBUFFER_DESC{.byteWidth = sizeof(CB_PLANAR_REFLECTION) })))	return E_FAIL;
+	
 	return S_OK;
 }
 
@@ -972,10 +1029,10 @@ VOID	CRenderer::Unbind_Resources() {
 	ID3D11UnorderedAccessView* pNullUAVs[8] = { nullptr };
 	m_pContext->CSSetUnorderedAccessViews(0, 8, pNullUAVs, nullptr);
 
-	ID3D11ShaderResourceView* pNullSRVs[12] = { nullptr };
-	m_pContext->PSSetShaderResources(0, 12, pNullSRVs);
-	m_pContext->VSSetShaderResources(0, 12, pNullSRVs);
-	m_pContext->CSSetShaderResources(0, 12, pNullSRVs);
+	ID3D11ShaderResourceView* pNullSRVs[15] = { nullptr };
+	m_pContext->PSSetShaderResources(0, 15, pNullSRVs);
+	m_pContext->VSSetShaderResources(0, 15, pNullSRVs);
+	m_pContext->CSSetShaderResources(0, 15, pNullSRVs);
 
 	m_pContext->IASetInputLayout(nullptr);
 	m_pContext->GSSetShader(nullptr, nullptr, 0);
@@ -995,6 +1052,13 @@ VOID CRenderer::Convert_Rasterizer_BackCull() {
 	if (!BackCullRasterizer)	return;
 
 	m_pContext->RSSetState(BackCullRasterizer->GetRasterizerState().Get());
+}
+
+VOID CRenderer::Convert_Rasterizer_FrontCull() {
+	const auto FrontCullRasterizer = CGameInstance::Get().GetResourceFirst<CResRasterizerState>(TAG_RES_GRP_PERMANENT_STATE, TAG_RES_STATE_RS_SOLID_FRONTCULL);
+	if (!FrontCullRasterizer)	return;
+
+	m_pContext->RSSetState(FrontCullRasterizer->GetRasterizerState().Get());
 }
 
 HRESULT CRenderer::Bind_CameraAttribute(CCameraObject* _ActiveCam) {
@@ -1073,6 +1137,7 @@ HRESULT CRenderer::Draw() {
 	// m_pRasterizer Setting - BackCull
 	m_pContext->RSSetState(m_pRasterizer->GetRasterizerState().Get());
 
+
 	if (FAILED(Render_Shadow()))		 return E_FAIL;
 
 	// DepthMap
@@ -1093,10 +1158,14 @@ HRESULT CRenderer::Draw() {
 	// PBR Lighting
 	if (FAILED(Render_Lighting()))       return E_FAIL;
 
+	// Decal Reflection
+	if (FAILED(Render_PlanarEffectReflection()))  return E_FAIL;
+	
+	// Screen Space Reflection
+	if (FAILED(Render_DecalSurface())) return E_FAIL;
+
 	// Trensparent + PBR
 	if (FAILED(Render_Alpha()))          return E_FAIL;
-
-
 
 	// Volumetric
 	if (FAILED(Render_VolumetricEffect())) return E_FAIL;
@@ -1207,13 +1276,14 @@ HRESULT CRenderer::Render_NonAlpha() {
 	ZoneScopedN("Render_NonAlpha");
 	TracyD3D11Zone(m_pTracyGpuContext, "Opaque GBuffer");
 	{
-		ID3D11RenderTargetView* pRTVs[4] = {
+		ID3D11RenderTargetView* pRTVs[5] = {
 			m_pResDynTexTargetDiffuse->GetRTV().Get(),
 			m_pResDynTexTargetNormal->GetRTV().Get(),
 			m_pResDynTexTargetSMRO->GetRTV().Get(),
 			m_pResDynTexTargetEmissive->GetRTV().Get(),
+			m_pResDynTexTargetSSRSurface->GetRTV().Get()
 		};
-		m_pContext->OMSetRenderTargets(4, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
+		m_pContext->OMSetRenderTargets(5, pRTVs, m_pResDynTexTargetDepth->GetDSV().Get());
 		m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
 		SPtr<CResDepthStencilState> DepthState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHREAD");
@@ -1230,11 +1300,15 @@ HRESULT CRenderer::Render_NonAlpha() {
 		};
 		m_pContext->PSSetShaderResources(13, 2, pNoiseSRVs);
 
-		_float4 clearColor = { 0.f, 0.f, 1.f, 1.f };
-		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&clearColor));
-		m_pContext->ClearRenderTargetView(pRTVs[1], reinterpret_cast<const float*>(&clearColor));
-		m_pContext->ClearRenderTargetView(pRTVs[2], reinterpret_cast<const float*>(&clearColor));
-		m_pContext->ClearRenderTargetView(pRTVs[3], reinterpret_cast<const float*>(&clearColor));
+		_float4 ClearRTVColor = { 0.f, 0.f, 1.f, 1.f };
+		m_pContext->ClearRenderTargetView(pRTVs[0], reinterpret_cast<const float*>(&ClearRTVColor ));
+		m_pContext->ClearRenderTargetView(pRTVs[1], reinterpret_cast<const float*>(&ClearRTVColor ));
+		m_pContext->ClearRenderTargetView(pRTVs[2], reinterpret_cast<const float*>(&ClearRTVColor ));
+		m_pContext->ClearRenderTargetView(pRTVs[3], reinterpret_cast<const float*>(&ClearRTVColor ));
+
+		_float4 ClearDecalRTVColor = { 0.f, 0.f, 0.f, 0.f };
+		m_pContext->ClearRenderTargetView(m_pResDynTexTargetDecalSurface->GetRTV().Get(), reinterpret_cast<const float*>(&ClearDecalRTVColor));
+		m_pContext->ClearRenderTargetView(m_pResDynTexTargetSSRSurface->GetRTV().Get(), reinterpret_cast<const float*>(&ClearDecalRTVColor));
 	}
 	{
 		const auto& VS_NonAlpha = m_pResVertexShader;
@@ -1278,7 +1352,7 @@ HRESULT CRenderer::Render_Decal()
 		return S_OK;
 
 	auto& gameInstance = CGameInstance::Get();
-	const auto blendState = gameInstance.GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_BLEND");
+	const auto blendState = gameInstance.GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_DECAL_SURFACE");
 	const auto noBlendState = gameInstance.GetResourceFirst<CResBlendState>(TAG_RES_GRP_PERMANENT_STATE, "BS_BLEND_NONE");
 	const auto depthDisabled = gameInstance.GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_NO_DEPTHSTENCIL");
 	const auto mapMeshOnly = gameInstance.GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DECAL_MAPMESH_ONLY");
@@ -1289,12 +1363,13 @@ HRESULT CRenderer::Render_Decal()
 		!frontCull || !backCull || !m_pDecalReadOnlyDSV)
 		return E_FAIL;
 
-	ID3D11RenderTargetView* renderTargets[2] = {
+	ID3D11RenderTargetView* renderTargets[3] = {
 		m_pResDynTexTargetDiffuse->GetRTV().Get(),
-		m_pResDynTexTargetEmissive->GetRTV().Get()
+		m_pResDynTexTargetEmissive->GetRTV().Get(),
+		m_pResDynTexTargetDecalSurface->GetRTV().Get()
 	};
 
-	m_pContext->OMSetRenderTargets(2, renderTargets, m_pDecalReadOnlyDSV.Get());
+	m_pContext->OMSetRenderTargets(3, renderTargets, m_pDecalReadOnlyDSV.Get());
 	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
 	ID3D11ShaderResourceView* gBufferResources[2] = {
@@ -1426,6 +1501,11 @@ HRESULT CRenderer::Render_Lighting() {
 
 		m_pContext->CSSetShaderResources(0, 9, SRVList->GetAddressOf());
 
+		{
+			ComPtr<ID3D11ShaderResourceView> DecalSRV[] = { m_pResDynTexTargetDecalSurface->GetSRV() };
+			m_pContext->CSSetShaderResources(14, 1, DecalSRV->GetAddressOf());
+		}
+		
 		if (m_bApplyShadow) {
 			if (FAILED(CGameInstance::Get().Render_ObjectShadow())) { Unbind_Resources(); return S_OK; }
 		}
@@ -1562,6 +1642,91 @@ HRESULT CRenderer::Render_VolumetricEffect() {
 		if (FAILED(Render_VolumetricComposite()))	{ Unbind_Resources(); return S_OK; }
 	}
 	
+	return S_OK;
+}
+
+HRESULT CRenderer::Render_DecalSurface(){
+	{
+
+		m_pContext->CSSetShader(m_pPlanarReflectionComputeShader->GetComputeShader().Get(), nullptr, 0);
+		m_pContext->CSSetShader(m_pReflectionComputeShader->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11ShaderResourceView* pSRVs[6] = { nullptr };
+		pSRVs[0] = m_pResDynTexTargetPreviousRenderView->GetSRV().Get();
+		pSRVs[1] = m_pResDynTexTargetDepth->GetSRV().Get();
+		pSRVs[2] = m_pResDynTexTargetDecalSurface->GetSRV().Get();
+		pSRVs[3] = m_pResDynTexTargetSSRSurface->GetSRV().Get();
+		pSRVs[4] = m_pResDynTexTargetNormal->GetSRV().Get();
+		pSRVs[5] = m_pResDynTexTargetPlanarReflection->GetSRV().Get();
+
+		m_pContext->CSSetShaderResources(0, 6, pSRVs);
+
+		if (FAILED(Bind_PlanarConstantBuffer()))  return E_FAIL;
+
+		ID3D11UnorderedAccessView* pUAVs[1] = { m_pResDynTexTargetReflection->GetUAV().Get() };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
+	}
+	{
+		_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
+		_float	ThreadCount = 8;
+
+		m_pContext->Dispatch((ScreenSize.x + ThreadCount - 1) / ThreadCount, (ScreenSize.y + ThreadCount - 1) / ThreadCount, 1);
+
+		ID3D11ShaderResourceView* pNullSRVs[6] = { nullptr };
+		m_pContext->CSSetShaderResources(0, 6, pNullSRVs);
+
+		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
+		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
+	}
+
+	m_pResDynTexTargetPreviousRenderView = m_pResDynTexTargetReflection;
+
+	return S_OK;
+}
+
+HRESULT CRenderer::Render_PlanarEffectReflection(){
+		if (!m_bPlanarReflectionRegisteredThisFrame  || !m_pPlanarReflectionDesc.enabled)	return S_OK;
+
+	auto ActiveCam = CGameInstance::Get().GetActiveCamera();
+
+	const RENDER_CTX PreviousCTX = m_pRenderContext;
+
+	if (!ActiveCam || !m_pResDynTexTargetPlanarReflection || !m_pResDynTexTargetPlanarDepth)
+		return E_FAIL;
+
+	m_pContext->OMSetRenderTargets(1, m_pResDynTexTargetPlanarReflection->GetRTV().GetAddressOf(), m_pResDynTexTargetPlanarDepth->GetDSV().Get());
+	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
+
+	const _float clearColor[4] = { 0.f, 0.f, 0.f, 0.f };
+	m_pContext->ClearRenderTargetView(m_pResDynTexTargetPlanarReflection->GetRTV().Get(), clearColor);
+	m_pContext->ClearDepthStencilView(m_pResDynTexTargetPlanarDepth->GetDSV().Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+	
+	Convert_Rasterizer_FrontCull();
+
+	SPtr<CResDepthStencilState> DepthWriteState = CGameInstance::Get().GetResourceFirst<CResDepthStencilState>(TAG_RES_GRP_PERMANENT_STATE, "DS_DEPTHWRITE");
+	if (nullptr == DepthWriteState) return S_OK;
+	m_pContext->OMSetDepthStencilState(DepthWriteState->GetDepthStencilState().Get(), 0);
+
+	if(FAILED(Bind_PlanarCameraAttribute(ActiveCam))) return S_OK;
+
+	for (auto& pRenderObject : m_pRenderObject[ETOUI(RENDERGROUP::REFLECTION)])
+	{
+		if (pRenderObject->HasRenderPass(m_pRenderContext.pass))
+		{
+			pRenderObject->Render(m_pContext.Get(), m_pRenderContext);
+		}
+	}
+
+	if (FAILED(RenderEffect())) return S_OK;
+
+	Unbind_Resources();
+
+	Bind_CameraAttribute(ActiveCam);
+
+	Convert_Rasterizer_BackCull();
+
+	m_pRenderContext = PreviousCTX;
+
 	return S_OK;
 }
 
@@ -2831,6 +2996,84 @@ _float CRenderer::Get_HaltonSequence(uint32_t _FrameIndex, uint32_t _Base) {
 		fraction /= static_cast<_float>(_Base);
 	}
 	return result;
+}
+
+HRESULT CRenderer::Bind_PlanarCameraAttribute(CCameraObject* _ActiveCam) {
+
+	XMVECTOR FloorPoint = XMLoadFloat3(&m_pPlanarReflectionDesc.FloorPoint);
+	XMVECTOR FloorNormal = XMVector3Normalize(XMLoadFloat3(&m_pPlanarReflectionDesc.FloorNormal));
+
+	if (XMVectorGetX(XMVector3LengthSq(FloorNormal)) < 0.0001f)
+		return E_FAIL;
+
+	XMVECTOR CameraEye		= _ActiveCam->GetTransform().GetLoadedPostion();
+	XMVECTOR CameraLook		= _ActiveCam->GetTransform().GetState(STATE::LOOK);
+	XMVECTOR CameraUp		= _ActiveCam->GetTransform().GetState(STATE::UP);
+
+	XMVECTOR ReflectionEye	= FloorPoint + XMVector3Reflect(CameraEye - FloorPoint, FloorNormal);
+	XMVECTOR ReflectionLook = XMVector3Normalize(XMVector3Reflect(CameraLook, FloorNormal));
+	XMVECTOR ReflectionUp	= XMVector3Normalize(XMVector3Reflect(CameraUp, FloorNormal));
+
+	XMMATRIX ReflectionView = XMMatrixLookAtLH(ReflectionEye, ReflectionEye + ReflectionLook, ReflectionUp);
+	XMMATRIX ReflectionProj = _ActiveCam->GetProj();
+
+	XMStoreFloat4x4(&m_mPlanarReflectionViewProj, ReflectionView * ReflectionProj);
+
+	{
+		m_pRenderContext.pass		 = RENDERPASS::DEFAULT;
+		m_pRenderContext.eye		 = ReflectionEye;
+		m_pRenderContext.matView	 = ReflectionView;
+		m_pRenderContext.matProj	 = ReflectionProj;
+		m_pRenderContext.matViewProj = ReflectionView * ReflectionProj;
+	}
+
+	CB_PER_PASS cbPerPass{ };
+
+	XMMATRIX InvReflectionView = XMMatrixInverse(nullptr, ReflectionView);
+	XMMATRIX InvReflectionProj = XMMatrixInverse(nullptr, ReflectionProj);
+	XMStoreFloat4x4(&cbPerPass.matView, ReflectionView);
+	XMStoreFloat4x4(&cbPerPass.matProj, ReflectionProj);
+	XMStoreFloat4x4(&cbPerPass.matViewProj, m_pRenderContext.matViewProj);
+
+	XMStoreFloat4x4(&cbPerPass.matInvView, InvReflectionView);
+	XMStoreFloat4x4(&cbPerPass.matInvProj, InvReflectionProj);
+	XMStoreFloat3(&cbPerPass.vCamPos, ReflectionEye);
+
+	XMStoreFloat4x4(&cbPerPass.matInvViewProj, XMMatrixMultiply(InvReflectionProj, InvReflectionView));
+
+	cbPerPass.fDeltaTime = m_fDeltaTime;
+	cbPerPass.fTimeAccumulation = m_fTimeAccumulation;
+	cbPerPass.matPrevViewProj = cbPerPass.matViewProj;
+
+	auto pCbPerPass = CGameInstance::Get().GetResourceFirst<CResCBuffer>(TAG_RES_GRP_PERMANENT_BUFFER, TAG_RES_CBUFFER_PASS);
+
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+	if (FAILED(m_pContext->Map(pCbPerPass->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))	return E_FAIL;
+	memcpy(mapped.pData, &cbPerPass, sizeof(cbPerPass));
+	m_pContext->Unmap(pCbPerPass->GetCBuffer().Get(), 0);
+
+	m_pContext->VSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	m_pContext->PSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+	m_pContext->CSSetConstantBuffers(1, 1, pCbPerPass->GetCBuffer().GetAddressOf());
+
+	return S_OK;
+}
+
+HRESULT CRenderer::Bind_PlanarConstantBuffer() {
+	CB_PLANAR_REFLECTION PlanarCB{};
+	PlanarCB.g_mPlanarReflectionViewProj = m_mPlanarReflectionViewProj;
+	PlanarCB.g_fPlanarReflectionEnabled  = m_pPlanarReflectionDesc.enabled;
+	PlanarCB.g_fPlanarReflectionEnabled = m_bPlanarReflectionRegisteredThisFrame ? m_pPlanarReflectionDesc.enabled : 0.f;
+	D3D11_MAPPED_SUBRESOURCE mapped{};
+	if (FAILED(m_pContext->Map(m_pPlanarReflectionCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+		return E_FAIL;
+
+	memcpy(mapped.pData, &PlanarCB, sizeof(PlanarCB));
+	m_pContext->Unmap(m_pPlanarReflectionCBuffer->GetCBuffer().Get(), 0);
+
+	m_pContext->CSSetConstantBuffers(8, 1, m_pPlanarReflectionCBuffer->GetCBuffer().GetAddressOf());
+
+	return S_OK;
 }
 
 #pragma endregion

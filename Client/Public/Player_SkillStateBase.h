@@ -12,6 +12,7 @@ class CPlayer_SkillStateBase : public CState
 public:
 	DECLARE_DERIVED_TYPE(CPlayer_SkillStateBase, CState)
 
+	static _bool HasTargetInRange(const CPlayer& player);
 	static _bool HasValidTarget(const CPlayer& player);
 
 protected:
@@ -51,7 +52,7 @@ private:
 	void CacheDirectionalAttackAnimations(const CPlayer& player);
 	ATTACK_DIRECTION ResolveTargetAttackDirection(const CPlayer& player) const;
 
-	static constexpr _float TARGET_MAX_DISTANCE = 40.f;
+	static constexpr _float TARGET_MAX_DISTANCE = 80.f;
 	static constexpr _float TARGET_FRONT_DOT_THRESHOLD = 0.5f;
 	static constexpr size_t ATTACK_DIRECTION_COUNT =
 		static_cast<size_t>(ATTACK_DIRECTION::END);

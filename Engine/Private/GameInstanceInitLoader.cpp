@@ -625,37 +625,66 @@ HRESULT CGameInstanceInitLoader::LoadBlendState()
 		if (FAILED(res->Load(blendDesc))) return E_FAIL;
 	}
 
-		if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT", E::CResBlendState::Create()))
-		{
-			D3D11_BLEND_DESC blendDesc{};
-			blendDesc.AlphaToCoverageEnable = FALSE;
-			blendDesc.IndependentBlendEnable = FALSE;
-			blendDesc.RenderTarget[0].BlendEnable = TRUE;
-			blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-			blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-			blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-			blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
-			blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
-			blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-			blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-			res->Load(blendDesc);
-		}
+	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_ALPHA_EFFECT", E::CResBlendState::Create()))
+	{
+		D3D11_BLEND_DESC blendDesc{};
+		blendDesc.AlphaToCoverageEnable = FALSE;
+		blendDesc.IndependentBlendEnable = FALSE;
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		res->Load(blendDesc);
+	}
 
-		if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE", E::CResBlendState::Create()))
-		{
-			D3D11_BLEND_DESC blendDesc{};
-			blendDesc.AlphaToCoverageEnable = FALSE;
-			blendDesc.IndependentBlendEnable = FALSE;
-			blendDesc.RenderTarget[0].BlendEnable = TRUE;
-			blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;   // 텍스처 알파로 밝기(강도) 조절
-			blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;        // 배경을 100% 보존하고 그 위에 더한다 ← 핵심
-			blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-			blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-			blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
-			blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-			blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-			if (FAILED(res->Load(blendDesc))) return E_FAIL;
-		}
+	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_ADDITIVE", E::CResBlendState::Create()))
+	{
+		D3D11_BLEND_DESC blendDesc{};
+		blendDesc.AlphaToCoverageEnable = FALSE;
+		blendDesc.IndependentBlendEnable = FALSE;
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;   // 텍스처 알파로 밝기(강도) 조절
+		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;        // 배경을 100% 보존하고 그 위에 더한다 ← 핵심
+		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		if (FAILED(res->Load(blendDesc))) return E_FAIL;
+	}
+
+	if (auto res = CGameInstance::Get().AddResource(TAG_RES_GRP_PERMANENT_STATE, "BS_DECAL_SURFACE", E::CResBlendState::Create()))
+	{
+		D3D11_BLEND_DESC blendDesc{};
+		blendDesc.AlphaToCoverageEnable = FALSE;
+		blendDesc.IndependentBlendEnable = TRUE;
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+
+		blendDesc.RenderTarget[1] = blendDesc.RenderTarget[0];
+
+		blendDesc.RenderTarget[2].BlendEnable = TRUE;
+		blendDesc.RenderTarget[2].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[2].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		blendDesc.RenderTarget[2].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[2].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[2].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+		blendDesc.RenderTarget[2].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[2].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		if (FAILED(res->Load(blendDesc))) return E_FAIL;
+	}
+
 	return S_OK;
 }
 

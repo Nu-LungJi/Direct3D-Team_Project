@@ -17,6 +17,7 @@
 #include "NvClothCape.h"
 
 #include "BossTMB.h"
+#include "RWB_Floor.h"
 
 #include "UIManager.h"
 #include "UIController.h"
@@ -91,6 +92,16 @@ HRESULT CLevelBossCharlesRookwood::Initialize()
 		return E_FAIL;
 
 	SubscribePlayerDeath(*hPlayer);
+
+	{
+		CRWB_Floor::DESC Floordesc{};
+		Floordesc.sObjectTag = "BOSS_CHARLES_ROOKWOOD_RWB_FLOOR";
+		Floordesc.vInitialPosition = _float3(-28.3f, 12.7f, 33.f);
+		Floordesc.vInitialRotation = _float3(0.f, 0.f, 0.f);
+		Floordesc.vInitialScale = _float3(1.f, 1.f, 1.f);
+		if (!E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::BOSS_CHARLES_ROOKWOOD, PROTO_GAMEOBJECT::Prototype_GameObject_RWBFloor, "RockWoodBoss_RWB_Floor", &Floordesc))
+			return E_FAIL;
+	}
 
 	return S_OK;
 }
@@ -302,6 +313,7 @@ std::optional<CHandle> CLevelBossCharlesRookwood::SpawnPlayer()
 	.iSimulationMask = PX_ALL_LAYERS,
 	.iQueryMask =
 		ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+		ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 		ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 		ETOUI(COLLISION_LAYER::ENEMY_BODY)
 	};
@@ -407,7 +419,7 @@ HRESULT CLevelBossCharlesRookwood::PlayBGM()
 	m_bmgID = pSoundManager->Play2D(sSoundPath,
 		E::SOUND_PLAY_DESC{
 			.sBusID = SOUND_BUS::BGM,
-			.fVolume = 1.f,
+			.fVolume = 0.6f,
 			.fPitch = 1.f,
 			.fFadeInDuration = 1.f,
 			.iPriority = 64,
@@ -478,8 +490,8 @@ HRESULT CLevelBossCharlesRookwood::Initialize_VolumetricFog(){
 	FogOption.g_fFogMaxHeight		= 500.f;
 	FogOption.g_fFogHeightFallOff	= 0.05f;
 
-	FogOption.g_fFogStartDistance	= 100.f;
-	FogOption.g_fFogEndDistance		= 250.f;
+	FogOption.g_fFogStartDistance	= 300.f;
+	FogOption.g_fFogEndDistance		= 500.f;
 
 	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
 

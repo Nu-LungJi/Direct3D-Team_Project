@@ -202,24 +202,6 @@ void CUIController::Update(E::_float fTimeDelta)
 		AddFinisher(-10.f);
 	}
 
-	// ************** 스펠슬롯
-	if (E::CGameInstance::Get().KeyDown(DIK_1))
-	{
-		UseSpell(1);
-	}
-	else if (E::CGameInstance::Get().KeyDown(DIK_2))
-	{
-		UseSpell(2);
-	}
-	else if (E::CGameInstance::Get().KeyDown(DIK_3))
-	{
-		UseSpell(3);
-	}
-	else if (E::CGameInstance::Get().KeyDown(DIK_4))
-	{
-		UseSpell(4);
-	}
-
 	// ************** 포션
 	if (E::CGameInstance::Get().KeyDown(DIK_NEXT))
 	{
@@ -1559,6 +1541,16 @@ uint32_t CUIController::GetSpellType(uint32_t SlotNumber)
 	return spellType;
 }
 
+_float CUIController::GetSpellCooldownDuration(uint32_t SlotNumber)
+{
+	if (SlotNumber < 1u || SlotNumber > 4u)
+		return 0.f;
+
+	auto* pSpellSlot = static_cast<CSpellMeter*>(
+		SafeGetOBJ(m_SpellSlot[SlotNumber - 1u]));
+	return pSpellSlot ? pSpellSlot->GetCooldownDuration() : 0.f;
+}
+
 void CUIController::UseSpell(uint32_t SlotNumber)
 {
 	if (SlotNumber < 1u || SlotNumber > 4u)
@@ -1566,8 +1558,7 @@ void CUIController::UseSpell(uint32_t SlotNumber)
 
 	auto* pSpellSlot = static_cast<CSpellMeter*>(
 		SafeGetOBJ(m_SpellSlot[SlotNumber - 1u]));
-	if (!pSpellSlot || pSpellSlot->GetSpellType() == ETOUI(SPELL_TYPE::NONE) ||
-		pSpellSlot->GetFillAmount() < 0.999f)
+	if (!pSpellSlot || pSpellSlot->GetSpellType() == ETOUI(SPELL_TYPE::NONE))
 		return;
 
 	const SPELL_TYPE spellType =
@@ -1610,9 +1601,22 @@ void CUIController::UseSpell(uint32_t SlotNumber)
 		break;
 	}
 
-	pSpellSlot->StartCooldown();
 	if (dialogue)
 		GET_SINGLE(UIManager)->AddDialoguePopup("샤프교수", dialogue);
+}
+
+void CUIController::SetSpellCooldownRatio(
+	uint32_t SlotNumber, _float fReadyRatio)
+{
+	if (SlotNumber < 1u || SlotNumber > 4u)
+		return;
+
+	auto* pSpellSlot = static_cast<CSpellMeter*>(
+		SafeGetOBJ(m_SpellSlot[SlotNumber - 1u]));
+	if (!pSpellSlot)
+		return;
+
+	pSpellSlot->SetFillAmount(std::clamp(fReadyRatio, 0.f, 1.f));
 }
 
 void CUIController::SetPotionCount(_float cnt)

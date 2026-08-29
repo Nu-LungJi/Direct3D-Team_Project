@@ -119,6 +119,7 @@ HRESULT CTerrainGUI::GenerateTerrainNoise(E::CTerrain& terrain, uint32_t seed,
 	return terrain.CommitAllHeights();
 }
 
+
 void CTerrainGUI::UpdateGUI(E::_float fTimeDelta)
 {
 	auto finishEditCommand = [&]()
@@ -455,20 +456,41 @@ void CTerrainGUI::UpdateGUI(E::_float fTimeDelta)
 					const float localX = localCenter.x + std::cos(angle) * distance / std::max(std::abs(terrainScale.x), 0.0001f);
 					const float localZ = localCenter.z + std::sin(angle) * distance / std::max(std::abs(terrainScale.z), 0.0001f);
 					float localHeight = 0.f;
+					E::_float3 localNormal{};
 
-					if (!terrain->TryGetLocalHeight(localX, localZ, localHeight)) 
-						continue;
+					if (!terrain->TryGetLocalSurface(localX, localZ, localHeight, localNormal))	continue;
+
+					const E::_matrix terrainWorld = terrain->GetTransform().GetLoadedCombinedWorldMatrix();
+					const E::_matrix normalMatrix = XMMatrixTranspose(XMMatrixInverse(nullptr, terrainWorld));
+					const E::_vector worldNormal = XMVector3Normalize(XMVector3TransformNormal(XMLoadFloat3(&localNormal), normalMatrix));
 
 					E::_float3 worldPosition{};
-					XMStoreFloat3(&worldPosition, XMVector3TransformCoord(
-						XMVectorSet(localX, localHeight, localZ, 1.f),
-						terrain->GetTransform().GetLoadedCombinedWorldMatrix()));
+					XMStoreFloat3(&worldPosition, XMVector3TransformCoord(XMVectorSet(localX, localHeight, localZ, 1.f), terrainWorld));
 
-					const float objectScale = std::lerp(m_fScatterScaleMin, m_fScatterScaleMax, unit(rng));
-					E::_float4 rotation{ 0.f, 0.f, 0.f, 1.f };
+					E::_vector forward = XMVectorSet(0.f, 0.f, 1.f, 0.f);
+					forward = XMVectorSubtract(forward, XMVectorMultiply(worldNormal, XMVector3Dot(forward, worldNormal)));
+
+					forward = XMVectorGetX(XMVector3LengthSq(forward)) < 0.0001f ? XMVectorSet(1.f, 0.f, 0.f, 0.f) : XMVector3Normalize(forward);
 
 					if (m_bScatterRandomYaw)
-						XMStoreFloat4(&rotation, XMQuaternionRotationAxis(terrain->GetTransform().GetState(E::STATE::UP), unit(rng) * XM_2PI));
+					{
+						const E::_vector yaw = XMQuaternionRotationAxis(worldNormal, unit(rng) * XM_2PI);
+						forward = XMVector3Normalize(XMVector3Rotate(forward, yaw));
+					}
+
+					const E::_vector right = XMVector3Normalize(XMVector3Cross(worldNormal, forward));
+
+					forward = XMVector3Normalize(XMVector3Cross(right, worldNormal));
+
+					E::_matrix rotationMatrix = XMMatrixIdentity();
+					rotationMatrix.r[0] = right;
+					rotationMatrix.r[1] = worldNormal;
+					rotationMatrix.r[2] = forward;
+
+					E::_float4 rotation{};
+					XMStoreFloat4(&rotation, XMQuaternionNormalize(XMQuaternionRotationMatrix(rotationMatrix)));
+
+					const float objectScale = std::lerp(m_fScatterScaleMin, m_fScatterScaleMax, unit(rng));
 
 					MAPMESH_OBJECT_SNAPSHOT snapshot{};
 					snapshot.objectTag = "TerrainScatter_" + std::to_string(m_ScatterSnapshots.size());

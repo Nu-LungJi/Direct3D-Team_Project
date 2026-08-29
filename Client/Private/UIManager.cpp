@@ -1365,6 +1365,7 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 				pPlayer->SetFlyRequested(false);
 				pPlayer->SetDialoguePose(vShopPosition, vShopLookAt);
 			}
+			E::CGameInstance::Get().Set_ShadowEnabled(true);
 			if (m_OnRaceReturnToShop)
 				m_OnRaceReturnToShop();
 

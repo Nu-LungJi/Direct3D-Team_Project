@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "DecalVolume.h"
 #include "ComConstantBuffer.h"
 #include "GameInstance.h"

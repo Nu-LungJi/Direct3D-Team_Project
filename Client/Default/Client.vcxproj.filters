@@ -490,6 +490,12 @@
     <Filter Include="GameObject\AnimationWorldObject">
       <UniqueIdentifier>{2ec69e32-ef56-40ec-9fed-c71016b51ac8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject\Terrain\Puddle">
+      <UniqueIdentifier>{565a9485-6222-4b2d-9295-7eb7d5bfb91b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject\Terrain\RockWoodBoss_Floor">
+      <UniqueIdentifier>{260c74a8-b078-447c-95e0-9fd9504175cb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h">
@@ -1209,6 +1215,12 @@
     <ClInclude Include="..\public\AnimatedWorldObject.h">
       <Filter>GameObject\AnimationWorldObject</Filter>
     </ClInclude>
+    <ClInclude Include="..\Public\Puddle.h">
+      <Filter>GameObject\Terrain\Puddle</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\RWB_Floor.h">
+      <Filter>GameObject\Terrain\RockWoodBoss_Floor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Client.ico">
@@ -1868,6 +1880,12 @@
     <ClCompile Include="..\private\AnimatedWorldObject.cpp">
       <Filter>GameObject\AnimationWorldObject</Filter>
     </ClCompile>
+    <ClCompile Include="..\Private\Puddle.cpp">
+      <Filter>GameObject\Terrain\Puddle</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Private\RWB_Floor.cpp">
+      <Filter>GameObject\Terrain\RockWoodBoss_Floor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\ShaderFiles\Shader_Lightning.hlsl">
@@ -1998,6 +2016,12 @@
     </FxCompile>
     <FxCompile Include="..\ShaderFiles\Decal\Shader_RanrokBranchCrack.hlsl">
       <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\ShaderFiles\Decal\Shader_HogsmeadePuddle.hlsl">
+      <Filter>ShaderFiles\Decal</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Bin\ShaderFiles\Decal\Shader_RWBFloor.hlsl">
+      <Filter>ShaderFiles\GameObject</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>
