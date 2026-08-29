@@ -405,9 +405,18 @@ _bool CAccioActivity_Base::StartMatch()
 	if (!ResetMatch(true))
 		return false;
 
+	if (!GET_SINGLE(UIManager)->AssioMiniGameStart(
+		!m_bNpcStartsFirst,
+		m_PlayerDisplayName,
+		m_NpcDisplayName))
+	{
+		// [LSY] 필수 UI 프리팹이 없으면 보이지 않는 경기를 시작하지 않는다.
+		m_eMatchState = MATCH_STATE::READY;
+		return false;
+	}
+
 	m_eMatchState = m_bNpcStartsFirst ?
 		MATCH_STATE::NPC_TURN : MATCH_STATE::PLAYER_TURN;
-	GET_SINGLE(UIManager)->AssioMiniGameStart(!m_bNpcStartsFirst);
 	return true;
 }
 
@@ -936,6 +945,8 @@ _bool CAccioActivity_Base::IsPointInsideScoreZone(
 HRESULT CAccioActivity_Base::InitializeBasePhysics(const DESC& desc)
 {
 	m_bNpcStartsFirst = desc.bNpcStartsFirst;
+	m_PlayerDisplayName = desc.PlayerDisplayName;
+	m_NpcDisplayName = desc.NpcDisplayName;
 	m_PlayArea = desc.BoxColliders[3];
 	m_ScoreZones = {
 		desc.Score10Trigger,
