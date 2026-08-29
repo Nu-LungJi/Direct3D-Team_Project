@@ -38,6 +38,9 @@ public:
 		const _float4& vRotation,
 		_bool bTeleport = false);
 	_bool SetWind(const NVCLOTH_WIND_DESC& Desc);
+	// [LSY] 생성된 Cloth의 이동 관성과 Solver 반복 빈도를 런타임에 조정한다.
+	_bool SetLinearInertia(const _float3& vLinearInertia);
+	_bool SetSolverFrequency(_float fSolverFrequency);
 	_bool SetSelfCollision(
 		_float fDistance,
 		_float fStiffness);

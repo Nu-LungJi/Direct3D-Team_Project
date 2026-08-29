@@ -52,6 +52,47 @@ namespace
 			vValue.z >= 0.f && vValue.z <= 1.f;
 	}
 
+	_bool IsOptionalPhaseStiffnessValid(_float fValue)
+	{
+		return std::isfinite(fValue) &&
+			fValue >= -1.f &&
+			fValue <= 1.f;
+	}
+
+	_float ResolvePhaseStiffness(
+		const NVCLOTH_CLOTH_DESC& Desc,
+		int32_t iPhaseType)
+	{
+		_float fPhaseStiffness = Desc.fPhaseStiffness;
+		switch (iPhaseType)
+		{
+		case nv::cloth::ClothFabricPhaseType::eVERTICAL:
+			if (Desc.tPhaseStiffness.fVertical >= 0.f)
+				fPhaseStiffness = Desc.tPhaseStiffness.fVertical;
+			break;
+
+		case nv::cloth::ClothFabricPhaseType::eHORIZONTAL:
+			if (Desc.tPhaseStiffness.fHorizontal >= 0.f)
+				fPhaseStiffness = Desc.tPhaseStiffness.fHorizontal;
+			break;
+
+		case nv::cloth::ClothFabricPhaseType::eBENDING:
+			if (Desc.tPhaseStiffness.fBending >= 0.f)
+				fPhaseStiffness = Desc.tPhaseStiffness.fBending;
+			break;
+
+		case nv::cloth::ClothFabricPhaseType::eSHEARING:
+			if (Desc.tPhaseStiffness.fShearing >= 0.f)
+				fPhaseStiffness = Desc.tPhaseStiffness.fShearing;
+			break;
+
+		default:
+			break;
+		}
+
+		return fPhaseStiffness;
+	}
+
 	_bool ValidateFabricDesc(const NVCLOTH_FABRIC_DESC& Desc)
 	{
 		if (Desc.vecPositions.size() < 3 ||
@@ -142,6 +183,14 @@ namespace
 			!std::isfinite(Desc.fSolverFrequency) ||
 			!std::isfinite(Desc.fStiffnessFrequency) ||
 			!std::isfinite(Desc.fPhaseStiffness) ||
+			!IsOptionalPhaseStiffnessValid(
+				Desc.tPhaseStiffness.fVertical) ||
+			!IsOptionalPhaseStiffnessValid(
+				Desc.tPhaseStiffness.fHorizontal) ||
+			!IsOptionalPhaseStiffnessValid(
+				Desc.tPhaseStiffness.fBending) ||
+			!IsOptionalPhaseStiffnessValid(
+				Desc.tPhaseStiffness.fShearing) ||
 			!std::isfinite(Desc.fPhaseStiffnessMultiplier) ||
 			!std::isfinite(Desc.fCompressionLimit) ||
 			!std::isfinite(Desc.fStretchLimit) ||
@@ -1018,7 +1067,17 @@ HRESULT CNvClothManager::CreateCloth(
 	{
 		auto& Phase = vecPhases[i];
 		Phase.mPhaseIndex = static_cast<uint16_t>(i);
-		Phase.mStiffness = Desc.fPhaseStiffness;
+		int32_t iPhaseType =
+			nv::cloth::ClothFabricPhaseType::eINVALID;
+		if (i < FabricIter->second->vecPhaseTypes.size())
+			iPhaseType =
+				FabricIter->second->vecPhaseTypes[i];
+
+		// [LSY] Phase 배열 순서는 제약 종류 순서가 아니다. Fabric 쿠커가
+		// 함께 반환한 동일 인덱스의 타입으로 개별 강성을 선택한다.
+		Phase.mStiffness = ResolvePhaseStiffness(
+			Desc,
+			iPhaseType);
 		Phase.mStiffnessMultiplier =
 			Desc.fPhaseStiffnessMultiplier;
 		Phase.mCompressionLimit = Desc.fCompressionLimit;
@@ -1482,6 +1541,58 @@ _bool CNvClothManager::SetClothWind(
 	return true;
 }
 
+_bool CNvClothManager::SetClothLinearInertia(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	const _float3& vLinearInertia)
+{
+	ZoneScopedN("NvCloth_SetLinearInertia");
+
+	if (!m_pImpl || !Handle || !IsUnitInterval(vLinearInertia))
+		return false;
+
+	std::scoped_lock Lock{ m_pImpl->StateMutex };
+	const auto Iter = m_pImpl->Cloths.find(Handle.iValue);
+	if (Iter == m_pImpl->Cloths.end() ||
+		!Iter->second ||
+		!Iter->second->pCloth)
+	{
+		return false;
+	}
+
+	Iter->second->pCloth->setLinearInertia({
+		vLinearInertia.x,
+		vLinearInertia.y,
+		vLinearInertia.z });
+	return true;
+}
+
+_bool CNvClothManager::SetClothSolverFrequency(
+	NVCLOTH_CLOTH_HANDLE Handle,
+	_float fSolverFrequency)
+{
+	ZoneScopedN("NvCloth_SetSolverFrequency");
+
+	if (!m_pImpl ||
+		!Handle ||
+		!std::isfinite(fSolverFrequency) ||
+		fSolverFrequency <= 0.f)
+	{
+		return false;
+	}
+
+	std::scoped_lock Lock{ m_pImpl->StateMutex };
+	const auto Iter = m_pImpl->Cloths.find(Handle.iValue);
+	if (Iter == m_pImpl->Cloths.end() ||
+		!Iter->second ||
+		!Iter->second->pCloth)
+	{
+		return false;
+	}
+
+	Iter->second->pCloth->setSolverFrequency(fSolverFrequency);
+	return true;
+}
+
 _bool CNvClothManager::SetClothSelfCollision(
 	NVCLOTH_CLOTH_HANDLE Handle,
 	_float fDistance,
@@ -1900,6 +2011,11 @@ _bool CNvClothManager::ResetClothParticlesToPositions(
 
 	pCloth->clearInertia();
 	pCloth->clearInterpolation();
+	if (m_pImpl->eBackend == NVCLOTH_BACKEND::CPU)
+	{
+		// [LSY] 리셋된 파티클을 같은 프레임의 렌더 버퍼에 반영한다.
+		Record.bCpuParticleBufferDirty = true;
+	}
 	return true;
 }
 
