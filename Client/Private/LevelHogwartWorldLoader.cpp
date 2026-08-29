@@ -76,6 +76,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
 				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AvadaKedavra")))
+				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcEntrance")))
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcDialogueCloseUp")))
@@ -167,6 +169,8 @@ std::future<bool> CLevelHogwartWorldLoader::UnLoad()
 			E::CGameInstance::Get().DelResource(LEVEL::HOGWART_WORLD);
 			return true;
 		});
+
+
 }
 
 HRESULT CLevelHogwartWorldLoader::LoadPhysicsDoorResources()

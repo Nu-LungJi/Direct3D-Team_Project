@@ -4,6 +4,9 @@
 #include "ComCharacterMotor.h"
 #include "ComCharacterMoveIntent.h"
 #include "ClientEvents.h"
+#include "BlackBoardKey.h"
+#include "BTBlackBoard.h"
+#include "ComBeHavior.h"
 NS_USING(Client)
 
 CBTAnimRoot::CBTAnimRoot()
@@ -218,7 +221,7 @@ void CBTAnimRoot::Abort()
 		iter.fCurRatioTime = 0.f;
 		iter.bPlayed = false;
 
-		if (iter.SoundPlay.bLoop && iter.iSoundID != INVALID_SOUND_ID && pSoundManager->IsValidSound(iter.iSoundID))
+		if (iter.SoundPlay.bLoop && iter.iSoundID != INVALID_SOUND_ID && pSoundManager->IsValidSound(iter.iSoundID) || iter.bStopAbort)
 		{
 			pSoundManager->Stop(iter.iSoundID);
 			iter.iSoundID = INVALID_SOUND_ID;
@@ -297,6 +300,8 @@ nlohmann::json CBTAnimRoot::Save_Node()
 			SaveJsonValue(j, "SoundPlayPitch" + std::to_string(i), m_Sounds[i].SoundPlay.fPitch);
 			SaveJsonValue(j, "SoundPlayLoop" + std::to_string(i), m_Sounds[i].SoundPlay.bLoop);
 			SaveJsonValue(j, "PlaySoundOne" + std::to_string(i), m_Sounds[i].bOnlyOne);
+			SaveJsonValue(j, "SoundAbort" + std::to_string(i), m_Sounds[i].bStopAbort);
+			SaveJsonValue(j, "RunReset" + std::to_string(i), m_Sounds[i].bRunReset);
 		}
 	}
 
@@ -372,6 +377,8 @@ HRESULT CBTAnimRoot::Load_json(const nlohmann::json& j)
 			LoadJsonValue(j, "SoundPlayPitch" + std::to_string(i), m_Sounds[i].SoundPlay.fPitch);
 			LoadJsonValue(j, "SoundPlayLoop" + std::to_string(i), m_Sounds[i].SoundPlay.bLoop);
 			LoadJsonValue(j, "PlaySoundOne" + std::to_string(i), m_Sounds[i].bOnlyOne);
+			LoadJsonValue(j, "SoundAbort" + std::to_string(i), m_Sounds[i].bStopAbort);
+			LoadJsonValue(j, "RunReset" + std::to_string(i), m_Sounds[i].bRunReset);
 			m_Sounds[i].str3DSound.eRolloff = SOUND_3D_ROLLOFF::LINEAR;
 			m_Sounds[i].SoundPlay.sBusID = SOUND_BUS::SFX;
 			m_Sounds[i].SoundPlay.iPriority = 64;
@@ -519,6 +526,35 @@ void CBTAnimRoot::OnExit(EVALUATE eResult)
 	}
 }
 
+void CBTAnimRoot::Get_SoundKey(_string& Path, CComBeHavior* pBeHavior)
+{
+	auto* pBB = pBeHavior->Get_Blackboard();
+	if (nullptr == pBB) return;
+
+	auto* pSoundTable = pBB->Get_Value <std::unordered_map<_string, std::vector<_string>>>(PUBLIC_KEY::SOUNDTABLE);
+	if (nullptr == pSoundTable) return;
+
+	_string Key = "";
+	if (ImGui::BeginCombo("SoundTable", Path.c_str()))
+	{
+		for (auto& [key, value] : *pSoundTable)
+		{
+			_bool bSelect = key == Path;
+			if (ImGui::Selectable(key.c_str(), bSelect))
+			{
+				Path = key;
+				break;
+			}
+
+			if (bSelect)
+				ImGui::SetItemDefaultFocus();
+		}
+
+		ImGui::EndCombo();
+	}
+	return;
+}
+
 
 void CBTAnimRoot::Combo(const _char* pName,uint32_t& iFlag)
 {
@@ -583,6 +619,37 @@ void CBTAnimRoot::Rotation(CComTransform* pTransform, CComCharacterMoveIntent* p
 
 
 }
+SOUND_ID CBTAnimRoot::Find_Sound(const MONSOUND& MonSound,  CGameObject* pObj, CComBeHavior* pBeHavior)
+{
+	auto* pBB = pBeHavior->Get_Blackboard();
+	if (nullptr == pBB) return 0;
+
+	auto* pSoundTable = pBB->Get_Value<std::unordered_map<_string, std::vector<_string>>>(PUBLIC_KEY::SOUNDTABLE);
+
+	auto& iter = *pSoundTable->find(MonSound.SoundKey);
+
+	if (iter == *pSoundTable->end() || iter.second.empty())
+		return  INVALID_SOUND_ID;
+
+	auto& SoundPaths = iter.second;
+
+	int32_t iSoundIndex = Engine::RandInt(0, static_cast<int32_t>(SoundPaths.size()) - 1);
+
+	SOUND_3D_DESC Sounds = MonSound.str3DSound;
+	Sounds.vPosition = pObj->GetTransform().GetPosition();
+
+	auto id = CGameInstance::Get().GetSoundManager()->Play3D(
+		SoundPaths[iSoundIndex],
+		Sounds,
+		MonSound.SoundPlay
+	);
+	if (id == INVALID_SOUND_ID)
+	{
+		MSG_BOX("INVALID_SOUND_ID");
+	}
+	return id;
+	
+}
 void CBTAnimRoot::AddSound()
 {
 	if (ImGui::Button("Add Table"))
@@ -600,51 +667,51 @@ void CBTAnimRoot::SoundTableValueList()
 {
 	if (auto pBT = Get_ComBT())
 	{
-		if (auto pSrc = static_cast<CMonster*>(pBT->GetGameObject()))
+		int32_t iPopIndex{ 0 };
+		for (auto iter = m_Sounds.begin(); iter != m_Sounds.end(); ++iter)
 		{
-			int32_t iPopIndex{ 0 };
-			for (auto iter = m_Sounds.begin(); iter != m_Sounds.end(); ++iter)
-			{
-				
-				ImGui::PushID(iPopIndex);
-
-				if (ImGui::Button((*iter).SoundKey == "" ? "NONAME" : (*iter).SoundKey.c_str()))
-				{
-					ImGui::OpenPopup("SoundPopup");
-				}
-
-				SoundPopUp((*iter),pSrc);
-
-				ImGui::SameLine();
-				if (ImGui::Button("Del"))
-				{
-					m_Sounds.erase(iter);
-					ImGui::PopID();
-					break;
-				}
-
-				ImGui::PopID();
-				++iPopIndex;
-			}
 			
+			ImGui::PushID(iPopIndex);
+
+			if (ImGui::Button((*iter).SoundKey == "" ? "NONAME" : (*iter).SoundKey.c_str()))
+			{
+				ImGui::OpenPopup("SoundPopup");
+			}
+
+			SoundPopUp((*iter),pBT);
+
+			ImGui::SameLine();
+			if (ImGui::Button("Del"))
+			{
+				m_Sounds.erase(iter);
+				ImGui::PopID();
+				break;
+			}
+
+			ImGui::PopID();
+			++iPopIndex;
 		}
+			
 	}
 
 
 }
 
-void CBTAnimRoot::SoundPopUp(MONSOUND& Sound, CMonster* Monster)
+void CBTAnimRoot::SoundPopUp(MONSOUND& Sound, CComBeHavior* pBeHavior)
 {
 	if (!ImGui::BeginPopup("SoundPopup"))
 		return;
 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 1,0,0,1 });
-	Monster->Get_SoundKey(Sound.SoundKey);
+	Get_SoundKey(Sound.SoundKey, pBeHavior);
 	DragFloat("Interval Ratio", Sound.fPlayRatio);
-	if (ImGui::Button("PlayOnlyOne : "))
+	if (ImGui::Button(Sound.bOnlyOne == true ? "PlayOnlyOne : TRUE" : "PlayOnlyOne : FALSE"))
 		Sound.bOnlyOne = !Sound.bOnlyOne;
-	ImGui::SameLine();
-	ImGui::Text(Sound.bOnlyOne == true ? "TRUE" : "FALSE");
 
+	if (ImGui::Button(Sound.bStopAbort == true ? "StopAbort : TRUE" : "StopAbort  : FALSE"))
+		Sound.bStopAbort= !Sound.bStopAbort;
+
+	if (ImGui::Button(Sound.bRunReset == true ? "RunReset : TRUE" : "RunReset  : FALSE"))
+		Sound.bRunReset = !Sound.bRunReset;
 
 	ImGui::Separator();
 	DragFloat("Sound_3D_DESC_fMinDist : ", Sound.str3DSound.fMinDistance);
@@ -685,7 +752,7 @@ void CBTAnimRoot::Play_Sound(_float fTimeDelta)
 
 	if (!pBT) return;
 
-	auto pOwner = static_cast<CMonster*>(pBT->GetGameObject());
+	auto pOwner = pBT->GetGameObject();
 
 	if (!pOwner) return;
 	auto pSoundManager = CGameInstance::Get().GetSoundManager();
@@ -702,10 +769,12 @@ void CBTAnimRoot::Play_Sound(_float fTimeDelta)
 		if (iter.fPlayRatio > 0.f && iter.fCurRatioTime < iter.fPlayRatio)
 			continue;
 		
-		iter.iSoundID  = pOwner->Play_Sound(iter);
+		iter.iSoundID  = Find_Sound(iter, pOwner,pBT);
 			if (iter.iSoundID != INVALID_SOUND_ID)
 			{
-				iter.bPlayed = true;
+				if(!iter.bRunReset)
+					iter.bPlayed = true;
+				
 				iter.fCurRatioTime = 0.f;
 			}
 	}

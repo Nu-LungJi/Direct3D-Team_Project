@@ -653,17 +653,17 @@ std::string CUIController::GetQuestDisplayText(QUEST_UI_GROUP group) const
 	switch (group)
 	{
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_01:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_TRIAL_02:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_02:
 		return "두 번째 전투 구역으로 이동하기";
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_03:
 		return "세 번째 전투 구역으로 이동하기";
 	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_PORTAL:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	default:
 		return {};
 	}
@@ -905,7 +905,7 @@ void CUIController::UpdateRookwoodQuestProgression()
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_02,
 		true,
-		"퍼시벌 랙햄의 시험을 완료하기",
+		"고대 유적 돌파하기",
 		true, false);
 }
 
@@ -991,14 +991,14 @@ void CUIController::UpdateRookwoodSecondBattleCompletion()
 
 	m_bRookwoodSecondBattleCompleted = true;
 	GET_SINGLE(UIManager)->CreateOrChangeQuest(
-		"퍼시벌 랙햄의 시험을 완료하기");
+		"고대 유적 돌파하기");
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_02,
 		false, {}, true, false);
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_03,
 		true,
-		"퍼시벌 랙햄의 시험을 완료하기",
+		"고대 유적 돌파하기",
 		true, false);
 }
 
@@ -1087,14 +1087,14 @@ void CUIController::UpdateRookwoodThirdBattleCompletion()
 
 	m_bRookwoodThirdBattleCompleted = true;
 	GET_SINGLE(UIManager)->CreateOrChangeQuest(
-		"퍼시벌 랙햄의 시험을 완료하기");
+		"고대 유적 돌파하기");
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_03,
 		false, {}, true, false);
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE,
 		true,
-		"퍼시벌 랙햄의 시험을 완료하기",
+		"고대 유적 돌파하기",
 		true, false);
 }
 

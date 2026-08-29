@@ -129,11 +129,11 @@ void CLevelLoading::Update(E::_float fTimeDelta)
 			m_bLoadUiResource = true;
 			break;
 		case LEVEL::HOGWART_WORLD:
-			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon1");
+			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon3");
 			m_bLoadUiResource = true;
 			break;
 		case LEVEL::LAST_BOSS_RANROK:
-			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon2");
+			GET_SINGLE(UIManager)->LoadPrefab("LoadingDungeon4");
 			m_bLoadUiResource = true;
 			break;
 		default:

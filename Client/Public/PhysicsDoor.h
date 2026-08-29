@@ -121,6 +121,7 @@ public:
 
 protected:
 	void OnRegisteredToManager() override;
+	void Free() override;
 
 private:
 	_float3 CalculateHingeWorldPosition(
@@ -137,6 +138,9 @@ private:
 	_bool SetReturnDrivePaused(_bool bPaused);
 	_bool SetPassageBarrierEnabled(_bool bEnabled);
 	void UpdatePassageState();
+	void UpdateDoorSoundState();
+	void PlayDoorOpenSound();
+	void StopDoorTransitionSound();
 	void DrawDebugDoor();
 
 public:
@@ -181,6 +185,8 @@ private:
 	_bool m_bPlayerInsidePassageTrigger{};
 	_bool m_bReturnDrivePaused{};
 	_bool m_bPassageBarrierEnabled{ true };
+	_bool m_bDoorSoundOpen{};
+	SOUND_ID m_iDoorSoundID{ INVALID_SOUND_ID };
 	_bool m_bDebugDraw{ true };
 };
 

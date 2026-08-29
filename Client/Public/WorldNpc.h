@@ -4,6 +4,8 @@
 
 
 NS_BEGIN(Client)
+class CNpcRagdollController;
+
 class CWorldNpc final : public CWorldAgent
 {
 public:
@@ -11,6 +13,7 @@ public:
 
 private:
 	CWorldNpc();
+	CWorldNpc(const CWorldNpc& Prototype);
 	~CWorldNpc() override;
 
 public:
@@ -30,10 +33,22 @@ public:
 	void						Set_Gravity(_bool bGravity);
 	_bool						Check_Table(PLAYER_SKILL_TYPE eType) override;
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
+	_bool						RequestRagdollActivation(
+		const _float3& vLinearVelocity = {},
+		const _float3& vAngularVelocityRadians = {});
+	_bool						ResetRagdoll();
+	_bool						IsRagdollActive() const;
+private:
+	void ReadySound() override;
+private:
+	UPtr<CNpcRagdollController>	m_pRagdollController{};
 
 public:
 	static E::UPtr<CWorldNpc> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
+
+private:
+	SOUND_ID					m_iSoundID{ INVALID_SOUND_ID };
 };
 
 NS_END

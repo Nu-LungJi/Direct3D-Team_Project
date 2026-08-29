@@ -84,8 +84,11 @@ void CTextUI::Update(_float fTimeDelta)
 	{
 		if (usePuzzleFillAndOutline)
 		{
-			const _vector fillColor = XMVectorSet(
-				1.f, 1.f, 1.f, m_UIINFO.Alpha);
+			// The black fill spritefont supplies the solid glyph interior. Honor
+			// the UI text color so callers can tint the fill (for example,
+			// critical damage) while keeping the outline layer black.
+			const _vector fillColor = XMVectorSetW(
+				color, m_UIINFO.Alpha);
 			const _vector outlineColor = XMVectorSet(
 				0.f, 0.f, 0.f, m_UIINFO.Alpha);
 			CGameInstance::Get().FontAddLateDraw(

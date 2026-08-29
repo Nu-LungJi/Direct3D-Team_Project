@@ -59,6 +59,12 @@ private:
 
 private:
 	_bool m_bCreatePlayScreenUI{ false };
+	_bool m_bInitialQuestShown{ false };
+	_bool m_bInitialQuestMinimapActivated{ false };
+	_float m_fInitialQuestDelay{};
+	_float m_fInitialQuestMinimapDelay{};
+	static constexpr _float INITIAL_QUEST_DELAY = 10.f;
+	static constexpr _float INITIAL_QUEST_APPEAR_DURATION = 0.3f;
 
 private:
 	void Free() override;

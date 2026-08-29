@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "ShopNpc.h"
+#include "NpcRagdollController.h"
 #include "ComAnimator.h"
 #include "ComCharacterMotor.h"
 #include "ComModelInstance.h"
@@ -9,13 +10,15 @@
 #include "ResModelBone.h"
 #include "UIManager.h"
 #include "AnimatedWorldObject.h"
-
+#include "BTRoot.h"
 NS_USING(Client)
 
 CShopNpc::CShopNpc(const CShopNpc& prototype)
 	: CInteractiveNpc(prototype)
 {
 }
+
+CShopNpc::~CShopNpc() = default;
 
 HRESULT CShopNpc::Initialize(void* pArg)
 {
@@ -96,20 +99,57 @@ HRESULT CShopNpc::Initialize(void* pArg)
 			}
 		}
 	}
+
+	m_pRagdollController = CNpcRagdollController::Create(*this);
+	if (!m_pRagdollController)
+		return E_FAIL;
+
 	return S_OK;
 }
 
 void CShopNpc::PriorityUpdate(E::_float fTimeDelta)
 {
+	const _bool bDeathRequested =
+		m_iHp <= 0 ||
+		(m_pBeHavior &&
+			m_pBeHavior->Check_Flag(ETOUI(CBTRoot::BTFLAG::DEAD)));
+	if (bDeathRequested && m_pRagdollController &&
+		!m_pRagdollController->IsTransitioning())
+	{
+		m_pRagdollController->RequestFromCurrentMotion();
+	}
+
+	if (m_pRagdollController &&
+		m_pRagdollController->PrePriorityUpdate())
+	{
+		return;
+	}
+	m_bRagdollGameplaySuspended = false;
+
 	__super::PriorityUpdate(fTimeDelta);
 	// 상점 NPC는 행동 트리 상태와 관계없이 바닥을 따라가야 한다.
 	if (m_pCharacterMotor)
 		m_pCharacterMotor->SetUseGravity(true);
 }
 
+void CShopNpc::FixedUpdate(E::_float fTimeDelta)
+{
+	if (m_pRagdollController &&
+		m_pRagdollController->PreFixedUpdate())
+	{
+		return;
+	}
+
+	__super::FixedUpdate(fTimeDelta);
+	if (m_pRagdollController)
+		m_pRagdollController->PostFixedUpdate();
+}
+
 void CShopNpc::UpdateGUI()
 {
 	__super::UpdateGUI();
+	if (m_pRagdollController)
+		m_pRagdollController->UpdateGUI();
 
 	if (!ImGui::CollapsingHeader(
 		"Shop NPC Animation Test", ImGuiTreeNodeFlags_DefaultOpen))
@@ -362,10 +402,22 @@ void CShopNpc::SpawnWandBoxAtFirstHandShot()
 
 void CShopNpc::Update(E::_float fTimeDelta)
 {
-	__super::Update(fTimeDelta);
+	if (!IsRagdollActive())
+		__super::Update(fTimeDelta);
+
+	GetTransform().Update();
+	if (m_pRagdollController)
+		m_pRagdollController->UpdatePoseBridge();
+	if (IsRagdollActive())
+	{
+		SuspendGameplayForRagdoll();
+		return;
+	}
+
 	auto* uiManager = GET_SINGLE(UIManager);
 	if (uiManager->ConsumeWandPurchaseCompleted())
 		m_bWandPurchaseDialoguePending = true;
+
 	if (!m_pModelAnimator)
 		return;
 
@@ -541,6 +593,132 @@ void CShopNpc::Update(E::_float fTimeDelta)
 	const _float weight = pause ? 0.03f : std::clamp(syllable * variation, 0.04f, 0.72f);
 	m_pModelAnimator->SetMorphPreview(m_iSpeechMouthMorph, weight);
 	m_bSpeechMorphApplied = true;
+}
+
+void CShopNpc::LateUpdate(E::_float fTimeDelta)
+{
+	if (!IsRagdollActive())
+	{
+		__super::LateUpdate(fTimeDelta);
+		return;
+	}
+
+	// CWorldAgent::LateUpdate의 CCT 발 위치 동기화를 건너뛰고,
+	// 랙돌이 기록한 본 행렬과 기존 오브젝트 월드를 그대로 렌더한다.
+	GetTransform().Update();
+	if (m_pComModelInstance &&
+		m_pModelAnimator &&
+		m_pComModelInstance->GetModel() &&
+		!m_pComModelInstance->GetModel()->GetAnimations().empty())
+	{
+		CGameInstance::Get().Add_Instance(
+			m_pComModelInstance,
+			m_pModelAnimator,
+			*GetTransform().GetCombinedWorldMatrix());
+	}
+}
+
+_bool CShopNpc::Check_Table(PLAYER_SKILL_TYPE eType)
+{
+	if (eType != PLAYER_SKILL_TYPE::ABRA || !CanBePlayerCombatTarget())
+		return false;
+
+	// 랙돌 준비가 성공한 뒤에만 사망 상태로 바꾼다. 준비 실패 상태에서
+	// HP부터 0이 되면 CWorldAgent의 일반 PendingDestroy 경로로 빠질 수 있다.
+	if (!m_pRagdollController ||
+		!m_pRagdollController->RequestFromCurrentMotion())
+	{
+		return false;
+	}
+
+	// 다음 포즈 브리지에서 현재 애니메이션 자세를 랙돌 시작 자세로 넘긴다.
+	m_iHp = 0;
+	return true;
+}
+
+_bool CShopNpc::CanBePlayerCombatTarget() const
+{
+	return m_iHp > 0 && !IsRagdollActive();
+}
+
+_bool CShopNpc::TryGetSkillTargetPosition(_float3& OutPosition) const
+{
+	if (m_pCharacterController)
+	{
+		// Transform은 발 위치이므로 CCT 중심을 사용해 빔이 몸통으로 향하게 한다.
+		OutPosition = m_pCharacterController->GetPosition();
+		return true;
+	}
+
+	OutPosition = GetTransform().GetPosition();
+	OutPosition.y += 1.2f;
+	return true;
+}
+
+void CShopNpc::SuspendGameplayForRagdoll()
+{
+	if (m_bRagdollGameplaySuspended)
+		return;
+
+	// 대화 카메라, 입력 잠금, 선택지와 상점 UI가 랙돌 뒤에 남지 않게 정리한다.
+	CancelDialogue();
+	StopDialogueCameraOnlyForTest();
+	auto* pUIManager = GET_SINGLE(UIManager);
+	if (pUIManager->IsWandShopOpen())
+		pUIManager->CloseWandShop();
+
+	if (m_bWandPresentationOwnsTimePause)
+	{
+		E::CGameInstance::Get().EndTimeScale(
+			"ShopNpc_WandBoxRevealPause", 0.15f);
+	}
+	m_bWandPresentationOwnsTimePause = false;
+	m_bWandBoxPresentationPending = false;
+	m_bWandBoxPresentationActive = false;
+	m_bWandBoxCameraStarted = false;
+	m_bWandShopOpenedByPresentation = false;
+	m_bWandPurchaseDialoguePending = false;
+	m_fWandBoxCameraElapsed = 0.f;
+	m_fWandBoxAnimationElapsed = 0.f;
+	m_bWandBoxAnimationPaused = false;
+	if (auto* pWandBox = CGameInstance::Get().
+		GetGameObjectByHandle(m_hWandBox))
+	{
+		pWandBox->SetPendingDestroy();
+	}
+	m_hWandBox = {};
+
+	if (m_pModelAnimator)
+	{
+		m_pModelAnimator->ClearMorphPreview();
+		if (m_bSpeechUpperAnimationPlaying)
+			m_pModelAnimator->Stop_UpperAnim(0.f);
+	}
+	m_bSpeechMorphApplied = false;
+	m_bSpeechUpperAnimationPlaying = false;
+	m_bRagdollGameplaySuspended = true;
+}
+
+_bool CShopNpc::RequestRagdollActivation(
+	const _float3& vLinearVelocity,
+	const _float3& vAngularVelocityRadians)
+{
+	return m_pRagdollController &&
+		m_pRagdollController->RequestActivation(
+			vLinearVelocity,
+			vAngularVelocityRadians);
+}
+
+_bool CShopNpc::ResetRagdoll()
+{
+	return m_pRagdollController &&
+		m_pRagdollController->Reset();
+}
+
+_bool CShopNpc::IsRagdollActive() const
+{
+	return m_pRagdollController &&
+		m_pRagdollController->IsActive();
 }
 
 E::UPtr<CShopNpc> CShopNpc::Create()

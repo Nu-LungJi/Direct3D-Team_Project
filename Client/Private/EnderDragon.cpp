@@ -161,7 +161,6 @@ HRESULT CEnderDragon::Initialize(void* pArg)
 	GetTransform().SetPosition(XMLoadFloat3(&MonDesc->vPos));
 	m_eMonType = MONSTER_TYPE::BOSS;
 	InitializeEffects();
-	ReadySound();
 	m_pComSphereCol->SetQueryEnabled(true);
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("chest_targetSocket");
 	m_iLeft1WingParticleBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("indexmiddlewing_03_left");
@@ -199,6 +198,15 @@ void CEnderDragon::ReadySound()
 	};
 	m_SoundTable["Ground"] = {
 	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragon_conjured_akb__MaybeGround.wav"
+	};
+	m_SoundTable["Dead1"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragons_akb__Dead1.wav"
+	};
+	m_SoundTable["Dead2"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragons_akb__Dead2.wav"
+	};
+	m_SoundTable["Dead3"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragon_conjured_akb__DieorHit.wav"
 	};
 }
 HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)

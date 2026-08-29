@@ -25,6 +25,7 @@ public:
 		CHandle ParentHandle{};
 		int32_t iBoneIndex{ -1 };
 		int32_t iSpawnBoneIndex{ -1 };
+		_bool bRestorePurchasedPlayerWand{ false };
 	}WEAPON_DESC;
 
 private:

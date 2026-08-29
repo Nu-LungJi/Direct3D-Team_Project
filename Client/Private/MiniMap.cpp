@@ -9,6 +9,9 @@
 #include "PlayerThirdPersonCamera.h"
 #include "TextureUI.h"
 #include "Monster.h"
+#include "BossTMB.h"
+#include "Troll.h"
+#include "EnderDragon.h"
 
 NS_USING(Client)
 
@@ -129,13 +132,6 @@ void CMiniMap::Update(E::_float fTimeDelta)
 	UpdateWorldMapOffset(pPlayer->GetTransform().GetPosition());
 	UpdateBattleZones(pPlayer->GetTransform().GetPosition());
 	UpdateMonsterMarkers(fTimeDelta, pPlayer);
-	// PlayerCamera는 플레이어 위치/방향 조회에 사용하고,
-	// 월드 좌표 투영은 실제 렌더링 중인 활성 카메라를 사용한다.
-	UpdateObjectiveMarkers(
-		fTimeDelta,
-		pPlayer->GetTransform().GetPosition(),
-		E::CGameInstance::Get().GetActiveCamera());
-
 	XMVECTOR cameraLook = XMVectorSetY(
 		pCamera->GetTransform().GetState(STATE::LOOK), 0.f);
 	XMVECTOR playerLook = XMVectorSetY(
@@ -158,6 +154,26 @@ void CMiniMap::LateUpdate(E::_float fTimeDelta)
 {
 	if (!m_isActive)
 		return;
+
+	// Player::UpdateFollow and moving NPC updates must finish before projecting
+	// world markers. Using the final camera/target transforms here prevents the
+	// one-frame mismatch that can look like an intermittent position jump.
+	auto* playerCamera = Cast<CPlayerThirdPersonCamera>(
+		E::CGameInstance::Get().GetActiveCamera("PlayerCamera"));
+	auto* player = playerCamera ?
+		E::CGameInstance::Get().GetGameObjectByHandle(
+			playerCamera->GetTargetHandle()) : nullptr;
+	if (player)
+	{
+		UpdateObjectiveMarkers(
+			fTimeDelta,
+			player->GetTransform().GetPosition(),
+			E::CGameInstance::Get().GetActiveCamera());
+	}
+	else
+	{
+		HideObjectiveMarkers();
+	}
 
 	E::CGameInstance::Get().AddRenderObject(E::RENDERGROUP::UI, this);
 	GetTransform().Update();
@@ -684,6 +700,14 @@ void CMiniMap::UpdateMonsterMarkers(
 			continue;
 		}
 
+		const _bool isBoss =
+			Cast<CBossTMB>(pMonster) != nullptr ||
+			Cast<CTroll>(pMonster) != nullptr ||
+			Cast<CEnderDragon>(pMonster) != nullptr;
+		pMarker->GetUIInfo().Restag = isBoss ?
+			"TEX_UI_T_Map_NamedEnemy" :
+			"TEX_UI_T_MiniMap_AuthorityFigure";
+
 		const _float3& monsterPos = pMonster->GetTransform().GetPosition();
 		const _float dx = monsterPos.x - playerPos.x;
 		const _float dz = monsterPos.z - playerPos.z;
@@ -700,16 +724,27 @@ void CMiniMap::UpdateMonsterMarkers(
 			-dz * pixelPerWorldUnit
 		});
 
-		XMVECTOR monsterLook = XMVectorSetY(
-			pMonster->GetTransform().GetState(STATE::LOOK), 0.f);
-		if (XMVectorGetX(XMVector3LengthSq(monsterLook)) > 0.000001f)
+		if (isBoss)
 		{
-			monsterLook = XMVector3Normalize(monsterLook);
-			pMarker->SetLocalRot(XMConvertToDegrees(-atan2f(
-				XMVectorGetX(monsterLook),
-				XMVectorGetZ(monsterLook))));
+			// Boss markers represent position only. Counter-rotate the minimap
+			// parent so the named-enemy icon always stays upright on screen.
+			pMarker->SetLocalRot(-m_UIINFO.Rot);
+			pMarker->GetUIInfo().Rot = 0.f;
+		}
+		else
+		{
+			XMVECTOR monsterLook = XMVectorSetY(
+				pMonster->GetTransform().GetState(STATE::LOOK), 0.f);
+			if (XMVectorGetX(XMVector3LengthSq(monsterLook)) > 0.000001f)
+			{
+				monsterLook = XMVector3Normalize(monsterLook);
+				pMarker->SetLocalRot(XMConvertToDegrees(-atan2f(
+					XMVectorGetX(monsterLook),
+					XMVectorGetZ(monsterLook))));
+			}
 		}
 
+		pMarker->CalcUICoord();
 		SetMonsterMarkerVisible(pMarker, true);
 	}
 }
@@ -826,10 +861,19 @@ void CMiniMap::UpdateObjectiveMarkers(
 				phase, isSelected, fTimeDelta);
 
 			_bool showScreenMarker = isSelected && phase.ShowScreenMarker;
+			const _float distance = sqrtf(distanceSq);
+			if (showScreenMarker &&
+				phase.ScreenMarkerShowWithinDistance > 0.f)
+			{
+				const _float showThreshold =
+					phase.ScreenMarkerShowWithinDistance +
+					(phase.ScreenMarkerDesiredVisible ?
+						std::max(0.f, phase.DistanceHysteresis) : 0.f);
+				showScreenMarker = distance < showThreshold;
+			}
 			if (showScreenMarker &&
 				phase.ScreenMarkerHideWithinDistance > 0.f)
 			{
-				const _float distance = sqrtf(distanceSq);
 				const _float showThreshold =
 					phase.ScreenMarkerHideWithinDistance +
 					(phase.ScreenMarkerDesiredVisible ? 0.f :
@@ -1375,7 +1419,13 @@ void CMiniMap::InitHogwartObjectives()
 		.PrototypeTag = "Prototype_GameObject_TextureUI",
 		.IconSize = 24.f,
 		.DistanceHysteresis = 1.f,
-		.ShowScreenMarker = false
+		.ShowScreenMarker = true,
+		.ScreenMarkerShowWithinDistance = 100.f,
+		.ScreenMarkerHideWithinDistance = 10.f,
+		.ScreenMarkerSize = 30.f,
+		.ScreenMarkerWorldOffset = { 0.f, 3.4f, 0.f },
+		.ScreenMarkerWeight = 100,
+		.ScreenMarkerOffscreenAlpha = 0.f
 	});
 
 	AddObjective(std::move(shopObjective));
