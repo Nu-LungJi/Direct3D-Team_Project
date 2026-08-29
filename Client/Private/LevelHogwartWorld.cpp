@@ -198,9 +198,6 @@ HRESULT CLevelHogwartWorld::Initialize()
 		return E_FAIL;
 	}
 
-	if (FAILED(SpawnPropBarrelBlock()))
-		return E_FAIL;
-
 	{
 		// 상점 NPC
 		CShopNpc::DESC Desc{};
@@ -1022,6 +1019,9 @@ HRESULT CLevelHogwartWorld::SpawnPlayerCape(CHandle hPlayer)
 
 HRESULT CLevelHogwartWorld::SpawnPropBarrelBlock()
 {
+	if (m_bPropBarrelBlockSpawned)
+		return S_OK;
+
 	// 지정한 두 좌표를 바닥 줄의 정확한 양 끝점으로 사용한다.
 	const _float3 vBaseStart{ 270.173f, 39.265f, 121.917f };
 	const _float3 vBaseEnd{ 280.773f, 39.376f, 134.895f };
@@ -1033,6 +1033,8 @@ HRESULT CLevelHogwartWorld::SpawnPropBarrelBlock()
 	constexpr uint32_t iColumnCount = 5u;
 	constexpr uint32_t iRowCount = 3u;
 
+	std::vector<CHandle> SpawnedHandles{};
+	SpawnedHandles.reserve(iColumnCount * iRowCount);
 	uint32_t iBarrelIndex{};
 	for (uint32_t iRow = 0; iRow < iRowCount; ++iRow)
 	{
@@ -1058,17 +1060,21 @@ HRESULT CLevelHogwartWorld::SpawnPropBarrelBlock()
 				vBaseStart.z + (vBaseEnd.z - vBaseStart.z) * fColumnRatio
 			};
 
-			if (!CGameInstance::Get().AddGameObjectToLayer(
+			const auto hBarrel = CGameInstance::Get().AddGameObjectToLayer(
 				"PERMANENT",
 				PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
 				"PropBarrel",
-				&Desc))
+				&Desc);
+			if (!hBarrel)
 			{
+				DespawnRuntimeObjects(SpawnedHandles);
 				return E_FAIL;
 			}
+			SpawnedHandles.push_back(*hBarrel);
 		}
 	}
 
+	m_bPropBarrelBlockSpawned = true;
 	return S_OK;
 }
 
@@ -1258,12 +1264,17 @@ HRESULT CLevelHogwartWorld::SpawnMonster(std::optional<CHandle> hPlayer)
 	CMon_Spawner::MON_SPAWNER_DESC MonS{};
 	MonS.sObjectTag = "MonSpawn";
 	MonS.handle = hPlayer.value();
+	MonS.OnBeforeTrollSpawn = [this]()
+	{
+		return SpawnPropBarrelBlock();
+	};
 	if (!CGameInstance::Get().AddGameObjectToLayer(
 			LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_MonSpawner, "00.MonSpawn", &MonS))
 	{
 		return E_FAIL;
 	}
 
+	return S_OK;
 }
 HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 {
