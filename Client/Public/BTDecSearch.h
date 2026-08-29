@@ -26,7 +26,7 @@ private:
 	void						OnExit(EVALUATE eResult) override;
 private:
 	_float				m_fDis{10.f};
-	_bool				m_bTrue{ false }, m_bRunning{ false };
+	_bool				m_bTrue{ false }, m_bRunning{ false }, m_bInvert{ false };
 	EVALUATE			m_PreEval{ EVALUATE::SUCCESS };
 public:
 	static UPtr<CBTDecSearch> Create();

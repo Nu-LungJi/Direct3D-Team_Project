@@ -58,6 +58,7 @@ HRESULT CMon_Spawner::Initialize(void* pArg)
 	}
 	auto Desc = static_cast<MON_SPAWNER_DESC*>(pArg);
 	m_LeveTag = Desc->LevelTag;
+	m_OnBeforeTrollSpawn = Desc->OnBeforeTrollSpawn;
 	if (Desc->LevelTag != "TERRAIN")
 	{
 		m_SpawnPos.clear();
@@ -113,6 +114,22 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 	{
 		if (m_Monsters.empty())
 		{
+			// 트롤은 Initialize -> Spawn State::Enter에서 즉시 컷신을 재생한다.
+			// 배럴을 먼저 등록하고 한 프레임을 넘겨 첫 컷신 프레임부터
+			// 렌더/물리 씬에 확실히 존재하도록 한다.
+			if (!m_bTrollSpawnPrepared)
+			{
+				if (m_OnBeforeTrollSpawn && FAILED(m_OnBeforeTrollSpawn()))
+				{
+					DEBUG_LOG("[MonSpawner] Failed to prepare the troll encounter.\n");
+					return;
+				}
+
+				m_OnBeforeTrollSpawn = {};
+				m_bTrollSpawnPrepared = true;
+				return;
+			}
+
 			CTroll::TROLL_DESC Troll{};
 			Troll.sObjectTag = "Troll";
 			Troll.TargetHandle = m_Handle;
@@ -124,9 +141,18 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 			Troll.resBeHaviorMajor = "BTJSON";
 			Troll.resBeHaviorMinor = "TROLL";
 			Troll.MonType = MONSTER_TYPE::BOSS;
-			CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, "02.Troll", &Troll);
-			
-			m_bTroll = true;
+			if (CGameInstance::Get().AddGameObjectToLayer(
+				LEVEL::HOGWART_WORLD,
+				PROTO_GAMEOBJECT::Prototype_GameObject_Troll,
+				"02.Troll",
+				&Troll))
+			{
+				m_bTroll = true;
+			}
+			else
+			{
+				DEBUG_LOG("[MonSpawner] Failed to spawn the troll.\n");
+			}
 		}
 		for (auto iter = m_Monsters.begin(); iter != m_Monsters.end();)
 		{

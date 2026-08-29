@@ -241,7 +241,7 @@ void UIManager::UpdateWandShopWorldBillboard()
 		m_WandShopPanelWorld, true, false);
 }
 
-void UIManager::AssioMiniGameStart()
+void UIManager::AssioMiniGameStart(_bool bPlayerStarts)
 {
 	ClearAssioMiniGameUI();
 	// 미니게임 UI를 만들기 전에 기존 UI만 복원 목록에 저장해 숨긴다.
@@ -347,14 +347,35 @@ void UIManager::AssioMiniGameStart()
 	m_fAssioActiveFrameAlpha = playerFrame->GetAlphaRatio();
 	m_fAssioInactiveFrameAlpha = npcFrame->GetAlphaRatio();
 	m_fAssioTurnTitleBaseAlpha = turnTitle->GetAlpha();
-	m_bAssioCurrentTurnIsPlayer =
-		playerFrame->GetAlpha() >= npcFrame->GetAlpha();
+	m_bAssioCurrentTurnIsPlayer = bPlayerStarts;
 	m_bAssioTurnTitleFadeInStarted = false;
 	m_bAssioTurnTitleWasAlreadyHidden = false;
+	auto ApplyInitialTurnLayout = [this](
+		CUIObject* root, CUIObject* frame, _bool bActive)
+	{
+		root->SetPos(bActive ?
+			m_AssioActiveTurnPosition : m_AssioInactiveTurnPosition);
+		root->SetScaleRatio(bActive ?
+			m_fAssioActiveTurnScale : m_fAssioInactiveTurnScale);
+		root->SetAlpha(bActive ?
+			m_fAssioActiveTurnAlpha : m_fAssioInactiveTurnAlpha);
+		frame->SetAlphaRatio(bActive ?
+			m_fAssioActiveFrameAlpha : m_fAssioInactiveFrameAlpha);
+		root->CalcUICoord();
+	};
+	ApplyInitialTurnLayout(playerRoot, playerFrame, bPlayerStarts);
+	ApplyInitialTurnLayout(npcRoot, npcFrame, !bPlayerStarts);
+	if (auto* title = dynamic_cast<CTextBox*>(turnTitle))
+	{
+		title->SetwText(bPlayerStarts ?
+			L"이솝 샤프의 턴" : L"저스티스 훈의 턴");
+	}
 
 	m_iAssioPlayerScore = 0;
 	m_iAssioNpcScore = 0;
 	m_iAssioPendingScore = 0;
+	m_iAssioPendingPlayerScore = 0;
+	m_iAssioPendingNpcScore = 0;
 	m_fAssioScorePhaseElapsed = 0.f;
 	m_bAssioFinalScore = false;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
@@ -412,29 +433,45 @@ void UIManager::TurnTitleFadeOut(float playtime)
 	}
 }
 
-void UIManager::AddScore(int score, _bool isFinalScore)
+_bool UIManager::AddScore(
+	int iTurnScore,
+	int iPlayerTotalScore,
+	int iNpcTotalScore,
+	_bool bPlayerTurn,
+	_bool bFinalScore)
 {
 	if (!m_bAssioMiniGameActive ||
 		m_eAssioScorePhase != ASSIO_SCORE_PHASE::NONE ||
 		!m_hAssioCenterScore || !m_hAssioCenterScoreText)
 	{
-		return;
+		return false;
 	}
-	m_iAssioPendingScore = score;
+	m_iAssioPendingScore = std::max(0, iTurnScore);
+	m_iAssioPendingPlayerScore = std::max(0, iPlayerTotalScore);
+	m_iAssioPendingNpcScore = std::max(0, iNpcTotalScore);
+	m_bAssioCurrentTurnIsPlayer = bPlayerTurn;
 	if (!ResolveAssioCurrentTurn())
 	{
 		m_iAssioPendingScore = 0;
-		return;
+		m_iAssioPendingPlayerScore = 0;
+		m_iAssioPendingNpcScore = 0;
+		return false;
 	}
 
 	auto* center = GetSafeUI(*m_hAssioCenterScore);
 	auto* centerText = dynamic_cast<CTextBox*>(
 		GetSafeUI(*m_hAssioCenterScoreText));
 	if (!center || !centerText)
-		return;
-	m_bAssioFinalScore = isFinalScore;
+	{
+		m_iAssioPendingScore = 0;
+		m_iAssioPendingPlayerScore = 0;
+		m_iAssioPendingNpcScore = 0;
+		m_hAssioTargetScoreText.reset();
+		return false;
+	}
+	m_bAssioFinalScore = bFinalScore;
 
-	centerText->SetwText(std::to_wstring(score));
+	centerText->SetwText(std::to_wstring(m_iAssioPendingScore));
 	center->SetPos(m_AssioCenterScoreBasePosition);
 	center->SetScaleRatio(0.f);
 	center->SetAlpha(0.f);
@@ -443,6 +480,7 @@ void UIManager::AddScore(int score, _bool isFinalScore)
 	m_AssioCenterScoreMoveStart = m_AssioCenterScoreBasePosition;
 	m_fAssioScorePhaseElapsed = 0.f;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::APPEAR;
+	return true;
 }
 
 _bool UIManager::ResolveAssioCurrentTurn()
@@ -471,12 +509,8 @@ _bool UIManager::ResolveAssioCurrentTurn()
 
 	if (auto* target = GetSafeUI(*m_hAssioTargetScoreText))
 	{
-		const int currentScore = targetPlayer ?
-			m_iAssioPlayerScore : m_iAssioNpcScore;
-		const int64_t previewValue = static_cast<int64_t>(currentScore) +
-			static_cast<int64_t>(m_iAssioPendingScore);
-		const int previewScore = static_cast<int>(std::clamp<int64_t>(
-			previewValue, 0, std::numeric_limits<int>::max()));
+		const int previewScore = targetPlayer ?
+			m_iAssioPendingPlayerScore : m_iAssioPendingNpcScore;
 		const std::wstring previewText = std::to_wstring(previewScore);
 		const _float textScale = target->GetUIInfo().SizeX *
 			target->GetScaleRatio();
@@ -699,17 +733,18 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 	if (ratio < 1.f)
 		return;
 
-	int& currentScore = m_bAssioTargetIsPlayer ?
-		m_iAssioPlayerScore : m_iAssioNpcScore;
-	const int64_t updatedScore = static_cast<int64_t>(currentScore) +
-		static_cast<int64_t>(m_iAssioPendingScore);
-	currentScore = static_cast<int>(std::clamp<int64_t>(
-		updatedScore, 0, std::numeric_limits<int>::max()));
-	if (auto* text = dynamic_cast<CTextBox*>(targetScore))
-		text->SetwText(std::to_wstring(currentScore));
-	PlayAssioScoreImpactEffect();
-
-	// TODO: UpdateAssioFinalScore(...); // 최종 점수갱신
+	m_iAssioPlayerScore = m_iAssioPendingPlayerScore;
+	m_iAssioNpcScore = m_iAssioPendingNpcScore;
+	if (auto* text = dynamic_cast<CTextBox*>(
+		GetSafeUI(*m_hAssioPlayerScoreText)))
+	{
+		text->SetwText(std::to_wstring(m_iAssioPlayerScore));
+	}
+	if (auto* text = dynamic_cast<CTextBox*>(
+		GetSafeUI(*m_hAssioNpcScoreText)))
+	{
+		text->SetwText(std::to_wstring(m_iAssioNpcScore));
+	}
 
 	center->SetAlpha(0.f);
 	center->SetScaleRatio(0.f);
@@ -987,6 +1022,8 @@ void UIManager::ClearAssioGameplayHandles()
 	m_hAssioTurnTitle.reset();
 	m_hAssioTargetScoreText.reset();
 	m_iAssioPendingScore = 0;
+	m_iAssioPendingPlayerScore = 0;
+	m_iAssioPendingNpcScore = 0;
 	m_bAssioTurnTitleFadeInStarted = false;
 	m_bAssioTurnTitleWasAlreadyHidden = false;
 }

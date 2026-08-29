@@ -101,9 +101,14 @@ public:
 	}
 
 	/********소환사의 코트 미니게임**********/
-	void AssioMiniGameStart();
+	void AssioMiniGameStart(_bool bPlayerStarts = true);
 	void AssioMiniGameFinish();
-	void AddScore(int score, _bool isFinalScore = false);
+	_bool AddScore(
+		int iTurnScore,
+		int iPlayerTotalScore,
+		int iNpcTotalScore,
+		_bool bPlayerTurn,
+		_bool bFinalScore = false);
 	void TurnTitleFadeOut(float playtime = 0.3f);
 	_bool IsAssioMiniGameActive() const { return m_bAssioMiniGameActive; }
 	_bool CanAddAssioScore() const
@@ -273,6 +278,8 @@ private:
 	int m_iAssioPlayerScore{};
 	int m_iAssioNpcScore{};
 	int m_iAssioPendingScore{};
+	int m_iAssioPendingPlayerScore{};
+	int m_iAssioPendingNpcScore{};
 	_bool m_bAssioTargetIsPlayer{};
 	_bool m_bAssioCurrentTurnIsPlayer{ true };
 	_bool m_bAssioTurnTitleFadeInStarted{};
