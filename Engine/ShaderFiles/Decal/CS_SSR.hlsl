@@ -221,7 +221,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID) {
 	float3 FinalColor = lerp(SceneColor.rgb, RayHitColor * SSR_COLOR_GAIN, SSRAmount);
 	
 	FinalColor += PlanarEffectColor * PlanarAmount;
-
+   
 	OUTPUT[ID.xy] = float4(FinalColor * 0.7f, SceneColor.a);
 	return; 
 }
