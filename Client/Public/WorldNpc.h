@@ -38,7 +38,8 @@ public:
 		const _float3& vAngularVelocityRadians = {});
 	_bool						ResetRagdoll();
 	_bool						IsRagdollActive() const;
-
+private:
+	void ReadySound() override;
 private:
 	UPtr<CNpcRagdollController>	m_pRagdollController{};
 

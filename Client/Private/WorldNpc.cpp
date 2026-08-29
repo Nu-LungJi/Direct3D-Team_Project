@@ -63,6 +63,7 @@ HRESULT CWorldNpc::InitializePrototype(void* pArg)
 HRESULT CWorldNpc::Initialize(void* pArg)
 {
 	auto NpcDesc = static_cast<WORLD_AGENT_DESC*>(pArg);
+	ReadySound();
 	if (FAILED(__super::Initialize(pArg)))
 	{
 		return E_FAIL;
@@ -129,21 +130,13 @@ HRESULT CWorldNpc::Initialize(void* pArg)
 
 	return S_OK;
 }
+void CWorldNpc::ReadySound()
+{
+	m_SoundTable["WatchOut"] = { "./Resources/SampleClient/Sound/NPC/watch-out-voice-352456.mp3",
+	 "./Resources/SampleClient/Sound/NPC/HitHuman.wav" };
+}
 HRESULT CWorldNpc::Ready_Fsm(const _string& LevelTag)
 {
-	//CMon_State::DESC Desc{};
-	//if (FAILED(AddComponentFromProto(LevelTag, "Prototype_Component_Mon_FSM", "Mon_Fsm", &Desc, &m_pFsm))) return E_FAIL;
-	//
-	//
-	//if (false == m_pFsm->Add_State(MON_STATE::SPAWN, CWorldNpc_Spawn::Create(LevelTag))) return E_FAIL;
-	//
-	//if (false == m_pFsm->Add_State(MON_STATE::COMBAT, CWorldNpc_Combat::Create(LevelTag))) return E_FAIL;
-	//
-	//if (false == m_pFsm->Add_State(MON_STATE::HIT, CWorldNpc_Hit::Create(LevelTag, this))) return E_FAIL;
-	//if (false == m_pFsm->Add_State(MON_STATE::DEAD, CWorldNpc_Dead::Create())) return E_FAIL;
-	//
-	//if (false == m_pFsm->Initialize_State(MON_STATE::SPAWN)) return E_FAIL;
-
 
 	return S_OK;
 }

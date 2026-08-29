@@ -873,7 +873,11 @@ HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 		"StreetRat_Animated_Blender_4_3", "StreetRaven_Animated_Blender_4_3",
 		"StreetSquirrel_Animated_Blender_4_3", "TeaShopTeaCup_Animated_Blender_4_3",
 		"ThestralStreetCarriage_Animated_Blender_4_3", "VillageGiantToad_Animated_Blender_4_3",
-		"WizardingDeck_Animated_Blender_4_3"
+		"WizardingDeck_Animated_Blender_4_3",
+		"BlueButterfly", "GlowingLumosMoth", "LeapingMushroom",
+		"OrangeButterfly", "PlantParty_Plant_01", "PlantParty_Plant_02",
+		"PlantParty_Plant_03", "PlantParty_Plant_04", "PlantParty_Plant_05",
+		"VenomousTentaculaBush", "VenomousTentaculaFlower"
 	};
 	for (const char* modelName : Blender43Skeletons)
 	{

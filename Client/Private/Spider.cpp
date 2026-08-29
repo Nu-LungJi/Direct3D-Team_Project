@@ -270,6 +270,11 @@ const _float CSpider::Get_Damage()
 {
 	return 5.f;
 }
+void CSpider::ReadySound()
+{
+	m_SoundTable["Attack"] = {"./Resources/SampleClient/Sound/Spider/spider_short_atk_tell.wav"};
+	m_SoundTable["Dead"] = { "./Resources/SampleClient/Sound/Spider/WoodLouse_spider_web_screech.wav" };
+}
 void CSpider::Update_BBToFsm()
 {
 	auto pBB = Get_BlackBoard();
