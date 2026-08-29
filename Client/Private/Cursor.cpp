@@ -70,7 +70,9 @@ void CCursor::Update(E::_float fTimeDelta)
 
 	CUIObject::Update(fTimeDelta);
 
-	m_fAccTime += fTimeDelta;
+	m_fAccTime = std::fmod(
+		m_fAccTime + std::max(0.f, fTimeDelta),
+		4096.f);
 
 	m_UIINFO.fX = mousePos.x;
 	m_UIINFO.fY = mousePos.y;
@@ -156,7 +158,49 @@ HRESULT CCursor::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx)
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
-	// Draw the small aim reticle over CursorRings as one cursor visual.
+	// Draw the fixed center reticle with the ordinary texture shader. The ring
+	// shader rotates red/blue channels and must not be reused for this image.
+	const auto& aimPS = E::CGameInstance::Get().GetResourceFirst<
+		E::CResPixelShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"PS_QuadTexUI");
+	pContext->PSSetShader(aimPS->GetPixelShader().Get(), nullptr, 0);
+
+	// Keep the reticle centered while drawing it smaller than the outer rings.
+	{
+		constexpr _float AIM_RETICLE_SCALE = 0.55f;
+		auto pCbPerObject = E::CGameInstance::Get().GetResourceFirst<
+			E::CResCBuffer>(
+				TAG_RES_GRP_PERMANENT_BUFFER,
+				"CB_PerObject");
+		D3D11_MAPPED_SUBRESOURCE mappedSubResource{};
+		if (SUCCEEDED(pContext->Map(
+			pCbPerObject->GetCBuffer().Get(),
+			0,
+			D3D11_MAP_WRITE_DISCARD,
+			0,
+			&mappedSubResource)))
+		{
+			E::CB_PER_OBJECT cbPerObject{};
+			const _matrix scaledWorld = XMMatrixScaling(
+				AIM_RETICLE_SCALE,
+				AIM_RETICLE_SCALE,
+				1.f) * GetTransform().GetLoadedWorldMatrix();
+			XMStoreFloat4x4(
+				&cbPerObject.matWVP,
+				scaledWorld * ctx.matProj);
+			memcpy(
+				mappedSubResource.pData,
+				&cbPerObject,
+				sizeof(cbPerObject));
+			pContext->Unmap(pCbPerObject->GetCBuffer().Get(), 0);
+		}
+		pContext->VSSetConstantBuffers(
+			0,
+			1,
+			pCbPerObject->GetCBuffer().GetAddressOf());
+	}
+
 	{
 		const auto& aimReticle = E::CGameInstance::GetConst().
 			GetResourceFirst<E::CResTexture2D>(

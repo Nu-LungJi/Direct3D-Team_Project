@@ -72,6 +72,7 @@ public:
 private:
 	_bool m_bCreatePlayScreenUI = false;
 	_bool m_bPropBarrelBlockSpawned{};
+	_bool m_bQuestCreated = false;
 
 	CHandle m_hDebugPlayer{};
 	std::optional<CHandle> m_hPendingSummonersCourtPlayer{};

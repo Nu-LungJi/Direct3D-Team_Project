@@ -135,6 +135,11 @@ void CEffectUI::LateUpdate(E::_float fTimeDelta)
 		m_VSShaderTag = "VS_TwoTone";
 		m_PSShaderTag = "PS_TwoTone";
 	}
+	else if (m_UIINFO.Restag == "TEX_VFX_T_SmokeMedium_8x8_D")
+	{
+		m_VSShaderTag = "VS_QuadTexFlipBook";
+		m_PSShaderTag = "PS_ScoreImpactSmoke";
+	}
 	else if (m_UIINFO.Restag == "TEX_UI_T_PointFlame")
 	{
 		m_VSShaderTag = "VS_SpellMiniGameFlame";

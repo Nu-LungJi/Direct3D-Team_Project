@@ -69,6 +69,7 @@ struct MINIMAP_OBJECTIVE_INFO
 	_bool Enabled{ true };
 	std::string Key;
 	_float3 WorldPosition{};
+	std::optional<CHandle> TargetHandle{};
 	uint32_t LevelID{ static_cast<uint32_t>(-1) };
 	OBJECTIVE_ACTIVE_RULE ActiveRule{ OBJECTIVE_ACTIVE_RULE::MANUAL };
 	_float AutoActivateDistance{};
