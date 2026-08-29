@@ -12,7 +12,7 @@ NS_USING(Client)
 namespace
 {
 	constexpr const _char* WAND2_MODEL_PATH =
-		"./Resources/SampleClient/Models/Skeleton/Wand/SK_Wand2.bin";
+		"./Resources/SampleClient/Models/Skeleton/Wand2/SK_Wand2.bin";
 	constexpr const _char* WAND2_RESOURCE_TAG =
 		"PLAYER_WEAPON_SKELETON_RESOURCE_WAND2";
 	constexpr _float WAND_SMOKE_SPAWN_INTERVAL = 0.2f;
@@ -195,10 +195,8 @@ void CPlayer_Weapon::PriorityUpdate(E::_float fTimeDelta)
 
 void CPlayer_Weapon::Update(E::_float fTimeDelta)
 {
-#ifdef _DEBUG
 	if (CGameInstance::Get().KeyDown(DIK_I))
 		EquipWand2();
-#endif
 }
 
 void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)
