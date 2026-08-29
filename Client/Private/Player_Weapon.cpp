@@ -7,6 +7,7 @@
 #include "ComModelInstance.h"
 #include "ResModelBone.h"
 #include "Trail_CPU.h"
+#include "UIManager.h"
 NS_USING(Client)
 
 namespace
@@ -104,6 +105,15 @@ HRESULT CPlayer_Weapon::Initialize(void* pArg)
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
 	GetTransform().SetScale(_float3{ 4.f,4.f,4.f });
 	GetTransform().SetRotationEuler({ -90.f, 0.f, 0.f });
+
+	// 레벨 이동으로 플레이어 무기가 다시 생성되어도 구매한 완드를 복원한다.
+	// 같은 클래스를 사용하는 NPC 무기는 descriptor 플래그가 false라 영향을 받지 않는다.
+	if (pDesc->bRestorePurchasedPlayerWand &&
+		GET_SINGLE(UIManager)->IsPurchasedWandEquipped())
+	{
+		if (FAILED(EquipWand2()))
+			return E_FAIL;
+	}
 
 	//test = CGameInstance::Get().Parse_Command("FireSparkQueue.json");
 

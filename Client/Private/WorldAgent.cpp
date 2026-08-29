@@ -693,48 +693,53 @@ int32_t CWorldAgent::Find_AnimIndex(const _string& AnimName)
 }
 void CWorldAgent::Damaged(PLAYER_SKILL_TYPE eType)
 {
+	int32_t baseDamage = 0;
 	switch (eType)
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
-		GET_SINGLE(UIManager)->CreateDamageFont(5, GetHandle(), false);
-		m_iHp -= 5.f;
+		baseDamage = 5;
 		break;
 	case PLAYER_SKILL_TYPE::ACCIO:
-		GET_SINGLE(UIManager)->CreateDamageFont(10, GetHandle(), true);
-		m_iHp -= 10.f;
+		baseDamage = 10;
 		break;
 	case PLAYER_SKILL_TYPE::DEPULSO:
-		GET_SINGLE(UIManager)->CreateDamageFont(15, GetHandle(), true);
-		m_iHp -= 15.f;
+		baseDamage = 15;
 		break;
 	case PLAYER_SKILL_TYPE::DESCENDO:
-		GET_SINGLE(UIManager)->CreateDamageFont(20, GetHandle(), true);
-		m_iHp -= 20.f;
+		baseDamage = 20;
 		break;
 	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
-		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
-		m_iHp -= 25.f;
+		baseDamage = 25;
 		break;
 	case PLAYER_SKILL_TYPE::PROTEGO:
-		m_iHp -= 8.f;
+		baseDamage = 8;
 		break;
 	case PLAYER_SKILL_TYPE::DESTORY:
-		m_iHp -= 25.f;
+		baseDamage = 25;
 		break;
 	case PLAYER_SKILL_TYPE::ABRA:
-		m_iHp -= 50.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
+		baseDamage = 50;
 		break;
 	case PLAYER_SKILL_TYPE::CONFRIGO:
-		m_iHp -= 18.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(18, GetHandle(), true);
+		baseDamage = 18;
 		break;
 	case PLAYER_SKILL_TYPE::BOMBARDA:
-		m_iHp -= 18.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(28, GetHandle(), true);
+		baseDamage = 18;
 		break;
-
+	default:
+		break;
 	}
+
+	if (baseDamage <= 0)
+		return;
+
+	const _bool isCritical = RandInt(0, 1) == 1;
+	const int32_t finalDamage = isCritical ?
+		static_cast<int32_t>(std::lround(baseDamage * 1.5f)) :
+		baseDamage;
+	GET_SINGLE(UIManager)->CreateDamageFont(
+		static_cast<uint32_t>(finalDamage), GetHandle(), isCritical);
+	m_iHp -= finalDamage;
 }
 
 

@@ -29,6 +29,7 @@ private:
 	void CompletePurchase(UIManager& manager);
 	void PlayPageFadeIn(const std::vector<CHandle>& roots) const;
 	void RefreshPurchaseCoinText();
+	void SetPurchasePromptVisible(_bool visible);
 	_bool HasLivePageRoots() const;
 
 private:

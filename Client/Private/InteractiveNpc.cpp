@@ -153,7 +153,9 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 		m_eState == STATE::TALKING &&
 		m_eConversationPhase == CONVERSATION_PHASE::TALKING;
 
-	SyncInteractionPrompt(canStartDialogue || canAdvanceDialogue);
+	// 대화 중에는 진행 입력을 계속 받되 F 액티브 버튼은 화면에
+	// 다시 생성하지 않는다. 시작 가능한 상태에서만 프롬프트를 표시한다.
+	SyncInteractionPrompt(canStartDialogue);
 
 	if ((canStartDialogue || canAdvanceDialogue) &&
 		E::CGameInstance::Get().KeyDown(DIK_F))

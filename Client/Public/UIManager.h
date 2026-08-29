@@ -7,8 +7,6 @@
 
 NS_BEGIN(Client)
 
-static constexpr bool isPurchaseWand{ false };
-
 static Engine::CUIObject* GetSafeUI(CHandle handle)
 {
 	return E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(handle);
@@ -58,6 +56,10 @@ public:
 	void SaveSpellSlot(uint32_t slotNumber, uint32_t spellType);
 	_bool HasInitializedSpellSlots() const { return m_bSpellSlotsInitialized; }
 
+	/********구매한 완드 영속 상태********/
+	void SetPurchasedWandEquipped(_bool equipped) { m_bPurchasedWandEquipped = equipped; }
+	_bool IsPurchasedWandEquipped() const { return m_bPurchasedWandEquipped; }
+
 	/********데미지 폰트***********/
 	void CreateDamageFont(uint32_t damage, CHandle targetMonster,_bool isCritical = false);
 
@@ -79,6 +81,9 @@ public:
 	/********퀘스트 안내***********/
 	// Quest UI가 없으면 생성하고, 이미 표시 중이면 텍스트 전환 모션으로 교체한다.
 	void CreateOrChangeQuest(const std::string& questText);
+	void SetQuestColoredSuffix(
+		const std::string& suffix,
+		const _float3& color = { 0.39215687f, 1.f, 0.39215687f });
 	void DeleteQuest();
 	void FadeOutQuest(float playtime = 0.3f);
 	void FadeInQuest(float playtime = 0.5f);
@@ -175,6 +180,7 @@ private:
 	}();
 	std::array<uint32_t, 4> m_SavedSpellSlots{};
 	_bool m_bSpellSlotsInitialized{ false };
+	_bool m_bPurchasedWandEquipped{ false };
 
 	// 애니메이션 함수, 실행 함수들 이름
 	std::vector<std::string> m_vEventNames;

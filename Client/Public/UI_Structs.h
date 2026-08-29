@@ -47,6 +47,9 @@ struct OBJECTIVE_VISUAL_PHASE
 	_float FadeOutTime{ 0.5f };
 	_float DistanceHysteresis{ 1.f };
 	_bool ShowScreenMarker{ false };
+	// When positive, the world/screen marker is only visible inside this
+	// world-space radius. The minimap marker remains visible.
+	_float ScreenMarkerShowWithinDistance{};
 	// When positive, only the world/screen marker fades out inside this
 	// world-space radius. The minimap marker remains visible.
 	_float ScreenMarkerHideWithinDistance{};

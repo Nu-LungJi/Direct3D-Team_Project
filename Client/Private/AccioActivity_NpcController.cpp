@@ -391,7 +391,8 @@ void CAccioActivity_NpcController::UpdateDialogue(_float fTimeDelta)
 		UpdateDialogueIntro(fTimeDelta);
 		const _bool bCanAdvanceDialogue =
 			m_eConversationPhase == CONVERSATION_PHASE::TALKING;
-		SyncInteractionPrompt(bCanAdvanceDialogue);
+		// 대화 진행용 F 입력은 유지하지만 액티브 버튼 UI는 숨긴다.
+		SyncInteractionPrompt(false);
 		if (!bCanAdvanceDialogue || !CGameInstance::Get().KeyDown(DIK_F))
 			return;
 

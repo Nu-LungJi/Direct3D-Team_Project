@@ -393,7 +393,7 @@ void UIManager::AssioMiniGameStart(_bool bPlayerStarts)
 		*m_hAssioPlayerScoreRoot,
 		*m_hAssioNpcScoreRoot,
 		*m_hAssioTurnTitle
-	}, 0.35f);
+	}, 1.f);
 }
 
 void UIManager::AssioMiniGameFinish()
@@ -996,8 +996,8 @@ void UIManager::LoadAssioResult()
 
 	// 동점일 때는 플레이어를 우선한다.
 	const _bool playerWon = m_iAssioPlayerScore >= m_iAssioNpcScore;
-	if (playerWon)
-		CreateOrChangeQuest("부릉! 브룸! 참여하기");
+	// 승패와 관계없이 소환사의 코트가 끝나면 다음 미니게임으로 진행한다.
+	CreateOrChangeQuest("부릉! 브룸! 참여하기");
 
 	const wchar_t* winnerName = playerWon ? L"이솝 샤프" : L"저스티스 훈";
 	const int winnerScore = playerWon ? m_iAssioPlayerScore : m_iAssioNpcScore;
@@ -2785,18 +2785,19 @@ void UIManager::CreateFadeInSceneChange(float delay, float playtime, LEVEL level
 
 void UIManager::CreateDamageFont(uint32_t damage, CHandle targetMonster, _bool isCritical)
 {
-	auto* pMonster =
-		E::CGameInstance::Get()
-		.GetGameObjectByHandleT<CMonster>(targetMonster);
+	auto* pTarget = E::CGameInstance::Get().
+		GetGameObjectByHandle(targetMonster);
+	auto* pMonster = dynamic_cast<CMonster*>(pTarget);
 
 	auto* pCamera =
 		E::CGameInstance::Get().GetActiveCamera();
 
-	if (!pMonster || !pCamera || damage == 0)
+	if (!pTarget || !pCamera || damage == 0)
 		return;
 
-	const _float3 worldPosition =
-		pMonster->GetHurtBoxPosition();
+	const _float3 worldPosition = pMonster ?
+		pMonster->GetHurtBoxPosition() :
+		pTarget->GetTransform().GetPosition();
 
 	const _float2 screenSize =
 		E::CGameInstance::Get().GetClientScreenSize();
@@ -2880,14 +2881,17 @@ void UIManager::CreateDamageFont(uint32_t damage, CHandle targetMonster, _bool i
 
 	if (isCritical)
 	{
-		pDamageFont->SetColor({ 0.72f, 0.64f, 0.40f });
+		pDamageFont->SetColor({
+			0.862745106f, 0.725490212f, 0.411764711f });
 		pDamageFont->SetSize({ 0.9f, 0.9f });
 		pDamageFont->SetScaleRatio(1.25f);
 	}
 	else
 	{
 		pDamageFont->SetColor({ 1.f, 1.f, 1.f });
-		pDamageFont->SetSize({ 0.72f, 0.72f });
+		// Root text rendering uses SizeX as the actual SpriteFont scale.
+		// Apply the requested 70% reduction to the previous 0.72 size here.
+		pDamageFont->SetSize({ 0.504f, 0.504f });
 		pDamageFont->SetScaleRatio(1.f);
 	}
 
@@ -3573,6 +3577,8 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 		GetGameObjectByHandleT<CTextBox>(*m_hQuestText) : nullptr;
 	auto* targetIcon = m_hQuestTargetIcon ?
 		GetSafeUI(*m_hQuestTargetIcon) : nullptr;
+	if (text)
+		text->ClearColoredSuffix();
 
 	if (!root || !text)
 	{
@@ -3619,15 +3625,46 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 		// TextureUI는 최초 APPEAR 처리에서 tween을 초기화한다. 최초 프레임의
 		// APPEAR 콜백에서 FadeIn을 시작해야 알파 0에 고정되지 않는다.
 		const CHandle rootHandle = *m_hQuestRoot;
-		root->Appear = [rootHandle](CUIObject*)
+		const _float2 rootBasePosition = root->GetPos();
+		root->Appear = [rootHandle, rootBasePosition](CUIObject*)
 		{
 			if (auto* questRoot = GetSafeUI(rootHandle))
 			{
 				questRoot->SetAlpha(0.f);
 				if (!GET_SINGLE(UIManager)->m_bQuestFadeSuppressed)
 				{
-					GET_SINGLE(UIManager)->PlayFadeIn(
-						rootHandle, 0.f, 0.3f);
+					constexpr _float enterOffsetX = 24.f;
+					constexpr _float enterDuration = 0.3f;
+					questRoot->SetPos({
+						rootBasePosition.x - enterOffsetX,
+						rootBasePosition.y
+					});
+					questRoot->CalcUICoord();
+
+					GET_SINGLE(UIManager)->PlayOnlyFadeIn(
+						rootHandle, 0.f, enterDuration);
+					if (auto* tween = questRoot->GetTweenCom())
+					{
+						tween->PlayTween(
+							rootBasePosition.x - enterOffsetX,
+							rootBasePosition.x,
+							enterDuration,
+							[rootHandle, rootBasePosition](_float x)
+							{
+								if (auto* currentRoot = GetSafeUI(rootHandle))
+								{
+									currentRoot->SetPos({ x, rootBasePosition.y });
+									currentRoot->CalcUICoord();
+								}
+							},
+							nullptr,
+							EEaseType::EaseOutQuad);
+					}
+				}
+				else
+				{
+					questRoot->SetPos(rootBasePosition);
+					questRoot->CalcUICoord();
 				}
 			}
 		};
@@ -3755,6 +3792,23 @@ void UIManager::CreateOrChangeQuest(const std::string& questText)
 					}
 				}, nullptr, EEaseType::EaseOutQuad, outDuration);
 		}
+	}
+}
+
+void UIManager::SetQuestColoredSuffix(
+	const std::string& suffix,
+	const _float3& color)
+{
+	if (!m_hQuestText)
+		return;
+
+	if (auto* text = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextBox>(*m_hQuestText))
+	{
+		if (suffix.empty())
+			text->ClearColoredSuffix();
+		else
+			text->SetColoredSuffix(StringToWUTF8(suffix), color);
 	}
 }
 

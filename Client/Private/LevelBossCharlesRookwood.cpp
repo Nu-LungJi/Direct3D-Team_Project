@@ -113,7 +113,7 @@ void CLevelBossCharlesRookwood::Update(E::_float fTimeDelta)
 	{
 		m_bBossQuestCreated = true;
 		GET_SINGLE(UIManager)->CreateOrChangeQuest(
-			"퍼시벌 랙햄의 시험을 완료하기");
+			"고대 유적 돌파하기");
 	}
 
 	// TombBossIntro는 행동 트리에서 비동기로 재생된다. 첫 보스 시네마틱의
