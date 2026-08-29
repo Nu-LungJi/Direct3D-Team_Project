@@ -17,6 +17,7 @@
 #include "AccioActivity_Base.h"
 #include "UIManager.h"
 #include "Player.h"
+#include "CinematicAsset.h"
 #include "CinematicTypes.h"
 
 NS_USING(Client)
@@ -79,8 +80,17 @@ HRESULT CInteractiveNpc::Initialize(void* pArg)
 	m_fFadeDuration = std::max(0.05f, pDesc->FadeDuration);
 	m_fFadeHoldDuration = std::max(0.f, pDesc->FadeHoldDuration);
 	m_vPlayerDialogueOffset = pDesc->PlayerDialogueOffset;
+	m_fPlayerDialogueGroundY = pDesc->PlayerDialogueGroundY;
 	m_bRepositionPlayerForDialogue = pDesc->RepositionPlayerForDialogue;
 	m_DialogueCinematicName = pDesc->DialogueCinematicName;
+	m_bAutoAimDialogueCamera = pDesc->AutoAimDialogueCamera;
+	m_vDialogueCameraOffset = pDesc->DialogueCameraOffset;
+	m_vDialogueCameraWorldPosition =
+		pDesc->DialogueCameraWorldPosition;
+	m_vDialogueCameraWorldRotationEuler =
+		pDesc->DialogueCameraWorldRotationEuler;
+	m_fDialogueCameraTargetHeight = pDesc->DialogueCameraTargetHeight;
+	m_fDialogueCameraFovY = pDesc->DialogueCameraFovY;
 	m_MoveDestinations = pDesc->MoveDestination;
 	m_vCoinMoveRotationEuler = pDesc->CoinMoveRotationEuler;
 	m_fMoveFadeHoldDuration = std::max(0.f, pDesc->MoveFadeHoldDuration);
@@ -641,6 +651,110 @@ void CInteractiveNpc::StopDialogueCameraOnlyForTest()
 	EndDialogueCamera();
 }
 
+void CInteractiveNpc::PrepareDialogueCamera(const _string& cinematicName)
+{
+	if (!m_bAutoAimDialogueCamera || cinematicName.empty())
+		return;
+
+	const _vector up = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	_vector cameraPosition = XMVectorSet(
+		m_vDialogueCameraOffset.x,
+		m_vDialogueCameraOffset.y,
+		m_vDialogueCameraOffset.z,
+		1.f);
+	_vector targetPosition = XMVectorSet(
+		0.f, m_fDialogueCameraTargetHeight, 0.f, 1.f);
+	ECinematicCoordinateSpace coordinateSpace =
+		ECinematicCoordinateSpace::TargetLocal;
+	_vector look = targetPosition - cameraPosition;
+	if (XMVectorGetX(XMVector3LengthSq(look)) <= FLT_EPSILON)
+		look = XMVectorSet(0.f, 0.f, -1.f, 0.f);
+	else
+		look = XMVector3Normalize(look);
+
+	_vector right = XMVector3Cross(up, look);
+	if (XMVectorGetX(XMVector3LengthSq(right)) <= FLT_EPSILON)
+		right = XMVectorSet(1.f, 0.f, 0.f, 0.f);
+	else
+		right = XMVector3Normalize(right);
+	const _vector cameraUp = XMVector3Normalize(
+		XMVector3Cross(look, right));
+
+	_matrix cameraWorld = XMMatrixIdentity();
+	cameraWorld.r[0] = XMVectorSetW(right, 0.f);
+	cameraWorld.r[1] = XMVectorSetW(cameraUp, 0.f);
+	cameraWorld.r[2] = XMVectorSetW(look, 0.f);
+	_vector cameraRotation = XMQuaternionRotationMatrix(cameraWorld);
+
+	if (m_vDialogueCameraWorldPosition)
+	{
+		cameraPosition = XMLoadFloat3(
+			&m_vDialogueCameraWorldPosition.value());
+		cameraPosition = XMVectorSetW(cameraPosition, 1.f);
+		coordinateSpace = ECinematicCoordinateSpace::World;
+	}
+
+	if (m_vDialogueCameraWorldRotationEuler)
+	{
+		if (!m_vDialogueCameraWorldPosition)
+		{
+			_vector targetScale{};
+			_vector targetRotation{};
+			_vector targetTranslation{};
+			if (!XMMatrixDecompose(
+				&targetScale,
+				&targetRotation,
+				&targetTranslation,
+				GetTransform().GetLoadedCombinedWorldMatrix()))
+			{
+				return;
+			}
+
+			const _matrix targetWorldNoScale =
+				XMMatrixRotationQuaternion(
+					XMQuaternionNormalize(targetRotation)) *
+				XMMatrixTranslationFromVector(targetTranslation);
+			cameraPosition = XMVector3TransformCoord(
+				cameraPosition, targetWorldNoScale);
+		}
+
+		const _float3& rotationEuler =
+			*m_vDialogueCameraWorldRotationEuler;
+		cameraRotation = XMQuaternionRotationRollPitchYaw(
+			XMConvertToRadians(rotationEuler.x),
+			XMConvertToRadians(rotationEuler.y),
+			XMConvertToRadians(rotationEuler.z));
+		coordinateSpace = ECinematicCoordinateSpace::World;
+	}
+
+	_float3 cameraPositionData{};
+	_float4 cameraRotationData{};
+	XMStoreFloat3(&cameraPositionData, cameraPosition);
+	XMStoreFloat4(
+		&cameraRotationData,
+		XMQuaternionNormalize(cameraRotation));
+
+	FCinematicAssetData data{};
+	data.CinematicID = StringID{ cinematicName };
+	data.CameraTrack.TrackID = StringID{ cinematicName + "_AutoAimTrack" };
+	FCinematicCameraShot shot{};
+	shot.ShotID = StringID{ cinematicName + "_AutoAimShot" };
+	shot.eCoordinateSpace = coordinateSpace;
+	shot.eBindingMode = ECinematicBindingMode::Live;
+	FCinematicCameraKeyframe first{};
+	first.vPosition = cameraPositionData;
+	first.vRotation = cameraRotationData;
+	first.fFovY = m_fDialogueCameraFovY;
+	FCinematicCameraKeyframe last = first;
+	last.fTime = 600.f;
+	shot.Keyframes = { first, last };
+	data.CameraTrack.Shots.push_back(std::move(shot));
+
+	auto cinematic = CCinematicAsset::Create(data);
+	if (cinematic)
+		CGameInstance::Get().RegistCinematicAsset(cinematic);
+}
+
 void CInteractiveNpc::PlacePlayerFacingNpc(const _float3& localOffset)
 {
 	ResolvePlayerHandle();
@@ -766,7 +880,17 @@ void CInteractiveNpc::BeginDialogueCamera()
 		_float3 npcLookAt{};
 		XMStoreFloat3(&dialoguePlayerPosition, playerPosition);
 		XMStoreFloat3(&npcLookAt, npcPosition + up * 1.35f);
-		pPlayer->SetDialoguePose(dialoguePlayerPosition, npcLookAt);
+		if (m_fPlayerDialogueGroundY)
+		{
+			pPlayer->SetDialoguePoseOnGround(
+				dialoguePlayerPosition,
+				*m_fPlayerDialogueGroundY,
+				npcLookAt);
+		}
+		else
+		{
+			pPlayer->SetDialoguePose(dialoguePlayerPosition, npcLookAt);
+		}
 	}
 
 	_string cinematicName = m_DialogueCinematicName;

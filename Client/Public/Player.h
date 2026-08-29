@@ -171,6 +171,11 @@ public:
 	void SetCurrentSkill(PLAYER_SKILL_TYPE eSkillType) { m_eSkillType = eSkillType; }
 	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
 	void SetDialoguePose(const _float3& vPosition, const _float3& vLookAt);
+	// 지정한 지면 높이에 CCT 발바닥이 닿도록 원점 높이를 보정한 뒤 대화 포즈를 적용한다.
+	void SetDialoguePoseOnGround(
+		const _float3& vPosition,
+		_float fGroundY,
+		const _float3& vLookAt);
 	void SetRootMotionRotationActive(_bool bActive) { m_bRootMotionRotationActive = bActive; }
 	void SetRootMotionTranslationActive(_bool bActive) { m_bRootMotionTranslationActive = bActive; }
 	void SetRootMotionTranslationScale(_float fScale) { m_fRootMotionTranslationScale = std::max(0.f, fScale); }

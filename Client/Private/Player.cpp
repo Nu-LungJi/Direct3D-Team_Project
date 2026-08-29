@@ -1948,6 +1948,31 @@ void CPlayer::SetDialoguePose(const _float3& vPosition, const _float3& vLookAt)
 		m_pComMoveIntent->ClearMoveIntent();
 }
 
+void CPlayer::SetDialoguePoseOnGround(
+	const _float3& vPosition,
+	_float fGroundY,
+	const _float3& vLookAt)
+{
+	_float3 groundedPosition = vPosition;
+	groundedPosition.y = fGroundY;
+
+	// Transform 원점과 PhysX CCT 발바닥은 같은 위치가 아니다.
+	// 현재 정상적으로 서 있는 상태의 차이를 유지해 지면 아래로 박히지 않게 한다.
+	if (m_pComCharacterController)
+	{
+		const _float3 currentPosition = GetTransform().GetPosition();
+		const _float3 currentFootPosition =
+			m_pComCharacterController->GetFootPosition();
+		const _float originToFoot =
+			currentPosition.y - currentFootPosition.y;
+
+		if (std::isfinite(originToFoot))
+			groundedPosition.y += originToFoot;
+	}
+
+	SetDialoguePose(groundedPosition, vLookAt);
+}
+
 void CPlayer::ApplyGroundFollow(_float fFixedTimeDelta)
 {
 	if (!m_pComCharacterController ||!m_pComCharacterMotor ||!m_pComMoveIntent ||!m_pStateMachine ||fFixedTimeDelta <= 0.f)
