@@ -292,7 +292,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 				"ShopNpcDialogueCloseUp"
 			},
 			{
-				"아, 돈이 없네요... 호그와트 성에 돈이 있다고 하던데, 그곳으로 가보시죠!",
+				"아, 돈이 부족하시네요... 호그와트 성에서 작은 대회를 연다고 하던데, 그곳으로 가보시죠!",
 				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
 				true,
 				{},
@@ -342,7 +342,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 				true
 			},
 			{
-				"그 마법은 함부러 쓰면 안되는 마법입니다. 조심하세요!",
+				"그 마법은 함부로 쓰면 안되는 마법입니다. 조심하세요!",
 				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
 				true,
 				{},
