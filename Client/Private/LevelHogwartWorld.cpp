@@ -52,6 +52,51 @@ CLevelHogwartWorld::CLevelHogwartWorld() : CLevel{ETOUI(LEVEL::HOGWART_WORLD)}
 {
 }
 
+void CLevelHogwartWorld::ChangeBGM(
+	const _string& strSoundPath,
+	_float fTargetVolume,
+	_float fFadeDuration)
+{
+	auto* pSoundManager = E::CGameInstance::Get().GetSoundManager();
+	if (nullptr == pSoundManager || strSoundPath.empty())
+		return;
+
+	const _float fSafeFadeDuration = std::max(0.f, fFadeDuration);
+	const _float fSafeTargetVolume = std::max(0.f, fTargetVolume);
+
+	if (m_iBGM != INVALID_SOUND_ID &&
+		pSoundManager->IsValidSound(m_iBGM) &&
+		m_strCurrentBGMPath == strSoundPath)
+	{
+		pSoundManager->FadeTo(
+			m_iBGM, fSafeTargetVolume, fSafeFadeDuration);
+		return;
+	}
+
+	if (m_iBGM != INVALID_SOUND_ID &&
+		pSoundManager->IsValidSound(m_iBGM))
+	{
+		pSoundManager->FadeOutAndStop(
+			m_iBGM, fSafeFadeDuration);
+	}
+
+	m_iBGM = pSoundManager->Play2D(
+		strSoundPath,
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::BGM,
+			.fVolume = fSafeTargetVolume,
+			.fPitch = 1.f,
+			.fFadeInDuration = fSafeFadeDuration,
+			.iPriority = 64,
+			.bLoop = true
+		});
+
+	if (m_iBGM != INVALID_SOUND_ID)
+		m_strCurrentBGMPath = strSoundPath;
+	else
+		m_strCurrentBGMPath.clear();
+}
+
 HRESULT CLevelHogwartWorld::Initialize()
 {
 	auto &gameInstance = E::CGameInstance::Get();
@@ -128,6 +173,17 @@ HRESULT CLevelHogwartWorld::Initialize()
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "ThestralStreetCarriage_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_ThestralStreetCarriage_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/ThestralStreetCarriage_Animated_Blender_4_3/");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "VillageGiantToad_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_VillageGiantToad_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/VillageGiantToad_Animated_Blender_4_3/");
 			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "WizardingDeck_Animated_Blender_4_3", NpcOption.sModelGroupTag, "Model_Resource_WizardingDeck_Animated_Blender_4_3", "./Resources/SampleClient/Models/Skeleton/WizardingDeck_Animated_Blender_4_3/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "BlueButterfly", NpcOption.sModelGroupTag, "Model_Resource_BlueButterfly", "./Resources/SampleClient/Models/Skeleton/BlueButterfly/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "GlowingLumosMoth", NpcOption.sModelGroupTag, "Model_Resource_GlowingLumosMoth", "./Resources/SampleClient/Models/Skeleton/GlowingLumosMoth/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "LeapingMushroom", NpcOption.sModelGroupTag, "Model_Resource_LeapingMushroom", "./Resources/SampleClient/Models/Skeleton/LeapingMushroom/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "OrangeButterfly", NpcOption.sModelGroupTag, "Model_Resource_OrangeButterfly", "./Resources/SampleClient/Models/Skeleton/OrangeButterfly/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PlantParty_Plant_01", NpcOption.sModelGroupTag, "Model_Resource_PlantParty_Plant_01", "./Resources/SampleClient/Models/Skeleton/PlantParty_Plant_01/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PlantParty_Plant_02", NpcOption.sModelGroupTag, "Model_Resource_PlantParty_Plant_02", "./Resources/SampleClient/Models/Skeleton/PlantParty_Plant_02/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PlantParty_Plant_03", NpcOption.sModelGroupTag, "Model_Resource_PlantParty_Plant_03", "./Resources/SampleClient/Models/Skeleton/PlantParty_Plant_03/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PlantParty_Plant_04", NpcOption.sModelGroupTag, "Model_Resource_PlantParty_Plant_04", "./Resources/SampleClient/Models/Skeleton/PlantParty_Plant_04/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "PlantParty_Plant_05", NpcOption.sModelGroupTag, "Model_Resource_PlantParty_Plant_05", "./Resources/SampleClient/Models/Skeleton/PlantParty_Plant_05/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "VenomousTentaculaBush", NpcOption.sModelGroupTag, "Model_Resource_VenomousTentaculaBush", "./Resources/SampleClient/Models/Skeleton/VenomousTentaculaBush/");
+			pNpcManager->RegisterNpcSkeletonOption(NpcOption.sPrototypeTag, "VenomousTentaculaFlower", NpcOption.sModelGroupTag, "Model_Resource_VenomousTentaculaFlower", "./Resources/SampleClient/Models/Skeleton/VenomousTentaculaFlower/");
 			
 		}
 		//{
@@ -281,7 +337,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 				"ShopNpcDialogueCloseUp"
 			},
 			{
-				"아, 돈이 없네요... 호그와트 성에 돈이 있다고 하던데, 그곳으로 가보시죠!",
+				"아, 돈이 부족하시네요... 호그와트 성에서 작은 대회를 연다고 하던데, 그곳으로 가보시죠!",
 				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
 				true,
 				{},
@@ -331,7 +387,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 				true
 			},
 			{
-				"그 마법은 함부러 쓰면 안되는 마법입니다. 조심하세요!",
+				"그 마법은 함부로 쓰면 안되는 마법입니다. 조심하세요!",
 				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
 				true,
 				{},
@@ -356,6 +412,11 @@ HRESULT CLevelHogwartWorld::Initialize()
 			"AN_BODY__Meeting__Shot_180_GerboldOllivander.bin";
 		Desc.OnMoveDestinationApplied = [this, hPlayer = *hPlayer]()
 		{
+			ChangeBGM(
+				"./Resources/SampleClient/Sound/HogsMeade/Ambient/HogwartBgm3.wav",
+				0.5f,
+				1.f);
+
 			RequestSummonersCourtSpawn(hPlayer);
 			GET_SINGLE(UIManager)->CreateOrChangeQuest(
 				"미니게임 참여하기");
@@ -514,19 +575,21 @@ HRESULT CLevelHogwartWorld::Initialize()
 
 	GET_SINGLE(UIManager)->SetRaceReturnToShopCallback([this]()
 	{
+		ChangeBGM(
+			"./Resources/SampleClient/Sound/HogsMeade/Ambient/Roads_Lead_to_Hogsmeade.mp3",
+			0.2f,
+			1.f);
+
 		RequestSummonersCourtDespawn();
 	});
 
 	// 레벨 진입 후 3초 동안 검은 화면을 유지하고,
 	// 이후 2초 동안 검은 UI를 사라지게 해 게임 화면을 드러낸다.
 	GET_SINGLE(UIManager)->CreateFadeOut(3.f, 2.f);
-	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/HogsMeade/Ambient/Roads_Lead_to_Hogsmeade.mp3", SOUND_PLAY_DESC{
-   .sBusID = SOUND_BUS::BGM,
-   .fVolume = 0.2f,
-   .fPitch = 1.f,
-   .iPriority = 64,
-   .bLoop = true
-		});
+	ChangeBGM(
+		"./Resources/SampleClient/Sound/HogsMeade/Ambient/Roads_Lead_to_Hogsmeade.mp3",
+		0.2f,
+		1.f);
 	return S_OK;
 }
 
@@ -1522,8 +1585,14 @@ void CLevelHogwartWorld::Free()
 	if (auto* pSoundManager =
 		E::CGameInstance::Get().GetSoundManager())
 	{
-		pSoundManager->StopBus(SOUND_BUS::BGM);
+		if (m_iBGM != INVALID_SOUND_ID &&
+			pSoundManager->IsValidSound(m_iBGM))
+		{
+			pSoundManager->FadeOutAndStop(m_iBGM, 0.5f);
+		}
 	}
+	m_iBGM = INVALID_SOUND_ID;
+	m_strCurrentBGMPath.clear();
 	GET_SINGLE(UIManager)->SetRaceReturnToShopCallback({});
 	if (auto *pNpcManager = E::CGameInstance::Get().GetNpcPlacementManager())
 		pNpcManager->ClearNpcOptions();

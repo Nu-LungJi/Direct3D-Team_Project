@@ -510,7 +510,7 @@ void CShopNpc::Update(E::_float fTimeDelta)
 					activeCamera->GetTransform().GetState(E::STATE::RIGHT));
 				const _vector panelPosition =
 					cameraPosition + cameraLook * PANEL_DISTANCE +
-					cameraRight * 1.05f;
+					cameraRight * 0.75f;
 				const _vector panelDelta =
 					panelPosition - GetTransform().GetLoadedPostion();
 				const _vector npcRight = XMVector3Normalize(
@@ -527,7 +527,7 @@ void CShopNpc::Update(E::_float fTimeDelta)
 				};
 			}
 			GET_SINGLE(UIManager)->OpenWandShopWorld(
-				GetHandle(), panelOffset, { 0.f, 180.f, 0.f }, 0.22f);
+				GetHandle(), panelOffset, { 0.f, 180.f, 0.f }, 0.4f);
 			m_bWandShopOpenedByPresentation = true;
 		}
 		else if (m_bWandShopOpenedByPresentation &&
