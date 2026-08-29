@@ -655,6 +655,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RightHandWandSocket");
 	WeaponDesc.iSpawnBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("WandSocketTip");
 	WeaponDesc.ParentHandle = GetHandle();
+	WeaponDesc.bRestorePurchasedPlayerWand = true;
 
 	
 	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(pDesc->LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, "Weapon", &WeaponDesc);

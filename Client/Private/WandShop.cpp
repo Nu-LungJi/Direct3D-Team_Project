@@ -182,6 +182,7 @@ void CWandShop::CreatePurchasePrompt()
 		return;
 	}
 	m_PurchasePromptRoots = std::move(promptRoots);
+	SetPurchasePromptVisible(m_iCurrentPage == 0u);
 	RefreshPurchaseCoinText();
 }
 
@@ -189,6 +190,19 @@ void CWandShop::Update(UIManager& manager, _float fTimeDelta)
 {
 	if (!IsOpen())
 		return;
+	if (m_iCurrentPage != 0u)
+	{
+		m_fPurchaseHoldProgress = 0.f;
+		if (m_PurchaseGauge)
+		{
+			if (auto* gauge = E::CGameInstance::Get().
+				GetGameObjectByHandleT<CTextureUI>(*m_PurchaseGauge))
+			{
+				gauge->SetPathProgress(0.f);
+			}
+		}
+		return;
+	}
 	RefreshPurchaseCoinText();
 	if (!m_PurchaseGauge)
 		return;
@@ -243,6 +257,30 @@ void CWandShop::RefreshPurchaseCoinText()
 	textBox->SetwText(std::to_wstring(coinCount));
 }
 
+void CWandShop::SetPurchasePromptVisible(_bool visible)
+{
+	for (const CHandle handle : m_PurchasePromptRoots)
+	{
+		if (auto* root = GetSafeUI(handle))
+			root->SetActive(visible);
+	}
+
+	if (visible)
+	{
+		RefreshPurchaseCoinText();
+		return;
+	}
+
+	m_fPurchaseHoldProgress = 0.f;
+	if (!m_PurchaseGauge)
+		return;
+	if (auto* gauge = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextureUI>(*m_PurchaseGauge))
+	{
+		gauge->SetPathProgress(0.f);
+	}
+}
+
 void CWandShop::CompletePurchase(UIManager& manager)
 {
 
@@ -259,8 +297,8 @@ void CWandShop::CompletePurchase(UIManager& manager)
 			auto* weapon = E::CGameInstance::Get().
 				GetGameObjectByHandleT<CPlayer_Weapon>(
 					player->GetWeaponHandle());
-			if (weapon)
-				weapon->EquipWand2();
+			if (weapon && SUCCEEDED(weapon->EquipWand2()))
+				manager.SetPurchasedWandEquipped(true);
 
 			break;
 		}
@@ -381,6 +419,7 @@ void CWandShop::OpenPage(UIManager& manager, uint32_t pageIndex)
 
 	m_iCurrentPage = pageIndex;
 	CGeneralButton::SetCurrentWandShopPage(pageIndex);
+	SetPurchasePromptVisible(pageIndex == 0u);
 	m_PageRoots = manager.LoadPrefabFiltered(
 		std::string(PAGE_PREFABS[pageIndex]),
 		"./Resources/SampleClient/UIData/RTT/",

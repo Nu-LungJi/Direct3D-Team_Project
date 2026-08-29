@@ -2,6 +2,7 @@
 #include "Mon_Spawner.h"
 #include "Spider.h"
 #include "Troll.h"
+#include "UIManager.h"
 NS_USING(Client)
 CMon_Spawner::CMon_Spawner()
 {
@@ -85,6 +86,7 @@ HRESULT CMon_Spawner::Initialize(void* pArg)
 			Spider.vPos = iter;
 			m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
 		}
+		m_iTotalSpiderCount = m_Monsters.size();
 		
 	}
 	return S_OK;
@@ -109,7 +111,15 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 				pSrc->Set_Spawn(true);
 
 		}
+		if (!m_bSpiderEncounterStarted)
+		{
+			m_bSpiderEncounterStarted = true;
+			UpdateSpiderQuestProgress();
+		}
 	}
+
+	UpdateTrollQuestAfterCinematic();
+
 	if (!m_bTroll)
 	{
 		if (m_Monsters.empty())
@@ -148,6 +158,7 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 				&Troll))
 			{
 				m_bTroll = true;
+				m_bWaitingForTrollCinematic = true;
 			}
 			else
 			{
@@ -163,7 +174,45 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 			}
 			++iter;
 		}
+		UpdateSpiderQuestProgress();
 	}
+}
+
+void CMon_Spawner::UpdateSpiderQuestProgress()
+{
+	if (!m_bSpiderEncounterStarted || m_LeveTag == "TERRAIN")
+		return;
+
+	const size_t defeated = m_iTotalSpiderCount >= m_Monsters.size() ?
+		m_iTotalSpiderCount - m_Monsters.size() : 0u;
+	if (defeated == m_iLastReportedDefeated)
+		return;
+
+	m_iLastReportedDefeated = defeated;
+	const std::string progress = std::to_string(defeated) + " / " +
+		std::to_string(m_iTotalSpiderCount);
+	GET_SINGLE(UIManager)->CreateOrChangeQuest(
+		"가시등거미 퇴치하기  " + progress);
+	//GET_SINGLE(UIManager)->SetQuestColoredSuffix(progress);
+}
+
+void CMon_Spawner::UpdateTrollQuestAfterCinematic()
+{
+	if (!m_bWaitingForTrollCinematic)
+		return;
+
+	const _bool cinematicPlaying = CGameInstance::Get().IsCinematicPlaying();
+	if (cinematicPlaying)
+	{
+		m_bTrollCinematicObserved = true;
+		return;
+	}
+
+	if (!m_bTrollCinematicObserved)
+		return;
+
+	m_bWaitingForTrollCinematic = false;
+	GET_SINGLE(UIManager)->CreateOrChangeQuest("트롤 퇴치하기");
 }
 
 void CMon_Spawner::FixedUpdate(E::_float fTimeDelta)
