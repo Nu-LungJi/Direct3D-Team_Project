@@ -494,6 +494,13 @@ void CLevelHogwartWorld::Update(E::_float fTimeDelta)
 		m_bCreatePlayScreenUI = hUIController.has_value();
 	}
 
+	if (m_bCreatePlayScreenUI && !m_bQuestCreated)
+	{
+		m_bQuestCreated = true;
+		GET_SINGLE(UIManager)->CreateOrChangeQuest(
+			"호그스미스 광장 둘러보기");
+	}
+
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 	UpdateDebugWarp();
 }

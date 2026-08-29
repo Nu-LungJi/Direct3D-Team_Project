@@ -36,6 +36,7 @@ nlohmann::json CBTDecSearch::Save_Node()
 	SaveJsonValue(j, "Distance", m_fDis);
 	SaveJsonValue(j, "Run", m_bRunning);
 
+	SaveJsonValue(j, "Invert", m_bInvert);
 	
 	return j;
 }
@@ -46,6 +47,7 @@ HRESULT CBTDecSearch::Load_json(const nlohmann::json& j)
 	LoadJsonValue(j, "Distance", m_fDis);
 	LoadJsonValue(j, "Run", m_bRunning);
 
+	LoadJsonValue(j, "Invert", m_bInvert);
 	return S_OK;
 }
 
@@ -76,7 +78,9 @@ EVALUATE CBTDecSearch::Evaluate(_float fTimeDelta)
 	if(m_bRunning && m_PreEval == EVALUATE::RUN)
 		return  m_eDebug = __super::Evaluate(fTimeDelta);
 
-	if (fDistance <= m_fDis)
+	if (!m_bInvert && fDistance <= m_fDis)
+		return  m_PreEval = m_eDebug = __super::Evaluate(fTimeDelta);
+	else if (m_bInvert && fDistance >= m_fDis)
 		return  m_PreEval = m_eDebug = __super::Evaluate(fTimeDelta);
 
 	return  m_eDebug = EVALUATE::FAILED;
@@ -86,7 +90,10 @@ void		CBTDecSearch::Update_Gui()
 {
 	if (ImGui::Button(m_bRunning == true ? "RUN : TRUE" : "RUN : FALSE"))
 		m_bRunning = !m_bRunning;
-
+	
+	if (ImGui::Button(m_bInvert == true ? "Invert : TRUE" : "Invert : FALSE"))
+		m_bInvert = !m_bInvert;
+	
 	ImGui::DragFloat("##Dist", &m_fDis, 0, 100);
 }
 void CBTDecSearch::Abort()

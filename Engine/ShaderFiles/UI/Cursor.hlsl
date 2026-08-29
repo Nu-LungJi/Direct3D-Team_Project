@@ -36,7 +36,7 @@ float4 PSMain(PS_IN input) : SV_Target
 {
 	float time = g_ui_texCoord.y;
 
-	float speedMultiplier = 5.0f;
+	float speedMultiplier = 4.0f;
 	float clipValue = 0.3333f;
 
 	float outerSpeed = time * speedMultiplier;
