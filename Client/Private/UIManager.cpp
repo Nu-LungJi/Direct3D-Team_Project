@@ -32,6 +32,7 @@ namespace
 		"./Resources/SampleClient/Sound/UI/Go.wav";
 	constexpr const _char* RACE_TIMER_SOUND_PATH =
 		"./Resources/SampleClient/Sound/UI/Timer.wav";
+	constexpr _float WAND_SHOP_PANEL_APPEAR_DURATION = 0.5f;
 
 	void PlayUISound(const _char* pSoundPath, _float fVolume)
 	{
@@ -218,6 +219,18 @@ void UIManager::SaveSpellSlot(uint32_t slotNumber, uint32_t spellType)
 
 void UIManager::Update(_float fTimeDelta)
 {
+	if (m_bWandShopWorldMode && m_fWandShopPanelAppearScale < 1.f)
+	{
+		m_fWandShopPanelAppearElapsed = std::min(
+			WAND_SHOP_PANEL_APPEAR_DURATION,
+			m_fWandShopPanelAppearElapsed +
+			E::CGameInstance::Get().GetUnscaledDelta());
+		const _float ratio = WAND_SHOP_PANEL_APPEAR_DURATION > 0.f
+			? m_fWandShopPanelAppearElapsed / WAND_SHOP_PANEL_APPEAR_DURATION
+			: 1.f;
+		// UI 내부 좌표는 건드리지 않고 RTT 패널만 부드럽게 확대한다.
+		m_fWandShopPanelAppearScale = 1.f - (1.f - ratio) * (1.f - ratio);
+	}
 	UpdateWandShopWorldBillboard();
 	UpdateWandShopWorldMousePosition();
 	UpdateActiveButtons();
@@ -232,6 +245,8 @@ void UIManager::Update(_float fTimeDelta)
 
 void UIManager::UpdateWandShopWorldBillboard()
 {
+	constexpr _float PANEL_UPWARD_TILT_DEGREES = 5.f;
+
 	if (!m_bWandShopWorldMode)
 		return;
 
@@ -247,21 +262,26 @@ void UIManager::UpdateWandShopWorldBillboard()
 	if (XMVectorGetX(XMVector3LengthSq(panelLook)) <= 0.0001f)
 		return;
 
-	panelLook = XMVector3Normalize(panelLook);
 	const _vector worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	panelLook = XMVector3Normalize(panelLook);
+	panelLook = XMVector3Normalize(
+		panelLook + worldUp * tanf(XMConvertToRadians(
+			PANEL_UPWARD_TILT_DEGREES)));
 	// The RTT quad faces back toward the camera. Build its screen-right axis
 	// from look x up so the UI texture is not mirrored horizontally.
 	const _vector panelRight = XMVector3Normalize(
 		XMVector3Cross(panelLook, worldUp));
+	const _vector panelUp = XMVector3Normalize(
+		XMVector3Cross(panelRight, panelLook));
 	const _matrix panelPose{
 		XMVectorSetW(panelRight, 0.f),
-		worldUp,
+		XMVectorSetW(panelUp, 0.f),
 		XMVectorSetW(panelLook, 0.f),
 		XMVectorSetW(panelPosition, 1.f)
 	};
 	const _matrix panelWorld = XMMatrixScaling(
-		m_vWandShopPanelWorldScale.x,
-		m_vWandShopPanelWorldScale.y,
+		m_vWandShopPanelWorldScale.x * m_fWandShopPanelAppearScale,
+		m_vWandShopPanelWorldScale.y * m_fWandShopPanelAppearScale,
 		1.f) * panelPose;
 
 	XMStoreFloat4x4(&m_WandShopPanelWorld, panelWorld);
@@ -1692,6 +1712,8 @@ void UIManager::UpdateWandShopWorldMousePosition()
 	m_bWandShopPanelMouseHit = false;
 	m_WandShopPanelMousePosition = { -FLT_MAX, -FLT_MAX };
 	if (!m_bWandShopWorldMode)
+		return;
+	if (m_fWandShopPanelAppearScale <= 0.001f)
 		return;
 
 	// Picking must use the same active camera that projects and billboards the
@@ -4558,6 +4580,8 @@ void UIManager::OpenWandShop()
 	if (m_WandShop.IsOpen())
 		return;
 	m_bWandShopWorldMode = false;
+	m_fWandShopPanelAppearElapsed = 0.f;
+	m_fWandShopPanelAppearScale = 1.f;
 	E::CGameInstance::Get().ClearUI3DPanel();
 
 	CGeneralButton::ResetWandShopSelection();
@@ -4641,6 +4665,8 @@ void UIManager::OpenWandShopWorld(
 	XMStoreFloat4x4(&storedPanelWorld, panelWorld);
 
 	m_bWandShopWorldMode = true;
+	m_fWandShopPanelAppearElapsed = 0.f;
+	m_fWandShopPanelAppearScale = 0.f;
 	m_WandShopPanelWorld = storedPanelWorld;
 	// Replace the initial NPC-relative rotation immediately with an upright
 	// billboard facing whichever camera is currently active.
@@ -4656,6 +4682,8 @@ void UIManager::CloseWandShop()
 {
 	m_WandShop.Close(*this);
 	m_bWandShopWorldMode = false;
+	m_fWandShopPanelAppearElapsed = 0.f;
+	m_fWandShopPanelAppearScale = 1.f;
 	E::CGameInstance::Get().ClearUI3DPanel();
 }
 

@@ -2359,7 +2359,7 @@ HRESULT CRenderer::Render_UI3D() {
 			D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 		{
 			CB_PER_UI perUI{};
-			perUI.color = { 1.f, 1.f, 1.f, 0.8f };
+			perUI.color = { 1.f, 1.f, 1.f, 0.95f };
 			memcpy(mapped.pData, &perUI, sizeof(perUI));
 			m_pContext->Unmap(perUIBuffer->GetCBuffer().Get(), 0);
 			ID3D11Buffer* uiCB = perUIBuffer->GetCBuffer().Get();

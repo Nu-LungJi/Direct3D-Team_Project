@@ -317,6 +317,8 @@ private:
 	_float4x4 m_WandShopPanelWorld{};
 	_float3 m_vWandShopPanelWorldPosition{};
 	_float2 m_vWandShopPanelWorldScale{};
+	_float m_fWandShopPanelAppearElapsed{};
+	_float m_fWandShopPanelAppearScale{ 1.f };
 	_float2 m_WandShopPanelMousePosition{ -FLT_MAX, -FLT_MAX };
 	_bool m_bWandShopPanelMouseHit{ false };
 
