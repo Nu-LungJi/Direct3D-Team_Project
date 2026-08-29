@@ -935,7 +935,7 @@ HRESULT CMapMeshInstancingRenderer::RecordShadowDrawCommands(ID3D11DeviceContext
 HRESULT CMapMeshInstancingRenderer::RecordDrawCommands(
 	ID3D11DeviceContext* context,
 	const DRAW_PACKET& packet,
-	uint32_t commandBegin,
+	uint32_t commandBegin,  
 	uint32_t commandEnd,
 	uint32_t& outDrawCalls)
 {

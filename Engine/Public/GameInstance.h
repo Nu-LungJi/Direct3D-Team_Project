@@ -371,6 +371,8 @@ public:
 	const _float&	Get_ChromaticIntensity();
 	const _float&	Get_VignetteIntensity();
 
+	VOID			Set_PlanarReflection(PLANAR_REFLECTION_DESC _DESC);
+	VOID			Begin_PlanarReflectionFrame();
 #pragma endregion
 
 
