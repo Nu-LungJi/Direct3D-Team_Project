@@ -245,6 +245,7 @@ void CWandShop::RefreshPurchaseCoinText()
 
 void CWandShop::CompletePurchase(UIManager& manager)
 {
+
 	if (const auto* playerLayer =
 		E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
 	{

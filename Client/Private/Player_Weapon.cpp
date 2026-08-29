@@ -195,10 +195,8 @@ void CPlayer_Weapon::PriorityUpdate(E::_float fTimeDelta)
 
 void CPlayer_Weapon::Update(E::_float fTimeDelta)
 {
-#ifdef _DEBUG
 	if (CGameInstance::Get().KeyDown(DIK_I))
 		EquipWand2();
-#endif
 }
 
 void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)

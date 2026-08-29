@@ -97,68 +97,36 @@ void CUIController::Update(E::_float fTimeDelta)
 	UpdateRookwoodBridgeProgression();
 	UpdateRookwoodPortalProgression();
 
-	// 소환사의 코트 미니게임 UI 확인용 디버그 입력.
-	static uint32_t assioDebugScoreCount = 0u;
-	static int assioDebugPlayerScore = 0;
-	static int assioDebugNpcScore = 0;
-	static _bool assioDebugPlayerTurn = true;
+	// 소환사의 코트 미니게임 UI 시작 확인용 디버그 입력.
 	if (E::CGameInstance::Get().KeyDown(DIK_F3))
-	{
 		GET_SINGLE(UIManager)->AssioMiniGameStart(true);
-		assioDebugScoreCount = 0u;
-		assioDebugPlayerScore = 0;
-		assioDebugNpcScore = 0;
-		assioDebugPlayerTurn = true;
-	}
-	if (E::CGameInstance::Get().KeyDown(DIK_SPACE) &&
-		GET_SINGLE(UIManager)->CanAddAssioScore())
-	{
-		constexpr int turnScore = 30;
-		const int playerScore = assioDebugPlayerScore +
-			(assioDebugPlayerTurn ? turnScore : 0);
-		const int npcScore = assioDebugNpcScore +
-			(assioDebugPlayerTurn ? 0 : turnScore);
-		const _bool isFinalScore = assioDebugScoreCount + 1u >= 4u;
-		if (GET_SINGLE(UIManager)->AddScore(
-			turnScore,
-			playerScore,
-			npcScore,
-			assioDebugPlayerTurn,
-			isFinalScore))
-		{
-			++assioDebugScoreCount;
-			assioDebugPlayerScore = playerScore;
-			assioDebugNpcScore = npcScore;
-			assioDebugPlayerTurn = !assioDebugPlayerTurn;
-		}
-	}
 
 	// World-space RTT wand-shop debug entry.
 	if (E::CGameInstance::Get().KeyDown(DIK_F4))
 	{
-		//CPlayer* player = nullptr;
-		//CHandle playerHandle{};
-		//if (const auto* playerLayer = E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
-		//{
-		//	for (const CHandle handle : *playerLayer)
-		//	{
-		//		player = E::CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(handle);
-		//		if (player)
-		//		{
-		//			playerHandle = handle;
-		//			break;
-		//		}
-		//	}
-		//}
+		CPlayer* player = nullptr;
+		CHandle playerHandle{};
+		if (const auto* playerLayer = E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
+		{
+			for (const CHandle handle : *playerLayer)
+			{
+				player = E::CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(handle);
+				if (player)
+				{
+					playerHandle = handle;
+					break;
+				}
+			}
+		}
 
-		//if (player)
-		//{
-		//	GET_SINGLE(UIManager)->OpenWandShopWorld(
-		//		playerHandle,
-		//		{ 0.f, 1.6f, 3.f },
-		//		{ 0.f, 0.f, 0.f });
-		//}
-		GET_SINGLE(UIManager)->LoadPrefab("AccioSuccess");
+		if (player)
+		{
+			GET_SINGLE(UIManager)->OpenWandShopWorld(
+				playerHandle,
+				{ 0.f, 1.6f, 3.f },
+				{ 0.f, 0.f, 0.f });
+		}
+		//GET_SINGLE(UIManager)->LoadPrefab("AccioSuccess");
 	}
 
 	// 대화 선택 UI와 콜백 연결 확인용 디버그 입력.
