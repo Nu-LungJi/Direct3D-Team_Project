@@ -64,6 +64,16 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
 				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("AvadaKedavra")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcEntrance")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcDialogueCloseUp")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcWandBox")))
+				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcSpellLesson")))
+				return false;
 
 			if (auto texture = E::CGameInstance::Get().AddResource(
 				LEVEL::HOGWART_WORLD,
