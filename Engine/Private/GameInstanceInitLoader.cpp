@@ -1176,6 +1176,13 @@ HRESULT CGameInstanceInitLoader::LoadShader()
 			return E_FAIL;
 		}
 	}
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResPixelShader>(TAG_RES_GRP_PERMANENT_SHADER, "PS_ScoreImpactSmoke", "./ShaderFiles/UI/ScoreImpactSmoke.hlsl"))
+	{
+		if (FAILED(res->Load()))
+		{
+			return E_FAIL;
+		}
+	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResVertexShader>(TAG_RES_GRP_PERMANENT_SHADER, "VS_BoostTrailInstancedUI", "./ShaderFiles/UI/BoostTrailInstancedUI.hlsl"))
 	{
 		if (FAILED(res->Load()))

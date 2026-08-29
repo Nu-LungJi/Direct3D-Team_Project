@@ -15,6 +15,7 @@ namespace
 		"./Resources/SampleClient/Models/Skeleton/Wand/SK_Wand2.bin";
 	constexpr const _char* WAND2_RESOURCE_TAG =
 		"PLAYER_WEAPON_SKELETON_RESOURCE_WAND2";
+	constexpr _float WAND_SMOKE_SPAWN_INTERVAL = 0.2f;
 }
 
 CPlayer_Weapon::CPlayer_Weapon()
@@ -124,21 +125,25 @@ HRESULT CPlayer_Weapon::EquipWandModel(
 	const E::StringID groupTag = m_pComModelInstance->Get_GroupTag();
 	const E::StringID resourceTag{ strResourceTag };
 
-	if (!CGameInstance::Get().GetResourceFirst<CResModel>(groupTag, resourceTag))
+	auto model =
+		CGameInstance::Get().GetResourceFirst<CResModel>(groupTag, resourceTag);
+	if (!model)
 	{
-		auto model = CGameInstance::Get().AddResourceT<CResModel>(
+		model = CGameInstance::Get().AddResourceT<CResModel>(
 			groupTag,
 			resourceTag,
 			CResModel::Create(strModelPath));
 		if (!model)
 			return E_FAIL;
-
-		CResModel::DESC modelDesc{};
-		modelDesc.PreTransformMatrix =
-			XMMatrixRotationX(XMConvertToRadians(-90.f));
-		if (FAILED(model->Load(modelDesc)))
-			return E_FAIL;
 	}
+
+	// A failed first load leaves the resource registered under its tag. Always
+	// call Load so restoring a missing file can recover on the next attempt.
+	CResModel::DESC modelDesc{};
+	modelDesc.PreTransformMatrix =
+		XMMatrixRotationX(XMConvertToRadians(-90.f));
+	if (FAILED(model->Load(modelDesc)))
+		return E_FAIL;
 
 	const E::StringID previousGroupTag = m_pComModelInstance->Get_GroupTag();
 	const E::StringID previousResourceTag = m_pComModelInstance->Get_ResTag();
@@ -152,6 +157,9 @@ HRESULT CPlayer_Weapon::EquipWandModel(
 		RefreshModelBones();
 		return E_FAIL;
 	}
+
+	m_bWand2Equipped = strResourceTag == WAND2_RESOURCE_TAG;
+	m_fWandSmokeSpawnTime = WAND_SMOKE_SPAWN_INTERVAL;
 
 	return S_OK;
 }
@@ -181,7 +189,6 @@ HRESULT CPlayer_Weapon::RefreshModelBones()
 		m_pComModelInstance->GetModel()->Get_BoneIndex("MuzzleSocket");
 	return m_iMuzzleSocketBoneIndex >= 0 ? S_OK : E_FAIL;
 }
-
 void CPlayer_Weapon::PriorityUpdate(E::_float fTimeDelta)
 {
 }
@@ -196,6 +203,7 @@ void CPlayer_Weapon::Update(E::_float fTimeDelta)
 
 void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)
 {
+	_bool bHandWorldUpdated = false;
 	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
 	{
 		if (!m_bThrow)
@@ -212,6 +220,7 @@ void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)
 						Par.r[i] = XMVector3Normalize(Par.r[i]);
 					}
 					XMStoreFloat4x4(&m_ParentMatrix, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
+					bHandWorldUpdated = true;
 				}
 			}
 		}
@@ -220,6 +229,16 @@ void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)
 
 	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
 	GetTransform().Update();
+	if (m_bWand2Equipped && bHandWorldUpdated)
+	{
+		m_fWandSmokeSpawnTime += std::max(0.f, fTimeDelta);
+		if (m_fWandSmokeSpawnTime >= WAND_SMOKE_SPAWN_INTERVAL)
+		{
+			m_fWandSmokeSpawnTime = 0.f;
+			CGameInstance::Get().Spawn(
+				"WandSmokeLoop.json", m_ParentMatrix);
+		}
+	}
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 
 	/*----------- 광윤 추가 -----------*/

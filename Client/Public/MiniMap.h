@@ -113,6 +113,7 @@ private:
 
 	void InitRookwoodBattleZone();
 	void InitBossRookwoodBattleZone();
+	void InitHogwartObjectives();
 	void InitRookwoodObjectives();
 
 private:

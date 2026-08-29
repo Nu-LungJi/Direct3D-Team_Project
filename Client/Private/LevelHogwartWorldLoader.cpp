@@ -530,7 +530,9 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 				"./Resources/SampleClient/Textures/UI/UITexture/DeadScene",
 				"./Resources/SampleClient/Textures/UI/UITexture/Cursor",
 				"./Resources/SampleClient/Textures/UI/UITexture/WandShop",
-				"./Resources/SampleClient/Textures/UI/UITexture/MiniGame"
+				"./Resources/SampleClient/Textures/UI/UITexture/SpellMiniGame",
+				"./Resources/SampleClient/Textures/UI/UITexture/MiniGame",
+				"./Resources/SampleClient/Textures/UI/FlipBook"
 			};
 
 			for (const auto& targetDir : targetDirectories)
@@ -571,6 +573,10 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 			return false;
 		}
 		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_HOGWART_WORLD", "Prototype_GameObject_UIController", CUIController::Create())))
+		{
+			return false;
+		}
+		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_HOGWART_WORLD", "Prototype_GameObject_SpellMiniGame", CSpellMiniGame::Create())))
 		{
 			return false;
 		}
