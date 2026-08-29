@@ -870,7 +870,10 @@ _bool CInteractiveNpc::StartCoinMiniGame()
 	m_eActiveMiniGame = ACTIVE_MINIGAME::COIN;
 	SpawnCoinCollision();
 	if (StartMoveToDestination(1u))
+	{
+		E::CGameInstance::Get().Set_ShadowEnabled(false);
 		return true;
+	}
 
 	m_eActiveMiniGame = ACTIVE_MINIGAME::NONE;
 	return false;

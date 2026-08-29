@@ -278,6 +278,7 @@ std::optional<CHandle> CLevelCharlesRookwood::SpawnPlayer()
 		.iSimulationMask = PX_ALL_LAYERS,
 		.iQueryMask =
 			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 			ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 			ETOUI(COLLISION_LAYER::ENEMY_BODY)
 	};

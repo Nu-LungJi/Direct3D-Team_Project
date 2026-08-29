@@ -1559,6 +1559,16 @@ uint32_t CUIController::GetSpellType(uint32_t SlotNumber)
 	return spellType;
 }
 
+_float CUIController::GetSpellCooldownDuration(uint32_t SlotNumber)
+{
+	if (SlotNumber < 1u || SlotNumber > 4u)
+		return 0.f;
+
+	auto* pSpellSlot = static_cast<CSpellMeter*>(
+		SafeGetOBJ(m_SpellSlot[SlotNumber - 1u]));
+	return pSpellSlot ? pSpellSlot->GetCooldownDuration() : 0.f;
+}
+
 void CUIController::UseSpell(uint32_t SlotNumber)
 {
 	if (SlotNumber < 1u || SlotNumber > 4u)

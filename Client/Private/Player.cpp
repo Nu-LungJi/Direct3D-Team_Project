@@ -1641,7 +1641,8 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 
 	if (eSpellType != SPELL_TYPE::LUMOS)
 	{
-		m_SkillSlotCooldowns[iSlotNumber - 1u] = SKILL_SLOT_COOLDOWN;
+		m_SkillSlotCooldowns[iSlotNumber - 1u] =
+			pUIController->GetSpellCooldownDuration(iSlotNumber);
 		pUIController->UseSpell(iSlotNumber);
 	}
 	return true;

@@ -90,7 +90,7 @@ private:
 	_bool m_bQuestRestoreDeferred{};
 	// F5로 전환하며, 올리밴더 상점에서 호그와트 쪽 목적지로 이동할 때만 사용한다.
 	_bool m_bUseExtendedHogwartsMoveFadeHold{};
-	_float m_fOriginalHogwartsMoveFadeHoldDuration{ 5.f };
+	_float m_fOriginalHogwartsMoveFadeHoldDuration{ 15.f };
 	E::CHandle m_hWandBox{};
 	// Hand-socket local transform. The former NPC-root position
 	// (-1.2, 3.7, 0.8) is represented by the hand bone itself now.

@@ -491,7 +491,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.resBeHaviorMajor = "BTJSON";
 		Desc.resBeHaviorMinor = "NPC1";
 		Desc.TargetHandle = *hPlayer;
-		Desc.vPos = { 1895.461f, 35.9f, 268.991f };
+		Desc.vPos = { 1895.461f, 34.4f, 268.991f };
 		Desc.vStartPos = Desc.vPos;
 		Desc.vRot = {/*33.5f*/0.f, 24.5f, 0.f };
 		Desc.vScale = { 1.f, 1.f, 1.f };
@@ -841,6 +841,7 @@ std::optional<CHandle> CLevelHogwartWorld::SpawnPlayer()
 		.iSimulationMask = PX_ALL_LAYERS,
 		.iQueryMask =
 			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 			ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 			ETOUI(COLLISION_LAYER::DOOR_DYNAMIC) |
 			ETOUI(COLLISION_LAYER::DOOR_HINGE_BLOCKER)

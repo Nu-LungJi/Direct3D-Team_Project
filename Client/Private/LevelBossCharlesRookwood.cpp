@@ -303,6 +303,7 @@ std::optional<CHandle> CLevelBossCharlesRookwood::SpawnPlayer()
 	.iSimulationMask = PX_ALL_LAYERS,
 	.iQueryMask =
 		ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+		ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 		ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 		ETOUI(COLLISION_LAYER::ENEMY_BODY)
 	};
@@ -408,7 +409,7 @@ HRESULT CLevelBossCharlesRookwood::PlayBGM()
 	m_bmgID = pSoundManager->Play2D(sSoundPath,
 		E::SOUND_PLAY_DESC{
 			.sBusID = SOUND_BUS::BGM,
-			.fVolume = 1.f,
+			.fVolume = 0.6f,
 			.fPitch = 1.f,
 			.fFadeInDuration = 1.f,
 			.iPriority = 64,
@@ -479,8 +480,8 @@ HRESULT CLevelBossCharlesRookwood::Initialize_VolumetricFog(){
 	FogOption.g_fFogMaxHeight		= 500.f;
 	FogOption.g_fFogHeightFallOff	= 0.05f;
 
-	FogOption.g_fFogStartDistance	= 100.f;
-	FogOption.g_fFogEndDistance		= 250.f;
+	FogOption.g_fFogStartDistance	= 150.f;
+	FogOption.g_fFogEndDistance		= 400.f;
 
 	CGameInstance::Get().Set_VolumetricFogOption(FogOption);
 

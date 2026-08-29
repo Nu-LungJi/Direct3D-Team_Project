@@ -51,7 +51,7 @@ private:
 	void CacheDirectionalAttackAnimations(const CPlayer& player);
 	ATTACK_DIRECTION ResolveTargetAttackDirection(const CPlayer& player) const;
 
-	static constexpr _float TARGET_MAX_DISTANCE = 40.f;
+	static constexpr _float TARGET_MAX_DISTANCE = 80.f;
 	static constexpr _float TARGET_FRONT_DOT_THRESHOLD = 0.5f;
 	static constexpr size_t ATTACK_DIRECTION_COUNT =
 		static_cast<size_t>(ATTACK_DIRECTION::END);

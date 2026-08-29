@@ -75,6 +75,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AcientThunderAttack")))
 				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("Lightning")))
+				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("InteractiveNpcDialogue")))
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("AvadaKedavra")))
