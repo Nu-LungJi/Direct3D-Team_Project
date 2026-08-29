@@ -1222,6 +1222,41 @@ void UIManager::FinishRaceMiniGame()
 
 	m_RaceResultRoots = LoadPrefab("Flag");
 	m_hRaceResultCoinText.reset();
+	if (auto* trophy = FindUIByNameRecursive(
+		m_RaceResultRoots, "Trophy"))
+	{
+		const CHandle trophyHandle = trophy->GetHandle();
+		const _float trophyBaseScale = trophy->GetScaleRatio();
+		trophy->SetScaleRatio(0.f);
+		trophy->CalcUICoord();
+		trophy->Appear = [trophyHandle, trophyBaseScale](CUIObject*)
+		{
+			auto* current = GetSafeUI(trophyHandle);
+			if (!current)
+				return;
+
+			current->SetScaleRatio(0.f);
+			current->CalcUICoord();
+			if (auto* tween = current->GetTweenCom())
+			{
+				tween->PlayTween(
+					0.f, trophyBaseScale, 1.f,
+					[trophyHandle](_float value)
+					{
+						if (auto* target = GetSafeUI(trophyHandle))
+						{
+							target->SetScaleRatio(value);
+							target->CalcUICoord();
+						}
+					}, nullptr, EEaseType::EaseOutQuad);
+			}
+			else
+			{
+				current->SetScaleRatio(trophyBaseScale);
+				current->CalcUICoord();
+			}
+		};
+	}
 	if (auto* coin = FindUIByNameRecursive(
 		m_RaceResultRoots, "CoinCnt"))
 	{
@@ -2812,7 +2847,15 @@ void UIManager::CreateFadeIn(float delay, float playtime)
 	}
 
 	if (auto* pBG = GetSafeUI(hBG))
+	{
 		pBG->GetTweenCom()->ClearTweens();
+		if (delay <= 0.f && playtime <= 0.f)
+		{
+			pBG->SetInputLcok(true);
+			pBG->SetAlpha(1.f);
+			return;
+		}
+	}
 	PlayOnlyFadeIn(hBG, delay, playtime);
 }
 
@@ -3911,6 +3954,9 @@ void UIManager::FadeOutQuest(float playtime)
 
 void UIManager::FadeInQuest(float playtime)
 {
+	if (m_bQuestFadeInDeferred)
+		return;
+
 	m_bQuestFadeSuppressed = false;
 	if (!m_hQuestRoot)
 		return;

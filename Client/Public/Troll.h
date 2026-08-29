@@ -83,6 +83,7 @@ private:
 	CComPxBoxCollider*	m_pChargeBodyCollider{};
 	PX_FILTER_DESC		m_tDefaultCCTFilter{};
 	_bool				m_bIsBreak{ false }, m_bActiveSKill{ false };
+	_bool				m_bSceneChangeRequested{ false };
 	_float				m_fTick{ 0.f };
 	_bool				m_bChargeBodyColliderEnabled{};
 	static constexpr uint32_t CHARGE_BODY_SHAPE_INDEX = 100u;

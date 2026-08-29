@@ -87,6 +87,14 @@ public:
 	void DeleteQuest();
 	void FadeOutQuest(float playtime = 0.3f);
 	void FadeInQuest(float playtime = 0.5f);
+	void SetQuestFadeInDeferred(_bool deferred)
+	{
+		m_bQuestFadeInDeferred = deferred;
+	}
+	_bool IsQuestFadeInDeferred() const
+	{
+		return m_bQuestFadeInDeferred;
+	}
 	_bool SetMiniMapObjectiveActive(const std::string& key, _bool active);
 
 	/********레이스 시작 타이머***********/
@@ -209,6 +217,7 @@ private:
 	std::optional<CHandle> m_hQuestTargetIcon{};
 	std::string m_CurrentQuestText{};
 	_bool m_bQuestFadeSuppressed{};
+	_bool m_bQuestFadeInDeferred{};
 	_float2 m_QuestTextBaseLocalPos{};
 	_float2 m_QuestTargetIconBaseLocalPos{};
 	_float m_fDialogueTargetWidth{};

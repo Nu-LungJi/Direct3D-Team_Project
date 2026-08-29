@@ -60,6 +60,7 @@ private:
 
 	static constexpr size_t MONSTER_MARKER_COUNT = 20;
 	static constexpr _float MONSTER_MARKER_SIZE = 18.f;
+	static constexpr _float BOSS_MARKER_SCALE = 2.5f;
 	static constexpr _float MONSTER_DETECTION_RADIUS = 60.f;
 	static constexpr _float MONSTER_SEARCH_INTERVAL = 0.1f;
 	static constexpr _float MINIMAP_BORDER_PADDING = 4.3f;
