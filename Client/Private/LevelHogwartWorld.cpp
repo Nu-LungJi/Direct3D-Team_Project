@@ -520,7 +520,13 @@ HRESULT CLevelHogwartWorld::Initialize()
 	// 레벨 진입 후 3초 동안 검은 화면을 유지하고,
 	// 이후 2초 동안 검은 UI를 사라지게 해 게임 화면을 드러낸다.
 	GET_SINGLE(UIManager)->CreateFadeOut(3.f, 2.f);
-
+	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/HogsMeade/Ambient/Roads_Lead_to_Hogsmeade.mp3", SOUND_PLAY_DESC{
+   .sBusID = SOUND_BUS::BGM,
+   .fVolume = 0.2f,
+   .fPitch = 1.f,
+   .iPriority = 64,
+   .bLoop = true
+		});
 	return S_OK;
 }
 
@@ -551,6 +557,7 @@ void CLevelHogwartWorld::Update(E::_float fTimeDelta)
 
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();
 	UpdateDebugWarp();
+
 }
 
 void CLevelHogwartWorld::UpdateDebugWarp()
@@ -1512,6 +1519,11 @@ UPtr<CLevelHogwartWorld> CLevelHogwartWorld::Create()
 
 void CLevelHogwartWorld::Free()
 {
+	if (auto* pSoundManager =
+		E::CGameInstance::Get().GetSoundManager())
+	{
+		pSoundManager->StopBus(SOUND_BUS::BGM);
+	}
 	GET_SINGLE(UIManager)->SetRaceReturnToShopCallback({});
 	if (auto *pNpcManager = E::CGameInstance::Get().GetNpcPlacementManager())
 		pNpcManager->ClearNpcOptions();

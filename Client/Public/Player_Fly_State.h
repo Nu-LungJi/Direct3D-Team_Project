@@ -88,7 +88,9 @@ private:
 
 	_float m_fBloomLimit{ 5.0f };
 	_float m_fCurBlurIntensity{ 0.0f };
-
+	_float m_fBoostTimeAcc{ 0.0f };
+	_bool m_bBoostSoundPlayed{false};
+	SOUND_ID m_iBroomLoopSoundID{ INVALID_SOUND_ID };
 };
 
 NS_END
