@@ -39,6 +39,7 @@ public:
 		_float3 vInitialAngularVelocityRadians{};
 		_float fAngularDamping{ 0.05f };
 		_float fMass{ 0.15f };
+		_bool bStartSleeping{};
 		_float fCollisionDestroyImpulse{ 2.25f };
 		_float fCollisionDestroyGraceTime{ 0.3f };
 		PX_FILTER_DESC tFilter{

@@ -9,6 +9,14 @@
 #include "Trail_CPU.h"
 NS_USING(Client)
 
+namespace
+{
+	constexpr const _char* WAND2_MODEL_PATH =
+		"./Resources/SampleClient/Models/Skeleton/Wand/SK_Wand2.bin";
+	constexpr const _char* WAND2_RESOURCE_TAG =
+		"PLAYER_WEAPON_SKELETON_RESOURCE_WAND2";
+}
+
 CPlayer_Weapon::CPlayer_Weapon()
 	: CGameObject{}
 {
@@ -89,19 +97,8 @@ HRESULT CPlayer_Weapon::Initialize(void* pArg)
 		};
 	}
 
-	{
-		const auto& bones = m_pComModelInstance->GetModel()->GetBones();
-		auto& combinedBones = m_pComModelInstance->Get_CombinedBoneMatrices();
-		combinedBones.resize(bones.size());
-		for (size_t i = 0; i < bones.size(); ++i)
-		{
-			if (!bones[i]) return E_FAIL;
-			bones[i]->Update_CombinedTransformationMatrix(bones, XMMatrixIdentity());
-			combinedBones[i] = *bones[i]->Get_CombinedTransformationMatrixPtr();
-		}
-		m_iMuzzleSocketBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("MuzzleSocket");
-		if (m_iMuzzleSocketBoneIndex < 0) return E_FAIL;
-	}
+	if (FAILED(RefreshModelBones()))
+		return E_FAIL;
 
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
 	GetTransform().SetScale(_float3{ 4.f,4.f,4.f });
@@ -112,14 +109,89 @@ HRESULT CPlayer_Weapon::Initialize(void* pArg)
 	return S_OK;
 }
 
+HRESULT CPlayer_Weapon::EquipWand2()
+{
+	return EquipWandModel(WAND2_MODEL_PATH, WAND2_RESOURCE_TAG);
+}
+
+HRESULT CPlayer_Weapon::EquipWandModel(
+	const _string& strModelPath,
+	const _string& strResourceTag)
+{
+	if (!m_pComModelInstance || strModelPath.empty() || strResourceTag.empty())
+		return E_INVALIDARG;
+
+	const E::StringID groupTag = m_pComModelInstance->Get_GroupTag();
+	const E::StringID resourceTag{ strResourceTag };
+
+	if (!CGameInstance::Get().GetResourceFirst<CResModel>(groupTag, resourceTag))
+	{
+		auto model = CGameInstance::Get().AddResourceT<CResModel>(
+			groupTag,
+			resourceTag,
+			CResModel::Create(strModelPath));
+		if (!model)
+			return E_FAIL;
+
+		CResModel::DESC modelDesc{};
+		modelDesc.PreTransformMatrix =
+			XMMatrixRotationX(XMConvertToRadians(-90.f));
+		if (FAILED(model->Load(modelDesc)))
+			return E_FAIL;
+	}
+
+	const E::StringID previousGroupTag = m_pComModelInstance->Get_GroupTag();
+	const E::StringID previousResourceTag = m_pComModelInstance->Get_ResTag();
+
+	if (FAILED(m_pComModelInstance->ChangeModel(groupTag, resourceTag)))
+		return E_FAIL;
+
+	if (FAILED(RefreshModelBones()))
+	{
+		m_pComModelInstance->ChangeModel(previousGroupTag, previousResourceTag);
+		RefreshModelBones();
+		return E_FAIL;
+	}
+
+	return S_OK;
+}
+
+HRESULT CPlayer_Weapon::RefreshModelBones()
+{
+	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
+		return E_FAIL;
+
+	const auto& bones = m_pComModelInstance->GetModel()->GetBones();
+	auto& combinedBones = m_pComModelInstance->Get_CombinedBoneMatrices();
+	combinedBones.clear();
+	combinedBones.resize(bones.size());
+
+	for (size_t i = 0; i < bones.size(); ++i)
+	{
+		if (!bones[i])
+			return E_FAIL;
+
+		bones[i]->Update_CombinedTransformationMatrix(
+			bones, XMMatrixIdentity());
+		combinedBones[i] =
+			*bones[i]->Get_CombinedTransformationMatrixPtr();
+	}
+
+	m_iMuzzleSocketBoneIndex =
+		m_pComModelInstance->GetModel()->Get_BoneIndex("MuzzleSocket");
+	return m_iMuzzleSocketBoneIndex >= 0 ? S_OK : E_FAIL;
+}
+
 void CPlayer_Weapon::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
 void CPlayer_Weapon::Update(E::_float fTimeDelta)
 {
-
-
+#ifdef _DEBUG
+	if (CGameInstance::Get().KeyDown(DIK_I))
+		EquipWand2();
+#endif
 }
 
 void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)

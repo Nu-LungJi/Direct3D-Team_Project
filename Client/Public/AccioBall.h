@@ -59,7 +59,10 @@ public:
 				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
 				ETOUI(COLLISION_LAYER::PLAYER_BODY) |
 				ETOUI(COLLISION_LAYER::ENEMY_BODY),
-			.iQueryMask = PX_ALL_LAYERS
+			.iQueryMask = PX_ALL_LAYERS,
+			.iNotifyFlags =
+				PX_NOTIFY_TOUCH_FOUND |
+				PX_NOTIFY_CONTACT_POINTS
 		};
 	};
 
@@ -79,6 +82,9 @@ public:
 	bool GetShadowBounds(BoundingBox& outBounds) const override;
 	void OnWake() override;
 	void OnSleep() override;
+	void OnCollisionEnter(
+		CGameObject* pObj,
+		const PX_ON_COLLISION_DATA& info) override;
 
 	_bool ApplyPullMotion(const _float3& vToTarget);
 	// [LSY] 선택 표시와 실제 획득이 같은 경기 규칙을 사용하도록 상태를 바꾸지 않고 검사한다.
@@ -113,6 +119,9 @@ private:
 	void SyncRenderPoseFromRigidBody();
 	_bool ApplyTorque(const _float3& vTorque);
 	_bool ApplyRollingTorque(const _float3& vTorqueAxis);
+	void PlayCollisionSound(
+		const _float3& vImpactPosition,
+		_float fImpulse) const;
 
 private:
 	CComStaticModelInstance* m_pComModelInstance{};
@@ -133,6 +142,7 @@ private:
 	_float m_fAutoSleepAngularSpeed{ 0.2f };
 	_float m_fAutoSleepDelay{ 0.3f };
 	_float m_fAutoSleepElapsed{};
+	_float m_fCollisionSoundCooldown{};
 	_bool m_bSettled{};
 	CHandle m_hController{};
 	CHandle m_hActivity{};

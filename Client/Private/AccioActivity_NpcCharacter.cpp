@@ -9,10 +9,15 @@
 #include "ComConstantBuffer.h"
 #include "ComModelInstance.h"
 #include "ComPxCharacterController.h"
+#include "ComPxRigidBody.h"
+#include "ComPxSphereCollider.h"
 #include "GameInstance.h"
+#include "PhysXManager.h"
 #include "Player_Weapon.h"
 #include "ResPhysXMaterial.h"
+#include "ResPhysXSphereGeometry.h"
 #include "Resources.h"
+#include "SoundManager.h"
 
 NS_USING(Client)
 
@@ -26,6 +31,12 @@ namespace
 		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_RMB_WandReady_POSE_anm.bin";
 	constexpr _char PULL_ANIMATION[] =
 		"AN_ElegantStudent_PrettyGirl2_Rig_ESPG2_Hu_Cmbt_Atk_Cast_AccioPull_anm.bin";
+	constexpr const _char* FOOTSTEP_SOUND_PATH =
+		"./Resources/SampleClient/Sound/AccioActivity/Npc/AccioNpc_FemaleFootstep.wav";
+	constexpr _float FOOT_COLLIDER_RADIUS = 0.18f;
+	constexpr _float LEFT_FOOT_COLLIDER_VERTICAL_OFFSET = -0.28f;
+	constexpr _float RIGHT_FOOT_COLLIDER_VERTICAL_OFFSET = -0.20f;
+	constexpr _float FOOTSTEP_SOUND_COOLDOWN = 0.12f;
 }
 
 CAccioActivity_NpcCharacter::CAccioActivity_NpcCharacter() = default;
@@ -163,7 +174,66 @@ HRESULT CAccioActivity_NpcCharacter::Initialize(void* pArg)
 		}
 	}
 
+	{
+		CComPxRigidBody::DESC desc{};
+		desc.eType = CComPxRigidBody::TYPE::KINEMATIC;
+		desc.vPosition = pDesc->vInitialPosition;
+		if (FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PHYSX,
+			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxRigidBody,
+			"ComFootRigidbody",
+			&desc,
+			&m_pComRigidBody)))
+		{
+			return E_FAIL;
+		}
+	}
+
+	const auto AddFootCollider =
+		[&](const _char* pComponentTag,
+			FOOT_COLLISION eFoot,
+			CComPxSphereCollider** ppCollider)
+		{
+			CComPxSphereCollider::DESC desc{};
+			desc.pComPxRigidBody = m_pComRigidBody;
+			desc.pResSphereGeo =
+				CResPhysXSphereGeometry::CreateAndLoad({ .fRadius = FOOT_COLLIDER_RADIUS });
+			desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+			desc.iShapeSubIndex = ETOUI(eFoot);
+			desc.bIsTrigger = true;
+			desc.tFilter.iLayer = ETOUI(COLLISION_LAYER::SENSOR);
+			desc.tFilter.iQueryMask = 0;
+			desc.tFilter.iSimulationMask =
+				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+				ETOUI(COLLISION_LAYER::MOVING_PLATFORM);
+			return AddComponentFromProto(
+				ES_EngineProtoMajorType::PHYSX,
+				ES_EngineProtoPhysXComponent::Prototype_Component_ComPxSphereCollider,
+				pComponentTag,
+				&desc,
+				ppCollider);
+		};
+
+	if (FAILED(AddFootCollider(
+		"ComPxLeftFootCollider",
+		FOOT_COLLISION::LEFT,
+		&m_pComPxLeftFootCollider)) ||
+		FAILED(AddFootCollider(
+			"ComPxRightFootCollider",
+			FOOT_COLLISION::RIGHT,
+			&m_pComPxRightFootCollider)))
+	{
+		return E_FAIL;
+	}
+
 	if (!m_pComModelInstance || !m_pComModelInstance->GetModel() || !m_pModelAnimator)
+		return E_FAIL;
+	m_iLeftFootBoneIndex =
+		m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_FX_LeftFootSocket");
+	m_iRightFootBoneIndex =
+		m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_FX_RightFootSocket");
+	if (m_iLeftFootBoneIndex < 0 || m_iRightFootBoneIndex < 0)
 		return E_FAIL;
 
 	m_iIdleAnimation = FindAnimationIndex(IDLE_ANIMATION);
@@ -226,8 +296,87 @@ void CAccioActivity_NpcCharacter::OnRegisteredToManager()
 
 void CAccioActivity_NpcCharacter::FixedUpdate(_float fTimeDelta)
 {
+	m_fFootstepSoundCooldown = std::max(
+		0.f,
+		m_fFootstepSoundCooldown - std::max(fTimeDelta, 0.f));
+
 	if (m_pCharacterMotor)
 		m_pCharacterMotor->FixedUpdate(fTimeDelta);
+
+	GetTransform().Update();
+	if (m_pComRigidBody)
+	{
+		const _float3 vPosition = GetTransform().GetPosition();
+		const _float4 vRotation = GetTransform().GetQuaternion();
+		m_pComRigidBody->SetKinematicTarget(vPosition, vRotation);
+
+		if (m_pComModelInstance)
+		{
+			const auto& combinedBones =
+				m_pComModelInstance->Get_CombinedBoneMatrices();
+			const _matrix physicsWorld =
+				XMMatrixRotationQuaternion(XMLoadFloat4(&vRotation)) *
+				XMMatrixTranslation(vPosition.x, vPosition.y, vPosition.z);
+			const _matrix inversePhysicsWorld =
+				XMMatrixInverse(nullptr, physicsWorld);
+
+			const auto UpdateFootCollider =
+				[&](CComPxSphereCollider* pCollider,
+					int32_t iBoneIndex,
+					_float fVerticalOffset)
+				{
+					if (!pCollider || iBoneIndex < 0 ||
+						static_cast<size_t>(iBoneIndex) >= combinedBones.size())
+					{
+						return;
+					}
+
+					const _matrix colliderWorld =
+						XMLoadFloat4x4(&combinedBones[static_cast<size_t>(iBoneIndex)]) *
+						GetTransform().GetLoadedCombinedWorldMatrix();
+					const _matrix colliderLocal = colliderWorld * inversePhysicsWorld;
+
+					_vector vScale{};
+					_vector vRotationLocal{};
+					_vector vTranslation{};
+					if (!XMMatrixDecompose(
+						&vScale,
+						&vRotationLocal,
+						&vTranslation,
+						colliderLocal))
+					{
+						return;
+					}
+
+					_float3 vLocalPosition{};
+					_float4 vLocalRotation{};
+					XMStoreFloat3(&vLocalPosition, vTranslation);
+					vLocalPosition.y += fVerticalOffset;
+					XMStoreFloat4(
+						&vLocalRotation,
+						XMQuaternionNormalize(vRotationLocal));
+					pCollider->SetLocalPosition(vLocalPosition);
+					pCollider->SetLocalRotation(vLocalRotation);
+				};
+
+			UpdateFootCollider(
+				m_pComPxLeftFootCollider,
+				m_iLeftFootBoneIndex,
+				LEFT_FOOT_COLLIDER_VERTICAL_OFFSET);
+			UpdateFootCollider(
+				m_pComPxRightFootCollider,
+				m_iRightFootBoneIndex,
+				RIGHT_FOOT_COLLIDER_VERTICAL_OFFSET);
+			UpdateFootGroundContact(
+				FOOT_COLLISION::LEFT,
+				m_pComPxLeftFootCollider,
+				m_bLeftFootGroundContact);
+			UpdateFootGroundContact(
+				FOOT_COLLISION::RIGHT,
+				m_pComPxRightFootCollider,
+				m_bRightFootGroundContact);
+		}
+	}
 
 	// [LSY] AI가 다음 FixedUpdate용 이동 의도를 다시 기록하도록 1회 적용 후 비운다.
 	if (m_pMoveIntent)
@@ -475,6 +624,111 @@ void CAccioActivity_NpcCharacter::UpdatePullAnimation()
 
 	if (fRatio >= m_fPullHoldRatio)
 		m_pModelAnimator->SetPlay(false);
+}
+
+void CAccioActivity_NpcCharacter::OnTriggerEnter(
+	CGameObject*,
+	const PX_ON_TRIGGER_DATA& info)
+{
+	if (!info.bSelfIsTrigger)
+		return;
+
+	const auto eFoot = static_cast<FOOT_COLLISION>(info.iSelfShapeSubIndex);
+	if (eFoot == FOOT_COLLISION::LEFT || eFoot == FOOT_COLLISION::RIGHT)
+		PlayFootstepSound(eFoot);
+}
+
+void CAccioActivity_NpcCharacter::UpdateFootGroundContact(
+	FOOT_COLLISION eFoot,
+	const CComPxSphereCollider* pFootCollider,
+	_bool& bWasGrounded)
+{
+	if (!pFootCollider)
+	{
+		bWasGrounded = false;
+		return;
+	}
+
+	const _float3 vRootPosition = GetTransform().GetPosition();
+	const _float3 vLocalPosition = pFootCollider->GetLocalPosition();
+	_vector vWorldPosition = XMVector3Rotate(
+		XMLoadFloat3(&vLocalPosition),
+		GetTransform().GetLoadedQuaternion());
+	vWorldPosition += XMLoadFloat3(&vRootPosition);
+	_float3 vFootWorldPosition{};
+	XMStoreFloat3(&vFootWorldPosition, vWorldPosition);
+
+	PX_OVERLAP_DESC overlapDesc{};
+	overlapDesc.tGeometry = {
+		.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,
+		.fRadius = FOOT_COLLIDER_RADIUS
+	};
+	overlapDesc.tPose.vPosition = vFootWorldPosition;
+	overlapDesc.tFilter = {
+		.iQueryMask =
+			ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+			ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
+			ETOUI(COLLISION_LAYER::MOVING_PLATFORM),
+		.hIgnoreGameObject = GetHandle(),
+		.bQueryStatic = true,
+		.bQueryDynamic = true,
+		.bIncludeTrigger = false
+	};
+
+	PX_OVERLAP_RESULT overlapResult{};
+	auto* pPhysXManager = CGameInstance::Get().GetPhysXManager();
+	const _bool bGrounded = pPhysXManager &&
+		pPhysXManager->Overlap(overlapDesc, overlapResult) &&
+		overlapResult.bHit;
+	if (bGrounded && !bWasGrounded)
+		PlayFootstepSound(eFoot);
+	bWasGrounded = bGrounded;
+}
+
+void CAccioActivity_NpcCharacter::PlayFootstepSound(FOOT_COLLISION eFoot)
+{
+	if (m_eAction != ACTION::MOVE || m_bDialogueAnimationPlaying ||
+		m_fFootstepSoundCooldown > 0.f ||
+		(eFoot != FOOT_COLLISION::LEFT && eFoot != FOOT_COLLISION::RIGHT))
+		return;
+
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (!pSoundManager)
+		return;
+
+	const CComPxSphereCollider* pFootCollider =
+		eFoot == FOOT_COLLISION::LEFT
+		? m_pComPxLeftFootCollider
+		: m_pComPxRightFootCollider;
+	_float3 vSoundPosition = GetTransform().GetPosition();
+	if (pFootCollider)
+	{
+		const _float3 vLocalPosition = pFootCollider->GetLocalPosition();
+		_vector vWorldPosition = XMVector3Rotate(
+			XMLoadFloat3(&vLocalPosition),
+			GetTransform().GetLoadedQuaternion());
+		vWorldPosition += XMLoadFloat3(&vSoundPosition);
+		XMStoreFloat3(&vSoundPosition, vWorldPosition);
+	}
+
+	const SOUND_ID iSoundID = pSoundManager->Play3D(
+		FOOTSTEP_SOUND_PATH,
+		SOUND_3D_DESC{
+			.vPosition = vSoundPosition,
+			.fMinDistance = 5.f,
+			.fMaxDistance = 30.f,
+			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		},
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::SFX,
+			.fVolume = 0.75f,
+			.fPitch = 1.f,
+			.iPriority = 96,
+			.bLoop = false
+		});
+
+	if (iSoundID != INVALID_SOUND_ID)
+		m_fFootstepSoundCooldown = FOOTSTEP_SOUND_COOLDOWN;
 }
 
 const _char* CAccioActivity_NpcCharacter::GetActionName(ACTION eAction)

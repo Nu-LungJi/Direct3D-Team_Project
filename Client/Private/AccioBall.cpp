@@ -10,8 +10,28 @@
 #include "ResPhysXMaterial.h"
 #include "ResPhysXSphereGeometry.h"
 #include "Resources.h"
+#include "SoundManager.h"
 
 NS_USING(Client)
+
+namespace
+{
+	constexpr const _char* ACCIO_BALL_IMPACT_SOUND_PATHS[] =
+	{
+		"./Resources/SampleClient/Sound/AccioActivity/Ball/AccioBall_Impact_01.wav",
+		"./Resources/SampleClient/Sound/AccioActivity/Ball/AccioBall_Impact_02.wav",
+		"./Resources/SampleClient/Sound/AccioActivity/Ball/AccioBall_Impact_03.wav",
+		"./Resources/SampleClient/Sound/AccioActivity/Ball/AccioBall_Impact_04.wav",
+		"./Resources/SampleClient/Sound/AccioActivity/Ball/AccioBall_Impact_05.wav",
+		"./Resources/SampleClient/Sound/AccioActivity/Ball/AccioBall_Impact_06.wav"
+	};
+	constexpr int32_t ACCIO_BALL_IMPACT_SOUND_COUNT =
+		static_cast<int32_t>(sizeof(ACCIO_BALL_IMPACT_SOUND_PATHS) /
+			sizeof(ACCIO_BALL_IMPACT_SOUND_PATHS[0]));
+	constexpr _float ACCIO_BALL_IMPACT_MIN_IMPULSE = 0.35f;
+	constexpr _float ACCIO_BALL_IMPACT_FULL_VOLUME_IMPULSE = 18.f;
+	constexpr _float ACCIO_BALL_IMPACT_SOUND_COOLDOWN = 0.12f;
+}
 
 CAccioBall::CAccioBall() = default;
 
@@ -159,6 +179,10 @@ HRESULT CAccioBall::Initialize(void* pArg)
 
 void CAccioBall::FixedUpdate(_float fTimeDelta)
 {
+	m_fCollisionSoundCooldown = std::max(
+		0.f,
+		m_fCollisionSoundCooldown - std::max(fTimeDelta, 0.f));
+
 	if (m_hController != CHandle{})
 	{
 		auto* pController = CGameInstance::Get().GetGameObjectByHandle(
@@ -355,6 +379,66 @@ void CAccioBall::OnSleep()
 {
 	m_bSettled = true;
 	m_fAutoSleepElapsed = 0.f;
+}
+
+void CAccioBall::OnCollisionEnter(
+	CGameObject* pObj,
+	const PX_ON_COLLISION_DATA& info)
+{
+	if (m_fCollisionSoundCooldown > 0.f || info.iContactCount == 0u)
+		return;
+
+	// 공끼리 충돌하면 양쪽 객체에 콜백이 오므로 한쪽에서만 재생한다.
+	if (pObj && pObj->IsA(CAccioBall::StaticType))
+	{
+		const auto* pOtherBall = static_cast<const CAccioBall*>(pObj);
+		if (std::less<const CAccioBall*>{}(pOtherBall, this))
+			return;
+	}
+
+	_float fTotalImpulse = 0.f;
+	for (uint32_t i = 0; i < info.iContactCount; ++i)
+	{
+		fTotalImpulse += XMVectorGetX(XMVector3Length(
+			XMLoadFloat3(&info.Contacts[i].vImpulse)));
+	}
+	if (fTotalImpulse < ACCIO_BALL_IMPACT_MIN_IMPULSE)
+		return;
+
+	PlayCollisionSound(info.Contacts[0].vWorldPosition, fTotalImpulse);
+	m_fCollisionSoundCooldown = ACCIO_BALL_IMPACT_SOUND_COOLDOWN;
+}
+
+void CAccioBall::PlayCollisionSound(
+	const _float3& vImpactPosition,
+	_float fImpulse) const
+{
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (!pSoundManager)
+		return;
+
+	const _float fStrength = std::clamp(
+		fImpulse / ACCIO_BALL_IMPACT_FULL_VOLUME_IMPULSE,
+		0.f,
+		1.f);
+	const int32_t iSoundIndex = Engine::RandInt(
+		0,
+		ACCIO_BALL_IMPACT_SOUND_COUNT - 1);
+	pSoundManager->Play3D(
+		ACCIO_BALL_IMPACT_SOUND_PATHS[iSoundIndex],
+		SOUND_3D_DESC{
+			.vPosition = vImpactPosition,
+			.fMinDistance = 2.f,
+			.fMaxDistance = 55.f,
+			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		},
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::SFX,
+			.fVolume = 0.18f + fStrength * 0.55f,
+			.fPitch = Randf(0.92f, 1.06f),
+			.iPriority = 72,
+			.bLoop = false
+		});
 }
 
 _bool CAccioBall::ApplyTorque(const _float3& vTorque)
@@ -576,6 +660,7 @@ _bool CAccioBall::ResetToInitialPose()
 	m_hController = CHandle{};
 	m_bSettled = false;
 	m_fAutoSleepElapsed = 0.f;
+	m_fCollisionSoundCooldown = 0.f;
 	if (!m_pComPxRigidBody ||
 		!m_pComPxRigidBody->SetPose(m_vInitialPosition, m_vInitialRotation) ||
 		!m_pComPxRigidBody->SetLinearVelocity({}) ||
