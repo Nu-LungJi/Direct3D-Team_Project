@@ -31,7 +31,7 @@ public:
 	HRESULT Load(const std::string& CinematicName);
 	HRESULT Play(const StringID& CinematicID, const FCinematicPlayOptions& Options = {});
 	HRESULT Play(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options = {});
-	void Stop();
+	void Stop(_float fReturnBlendDuration = 0.f);
 	_bool IsPlaying() const;
 	_float GetPlayTime() const;
 

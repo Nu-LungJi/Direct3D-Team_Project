@@ -80,8 +80,8 @@ namespace
 			pMonster && (!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0))
 			return false;
 
-		if (Engine::Cast<CSkillTarget>(pObject))
-			return true;
+		if (const auto* pSkillTarget = Engine::Cast<CSkillTarget>(pObject))
+			return pSkillTarget->CanBePlayerCombatTarget();
 
 		const auto* pBall = Engine::Cast<CAccioBall>(pObject);
 		return pBall && pBall->CanAcquireControl(hPlayer);
@@ -655,6 +655,7 @@ HRESULT CPlayer::Initialize(void* pArg)
 	WeaponDesc.iBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("RightHandWandSocket");
 	WeaponDesc.iSpawnBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("WandSocketTip");
 	WeaponDesc.ParentHandle = GetHandle();
+	WeaponDesc.bRestorePurchasedPlayerWand = true;
 
 	
 	auto Weapon = E::CGameInstance::Get().AddGameObjectToLayer(pDesc->LevelTag, PROTO_GAMEOBJECT::Prototype_GameObject_PlayerWeapon, "Weapon", &WeaponDesc);
@@ -1034,7 +1035,19 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		//m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
 		m_pComMoveIntent->RequestWarp(m_vInitialPosition);
 	}
-
+	if (CGameInstance::Get().KeyDown(DIK_HOME)) {
+		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/NPC/StupidCat.mp3", SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+	}
+	{
+		//m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
+		m_pComMoveIntent->RequestWarp(m_vInitialPosition);
+	}
 	if (m_pStateMachine &&m_pComCharacterMotor &&m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&m_pComCharacterMotor->IsGrounded() &&CGameInstance::Get().KeyDown(DIK_SPACE))
 	{
 		m_pStateMachine->RequestState(PLAYER_STATE::JUMP);
@@ -1129,6 +1142,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			ETOUI(COLLISION_LAYER::ENEMY_BODY),
 			TARGET_QUERY_MAX_HITS);
 		AppendTargets(
+			DEFAULT_TARGET_ACQUIRE_RANGE,
+			ETOUI(COLLISION_LAYER::NPC_BODY),
+			TARGET_QUERY_MAX_HITS);
+		AppendTargets(
 			ACCIO_BALL_TARGET_ACQUIRE_RANGE,
 			ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
 			ACCIO_BALL_TARGET_QUERY_MAX_HITS);
@@ -1206,6 +1223,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		
 
 			std::vector<PX_OVERLAP_RESULT> results{};
+			// NPC_BODY는 위의 우클릭 선택에서만 검색한다. 평상시 자동 탐색에
+			// 포함하면 상점 NPC가 근처에 있다는 이유만으로 계속 외곽선이 생긴다.
 			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 40.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
 
@@ -1258,7 +1277,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 					DEFAULT_TARGET_KEEP_RANGE;
 				keepTargetOverlapDesc.tPose.vPosition = ori;
 				keepTargetOverlapDesc.tFilter.iQueryMask =
-					ETOUI(COLLISION_LAYER::ENEMY_BODY);
+					ETOUI(COLLISION_LAYER::ENEMY_BODY) |
+					ETOUI(COLLISION_LAYER::NPC_BODY);
 
 				const _bool bOverlapped = CGameInstance::Get().
 					GetPhysXManager()->OverlapMultiple(
@@ -2216,6 +2236,15 @@ void CPlayer::Update(E::_float fTimeDelta)
 	m_fDoorPushContactRemainTime = std::max(
 		0.f,
 		m_fDoorPushContactRemainTime - fTimeDelta);
+	if (CGameInstance::Get().KeyDown(DIK_HOME)) {
+		E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/NPC/StupidCat.mp3", SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::SFX,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 64,
+				.bLoop = false
+			});
+	}
 
 	if (nullptr == CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle))
 	{

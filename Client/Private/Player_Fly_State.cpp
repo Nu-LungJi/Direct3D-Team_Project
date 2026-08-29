@@ -243,6 +243,7 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 
 
 		if (m_bBoosting) {
+			m_fBoostTimeAcc += fTimeDelta;
 			if (CGameInstance::Get().Get_RadialBlurIntensity() < m_fBloomLimit) {
 				m_fCurBlurIntensity += fTimeDelta;
 			}
@@ -298,6 +299,29 @@ void CPlayer_Fly_State::Update(CStateMachine* pStateMachine, _float fTimeDelta)
 			pMoveIntent->ClearFacingIntent();
 		}
 	}
+	// 부스트 사운드 
+	if (m_bBoosting && m_fBoostTimeAcc >= 1.f && !m_bBoostSoundPlayed) {
+		m_iBroomLoopSoundID = E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/Player/Movement/BroomFly.wav", SOUND_PLAY_DESC{
+		.sBusID = SOUND_BUS::SFX,
+		.fVolume = 1.f,
+		.fPitch = 1.f,
+		.iPriority = 64,
+		.bLoop = true
+			});
+		m_bBoostSoundPlayed = true;
+	}
+	if (CGameInstance::Get().KeyUp(DIK_LSHIFT)) {
+		if (m_iBroomLoopSoundID != INVALID_SOUND_ID)
+		{
+			CGameInstance::Get().GetSoundManager()->FadeOutAndStop(m_iBroomLoopSoundID, 1.0f);
+			m_iBroomLoopSoundID = INVALID_SOUND_ID;
+		}
+		m_bBoostSoundPlayed = false;
+		m_fBoostTimeAcc = 0.f;
+	}
+
+
+
 	// 호버 전환은 완전히 멈춘 뒤가 아니라 입력을 놓는 순간 시작한다.
 	// 전환 애니메이션 동안 실제 속도는 위 감속 로직으로 자연스럽게 0에 수렴한다.
 	// 빗자루 높이는 일반 비행 중에는 유지하고 실제 최고 속도에 도달했을 때만 올린다.

@@ -12,9 +12,18 @@
 #include "ResPhysXBoxGeometry.h"
 #include "ResPhysXMaterial.h"
 #include "Resources.h"
+#include "SoundManager.h"
 #include "Player.h"
 
 NS_USING(Client)
+
+namespace
+{
+	constexpr const _char* PHYSICS_DOOR_SOUND_PATH =
+		"./Resources/SampleClient/Sound/PhysicsDoor/PhysicsDoor_OpenClose.wav";
+	constexpr _float PHYSICS_DOOR_SOUND_OPEN_ANGLE = 4.f;
+	constexpr _float PHYSICS_DOOR_SOUND_CLOSE_ANGLE = 1.5f;
+}
 
 CPhysicsDoor::CPhysicsDoor() = default;
 
@@ -469,6 +478,7 @@ void CPhysicsDoor::LateUpdate(_float)
 {
 	UpdatePhysicData();
 	GetTransform().Update();
+	UpdateDoorSoundState();
 	UpdatePassageState();
 	DrawDebugDoor();
 
@@ -726,6 +736,61 @@ void CPhysicsDoor::UpdatePassageState()
 	{
 		SetPassageBarrierEnabled(true);
 	}
+}
+
+void CPhysicsDoor::UpdateDoorSoundState()
+{
+	const _float fAbsoluteAngle = fabsf(GetOpeningAngleDegrees());
+	if (!m_bDoorSoundOpen &&
+		fAbsoluteAngle >= PHYSICS_DOOR_SOUND_OPEN_ANGLE)
+	{
+		m_bDoorSoundOpen = true;
+		PlayDoorOpenSound();
+	}
+	else if (m_bDoorSoundOpen &&
+		fAbsoluteAngle <= PHYSICS_DOOR_SOUND_CLOSE_ANGLE)
+	{
+		m_bDoorSoundOpen = false;
+	}
+}
+
+void CPhysicsDoor::PlayDoorOpenSound()
+{
+	auto* pSoundManager = CGameInstance::Get().GetSoundManager();
+	if (!pSoundManager)
+		return;
+
+	if (m_iDoorSoundID != INVALID_SOUND_ID &&
+		pSoundManager->IsValidSound(m_iDoorSoundID))
+	{
+		pSoundManager->Stop(m_iDoorSoundID);
+	}
+
+	m_iDoorSoundID = pSoundManager->Play3D(
+		PHYSICS_DOOR_SOUND_PATH,
+		SOUND_3D_DESC{
+			.vPosition = m_vHingeWorldPosition,
+			.fMinDistance = 2.f,
+			.fMaxDistance = 35.f,
+			.eRolloff = SOUND_3D_ROLLOFF::LINEAR
+		},
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::SFX,
+			.fVolume = 0.8f,
+			.fPitch = 1.f,
+			.iPriority = 68,
+			.bLoop = false
+		});
+}
+
+void CPhysicsDoor::StopDoorTransitionSound()
+{
+	if (m_iDoorSoundID == INVALID_SOUND_ID)
+		return;
+
+	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager())
+		pSoundManager->Stop(m_iDoorSoundID);
+	m_iDoorSoundID = INVALID_SOUND_ID;
 }
 
 HRESULT CPhysicsDoor::Render_Shadow(
@@ -1054,6 +1119,8 @@ _bool CPhysicsDoor::SetPlacement(
 	GetTransform().SetPosition(vPosition);
 	GetTransform().SetRotationEuler(vRotationEulerDegrees);
 	GetTransform().Update();
+	m_bDoorSoundOpen = false;
+	StopDoorTransitionSound();
 	return true;
 }
 
@@ -1064,9 +1131,15 @@ _bool CPhysicsDoor::ResetDoor()
 		!SetPassageBarrierEnabled(true))
 		return false;
 
-	return m_pComPxD6Joint->RelocateWorldAnchoredRigidBody(
+	const _bool bReset = m_pComPxD6Joint->RelocateWorldAnchoredRigidBody(
 		m_vInitialPosition,
 		m_vInitialRotation);
+	if (bReset)
+	{
+		m_bDoorSoundOpen = false;
+		StopDoorTransitionSound();
+	}
+	return bReset;
 }
 
 _float CPhysicsDoor::GetOpeningAngleDegrees() const
@@ -1090,4 +1163,10 @@ UPtr<CPrototype> CPhysicsDoor::Clone(void* pArg)
 	if (FAILED(pInstance->Initialize(pArg)))
 		return nullptr;
 	return pInstance;
+}
+
+void CPhysicsDoor::Free()
+{
+	StopDoorTransitionSound();
+	CGameObject::Free();
 }

@@ -73,7 +73,7 @@ PS_OUT PSMain(PS_IN In)
         g_TileTextures[3].Sample(LinearWrap, In.vTexcoord * 50.f) * weights.a;
     Out.vDiffuse = materialDiffuse;
     Out.vNormal = float4(In.vNormal.xyz * 0.5f + 0.5f, 0.f);
-    Out.vSMRO = float4(0.f, 0.f, 0.f, 1.f);
+    Out.vSMRO = float4(0.f, 1.f, 1.f, 1.f);
     Out.vEmissive = float4(0.f, 0.f, 0.f, 1.f);
     return Out;
 }

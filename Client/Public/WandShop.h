@@ -20,6 +20,7 @@ public:
 	void Update(UIManager& manager, _float fTimeDelta);
 	void OpenPage(UIManager& manager, uint32_t pageIndex);
 	void Close(UIManager& manager);
+	_bool ConsumePurchaseCompleted();
 
 private:
 	void AdoptEditorPageRoots();
@@ -29,6 +30,7 @@ private:
 	void CompletePurchase(UIManager& manager);
 	void PlayPageFadeIn(const std::vector<CHandle>& roots) const;
 	void RefreshPurchaseCoinText();
+	void SetPurchasePromptVisible(_bool visible);
 	_bool HasLivePageRoots() const;
 
 private:
@@ -41,6 +43,7 @@ private:
 	uint32_t m_iDisplayedCoinCount{ UINT32_MAX };
 	int m_iRootWeightOffset{};
 	_float m_fPurchaseHoldProgress{};
+	_bool m_bPurchaseCompleted{};
 };
 
 NS_END

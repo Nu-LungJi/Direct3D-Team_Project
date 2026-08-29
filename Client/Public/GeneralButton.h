@@ -59,6 +59,7 @@ private:
 	void HandleEnter();
 	void HandleExit();
 	void HandleClick();
+	void PlayButtonSelectSound() const;
 	void EnsureBaseScaleCaptured();
 
 	void PlayScaleTo(_float targetScale, _float duration, _float delay = 0.f);
