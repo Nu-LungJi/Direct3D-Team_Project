@@ -753,6 +753,28 @@ void CMiniMap::UpdateObjectiveMarkers(
 	for (auto& objective : m_vObjectives)
 	{
 		_float3 objectivePosition = objective.WorldPosition;
+		if (!objective.TargetObjectTag.empty() &&
+			(!objective.TargetHandle ||
+				!E::CGameInstance::Get().GetGameObjectByHandle(
+					*objective.TargetHandle)))
+		{
+			objective.TargetHandle.reset();
+			if (const auto* npcLayer = E::CGameInstance::Get().
+				GetGameObjectLayer("02_Npc"))
+			{
+				for (const CHandle handle : *npcLayer)
+				{
+					auto* target = E::CGameInstance::Get().
+						GetGameObjectByHandle(handle);
+					if (target && target->GetObjectTag() ==
+						objective.TargetObjectTag)
+					{
+						objective.TargetHandle = handle;
+						break;
+					}
+				}
+			}
+		}
 		if (objective.TargetHandle)
 		{
 			if (auto* target = E::CGameInstance::Get().
@@ -1357,6 +1379,95 @@ void CMiniMap::InitHogwartObjectives()
 	});
 
 	AddObjective(std::move(shopObjective));
+
+	MINIMAP_OBJECTIVE_INFO miniGameNpcObjective{};
+	miniGameNpcObjective.Key = "Hogwart_MiniGameNpc";
+	miniGameNpcObjective.WorldPosition = { 1895.461f, 35.9f, 268.991f };
+	miniGameNpcObjective.LevelID = ETOUI(LEVEL::HOGWART_WORLD);
+	miniGameNpcObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::PROXIMITY;
+	miniGameNpcObjective.AutoActivateDistance = 100.f;
+	miniGameNpcObjective.ActivationHysteresis = 3.f;
+
+	if (const auto* npcLayer =
+		E::CGameInstance::Get().GetGameObjectLayer("02_Npc"))
+	{
+		for (const CHandle handle : *npcLayer)
+		{
+			auto* npc = E::CGameInstance::Get().GetGameObjectByHandle(handle);
+			if (!npc || npc->GetObjectTag() !=
+				"Hogsmeade_MiniGameNpc_Professor")
+			{
+				continue;
+			}
+
+			miniGameNpcObjective.TargetHandle = handle;
+			miniGameNpcObjective.WorldPosition =
+				npc->GetTransform().GetPosition();
+			break;
+		}
+	}
+
+	miniGameNpcObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_MiniMap_BroomRace",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = 24.f,
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = false
+	});
+
+	AddObjective(std::move(miniGameNpcObjective));
+
+	MINIMAP_OBJECTIVE_INFO miniGameNpcQuestObjective{};
+	miniGameNpcQuestObjective.Key = "Hogwart_MiniGameNpcQuest";
+	miniGameNpcQuestObjective.WorldPosition = { 1895.461f, 35.9f, 268.991f };
+	miniGameNpcQuestObjective.TargetObjectTag =
+		"Hogsmeade_MiniGameNpc_Professor";
+	miniGameNpcQuestObjective.LevelID = ETOUI(LEVEL::HOGWART_WORLD);
+	miniGameNpcQuestObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::MANUAL;
+	miniGameNpcQuestObjective.ManualActive = false;
+	miniGameNpcQuestObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_Minimap_Mission_Active",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = 24.f,
+		.TintColor = { 1.f, 0.78f, 0.04f },
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = true,
+		.ScreenMarkerSize = 30.f,
+		.ScreenMarkerWorldOffset = { 0.f, 4.2f, 0.f },
+		.ScreenMarkerWeight = 100,
+		.ScreenMarkerOffscreenAlpha = 0.f
+	});
+
+	AddObjective(std::move(miniGameNpcQuestObjective));
+
+	MINIMAP_OBJECTIVE_INFO accioStudentObjective{};
+	accioStudentObjective.Key = "Hogwart_AccioStudentQuest";
+	accioStudentObjective.WorldPosition = { 323.512f, 44.703f, 85.749f };
+	accioStudentObjective.TargetObjectTag =
+		"HogwartWorld_AccioActivity_NpcCharacter";
+	accioStudentObjective.LevelID = ETOUI(LEVEL::HOGWART_WORLD);
+	accioStudentObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::MANUAL;
+	accioStudentObjective.ManualActive = false;
+	accioStudentObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_Minimap_Mission_Active",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = 24.f,
+		.TintColor = { 1.f, 0.78f, 0.04f },
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = true,
+		.ScreenMarkerSize = 30.f,
+		.ScreenMarkerWorldOffset = { 0.f, 3.4f, 0.f },
+		.ScreenMarkerWeight = 100,
+		.ScreenMarkerOffscreenAlpha = 0.f
+	});
+
+	AddObjective(std::move(accioStudentObjective));
 }
 
 void CMiniMap::InitRookwoodObjectives()
