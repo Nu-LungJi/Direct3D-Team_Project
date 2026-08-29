@@ -61,6 +61,7 @@ public:
 	TROLL_SKILL_INFO&			Get_SkillInfo(TROLL_SKILL eType) { return m_SkillHandle[ETOUI(eType)]; }
 	const _string&				Get_SkillName(TROLL_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
 	void						Destory_Child() override;
+	const _float				Get_Damage() override;
 	void						OnCollisionEnter(
 		CGameObject* pObj,
 		const PX_ON_COLLISION_DATA& info) override;
@@ -70,7 +71,7 @@ private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);
-				
+	void						Set_Damage(TROLL_SKILL eType);
 	void						InitializeEffects();
 	void						Stuck() override;
 private:
@@ -82,6 +83,7 @@ private:
 	CComPxBoxCollider*	m_pChargeBodyCollider{};
 	PX_FILTER_DESC		m_tDefaultCCTFilter{};
 	_bool				m_bIsBreak{ false }, m_bActiveSKill{ false };
+	_float				m_fTick{ 0.f };
 	_bool				m_bChargeBodyColliderEnabled{};
 	static constexpr uint32_t CHARGE_BODY_SHAPE_INDEX = 100u;
 
