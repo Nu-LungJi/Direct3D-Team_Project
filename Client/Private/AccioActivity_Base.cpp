@@ -7,6 +7,7 @@
 #include "GameInstance.h"
 #include "ResPhysXBoxGeometry.h"
 #include "ResPhysXMaterial.h"
+#include "UIManager.h"
 
 NS_USING(Client)
 
@@ -43,6 +44,8 @@ void CAccioActivity_Base::FixedUpdate(_float)
 			// [LSY] 참가자나 등록 공이 사라진 경기는 진행 상태에 고착되지 않게 즉시 종료한다.
 			m_eMatchState = MATCH_STATE::MATCH_END;
 			ReleaseActiveBallControl();
+			m_bScoreUiSubmitted = false;
+			GET_SINGLE(UIManager)->AssioMiniGameFinish();
 		}
 	}
 
@@ -404,6 +407,7 @@ _bool CAccioActivity_Base::StartMatch()
 
 	m_eMatchState = m_bNpcStartsFirst ?
 		MATCH_STATE::NPC_TURN : MATCH_STATE::PLAYER_TURN;
+	GET_SINGLE(UIManager)->AssioMiniGameStart(!m_bNpcStartsFirst);
 	return true;
 }
 
@@ -416,6 +420,9 @@ _bool CAccioActivity_Base::ResetMatch(_bool bResetBalls)
 	m_iCurrentRound = 0u;
 	m_iBlueScore = 0;
 	m_iRedScore = 0;
+	m_bScoreUiSubmitted = false;
+	if (GET_SINGLE(UIManager)->IsAssioMiniGameActive())
+		GET_SINGLE(UIManager)->AssioMiniGameFinish();
 
 	if (!bResetBalls)
 		return true;
@@ -511,21 +518,10 @@ _bool CAccioActivity_Base::SkipNpcTurn(const CHandle& hController)
 		return false;
 	}
 
-	// [LSY] 사용할 NPC 공이 사라진 예외 상황에서도 매치가 NPC 턴에 고착되지 않게 한다.
+	// [LSY] 사용할 NPC 공이 사라진 경우에도 0점 UI 연출을 거쳐 다음 턴으로 진행한다.
 	m_hActiveBall = CHandle{};
-	if (m_bNpcStartsFirst)
-	{
-		// [LSY] NPC 선공 규칙에서는 플레이어 턴까지 끝나야 한 라운드가 완료된다.
-		m_eMatchState = MATCH_STATE::PLAYER_TURN;
-	}
-	else
-	{
-		++m_iCurrentRound;
-		if (m_iCurrentRound >= m_iMaxRounds)
-			m_eMatchState = MATCH_STATE::MATCH_END;
-		else
-			m_eMatchState = MATCH_STATE::PLAYER_TURN;
-	}
+	m_bScoreUiSubmitted = false;
+	m_eMatchState = MATCH_STATE::WAIT_NPC_BALL_SETTLED;
 	return true;
 }
 
@@ -670,13 +666,47 @@ void CAccioActivity_Base::UpdateTurnState()
 	{
 		// [LSY] 베이스를 벗어난 공은 점수와 Sleep 추적 대상에서 제외한다.
 		m_BallScoreStates.erase(m_hActiveBall);
+		RefreshScores();
 	}
 	if (!AreInPlayBallsSettled())
 		return;
 
-	m_hActiveBall = CHandle{};
 	const _bool bRoundFinished = m_bNpcStartsFirst ?
 		bWaitingForPlayer : bWaitingForNpc;
+	const _bool bFinalScore = bRoundFinished &&
+		m_iCurrentRound + 1u >= m_iMaxRounds;
+	auto* pUIManager = GET_SINGLE(UIManager);
+	if (!m_bScoreUiSubmitted && pUIManager->IsAssioMiniGameActive())
+	{
+		int32_t iTurnScore = 0;
+		if (const auto iter = m_BallScoreStates.find(m_hActiveBall);
+			iter != m_BallScoreStates.end() && iter->second.bScoreCommitted)
+		{
+			iTurnScore = iter->second.iCommittedScore;
+		}
+
+		if (!pUIManager->AddScore(
+			iTurnScore,
+			m_iBlueScore,
+			m_iRedScore,
+			bWaitingForPlayer,
+			bFinalScore))
+		{
+			return;
+		}
+
+		m_bScoreUiSubmitted = true;
+		return;
+	}
+	if (m_bScoreUiSubmitted && !bFinalScore &&
+		pUIManager->IsAssioMiniGameActive() &&
+		!pUIManager->CanAddAssioScore())
+	{
+		return;
+	}
+
+	m_bScoreUiSubmitted = false;
+	m_hActiveBall = CHandle{};
 	if (!bRoundFinished)
 	{
 		m_eMatchState = bWaitingForPlayer ?

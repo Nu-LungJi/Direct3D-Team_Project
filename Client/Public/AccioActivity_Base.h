@@ -221,6 +221,7 @@ private:
 	uint32_t m_iMaxRounds{ 3u };
 	int32_t m_iBlueScore{};
 	int32_t m_iRedScore{};
+	_bool m_bScoreUiSubmitted{};
 };
 
 NS_END

@@ -198,9 +198,6 @@ HRESULT CLevelHogwartWorld::Initialize()
 		return E_FAIL;
 	}
 
-	if (FAILED(SpawnPropBarrelPyramid()))
-		return E_FAIL;
-
 	{
 		// 상점 NPC
 		CShopNpc::DESC Desc{};
@@ -1020,52 +1017,64 @@ HRESULT CLevelHogwartWorld::SpawnPlayerCape(CHandle hPlayer)
 	return S_OK;
 }
 
-HRESULT CLevelHogwartWorld::SpawnPropBarrelPyramid()
+HRESULT CLevelHogwartWorld::SpawnPropBarrelBlock()
 {
-	// 전달받은 위치를 바닥 줄의 오른쪽 끝으로 두고 왼쪽으로 펼친다.
-	const _float3 vRightBasePosition{ 273.554f, 38.809f, 130.496f };
-	// 배럴을 세운 크기에 맞춰 초기 Convex가 서로 겹치지 않게 여유를 둔다.
-	const _float fHorizontalSpacing = 4.4f;
-	const _float fVerticalSpacing = 4.6f;
-	const uint32_t iRowCounts[]{ 5u, 3u, 1u };
-	const _float fPyramidCenterX =
-		vRightBasePosition.x - fHorizontalSpacing * 2.f;
+	if (m_bPropBarrelBlockSpawned)
+		return S_OK;
 
+	// 지정한 두 좌표를 바닥 줄의 정확한 양 끝점으로 사용한다.
+	const _float3 vBaseStart{ 270.173f, 39.265f, 121.917f };
+	const _float3 vBaseEnd{ 280.773f, 39.376f, 134.895f };
+	const _float fBaseHeightOffset = 1.f;
+	const _float fHorizontalSpacingScale = 1.05f;
+	const _float fVerticalSpacing = 3.9f;
+	// 기존 6열 간격은 유지하되 오른쪽 끝 열만 제외한다.
+	constexpr uint32_t iOriginalColumnCount = 6u;
+	constexpr uint32_t iColumnCount = 5u;
+	constexpr uint32_t iRowCount = 3u;
+
+	std::vector<CHandle> SpawnedHandles{};
+	SpawnedHandles.reserve(iColumnCount * iRowCount);
 	uint32_t iBarrelIndex{};
-	for (uint32_t iRow = 0; iRow < std::size(iRowCounts); ++iRow)
+	for (uint32_t iRow = 0; iRow < iRowCount; ++iRow)
 	{
-		const uint32_t iBarrelCount = iRowCounts[iRow];
-		const _float fHalfRow =
-			static_cast<_float>(iBarrelCount - 1u) * 0.5f;
-
-		for (uint32_t iColumn = 0; iColumn < iBarrelCount; ++iColumn)
+		for (uint32_t iColumn = 0; iColumn < iColumnCount; ++iColumn)
 		{
+			const _float fColumnRatio = static_cast<_float>(iColumn) /
+				static_cast<_float>(iOriginalColumnCount - 1u) *
+				fHorizontalSpacingScale;
 			CPropBarrel::DESC Desc{};
 			Desc.sObjectTag =
-				"Hogwart_PropBarrel_Pyramid_" + std::to_string(iBarrelIndex++);
+				"Hogwart_PropBarrel_Block_" + std::to_string(iBarrelIndex++);
 			Desc.sResourceGroup = "PERMANENT";
 			Desc.vInitialRotation = { 90.f, 0.f, 0.f };
-			// 위쪽 배럴이 자리를 잡는 동안 발생하는 초기 접촉으로는 파괴하지 않는다.
+			// 다이나믹 상태로 배치하되 첫 충돌 전까지 현재 자세에서 잠재운다.
+			Desc.bStartSleeping = true;
 			Desc.fCollisionDestroyGraceTime = 2.f;
 			Desc.vInitialPosition =
 			{
-				fPyramidCenterX +
-					(static_cast<_float>(iColumn) - fHalfRow) * fHorizontalSpacing,
-				vRightBasePosition.y + static_cast<_float>(iRow) * fVerticalSpacing,
-				vRightBasePosition.z
+				vBaseStart.x + (vBaseEnd.x - vBaseStart.x) * fColumnRatio,
+				vBaseStart.y + (vBaseEnd.y - vBaseStart.y) * fColumnRatio +
+					fBaseHeightOffset +
+					static_cast<_float>(iRow) * fVerticalSpacing,
+				vBaseStart.z + (vBaseEnd.z - vBaseStart.z) * fColumnRatio
 			};
 
-			if (!CGameInstance::Get().AddGameObjectToLayer(
+			const auto hBarrel = CGameInstance::Get().AddGameObjectToLayer(
 				"PERMANENT",
 				PROTO_GAMEOBJECT::Prototype_GameObject_PropBarrel,
 				"PropBarrel",
-				&Desc))
+				&Desc);
+			if (!hBarrel)
 			{
+				DespawnRuntimeObjects(SpawnedHandles);
 				return E_FAIL;
 			}
+			SpawnedHandles.push_back(*hBarrel);
 		}
 	}
 
+	m_bPropBarrelBlockSpawned = true;
 	return S_OK;
 }
 
@@ -1255,12 +1264,17 @@ HRESULT CLevelHogwartWorld::SpawnMonster(std::optional<CHandle> hPlayer)
 	CMon_Spawner::MON_SPAWNER_DESC MonS{};
 	MonS.sObjectTag = "MonSpawn";
 	MonS.handle = hPlayer.value();
+	MonS.OnBeforeTrollSpawn = [this]()
+	{
+		return SpawnPropBarrelBlock();
+	};
 	if (!CGameInstance::Get().AddGameObjectToLayer(
 			LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_MonSpawner, "00.MonSpawn", &MonS))
 	{
 		return E_FAIL;
 	}
 
+	return S_OK;
 }
 HRESULT CLevelHogwartWorld::SpawnStaticCollision()
 {
