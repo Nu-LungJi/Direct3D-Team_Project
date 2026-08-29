@@ -58,6 +58,7 @@ public:
 	const _string&				Get_SkillNmae(SPIDER_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
 	const _float				Get_Damage() override;
 private:
+	void						ReadySound() override;
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);

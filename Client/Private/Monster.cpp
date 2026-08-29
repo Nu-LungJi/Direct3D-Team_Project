@@ -931,10 +931,7 @@ SOUND_ID  CMonster::Play_Sound(const MONSOUND& MonSound)
 		Sounds,
 		MonSound.SoundPlay
 	);
-	if (id == INVALID_SOUND_ID)
-	{
-		MSG_BOX("INVALID_SOUND_ID");
-	}
+
 	return id;
 }
 

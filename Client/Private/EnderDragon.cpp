@@ -199,6 +199,15 @@ void CEnderDragon::ReadySound()
 	m_SoundTable["Ground"] = {
 	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragon_conjured_akb__MaybeGround.wav"
 	};
+	m_SoundTable["Dead1"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragons_akb__Dead1.wav"
+	};
+	m_SoundTable["Dead2"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragons_akb__Dead2.wav"
+	};
+	m_SoundTable["Dead3"] = {
+	"./Resources/SampleClient/Sound/LastBossRanrok/enemies_dragon_conjured_akb__DieorHit.wav"
+	};
 }
 HRESULT CEnderDragon::Ready_Fsm(const _string& LevelTag)
 {
