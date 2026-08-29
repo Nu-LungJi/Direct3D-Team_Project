@@ -129,35 +129,6 @@ void CUIController::Update(E::_float fTimeDelta)
 		//GET_SINGLE(UIManager)->LoadPrefab("AccioSuccess");
 	}
 
-	// 대화 선택 UI와 콜백 연결 확인용 디버그 입력.
-	if (E::CGameInstance::Get().KeyDown(DIK_F5))
-	{
-		const CHandle controllerHandle = GetHandle();
-		GET_SINGLE(UIManager)->PlayFadeOutAll2DUI(0.f, 0.25f);
-		GET_SINGLE(UIManager)->CreateChoiceUI(
-			{
-				"스펠 미니게임 1 시작",
-				"레이스 미니게임 시작"
-			},
-			[controllerHandle](size_t choiceIndex)
-			{
-				GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.2f, 0.3f);
-
-				if (choiceIndex == 0u)
-				{
-					if (auto* controller = E::CGameInstance::Get().
-						GetGameObjectByHandleT<CUIController>(controllerHandle))
-					{
-						controller->StartSpellMiniGame(false);
-					}
-				}
-				else if (choiceIndex == 1u)
-				{
-					GET_SINGLE(UIManager)->StartRaceMiniGame();
-				}
-			});
-	}
-
 	if (m_hSpellMiniGame && !E::CGameInstance::Get().
 		GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
 	{
@@ -504,6 +475,9 @@ void CUIController::FadeOutQuestForSpellMiniGame()
 
 void CUIController::FadeInQuestAfterSpellMiniGame()
 {
+	if (GET_SINGLE(UIManager)->IsQuestFadeInDeferred())
+		return;
+
 	GET_SINGLE(UIManager)->FadeInQuest(0.5f);
 
 	if (!m_hQuestRoot)

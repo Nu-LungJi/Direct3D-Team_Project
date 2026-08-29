@@ -87,6 +87,14 @@ public:
 	void DeleteQuest();
 	void FadeOutQuest(float playtime = 0.3f);
 	void FadeInQuest(float playtime = 0.5f);
+	void SetQuestFadeInDeferred(_bool deferred)
+	{
+		m_bQuestFadeInDeferred = deferred;
+	}
+	_bool IsQuestFadeInDeferred() const
+	{
+		return m_bQuestFadeInDeferred;
+	}
 	_bool SetMiniMapObjectiveActive(const std::string& key, _bool active);
 
 	/********레이스 시작 타이머***********/
@@ -107,7 +115,10 @@ public:
 	}
 
 	/********소환사의 코트 미니게임**********/
-	void AssioMiniGameStart(_bool bPlayerStarts = true);
+	_bool AssioMiniGameStart(
+		_bool bPlayerStarts = true,
+		const _string& PlayerDisplayName = "이솝 샤프",
+		const _string& NpcDisplayName = "저스티스 훈");
 	void AssioMiniGameFinish();
 	_bool AddScore(
 		int iTurnScore,
@@ -206,6 +217,7 @@ private:
 	std::optional<CHandle> m_hQuestTargetIcon{};
 	std::string m_CurrentQuestText{};
 	_bool m_bQuestFadeSuppressed{};
+	_bool m_bQuestFadeInDeferred{};
 	_float2 m_QuestTextBaseLocalPos{};
 	_float2 m_QuestTargetIconBaseLocalPos{};
 	_float m_fDialogueTargetWidth{};
@@ -271,6 +283,8 @@ private:
 	std::optional<CHandle> m_hAssioCenterScoreText{};
 	std::optional<CHandle> m_hAssioTurnTitle{};
 	std::optional<CHandle> m_hAssioTargetScoreText{};
+	_wstring m_AssioPlayerDisplayName{ L"이솝 샤프" };
+	_wstring m_AssioNpcDisplayName{ L"저스티스 훈" };
 	_float2 m_AssioCenterScoreBasePosition{};
 	_float2 m_AssioCenterScoreMoveStart{};
 	_float2 m_AssioCenterScoreMoveTarget{};

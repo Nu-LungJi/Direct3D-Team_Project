@@ -26,10 +26,14 @@ namespace
 {
 	constexpr const _char* ASSIO_UI_START_SOUND_PATH =
 		"./Resources/SampleClient/Sound/AccioActivity/UI/AccioUI_Start.wav";
-	constexpr const _char* ASSIO_UI_END_SOUND_PATH =
-		"./Resources/SampleClient/Sound/AccioActivity/UI/AccioUI_End.wav";
+	constexpr const _char* MINIGAME_FINISH_SOUND_PATH =
+		"./Resources/SampleClient/Sound/UI/Finish.wav";
+	constexpr const _char* RACE_GO_SOUND_PATH =
+		"./Resources/SampleClient/Sound/UI/Go.wav";
+	constexpr const _char* RACE_TIMER_SOUND_PATH =
+		"./Resources/SampleClient/Sound/UI/Timer.wav";
 
-	void PlayAssioUISound(const _char* pSoundPath, _float fVolume)
+	void PlayUISound(const _char* pSoundPath, _float fVolume)
 	{
 		if (auto* pSoundManager = E::CGameInstance::Get().GetSoundManager())
 		{
@@ -265,9 +269,14 @@ void UIManager::UpdateWandShopWorldBillboard()
 		m_WandShopPanelWorld, true, false);
 }
 
-void UIManager::AssioMiniGameStart(_bool bPlayerStarts)
+_bool UIManager::AssioMiniGameStart(
+	_bool bPlayerStarts,
+	const _string& PlayerDisplayName,
+	const _string& NpcDisplayName)
 {
 	ClearAssioMiniGameUI();
+	m_AssioPlayerDisplayName = StringToWUTF8(PlayerDisplayName);
+	m_AssioNpcDisplayName = StringToWUTF8(NpcDisplayName);
 	// 미니게임 UI를 만들기 전에 기존 UI만 복원 목록에 저장해 숨긴다.
 	// 이후 생성되는 Coat UI는 전체 UI FadeOut 대상에 포함되지 않는다.
 	PlayFadeOutAll2DUI(0.f, 0.35f);
@@ -344,7 +353,7 @@ void UIManager::AssioMiniGameStart(_bool bPlayerStarts)
 	{
 		ClearAssioMiniGameUI();
 		PlayFadeInAll2DUI(0.f, 0.35f);
-		return;
+		return false;
 	}
 
 	auto* playerRoot = GetSafeUI(*m_hAssioPlayerScoreRoot);
@@ -356,8 +365,21 @@ void UIManager::AssioMiniGameStart(_bool bPlayerStarts)
 	{
 		ClearAssioMiniGameUI();
 		PlayFadeInAll2DUI(0.f, 0.35f);
-		return;
+		return false;
 	}
+
+	const auto ApplyParticipantName = [](const CHandle& hRoot,
+		const _wstring& DisplayName)
+	{
+		const std::vector<CHandle> roots{ hRoot };
+		if (auto* nameText = dynamic_cast<CTextBox*>(
+			FindUIByNameRecursive(roots, "BF20")))
+		{
+			nameText->SetwText(DisplayName);
+		}
+	};
+	ApplyParticipantName(*m_hAssioPlayerScoreRoot, m_AssioPlayerDisplayName);
+	ApplyParticipantName(*m_hAssioNpcScoreRoot, m_AssioNpcDisplayName);
 
 	// Coat 프리팹에서 현재 턴/대기 턴의 원래 배치를 보관한다.
 	m_AssioActiveTurnPosition = playerRoot->GetPos();
@@ -391,8 +413,8 @@ void UIManager::AssioMiniGameStart(_bool bPlayerStarts)
 	ApplyInitialTurnLayout(npcRoot, npcFrame, !bPlayerStarts);
 	if (auto* title = dynamic_cast<CTextBox*>(turnTitle))
 	{
-		title->SetwText(bPlayerStarts ?
-			L"이솝 샤프의 턴" : L"저스티스 훈의 턴");
+		title->SetwText((bPlayerStarts ?
+			m_AssioPlayerDisplayName : m_AssioNpcDisplayName) + L"의 턴");
 	}
 
 	m_iAssioPlayerScore = 0;
@@ -404,7 +426,7 @@ void UIManager::AssioMiniGameStart(_bool bPlayerStarts)
 	m_bAssioFinalScore = false;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
 	m_bAssioMiniGameActive = true;
-	PlayAssioUISound(ASSIO_UI_START_SOUND_PATH, 0.75f);
+	PlayUISound(ASSIO_UI_START_SOUND_PATH, 0.75f);
 
 	if (auto* text = dynamic_cast<CTextBox*>(
 		GetSafeUI(*m_hAssioPlayerScoreText)))
@@ -419,6 +441,7 @@ void UIManager::AssioMiniGameStart(_bool bPlayerStarts)
 		*m_hAssioNpcScoreRoot,
 		*m_hAssioTurnTitle
 	}, 1.f);
+	return true;
 }
 
 void UIManager::AssioMiniGameFinish()
@@ -646,8 +669,8 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 			if (auto* title = dynamic_cast<CTextBox*>(
 				GetSafeUI(*m_hAssioTurnTitle)))
 			{
-				title->SetwText(nextTurnIsPlayer ?
-					L"이솝 샤프의 턴" : L"저스티스 훈의 턴");
+				title->SetwText((nextTurnIsPlayer ?
+					m_AssioPlayerDisplayName : m_AssioNpcDisplayName) + L"의 턴");
 				title->SetAlpha(0.f);
 				if (auto* tween = title->GetTweenCom())
 				{
@@ -1018,19 +1041,26 @@ void UIManager::LoadAssioResult()
 		PlayFadeInAll2DUI(0.f, 0.5f);
 		return;
 	}
-	PlayAssioUISound(ASSIO_UI_END_SOUND_PATH, 0.8f);
+	PlayUISound(MINIGAME_FINISH_SOUND_PATH, 0.8f);
 
-	// 동점일 때는 플레이어를 우선한다.
-	const _bool playerWon = m_iAssioPlayerScore >= m_iAssioNpcScore;
+	const _bool bDraw = m_iAssioPlayerScore == m_iAssioNpcScore;
+	const _bool playerWon = m_iAssioPlayerScore > m_iAssioNpcScore;
 	// 승패와 관계없이 소환사의 코트가 끝나면 다음 미니게임으로 진행한다.
 	CreateOrChangeQuest("부릉! 브룸! 참여하기");
 
-	const wchar_t* winnerName = playerWon ? L"이솝 샤프" : L"저스티스 훈";
+	const _wstring winnerName = bDraw ? L"무승부" :
+		(playerWon ? m_AssioPlayerDisplayName : m_AssioNpcDisplayName);
 	const int winnerScore = playerWon ? m_iAssioPlayerScore : m_iAssioNpcScore;
 	if (auto* winName = dynamic_cast<CTextBox*>(
 		FindUIByNameRecursive(m_AssioResultRoots, "WinName")))
 	{
 		winName->SetwText(winnerName);
+	}
+	if (auto* resultText = dynamic_cast<CTextBox*>(
+		FindUIByNameRecursive(m_AssioResultRoots, "Text")))
+	{
+		resultText->SetwText(bDraw ?
+			L"소환사 코트 무승부" : L"소환사 코트의 승자");
 	}
 	if (auto* score = dynamic_cast<CTextBox*>(
 		FindUIByNameRecursive(m_AssioResultRoots, "Score")))
@@ -1195,7 +1225,44 @@ void UIManager::FinishRaceMiniGame()
 	m_hRaceBoardCoinText.reset();
 
 	m_RaceResultRoots = LoadPrefab("Flag");
+	if (!m_RaceResultRoots.empty())
+		PlayUISound(MINIGAME_FINISH_SOUND_PATH, 0.8f);
 	m_hRaceResultCoinText.reset();
+	if (auto* trophy = FindUIByNameRecursive(
+		m_RaceResultRoots, "Trophy"))
+	{
+		const CHandle trophyHandle = trophy->GetHandle();
+		const _float trophyBaseScale = trophy->GetScaleRatio();
+		trophy->SetScaleRatio(0.f);
+		trophy->CalcUICoord();
+		trophy->Appear = [trophyHandle, trophyBaseScale](CUIObject*)
+		{
+			auto* current = GetSafeUI(trophyHandle);
+			if (!current)
+				return;
+
+			current->SetScaleRatio(0.f);
+			current->CalcUICoord();
+			if (auto* tween = current->GetTweenCom())
+			{
+				tween->PlayTween(
+					0.f, trophyBaseScale, 1.f,
+					[trophyHandle](_float value)
+					{
+						if (auto* target = GetSafeUI(trophyHandle))
+						{
+							target->SetScaleRatio(value);
+							target->CalcUICoord();
+						}
+					}, nullptr, EEaseType::EaseOutQuad);
+			}
+			else
+			{
+				current->SetScaleRatio(trophyBaseScale);
+				current->CalcUICoord();
+			}
+		};
+	}
 	if (auto* coin = FindUIByNameRecursive(
 		m_RaceResultRoots, "CoinCnt"))
 	{
@@ -1526,8 +1593,21 @@ void UIManager::UpdateRaceStartTimer(_float fTimeDelta)
 		return std::sin(saturate(secondPhase / 0.2f) * XM_PI) * 0.09f;
 	};
 
+	const _float previousElapsed = m_fRaceStartTimerElapsed;
 	m_fRaceStartTimerElapsed += fTimeDelta;
 	const _float elapsed = m_fRaceStartTimerElapsed;
+	// 각 숫자 구간 시작 후 0.1초가 프레임 두근거림의 최저 스케일 지점이다.
+	// 3, 2, 1 모두 그 지점을 처음 통과할 때 Timer 사운드를 한 번 재생한다.
+	constexpr _float timerSoundOffset = 0.1f;
+	for (uint32_t countIndex = 0u; countIndex < 3u; ++countIndex)
+	{
+		const _float soundTime = countDuration * countIndex + timerSoundOffset;
+		if (previousElapsed < soundTime && elapsed >= soundTime)
+			PlayUISound(RACE_TIMER_SOUND_PATH, 0.85f);
+	}
+	// 3, 2, 1 이후 GO가 처음 표시되는 프레임에 한 번만 재생한다.
+	if (previousElapsed < countTotal && elapsed >= countTotal)
+		PlayUISound(RACE_GO_SOUND_PATH, 0.85f);
 	if (elapsed >= totalDuration)
 	{
 		for (const CHandle root : m_RaceStartTimerRoots)
@@ -2786,7 +2866,15 @@ void UIManager::CreateFadeIn(float delay, float playtime)
 	}
 
 	if (auto* pBG = GetSafeUI(hBG))
+	{
 		pBG->GetTweenCom()->ClearTweens();
+		if (delay <= 0.f && playtime <= 0.f)
+		{
+			pBG->SetInputLcok(true);
+			pBG->SetAlpha(1.f);
+			return;
+		}
+	}
 	PlayOnlyFadeIn(hBG, delay, playtime);
 }
 
@@ -3885,6 +3973,9 @@ void UIManager::FadeOutQuest(float playtime)
 
 void UIManager::FadeInQuest(float playtime)
 {
+	if (m_bQuestFadeInDeferred)
+		return;
+
 	m_bQuestFadeSuppressed = false;
 	if (!m_hQuestRoot)
 		return;

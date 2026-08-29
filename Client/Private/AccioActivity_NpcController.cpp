@@ -11,6 +11,7 @@
 #include "DbgLineRender.h"
 #include "GameInstance.h"
 #include "Player.h"
+#include "SoundManager.h"
 #include "UIManager.h"
 
 NS_USING(Client)
@@ -587,30 +588,47 @@ void CAccioActivity_NpcController::AdvanceDialogue()
 }
 
 void CAccioActivity_NpcController::HandleDialogueLineSound(
-	const DIALOGUE_LINE& line) const
+	const DIALOGUE_LINE& line)
 {
-	(void)line;
+	StopDialogueSound();
+	if (line.SoundPath.empty())
+		return;
 
-	switch (m_eDialoguePurpose)
+	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager())
 	{
-	case DIALOGUE_PURPOSE::START_MATCH:
-		// [LSY][TODO][AccioDialogueSound]
-		// 경기 시작 전 NPC 대화 음성: m_iDialogueIndex와 line에 맞는 사운드를 재생한다.
-		break;
-
-	case DIALOGUE_PURPOSE::MATCH_RESULT:
-		// [LSY][TODO][AccioDialogueSound]
-		// 경기 결과 NPC 대화 음성: 승리/패배/무승부 대사 목록의 현재 줄 사운드를 재생한다.
-		break;
-
-	case DIALOGUE_PURPOSE::NONE:
-	default:
-		break;
+		m_iDialogueSoundID = pSoundManager->Play2D(
+			line.SoundPath,
+			SOUND_PLAY_DESC{
+				.sBusID = SOUND_BUS::VOICE,
+				.fVolume = 1.f,
+				.fPitch = 1.f,
+				.iPriority = 48,
+				.bLoop = false
+			},
+			SOUND_LOAD_TYPE::STREAM);
 	}
+}
+
+void CAccioActivity_NpcController::StopDialogueSound(
+	_float fFadeOutDuration)
+{
+	if (m_iDialogueSoundID == INVALID_SOUND_ID)
+		return;
+
+	if (auto* pSoundManager = CGameInstance::Get().GetSoundManager())
+	{
+		if (fFadeOutDuration > 0.f)
+			pSoundManager->FadeOutAndStop(
+				m_iDialogueSoundID, fFadeOutDuration);
+		else
+			pSoundManager->Stop(m_iDialogueSoundID);
+	}
+	m_iDialogueSoundID = INVALID_SOUND_ID;
 }
 
 void CAccioActivity_NpcController::CancelDialogue()
 {
+	StopDialogueSound();
 	m_bTalking = false;
 	m_ActiveDialogue.clear();
 	m_eDialoguePurpose = DIALOGUE_PURPOSE::NONE;
@@ -629,6 +647,7 @@ void CAccioActivity_NpcController::CancelDialogue()
 
 void CAccioActivity_NpcController::FinishDialogue()
 {
+	StopDialogueSound();
 	const DIALOGUE_PURPOSE eFinishedPurpose = m_eDialoguePurpose;
 	m_bTalking = false;
 	if (eFinishedPurpose == DIALOGUE_PURPOSE::START_MATCH)
@@ -1995,9 +2014,24 @@ UPtr<CPrototype> CAccioActivity_NpcController::Clone(void* pArg)
 
 void CAccioActivity_NpcController::Free()
 {
+	const auto* pActivity = CGameInstance::Get().
+		GetGameObjectByHandleT<CAccioActivity_Base>(m_hActivity);
+	const _bool bRestoreAssioUi =
+		m_bTalking ||
+		GET_SINGLE(UIManager)->IsAssioMiniGameActive() ||
+		(pActivity &&
+			pActivity->GetMatchState() != CAccioActivity_Base::MATCH_STATE::READY);
+
 	SyncInteractionPrompt(false);
 	EndDialogueCamera();
 	SetPlayerMovementLocked(false);
+	StopDialogueSound(0.f);
 	StopAccioEffects();
+	if (bRestoreAssioUi)
+	{
+		// [LSY] 런타임 디스폰이나 레벨 정리로 경기가 중단돼도
+		// Coat/결과 UI와 시작 전에 숨긴 HUD를 함께 복원한다.
+		GET_SINGLE(UIManager)->AssioMiniGameFinish();
+	}
 	CGameObject::Free();
 }

@@ -287,15 +287,19 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 			SetExpression(line.ExpressionAnim, line.LoopExpression);
 			m_bLineAnimationStartedDuringFade = true;
 		}
+		const _float fadeOutDuration =
+			m_TemporaryFadeOutDuration.value_or(m_fFadeDuration);
 		GET_SINGLE(UIManager)->CreateFadeOut(
-			m_fFadeHoldDuration, m_fFadeDuration);
+			m_fFadeHoldDuration, fadeOutDuration);
 
 		m_fIntroElapsed = -m_fFadeHoldDuration;
 		m_eConversationPhase = CONVERSATION_PHASE::FADING_IN;
 		return;
 	}
 
-	if (m_fIntroElapsed < m_fFadeDuration)
+	const _float fadeOutDuration =
+		m_TemporaryFadeOutDuration.value_or(m_fFadeDuration);
+	if (m_fIntroElapsed < fadeOutDuration)
 		return;
 	ShowFirstDialogueLine();
 }
@@ -303,6 +307,19 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 
 void CInteractiveNpc::ShowFirstDialogueLine()
 {
+	// 구매 후 대화 재진입에만 사용한 빠른 화면 전환 속도를 복구한다.
+	// 이후 대사/미니게임 전환은 NPC 설명자의 원래 FadeDuration을 사용한다.
+	if (m_TemporaryFadeDurationRestore)
+	{
+		m_fFadeDuration = *m_TemporaryFadeDurationRestore;
+		m_TemporaryFadeDurationRestore.reset();
+	}
+	if (m_TemporaryFadeHoldDurationRestore)
+	{
+		m_fFadeHoldDuration = *m_TemporaryFadeHoldDurationRestore;
+		m_TemporaryFadeHoldDurationRestore.reset();
+	}
+	m_TemporaryFadeOutDuration.reset();
 	m_eState = STATE::TALKING;
 	ShowCurrentDialogueLine();
 }
@@ -580,8 +597,26 @@ void CInteractiveNpc::RestartDialogueForTest()
 	BeginDialogue();
 }
 
-void CInteractiveNpc::RestartDialogueAtIndexForTest(size_t dialogueIndex)
+void CInteractiveNpc::RestartDialogueAtIndexForTest(
+	size_t dialogueIndex,
+	_float temporaryFadeDuration,
+	_float temporaryFadeHoldDuration,
+	_float temporaryFadeOutDuration)
 {
+	if (temporaryFadeDuration >= 0.f)
+	{
+		if (!m_TemporaryFadeDurationRestore)
+			m_TemporaryFadeDurationRestore = m_fFadeDuration;
+		m_fFadeDuration = temporaryFadeDuration;
+	}
+	if (temporaryFadeHoldDuration >= 0.f)
+	{
+		if (!m_TemporaryFadeHoldDurationRestore)
+			m_TemporaryFadeHoldDurationRestore = m_fFadeHoldDuration;
+		m_fFadeHoldDuration = temporaryFadeHoldDuration;
+	}
+	if (temporaryFadeOutDuration >= 0.f)
+		m_TemporaryFadeOutDuration = temporaryFadeOutDuration;
 	m_DebugStartDialogueIndex = dialogueIndex;
 	RestartDialogueForTest();
 }
@@ -643,6 +678,17 @@ void CInteractiveNpc::CancelDialogue()
 	EndDialogueCamera();
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
+	if (m_TemporaryFadeDurationRestore)
+	{
+		m_fFadeDuration = *m_TemporaryFadeDurationRestore;
+		m_TemporaryFadeDurationRestore.reset();
+	}
+	if (m_TemporaryFadeHoldDurationRestore)
+	{
+		m_fFadeHoldDuration = *m_TemporaryFadeHoldDurationRestore;
+		m_TemporaryFadeHoldDurationRestore.reset();
+	}
+	m_TemporaryFadeOutDuration.reset();
 	m_eConversationPhase = CONVERSATION_PHASE::IDLE;
 	m_eState = STATE::IDLE;
 }
@@ -664,14 +710,29 @@ void CInteractiveNpc::FinishDialogue()
 	if (m_eState == STATE::MOVING || m_eState == STATE::MINIGAME)
 		return;
 
-	if (!KeepDialogueCameraOnFinish())
+	const _bool keepDialoguePresentation = KeepDialogueCameraOnFinish();
+	if (!keepDialoguePresentation)
 	{
 		EndDialogueCamera(
 			m_bInteractionPermanentlyDisabled ? 1.25f : 0.f);
+		SetPlayerMovementLocked(false);
+		GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
 	}
-	SetPlayerMovementLocked(false);
-	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
-	m_eState = STATE::IDLE;
+	// 완드 상자 연출 -> 상점 -> 구매 후속 대화가 이어지는 동안에는
+	// 최초 대화에서 숨긴 HUD와 플레이어 입력 잠금을 그대로 유지한다.
+	// 구매 후 마지막 NPC 대화가 끝나 KeepDialogueCameraOnFinish()가
+	// false가 되었을 때 위 복원 경로가 정확히 한 번 실행된다.
+	if (keepDialoguePresentation)
+	{
+		// 임시 대화 종료를 새 상호작용 가능 상태로 취급하지 않도록 하여
+		// 완드 시네마틱과 상점 진행 중 F 프롬프트가 재생성되지 않게 한다.
+		SyncInteractionPrompt(false);
+		m_eState = STATE::DIALOGUE_INTRO;
+	}
+	else
+	{
+		m_eState = STATE::IDLE;
+	}
 }
 
 

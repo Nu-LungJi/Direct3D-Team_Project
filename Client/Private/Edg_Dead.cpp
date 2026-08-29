@@ -51,7 +51,8 @@ void CEdg_Dead::PriorityUpdate(CStateMachine* pStateMachine, _float fTimeDelta)
 		pDragon->Set_Dissolve(1.f * t);
 		
 	}
-	if (pAnimator->GetFinish())
+	// 애니메이션뿐 아니라 마지막 디졸브까지 전부 끝난 뒤 종료를 알린다.
+	if (pAnimator->GetFinish() && m_fTick >= 1.f)
 		pDragon->Set_EndGame();
 }
 
