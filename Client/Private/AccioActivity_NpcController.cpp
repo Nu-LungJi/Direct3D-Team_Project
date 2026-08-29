@@ -469,6 +469,11 @@ void CAccioActivity_NpcController::BeginDialogueSequence(
 	m_ActiveDialogue = dialogue;
 	m_eDialoguePurpose = ePurpose;
 	m_bTalking = true;
+	if (ePurpose == DIALOGUE_PURPOSE::START_MATCH)
+	{
+		GET_SINGLE(UIManager)->SetMiniMapObjectiveActive(
+			"Hogwart_AccioStudentQuest", false);
+	}
 	m_iDialogueIndex = 0u;
 	m_fDialogueIntroElapsed = 0.f;
 	m_eConversationPhase = CONVERSATION_PHASE::FADING_OUT;
