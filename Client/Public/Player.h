@@ -432,6 +432,7 @@ private:
 
 	_float m_fControlHoldTime{};
 	_bool m_bDashTriggered{};
+	static constexpr _float SKILL_INPUT_BUFFER_TIME = 0.25f;
 	std::array<_float, 4> m_SkillSlotCooldowns{};
 	uint32_t m_iBufferedSkillSlot{};
 	_float m_fBufferedSkillInputRemainTime{};

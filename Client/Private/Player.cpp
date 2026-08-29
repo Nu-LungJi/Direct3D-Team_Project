@@ -1706,15 +1706,13 @@ void CPlayer::UpdateSkillSlotCooldowns(_float fTimeDelta)
 		if (!pUIController)
 			continue;
 
-		const SPELL_TYPE eSpellType = static_cast<SPELL_TYPE>(
-			pUIController->GetSpellType(static_cast<uint32_t>(i) + 1u));
+		const uint32_t iSlotNumber = static_cast<uint32_t>(i) + 1u;
 		const _float fCooldownDuration =
-			eSpellType == SPELL_TYPE::BOMBARDA
-			? 10.f : DEFAULT_SKILL_SLOT_COOLDOWN;
+			pUIController->GetSpellCooldownDuration(iSlotNumber);
 		const _float fReadyRatio = fCooldownDuration > 0.f
 			? 1.f - fCooldown / fCooldownDuration : 1.f;
 		pUIController->SetSpellCooldownRatio(
-			static_cast<uint32_t>(i) + 1u, fReadyRatio);
+			iSlotNumber, fReadyRatio);
 	}
 }
 
