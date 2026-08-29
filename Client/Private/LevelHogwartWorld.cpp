@@ -321,6 +321,10 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.OnMoveDestinationApplied = [this, hPlayer = *hPlayer]()
 		{
 			RequestSummonersCourtSpawn(hPlayer);
+			GET_SINGLE(UIManager)->CreateOrChangeQuest(
+				"미니게임 참여하기");
+			GET_SINGLE(UIManager)->SetMiniMapObjectiveActive(
+				"Hogwart_MiniGameNpcQuest", true);
 		};
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
@@ -370,7 +374,15 @@ HRESULT CLevelHogwartWorld::Initialize()
 				{
 					{
 						"소환사의 코트", 4,
-						CInteractiveNpc::DIALOGUE_ACTION::CONTINUE_DIALOGUE
+						CInteractiveNpc::DIALOGUE_ACTION::CONTINUE_DIALOGUE,
+						[]()
+						{
+							GET_SINGLE(UIManager)->CreateOrChangeQuest(
+								"소환사의 코트 참여하기");
+							GET_SINGLE(UIManager)->SetMiniMapObjectiveActive(
+								"Hogwart_AccioStudentQuest", true);
+							return 4u;
+						}
 					},
 					{
 						"부릉! 브룸!", 2,
@@ -492,6 +504,13 @@ void CLevelHogwartWorld::Update(E::_float fTimeDelta)
 			"LEVEL_HOGWART_WORLD", "Prototype_GameObject_UIController", "UIController", &desc);
 		GET_SINGLE(UIManager)->SetUIController(hUIController);
 		m_bCreatePlayScreenUI = hUIController.has_value();
+	}
+
+	if (m_bCreatePlayScreenUI && !m_bQuestCreated)
+	{
+		m_bQuestCreated = true;
+		GET_SINGLE(UIManager)->CreateOrChangeQuest(
+			"호그스미스 둘러보기");
 	}
 
 	GET_SINGLE(UIManager)->UpdateRootUIHandles();

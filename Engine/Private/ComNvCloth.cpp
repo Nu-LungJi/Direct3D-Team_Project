@@ -151,6 +151,38 @@ _bool CComNvCloth::SetWind(
 			Desc);
 }
 
+_bool CComNvCloth::SetLinearInertia(
+	const _float3& vLinearInertia)
+{
+	if (!m_hCloth)
+		return false;
+
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	if (!pManager)
+		return false;
+
+	return pManager->SetClothLinearInertia(
+		m_hCloth,
+		vLinearInertia);
+}
+
+_bool CComNvCloth::SetSolverFrequency(
+	_float fSolverFrequency)
+{
+	if (!m_hCloth)
+		return false;
+
+	auto* pManager =
+		CGameInstance::Get().GetNvClothManager();
+	if (!pManager)
+		return false;
+
+	return pManager->SetClothSolverFrequency(
+		m_hCloth,
+		fSolverFrequency);
+}
+
 _bool CComNvCloth::SetSelfCollision(
 	_float fDistance,
 	_float fStiffness)

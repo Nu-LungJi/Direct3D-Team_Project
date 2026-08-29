@@ -1,6 +1,10 @@
 #pragma once
 #include "Monster.h"
 #include "Client_Defines.h"
+NS_BEGIN(Engine)
+class CComPxBoxCollider;
+NS_END
+
 enum class TROLL_SKILL { SMASH,DOLJIN, END };
 
 NS_BEGIN(Client)
@@ -59,7 +63,12 @@ public:
 	void						Destory_Child() override;
 	void						OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit) override;
 	const _float				Get_Damage() override;
+	void						OnCollisionEnter(
+		CGameObject* pObj,
+		const PX_ON_COLLISION_DATA& info) override;
 private:
+	HRESULT					InitializeChargeCollider();
+	void						UpdateChargeColliderState();
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);
@@ -72,8 +81,13 @@ private:
 	_string				m_EffectNames[ETOUI(TROLL_SKILL::END)]{};
 	TROLL_SKILL_INFO	m_SkillHandle[ETOUI(TROLL_SKILL::END)]{};
 	TROLL_SKILL			m_eDragonSkill{};
+	CComPxBoxCollider*	m_pChargeBodyCollider{};
+	PX_FILTER_DESC		m_tDefaultCCTFilter{};
 	_bool				m_bIsBreak{ false }, m_bActiveSKill{ false };
 	_float				m_fTick{ 0.f };
+	_bool				m_bChargeBodyColliderEnabled{};
+	static constexpr uint32_t CHARGE_BODY_SHAPE_INDEX = 100u;
+
 public:
 	static E::UPtr<CTroll> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

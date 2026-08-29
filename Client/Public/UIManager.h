@@ -82,6 +82,7 @@ public:
 	void DeleteQuest();
 	void FadeOutQuest(float playtime = 0.3f);
 	void FadeInQuest(float playtime = 0.5f);
+	_bool SetMiniMapObjectiveActive(const std::string& key, _bool active);
 
 	/********레이스 시작 타이머***********/
 	void StartRaceStartTimer();
@@ -231,6 +232,7 @@ private:
 	_float m_fRaceMiniGameElapsed{};
 	uint32_t m_iRaceMiniGameCoinCount{40};
 	_bool m_bRaceReturnPositionApplied{};
+	_bool m_bRaceResultFadeOutStarted{};
 	_float m_fRaceReturnElapsed{};
 	std::function<void()> m_OnRaceReturnToShop{};
 
@@ -240,6 +242,7 @@ private:
 		APPEAR,
 		HOLD,
 		MOVE,
+		IMPACT_HOLD,
 		TURN_CHANGE,
 		RESULT_COAT_FADE_OUT,
 		RESULT_HOLD,
@@ -307,6 +310,8 @@ private:
 	void PlayRaceRootsFadeIn(const std::vector<CHandle>& roots,
 		_float playtime = 0.3f);
 	void UpdateAssioMiniGame(_float fTimeDelta);
+	void PlayAssioScoreImpactEffect();
+	void CompleteAssioScoreImpact();
 	void BeginAssioTurnChange();
 	void BeginAssioResult();
 	void LoadAssioResult();

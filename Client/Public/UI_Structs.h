@@ -69,6 +69,9 @@ struct MINIMAP_OBJECTIVE_INFO
 	_bool Enabled{ true };
 	std::string Key;
 	_float3 WorldPosition{};
+	std::optional<CHandle> TargetHandle{};
+	// TargetHandle이 아직 생성되지 않았거나 무효가 되면 이 태그로 다시 찾는다.
+	std::string TargetObjectTag{};
 	uint32_t LevelID{ static_cast<uint32_t>(-1) };
 	OBJECTIVE_ACTIVE_RULE ActiveRule{ OBJECTIVE_ACTIVE_RULE::MANUAL };
 	_float AutoActivateDistance{};

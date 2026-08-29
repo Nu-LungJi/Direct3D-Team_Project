@@ -5,6 +5,7 @@
 #include "GameInstance.h"
 #include "Player.h"
 #include "Player_Weapon.h"
+#include "TextBox.h"
 #include "TextureUI.h"
 #include "TweenComponent.h"
 #include "UIManager.h"
@@ -110,6 +111,8 @@ void CWandShop::CreatePurchasePrompt()
 
 	m_PurchasePromptRoots.clear();
 	m_PurchaseGauge.reset();
+	m_PurchaseCoinText.reset();
+	m_iDisplayedCoinCount = UINT32_MAX;
 	m_fPurchaseHoldProgress = 0.f;
 
 	auto promptRoots = GET_SINGLE(UIManager)->LoadPrefab(
@@ -120,6 +123,7 @@ void CWandShop::CreatePurchasePrompt()
 
 	CUIObject* button = nullptr;
 	CTextureUI* gauge = nullptr;
+	CTextBox* coinText = nullptr;
 	for (const CHandle rootHandle : promptRoots)
 	{
 		auto* root = GetSafeUI(rootHandle);
@@ -135,10 +139,19 @@ void CWandShop::CreatePurchasePrompt()
 			auto* child = GetSafeUI(childHandle);
 			if (!child)
 				continue;
+			child->GetUIInfo().Weight = PURCHASE_CHILD_WEIGHT;
 			child->SetInputLcok(true);
+			if (std::string_view(root->GetName()) == "CoinImage" &&
+				(std::string_view(child->GetName()) == "CoinText" ||
+				 std::string_view(child->GetName()) == "Coin"))
+			{
+				coinText = E::CGameInstance::Get().
+					GetGameObjectByHandleT<CTextBox>(childHandle);
+				if (coinText)
+					m_PurchaseCoinText = childHandle;
+			}
 			if (std::string_view(child->GetName()) == "Text")
 			{
-				child->GetUIInfo().Weight = PURCHASE_CHILD_WEIGHT;
 				continue;
 			}
 			if (std::string_view(child->GetName()) != "BTFrame")
@@ -148,7 +161,6 @@ void CWandShop::CreatePurchasePrompt()
 			if (gauge)
 			{
 				m_PurchaseGauge = childHandle;
-				gauge->GetUIInfo().Weight = PURCHASE_CHILD_WEIGHT;
 				gauge->SetPathProgressMode(true);
 				gauge->SetPathProgressType(2u);
 				gauge->SetPathProgress(0.f);
@@ -170,11 +182,15 @@ void CWandShop::CreatePurchasePrompt()
 		return;
 	}
 	m_PurchasePromptRoots = std::move(promptRoots);
+	RefreshPurchaseCoinText();
 }
 
 void CWandShop::Update(UIManager& manager, _float fTimeDelta)
 {
-	if (!IsOpen() || !m_PurchaseGauge)
+	if (!IsOpen())
+		return;
+	RefreshPurchaseCoinText();
+	if (!m_PurchaseGauge)
 		return;
 	auto* gauge = E::CGameInstance::Get().
 		GetGameObjectByHandleT<CTextureUI>(*m_PurchaseGauge);
@@ -205,8 +221,31 @@ void CWandShop::Update(UIManager& manager, _float fTimeDelta)
 		CompletePurchase(manager);
 }
 
+void CWandShop::RefreshPurchaseCoinText()
+{
+	if (!m_PurchaseCoinText)
+		return;
+
+	auto* textBox = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CTextBox>(*m_PurchaseCoinText);
+	if (!textBox)
+	{
+		m_PurchaseCoinText.reset();
+		return;
+	}
+
+	const uint32_t coinCount =
+		GET_SINGLE(UIManager)->GetRaceMiniGameCoinCount();
+	if (m_iDisplayedCoinCount == coinCount)
+		return;
+
+	m_iDisplayedCoinCount = coinCount;
+	textBox->SetwText(std::to_wstring(coinCount));
+}
+
 void CWandShop::CompletePurchase(UIManager& manager)
 {
+
 	if (const auto* playerLayer =
 		E::CGameInstance::Get().GetGameObjectLayer("03_Player"))
 	{
@@ -248,6 +287,8 @@ void CWandShop::Close(UIManager& manager)
 	deleteRoots(m_PageRoots);
 	deleteRoots(m_CommonRoots);
 	m_PurchaseGauge.reset();
+	m_PurchaseCoinText.reset();
+	m_iDisplayedCoinCount = UINT32_MAX;
 	m_fPurchaseHoldProgress = 0.f;
 	m_iCurrentPage = UINT32_MAX;
 	m_iRootWeightOffset = 0;

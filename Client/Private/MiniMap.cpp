@@ -492,6 +492,9 @@ void CMiniMap::InitializeObjectives()
 
 	switch (currentLevelID)
 	{
+	case ETOUI(LEVEL::HOGWART_WORLD):
+		InitHogwartObjectives();
+		break;
 	case ETOUI(LEVEL::CHARLES_ROOKWOOD):
 		InitRookwoodObjectives();
 		break;
@@ -749,8 +752,40 @@ void CMiniMap::UpdateObjectiveMarkers(
 
 	for (auto& objective : m_vObjectives)
 	{
-		const _float deltaX = objective.WorldPosition.x - playerPosition.x;
-		const _float deltaZ = objective.WorldPosition.z - playerPosition.z;
+		_float3 objectivePosition = objective.WorldPosition;
+		if (!objective.TargetObjectTag.empty() &&
+			(!objective.TargetHandle ||
+				!E::CGameInstance::Get().GetGameObjectByHandle(
+					*objective.TargetHandle)))
+		{
+			objective.TargetHandle.reset();
+			if (const auto* npcLayer = E::CGameInstance::Get().
+				GetGameObjectLayer("02_Npc"))
+			{
+				for (const CHandle handle : *npcLayer)
+				{
+					auto* target = E::CGameInstance::Get().
+						GetGameObjectByHandle(handle);
+					if (target && target->GetObjectTag() ==
+						objective.TargetObjectTag)
+					{
+						objective.TargetHandle = handle;
+						break;
+					}
+				}
+			}
+		}
+		if (objective.TargetHandle)
+		{
+			if (auto* target = E::CGameInstance::Get().
+				GetGameObjectByHandle(*objective.TargetHandle))
+			{
+				objectivePosition = target->GetTransform().GetPosition();
+			}
+		}
+
+		const _float deltaX = objectivePosition.x - playerPosition.x;
+		const _float deltaZ = objectivePosition.z - playerPosition.z;
 		const _float distanceSq = deltaX * deltaX + deltaZ * deltaZ;
 		OBJECTIVE_VISUAL_PHASE* selectedPhase = nullptr;
 		const _bool isCurrentLevel =
@@ -804,8 +839,8 @@ void CMiniMap::UpdateObjectiveMarkers(
 
 			const _float screenMarkerTargetAlpha =
 				showScreenMarker ?
-				UpdateScreenObjectiveMarkerPosition(
-					phase, objective.WorldPosition, camera) :
+					UpdateScreenObjectiveMarkerPosition(
+						phase, objectivePosition, camera) :
 				0.f;
 			SetScreenObjectivePhaseVisible(
 				phase, screenMarkerTargetAlpha, fTimeDelta);
@@ -1302,6 +1337,137 @@ void CMiniMap::InitBossRookwoodBattleZone()
 	bossZone.Alpha = 0.25f;
 	bossZone.LevelID = ETOUI(LEVEL::BOSS_CHARLES_ROOKWOOD);
 	AddBattleZone(bossZone);
+}
+
+void CMiniMap::InitHogwartObjectives()
+{
+	MINIMAP_OBJECTIVE_INFO shopObjective{};
+	shopObjective.Key = "Hogwart_OllivandersShopNpc";
+	shopObjective.WorldPosition = { 108.5f, 2.5f, -82.f };
+	shopObjective.LevelID = ETOUI(LEVEL::HOGWART_WORLD);
+	shopObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::PROXIMITY;
+	shopObjective.AutoActivateDistance = 100.f;
+	shopObjective.ActivationHysteresis = 3.f;
+
+	if (const auto* npcLayer =
+		E::CGameInstance::Get().GetGameObjectLayer("02_Npc"))
+	{
+		for (const CHandle handle : *npcLayer)
+		{
+			auto* npc = E::CGameInstance::Get().GetGameObjectByHandle(handle);
+			if (!npc || npc->GetObjectTag() !=
+				"Hogsmeade_ShopNpc_GerboldOllivander")
+			{
+				continue;
+			}
+
+			shopObjective.TargetHandle = handle;
+			shopObjective.WorldPosition =
+				npc->GetTransform().GetPosition();
+			break;
+		}
+	}
+
+	shopObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_Map_Vendor_Ollivanders_Wands",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = 24.f,
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = false
+	});
+
+	AddObjective(std::move(shopObjective));
+
+	MINIMAP_OBJECTIVE_INFO miniGameNpcObjective{};
+	miniGameNpcObjective.Key = "Hogwart_MiniGameNpc";
+	miniGameNpcObjective.WorldPosition = { 1895.461f, 35.9f, 268.991f };
+	miniGameNpcObjective.LevelID = ETOUI(LEVEL::HOGWART_WORLD);
+	miniGameNpcObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::PROXIMITY;
+	miniGameNpcObjective.AutoActivateDistance = 100.f;
+	miniGameNpcObjective.ActivationHysteresis = 3.f;
+
+	if (const auto* npcLayer =
+		E::CGameInstance::Get().GetGameObjectLayer("02_Npc"))
+	{
+		for (const CHandle handle : *npcLayer)
+		{
+			auto* npc = E::CGameInstance::Get().GetGameObjectByHandle(handle);
+			if (!npc || npc->GetObjectTag() !=
+				"Hogsmeade_MiniGameNpc_Professor")
+			{
+				continue;
+			}
+
+			miniGameNpcObjective.TargetHandle = handle;
+			miniGameNpcObjective.WorldPosition =
+				npc->GetTransform().GetPosition();
+			break;
+		}
+	}
+
+	miniGameNpcObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_MiniMap_BroomRace",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = 24.f,
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = false
+	});
+
+	AddObjective(std::move(miniGameNpcObjective));
+
+	MINIMAP_OBJECTIVE_INFO miniGameNpcQuestObjective{};
+	miniGameNpcQuestObjective.Key = "Hogwart_MiniGameNpcQuest";
+	miniGameNpcQuestObjective.WorldPosition = { 1895.461f, 35.9f, 268.991f };
+	miniGameNpcQuestObjective.TargetObjectTag =
+		"Hogsmeade_MiniGameNpc_Professor";
+	miniGameNpcQuestObjective.LevelID = ETOUI(LEVEL::HOGWART_WORLD);
+	miniGameNpcQuestObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::MANUAL;
+	miniGameNpcQuestObjective.ManualActive = false;
+	miniGameNpcQuestObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_Minimap_Mission_Active",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = 24.f,
+		.TintColor = { 1.f, 0.78f, 0.04f },
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = true,
+		.ScreenMarkerSize = 30.f,
+		.ScreenMarkerWorldOffset = { 0.f, 4.2f, 0.f },
+		.ScreenMarkerWeight = 100,
+		.ScreenMarkerOffscreenAlpha = 0.f
+	});
+
+	AddObjective(std::move(miniGameNpcQuestObjective));
+
+	MINIMAP_OBJECTIVE_INFO accioStudentObjective{};
+	accioStudentObjective.Key = "Hogwart_AccioStudentQuest";
+	accioStudentObjective.WorldPosition = { 323.512f, 44.703f, 85.749f };
+	accioStudentObjective.TargetObjectTag =
+		"HogwartWorld_AccioActivity_NpcCharacter";
+	accioStudentObjective.LevelID = ETOUI(LEVEL::HOGWART_WORLD);
+	accioStudentObjective.ActiveRule = OBJECTIVE_ACTIVE_RULE::MANUAL;
+	accioStudentObjective.ManualActive = false;
+	accioStudentObjective.VisualPhases.push_back({
+		.MinDistance = 0.f,
+		.MaxDistance = 0.f,
+		.TextureTag = "TEX_UI_T_Minimap_Mission_Active",
+		.PrototypeTag = "Prototype_GameObject_TextureUI",
+		.IconSize = 24.f,
+		.TintColor = { 1.f, 0.78f, 0.04f },
+		.DistanceHysteresis = 1.f,
+		.ShowScreenMarker = true,
+		.ScreenMarkerSize = 30.f,
+		.ScreenMarkerWorldOffset = { 0.f, 3.4f, 0.f },
+		.ScreenMarkerWeight = 100,
+		.ScreenMarkerOffscreenAlpha = 0.f
+	});
+
+	AddObjective(std::move(accioStudentObjective));
 }
 
 void CMiniMap::InitRookwoodObjectives()
