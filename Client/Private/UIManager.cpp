@@ -18,11 +18,33 @@
 #include "VideoObject.h"
 #include "Monster.h"
 #include "Player.h"
+#include "SoundManager.h"
 
 NS_USING(Client)
 
 namespace
 {
+	constexpr const _char* ASSIO_UI_START_SOUND_PATH =
+		"./Resources/SampleClient/Sound/AccioActivity/UI/AccioUI_Start.wav";
+	constexpr const _char* ASSIO_UI_END_SOUND_PATH =
+		"./Resources/SampleClient/Sound/AccioActivity/UI/AccioUI_End.wav";
+
+	void PlayAssioUISound(const _char* pSoundPath, _float fVolume)
+	{
+		if (auto* pSoundManager = E::CGameInstance::Get().GetSoundManager())
+		{
+			pSoundManager->Play2D(
+				pSoundPath,
+				SOUND_PLAY_DESC{
+					.sBusID = SOUND_BUS::UI,
+					.fVolume = fVolume,
+					.fPitch = 1.f,
+					.iPriority = 70,
+					.bLoop = false
+				});
+		}
+	}
+
 	void SetRenderGroupRecursive(CHandle handle, E::RENDERGROUP renderGroup)
 	{
 		auto* ui = E::CGameInstance::Get().GetGameObjectByHandleT<E::CUIObject>(handle);
@@ -380,6 +402,7 @@ void UIManager::AssioMiniGameStart(_bool bPlayerStarts)
 	m_bAssioFinalScore = false;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
 	m_bAssioMiniGameActive = true;
+	PlayAssioUISound(ASSIO_UI_START_SOUND_PATH, 0.75f);
 
 	if (auto* text = dynamic_cast<CTextBox*>(
 		GetSafeUI(*m_hAssioPlayerScoreText)))
@@ -791,6 +814,7 @@ void UIManager::LoadAssioResult()
 		PlayFadeInAll2DUI(0.f, 0.5f);
 		return;
 	}
+	PlayAssioUISound(ASSIO_UI_END_SOUND_PATH, 0.8f);
 
 	// 동점일 때는 플레이어를 우선한다.
 	const _bool playerWon = m_iAssioPlayerScore >= m_iAssioNpcScore;
