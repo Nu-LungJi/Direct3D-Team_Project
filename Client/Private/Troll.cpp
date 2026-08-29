@@ -121,6 +121,17 @@ HRESULT CTroll::Initialize(void* pArg)
 }
 void CTroll::ReadySound()
 {
+	m_SoundTable["ChageReady"] = { "./Resources/SampleClient/Sound/Troll/Charge/troll_charge_attack_hit.wav", };
+	m_SoundTable["ChageLoop"] = { "./Resources/SampleClient/Sound/Troll/Charge/vo_troll_charge_attack_loop.wav", };
+	m_SoundTable["ChageHit"] = { "./Resources/SampleClient/Sound/Troll/Charge/troll_charge_attack_hit.wav", };
+
+	m_SoundTable["Swing"] = { "./Resources/SampleClient/Sound/Troll/Club/troll_club_swing.wav", };
+	m_SoundTable["Walk"] = { 
+		"./Resources/SampleClient/Sound/Troll/Footsteps/Troll_Foot_Impact_91691935.wav", 
+	"./Resources/SampleClient/Sound/Troll/Footsteps/Troll_Foot_Impact_902343883.wav", 
+	"./Resources/SampleClient/Sound/Troll/Footsteps/Troll_Foot_Impact_241239946.wav",  };
+
+	
 }
 HRESULT CTroll::Ready_Fsm(const _string& LevelTag)
 {
@@ -196,6 +207,12 @@ void CTroll::Update(E::_float fTimeDelta)
 {
 	if (m_bEndGame) return;
 	__super::Update(fTimeDelta);
+
+	if (m_fTick > 3.f)
+	{
+		Find_Target();
+		m_fTick = 0.f;
+	}
 }
 
 void CTroll::Stuck()
@@ -318,7 +335,7 @@ void CTroll::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 		CGameInstance::Get().Spawn(m_EffectNames[iSkillNum], mat);
 		Get_BlackBoard()->Set_Value<_bool>(EDG_KEY::EDGEFFECT, false);
 	}
-
+	Set_Damage(static_cast<TROLL_SKILL>(iSkillNum));
 	m_CurEffectName.clear();
 	m_eAttType = eType;
 	m_eLastSkillTable = m_eAttType = eType;
@@ -346,6 +363,10 @@ void CTroll::OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit)
 
 	if (auto* pBarrel = Cast<CPropBarrel>(tHit.pGameObject))
 		pBarrel->DestroyBarrel();
+}
+const _float CTroll::Get_Damage()
+{
+	return m_fDamage;
 }
 void CTroll::Update_BBToFsm()
 {
@@ -381,6 +402,19 @@ _bool CTroll::BreakSkillType(PLAYER_SKILL_TYPE eType)
 		break;
 	}
 	return false;
+}
+
+void CTroll::Set_Damage(TROLL_SKILL eType)
+{
+	switch(eType)
+	{
+	case TROLL_SKILL::DOLJIN:
+		m_fDamage = 100.f;
+		break;
+	case TROLL_SKILL::SMASH:
+		m_fDamage = 30.f;
+		break;
+	}
 }
 
 E::UPtr<CTroll> CTroll::Create()

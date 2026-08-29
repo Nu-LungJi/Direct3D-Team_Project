@@ -58,11 +58,12 @@ public:
 	const _string&				Get_SkillName(TROLL_SKILL eType) { return m_EffectNames[ETOUI(eType)]; }
 	void						Destory_Child() override;
 	void						OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit) override;
+	const _float				Get_Damage() override;
 private:
 	void						Update_BBToFsm();
 	void						Flag_Check(_float fTimeDelta) override;
 	_bool						BreakSkillType(PLAYER_SKILL_TYPE eType);
-				
+	void						Set_Damage(TROLL_SKILL eType);
 	void						InitializeEffects();
 	void						Stuck() override;
 private:
@@ -72,7 +73,7 @@ private:
 	TROLL_SKILL_INFO	m_SkillHandle[ETOUI(TROLL_SKILL::END)]{};
 	TROLL_SKILL			m_eDragonSkill{};
 	_bool				m_bIsBreak{ false }, m_bActiveSKill{ false };
-
+	_float				m_fTick{ 0.f };
 public:
 	static E::UPtr<CTroll> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
