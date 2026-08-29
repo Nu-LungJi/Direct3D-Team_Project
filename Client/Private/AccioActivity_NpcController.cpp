@@ -391,7 +391,8 @@ void CAccioActivity_NpcController::UpdateDialogue(_float fTimeDelta)
 		UpdateDialogueIntro(fTimeDelta);
 		const _bool bCanAdvanceDialogue =
 			m_eConversationPhase == CONVERSATION_PHASE::TALKING;
-		SyncInteractionPrompt(bCanAdvanceDialogue);
+		// 대화 진행용 F 입력은 유지하지만 액티브 버튼 UI는 숨긴다.
+		SyncInteractionPrompt(false);
 		if (!bCanAdvanceDialogue || !CGameInstance::Get().KeyDown(DIK_F))
 			return;
 
@@ -404,6 +405,9 @@ void CAccioActivity_NpcController::UpdateDialogue(_float fTimeDelta)
 	if (eMatchState == CAccioActivity_Base::MATCH_STATE::MATCH_END)
 	{
 		SyncInteractionPrompt(false);
+		// 최종 점수와 승패 UI가 모두 끝난 뒤 결과 대화를 시작한다.
+		if (GET_SINGLE(UIManager)->IsAssioMiniGameActive())
+			return;
 		if (!m_bMatchEndDialogueCompleted &&
 			m_bAtSideStandby && m_eState == STATE::IDLE)
 		{
@@ -466,6 +470,11 @@ void CAccioActivity_NpcController::BeginDialogueSequence(
 	m_ActiveDialogue = dialogue;
 	m_eDialoguePurpose = ePurpose;
 	m_bTalking = true;
+	if (ePurpose == DIALOGUE_PURPOSE::START_MATCH)
+	{
+		GET_SINGLE(UIManager)->SetMiniMapObjectiveActive(
+			"Hogwart_AccioStudentQuest", false);
+	}
 	m_iDialogueIndex = 0u;
 	m_fDialogueIntroElapsed = 0.f;
 	m_eConversationPhase = CONVERSATION_PHASE::FADING_OUT;
@@ -552,6 +561,7 @@ void CAccioActivity_NpcController::ShowFirstDialogueLine()
 	m_eConversationPhase = CONVERSATION_PHASE::TALKING;
 	const auto& line = m_ActiveDialogue[m_iDialogueIndex];
 	SetDialogueExpression(line);
+	HandleDialogueLineSound(line);
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_sSpeakerName, line.Text);
 }
 
@@ -572,7 +582,31 @@ void CAccioActivity_NpcController::AdvanceDialogue()
 
 	const auto& line = m_ActiveDialogue[m_iDialogueIndex];
 	SetDialogueExpression(line);
+	HandleDialogueLineSound(line);
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_sSpeakerName, line.Text);
+}
+
+void CAccioActivity_NpcController::HandleDialogueLineSound(
+	const DIALOGUE_LINE& line) const
+{
+	(void)line;
+
+	switch (m_eDialoguePurpose)
+	{
+	case DIALOGUE_PURPOSE::START_MATCH:
+		// [LSY][TODO][AccioDialogueSound]
+		// 경기 시작 전 NPC 대화 음성: m_iDialogueIndex와 line에 맞는 사운드를 재생한다.
+		break;
+
+	case DIALOGUE_PURPOSE::MATCH_RESULT:
+		// [LSY][TODO][AccioDialogueSound]
+		// 경기 결과 NPC 대화 음성: 승리/패배/무승부 대사 목록의 현재 줄 사운드를 재생한다.
+		break;
+
+	case DIALOGUE_PURPOSE::NONE:
+	default:
+		break;
+	}
 }
 
 void CAccioActivity_NpcController::CancelDialogue()
@@ -612,13 +646,13 @@ void CAccioActivity_NpcController::FinishDialogue()
 		pNpcCharacter->SetAction(CAccioActivity_NpcCharacter::ACTION::IDLE);
 	EndDialogueCamera();
 	SetPlayerMovementLocked(false);
-	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
-		0.f, m_fDialogueFadeDuration);
 
 	auto* pActivity = CGameInstance::Get().
 		GetGameObjectByHandleT<CAccioActivity_Base>(m_hActivity);
 	if (eFinishedPurpose == DIALOGUE_PURPOSE::MATCH_RESULT)
 	{
+		GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
+			0.f, m_fDialogueFadeDuration);
 		// [LSY] 결과 확인 후 공과 점수를 준비 상태로 되돌려 NPC에게 다시 말을 걸 수 있게 한다.
 		if (pActivity && pActivity->ResetMatch(true))
 		{
@@ -630,14 +664,20 @@ void CAccioActivity_NpcController::FinishDialogue()
 		return;
 	}
 	if (eFinishedPurpose != DIALOGUE_PURPOSE::START_MATCH)
+	{
+		GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
+			0.f, m_fDialogueFadeDuration);
+		return;
+	}
+
+	if (pActivity && pActivity->StartMatch())
 		return;
 
-	if (!pActivity || !pActivity->StartMatch())
-	{
-		// [LSY] 경기 시작 실패 시 F 상호작용을 다시 열어 재시도할 수 있게 한다.
-		m_bDialogueCompleted = false;
-		DEBUG_LOG("[AccioActivity] Dialogue finished, but StartMatch failed.\n");
-	}
+	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(
+		0.f, m_fDialogueFadeDuration);
+	// [LSY] 경기 시작 실패 시 F 상호작용을 다시 열어 재시도할 수 있게 한다.
+	m_bDialogueCompleted = false;
+	DEBUG_LOG("[AccioActivity] Dialogue finished, but StartMatch failed.\n");
 }
 
 void CAccioActivity_NpcController::BeginDialogueCamera()
@@ -1533,7 +1573,7 @@ void CAccioActivity_NpcController::UpdateAccioEffects(_float fTimeDelta)
 			m_fPullEffectBlend = 0.f;
 			const CHandle hOwner = GetHandle();
 			m_iPullEffectID = CGameInstance::Get().PlayEffect(
-				"AccioBallPull",
+				"AccioBallPullNpc",
 				wandWorld,
 				XMVectorSetW(XMLoadFloat3(&vEnd), 1.f),
 				[hOwner](EFFECT_INSTANCE_ID iEffectID, EFFECT_FINISH_REASON)

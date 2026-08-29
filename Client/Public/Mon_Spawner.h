@@ -9,6 +9,9 @@ public:
 	{
 		CHandle handle{};
 		_string LevelTag{};
+		// 트롤 오브젝트가 생성되어 Spawn 상태에서 컷신을 재생하기 전에
+		// 레벨 전용 연출 오브젝트를 준비한다.
+		std::function<HRESULT()> OnBeforeTrollSpawn{};
 	}MON_SPAWNER_DESC;
 public:
 	DECLARE_DERIVED_TYPE(CMon_Spawner, CGameObject)
@@ -32,12 +35,22 @@ private:
 	void						Debug_Point();
 	void						Picking();
 	void						Picking_TerrainMon();
+	void						UpdateSpiderQuestProgress();
+	void						UpdateTrollQuestAfterCinematic();
 private:
 	std::vector<CHandle>		m_Monsters;
 	_string						m_LeveTag{};
 	std::list<_float3>			m_SpawnPos;
 	CHandle						m_Handle{};
-	_bool						m_bPick{ false }, m_bTroll{ false };
+	std::function<HRESULT()>	m_OnBeforeTrollSpawn{};
+	_bool						m_bPick{ false };
+	_bool						m_bTrollSpawnPrepared{ false };
+	_bool						m_bTroll{ false };
+	_bool						m_bSpiderEncounterStarted{ false };
+	_bool						m_bWaitingForTrollCinematic{ false };
+	_bool						m_bTrollCinematicObserved{ false };
+	size_t						m_iTotalSpiderCount{};
+	size_t						m_iLastReportedDefeated{ std::numeric_limits<size_t>::max() };
 public:
 	static E::UPtr<CMon_Spawner> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;

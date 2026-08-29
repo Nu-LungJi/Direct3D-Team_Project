@@ -39,6 +39,13 @@ public:
 	void SetAdditiveBlend(_bool enabled) { m_bAdditiveBlend = enabled; }
 	void SetTextureBrightness(_float brightness) { m_fTextureBrightness = std::max(0.f, brightness); }
 	_float GetTextureBrightness() const { return m_fTextureBrightness; }
+	void SetLogoSparkle(_float delay, _float duration)
+	{
+		m_bLogoSparkle = true;
+		m_fLogoSparkleTime = 0.f;
+		m_fLogoSparkleDelay = std::max(0.f, delay);
+		m_fLogoSparkleDuration = std::max(0.01f, duration);
+	}
 	void SetAlphaMaskSource(CHandle sourceHandle) { m_AlphaMaskSource = sourceHandle; }
 	void ClearAlphaMaskSource() { m_AlphaMaskSource.reset(); }
 	void SetNineSliceMargins(const _float4& margins) { m_vNineSliceMargins = margins; }
@@ -49,11 +56,18 @@ private:
 	uint32_t m_iPathProgressType{};
 	_bool m_bSpellAlarmFlame{};
 	_bool m_bRaceStartFlagWave{};
+	_bool m_bAccioSuccessFlagWave{};
+	_bool m_bScoreAura{};
+	_bool m_bLogoSparkle{};
 	_bool m_bAdditiveBlend{};
 	_float m_fTextureBrightness{ 1.f };
 	std::optional<CHandle> m_AlphaMaskSource{};
 	_float m_fSpellAlarmFlameTime{};
 	_float m_fRaceStartFlagWaveTime{};
+	_float m_fScoreAuraTime{};
+	_float m_fLogoSparkleTime{};
+	_float m_fLogoSparkleDelay{};
+	_float m_fLogoSparkleDuration{ 5.f };
 	_float m_fSpellAlarmFlamePhase{};
 	_float m_fSpellAlarmFlameSwayScale{ 1.f };
 	_float m_fSpellAlarmFlameSpeed{ 1.f };

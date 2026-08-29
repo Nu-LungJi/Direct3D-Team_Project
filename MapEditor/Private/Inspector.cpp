@@ -206,6 +206,8 @@ namespace
 		if (Matchanged)
 		{
 			MapStaticMesh->SetMaterialDesc(matDesc);
+			E::CGameInstance::Get().SetMaterialOverride(mapMeshObject.GetModelResourceTag(), matDesc);
+
 			residentDataChanged = true;
 		}
 		/*---------------------------------*/
@@ -352,7 +354,7 @@ void CInspector::UpdateGUI(E::_float fTimeDelta)
 
 	ImGui::TextUnformatted("Handle");
 	ImGui::SameLine(82.f);
-	ImGui::Text("%zu : %u", pSelectedHandle->GetIndex(), pSelectedHandle->GetGeneration());
+	ImGui::Text("%u : %u", pSelectedHandle->GetIndex(), pSelectedHandle->GetGeneration());
 
 	_bool transformChanged = false;
 	if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))

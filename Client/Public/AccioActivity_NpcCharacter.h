@@ -20,6 +20,12 @@ public:
 		PULL
 	};
 
+	enum class FOOT_COLLISION : uint32_t
+	{
+		LEFT = 1,
+		RIGHT
+	};
+
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
 		_string sResourceGroup{};
@@ -61,6 +67,9 @@ public:
 	void Update(_float fTimeDelta) override;
 	void LateUpdate(_float fTimeDelta) override;
 	void UpdateGUI() override;
+	void OnTriggerEnter(
+		CGameObject* pObj,
+		const PX_ON_TRIGGER_DATA& info) override;
 
 	void SetAction(ACTION eAction);
 	void SetWorldPosition(const _float3& vWorldPosition);
@@ -81,6 +90,11 @@ private:
 	int32_t FindWandAttachBoneIndex() const;
 	void PlayAction(ACTION eAction, _float fBlendDuration = 0.15f);
 	void UpdatePullAnimation();
+	void UpdateFootGroundContact(
+		FOOT_COLLISION eFoot,
+		const CComPxSphereCollider* pFootCollider,
+		_bool& bWasGrounded);
+	void PlayFootstepSound(FOOT_COLLISION eFoot);
 	static const _char* GetActionName(ACTION eAction);
 
 private:
@@ -95,6 +109,13 @@ private:
 	_float3 m_vCCTCenterOffset{ 0.f, 0.6f, 0.f };
 	_bool m_bFinishingPull{};
 	_bool m_bDialogueAnimationPlaying{};
+	_float m_fFootstepSoundCooldown{};
+	CComPxSphereCollider* m_pComPxLeftFootCollider{};
+	CComPxSphereCollider* m_pComPxRightFootCollider{};
+	int32_t m_iLeftFootBoneIndex{ -1 };
+	int32_t m_iRightFootBoneIndex{ -1 };
+	_bool m_bLeftFootGroundContact{};
+	_bool m_bRightFootGroundContact{};
 	_string m_sResourceGroup{};
 	_string m_sWeaponResourceTag{};
 	_string m_sWeaponLayerTag{};

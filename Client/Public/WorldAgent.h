@@ -25,10 +25,15 @@ NS_END
 
 
 NS_BEGIN(Client)
+class CNpcRagdollController;
+
 class CWorldAgent : public CAnimationObject, public CSkillTarget
 {
 public:
-	DECLARE_DERIVED_TYPE(CWorldAgent, CAnimationObject)
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CWorldAgent,
+		CAnimationObject,
+		CSkillTarget)
 public:
 	typedef struct tagnpcdesc : CAnimationObject::GAMEOBJECT_DESC
 	{
@@ -46,7 +51,6 @@ public:
 		_float3 vStartPos{}, vEndPos{};
 		_float fSpeed{};
 		_bool bPhyx{ true };
-		_bool bFreezeAnimation{ false };
 		_string AnimName{};
 		CHandle						TargetHandle{};
 		PX_FILTER_DESC tFilter{
@@ -67,6 +71,7 @@ public:
 protected:
 	CWorldAgent();
 	~CWorldAgent() override;
+	friend class CNpcRagdollController;
 
 public:
 	void UpdateGUI();
@@ -90,6 +95,7 @@ public:
 	void OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info) override;
 public:
 	virtual _bool				Check_Table(PLAYER_SKILL_TYPE eType) { return true; };
+	_bool						CanBePlayerCombatTarget() const override { return false; }
 
 	const int32_t				Get_CurrentHp() const { return m_iHp; }
 	const int32_t				Get_MaxHp()		const { return m_iMaxHp; }
@@ -139,9 +145,8 @@ protected:
 	int32_t								m_iHp{}, m_iMaxHp{},m_iCurAnimIndex{-1};
 	_bool								m_bRootMotionTranslationActive{ false }, m_bRootMotionRotationActive{ false };
 	_float								m_fRootMotionTranslationScale{ 1.f };
-
+	_float3								m_vPos{};
 	_bool								m_bEndGame{false};
-	_bool								m_bFreezeAnimation{ false };
 	CHandle								m_TargetHandle{};
 	std::unordered_map<_string, std::vector<_string>> m_SoundTable;
 public:

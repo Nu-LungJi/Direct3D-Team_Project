@@ -44,7 +44,7 @@ public:
 	HRESULT LoadCinematic(const std::string& CinematicName);
 	HRESULT PlayCinematic(const StringID& CinematicID, const FCinematicPlayOptions& Options = {});
 	HRESULT PlayCinematic(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options = {});
-	void StopCinematic();
+	void StopCinematic(_float fReturnBlendDuration = 0.f);
 	_bool IsCinematicPlaying() const;
 	_float GetCinematicPlayTime() const;
 

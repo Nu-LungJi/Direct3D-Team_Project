@@ -47,13 +47,13 @@ EVALUATE CBTDirectChase::Evaluate(_float fTimeDelta)
 
 	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(*pTargetHandle);
 	if(nullptr == pTarget) return m_eDebug = EVALUATE::FAILED;
-
+	
 	_vector vTargetPos = XMLoadFloat3(&pTarget->GetTransform().GetPosition());
 	_vector vSrcPos	   = XMLoadFloat3(&pSrc->GetTransform().GetPosition());
 
 	_vector vLen = vTargetPos - vSrcPos;
 	_float fDistance = XMVectorGetX(XMVector3Length(vLen));
-	
+	Play_Sound(fTimeDelta);
 	if (fDistance >= m_fDist)
 	{
 		_float3 vDist{};

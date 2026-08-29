@@ -199,7 +199,7 @@ void CMapChunkGUI::UpdateGUI(E::_float fTimeDelta)
 							{
 								continue;
 							}
-							ImGui::Text("%zu:%u  %s", handle.GetIndex(), handle.GetGeneration(), object->GetObjectTag().data());
+							ImGui::Text("%u:%u  %s", handle.GetIndex(), handle.GetGeneration(), object->GetObjectTag().data());
 						}
 						ImGui::TreePop();
 					}

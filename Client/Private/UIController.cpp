@@ -10,6 +10,7 @@
 #include "EnderDragon.h"
 #include "BossTMB.h"
 #include "Spider.h"
+#include "Troll.h"
 #include "MiniMap.h"
 #include "ClientEvents.h"
 #include "SpellMiniGame.h"
@@ -96,11 +97,9 @@ void CUIController::Update(E::_float fTimeDelta)
 	UpdateRookwoodBridgeProgression();
 	UpdateRookwoodPortalProgression();
 
-	// 전체 레이스 미니게임 흐름 확인용 디버그 입력.
+	// 소환사의 코트 미니게임 UI 시작 확인용 디버그 입력.
 	if (E::CGameInstance::Get().KeyDown(DIK_F3))
-	{
-		GET_SINGLE(UIManager)->StartRaceMiniGame();
-	}
+		GET_SINGLE(UIManager)->AssioMiniGameStart(true);
 
 	// World-space RTT wand-shop debug entry.
 	if (E::CGameInstance::Get().KeyDown(DIK_F4))
@@ -127,6 +126,7 @@ void CUIController::Update(E::_float fTimeDelta)
 				{ 0.f, 1.6f, 3.f },
 				{ 0.f, 0.f, 0.f });
 		}
+		//GET_SINGLE(UIManager)->LoadPrefab("AccioSuccess");
 	}
 
 	// 대화 선택 UI와 콜백 연결 확인용 디버그 입력.
@@ -215,7 +215,8 @@ void CUIController::Update(E::_float fTimeDelta)
 	}
 
 	// ************** 플레이어 HP
-	if (E::CGameInstance::Get().KeyDown(DIK_9))
+	if (E::CGameInstance::Get().KeyPressing(DIK_LSHIFT) &&
+		E::CGameInstance::Get().KeyDown(DIK_9))
 	{
 		AddHP(-200.f);
 	}
@@ -652,17 +653,17 @@ std::string CUIController::GetQuestDisplayText(QUEST_UI_GROUP group) const
 	switch (group)
 	{
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_01:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_TRIAL_02:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_02:
 		return "두 번째 전투 구역으로 이동하기";
 	case QUEST_UI_GROUP::ROOKWOOD_TRIAL_03:
 		return "세 번째 전투 구역으로 이동하기";
 	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	case QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_PORTAL:
-		return "퍼시벌 랙햄의 시험을 완료하기";
+		return "고대 유적 돌파하기";
 	default:
 		return {};
 	}
@@ -904,7 +905,7 @@ void CUIController::UpdateRookwoodQuestProgression()
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_02,
 		true,
-		"퍼시벌 랙햄의 시험을 완료하기",
+		"고대 유적 돌파하기",
 		true, false);
 }
 
@@ -990,14 +991,14 @@ void CUIController::UpdateRookwoodSecondBattleCompletion()
 
 	m_bRookwoodSecondBattleCompleted = true;
 	GET_SINGLE(UIManager)->CreateOrChangeQuest(
-		"퍼시벌 랙햄의 시험을 완료하기");
+		"고대 유적 돌파하기");
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_02,
 		false, {}, true, false);
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_03,
 		true,
-		"퍼시벌 랙햄의 시험을 완료하기",
+		"고대 유적 돌파하기",
 		true, false);
 }
 
@@ -1086,14 +1087,14 @@ void CUIController::UpdateRookwoodThirdBattleCompletion()
 
 	m_bRookwoodThirdBattleCompleted = true;
 	GET_SINGLE(UIManager)->CreateOrChangeQuest(
-		"퍼시벌 랙햄의 시험을 완료하기");
+		"고대 유적 돌파하기");
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_TRIAL_03,
 		false, {}, true, false);
 	SetQuestUIGroupActive(
 		QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_BRIDGE,
 		true,
-		"퍼시벌 랙햄의 시험을 완료하기",
+		"고대 유적 돌파하기",
 		true, false);
 }
 
@@ -1675,6 +1676,19 @@ void CUIController::UsePotion()
 
 void CUIController::TargetMonsterHP(CHandle monsterHandle)
 {
+	auto* pMonster = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CMonster>(monsterHandle);
+	if (!pMonster || pMonster->GetPendingDestroy() ||
+		!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0)
+	{
+		m_bMonsterHP = false;
+		m_ReserveTargetHandle.reset();
+		if (m_TargetHandle == monsterHandle)
+			m_TargetHandle.reset();
+		DeleteMonsterHP();
+		return;
+	}
+
 	m_ReserveTargetHandle = monsterHandle;
 	if (m_MonsterHP != std::nullopt && nullptr != SafeGetOBJ(*m_MonsterHP))
 	{
@@ -1697,14 +1711,21 @@ void CUIController::CreateMonsterHP()
 	if (std::nullopt == m_TargetHandle || nullptr == pMonster)
 		return;
 
-	if (pMonster->Get_CurrentHp() <= 0.f)
+	if (pMonster->GetPendingDestroy() ||
+		!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0)
+	{
+		m_TargetHandle.reset();
+		m_ReserveTargetHandle.reset();
 		return;
+	}
 
 	const char* pPrefabName = "MonsterHP";
 	if (pMonster->Is<CEnderDragon>())
 		pPrefabName = "RanRockHP";
 	else if (pMonster->Is<CBossTMB>())
 		pPrefabName = "PensiveHP";
+	else if (pMonster->Is<CTroll>())
+		pPrefabName = "TrollHP";
 
 	auto loadedHandles = GET_SINGLE(UIManager)->LoadPrefab(pPrefabName);
 	if (loadedHandles.empty())
@@ -1722,7 +1743,7 @@ void CUIController::CreateMonsterHP()
 
 			if (std::string_view(pUI->GetName()) == "MonsterName")
 			{
-				if (auto* pTextBox = dynamic_cast<CTextBox*>(pUI))
+				if (auto* pTextBox = Engine::Cast<CTextBox>(pUI))
 					pTextBox->SetwText(L"가시등 거미");
 			}
 
@@ -1737,23 +1758,27 @@ void CUIController::CreateMonsterHP()
 
 void CUIController::UpdateMonsterHP()
 {
-	if (m_TargetHandle != std::nullopt && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle))
+	auto* pMonster = m_TargetHandle ?
+		E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(
+			*m_TargetHandle) : nullptr;
+	if (!pMonster || pMonster->GetPendingDestroy() ||
+		!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0)
 	{
-		auto* pMonster = E::CGameInstance::Get().GetGameObjectByHandleT<CMonster>(*m_TargetHandle);
-		
-		if (m_MonsterHP != std::nullopt && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
-		{
-			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetMaxFill(static_cast<_float>(pMonster->Get_MaxHp()));
-			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetCurrentFill(static_cast<_float>(pMonster->Get_CurrentHp()));
-		}
-
+		m_bMonsterHP = false;
+		m_TargetHandle.reset();
+		m_ReserveTargetHandle.reset();
+		DeleteMonsterHP();
+		return;
 	}
-	else {
-		if (m_MonsterHP != std::nullopt && nullptr != E::CGameInstance::Get().GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
-		{	
-			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetMaxFill(static_cast<_float>(100.f));
-			static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetCurrentFill(static_cast<_float>(0.f));
-		}
+
+	if (m_MonsterHP != std::nullopt &&
+		nullptr != E::CGameInstance::Get().
+		GetGameObjectByHandleT<CUIObject>(*m_MonsterHP))
+	{
+		static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetMaxFill(
+			static_cast<_float>(pMonster->Get_MaxHp()));
+		static_cast<CHPBar*>(GetSafeUI(*m_MonsterHP))->SetCurrentFill(
+			static_cast<_float>(pMonster->Get_CurrentHp()));
 	}
 }
 

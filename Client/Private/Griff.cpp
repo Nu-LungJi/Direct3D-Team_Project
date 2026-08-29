@@ -16,7 +16,8 @@
 //BB
 #include "BlackBoardKey.h"
 #include "BTBlackBoard.h"
-//Skill
+
+#include "WayPointManager.h"
 NS_USING(Client)
 
 CGriff::CGriff()
@@ -46,8 +47,32 @@ HRESULT CGriff::InitializePrototype(void* pArg)
 
 HRESULT CGriff::Initialize(void* pArg)
 {
-	auto WorldAgentDesc = static_cast<WORLD_AGENT_DESC*>(pArg);
-	if (FAILED(__super::Initialize(pArg)))
+	auto WorldAgentDesc = static_cast<GRIFF_DESC*>(pArg);
+	m_ChildModelTag = WorldAgentDesc->ChildModelTag;
+	m_ChildObjectTag = WorldAgentDesc->ChildObjectTag;
+	if (!WorldAgentDesc->WayName.empty())
+	{
+		auto* pWay = CGameInstance::Get().GetWayManager();
+		if (nullptr == pWay)
+			return E_FAIL;
+
+		pWay->LoadWay(WorldAgentDesc->WayName, m_WayPoint);
+		if (m_WayPoint.empty())
+			return E_FAIL;
+		WorldAgentDesc->vPos.z -= 1.f;
+	}
+	else
+	{
+		m_WayPoint.push_back(_float3(30.f, 75.f, -346.f));
+		m_WayPoint.push_back(_float3(-8.f, 135.f, -61.f));
+		m_WayPoint.push_back(_float3(213.f, 122.f, -82.f));
+		m_WayPoint.push_back(_float3(360.f, 169.f, 19.f));
+		m_WayPoint.push_back(_float3(292.f, 186.f, 215.f));
+		m_WayPoint.push_back(_float3(-196.f, 139.f, 23.f));
+		m_WayPoint.push_back(_float3(30.f, 75.f, -346.f));
+	}
+
+	if (FAILED(__super::Initialize(WorldAgentDesc)))
 	{
 		return E_FAIL;
 	}
@@ -55,13 +80,7 @@ HRESULT CGriff::Initialize(void* pArg)
 	
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::DEL);
 
-	m_WayPoint.push_back(_float3(30.f, 75.f, -346.f));
-	m_WayPoint.push_back(_float3(-8.f, 135.f, -61.f));
-	m_WayPoint.push_back(_float3(213.f, 122.f, -82.f));
-	m_WayPoint.push_back(_float3(360.f, 169.f, 19.f));
-	m_WayPoint.push_back(_float3(292.f, 186.f, 215.f));
-	m_WayPoint.push_back(_float3(-196.f, 139.f, 23.f));
-	m_WayPoint.push_back(_float3(30.f, 75.f, -346.f));
+	
 	return S_OK;
 }
 
@@ -130,11 +149,12 @@ void CGriff::Set_Gravity(_bool bGravity)
 
 void CGriff::Set_Child()
 {
+	if (m_WayPoint.empty()) return;
 	WORLD_AGENT_DESC Child{};
 	Child.TargetHandle = GetHandle();
-	Child.sObjectTag = "GriffChild";
+	Child.sObjectTag = m_ChildObjectTag;
 	Child.LevelTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
-	Child.ReSourceTag = "Model_Resource_Griff";
+	Child.ReSourceTag = m_ChildModelTag;
 	Child.bPhyx = false;
 	_float3 vOffset = m_WayPoint.front();
 	_float iCnt = 10.f;

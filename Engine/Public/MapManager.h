@@ -54,6 +54,9 @@ public:
 	void SetMapModelResourceIndex(const std::filesystem::path& staticModelRoot, const std::string& resourceGroup, 
 		std::unordered_map<std::string, std::filesystem::path> modelPaths);
 
+	// 광윤 추가 -> Material 정보 저장
+	void SetMaterialOverride(const std::string& modelTag, const MATERIAL_DESC& material) { m_MaterialRepository.SetOverride(modelTag, material); }
+
 public:
 	void RebuildChunks();
 	HRESULT RegisterMapMeshObject(const CHandle& hObject);

@@ -365,8 +365,6 @@
     <ClInclude Include="..\Public\Handle.h" />
     <ClInclude Include="..\Public\ImguiManager.h" />
     <ClInclude Include="..\Public\NpcPlacementManager.h" />
-    <ClInclude Include="..\Public\AnimatedObjectPlacementManager.h" />
-    <ClInclude Include="..\Public\AnimatedObjectPlacementData.h" />
     <ClInclude Include="..\Public\NpcPlacementData.h" />
     <ClInclude Include="..\Public\IPhysicsListener.h" />
     <ClInclude Include="..\Public\IRenderable.h" />
@@ -477,6 +475,7 @@
     <ClInclude Include="..\Public\UICamera.h" />
     <ClInclude Include="..\Public\UIObject.h" />
     <ClInclude Include="..\Public\Water.h" />
+    <ClInclude Include="..\public\WayPointManager.h" />
     <ClInclude Include="..\Public\WorkerManager.h" />
     <ClInclude Include="..\Public\RenderWorkerManager.h" />
     <ClInclude Include="..\Public\Engine_PhysxDefines.h" />
@@ -721,7 +720,6 @@
     <ClCompile Include="..\Private\GraphicDevice.cpp" />
     <ClCompile Include="..\Private\ImguiManager.cpp" />
     <ClCompile Include="..\Private\NpcPlacementManager.cpp" />
-    <ClCompile Include="..\Private\AnimatedObjectPlacementManager.cpp" />
     <ClCompile Include="..\Private\Level.cpp" />
     <ClCompile Include="..\Private\LevelManager.cpp" />
     <ClCompile Include="..\Private\Light.cpp" />
@@ -829,6 +827,7 @@
     <ClCompile Include="..\Private\UICamera.cpp" />
     <ClCompile Include="..\Private\UIObject.cpp" />
     <ClCompile Include="..\Private\Water.cpp" />
+    <ClCompile Include="..\private\WayPointManager.cpp" />
     <ClCompile Include="..\Private\WorkerManager.cpp" />
     <ClCompile Include="..\Private\RenderWorkerManager.cpp" />
     <ClCompile Include="pch.cpp">
@@ -973,7 +972,10 @@
     <FxCompile Include="..\ShaderFiles\UI\QuadTexUI.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="..\ShaderFiles\UI\RaceStartFlagWave.hlsl" />
+	<FxCompile Include="..\ShaderFiles\UI\RaceStartFlagWave.hlsl" />
+	<FxCompile Include="..\ShaderFiles\UI\ScoreAura.hlsl">
+	  <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+	</FxCompile>
     <FxCompile Include="..\ShaderFiles\UI\SpellMeter.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\SpellPathProgress.hlsl" />
     <FxCompile Include="..\ShaderFiles\UI\TwoTone.hlsl" />

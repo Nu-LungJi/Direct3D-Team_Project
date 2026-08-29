@@ -2,6 +2,7 @@
 #include "Mon_Spawner.h"
 #include "Spider.h"
 #include "Troll.h"
+#include "UIManager.h"
 NS_USING(Client)
 CMon_Spawner::CMon_Spawner()
 {
@@ -18,24 +19,31 @@ CMon_Spawner::~CMon_Spawner()
 void CMon_Spawner::UpdateGUI()
 {
 	ImGui::Text(m_bPick == true ? "Pick : TRUE" : "Pick FALSE");
-	
-	if (ImGui::Button("Save EventSpider"))
-	{
-		nlohmann::json j;
-		JsonSaveLoadManager::SaveJsonTypeFloat3list(j, "EVENTSPIDER", m_SpawnPos);
-		std::ofstream path("./Resources/json/Spawn/EVENTSPIDER.json");
-		path << j.dump(4);
-		path.close();
-	}
 	if (ImGui::Button("Reset"))
 		m_SpawnPos.clear();
-	Debug_Point();
 
-	if (ImGui::Button("Undo"))
+	if (ImGui::TreeNode("Spawn"))
 	{
-		if (!m_SpawnPos.empty())
-			m_SpawnPos.pop_back();
+		if (ImGui::Button("Save EventSpider"))
+		{
+			nlohmann::json j;
+			JsonSaveLoadManager::SaveJsonTypeFloat3list(j, "EVENTSPIDER", m_SpawnPos);
+			std::ofstream path("./Resources/json/Spawn/EVENTSPIDER.json");
+			path << j.dump(4);
+			path.close();
+		}
+		Debug_Point();
+
+		if (ImGui::Button("Undo"))
+		{
+			if (!m_SpawnPos.empty())
+				m_SpawnPos.pop_back();
+		}
+		ImGui::TreePop();
 	}
+	
+	
+	
 }
 
 HRESULT CMon_Spawner::InitializePrototype(void* pArg)
@@ -51,6 +59,7 @@ HRESULT CMon_Spawner::Initialize(void* pArg)
 	}
 	auto Desc = static_cast<MON_SPAWNER_DESC*>(pArg);
 	m_LeveTag = Desc->LevelTag;
+	m_OnBeforeTrollSpawn = Desc->OnBeforeTrollSpawn;
 	if (Desc->LevelTag != "TERRAIN")
 	{
 		m_SpawnPos.clear();
@@ -77,6 +86,7 @@ HRESULT CMon_Spawner::Initialize(void* pArg)
 			Spider.vPos = iter;
 			m_Monsters.push_back(E::CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Spider, "02_Spider", &Spider).value());
 		}
+		m_iTotalSpiderCount = m_Monsters.size();
 		
 	}
 	return S_OK;
@@ -101,11 +111,35 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 				pSrc->Set_Spawn(true);
 
 		}
+		if (!m_bSpiderEncounterStarted)
+		{
+			m_bSpiderEncounterStarted = true;
+			UpdateSpiderQuestProgress();
+		}
 	}
+
+	UpdateTrollQuestAfterCinematic();
+
 	if (!m_bTroll)
 	{
 		if (m_Monsters.empty())
 		{
+			// 트롤은 Initialize -> Spawn State::Enter에서 즉시 컷신을 재생한다.
+			// 배럴을 먼저 등록하고 한 프레임을 넘겨 첫 컷신 프레임부터
+			// 렌더/물리 씬에 확실히 존재하도록 한다.
+			if (!m_bTrollSpawnPrepared)
+			{
+				if (m_OnBeforeTrollSpawn && FAILED(m_OnBeforeTrollSpawn()))
+				{
+					DEBUG_LOG("[MonSpawner] Failed to prepare the troll encounter.\n");
+					return;
+				}
+
+				m_OnBeforeTrollSpawn = {};
+				m_bTrollSpawnPrepared = true;
+				return;
+			}
+
 			CTroll::TROLL_DESC Troll{};
 			Troll.sObjectTag = "Troll";
 			Troll.TargetHandle = m_Handle;
@@ -117,9 +151,19 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 			Troll.resBeHaviorMajor = "BTJSON";
 			Troll.resBeHaviorMinor = "TROLL";
 			Troll.MonType = MONSTER_TYPE::BOSS;
-			CGameInstance::Get().AddGameObjectToLayer(LEVEL::HOGWART_WORLD, PROTO_GAMEOBJECT::Prototype_GameObject_Troll, "02.Troll", &Troll);
-			
-			m_bTroll = true;
+			if (CGameInstance::Get().AddGameObjectToLayer(
+				LEVEL::HOGWART_WORLD,
+				PROTO_GAMEOBJECT::Prototype_GameObject_Troll,
+				"02.Troll",
+				&Troll))
+			{
+				m_bTroll = true;
+				m_bWaitingForTrollCinematic = true;
+			}
+			else
+			{
+				DEBUG_LOG("[MonSpawner] Failed to spawn the troll.\n");
+			}
 		}
 		for (auto iter = m_Monsters.begin(); iter != m_Monsters.end();)
 		{
@@ -130,7 +174,45 @@ void CMon_Spawner::PriorityUpdate(E::_float fTimeDelta)
 			}
 			++iter;
 		}
+		UpdateSpiderQuestProgress();
 	}
+}
+
+void CMon_Spawner::UpdateSpiderQuestProgress()
+{
+	if (!m_bSpiderEncounterStarted || m_LeveTag == "TERRAIN")
+		return;
+
+	const size_t defeated = m_iTotalSpiderCount >= m_Monsters.size() ?
+		m_iTotalSpiderCount - m_Monsters.size() : 0u;
+	if (defeated == m_iLastReportedDefeated)
+		return;
+
+	m_iLastReportedDefeated = defeated;
+	const std::string progress = std::to_string(defeated) + " / " +
+		std::to_string(m_iTotalSpiderCount);
+	GET_SINGLE(UIManager)->CreateOrChangeQuest(
+		"가시등거미 퇴치하기  " + progress);
+	//GET_SINGLE(UIManager)->SetQuestColoredSuffix(progress);
+}
+
+void CMon_Spawner::UpdateTrollQuestAfterCinematic()
+{
+	if (!m_bWaitingForTrollCinematic)
+		return;
+
+	const _bool cinematicPlaying = CGameInstance::Get().IsCinematicPlaying();
+	if (cinematicPlaying)
+	{
+		m_bTrollCinematicObserved = true;
+		return;
+	}
+
+	if (!m_bTrollCinematicObserved)
+		return;
+
+	m_bWaitingForTrollCinematic = false;
+	GET_SINGLE(UIManager)->CreateOrChangeQuest("트롤 퇴치하기");
 }
 
 void CMon_Spawner::FixedUpdate(E::_float fTimeDelta)
@@ -170,6 +252,7 @@ void CMon_Spawner::Debug_Point()
 		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 	}
 }
+
 
 void CMon_Spawner::Picking()
 {

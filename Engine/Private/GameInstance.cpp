@@ -60,8 +60,6 @@
 #include "EventManager.h"
 #include "EffectManager.h"
 #include "NpcPlacementManager.h"
-#include "AnimatedObjectPlacementManager.h"
-
 NS_USING(Engine)
 
 CGameInstance::CGameInstance()
@@ -300,12 +298,6 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
-	m_pAnimatedObjectPlacementManager = CAnimatedObjectPlacementManager::Create();
-	if (m_pAnimatedObjectPlacementManager == nullptr)
-	{
-		return E_FAIL;
-	}
-
 	m_pPathPlaybackEditor = CPathPlaybackEditor::Create();
 	if (m_pPathPlaybackEditor == nullptr)
 		return E_FAIL;
@@ -333,7 +325,11 @@ HRESULT CGameInstance::InitializeEngine(const ENGINE_DESC& EngineDesc, ComPtr<ID
 	{
 		return E_FAIL;
 	}
-	
+	m_pWayManager = CWayPointManager::Create();
+	if (m_pWayManager == nullptr)
+	{
+		return E_FAIL;
+	}
 	return S_OK;
 }
 
@@ -426,13 +422,12 @@ void CGameInstance::UpdateGUI()
 	m_pSerializeManager->UpdateGUI();
 	if (m_pNpcPlacementManager)
 		m_pNpcPlacementManager->UpdateGUI();
-	if (m_pAnimatedObjectPlacementManager)
-		m_pAnimatedObjectPlacementManager->UpdateGUI();
 	if (m_pPathPlaybackEditor)
 		m_pPathPlaybackEditor->UpdateGUI();
 
 	m_pLuaManager->UpdateGUI();
 	m_pEffectManager->UpdateGUI();
+	m_pWayManager->UpdateGUI();
 	//if (ImGui::Button("ShaderRebuild"))
 	//{
 	//	//TAG_RES_GRP_PERMANENT_SHADER
@@ -617,7 +612,6 @@ HRESULT CGameInstance::Draw()
 void CGameInstance::Release_Engine()
 {
 	m_pNpcPlacementManager.reset();
-	m_pAnimatedObjectPlacementManager.reset();
 	m_pPathPlaybackEditor.reset();
 	m_pMapMeshInstancingRenderer.reset();
 	m_pNodeEditor.reset();
@@ -1294,9 +1288,9 @@ HRESULT CGameInstance::PlayCinematic(const StringID& CinematicID, const CHandle&
 {
 	return m_pCameraManager->PlayCinematic(CinematicID, TargetHandle, Options);
 }
-void CGameInstance::StopCinematic()
+void CGameInstance::StopCinematic(_float fReturnBlendDuration)
 {
-	m_pCameraManager->StopCinematic();
+	m_pCameraManager->StopCinematic(fReturnBlendDuration);
 }
 _bool CGameInstance::IsCinematicPlaying() const
 {

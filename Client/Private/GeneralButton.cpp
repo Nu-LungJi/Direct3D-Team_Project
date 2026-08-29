@@ -250,6 +250,7 @@ void CGeneralButton::HandleEnter()
 
 	EnsureBaseScaleCaptured();
 	m_bHovering = true;
+	PlayButtonSelectSound();
 
 	switch (m_eButtonType)
 	{
@@ -305,6 +306,7 @@ void CGeneralButton::HandleExit()
 void CGeneralButton::HandleClick()
 {
 	EnsureBaseScaleCaptured();
+	PlayButtonSelectSound();
 	if (m_eButtonType == GENERAL_BUTTON_TYPE::WAND_SLIDER_ARROW)
 	{
 		ChangeWandSliderOption();
@@ -367,6 +369,23 @@ void CGeneralButton::HandleClick()
 		ExecuteCommand();
 		break;
 	}
+}
+
+void CGeneralButton::PlayButtonSelectSound() const
+{
+	auto* soundManager = E::CGameInstance::Get().GetSoundManager();
+	if (!soundManager)
+		return;
+
+	soundManager->Play2D(
+		"./Resources/SampleClient/Sound/UI/ButtonSelect.wav",
+		SOUND_PLAY_DESC{
+			.sBusID = SOUND_BUS::UI,
+			.fVolume = 1.f,
+			.fPitch = 1.f,
+			.iPriority = 64,
+			.bLoop = false
+		});
 }
 
 void CGeneralButton::EnsureBaseScaleCaptured()
@@ -1034,7 +1053,7 @@ void CGeneralButton::SetWandSliderHovered(_bool hovered)
 		m_vSliderBaseBrightness.clear();
 		auto captureBrightness = [&](CUIObject* ui)
 		{
-			if (auto* textureUI = dynamic_cast<CTextureUI*>(ui))
+			if (auto* textureUI = Engine::Cast<CTextureUI>(ui))
 				m_vSliderBaseBrightness.emplace_back(
 					ui->GetHandle(),
 					textureUI->GetTextureBrightness());

@@ -6,6 +6,8 @@ class CGameObject;
 class ENGINE_DLL IPhysicsListener
 {
 public:
+	DECLARE_RUNTIME_TYPE(IPhysicsListener)
+
     virtual ~IPhysicsListener() = default;
     virtual void OnWake() = 0;
     virtual void OnSleep() = 0;

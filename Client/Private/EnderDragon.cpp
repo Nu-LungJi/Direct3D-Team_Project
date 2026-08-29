@@ -32,6 +32,7 @@
 #include "EdgBreath.h"
 #include "EdgPulse.h"
 #include "Trail_CPU.h"
+#include "Mon_Spawner.h"
 NS_USING(Client)
 
 CEnderDragon::CEnderDragon()
@@ -46,110 +47,6 @@ CEnderDragon::~CEnderDragon()
 void CEnderDragon::UpdateGUI()
 {
 	__super::UpdateGUI();
-	ImGui::DragInt("HP", &m_iHp, 0, 1);
-	
-	if (ImGui::Button("AddWay"))
-	{
-		auto pSrc = CGameInstance::Get().GetActiveCamera();
-		if (nullptr == pSrc) return;
-
-		m_DebugPoint.push_back(pSrc->GetTransform().GetPosition());
-	}
-	if (ImGui::Button("DelWay"))
-	{
-		if (!m_DebugPoint.empty())
-			m_DebugPoint.pop_back();
-	}
-	if (ImGui::Button("SaveWay"))
-		m_bPopup = true;
-	if (ImGui::Button("LoadWay"))
-	{
-		m_bPopupL = true;
-	}
-	if (m_bPopupL)
-	{
-		ImGui::OpenPopup("LoadWay");
-		_char NameBUffer[64]{};
-		if (ImGui::BeginPopup("LoadWay", ImGuiWindowFlags_AlwaysAutoResize))
-		{
-			ImGui::Text("FileName");
-			if (ImGui::InputText("##FileName", &NameBUffer[0], IM_ARRAYSIZE(NameBUffer))) //이름 입력
-			{
-				m_WayName = NameBUffer;
-
-			}
-			if (ImGui::Button("Ok"))
-			{
-				m_bPopupL = false;
-				if (m_WayName.empty())
-				{
-					ImGui::CloseCurrentPopup();
-					MSG_BOX("NoName");
-				}
-				else
-				{
-					m_DebugPoint.clear();
-					auto pRes = CGameInstance::Get().GetResourceFirst<CResJson>("EDGWAYPT", m_WayName);
-					if (nullptr == pRes)
-					{
-						MSG_BOX("Load Failed Json To EDGWAYPT SPAWN");
-						return;
-					}
-					auto json = pRes->Get_Json();
-					JsonSaveLoadManager::LoadJsonTypeFloat3list(json, m_WayName, m_DebugPoint);
-				}
-			} ImGui::SameLine(100.f);
-			if (ImGui::Button("Cancle"))
-			{
-				m_bPopupL = false;
-				ImGui::CloseCurrentPopup();
-			}
-			ImGui::EndPopup();
-		}
-		
-	}
-	if (m_bPopup)
-	{
-		_string Path = "./Resources/json/WayPoint/";
-		ImGui::OpenPopup("SaveWay");
-		_char NameBUffer[64]{};
-		if (ImGui::BeginPopup("SaveWay", ImGuiWindowFlags_AlwaysAutoResize))
-		{
-			ImGui::Text("FileName");
-			if (ImGui::InputText("##FileName", &NameBUffer[0], IM_ARRAYSIZE(NameBUffer))) //이름 입력
-			{
-				m_WayName = NameBUffer;
-
-			}
-			if (ImGui::Button("Ok"))
-			{
-				m_bPopup = false;
-				if (m_WayName.empty())
-				{
-					ImGui::CloseCurrentPopup();
-					MSG_BOX("NoName");
-				}
-				else
-				{
-					nlohmann::json j;
-					JsonSaveLoadManager::SaveJsonTypeFloat3list(j, m_WayName, m_DebugPoint);
-					Path += m_WayName + ".json";
-					std::ofstream path(Path);
-					path << j.dump(4);
-					path.close();
-				}
-			} ImGui::SameLine(100.f);
-			if (ImGui::Button("Cancle"))
-			{
-				m_bPopup = false;
-				ImGui::CloseCurrentPopup();
-			}
-			ImGui::EndPopup();
-		}
-	}
-	if (ImGui::Button("Clear"))
-		m_DebugPoint.clear();
-	Phase_Debug();
 }
 
 HRESULT CEnderDragon::InitializePrototype(void* pArg)
@@ -343,6 +240,8 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_MonSkillLists[ATTMON::SLOT9] = ETOUI(DRAGON_SKILL::GASI);
 	m_MonSkillLists[ATTMON::SLOT10] = ETOUI(DRAGON_SKILL::GASIBREATH);
 	m_MonSkillLists[ATTMON::SLOT11] = ETOUI(DRAGON_SKILL::GROUND);
+	m_MonSkillLists[ATTMON::SLOT12] = ETOUI(DRAGON_SKILL::READY_BREATH);
+	
 	//////////////////////파티클 넣는곳/////////////////////////
 	m_EffectNames[ETOUI(DRAGON_SKILL::FIREBALL)]   = "FireBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::BREATH)]	   = "DragonBreath";
@@ -355,6 +254,7 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 	m_EffectNames[ETOUI(DRAGON_SKILL::BLACKBALL)]  = "BlackBall";
 	m_EffectNames[ETOUI(DRAGON_SKILL::GASI)]		= "BreathSpike";
 	m_EffectNames[ETOUI(DRAGON_SKILL::GROUND)] = "RanrokLanding.json";
+	m_EffectNames[ETOUI(DRAGON_SKILL::READY_BREATH)] = "BreathReady.json";
 	////////////////////////////////////////////////////////////
 	CDragonSkill::EDG_SKILL_DESC SkillDesc{};
 	int32_t iHeadBoneIndex{};
@@ -405,6 +305,7 @@ HRESULT CEnderDragon::Ready_Skill(const _string& LevelTag)
 
 	m_SkillHandle[ETOUI(DRAGON_SKILL::PULSE)]  = EDG_SKILL_INFO{.handle = PulseHandle.value() , .bPool = true,};
 	m_SkillHandle[ETOUI(DRAGON_SKILL::GASI)]   = EDG_SKILL_INFO{ .handle = GasiHandle.value() , .bPool = true,};
+	m_SkillHandle[ETOUI(DRAGON_SKILL::READY_BREATH)] = EDG_SKILL_INFO{ .iBoneIndex = iHeadBoneIndex,.iOffsetBoneIndex = iOffsetBoneIndex };
 	return S_OK;
 }
 void CEnderDragon::Ready_BBKeyValue()
@@ -961,8 +862,30 @@ void CEnderDragon::Set_AttTable(ATTMON eType, _float2 fSkillRatio)
 	ACTable.eType = static_cast<DRAGON_SKILL>(iSkillNum);
 	if (*pbEffect)
 	{
+		int32_t iBoneIndex = m_SkillHandle[ETOUI(ACTable.eType)].iBoneIndex;
+		int32_t iBoneOffsetIndex = m_SkillHandle[ETOUI(ACTable.eType)].iOffsetBoneIndex;
+		_matrix BoneMat = XMMatrixIdentity();
+		if (-1 != iBoneIndex)
+		{
+			BoneMat = XMLoadFloat4x4(Get_CombineBoneMatrix(iBoneIndex));
+			for (uint32_t i = 0; i < 3; ++i)
+				BoneMat.r[i] = XMVector3Normalize(BoneMat.r[i]);
+		}
+		if (-1 != iBoneOffsetIndex)
+		{
+			_matrix BoneMatTwo = XMLoadFloat4x4(Get_CombineBoneMatrix(iBoneOffsetIndex));
+			
+			_vector vLook = XMVector3Normalize(BoneMatTwo.r[3] - BoneMat.r[3]);
+			_vector vRight = XMVector3Normalize(XMVector3Cross(XMVectorSet(0, 1, 0, 0), vLook));
+			_vector vUp   = XMVector3Normalize(XMVector3Cross(vLook, vRight));
+
+			BoneMat.r[0] = vRight;
+			BoneMat.r[1] = vUp;
+			BoneMat.r[2] = vLook;
+		}
+		_matrix OriginMat = GetTransform().GetLoadedWorldMatrix();
 		_float4x4 mat;
-		XMStoreFloat4x4(&mat, GetTransform().GetLoadedWorldMatrix());
+		XMStoreFloat4x4(&mat, BoneMat * GetTransform().GetLoadedWorldMatrix());
 		CGameInstance::Get().Spawn(ACTable.SkillName, mat);
 		Get_BlackBoard()->Set_Value<_bool>(EDG_KEY::EDGEFFECT, false);
 	}
@@ -1038,56 +961,6 @@ _bool CEnderDragon::BreakSkillType(PLAYER_SKILL_TYPE eType)
 		break;
 	}
 	return false;
-}
-void CEnderDragon::Phase_Debug()
-{
-	uint32_t i = 0;
-	for (auto& iter : m_DebugPoint)
-	{
-		auto pDbgLineRender = CGameInstance::Get().GetDbgLineRender();
-
-		const auto vPreviousColor = pDbgLineRender->GetColor();
-		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
-		pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
-		pDbgLineRender->SetDepthTest(true);
-		pDbgLineRender->AddSphere(1.2f, XMMatrixTranslation(iter.x, iter.y, iter.z));
-		pDbgLineRender->SetColor(vPreviousColor);
-		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
-		Picking(iter, 0x44524750 + i++);
-	}
-	auto pBB = Get_BlackBoard();
-	if (nullptr == pBB) return;
-	
-}
-void CEnderDragon::Picking(_float3& vPos, uint32_t iID)
-{
-	auto pCamera =CGameInstance::Get().GetActiveCamera();
-
-	ImGuiViewport* pViewport =ImGui::GetMainViewport();
-
-	if (!pCamera || !pViewport)
-		return;
-
-	_float4x4 View{};
-	_float4x4 Projection{};
-	_float4x4 World{};
-
-	XMStoreFloat4x4(&View,	pCamera->GetView());
-	XMStoreFloat4x4(&Projection,pCamera->GetProj());
-
-	XMStoreFloat4x4(&World,XMMatrixTranslation(	vPos.x,	vPos.y,vPos.z));
-
-	ImGuizmo::SetOrthographic(false);
-	ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList(pViewport));
-
-	ImGuizmo::SetRect(pViewport->Pos.x,pViewport->Pos.y,pViewport->Size.x,pViewport->Size.y);;
-	ImGuizmo::SetID(iID);
-	if (!ImGuizmo::Manipulate(	&View._11,&Projection._11,ImGuizmo::TRANSLATE,ImGuizmo::WORLD,&World._11))
-		return;
-	
-	vPos ={ World._41, World._42, World._43};
-
-	return ;
 }
 void CEnderDragon::InitializeEffects()
 {

@@ -206,8 +206,12 @@ HRESULT CPropBarrel::Initialize(void* pArg)
 		pDesc->vInitialAngularVelocityRadians.z != 0.f;
 
 	if (!m_pComPxRigidBody->SetAngularDamping(
-			std::max(pDesc->fAngularDamping, 0.f)) ||
-		!m_pComPxRigidBody->SetAngularVelocity(
+			std::max(pDesc->fAngularDamping, 0.f)))
+	{
+		return E_FAIL;
+	}
+
+	if (!m_pComPxRigidBody->SetAngularVelocity(
 			pDesc->vInitialAngularVelocityRadians) ||
 		(bHasInitialImpulse &&
 			!m_pComPxRigidBody->AddImpulse(pDesc->vInitialImpulse)))
@@ -217,6 +221,16 @@ HRESULT CPropBarrel::Initialize(void* pArg)
 
 	if ((bHasInitialImpulse || bHasInitialAngularVelocity) &&
 		!m_pComPxRigidBody->WakeUp())
+	{
+		return E_FAIL;
+	}
+
+	// 배치용 다이나믹 오크통은 모든 Shape/질량 설정이 끝난 뒤 잠재운다.
+	// 지지하던 통이 파괴되거나 파편과 충돌하면 PhysX가 다시 깨운다.
+	if (pDesc->bStartSleeping &&
+		(!m_pComPxRigidBody->SetLinearVelocity({}) ||
+			!m_pComPxRigidBody->SetAngularVelocity({}) ||
+			!m_pComPxRigidBody->PutToSleep()))
 	{
 		return E_FAIL;
 	}
@@ -947,7 +961,7 @@ void CPropBarrel::HandleAncientThrowImpact(
 	CGameInstance::Get().Spawn(
 		"LSY_AncientThrow_ImpactDust_Queue.json",
 		impactWorld);
-	if (auto* pMonster = dynamic_cast<CSkillTarget*>(pHitObject))
+	if (auto* pMonster = Engine::Cast<CSkillTarget>(pHitObject))
 		pMonster->Check_Table(PLAYER_SKILL_TYPE::DESTORY);
 	m_bDestroyRequested = true;
 }

@@ -592,6 +592,9 @@
     <Filter Include="GameObject\Manager\MapRuntimeObjectFactory">
       <UniqueIdentifier>{c0f79114-acba-4cf6-950d-b7f6ae012b17}</UniqueIdentifier>
     </Filter>
+    <Filter Include="WayPoint">
+      <UniqueIdentifier>{45d78343-25cc-496d-8f9a-b7ad35d7dc70}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -657,8 +660,6 @@
     <ClInclude Include="..\Public\NpcPlacementManager.h">
       <Filter>NPC</Filter>
     </ClInclude>
-    <ClInclude Include="..\Public\AnimatedObjectPlacementManager.h" />
-    <ClInclude Include="..\Public\AnimatedObjectPlacementData.h" />
     <ClInclude Include="..\Public\NpcPlacementData.h">
       <Filter>NPC</Filter>
     </ClInclude>
@@ -1356,6 +1357,9 @@
     <ClInclude Include="..\Public\MapRuntimeObjectFactory.h">
       <Filter>GameObject\Manager\MapRuntimeObjectFactory</Filter>
     </ClInclude>
+    <ClInclude Include="..\public\WayPointManager.h">
+      <Filter>WayPoint</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -1388,7 +1392,6 @@
     <ClCompile Include="..\Private\NpcPlacementManager.cpp">
       <Filter>NPC</Filter>
     </ClCompile>
-    <ClCompile Include="..\Private\AnimatedObjectPlacementManager.cpp" />
     <ClCompile Include="..\..\ThirdParty\ImGuizmo-1.83\GraphEditor.cpp">
       <Filter>ImGui\imguizmo</Filter>
     </ClCompile>
@@ -2036,6 +2039,9 @@
       <Filter>GameObject\Manager\MapChunk\Octree</Filter>
     </ClCompile>
     <ClCompile Include="..\Private\OctreeNode.cpp" />
+    <ClCompile Include="..\private\WayPointManager.cpp">
+      <Filter>WayPoint</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\private\BTSecqunce.cpp">
@@ -2244,6 +2250,9 @@
     <FxCompile Include="..\ShaderFiles\TestModel\Shader_VtxMapMesh_InstancedShadow.hlsl">
       <Filter>ShaderFiles\TestModel</Filter>
     </FxCompile>
+	<FxCompile Include="..\ShaderFiles\UI\ScoreAura.hlsl">
+	  <Filter>ShaderFiles\UIShader</Filter>
+	</FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\ShaderFiles\ShaderHeader\SH_CommonFunction.hlsli">

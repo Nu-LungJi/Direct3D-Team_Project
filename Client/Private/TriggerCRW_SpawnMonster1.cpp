@@ -53,7 +53,7 @@ void CTriggerCRW_SpawnMonster1::Update(E::_float fTimeDelta)
 
 		m_bTrialCompleted = true;
 		GET_SINGLE(UIManager)->CreateOrChangeQuest(
-			"퍼시벌 랙햄의 시험을 완료하기");
+			"고대 유적 돌파하기");
 		// 완료된 구역의 원과 미니맵/월드 마커를 정리한다.
 		E::CGameInstance::Get().EventPublish(
 			FQuestUIGroupChanged{
@@ -70,7 +70,7 @@ void CTriggerCRW_SpawnMonster1::Update(E::_float fTimeDelta)
 				FQuestUIGroupChanged{
 					.Group = QUEST_UI_GROUP::ROOKWOOD_MOVE_TO_TRIAL_02,
 					.Active = true,
-					.QuestText = "퍼시벌 랙햄의 시험을 완료하기",
+					.QuestText = "고대 유적 돌파하기",
 					.UpdateQuestWidget = false
 				});
 		}

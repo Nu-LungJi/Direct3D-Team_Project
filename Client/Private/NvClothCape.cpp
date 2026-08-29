@@ -7,7 +7,9 @@
 #include "ComNvCloth.h"
 #include "DbgLineRender.h"
 #include "GameInstance.h"
+#include "NvClothManager.h"
 #include "Player.h"
+#include "Player_Broom.h"
 #include "ResModel.h"
 #include "ResModelBone.h"
 #include "ResNvClothMesh.h"
@@ -122,6 +124,9 @@ HRESULT CNvClothCape::Initialize(void* pArg)
 		pDesc->sAttachBoneName.empty() ||
 		!std::isfinite(pDesc->fTeleportDistance) ||
 		pDesc->fTeleportDistance < 0.f ||
+		!std::isfinite(pDesc->fTeleportAngleDegrees) ||
+		pDesc->fTeleportAngleDegrees < 0.f ||
+		pDesc->fTeleportAngleDegrees > 180.f ||
 		!std::isfinite(pDesc->fBackstopRadius) ||
 		pDesc->fBackstopRadius <= 0.f ||
 		!std::isfinite(pDesc->fBackstopOffset) ||
@@ -157,18 +162,62 @@ HRESULT CNvClothCape::Initialize(void* pArg)
 		pDesc->fBroomBackstopFullInfluenceRatio < 0.f ||
 		pDesc->fBroomBackstopFullInfluenceRatio > 1.f ||
 		!std::isfinite(
-			pDesc->fBroomBackstopDisableRatio) ||
-		pDesc->fBroomBackstopDisableRatio < 0.f ||
-		pDesc->fBroomBackstopDisableRatio > 1.f ||
+			pDesc->fBroomBackstopMinimumInfluenceDepthRatio) ||
+		pDesc->fBroomBackstopMinimumInfluenceDepthRatio < 0.f ||
+		pDesc->fBroomBackstopMinimumInfluenceDepthRatio > 1.f ||
 		pDesc->fBroomBackstopFullInfluenceRatio >=
-			pDesc->fBroomBackstopDisableRatio ||
+			pDesc->fBroomBackstopMinimumInfluenceDepthRatio ||
+		!std::isfinite(
+			pDesc->fBroomBackstopMinimumInfluence) ||
+		pDesc->fBroomBackstopMinimumInfluence < 0.f ||
+		pDesc->fBroomBackstopMinimumInfluence > 1.f ||
 		!std::isfinite(pDesc->fSelfCollisionDistance) ||
 		pDesc->fSelfCollisionDistance < 0.f ||
 		!std::isfinite(pDesc->fSelfCollisionStiffness) ||
 		pDesc->fSelfCollisionStiffness < 0.f ||
 		pDesc->fSelfCollisionStiffness > 1.f ||
+		!std::isfinite(
+			pDesc->fStructuralPhaseStiffness) ||
+		pDesc->fStructuralPhaseStiffness < 0.f ||
+		pDesc->fStructuralPhaseStiffness > 1.f ||
+		!std::isfinite(
+			pDesc->fShearingPhaseStiffness) ||
+		pDesc->fShearingPhaseStiffness < 0.f ||
+		pDesc->fShearingPhaseStiffness > 1.f ||
+		!std::isfinite(
+			pDesc->fBendingPhaseStiffness) ||
+		pDesc->fBendingPhaseStiffness < 0.f ||
+		pDesc->fBendingPhaseStiffness > 1.f ||
 		!std::isfinite(pDesc->fVelocityWindScale) ||
 		pDesc->fVelocityWindScale < 0.f ||
+		!std::isfinite(
+			pDesc->fVerticalVelocityWindScale) ||
+		pDesc->fVerticalVelocityWindScale < 0.f ||
+		pDesc->fVerticalVelocityWindScale > 1.f ||
+		!std::isfinite(pDesc->fBroomVerticalInertia) ||
+		pDesc->fBroomVerticalInertia < 0.f ||
+		pDesc->fBroomVerticalInertia > 1.f ||
+		!std::isfinite(pDesc->fBaseSolverFrequency) ||
+		pDesc->fBaseSolverFrequency <= 0.f ||
+		!std::isfinite(pDesc->fHighLoadSolverFrequency) ||
+		pDesc->fHighLoadSolverFrequency <
+			pDesc->fBaseSolverFrequency ||
+		!std::isfinite(
+			pDesc->fHighLoadEnterVerticalSpeed) ||
+		pDesc->fHighLoadEnterVerticalSpeed < 0.f ||
+		!std::isfinite(
+			pDesc->fHighLoadExitVerticalSpeed) ||
+		pDesc->fHighLoadExitVerticalSpeed < 0.f ||
+		pDesc->fHighLoadExitVerticalSpeed >
+			pDesc->fHighLoadEnterVerticalSpeed ||
+		!std::isfinite(
+			pDesc->fHighLoadEnterVerticalAcceleration) ||
+		pDesc->fHighLoadEnterVerticalAcceleration < 0.f ||
+		!std::isfinite(
+			pDesc->fHighLoadExitVerticalAcceleration) ||
+		pDesc->fHighLoadExitVerticalAcceleration < 0.f ||
+		pDesc->fHighLoadExitVerticalAcceleration >
+			pDesc->fHighLoadEnterVerticalAcceleration ||
 		!std::isfinite(pDesc->fMaxWindSpeed) ||
 		pDesc->fMaxWindSpeed < 0.f ||
 		!std::isfinite(pDesc->fWindResponse) ||
@@ -190,6 +239,17 @@ HRESULT CNvClothCape::Initialize(void* pArg)
 		pDesc->fWindGustStrength > 1.f ||
 		!std::isfinite(pDesc->fWindGustFrequency) ||
 		pDesc->fWindGustFrequency <= 0.f ||
+		!std::isfinite(pDesc->fHighSpeedWindStart) ||
+		pDesc->fHighSpeedWindStart < 0.f ||
+		!std::isfinite(pDesc->fHighSpeedWindFull) ||
+		pDesc->fHighSpeedWindFull <= pDesc->fHighSpeedWindStart ||
+		!std::isfinite(pDesc->fHighSpeedFlutterStrength) ||
+		pDesc->fHighSpeedFlutterStrength < 0.f ||
+		!std::isfinite(pDesc->fHighSpeedFlutterFrequency) ||
+		pDesc->fHighSpeedFlutterFrequency <= 0.f ||
+		!std::isfinite(pDesc->fHighSpeedGustStrength) ||
+		pDesc->fHighSpeedGustStrength < 0.f ||
+		pDesc->fHighSpeedGustStrength > 1.f ||
 		!std::isfinite(pDesc->fMotionConstraintScale) ||
 		pDesc->fMotionConstraintScale < 0.f ||
 		(!pDesc->tBodyCollisionRig.Shapes.empty() &&
@@ -213,6 +273,8 @@ HRESULT CNvClothCape::Initialize(void* pArg)
 		pDesc->sAttachBoneName;
 	m_fTeleportDistance =
 		pDesc->fTeleportDistance;
+	m_fTeleportAngleDegrees =
+		pDesc->fTeleportAngleDegrees;
 	m_bUseBackstop =
 		pDesc->bUseBackstop;
 	m_bFlipBackstopNormal =
@@ -237,8 +299,10 @@ HRESULT CNvClothCape::Initialize(void* pArg)
 		pDesc->fBroomBackstopFadeDepth;
 	m_fBroomBackstopFullInfluenceRatio =
 		pDesc->fBroomBackstopFullInfluenceRatio;
-	m_fBroomBackstopDisableRatio =
-		pDesc->fBroomBackstopDisableRatio;
+	m_fBroomBackstopMinimumInfluenceDepthRatio =
+		pDesc->fBroomBackstopMinimumInfluenceDepthRatio;
+	m_fBroomBackstopMinimumInfluence =
+		pDesc->fBroomBackstopMinimumInfluence;
 	m_bUseVirtualParticles =
 		pDesc->bUseVirtualParticles;
 	m_bUseSelfCollision =
@@ -251,6 +315,22 @@ HRESULT CNvClothCape::Initialize(void* pArg)
 		pDesc->bUseVelocityWind;
 	m_fVelocityWindScale =
 		pDesc->fVelocityWindScale;
+	m_fVerticalVelocityWindScale =
+		pDesc->fVerticalVelocityWindScale;
+	m_fBroomVerticalInertia =
+		pDesc->fBroomVerticalInertia;
+	m_fBaseSolverFrequency =
+		pDesc->fBaseSolverFrequency;
+	m_fHighLoadSolverFrequency =
+		pDesc->fHighLoadSolverFrequency;
+	m_fHighLoadEnterVerticalSpeed =
+		pDesc->fHighLoadEnterVerticalSpeed;
+	m_fHighLoadExitVerticalSpeed =
+		pDesc->fHighLoadExitVerticalSpeed;
+	m_fHighLoadEnterVerticalAcceleration =
+		pDesc->fHighLoadEnterVerticalAcceleration;
+	m_fHighLoadExitVerticalAcceleration =
+		pDesc->fHighLoadExitVerticalAcceleration;
 	m_fMaxWindSpeed =
 		pDesc->fMaxWindSpeed;
 	m_fWindResponse =
@@ -271,6 +351,16 @@ HRESULT CNvClothCape::Initialize(void* pArg)
 		pDesc->fWindGustStrength;
 	m_fWindGustFrequency =
 		pDesc->fWindGustFrequency;
+	m_fHighSpeedWindStart =
+		pDesc->fHighSpeedWindStart;
+	m_fHighSpeedWindFull =
+		pDesc->fHighSpeedWindFull;
+	m_fHighSpeedFlutterStrength =
+		pDesc->fHighSpeedFlutterStrength;
+	m_fHighSpeedFlutterFrequency =
+		pDesc->fHighSpeedFlutterFrequency;
+	m_fHighSpeedGustStrength =
+		pDesc->fHighSpeedGustStrength;
 	m_fMotionConstraintScale =
 		pDesc->fMotionConstraintScale;
 	m_GroundBodyCollisionRig =
@@ -335,9 +425,21 @@ HRESULT CNvClothCape::Initialize(void* pArg)
 			{ 0.f, -18.f, 0.f };
 		Desc.tCloth.vDamping =
 			{ 0.08f, 0.08f, 0.08f };
-		Desc.tCloth.fSolverFrequency = 60.f;
-		Desc.tCloth.fStiffnessFrequency = 60.f;
+		// [LSY] 60Hz FixedUpdate에서 과도한 솔버 반복과 Self Collision 비용이
+		// 발생하지 않도록 프리퀀시를 물리 갱신 주기와 동일하게 사용한다.
+		Desc.tCloth.fSolverFrequency =
+			m_fBaseSolverFrequency;
+		Desc.tCloth.fStiffnessFrequency =
+			m_fBaseSolverFrequency;
 		Desc.tCloth.fPhaseStiffness = 0.9f;
+		Desc.tCloth.tPhaseStiffness.fVertical =
+			pDesc->fStructuralPhaseStiffness;
+		Desc.tCloth.tPhaseStiffness.fHorizontal =
+			pDesc->fStructuralPhaseStiffness;
+		Desc.tCloth.tPhaseStiffness.fShearing =
+			pDesc->fShearingPhaseStiffness;
+		Desc.tCloth.tPhaseStiffness.fBending =
+			pDesc->fBendingPhaseStiffness;
 		Desc.tCloth.fStretchLimit = 1.05f;
 		if (m_bUseSelfCollision)
 		{
@@ -398,24 +500,65 @@ void CNvClothCape::FixedUpdate(_float fTimeDelta)
 	const _bool bSuppressionChanged =
 		bOwnerRenderSuppressed !=
 		m_bOwnerRenderSuppressed;
-	if (!UpdateCollisionRigProfile(pPlayer))
+	COLLISION_RIG_PROFILE_CANDIDATE
+		CollisionRigCandidate{};
+	if (!PrepareCollisionRigProfile(
+		pPlayer,
+		CollisionRigCandidate))
+	{
 		return;
+	}
+	_bool bAppliedCandidateCollision{};
+	if (CollisionRigCandidate.bChanged)
+	{
+		// [LSY] 기존 리그 상태로 이번 물리 틱의 Simulation Transform을 먼저
+		// 맞춘 뒤 후보 Collision을 적용한다. 실패하면 기존 프로필을 유지한다.
+		if (!UpdateAttachment(
+			true,
+			bOwnerRenderSuppressed ||
+				bSuppressionChanged))
+		{
+			return;
+		}
+		if (!UpdateBodyCollisions(
+			CollisionRigCandidate.Rig,
+			CollisionRigCandidate.BoneIndices))
+		{
+			return;
+		}
+		bAppliedCandidateCollision = true;
+		CommitCollisionRigProfile(
+			std::move(CollisionRigCandidate));
+	}
+	if (!UpdateRuntimeSimulationProfile(
+		fTimeDelta,
+		pPlayer))
+	{
+		return;
+	}
+
+	const _bool bForceSimulationReset =
+		bSuppressionChanged ||
+		m_bCollisionRigProfileChanged;
 
 	// [LSY] 대시 중에는 망토가 보이지 않으므로 이동 관성을 누적하지 않는다.
 	// 종료 시에는 현재 애니메이션 자세로 복원한 뒤 다시 표시한다.
 	if (!UpdateAttachment(
 			true,
 			bOwnerRenderSuppressed ||
-				bSuppressionChanged))
+				bForceSimulationReset))
 	{
 		return;
 	}
 
-	if (bSuppressionChanged &&
+	if (bForceSimulationReset &&
 		!ResetSimulationToAnimationPose())
 	{
 		return;
 	}
+
+	if (!ValidateAndRecoverSimulation())
+		return;
 
 	if (!UpdateVirtualWind(
 		fTimeDelta,
@@ -425,11 +568,19 @@ void CNvClothCape::FixedUpdate(_float fTimeDelta)
 		return;
 	}
 
-	if (!UpdateBodyCollisions())
+	// [LSY] 리그 전환 틱은 후보 Collision을 이미 적용했다. 일반 틱만 현재
+	// Bone 자세를 반영해 Collision을 갱신한다.
+	if (!bAppliedCandidateCollision &&
+		!UpdateBodyCollisions())
+	{
 		return;
+	}
 
+	// [LSY] 중간 갱신 실패 시 완료 상태를 기록하지 않아 다음 Fixed Tick에서
+	// 자세 복원과 런타임 설정을 다시 시도한다.
 	m_bOwnerRenderSuppressed =
 		bOwnerRenderSuppressed;
+	m_bCollisionRigProfileChanged = false;
 }
 
 void CNvClothCape::Update(_float)
@@ -438,16 +589,26 @@ void CNvClothCape::Update(_float)
 
 void CNvClothCape::LateUpdate(_float)
 {
+	// [LSY] Collision 프로필 전환이 끝나지 않은 틱의 부분 갱신 자세는
+	// 렌더하지 않고 다음 FixedUpdate의 재동기화를 기다린다.
 	if (!m_bRenderCape ||
-		m_bOwnerRenderSuppressed)
+		m_bCollisionRigProfileChanged)
+	{
 		return;
+	}
 
 	auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(m_hTarget);
+	if (!pTarget)
+		return;
 	if (auto* pPlayer = Cast<CPlayer>(pTarget))
 	{
-		// [LSY] 플레이어가 대시 연출로 숨겨질 때 망토와 망토 그림자도 함께 숨긴다.
-		if (pPlayer->GetRenderInfluence())
+		// [LSY] 실시간 상태는 대시 진입을 즉시 반영하고, 캐시 상태는 FixedUpdate의
+		// 자세 복원과 충돌 갱신이 모두 끝날 때까지 재표시를 보류한다.
+		if (pPlayer->GetRenderInfluence() ||
+			m_bOwnerRenderSuppressed)
+		{
 			return;
+		}
 	}
 
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
@@ -462,6 +623,29 @@ void CNvClothCape::UpdateGUI()
 	ImGui::Checkbox(
 		"Render Cape",
 		&m_bRenderCape);
+	ImGui::Text(
+		"Simulation Recoveries: %u",
+		m_iSimulationRecoveryCount);
+	ImGui::Text(
+		"Runaway Recoveries: %u",
+		m_iSimulationRunawayRecoveryCount);
+	ImGui::Text(
+		"Simulation Distance Warnings: %u",
+		m_iSimulationDistanceWarningCount);
+	ImGui::Text(
+		"Last Outliers: %zu, Max Distance: %.2f",
+		m_iLastDistanceWarningParticleCount,
+		m_fLastMaximumParticleDistance);
+	const char* szSolverProfile = "Base";
+	if (m_bHighLoadSolverEnabled)
+		szSolverProfile = "Vertical High Load";
+	ImGui::Text(
+		"Solver Profile: %s",
+		szSolverProfile);
+	ImGui::Text(
+		"Vertical Speed: %.2f, Filtered Acceleration: %.2f",
+		m_fCurrentVerticalVelocity,
+		m_fFilteredVerticalAcceleration);
 
 	if (ImGui::TreeNode("Virtual Wind"))
 	{
@@ -474,6 +658,54 @@ void CNvClothCape::UpdateGUI()
 			0.05f,
 			0.f,
 			5.f);
+		ImGui::DragFloat(
+			"Vertical Velocity Wind Scale",
+			&m_fVerticalVelocityWindScale,
+			0.01f,
+			0.f,
+			1.f);
+		ImGui::DragFloat(
+			"Broom Vertical Inertia",
+			&m_fBroomVerticalInertia,
+			0.01f,
+			0.f,
+			1.f);
+		ImGui::DragFloat(
+			"Base Solver Frequency",
+			&m_fBaseSolverFrequency,
+			1.f,
+			30.f,
+			240.f);
+		ImGui::DragFloat(
+			"High Load Solver Frequency",
+			&m_fHighLoadSolverFrequency,
+			1.f,
+			30.f,
+			240.f);
+		ImGui::DragFloat(
+			"High Load Enter Vertical Speed",
+			&m_fHighLoadEnterVerticalSpeed,
+			0.1f,
+			0.f,
+			100.f);
+		ImGui::DragFloat(
+			"High Load Exit Vertical Speed",
+			&m_fHighLoadExitVerticalSpeed,
+			0.1f,
+			0.f,
+			100.f);
+		ImGui::DragFloat(
+			"High Load Enter Vertical Acceleration",
+			&m_fHighLoadEnterVerticalAcceleration,
+			0.1f,
+			0.f,
+			500.f);
+		ImGui::DragFloat(
+			"High Load Exit Vertical Acceleration",
+			&m_fHighLoadExitVerticalAcceleration,
+			0.1f,
+			0.f,
+			500.f);
 		ImGui::DragFloat(
 			"Max Wind Speed",
 			&m_fMaxWindSpeed,
@@ -533,6 +765,40 @@ void CNvClothCape::UpdateGUI()
 				0.05f,
 				0.1f,
 				5.f);
+			ImGui::Text("High Speed Response");
+			ImGui::DragFloat(
+				"High Speed Start",
+				&m_fHighSpeedWindStart,
+				0.25f,
+				0.f,
+				100.f);
+			ImGui::DragFloat(
+				"High Speed Full",
+				&m_fHighSpeedWindFull,
+				0.25f,
+				0.f,
+				100.f);
+			ImGui::DragFloat(
+				"High Speed Flutter Strength",
+				&m_fHighSpeedFlutterStrength,
+				0.02f,
+				0.f,
+				2.f);
+			ImGui::DragFloat(
+				"High Speed Flutter Frequency",
+				&m_fHighSpeedFlutterFrequency,
+				0.1f,
+				0.1f,
+				20.f);
+			ImGui::DragFloat(
+				"High Speed Gust Strength",
+				&m_fHighSpeedGustStrength,
+				0.02f,
+				0.f,
+				1.f);
+			ImGui::Text(
+				"High Speed Blend: %.2f",
+				m_fHighSpeedWindBlend);
 		}
 		ImGui::Text(
 			"Current Wind: %.2f, %.2f, %.2f",
@@ -687,8 +953,14 @@ void CNvClothCape::UpdateGUI()
 				0.f,
 				1.f);
 			ImGui::DragFloat(
-				"Broom Disable Ratio",
-				&m_fBroomBackstopDisableRatio,
+				"Broom Minimum Influence Depth Ratio",
+				&m_fBroomBackstopMinimumInfluenceDepthRatio,
+				0.01f,
+				0.f,
+				1.f);
+			ImGui::DragFloat(
+				"Broom Minimum Influence",
+				&m_fBroomBackstopMinimumInfluence,
 				0.01f,
 				0.f,
 				1.f);
@@ -909,15 +1181,19 @@ _bool CNvClothCape::ResolveCollisionRigBones(
 	return true;
 }
 
-_bool CNvClothCape::UpdateCollisionRigProfile(
-	CPlayer* pPlayer)
+_bool CNvClothCape::PrepareCollisionRigProfile(
+	CPlayer* pPlayer,
+	COLLISION_RIG_PROFILE_CANDIDATE& OutCandidate)
 {
+	OutCandidate = {};
 	const _bool bUseBroomRig =
 		pPlayer &&
 		pPlayer->IsBroomVisible() &&
 		!m_BroomBodyCollisionRig.Shapes.empty();
 	if (bUseBroomRig == m_bUsingBroomCollisionRig)
 		return true;
+	OutCandidate.bChanged = true;
+	OutCandidate.bUseBroomRig = bUseBroomRig;
 
 	auto* pTarget =
 		CGameInstance::Get().
@@ -936,21 +1212,39 @@ _bool CNvClothCape::UpdateCollisionRigProfile(
 
 	// [LSY] JSON은 초기화 때 이미 로드했다. 탑승 상태가 변할 때만
 	// 메모리에 보관한 리그와 Bone 매핑을 교체한다.
-	m_bUsingBroomCollisionRig = bUseBroomRig;
-	if (bUseBroomRig)
-		m_BodyCollisionRig = m_BroomBodyCollisionRig;
-	else
-		m_BodyCollisionRig = m_GroundBodyCollisionRig;
-	m_LastBodyCollisionDesc = {};
-	m_DebugBodyCollisionShapes.clear();
+	const auto* pTargetRig =
+		&m_GroundBodyCollisionRig;
 	const char* szProfileName = "Ground Body";
 	if (bUseBroomRig)
+	{
+		pTargetRig = &m_BroomBodyCollisionRig;
 		szProfileName = "Broom Body";
-	return ResolveCollisionRigBones(
-		m_BodyCollisionRig,
+	}
+	if (!ResolveCollisionRigBones(
+		*pTargetRig,
 		*pModelInstance,
-		m_CollisionRigBoneIndices,
-		szProfileName);
+		OutCandidate.BoneIndices,
+		szProfileName))
+	{
+		return false;
+	}
+	OutCandidate.Rig = *pTargetRig;
+	return true;
+}
+
+void CNvClothCape::CommitCollisionRigProfile(
+	COLLISION_RIG_PROFILE_CANDIDATE&& Candidate)
+{
+	// [LSY] 후보 Collision이 NvCloth에 적용된 뒤에만 활성 프로필을 확정한다.
+	m_bUsingBroomCollisionRig =
+		Candidate.bUseBroomRig;
+	m_BodyCollisionRig =
+		std::move(Candidate.Rig);
+	m_CollisionRigBoneIndices =
+		std::move(Candidate.BoneIndices);
+	m_bCollisionRigProfileChanged = true;
+	m_bRuntimeSimulationProfileInitialized = false;
+	m_bVerticalVelocityInitialized = false;
 }
 
 _bool CNvClothCape::UpdateAnimationConstraints(
@@ -1165,7 +1459,7 @@ _bool CNvClothCape::UpdateAnimationConstraints(
 						(fDepthRatio -
 							m_fBroomBackstopFullInfluenceRatio) /
 						std::max(
-							m_fBroomBackstopDisableRatio -
+							m_fBroomBackstopMinimumInfluenceDepthRatio -
 								m_fBroomBackstopFullInfluenceRatio,
 							0.001f),
 						0.f,
@@ -1173,8 +1467,14 @@ _bool CNvClothCape::UpdateAnimationConstraints(
 				const float fSmoothInfluence =
 					fInfluenceRatio * fInfluenceRatio *
 					(3.f - 2.f * fInfluenceRatio);
+				const float fMinimumInfluence =
+					std::clamp(
+						m_fBroomBackstopMinimumInfluence,
+						0.f,
+						1.f);
 				fBackstopInfluence =
-					1.f - fSmoothInfluence;
+					1.f - fSmoothInfluence *
+						(1.f - fMinimumInfluence);
 			}
 
 			const float fRadius =
@@ -1288,7 +1588,9 @@ _bool CNvClothCape::AppendCollisionsFromRig(
 	CComModelInstance& ModelInstance,
 	_fmatrix TargetWorld,
 	_fmatrix InverseSimulationWorld,
-	NVCLOTH_COLLISION_DESC& OutDesc)
+	NVCLOTH_COLLISION_DESC& OutDesc,
+	std::vector<DEBUG_BODY_COLLISION_SHAPE>&
+		OutDebugShapes)
 {
 	if (Rig.Shapes.empty() ||
 		BoneIndices.size() != Rig.Shapes.size())
@@ -1504,7 +1806,7 @@ _bool CNvClothCape::AppendCollisionsFromRig(
 		}
 		}
 
-		m_DebugBodyCollisionShapes.push_back(
+		OutDebugShapes.push_back(
 			DebugShape);
 		++iAppendedShapeCount;
 	}
@@ -1572,6 +1874,158 @@ void CNvClothCape::DebugDrawBodyCollisions()
 	pDebug->SetDepthMode(PreviousDepthMode);
 }
 
+_bool CNvClothCape::UpdateRuntimeSimulationProfile(
+	_float fTimeDelta,
+	CPlayer* pPlayer)
+{
+	if (!m_pComNvCloth ||
+		!std::isfinite(fTimeDelta) ||
+		fTimeDelta < 0.f)
+	{
+		return false;
+	}
+
+	_float fVerticalVelocity{};
+	_float fRawVerticalAcceleration{};
+	if (m_bUsingBroomCollisionRig && pPlayer)
+	{
+		const auto* pMotor = pPlayer->GetCharacterMotor();
+		if (pMotor)
+		{
+			fVerticalVelocity = pMotor->GetVelocity().y;
+			if (m_bVerticalVelocityInitialized &&
+				fTimeDelta > FLT_EPSILON)
+			{
+				fRawVerticalAcceleration =
+					(fVerticalVelocity -
+						m_fPreviousVerticalVelocity) /
+					fTimeDelta;
+			}
+			m_fPreviousVerticalVelocity =
+				fVerticalVelocity;
+			m_bVerticalVelocityInitialized = true;
+		}
+		else
+		{
+			m_fPreviousVerticalVelocity = 0.f;
+			m_fFilteredVerticalAcceleration = 0.f;
+			m_bVerticalVelocityInitialized = false;
+		}
+	}
+	else
+	{
+		m_fPreviousVerticalVelocity = 0.f;
+		m_fFilteredVerticalAcceleration = 0.f;
+		m_bVerticalVelocityInitialized = false;
+	}
+
+	// [LSY] Motor 속도의 한 틱 차분값은 작은 흔들림도 큰 가속도로 증폭한다.
+	// 저역 통과 필터를 거쳐 급격한 수직 이동만 고부하 Solver 전환에 사용한다.
+	constexpr _float VERTICAL_ACCELERATION_RESPONSE = 12.f;
+	const _float fAccelerationBlend =
+		1.f - std::exp(
+			-VERTICAL_ACCELERATION_RESPONSE *
+			fTimeDelta);
+	m_fFilteredVerticalAcceleration +=
+		(fRawVerticalAcceleration -
+			m_fFilteredVerticalAcceleration) *
+		fAccelerationBlend;
+	m_fCurrentVerticalVelocity =
+		fVerticalVelocity;
+	const _float fAbsoluteVerticalSpeed =
+		std::abs(fVerticalVelocity);
+	const _float fAbsoluteVerticalAcceleration =
+		std::abs(m_fFilteredVerticalAcceleration);
+	// [LSY] 서로 다른 진입/해제 임계값으로 경계 부근의 60/120Hz 반복 전환을 막는다.
+	const _float fEnterVerticalSpeed =
+		std::max(
+			m_fHighLoadEnterVerticalSpeed,
+			0.f);
+	const _float fExitVerticalSpeed =
+		std::clamp(
+			m_fHighLoadExitVerticalSpeed,
+			0.f,
+			fEnterVerticalSpeed);
+	const _float fEnterVerticalAcceleration =
+		std::max(
+			m_fHighLoadEnterVerticalAcceleration,
+			0.f);
+	const _float fExitVerticalAcceleration =
+		std::clamp(
+			m_fHighLoadExitVerticalAcceleration,
+			0.f,
+			fEnterVerticalAcceleration);
+	_bool bUseHighLoadSolver{};
+	if (m_bUsingBroomCollisionRig)
+	{
+		if (m_bHighLoadSolverEnabled)
+		{
+			bUseHighLoadSolver =
+				fAbsoluteVerticalSpeed >
+					fExitVerticalSpeed ||
+				fAbsoluteVerticalAcceleration >
+					fExitVerticalAcceleration;
+		}
+		else
+		{
+			bUseHighLoadSolver =
+				fAbsoluteVerticalSpeed >=
+					fEnterVerticalSpeed ||
+				fAbsoluteVerticalAcceleration >=
+					fEnterVerticalAcceleration;
+		}
+	}
+
+	_float3 vDesiredLinearInertia{ 1.f, 1.f, 1.f };
+	if (m_bUsingBroomCollisionRig)
+		vDesiredLinearInertia.y =
+			std::clamp(m_fBroomVerticalInertia, 0.f, 1.f);
+
+	_float fDesiredSolverFrequency =
+		std::max(m_fBaseSolverFrequency, 1.f);
+	if (bUseHighLoadSolver)
+	{
+		fDesiredSolverFrequency = std::max(
+			m_fHighLoadSolverFrequency,
+			fDesiredSolverFrequency);
+	}
+
+	const _bool bLinearInertiaChanged =
+		!m_bRuntimeSimulationProfileInitialized ||
+		std::abs(m_vAppliedLinearInertia.x -
+			vDesiredLinearInertia.x) > 0.0001f ||
+		std::abs(m_vAppliedLinearInertia.y -
+			vDesiredLinearInertia.y) > 0.0001f ||
+		std::abs(m_vAppliedLinearInertia.z -
+			vDesiredLinearInertia.z) > 0.0001f;
+	if (bLinearInertiaChanged &&
+		!m_pComNvCloth->SetLinearInertia(
+			vDesiredLinearInertia))
+	{
+		return false;
+	}
+
+	const _bool bSolverFrequencyChanged =
+		!m_bRuntimeSimulationProfileInitialized ||
+		std::abs(m_fAppliedSolverFrequency -
+			fDesiredSolverFrequency) > 0.0001f;
+	if (bSolverFrequencyChanged &&
+		!m_pComNvCloth->SetSolverFrequency(
+			fDesiredSolverFrequency))
+	{
+		return false;
+	}
+
+	m_vAppliedLinearInertia =
+		vDesiredLinearInertia;
+	m_fAppliedSolverFrequency =
+		fDesiredSolverFrequency;
+	m_bHighLoadSolverEnabled =
+		bUseHighLoadSolver;
+	m_bRuntimeSimulationProfileInitialized = true;
+	return true;
+}
+
 _bool CNvClothCape::UpdateVirtualWind(
 	_float fTimeDelta,
 	CPlayer* pPlayer,
@@ -1602,7 +2056,8 @@ _bool CNvClothCape::UpdateVirtualWind(
 				vTargetWind.x -=
 					vVelocity.x * m_fVelocityWindScale;
 				vTargetWind.y -=
-					vVelocity.y * m_fVelocityWindScale;
+					vVelocity.y * m_fVelocityWindScale *
+						m_fVerticalVelocityWindScale;
 				vTargetWind.z -=
 					vVelocity.z * m_fVelocityWindScale;
 			}
@@ -1612,17 +2067,57 @@ _bool CNvClothCape::UpdateVirtualWind(
 	_vector vTarget = XMLoadFloat3(&vTargetWind);
 	const _float fBaseWindSpeed = XMVectorGetX(
 		XMVector3Length(vTarget));
+	const _vector vHorizontalWind = XMVectorSetY(
+		vTarget,
+		0.f);
+	const _float fHorizontalWindSpeed = XMVectorGetX(
+		XMVector3Length(vHorizontalWind));
+	m_fHighSpeedWindBlend = 0.f;
+	const _float fHighSpeedRange =
+		m_fHighSpeedWindFull - m_fHighSpeedWindStart;
+	if (!bSuppressed && fHighSpeedRange > FLT_EPSILON)
+	{
+		m_fHighSpeedWindBlend = std::clamp(
+			(fHorizontalWindSpeed - m_fHighSpeedWindStart) /
+				fHighSpeedRange,
+			0.f,
+			1.f);
+		// [LSY] 경계에서 풍압이 갑자기 바뀌지 않도록 Smoothstep 곡선을 사용한다.
+		m_fHighSpeedWindBlend =
+			m_fHighSpeedWindBlend * m_fHighSpeedWindBlend *
+			(3.f - 2.f * m_fHighSpeedWindBlend);
+	}
+
+	const _float fFlutterStrength =
+		m_fWindFlutterStrength +
+		(m_fHighSpeedFlutterStrength - m_fWindFlutterStrength) *
+			m_fHighSpeedWindBlend;
+	const _float fFlutterFrequency =
+		m_fWindFlutterFrequency +
+		(m_fHighSpeedFlutterFrequency - m_fWindFlutterFrequency) *
+			m_fHighSpeedWindBlend;
+	const _float fGustStrength =
+		m_fWindGustStrength +
+		(m_fHighSpeedGustStrength - m_fWindGustStrength) *
+			m_fHighSpeedWindBlend;
 	if (!bSuppressed)
 	{
 		m_fWindTime += fTimeDelta;
+		m_fWindFlutterPhase +=
+			fTimeDelta * XM_2PI * fFlutterFrequency;
 		if (m_fWindTime > 1024.f)
 			m_fWindTime = std::fmod(
 				m_fWindTime,
 				1024.f);
+		if (m_fWindFlutterPhase > XM_2PI)
+			m_fWindFlutterPhase = std::fmod(
+				m_fWindFlutterPhase,
+				XM_2PI);
 	}
 	else
 	{
 		m_fWindTime = 0.f;
+		m_fWindFlutterPhase = 0.f;
 	}
 
 	if (m_bUseWindFlutter &&
@@ -1648,8 +2143,7 @@ _bool CNvClothCape::UpdateVirtualWind(
 		}
 
 		const _float fFlutterPhase =
-			m_fWindTime * XM_2PI *
-			m_fWindFlutterFrequency;
+			m_fWindFlutterPhase;
 		const _float fSideWave =
 			(std::sin(fFlutterPhase) +
 				std::sin(
@@ -1672,23 +2166,40 @@ _bool CNvClothCape::UpdateVirtualWind(
 			std::sin(
 				fGustPhase * 2.17f +
 				0.8f) * 0.35f;
-		const _float fGustScale = std::max(
+		const _float fBaseGustScale = std::max(
 			0.1f,
 			1.f + fGustWave *
 				m_fWindGustStrength);
-		const _float fFlutterAmplitude =
+		const _float fHorizontalGustScale = std::max(
+			0.1f,
+			1.f + fGustWave *
+				fGustStrength);
+		const _float fSideFlutterAmplitude =
+			fBaseWindSpeed *
+			fFlutterStrength;
+		const _float fVerticalFlutterAmplitude =
 			fBaseWindSpeed *
 			m_fWindFlutterStrength;
 
 		// [LSY] 서로 다른 주기의 파형을 섞어 반복이 눈에 띄는
 		// 단일 사인파 대신 불규칙한 횡풍과 상하 들썩임을 만든다.
-		vTarget *= fGustScale;
+		// 고속 증폭은 수평 성분에만 적용해 수직 상승 관통이 재발하지 않게 한다.
+		const _vector vVerticalTarget = XMVectorSet(
+			0.f,
+			XMVectorGetY(vTarget),
+			0.f,
+			0.f);
+		const _vector vHorizontalTarget =
+			vTarget - vVerticalTarget;
+		vTarget =
+			vHorizontalTarget * fHorizontalGustScale +
+			vVerticalTarget * fBaseGustScale;
 		vTarget +=
 			vSideDirection *
-			(fFlutterAmplitude * fSideWave);
+			(fSideFlutterAmplitude * fSideWave);
 		vTarget +=
 			vWorldUp *
-			(fFlutterAmplitude * 0.55f *
+			(fVerticalFlutterAmplitude * 0.55f *
 				fVerticalWave);
 	}
 
@@ -1748,6 +2259,15 @@ _bool CNvClothCape::UpdateVirtualWind(
 
 _bool CNvClothCape::UpdateBodyCollisions()
 {
+	return UpdateBodyCollisions(
+		m_BodyCollisionRig,
+		m_CollisionRigBoneIndices);
+}
+
+_bool CNvClothCape::UpdateBodyCollisions(
+	const NVCLOTH_COLLISION_RIG_DESC& BodyRig,
+	const std::vector<int32_t>& BodyRigBoneIndices)
+{
 	if (!m_pComNvCloth)
 		return false;
 
@@ -1799,23 +2319,24 @@ _bool CNvClothCape::UpdateBodyCollisions()
 		m_fCollisionMassScale;
 	CollisionDesc.fFriction =
 		m_fCollisionFriction;
-	m_DebugBodyCollisionShapes.clear();
-	m_iBroomDebugShapeStart =
+	std::vector<DEBUG_BODY_COLLISION_SHAPE>
+		DebugBodyCollisionShapes{};
+	size_t iBroomDebugShapeStart =
 		std::numeric_limits<size_t>::max();
-	m_bBroomObjectCollisionRequested =
+	const _bool bBroomObjectCollisionRequested =
 		pPlayer->IsBroomVisible() &&
 		!m_BroomObjectCollisionRig.Shapes.empty();
-	m_bBroomObjectCollisionApplied = false;
 
-	if (!m_BodyCollisionRig.Shapes.empty())
+	if (!BodyRig.Shapes.empty())
 	{
 		if (!AppendCollisionsFromRig(
-			m_BodyCollisionRig,
-			m_CollisionRigBoneIndices,
+			BodyRig,
+			BodyRigBoneIndices,
 			*pModelInstance,
 			TargetWorld,
 			InverseSimulationWorld,
-			CollisionDesc))
+			CollisionDesc,
+			DebugBodyCollisionShapes))
 		{
 			return false;
 		}
@@ -1862,7 +2383,7 @@ _bool CNvClothCape::UpdateBodyCollisions()
 				&DebugShape.SimulationPose,
 				XMMatrixTranslationFromVector(
 					vLocalPosition));
-			m_DebugBodyCollisionShapes.push_back(
+			DebugBodyCollisionShapes.push_back(
 				DebugShape);
 		}
 
@@ -1874,10 +2395,10 @@ _bool CNvClothCape::UpdateBodyCollisions()
 		};
 	}
 
-	if (m_bBroomObjectCollisionRequested)
+	if (bBroomObjectCollisionRequested)
 	{
 		auto* pBroom =
-			CGameInstance::Get().GetGameObjectByHandle(
+			CGameInstance::Get().GetGameObjectByHandleT<CPlayer_Broom>(
 				pPlayer->GetBroomHandle());
 		if (!pBroom)
 			return false;
@@ -1910,22 +2431,23 @@ _bool CNvClothCape::UpdateBodyCollisions()
 				{
 					return iBoneIndex >= 0;
 				}));
-		m_iBroomDebugShapeStart =
-			m_DebugBodyCollisionShapes.size();
+		iBroomDebugShapeStart =
+			DebugBodyCollisionShapes.size();
 
-		// [LSY] 렌더링되는 빗자루와 동일한 최종 행렬을 사용한다.
-		// 플레이어 소켓을 별도로 재조립하면 애니메이션 팔레트와 갱신 시점이
-		// 달라져 충돌체가 빗자루와 다른 위치에 배치될 수 있다.
-		const _matrix BroomWorld =
-			pBroom->GetTransform().
-				GetLoadedCombinedWorldMatrix();
+		// [LSY] 빗자루의 Cached Combined World는 LateUpdate에서 만들어지므로
+		// FixedUpdate에서는 한 프레임 전 플레이어 위치일 수 있다. 현재 소켓,
+		// 플레이어 루트, 빗자루 Local S/R/T로 이번 물리 틱의 월드를 직접 만든다.
+		_matrix BroomWorld{};
+		if (!pBroom->TryBuildAttachedWorldMatrix(BroomWorld))
+			return false;
 		if (!AppendCollisionsFromRig(
 			m_BroomObjectCollisionRig,
 			m_BroomObjectCollisionRigBoneIndices,
 			*pBroomModelInstance,
 			BroomWorld,
 			InverseSimulationWorld,
-			CollisionDesc))
+			CollisionDesc,
+			DebugBodyCollisionShapes))
 		{
 			return false;
 		}
@@ -1934,13 +2456,289 @@ _bool CNvClothCape::UpdateBodyCollisions()
 	if (!m_pComNvCloth->SetCollisions(
 		CollisionDesc))
 	{
+		if (!m_bCollisionUpdateFailureLogged)
+		{
+			char szLog[256]{};
+			sprintf_s(
+				szLog,
+				"[NvClothCape] Failed to update collisions: "
+				"%zu spheres, %zu capsules, %zu planes, "
+				"%zu convexes. NvCloth limits may be exceeded.\n",
+				CollisionDesc.vecSpheres.size(),
+				CollisionDesc.vecCapsules.size(),
+				CollisionDesc.vecPlanes.size(),
+				CollisionDesc.vecConvexes.size());
+			DEBUG_LOG(szLog);
+			m_bCollisionUpdateFailureLogged = true;
+		}
 		return false;
 	}
+	m_bCollisionUpdateFailureLogged = false;
+	m_DebugBodyCollisionShapes =
+		std::move(DebugBodyCollisionShapes);
+	m_iBroomDebugShapeStart =
+		iBroomDebugShapeStart;
+	m_bBroomObjectCollisionRequested =
+		bBroomObjectCollisionRequested;
 	m_bBroomObjectCollisionApplied =
-		m_bBroomObjectCollisionRequested;
+		bBroomObjectCollisionRequested;
 
 	m_LastBodyCollisionDesc =
 		std::move(CollisionDesc);
+	return true;
+}
+
+_bool CNvClothCape::ValidateAndRecoverSimulation()
+{
+	// [LSY] 현재 Client는 CPU NvCloth를 사용한다. DX11 Backend에서 이 검사를
+	// 수행하면 GPU 동기화 비용이 생길 수 있으므로 고속 빗자루 상태의 CPU만 검사한다.
+	auto* pManager = CGameInstance::Get().GetNvClothManager();
+	if (!m_bUsingBroomCollisionRig)
+	{
+		m_iSimulationValidationTick = 0;
+		m_iConsecutiveDistanceWarningSamples = 0;
+		m_iLastDistanceWarningParticleCount = 0;
+		m_fLastMaximumParticleDistance = 0.f;
+		// [LSY] 누적 통계는 유지하되 다음 빗자루 세션의 첫 이상 상태는
+		// 다시 기록할 수 있도록 세션 단위 로그 억제 상태만 해제한다.
+		m_bSimulationValidationFailureLogged = false;
+		m_bSimulationRecoveryLogged = false;
+		m_bSimulationDistanceWarningLogged = false;
+		return true;
+	}
+	if (!pManager ||
+		pManager->GetBackend() != NVCLOTH_BACKEND::CPU)
+	{
+		return true;
+	}
+
+	// [LSY] 평상시에는 기존 검사 주기를 유지하고 수직 급이동 중에만 검사 간격을
+	// 줄여 파티클 복사 비용과 폭주 감지 지연을 함께 관리한다.
+	constexpr uint32_t NORMAL_VALIDATION_INTERVAL = 30;
+	constexpr uint32_t HIGH_LOAD_VALIDATION_INTERVAL = 10;
+	uint32_t iValidationInterval = NORMAL_VALIDATION_INTERVAL;
+	if (m_bHighLoadSolverEnabled)
+		iValidationInterval = HIGH_LOAD_VALIDATION_INTERVAL;
+	++m_iSimulationValidationTick;
+	if (m_iSimulationValidationTick < iValidationInterval)
+		return true;
+	m_iSimulationValidationTick = 0;
+
+	const auto& TargetPositions =
+		m_AnimationConstraintDesc.vecTargetPositions;
+	const auto& MaxDistances =
+		m_AnimationConstraintDesc.vecMaxDistances;
+	if (!m_pComNvCloth ||
+		TargetPositions.empty() ||
+		TargetPositions.size() != MaxDistances.size())
+	{
+		if (!m_bSimulationValidationFailureLogged)
+		{
+			DEBUG_LOG(
+				"[NvClothCape] Simulation validation data is unavailable.\n");
+			m_bSimulationValidationFailureLogged = true;
+		}
+		return true;
+	}
+	for (size_t i = 0; i < TargetPositions.size(); ++i)
+	{
+		const auto& Target = TargetPositions[i];
+		const _float fMaxDistance = MaxDistances[i];
+		if (std::isfinite(Target.x) &&
+			std::isfinite(Target.y) &&
+			std::isfinite(Target.z) &&
+			std::isfinite(fMaxDistance))
+		{
+			continue;
+		}
+
+		// [LSY] 잘못된 애니메이션 타깃으로 파티클을 리셋하면 NaN을 다시 주입한다.
+		// 이 경우에는 복구 자세를 만들지 않고 호출자에게 갱신 실패를 알린다.
+		if (!m_bSimulationValidationFailureLogged)
+		{
+			char szLog[256]{};
+			sprintf_s(
+				szLog,
+				"[NvClothCape] Invalid animation constraint "
+				"at particle %zu. Recovery was skipped.\n",
+				i);
+			DEBUG_LOG(szLog);
+			m_bSimulationValidationFailureLogged = true;
+		}
+		return false;
+	}
+
+	if (!m_pComNvCloth->GetParticles(
+		m_SimulationValidationParticles) ||
+		m_SimulationValidationParticles.size() !=
+			TargetPositions.size())
+	{
+		if (!m_bSimulationValidationFailureLogged)
+		{
+			DEBUG_LOG(
+				"[NvClothCape] Failed to inspect simulation particles.\n");
+			m_bSimulationValidationFailureLogged = true;
+		}
+		return true;
+	}
+	m_bSimulationValidationFailureLogged = false;
+
+	const size_t INVALID_PARTICLE_INDEX =
+		std::numeric_limits<size_t>::max();
+	size_t iInvalidParticle =
+		INVALID_PARTICLE_INDEX;
+	size_t iDistanceWarningParticle =
+		INVALID_PARTICLE_INDEX;
+	size_t iDistanceWarningParticleCount{};
+	_bool bHardRunaway{};
+	_float fMaximumDistanceSq{};
+	for (size_t i = 0;
+		i < m_SimulationValidationParticles.size();
+		++i)
+	{
+		const auto& Particle =
+			m_SimulationValidationParticles[i];
+		const auto& Target = TargetPositions[i];
+		const _float fMaxDistance = MaxDistances[i];
+		if (!std::isfinite(Particle.x) ||
+			!std::isfinite(Particle.y) ||
+			!std::isfinite(Particle.z))
+		{
+			iInvalidParticle = i;
+			break;
+		}
+
+		const _float fSoftRecoveryDistance =
+			std::max(2.f, std::abs(fMaxDistance) * 8.f + 2.f);
+		const _float fHardRecoveryDistance =
+			fSoftRecoveryDistance * 2.f;
+		const _float fDeltaX = Particle.x - Target.x;
+		const _float fDeltaY = Particle.y - Target.y;
+		const _float fDeltaZ = Particle.z - Target.z;
+		const _float fDistanceSq =
+			fDeltaX * fDeltaX +
+			fDeltaY * fDeltaY +
+			fDeltaZ * fDeltaZ;
+		if (!std::isfinite(fDistanceSq))
+		{
+			iInvalidParticle = i;
+			break;
+		}
+		fMaximumDistanceSq = std::max(
+			fMaximumDistanceSq,
+			fDistanceSq);
+		if (fDistanceSq >
+			fSoftRecoveryDistance * fSoftRecoveryDistance)
+		{
+			if (iDistanceWarningParticle ==
+				INVALID_PARTICLE_INDEX)
+			{
+				iDistanceWarningParticle = i;
+			}
+			++iDistanceWarningParticleCount;
+		}
+		if (fDistanceSq >
+			fHardRecoveryDistance * fHardRecoveryDistance)
+		{
+			bHardRunaway = true;
+		}
+	}
+	m_iLastDistanceWarningParticleCount =
+		iDistanceWarningParticleCount;
+	m_fLastMaximumParticleDistance =
+		std::sqrt(fMaximumDistanceSq);
+
+	if (iInvalidParticle != INVALID_PARTICLE_INDEX)
+	{
+		return RecoverSimulation(
+			"non-finite particle data",
+			iInvalidParticle,
+			false);
+	}
+
+	if (iDistanceWarningParticle != INVALID_PARTICLE_INDEX)
+	{
+		++m_iConsecutiveDistanceWarningSamples;
+		if (!m_bSimulationDistanceWarningLogged)
+		{
+			char szLog[256]{};
+			sprintf_s(
+				szLog,
+				"[NvClothCape] Particle exceeded the soft animation range "
+				"at index %zu. Outliers: %zu, max distance: %.3f.\n",
+				iDistanceWarningParticle,
+				iDistanceWarningParticleCount,
+				m_fLastMaximumParticleDistance);
+			DEBUG_LOG(szLog);
+			++m_iSimulationDistanceWarningCount;
+			m_bSimulationDistanceWarningLogged = true;
+		}
+	}
+	else
+	{
+		m_iConsecutiveDistanceWarningSamples = 0;
+		m_bSimulationDistanceWarningLogged = false;
+		m_bSimulationRecoveryLogged = false;
+	}
+
+	const size_t iWidespreadRunawayCount =
+		std::max<size_t>(
+			4,
+			(m_SimulationValidationParticles.size() + 19) / 20);
+	const _bool bWidespreadRunaway =
+		iDistanceWarningParticleCount >=
+			iWidespreadRunawayCount;
+	const _bool bPersistentRunaway =
+		m_iConsecutiveDistanceWarningSamples >= 2;
+	if (!bHardRunaway &&
+		!bWidespreadRunaway &&
+		!bPersistentRunaway)
+	{
+		return true;
+	}
+
+	return RecoverSimulation(
+		"finite particle runaway",
+		iDistanceWarningParticle,
+		true);
+}
+
+_bool CNvClothCape::RecoverSimulation(
+	const char* szReason,
+	size_t iParticleIndex,
+	_bool bRunaway)
+{
+	// [LSY] 폭주한 속도와 외력을 다음 Step에 넘기지 않고 현재 애니메이션
+	// 자세에서 다시 시작한다. UpdateVirtualWind가 같은 틱에 완만하게 재적용한다.
+	m_vCurrentWindVelocity = {};
+	m_vClothWindImpulseVelocity = {};
+	m_fClothWindImpulseRemaining = 0.f;
+	m_pComNvCloth->SetWind({});
+	if (!ResetSimulationToAnimationPose())
+		return false;
+
+	++m_iSimulationRecoveryCount;
+	if (bRunaway)
+		++m_iSimulationRunawayRecoveryCount;
+
+	if (!m_bSimulationRecoveryLogged)
+	{
+		const char* szRecoveryReason = "unknown reason";
+		if (szReason)
+			szRecoveryReason = szReason;
+		char szLog[256]{};
+		sprintf_s(
+			szLog,
+			"[NvClothCape] Recovered unstable simulation: "
+			"%s at particle %zu.\n",
+			szRecoveryReason,
+			iParticleIndex);
+		DEBUG_LOG(szLog);
+		m_bSimulationRecoveryLogged = true;
+	}
+
+	m_iConsecutiveDistanceWarningSamples = 0;
+	m_bSimulationDistanceWarningLogged = false;
 	return true;
 }
 
@@ -2066,10 +2864,33 @@ _bool CNvClothCape::UpdateAttachment(
 			XMLoadFloat3(&vCurrentPosition) -
 			XMLoadFloat3(
 				&m_vPreviousAttachPosition)));
+	_bool bAngularTeleport{};
+	if (m_bSimulationTransformInitialized &&
+		m_fTeleportAngleDegrees > 0.f)
+	{
+		const _vector qPrevious =
+			XMLoadFloat4(&m_vPreviousAttachRotation);
+		const _vector qCurrent =
+			XMLoadFloat4(&vCurrentRotation);
+		_float fQuaternionDot = std::abs(
+			XMVectorGetX(
+				XMVector4Dot(qPrevious, qCurrent)));
+		fQuaternionDot = std::clamp(
+			fQuaternionDot,
+			0.f,
+			1.f);
+		const _float fAngularDistance =
+			2.f * std::acos(fQuaternionDot);
+		const _float fTeleportAngleRadians =
+			m_fTeleportAngleDegrees * XM_PI / 180.f;
+		bAngularTeleport =
+			fAngularDistance > fTeleportAngleRadians;
+	}
 	const _bool bTeleport =
 		bForceTeleport ||
 		!m_bSimulationTransformInitialized ||
-		fDistance > m_fTeleportDistance;
+		fDistance > m_fTeleportDistance ||
+		bAngularTeleport;
 	if (!m_pComNvCloth->SetSimulationTransform(
 		vCurrentPosition,
 		vCurrentRotation,
@@ -2088,8 +2909,41 @@ _bool CNvClothCape::UpdateAttachment(
 
 	m_vPreviousAttachPosition =
 		vCurrentPosition;
+	m_vPreviousAttachRotation =
+		vCurrentRotation;
 	m_bSimulationTransformInitialized = true;
 	return true;
+}
+
+_bool CNvClothCape::GetValidatedRenderParticleView(
+	NVCLOTH_RENDER_PARTICLE_VIEW& OutView)
+{
+	OutView = {};
+	const _bool bValid =
+		m_pComNvCloth &&
+		m_pClothMesh &&
+		m_pComNvCloth->GetRenderParticleView(OutView) &&
+		OutView.iParticleCount ==
+			m_pClothMesh->GetParticleCount();
+	if (bValid)
+	{
+		m_bRenderParticleViewFailureLogged = false;
+		return true;
+	}
+
+	if (!m_bRenderParticleViewFailureLogged)
+	{
+		char szLog[256]{};
+		sprintf_s(
+			szLog,
+			"[NvClothCape] Render particle view is invalid: "
+			"runtime=%u, mesh=%u.\n",
+			OutView.iParticleCount,
+			m_pClothMesh ? m_pClothMesh->GetParticleCount() : 0u);
+		DEBUG_LOG(szLog);
+		m_bRenderParticleViewFailureLogged = true;
+	}
+	return false;
 }
 
 HRESULT CNvClothCape::Render(
@@ -2108,10 +2962,7 @@ HRESULT CNvClothCape::Render(
 	}
 
 	NVCLOTH_RENDER_PARTICLE_VIEW ParticleView{};
-	if (!m_pComNvCloth->GetRenderParticleView(
-		ParticleView) ||
-		ParticleView.iParticleCount !=
-			m_pClothMesh->GetParticleCount())
+	if (!GetValidatedRenderParticleView(ParticleView))
 	{
 		return E_FAIL;
 	}
@@ -2153,6 +3004,21 @@ HRESULT CNvClothCape::Render(
 		9,
 		1,
 		&ParticleView.pSRV);
+
+	// [LSY] 망토는 두께가 없는 천 메시다. 고속 이동으로 면이 뒤집혀도
+	// 전체가 사라져 보이지 않도록 양면 렌더하고 기존 Rasterizer는 원복한다.
+	ComPtr<ID3D11RasterizerState> pPreviousRasterizer{};
+	pContext->RSGetState(
+		pPreviousRasterizer.GetAddressOf());
+	const auto pNoCullRasterizer =
+		CGameInstance::Get().GetResourceFirst<CResRasterizerState>(
+			TAG_RES_GRP_PERMANENT_STATE,
+			TAG_RES_STATE_RS_SOLID_NOCULL);
+	if (pNoCullRasterizer)
+	{
+		pContext->RSSetState(
+			pNoCullRasterizer->GetRasterizerState().Get());
+	}
 
 	const auto& Sections =
 		m_pClothMesh->GetSections();
@@ -2209,6 +3075,8 @@ HRESULT CNvClothCape::Render(
 		9,
 		1,
 		&pNullSRV);
+	pContext->RSSetState(
+		pPreviousRasterizer.Get());
 	return S_OK;
 }
 
@@ -2227,10 +3095,7 @@ HRESULT CNvClothCape::Render_Shadow(
 	}
 
 	NVCLOTH_RENDER_PARTICLE_VIEW ParticleView{};
-	if (!m_pComNvCloth->GetRenderParticleView(
-		ParticleView) ||
-		ParticleView.iParticleCount !=
-			m_pClothMesh->GetParticleCount())
+	if (!GetValidatedRenderParticleView(ParticleView))
 	{
 		return E_FAIL;
 	}

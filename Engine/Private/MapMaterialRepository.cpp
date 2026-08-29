@@ -26,7 +26,8 @@ HRESULT CMapMaterialRepository::SaveFile(const std::filesystem::path& filePath, 
 		if (!outFile.is_open())
 			return E_FAIL;
 
-		outFile << rootJson.dump(4);
+		//outFile << rootJson.dump(4);
+		outFile << rootJson.dump(); // 광윤 수정 : 들여쓰기 하는게 속도 문제가 있다해서 수정했습니다
 		return outFile.good() ? S_OK : E_FAIL;
 	}
 	catch (const std::exception&)
@@ -131,4 +132,19 @@ _float3 CMapMaterialRepository::ReadFloat3(const nlohmann::ordered_json& json, c
 	const auto& value = json[key];
 
 	return { value[0], value[1], value[2] };
+}
+
+void CMapMaterialRepository::SetOverride(
+	const std::string& modelTag,
+	const MATERIAL_DESC& material)
+{
+	std::unique_lock lock(m_Mutex);
+	m_Materials[modelTag] = material;
+}
+
+void CMapMaterialRepository::RemoveOverride(
+	const std::string& modelTag)
+{
+	std::unique_lock lock(m_Mutex);
+	m_Materials.erase(modelTag);
 }

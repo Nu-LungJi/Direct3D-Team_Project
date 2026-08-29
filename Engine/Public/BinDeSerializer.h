@@ -10,7 +10,10 @@ class ISerializable;
 class ENGINE_DLL CBinDeSerializer : public CEngineBase, public IDeserializer
 {
 public:
-	DECLARE_DERIVED_TYPE(CBinDeSerializer, CEngineBase)
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CBinDeSerializer,
+		CEngineBase,
+		IDeserializer)
 
 	CBinDeSerializer();
 	~CBinDeSerializer() override;

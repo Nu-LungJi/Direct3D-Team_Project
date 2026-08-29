@@ -43,7 +43,12 @@ class ENGINE_DLL CGameObject : public CPrototype,
 								public IPhysicsSync
 {
 public:
-	DECLARE_DERIVED_TYPE(CGameObject, CPrototype)
+	DECLARE_DERIVED_TYPE_WITH_BASES(
+		CGameObject,
+		CPrototype,
+		IRenderable,
+		IPhysicsListener,
+		IPhysicsSync)
 	// ENGINE_DLL 인애들은 반드시 명시적으로 복사 생성자, 복사 대입연산자 딜리트하거나 재정의해주어야함
 	CGameObject& operator=(const CGameObject&) = delete;
 
@@ -154,12 +159,8 @@ public:
 			return nullptr;
 		}
 		
-		if (m_Components[iter->second].second->IsA(T::StaticType))
-		{
-			return static_cast<T*>(m_Components[iter->second].second.get());
-		}
-
-		return nullptr;
+		return Engine::Cast<T>(
+			m_Components[iter->second].second.get());
 	};
 
 

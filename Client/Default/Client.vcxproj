@@ -352,6 +352,7 @@
     <ClInclude Include="..\Public\MiniMap.h" />
     <ClInclude Include="..\Public\Player.h" />
     <ClInclude Include="..\Public\PlayerRagdollController.h" />
+    <ClInclude Include="..\Public\NpcRagdollController.h" />
     <ClInclude Include="..\Public\PlayerAnimationRatioGuard.h" />
     <ClInclude Include="..\Public\PlayerThirdPersonCamera.h" />
     <ClInclude Include="..\Public\Player_AccioSkill_State.h" />
@@ -410,8 +411,10 @@
     <ClInclude Include="..\Public\UI_Structs.h" />
     <ClInclude Include="..\Public\VideoObject.h" />
     <ClInclude Include="..\public\WorldAnimal.h" />
+    <ClInclude Include="..\public\AnimatedWorldObject.h" />
     <ClInclude Include="..\public\WorldNpc.h" />
     <ClInclude Include="..\public\InteractiveNpc.h" />
+    <ClInclude Include="..\public\ShopNpc.h" />
     <ClInclude Include="BTAnimNpc.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="framework.h" />
@@ -562,6 +565,7 @@
     <ClCompile Include="..\private\LuaTestObject.cpp" />
     <ClCompile Include="..\Private\Player.cpp" />
     <ClCompile Include="..\Private\PlayerRagdollController.cpp" />
+    <ClCompile Include="..\Private\NpcRagdollController.cpp" />
     <ClCompile Include="..\Private\PlayerThirdPersonCamera.cpp" />
     <ClCompile Include="..\Private\Player_AccioSkill_State.cpp" />
     <ClCompile Include="..\Private\Player_AvadaKedavraSkill_State.cpp" />
@@ -616,8 +620,10 @@
     <ClCompile Include="..\Private\Mon_Weapon.cpp" />
     <ClCompile Include="..\Private\VideoObject.cpp" />
     <ClCompile Include="..\private\WorldAnimal.cpp" />
+    <ClCompile Include="..\private\AnimatedWorldObject.cpp" />
     <ClCompile Include="..\private\WorldNpc.cpp" />
     <ClCompile Include="..\private\InteractiveNpc.cpp" />
+    <ClCompile Include="..\private\ShopNpc.cpp" />
     <ClCompile Include="BTAnimNpc.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="pch.cpp">

@@ -14,6 +14,14 @@
 
 NS_USING(Client)
 
+namespace
+{
+	constexpr std::string_view AVADA_FACIAL_MORPH = "Avada_Facial_Peak";
+	constexpr std::string_view AVADA_FACIAL_FALLBACK_MORPH = "jaw_drop";
+	const StringID AVADA_FACIAL_PREVIEW_TIME_SCALE_TAG{
+		"Debug_AvadaFacialPreview" };
+}
+
 void CPlayer_AvadaKedavraSkill_State::Enter(CStateMachine* pStateMachine)
 {
 	auto* pPlayer = GetPlayer(pStateMachine);
@@ -50,8 +58,41 @@ void CPlayer_AvadaKedavraSkill_State::Enter(CStateMachine* pStateMachine)
 	pPlayer->SetCurrentMoveSpeed(0.f);
 	pPlayer->GetAnimator()->Play_Anim(
 		m_iCastAnimation,
-		false,
+		false, 
 		CAST_BLEND_DURATION);
+
+	if (m_iFacialAnimation >= 0)
+	{
+		pPlayer->GetAnimator()->Stop_UpperAnim(0.f);
+		if (pPlayer->GetAnimator()->Set_UpperBodyRootBone("face", 1))
+		{
+			pPlayer->GetAnimator()->Play_UpperAnim(
+				m_iFacialAnimation,
+				false,
+				0.f);
+			pPlayer->GetAnimator()->SetUpperAnimationFadeOutDuration(0.1f);
+		}
+		else
+		{
+			DEBUG_LOG("[AvadaKedavra] Facial root bone was not found.\n");
+		}
+	}
+	else
+	{
+		DEBUG_LOG("[AvadaKedavra] Facial bone animation was not found.\n");
+	}
+
+	m_iFacialMorphTarget = pPlayer->GetAnimator()->FindMorphTargetIndex(
+		AVADA_FACIAL_MORPH);
+	if (m_iFacialMorphTarget == UINT32_MAX)
+	{
+		m_iFacialMorphTarget = pPlayer->GetAnimator()->FindMorphTargetIndex(
+			AVADA_FACIAL_FALLBACK_MORPH);
+	}
+	if (m_iFacialMorphTarget != UINT32_MAX)
+		pPlayer->GetAnimator()->SetMorphPreview(m_iFacialMorphTarget, 1.f);
+	else
+		DEBUG_LOG("[AvadaKedavra] Facial Morph Target was not found.\n");
 
 	FCinematicPlayOptions CinematicOptions{};
 	CinematicOptions.eStartMode = ECinematicStartMode::Blend;
@@ -105,6 +146,22 @@ void CPlayer_AvadaKedavraSkill_State::Update(
 	m_fAnimationRatio = PlayerAnimationRatioGuard::Sanitize(
 		pAnimator->GetPlayAnimRatio());
 
+	if (m_iFacialMorphTarget != UINT32_MAX)
+	{
+		_float fMorphWeight = 1.f;
+		if (m_fAnimationRatio >= RECOVERY_RATIO)
+		{
+			const _float fRecoveryRatio = std::clamp(
+				(m_fAnimationRatio - RECOVERY_RATIO) /
+				(RECOVERY_EXIT_RATIO - RECOVERY_RATIO),
+				0.f,
+				1.f);
+			fMorphWeight = 1.f - fRecoveryRatio;
+		}
+
+		pAnimator->SetMorphPreview(m_iFacialMorphTarget, fMorphWeight);
+	}
+
 	switch (m_ePhase)
 	{
 	case PHASE::CAST_BEGIN:
@@ -145,14 +202,28 @@ void CPlayer_AvadaKedavraSkill_State::Exit(CStateMachine* pStateMachine)
 		CGameInstance::Get().StopCinematic();
 	}
 	m_bCinematicStarted = false;
+	if (CGameInstance::Get().IsTimeScaleActive(
+		AVADA_FACIAL_PREVIEW_TIME_SCALE_TAG))
+	{
+		CGameInstance::Get().EndTimeScale(
+			AVADA_FACIAL_PREVIEW_TIME_SCALE_TAG,
+			0.15f);
+	}
 
 	auto* pPlayer = GetPlayer(pStateMachine);
 	StopCastEffect(pPlayer);
 	StopBeamEffect(pPlayer);
 	m_bImpactPending = false;
+	if (pPlayer && pPlayer->GetAnimator())
+	{
+		pPlayer->GetAnimator()->Stop_UpperAnim(0.f);
+		pPlayer->GetAnimator()->Set_UpperBodyRootBone("RightArm", 1);
+		pPlayer->GetAnimator()->ClearMorphPreview();
+	}
 	if (pPlayer)
 		ResetSkillControl(*pPlayer);
 
+	m_iFacialMorphTarget = UINT32_MAX;
 	m_ePhase = PHASE::CAST_BEGIN;
 	m_fAnimationRatio = 0.f;
 }
@@ -166,6 +237,9 @@ void CPlayer_AvadaKedavraSkill_State::CacheAnimationIndices(
 	m_iCastAnimation = FindAnimationIndex(
 		player,
 		"AN_ProfessorSharp_MasterRig_Hu_Cmbt_Atk_Finisher_03_Cast_anm.bin");
+	m_iFacialAnimation = FindAnimationIndex(
+		player,
+		"AN_ProfessorSharp_MasterRig_Hu_Facial_AM_Spell_Black_Particle_Explode_anm.bin");
 	m_bAnimationsCached = true;
 }
 
@@ -389,7 +463,7 @@ _bool CPlayer_AvadaKedavraSkill_State::ReleaseSpell(CPlayer& player)
 	if (auto* pTargetObject = CGameInstance::Get().
 		GetGameObjectByHandle(player.GetTargetHandle()))
 	{
-		if (auto* pSkillTarget = dynamic_cast<CSkillTarget*>(pTargetObject))
+		if (auto* pSkillTarget = Engine::Cast<CSkillTarget>(pTargetObject))
 			pSkillTarget->Check_Table(PLAYER_SKILL_TYPE::ABRA);
 	}
 
@@ -427,6 +501,13 @@ _bool CPlayer_AvadaKedavraSkill_State::ResolveTargetPosition(
 
 	if (auto* pTarget = CGameInstance::Get().GetGameObjectByHandle(hTarget))
 	{
+		if (const auto* pSkillTarget = Engine::Cast<CSkillTarget>(pTarget);
+			pSkillTarget &&
+			pSkillTarget->TryGetSkillTargetPosition(OutTargetPosition))
+		{
+			return true;
+		}
+
 		OutTargetPosition = pTarget->GetTransform().GetPosition();
 		return true;
 	}

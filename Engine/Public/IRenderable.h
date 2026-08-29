@@ -6,6 +6,8 @@ NS_BEGIN(Engine)
 class ENGINE_DLL IRenderable
 {
 public:
+	DECLARE_RUNTIME_TYPE(IRenderable)
+
 	virtual ~IRenderable() = default;
 	virtual HRESULT Render(ID3D11DeviceContext* pContext, const RENDER_CTX& ctx) = 0;
 	virtual HRESULT Render_Shadow(ID3D11DeviceContext* pContext, const E::RENDER_CTX& ctx) { return S_OK; }

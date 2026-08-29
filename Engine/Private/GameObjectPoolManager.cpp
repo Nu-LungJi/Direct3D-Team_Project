@@ -27,10 +27,7 @@ HRESULT CGameObjectPoolManager::Initialize(
 size_t CGameObjectPoolManager::HANDLE_HASH::operator()(
 	const CHandle& hHandle) const noexcept
 {
-	size_t iSeed = std::hash<size_t>{}(hHandle.GetIndex());
-	iSeed ^= std::hash<uint32_t>{}(hHandle.GetGeneration()) +
-		0x9e3779b9u + (iSeed << 6) + (iSeed >> 2);
-	return iSeed;
+	return std::hash<uint64_t>{}(hHandle.GetPackedValue());
 }
 
 _bool CGameObjectPoolManager::RegisterPool(
@@ -395,7 +392,7 @@ void CGameObjectPoolManager::UpdateGUI()
 						if (pObject)
 						{
 							ImGui::Text(
-								"%s Index: %zu | Gen: %u | Type: %.*s | Tag: %.*s",
+								"%s Index: %u | Gen: %u | Type: %.*s | Tag: %.*s",
 								bValid ? "" : "[Invalid]",
 								hObject.GetIndex(),
 								hObject.GetGeneration(),
@@ -407,7 +404,7 @@ void CGameObjectPoolManager::UpdateGUI()
 						else
 						{
 							ImGui::Text(
-								"[Invalid] Index: %zu | Gen: %u | Object not found",
+								"[Invalid] Index: %u | Gen: %u | Object not found",
 								hObject.GetIndex(),
 								hObject.GetGeneration());
 						}

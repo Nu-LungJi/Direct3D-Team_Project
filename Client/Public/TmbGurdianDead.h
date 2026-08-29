@@ -43,7 +43,10 @@ public:
 	{
 		m_bRenderEnabled = bEnabled;
 	}
-	_bool ActivatePhysics();
+	_bool ActivatePhysics(
+		const _float3& vExplosionOrigin,
+		uint32_t iDebrisIndex,
+		uint32_t iDebrisCount);
 	_bool ApplyBonePose(
 		_fmatrix matSocketWorld,
 		_fmatrix matInverseBind);
@@ -61,7 +64,6 @@ public:
 	/*---------------------------------*/
 private:
 	void				Boom(_float fTimeDelta);
-	void				Dead_Sound(_float3 vPos);
 private:
 	CComStaticModelInstance* m_pComModelInstance{};
 	CComPxRigidBody* m_pComPxRigidBody{};
@@ -69,7 +71,6 @@ private:
 	_bool m_bActivated{};
 	_bool m_bSocketAttached{};
 	_bool m_bRenderEnabled{};
-	_bool m_bSound{true};
 	// nonAnim
 	SPtr<CResPixelShader> m_pResPixelNonAnimShader{};
 	SPtr<CResVertexShader> m_pResVertexNonAnimShader{};

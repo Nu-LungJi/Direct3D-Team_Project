@@ -142,6 +142,7 @@ private:
 	void EndDialogueCamera();
 	void SetPlayerMovementLocked(_bool bLocked);
 	void SetDialogueExpression(const DIALOGUE_LINE& line);
+	void HandleDialogueLineSound(const DIALOGUE_LINE& line) const;
 	void ResolveInteractionPlayer();
 	_bool IsInteractionPlayerInRange();
 	void SyncInteractionPrompt(_bool bShow);

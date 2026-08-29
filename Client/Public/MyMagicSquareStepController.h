@@ -81,6 +81,10 @@ public:
 	struct DESC : public CGameObject::GAMEOBJECT_DESC
 	{
 		uint32_t iMaxSpawnPerFrame{ 50 };
+		StringID PoolKey{ "CharlesRookwood_MagicSquareStepPool" };
+		size_t iPoolPrewarmCount{ 1024 };
+		size_t iPoolGrowCount{ 50 };
+		size_t iPoolMaxCount{ 2048 };
 		E::StringID ProtoMajorTag{};
 		E::StringID ProtoMinorTag{};
 		std::string SpawnLayerName{};
@@ -273,6 +277,8 @@ private:
 	std::unordered_map<StringID, GROUP> m_mapGroup{};
 	std::queue<SPAWN_DATA> m_qSpawn{};
 	uint32_t m_iMaxSpawnPerFrame{ 50 };
+	StringID m_StepPoolKey{};
+	_bool m_bPoolRegistered{};
 	std::vector<PENDING_PATTERN_EVENT>
 		m_vecPendingPatternEvents{};
 	CComSound* m_pComSound{};
@@ -305,6 +311,9 @@ private:
 	std::string m_StepSpawnLayerName{};
 	StringID m_ResMajorTag{};
 	StringID m_ResMinorTag{};
+
+private:
+	void Free() override;
 };
 
 NS_END

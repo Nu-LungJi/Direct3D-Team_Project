@@ -63,6 +63,10 @@ HRESULT CTextureUI::Initialize(void* pArg)
 	m_bRaceStartFlagWave =
 		m_UIINFO.Restag == "TEX_UI_T_BRFlag_Right" &&
 		(m_UIINFO.Name == "FlagR" || m_UIINFO.Name == "FlagL");
+	m_bAccioSuccessFlagWave =
+		m_UIINFO.Restag == "TEX_UI_T_FinalizedBackGround" &&
+		m_UIINFO.Name == "SuccesFlag";
+	m_bScoreAura = m_UIINFO.Restag == "TEX_UI_T_ScoreAuraRing";
 
 	return S_OK;
 }
@@ -79,6 +83,10 @@ void CTextureUI::Update(E::_float fTimeDelta)
 	m_bRaceStartFlagWave =
 		m_UIINFO.Restag == "TEX_UI_T_BRFlag_Right" &&
 		(m_UIINFO.Name == "FlagR" || m_UIINFO.Name == "FlagL");
+	m_bAccioSuccessFlagWave =
+		m_UIINFO.Restag == "TEX_UI_T_FinalizedBackGround" &&
+		m_UIINFO.Name == "SuccesFlag";
+	m_bScoreAura = m_UIINFO.Restag == "TEX_UI_T_ScoreAuraRing";
 
 	_float2 mousePos = GET_SINGLE(UIManager)->GetUIInteractionMousePosition();
 
@@ -94,13 +102,26 @@ void CTextureUI::Update(E::_float fTimeDelta)
 			4096.f);
 	}
 
-	if (m_bRaceStartFlagWave &&
+	if ((m_bRaceStartFlagWave || m_bAccioSuccessFlagWave) &&
 		std::isfinite(fTimeDelta) && fTimeDelta > 0.f)
 	{
 		m_fRaceStartFlagWaveTime = std::fmod(
 			m_fRaceStartFlagWaveTime +
-				std::min(fTimeDelta, 0.05f) * 1.4f,
+				std::min(fTimeDelta, 0.05f) *
+				(m_bAccioSuccessFlagWave ? 0.35f : 1.4f),
 			4096.f);
+	}
+	if (m_bScoreAura &&
+		std::isfinite(fTimeDelta) && fTimeDelta > 0.f)
+	{
+		m_fScoreAuraTime = std::fmod(
+			m_fScoreAuraTime + std::min(fTimeDelta, 0.05f) * 1.5f,
+			4096.f);
+	}
+	if (m_bLogoSparkle &&
+		std::isfinite(fTimeDelta) && fTimeDelta > 0.f)
+	{
+		m_fLogoSparkleTime += std::min(fTimeDelta, 0.05f);
 	}
 
 	CUIObject::Update(fTimeDelta);
@@ -184,6 +205,10 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	m_bRaceStartFlagWave =
 		m_UIINFO.Restag == "TEX_UI_T_BRFlag_Right" &&
 		(m_UIINFO.Name == "FlagR" || m_UIINFO.Name == "FlagL");
+	m_bAccioSuccessFlagWave =
+		m_UIINFO.Restag == "TEX_UI_T_FinalizedBackGround" &&
+		m_UIINFO.Name == "SuccesFlag";
+	m_bScoreAura = m_UIINFO.Restag == "TEX_UI_T_ScoreAuraRing";
 
 	std::string currentLevel = _string("LEVEL_") + MagicEnumToStringView(static_cast<LEVEL>(E::CGameInstance::Get().GetCurrentLevelID())).data();
 	CTextureUI* alphaMaskSource = nullptr;
@@ -216,7 +241,7 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 			TAG_RES_GRP_PERMANENT_SHADER,
 			"PS_SpellAlarmFlame");
 	}
-	if (m_bRaceStartFlagWave)
+	if (m_bRaceStartFlagWave || m_bAccioSuccessFlagWave)
 	{
 		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
 			TAG_RES_GRP_PERMANENT_SHADER,
@@ -227,6 +252,18 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
 			TAG_RES_GRP_PERMANENT_SHADER,
 			"PS_SpellMiniGameRippleGlow");
+	}
+	if (m_bScoreAura)
+	{
+		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"PS_ScoreAura");
+	}
+	if (m_bLogoSparkle)
+	{
+		ps = E::CGameInstance::Get().GetResourceFirst<E::CResPixelShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"PS_LogoSparkle");
 	}
 
 	if (m_bPathProgressMode)
@@ -261,10 +298,22 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	{
 		E::CB_PER_UI perUI{};
 		perUI.texCoord = {
-			m_bRaceStartFlagWave ? m_fRaceStartFlagWaveTime : m_fAmount,
-			static_cast<_float>(m_iPathProgressType)
+			(m_bRaceStartFlagWave || m_bAccioSuccessFlagWave) ?
+				m_fRaceStartFlagWaveTime :
+				(m_bScoreAura ? m_fScoreAuraTime : m_fAmount),
+			m_bAccioSuccessFlagWave ? 1.f :
+				static_cast<_float>(m_iPathProgressType)
 		};
-		perUI.uvSize = { 0.f, 0.f };
+		perUI.uvSize = m_bLogoSparkle ?
+			_float2{ m_fLogoSparkleDuration, 0.f } :
+			_float2{ 0.f, 0.f };
+		if (m_bLogoSparkle)
+		{
+			perUI.texCoord = {
+				m_fLogoSparkleTime,
+				m_fLogoSparkleDelay
+			};
+		}
 		perUI.quadSize = { m_fTextureBrightness, 0.f };
 		perUI.color = { m_UIINFO.Color.x, m_UIINFO.Color.y, m_UIINFO.Color.z, m_UIINFO.Alpha };
 		perUI.uvFlip = { m_UIINFO.FlipX ? 1.f : 0.f, m_UIINFO.FlipY ? 1.f : 0.f };
@@ -367,7 +416,32 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 	{
 		auto& tmp = E::CGameInstance::Get();
 		const auto& srv = E::CGameInstance::GetConst().GetResourceFirst<E::CResTexture2D>(currentLevel, m_UIINFO.Restag);
-		if (m_bRaceStartFlagWave)
+		if (m_bLogoSparkle)
+		{
+			const auto& blur = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_HogwartsLogo_Korean_Blur");
+			const auto& details = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_Logo_KoreanDetails");
+			const auto& ribbon = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_VFX_T_RibbonOffset_N");
+			ID3D11ShaderResourceView* srvs[] = {
+				srv->GetSRV().Get(),
+				blur->GetSRV().Get(),
+				details->GetSRV().Get(),
+				ribbon->GetSRV().Get()
+			};
+			pContext->PSSetShaderResources(
+				0,
+				static_cast<UINT>(std::size(srvs)),
+				srvs);
+		}
+		else if (m_bRaceStartFlagWave)
 		{
 			const auto& mask = E::CGameInstance::GetConst().
 				GetResourceFirst<E::CResTexture2D>(
@@ -381,6 +455,54 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 				srv->GetSRV().Get(),
 				mask->GetSRV().Get(),
 				clouds->GetSRV().Get()
+			};
+			pContext->PSSetShaderResources(
+				0,
+				static_cast<UINT>(std::size(srvs)),
+				srvs);
+		}
+		else if (m_bAccioSuccessFlagWave)
+		{
+			const auto& clouds = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_ScrollingClouds");
+			// The subtle result-banner mode uses the source alpha instead of the
+			// race flag silhouette mask. Slot 1 is intentionally a harmless copy.
+			ID3D11ShaderResourceView* srvs[] = {
+				srv->GetSRV().Get(),
+				srv->GetSRV().Get(),
+				clouds->GetSRV().Get()
+			};
+			pContext->PSSetShaderResources(
+				0,
+				static_cast<UINT>(std::size(srvs)),
+				srvs);
+		}
+		else if (m_bScoreAura)
+		{
+			const auto& cloudRing = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_ScoreAuraCloud");
+			const auto& smokeNoise = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_SmokesNoiseMask");
+			const auto& smokeThin = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_ScoreAuraSmokeThin");
+			const auto& smokeThick = E::CGameInstance::GetConst().
+				GetResourceFirst<E::CResTexture2D>(
+					currentLevel,
+					"TEX_UI_T_ScoreAuraSmokeThick");
+			ID3D11ShaderResourceView* srvs[] = {
+				srv->GetSRV().Get(),
+				cloudRing->GetSRV().Get(),
+				smokeNoise ? smokeNoise->GetSRV().Get() : nullptr,
+				smokeThin ? smokeThin->GetSRV().Get() : nullptr,
+				smokeThick ? smokeThick->GetSRV().Get() : nullptr
 			};
 			pContext->PSSetShaderResources(
 				0,
@@ -442,7 +564,8 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 		}
 	}
 
-	if (m_bAdditiveBlend)
+	const _bool useAdditiveBlend = m_bAdditiveBlend || m_bScoreAura;
+	if (useAdditiveBlend)
 	{
 		const auto& additive = E::CGameInstance::Get().
 			GetResourceFirst<E::CResBlendState>(
@@ -476,14 +599,17 @@ HRESULT CTextureUI::Render(ID3D11DeviceContext* pContext, const E::RENDER_CTX& c
 
 	pContext->DrawIndexed(viBuffer->GetNumIndices(), 0, 0);
 
-	if (m_bRaceStartFlagWave)
+	if (m_bRaceStartFlagWave || m_bAccioSuccessFlagWave ||
+		m_bScoreAura || m_bLogoSparkle)
 	{
 		// Do not leave the auxiliary mask/noise SRVs attached for later UI draws.
-		ID3D11ShaderResourceView* nullSrvs[] = { nullptr, nullptr };
-		pContext->PSSetShaderResources(1, 2, nullSrvs);
+		ID3D11ShaderResourceView* nullSrvs[] = {
+			nullptr, nullptr, nullptr, nullptr
+		};
+		pContext->PSSetShaderResources(1, 4, nullSrvs);
 	}
 
-	if (m_bAdditiveBlend)
+	if (useAdditiveBlend)
 	{
 		const auto& alphaBlend = E::CGameInstance::Get().
 			GetResourceFirst<E::CResBlendState>(

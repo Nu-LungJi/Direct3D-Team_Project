@@ -127,7 +127,8 @@ HRESULT CMonster::Initialize(void* pArg)
 	auto MonDesc = static_cast<MONSTER_DESC*>(pArg);
 	m_bDonMove = MonDesc->bDonMove;
 	m_bSpawn = MonDesc->bSpawn;
-	m_TargetHandle = MonDesc->TargetHandle;
+
+	m_PlayerHandle = m_TargetHandle = MonDesc->TargetHandle;
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
@@ -493,6 +494,11 @@ HRESULT CMonster::Render_Instanced_CPU(ID3D11DeviceContext* pContext, const E::R
 		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
 		skinningConstants.iVertexCount = mesh->GetNumVertices();
 		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+
+		const auto morphDeltaBuffer = mesh->GetMorphDeltaBuffer();
+		const auto morphTargetRangeBuffer = mesh->GetMorphTargetRangeBuffer();
+		if (morphDeltaBuffer && morphTargetRangeBuffer)
+			skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 			return E_FAIL;
@@ -500,6 +506,13 @@ HRESULT CMonster::Render_Instanced_CPU(ID3D11DeviceContext* pContext, const E::R
 		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
 		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+
+		ID3D11ShaderResourceView* morphSRVs[2] =
+		{
+			morphDeltaBuffer ? morphDeltaBuffer->GetSRV().Get() : nullptr,
+			morphTargetRangeBuffer ? morphTargetRangeBuffer->GetSRV().Get() : nullptr
+		};
+		pContext->VSSetShaderResources(9, 2, morphSRVs);
 		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 		const UINT stride = mesh->GetVertexStride();
 		const UINT offset = 0;
@@ -512,8 +525,8 @@ HRESULT CMonster::Render_Instanced_CPU(ID3D11DeviceContext* pContext, const E::R
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
-	ID3D11ShaderResourceView* nullVSSRVs[3]{};
-	pContext->VSSetShaderResources(6, 3, nullVSSRVs);
+	ID3D11ShaderResourceView* nullVSSRVs[5]{};
+	pContext->VSSetShaderResources(6, 5, nullVSSRVs);
 
 	return S_OK;
 
@@ -778,7 +791,7 @@ void CMonster::Find_Target()
 
 	PX_OVERLAP_DESC Desc{};
 	// 몬스터 주변 탐색 범위
-	Desc.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 2000.f};
+	Desc.tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE,.fRadius = 300.f};
 	Desc.tPose = {.vPosition = GetTransform().GetPosition()};
 
 	// 플레이어 본체와 NPC 본체만 검색
@@ -819,16 +832,18 @@ void CMonster::Find_Target()
 		}
 	}
 
+	auto* pBB = Get_BlackBoard();
+	if (nullptr == pBB) return;
 	if (nullptr != pLastTarget)
 	{
-		auto* pBB = Get_BlackBoard();
 		m_TargetHandle = pLastTarget->GetHandle();
-		if( nullptr != pBB)
-			pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
+		pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
 
 	}
 	else
-		m_TargetHandle = {};
+	{
+		pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_PlayerHandle);
+	}
 }
 
 void CMonster::OnTriggerEnter(CGameObject* pObj, const PX_ON_TRIGGER_DATA& info)
@@ -993,49 +1008,53 @@ int32_t CMonster::Find_AnimIndex(const _string& AnimName)
 }
 void CMonster::Damaged(PLAYER_SKILL_TYPE eType)
 {
+	int32_t baseDamage = 0;
 	switch (eType)
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
-		GET_SINGLE(UIManager)->CreateDamageFont(5, GetHandle(), false);
-		m_iHp -= 5.f;
+		baseDamage = RandInt(3, 10);
 		break;
 	case PLAYER_SKILL_TYPE::ACCIO:
-		GET_SINGLE(UIManager)->CreateDamageFont(10, GetHandle(), true);
-		m_iHp -= 10.f;
+		baseDamage = RandInt(8, 15);
 		break;
 	case PLAYER_SKILL_TYPE::DEPULSO:
-		GET_SINGLE(UIManager)->CreateDamageFont(15, GetHandle(), true);
-		m_iHp -= 15.f;
+		baseDamage = RandInt(11, 20);
 		break;
 	case PLAYER_SKILL_TYPE::DESCENDO:
-		GET_SINGLE(UIManager)->CreateDamageFont(20, GetHandle(), true);
-		m_iHp -= 20.f;
+		baseDamage = RandInt(15, 25);
 		break;
 	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
-		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
-		m_iHp -= 25.f;
+		baseDamage = RandInt(20, 28);
 		break;
 	case PLAYER_SKILL_TYPE::PROTEGO:
-		m_iHp -= 8.f;
+		baseDamage = 8;
 		break;
 	case PLAYER_SKILL_TYPE::DESTORY:
-		m_iHp -= 25.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
+		baseDamage = RandInt(23, 28);
 		break;
 	case PLAYER_SKILL_TYPE::ABRA:
-		m_iHp -= 50.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(50, GetHandle(), true);
+		baseDamage = RandInt(40, 65);
 		break;
 	case PLAYER_SKILL_TYPE::CONFRIGO:
-		m_iHp -= 18.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(18, GetHandle(), true);
+		baseDamage = RandInt(9, 23);
 		break;
 	case PLAYER_SKILL_TYPE::BOMBARDA:
-		m_iHp -= 28.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(28, GetHandle(), true);
+		baseDamage = RandInt(16, 28);
 		break;
-
+	default:
+		break;
 	}
+
+	if (baseDamage <= 0)
+		return;
+
+	const _bool isCritical = RandInt(0, 1) == 1;
+	const int32_t finalDamage = isCritical ?
+		static_cast<int32_t>(std::lround(baseDamage * 1.5f)) :
+		baseDamage;
+	GET_SINGLE(UIManager)->CreateDamageFont(
+		static_cast<uint32_t>(finalDamage), GetHandle(), isCritical);
+	m_iHp -= finalDamage;
 }
 
 void CMonster::Update_HurtBox()

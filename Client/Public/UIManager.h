@@ -7,8 +7,6 @@
 
 NS_BEGIN(Client)
 
-static constexpr bool isPurchaseWand{ false };
-
 static Engine::CUIObject* GetSafeUI(CHandle handle)
 {
 	return E::CGameInstance::Get().GetGameObjectByHandleT<Engine::CUIObject>(handle);
@@ -45,7 +43,8 @@ public:
 
 	/*******페이드 인아웃******/
 	void CreateFadeIn(float delay = 0.f, float playtime = 0.5f);
-	void CreateFadeOut(float delay = 0.f, float playtime = 0.5f);
+	void CreateFadeOut(float delay = 0.f, float playtime = 0.5f,
+		std::function<void()> onComplete = nullptr);
 	void CreateFadeInSceneChange(float delay = 0.f, float playtime = 1.f, LEVEL level = LEVEL::LOGO);
 	void PlayFadeInAll2DUI(float delay = 0.f, float playtime = 0.5f);
 	void PlayFadeOutAll2DUI(float delay = 0.f, float playtime = 0.5f);
@@ -56,6 +55,10 @@ public:
 	uint32_t GetSavedSpellSlot(uint32_t slotNumber) const;
 	void SaveSpellSlot(uint32_t slotNumber, uint32_t spellType);
 	_bool HasInitializedSpellSlots() const { return m_bSpellSlotsInitialized; }
+
+	/********구매한 완드 영속 상태********/
+	void SetPurchasedWandEquipped(_bool equipped) { m_bPurchasedWandEquipped = equipped; }
+	_bool IsPurchasedWandEquipped() const { return m_bPurchasedWandEquipped; }
 
 	/********데미지 폰트***********/
 	void CreateDamageFont(uint32_t damage, CHandle targetMonster,_bool isCritical = false);
@@ -78,9 +81,13 @@ public:
 	/********퀘스트 안내***********/
 	// Quest UI가 없으면 생성하고, 이미 표시 중이면 텍스트 전환 모션으로 교체한다.
 	void CreateOrChangeQuest(const std::string& questText);
+	void SetQuestColoredSuffix(
+		const std::string& suffix,
+		const _float3& color = { 0.39215687f, 1.f, 0.39215687f });
 	void DeleteQuest();
 	void FadeOutQuest(float playtime = 0.3f);
 	void FadeInQuest(float playtime = 0.5f);
+	_bool SetMiniMapObjectiveActive(const std::string& key, _bool active);
 
 	/********레이스 시작 타이머***********/
 	void StartRaceStartTimer();
@@ -90,9 +97,30 @@ public:
 	void StartRaceMiniGame();
 	void AddRaceMiniGameCoin(uint32_t amount = 1u);
 	void FinishRaceMiniGame();
+	void SetRaceReturnToShopCallback(std::function<void()> callback)
+	{
+		m_OnRaceReturnToShop = callback;
+	}
 	uint32_t GetRaceMiniGameCoinCount() const
 	{
 		return m_iRaceMiniGameCoinCount;
+	}
+
+	/********소환사의 코트 미니게임**********/
+	void AssioMiniGameStart(_bool bPlayerStarts = true);
+	void AssioMiniGameFinish();
+	_bool AddScore(
+		int iTurnScore,
+		int iPlayerTotalScore,
+		int iNpcTotalScore,
+		_bool bPlayerTurn,
+		_bool bFinalScore = false);
+	void TurnTitleFadeOut(float playtime = 0.3f);
+	_bool IsAssioMiniGameActive() const { return m_bAssioMiniGameActive; }
+	_bool CanAddAssioScore() const
+	{
+		return m_bAssioMiniGameActive &&
+			m_eAssioScorePhase == ASSIO_SCORE_PHASE::NONE;
 	}
 
 	/********지팡이 상점***********/
@@ -101,10 +129,16 @@ public:
 	void OpenWandShopWorld(
 		CHandle targetHandle,
 		const _float3& positionOffset,
-		const _float3& rotationOffsetDegrees); // 3D월드 상점
+		const _float3& rotationOffsetDegrees,
+		_float panelScale = 1.f); // 3D월드 상점
 
 	void OpenWandShopPage(uint32_t pageIndex);
 	void CloseWandShop();
+	_bool IsWandShopOpen() const { return m_WandShop.IsOpen(); }
+	_bool ConsumeWandPurchaseCompleted()
+	{
+		return m_WandShop.ConsumePurchaseCompleted();
+	}
 	_float2 GetUIInteractionMousePosition() const;
 	_bool IsWandShopWorldMode() const { return m_bWandShopWorldMode; }
 
@@ -126,9 +160,7 @@ private:
 	{
 		size_t operator()(const CHandle& handle) const noexcept
 		{
-			const size_t indexHash = std::hash<size_t>{}(handle.GetIndex());
-			const size_t generationHash = std::hash<uint32_t>{}(handle.GetGeneration());
-			return indexHash ^ (generationHash + 0x9e3779b9u + (indexHash << 6u) + (indexHash >> 2u));
+			return std::hash<uint64_t>{}(handle.GetPackedValue());
 		}
 	};
 	std::unordered_map<CHandle, _float, UI_HANDLE_HASH> m_2DUIRestoreAlpha{};
@@ -152,6 +184,7 @@ private:
 	}();
 	std::array<uint32_t, 4> m_SavedSpellSlots{};
 	_bool m_bSpellSlotsInitialized{ false };
+	_bool m_bPurchasedWandEquipped{ false };
 
 	// 애니메이션 함수, 실행 함수들 이름
 	std::vector<std::string> m_vEventNames;
@@ -197,6 +230,7 @@ private:
 		NONE,
 		COUNTDOWN,
 		RACING,
+		RETURNING_TO_SHOP,
 		RESULT
 	};
 	RACE_MINIGAME_PHASE m_eRaceMiniGamePhase{ RACE_MINIGAME_PHASE::NONE };
@@ -206,10 +240,69 @@ private:
 	std::optional<CHandle> m_hRaceBoardCoinText{};
 	std::optional<CHandle> m_hRaceResultCoinText{};
 	_float m_fRaceMiniGameElapsed{};
-	uint32_t m_iRaceMiniGameCoinCount{0};
+	uint32_t m_iRaceMiniGameCoinCount{40};
+	_bool m_bRaceReturnPositionApplied{};
+	_bool m_bRaceResultFadeOutStarted{};
+	_float m_fRaceReturnElapsed{};
+	std::function<void()> m_OnRaceReturnToShop{};
+
+	enum class ASSIO_SCORE_PHASE : uint8_t
+	{
+		NONE,
+		APPEAR,
+		HOLD,
+		MOVE,
+		IMPACT_HOLD,
+		TURN_CHANGE,
+		RESULT_COAT_FADE_OUT,
+		RESULT_HOLD,
+		RESULT_FADE_OUT
+	};
+	std::vector<CHandle> m_AssioMiniGameRoots{};
+	std::vector<CHandle> m_AssioResultRoots{};
+	std::optional<CHandle> m_hAssioScoreBoard{};
+	std::optional<CHandle> m_hAssioPlayerScoreRoot{};
+	std::optional<CHandle> m_hAssioNpcScoreRoot{};
+	std::optional<CHandle> m_hAssioPlayerScoreText{};
+	std::optional<CHandle> m_hAssioNpcScoreText{};
+	std::optional<CHandle> m_hAssioPlayerFrame{};
+	std::optional<CHandle> m_hAssioNpcFrame{};
+	std::optional<CHandle> m_hAssioCenterScore{};
+	std::optional<CHandle> m_hAssioCenterScoreText{};
+	std::optional<CHandle> m_hAssioTurnTitle{};
+	std::optional<CHandle> m_hAssioTargetScoreText{};
+	_float2 m_AssioCenterScoreBasePosition{};
+	_float2 m_AssioCenterScoreMoveStart{};
+	_float2 m_AssioCenterScoreMoveTarget{};
+	_float m_fAssioCenterScoreBaseScale{ 1.f };
+	_float m_fAssioCenterScoreBaseAlpha{ 1.f };
+	_float2 m_AssioActiveTurnPosition{};
+	_float2 m_AssioInactiveTurnPosition{};
+	_float m_fAssioActiveTurnScale{ 1.f };
+	_float m_fAssioInactiveTurnScale{ 1.f };
+	_float m_fAssioActiveTurnAlpha{ 1.f };
+	_float m_fAssioInactiveTurnAlpha{ 1.f };
+	_float m_fAssioActiveFrameAlpha{ 1.f };
+	_float m_fAssioInactiveFrameAlpha{};
+	_float m_fAssioTurnTitleBaseAlpha{ 1.f };
+	_float m_fAssioScorePhaseElapsed{};
+	int m_iAssioPlayerScore{};
+	int m_iAssioNpcScore{};
+	int m_iAssioPendingScore{};
+	int m_iAssioPendingPlayerScore{};
+	int m_iAssioPendingNpcScore{};
+	_bool m_bAssioTargetIsPlayer{};
+	_bool m_bAssioCurrentTurnIsPlayer{ true };
+	_bool m_bAssioTurnTitleFadeInStarted{};
+	_bool m_bAssioTurnTitleWasAlreadyHidden{};
+	_bool m_bAssioFinalScore{};
+	_bool m_bAssioMiniGameActive{};
+	ASSIO_SCORE_PHASE m_eAssioScorePhase{ ASSIO_SCORE_PHASE::NONE };
 	CWandShop m_WandShop{};
 	_bool m_bWandShopWorldMode{ false };
 	_float4x4 m_WandShopPanelWorld{};
+	_float3 m_vWandShopPanelWorldPosition{};
+	_float2 m_vWandShopPanelWorldScale{};
 	_float2 m_WandShopPanelMousePosition{ -FLT_MAX, -FLT_MAX };
 	_bool m_bWandShopPanelMouseHit{ false };
 
@@ -226,6 +319,16 @@ private:
 	void ClearRaceMiniGameUI();
 	void PlayRaceRootsFadeIn(const std::vector<CHandle>& roots,
 		_float playtime = 0.3f);
+	void UpdateAssioMiniGame(_float fTimeDelta);
+	void PlayAssioScoreImpactEffect();
+	void CompleteAssioScoreImpact();
+	void BeginAssioTurnChange();
+	void BeginAssioResult();
+	void LoadAssioResult();
+	void ClearAssioGameplayHandles();
+	void ClearAssioMiniGameUI(_bool immediate = true);
+	_bool ResolveAssioCurrentTurn();
+	void UpdateWandShopWorldBillboard();
 	void UpdateWandShopWorldMousePosition();
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
@@ -233,7 +336,8 @@ public:
 	std::vector<CHandle> LoadPrefab(std::string name, std::string g_BasePath = "./Resources/SampleClient/UIData/Prefabs/");
 	E::CUIObject* LoadUIRecursive(const nlohmann::ordered_json& obj, E::CUIObject* parent);
 	void DeleteUIRecursive(std::optional<CHandle> targetHandle);
-	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f, float playtime = 5.f);
+	void PlayFadeOutDelete(CHandle pHandle, float delay = 1.f,
+		float playtime = 5.f, std::function<void()> onComplete = nullptr);
 	void PlayFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 	void PlayOnlyFadeIn(CHandle pHandle, float delay = 0.f, float playtime = 5.f);
 

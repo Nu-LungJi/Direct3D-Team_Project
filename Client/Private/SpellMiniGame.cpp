@@ -2320,9 +2320,94 @@ void CSpellMiniGame::ShowSuccessAlarm()
 
 			if (std::string_view(root->GetName()) == "Flame")
 			{
-				if (auto* flame = dynamic_cast<CTextureUI*>(root))
+				if (auto* flame = Engine::Cast<CTextureUI>(root))
 					flame->SetSpellAlarmFlame(flameIndex++);
 			}
+
+			const CHandle alarmHandle = rootHandle;
+			const _float targetAlpha = root->GetAlpha();
+			const _float targetScale = root->GetScaleRatio();
+			const _bool deleteAtEnd = !hasParent;
+			root->SetAlpha(0.f);
+			root->Appear = [
+				alarmHandle,
+				targetAlpha,
+				targetScale,
+				deleteAtEnd](CUIObject*)
+			{
+				auto* currentAlarm = E::CGameInstance::Get().
+					GetGameObjectByHandleT<E::CUIObject>(alarmHandle);
+				if (!currentAlarm)
+					return;
+
+				currentAlarm->SetAlpha(0.f);
+				auto* tween = currentAlarm->GetTweenCom();
+				if (!tween)
+					return;
+
+				if (deleteAtEnd)
+				{
+					currentAlarm->SetScaleRatio(0.8f);
+					currentAlarm->CalcUICoord();
+					tween->PlayTween(
+						0.8f,
+						targetScale,
+						SUCCESS_ALARM_FADE_IN_DURATION,
+						[alarmHandle](_float scale)
+						{
+							if (auto* alarm = E::CGameInstance::Get().
+								GetGameObjectByHandleT<E::CUIObject>(alarmHandle))
+							{
+								alarm->SetScaleRatio(scale);
+								alarm->CalcUICoord();
+							}
+						},
+						nullptr,
+						EEaseType::EaseOutQuad,
+						SUCCESS_ALARM_DELAY);
+				}
+
+				tween->PlayTween(
+					0.f,
+					targetAlpha,
+					SUCCESS_ALARM_FADE_IN_DURATION,
+					[alarmHandle](_float alpha)
+					{
+						if (auto* alarm = E::CGameInstance::Get().
+							GetGameObjectByHandleT<E::CUIObject>(alarmHandle))
+						{
+							alarm->SetAlpha(alpha);
+						}
+					},
+					nullptr,
+					EEaseType::EaseOutQuad,
+					SUCCESS_ALARM_DELAY);
+
+				tween->PlayTween(
+					targetAlpha,
+					0.f,
+					SUCCESS_ALARM_FADE_OUT_DURATION,
+					[alarmHandle](_float alpha)
+					{
+						if (auto* alarm = E::CGameInstance::Get().
+							GetGameObjectByHandleT<E::CUIObject>(alarmHandle))
+						{
+							alarm->SetAlpha(alpha);
+						}
+					},
+					[alarmHandle, deleteAtEnd]()
+					{
+						if (deleteAtEnd)
+						{
+							if (GetSafeUI(alarmHandle))
+								GET_SINGLE(UIManager)->DeleteUIRecursive(alarmHandle);
+						}
+					},
+					EEaseType::EaseOutQuad,
+					SUCCESS_ALARM_DELAY +
+					SUCCESS_ALARM_FADE_IN_DURATION +
+					SUCCESS_ALARM_HOLD_DURATION);
+			};
 
 			for (const CHandle childHandle : root->GetChildren())
 			{
@@ -2351,18 +2436,6 @@ void CSpellMiniGame::ShowSuccessAlarm()
 			0.f,
 			1.f,
 			false);
-		alarmRoot->SetAlpha(0.f);
-
-		GET_SINGLE(UIManager)->PlayFadeIn(
-			handle,
-			SUCCESS_ALARM_DELAY,
-			SUCCESS_ALARM_FADE_IN_DURATION);
-		GET_SINGLE(UIManager)->PlayFadeOutDelete(
-			handle,
-			SUCCESS_ALARM_DELAY +
-			SUCCESS_ALARM_FADE_IN_DURATION +
-			SUCCESS_ALARM_HOLD_DURATION,
-			SUCCESS_ALARM_FADE_OUT_DURATION);
 	}
 
 	if (!hasBounds)

@@ -5,6 +5,7 @@
 #include "ComCharacterMoveIntent.h"
 #include "ComAnimator.h"
 #include "ComModelInstance.h"
+
 NS_USING(Client)
 CTroll_Spawn::CTroll_Spawn()
 {
@@ -50,6 +51,13 @@ void CTroll_Spawn::Enter(CStateMachine* pStateMachine)
 	option.LookAtTargetHandle = pTroll->GetHandle();/*트롤핸들(optional)*/;
 
 	CGameInstance::Get().PlayCinematic("TrollDoljin", pTroll->GetHandle(), option);
+
+	MONSOUND Sound_Desc{};
+	_float3 vPos = pTroll->GetTransform().GetPosition();
+	Sound_Desc.SoundKey = "ChageLoop";
+	Sound_Desc.SoundPlay = SOUND_PLAY_DESC{ .fVolume = 0.8f,.bLoop = false, };
+	Sound_Desc.str3DSound = SOUND_3D_DESC{ .vPosition = vPos ,.fMinDistance = 1.f, .fMaxDistance = 200.f, .eRolloff = SOUND_3D_ROLLOFF::LINEAR };
+	pTroll->Play_Sound(Sound_Desc);
 }
 _bool CTroll_Spawn::Play_Anim(CTroll* pTroll, _float fTimeDelta, uint32_t iIndex)
 {
@@ -93,6 +101,7 @@ void CTroll_Spawn::Run(CTroll* pTroll, _float fTimeDelta)
 {
 	if (Play_Anim(pTroll, fTimeDelta, TRS_FINISHE))
 		m_eState = MON_DEF_STATE::END;
+
 }
 void CTroll_Spawn::End(CTroll* pTroll, CMon_State* pMonState, _float fTimeDelta)
 {

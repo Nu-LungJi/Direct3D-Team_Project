@@ -139,6 +139,11 @@ public:
 	std::optional<_float> GetDistanceToPlayAreaEdge(
 		const CAccioBall& ball,
 		const _float3& vPushDirection) const;
+	_bool IsBallOnPlayArea(const CAccioBall& ball) const;
+	_bool IsActiveBall(const CHandle& hBall) const
+	{
+		return hBall != CHandle{} && hBall == m_hActiveBall;
+	}
 	void SetParticipantHandle(PARTICIPANT eParticipant, const CHandle& hObject);
 	_bool StartMatch();
 	_bool ResetMatch(_bool bResetBalls);
@@ -168,7 +173,6 @@ private:
 	_bool ValidateRegisteredBalls() const;
 	void ReleaseActiveBallControl();
 	_bool AreInPlayBallsSettled() const;
-	_bool IsBallOnPlayArea(const CAccioBall& ball) const;
 	_bool IsPointInsideScoreZone(
 		const _float3& vWorldPosition,
 		const ACCIO_ACTIVITY_BOX_COLLIDER_DESC& zone) const;
@@ -196,10 +200,7 @@ private:
 	{
 		size_t operator()(const CHandle& handle) const noexcept
 		{
-			size_t seed = std::hash<size_t>{}(handle.GetIndex());
-			seed ^= std::hash<uint32_t>{}(handle.GetGeneration()) +
-				0x9e3779b9u + (seed << 6) + (seed >> 2);
-			return seed;
+			return std::hash<uint64_t>{}(handle.GetPackedValue());
 		}
 	};
 
@@ -224,6 +225,7 @@ private:
 	uint32_t m_iMaxRounds{ 3u };
 	int32_t m_iBlueScore{};
 	int32_t m_iRedScore{};
+	_bool m_bScoreUiSubmitted{};
 };
 
 NS_END

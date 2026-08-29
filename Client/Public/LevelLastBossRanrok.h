@@ -33,6 +33,7 @@ private:
 	HRESULT SpawnPlayerCape(CHandle hPlayer);
 
 	HRESULT SpawnStaticCollision();
+	HRESULT SpawnPropBarrels();
 	HRESULT SpawnLightPlacement();
 
 	HRESULT SpawnSkyBox();

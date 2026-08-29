@@ -7,7 +7,17 @@
 #include "ComModelInstance.h"
 #include "ResModelBone.h"
 #include "Trail_CPU.h"
+#include "UIManager.h"
 NS_USING(Client)
+
+namespace
+{
+	constexpr const _char* WAND2_MODEL_PATH =
+		"./Resources/SampleClient/Models/Skeleton/Wand2/SK_Wand2.bin";
+	constexpr const _char* WAND2_RESOURCE_TAG =
+		"PLAYER_WEAPON_SKELETON_RESOURCE_WAND2";
+	constexpr _float WAND_SMOKE_SPAWN_INTERVAL = 0.2f;
+}
 
 CPlayer_Weapon::CPlayer_Weapon()
 	: CGameObject{}
@@ -89,41 +99,119 @@ HRESULT CPlayer_Weapon::Initialize(void* pArg)
 		};
 	}
 
-	{
-		const auto& bones = m_pComModelInstance->GetModel()->GetBones();
-		auto& combinedBones = m_pComModelInstance->Get_CombinedBoneMatrices();
-		combinedBones.resize(bones.size());
-		for (size_t i = 0; i < bones.size(); ++i)
-		{
-			if (!bones[i]) return E_FAIL;
-			bones[i]->Update_CombinedTransformationMatrix(bones, XMMatrixIdentity());
-			combinedBones[i] = *bones[i]->Get_CombinedTransformationMatrixPtr();
-		}
-		m_iMuzzleSocketBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("MuzzleSocket");
-		if (m_iMuzzleSocketBoneIndex < 0) return E_FAIL;
-	}
+	if (FAILED(RefreshModelBones()))
+		return E_FAIL;
 
 	XMStoreFloat4x4(&m_ParentMatrix, XMMatrixIdentity());
 	GetTransform().SetScale(_float3{ 4.f,4.f,4.f });
 	GetTransform().SetRotationEuler({ -90.f, 0.f, 0.f });
+
+	// 레벨 이동으로 플레이어 무기가 다시 생성되어도 구매한 완드를 복원한다.
+	// 같은 클래스를 사용하는 NPC 무기는 descriptor 플래그가 false라 영향을 받지 않는다.
+	if (pDesc->bRestorePurchasedPlayerWand &&
+		GET_SINGLE(UIManager)->IsPurchasedWandEquipped())
+	{
+		if (FAILED(EquipWand2()))
+			return E_FAIL;
+	}
 
 	//test = CGameInstance::Get().Parse_Command("FireSparkQueue.json");
 
 	return S_OK;
 }
 
+HRESULT CPlayer_Weapon::EquipWand2()
+{
+	return EquipWandModel(WAND2_MODEL_PATH, WAND2_RESOURCE_TAG);
+}
+
+HRESULT CPlayer_Weapon::EquipWandModel(
+	const _string& strModelPath,
+	const _string& strResourceTag)
+{
+	if (!m_pComModelInstance || strModelPath.empty() || strResourceTag.empty())
+		return E_INVALIDARG;
+
+	const E::StringID groupTag = m_pComModelInstance->Get_GroupTag();
+	const E::StringID resourceTag{ strResourceTag };
+
+	auto model =
+		CGameInstance::Get().GetResourceFirst<CResModel>(groupTag, resourceTag);
+	if (!model)
+	{
+		model = CGameInstance::Get().AddResourceT<CResModel>(
+			groupTag,
+			resourceTag,
+			CResModel::Create(strModelPath));
+		if (!model)
+			return E_FAIL;
+	}
+
+	// A failed first load leaves the resource registered under its tag. Always
+	// call Load so restoring a missing file can recover on the next attempt.
+	CResModel::DESC modelDesc{};
+	modelDesc.PreTransformMatrix =
+		XMMatrixRotationX(XMConvertToRadians(-90.f));
+	if (FAILED(model->Load(modelDesc)))
+		return E_FAIL;
+
+	const E::StringID previousGroupTag = m_pComModelInstance->Get_GroupTag();
+	const E::StringID previousResourceTag = m_pComModelInstance->Get_ResTag();
+
+	if (FAILED(m_pComModelInstance->ChangeModel(groupTag, resourceTag)))
+		return E_FAIL;
+
+	if (FAILED(RefreshModelBones()))
+	{
+		m_pComModelInstance->ChangeModel(previousGroupTag, previousResourceTag);
+		RefreshModelBones();
+		return E_FAIL;
+	}
+
+	m_bWand2Equipped = strResourceTag == WAND2_RESOURCE_TAG;
+	m_fWandSmokeSpawnTime = WAND_SMOKE_SPAWN_INTERVAL;
+
+	return S_OK;
+}
+
+HRESULT CPlayer_Weapon::RefreshModelBones()
+{
+	if (!m_pComModelInstance || !m_pComModelInstance->GetModel())
+		return E_FAIL;
+
+	const auto& bones = m_pComModelInstance->GetModel()->GetBones();
+	auto& combinedBones = m_pComModelInstance->Get_CombinedBoneMatrices();
+	combinedBones.clear();
+	combinedBones.resize(bones.size());
+
+	for (size_t i = 0; i < bones.size(); ++i)
+	{
+		if (!bones[i])
+			return E_FAIL;
+
+		bones[i]->Update_CombinedTransformationMatrix(
+			bones, XMMatrixIdentity());
+		combinedBones[i] =
+			*bones[i]->Get_CombinedTransformationMatrixPtr();
+	}
+
+	m_iMuzzleSocketBoneIndex =
+		m_pComModelInstance->GetModel()->Get_BoneIndex("MuzzleSocket");
+	return m_iMuzzleSocketBoneIndex >= 0 ? S_OK : E_FAIL;
+}
 void CPlayer_Weapon::PriorityUpdate(E::_float fTimeDelta)
 {
 }
 
 void CPlayer_Weapon::Update(E::_float fTimeDelta)
 {
-
-
+	if (CGameInstance::Get().KeyDown(DIK_I))
+		EquipWand2();
 }
 
 void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)
 {
+	_bool bHandWorldUpdated = false;
 	if (auto iter = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
 	{
 		if (!m_bThrow)
@@ -140,6 +228,7 @@ void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)
 						Par.r[i] = XMVector3Normalize(Par.r[i]);
 					}
 					XMStoreFloat4x4(&m_ParentMatrix, Par * XMLoadFloat4x4(pModel->GetGameObject()->GetTransform().GetWorldMatrix()));
+					bHandWorldUpdated = true;
 				}
 			}
 		}
@@ -148,6 +237,16 @@ void CPlayer_Weapon::LateUpdate(E::_float fTimeDelta)
 
 	GetTransform().SetParentWorldMatrix(m_ParentMatrix);
 	GetTransform().Update();
+	if (m_bWand2Equipped && bHandWorldUpdated)
+	{
+		m_fWandSmokeSpawnTime += std::max(0.f, fTimeDelta);
+		if (m_fWandSmokeSpawnTime >= WAND_SMOKE_SPAWN_INTERVAL)
+		{
+			m_fWandSmokeSpawnTime = 0.f;
+			CGameInstance::Get().Spawn(
+				"WandSmokeLoop.json", m_ParentMatrix);
+		}
+	}
 	CGameInstance::Get().AddRenderObject(RENDERGROUP::NONBLEND, this);
 
 	/*----------- 광윤 추가 -----------*/

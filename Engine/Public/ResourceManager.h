@@ -96,15 +96,7 @@ inline Engine::SPtr<T> Engine::CResourceManager::GetResourceFirst(const StringID
 	auto base = GetResourceFirst(sGroupTag, sResTag);
 	if (!base) return nullptr;
 
-	if (!base->IsA(T::StaticType))
-	{
-		return nullptr;
-	}
-
-	//if (base->GetType() != T::StaticType)
-	//	return nullptr;
-
-	return std::static_pointer_cast<T>(base);
+	return Engine::Cast<T>(base);
 }
 
 template<typename T>
@@ -155,8 +147,8 @@ inline Engine::SPtr<T> Engine::CResourceManager::GetOrCreateResourceByPath(const
 	for (const auto& weakResource : cachedResources)
 	{
 		auto resource = weakResource.lock();
-		if (resource && resource->IsA(T::StaticType))
-			return std::static_pointer_cast<T>(resource);
+		if (auto typedResource = Engine::Cast<T>(resource))
+			return typedResource;
 	}
 
 	auto resource = std::forward<CreateFunc>(createFunc)();

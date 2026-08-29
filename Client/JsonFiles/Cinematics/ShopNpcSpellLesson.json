@@ -1,0 +1,33 @@
+{
+  "Cinematic": {
+    "CameraTrack": {
+      "Shots": [
+        {
+          "BindingMode": 0,
+          "CoordinateSpace": 1,
+          "Keyframes": [
+            {
+              "FovY": 50.0,
+              "Position": [0.0, 1.6, 2.8],
+              "PositionInterpolation": 0,
+              "Rotation": [0.0, 1.0, 0.0, 0.0],
+              "Time": 0.0
+            },
+            {
+              "FovY": 50.0,
+              "Position": [0.0, 1.6, 2.8],
+              "PositionInterpolation": 0,
+              "Rotation": [0.0, 1.0, 0.0, 0.0],
+              "Time": 600.0
+            }
+          ],
+          "ShotID": "ShopNpcSpellLesson_PlayerFront",
+          "StartTime": 0.0
+        }
+      ],
+      "TrackID": "ShopNpcSpellLessonTrack"
+    },
+    "CinematicID": "ShopNpcSpellLesson",
+    "Version": 1
+  }
+}

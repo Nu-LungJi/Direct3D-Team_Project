@@ -20,7 +20,7 @@
 #include "PhysXManager.h"
 #include "NvClothManager.h"
 #include "TimeManager.h"
-
+#include "WayPointManager.h"
 NS_BEGIN(physx)
 class PxScene;
 class PxPhysics;
@@ -60,8 +60,6 @@ class CComPxD6Joint;
 class CPathPlaybackEditor;
 class CResModelAnim;
 class CNpcPlacementManager;
-class CAnimatedObjectPlacementManager;
-
 class ENGINE_DLL CGameInstance final : public Singleton<CGameInstance>
 {
 	friend Singleton<CGameInstance>;
@@ -237,7 +235,6 @@ public:
 #pragma region NPC_PLACEMENT_MANAGER
 public:
 	CNpcPlacementManager* GetNpcPlacementManager() const { return m_pNpcPlacementManager.get(); }
-	CAnimatedObjectPlacementManager* GetAnimatedObjectPlacementManager() const { return m_pAnimatedObjectPlacementManager.get(); }
 #pragma endregion
 
 #pragma region GAMEOBJECT_MANAGER
@@ -327,7 +324,7 @@ public:
 	HRESULT LoadCinematic(const std::string& CinematicName);
 	HRESULT PlayCinematic(const StringID& CinematicID, const FCinematicPlayOptions& Options = {});
 	HRESULT PlayCinematic(const StringID& CinematicID, const CHandle& TargetHandle, const FCinematicPlayOptions& Options = {});
-	void StopCinematic();
+	void StopCinematic(_float fReturnBlendDuration = 0.f);
 	_bool IsCinematicPlaying() const;
 	_float GetCinematicPlayTime() const;
 	void SetCinematicCollisionQueryMask(uint32_t iQueryMask);
@@ -518,6 +515,7 @@ public:
 
 	/*----------- 광윤 추가 -----------*/
 	MATERIAL_DESC FindMaterial(const std::string& modelName);
+	void SetMaterialOverride(const std::string& modelTag, const MATERIAL_DESC& material) { m_pMapManager->SetMaterialOverride(modelTag, material); }
 	/*---------------------------------*/
 #ifdef _DEBUG
 	void SetDebugDrawMapChunk(_bool draw);
@@ -710,7 +708,9 @@ public:
 #pragma region LUA_MANAGER
 	CLuaManager* GetLuaManager() const { return m_pLuaManager.get(); }
 #pragma endregion
-
+#pragma region WAY_MANAGER
+	CWayPointManager* GetWayManager() const { return m_pWayManager.get(); }
+#pragma endregion
 public:
 	_float2 GetClientScreenSize() const { return m_vClientScreenSize; }
 	_float2 GetDisplayScreenSize() const { return m_vDisplayScreenSize; }
@@ -774,7 +774,7 @@ private:
 	UPtr<CEffectManager> m_pEffectManager{};
 	UPtr<CPathPlaybackEditor> m_pPathPlaybackEditor{};
 	UPtr<CNpcPlacementManager> m_pNpcPlacementManager{};
-	UPtr<CAnimatedObjectPlacementManager> m_pAnimatedObjectPlacementManager{};
+	UPtr<CWayPointManager> m_pWayManager{};
 };
 
 template<typename TLayer>

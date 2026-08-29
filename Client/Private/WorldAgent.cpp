@@ -68,7 +68,6 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 {
 	auto WorldAgentDesc = static_cast<WORLD_AGENT_DESC*>(pArg);
 	m_TargetHandle = WorldAgentDesc->TargetHandle;
-	m_bFreezeAnimation = WorldAgentDesc->bFreezeAnimation;
 	m_iHp = 1;
 
 	if (FAILED(CGameObject::Initialize(pArg)))
@@ -209,6 +208,7 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 
 			if (FAILED(AddComponentFromProto("PERMANENT", "Prototype_Component_ModelInstance", "ComCModelIntance", &Desc, &m_pComModelInstance)))
 			{
+				MessageBoxA(g_hWnd, WorldAgentDesc->ReSourceTag.c_str(), "hm", MB_OK);
 				return E_FAIL;
 			};
 		}
@@ -234,7 +234,7 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 		m_pModelAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 		m_pModelAnimator->Build_BoneMatrices_CPU(0.f);
 		m_pModelAnimator->Play_Anim(0, true,Randf(0.1f,1.f));
-
+		m_vPos = WorldAgentDesc->vPos;
 		GetTransform().SetPosition(XMLoadFloat3(&WorldAgentDesc->vPos));
 		if(nullptr != m_pCharacterController)
 			GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
@@ -242,6 +242,7 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 
 		auto* pBB = Get_BlackBoard();
 		pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
+		
 		if (!WorldAgentDesc->AnimName.empty())
 		{
 			pBB->Set_Value<_string>(PUBLIC_KEY::ANIMNAME, WorldAgentDesc->AnimName);
@@ -290,9 +291,6 @@ void CWorldAgent::Update(E::_float fTimeDelta)
 
 void CWorldAgent::Update_Animation(_float fTimeDelta)
 {
-	if (m_bFreezeAnimation)
-		return;
-
 	if (m_pComModelInstance->GetModel()->GetAnimations().empty())
 		return;
 
@@ -321,6 +319,7 @@ void CWorldAgent::LateUpdate(E::_float fTimeDelta)
 		const _float3 vControllerPosition = m_pCharacterController->GetPosition();
 		GetTransform().SetPosition(m_pCharacterController->GetFootPosition());
 	}
+
 	GetTransform().Update();
 
 	const auto& pModel = m_pComModelInstance->GetModel();
@@ -422,6 +421,11 @@ HRESULT CWorldAgent::Render_Instanced(ID3D11DeviceContext* pContext, const E::RE
 		skinningConstants.iSkinBoneOffset = skinRange.iSkinBoneOffset;
 		skinningConstants.iVertexCount = mesh->GetNumVertices();
 		skinningConstants.iSkinBoneCount = skinRange.iSkinBoneCount;
+
+		const auto morphDeltaBuffer = mesh->GetMorphDeltaBuffer();
+		const auto morphTargetRangeBuffer = mesh->GetMorphTargetRangeBuffer();
+		if (morphDeltaBuffer && morphTargetRangeBuffer)
+			skinningConstants.iMorphTargetCount = mesh->GetMorphTargetCount();
 		D3D11_MAPPED_SUBRESOURCE mapped{};
 		if (FAILED(pContext->Map(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
 			return E_FAIL;
@@ -429,6 +433,13 @@ HRESULT CWorldAgent::Render_Instanced(ID3D11DeviceContext* pContext, const E::RE
 		pContext->Unmap(m_pResSkinMeshCBuffer->GetCBuffer().Get(), 0);
 		ID3D11Buffer* skinningCB = m_pResSkinMeshCBuffer->GetCBuffer().Get();
 		pContext->VSSetConstantBuffers(5, 1, &skinningCB);
+
+		ID3D11ShaderResourceView* morphSRVs[2] =
+		{
+			morphDeltaBuffer ? morphDeltaBuffer->GetSRV().Get() : nullptr,
+			morphTargetRangeBuffer ? morphTargetRangeBuffer->GetSRV().Get() : nullptr
+		};
+		pContext->VSSetShaderResources(9, 2, morphSRVs);
 		ID3D11Buffer* vertexBuffer = mesh->GetVertexBuffer().Get();
 		const UINT stride = mesh->GetVertexStride();
 		const UINT offset = 0;
@@ -436,12 +447,24 @@ HRESULT CWorldAgent::Render_Instanced(ID3D11DeviceContext* pContext, const E::RE
 		pContext->IASetIndexBuffer(mesh->GetIndexBuffer().Get(), mesh->GetIndexFormat(), 0);
 		pContext->IASetPrimitiveTopology(mesh->GetPrimitiveType());
 		m_pComModelInstance->Bind_Textures(pContext, iMeshIndex);
-		m_pComModelInstance->Bind_Materials(pContext,_float3{1,1,1}, 0, {1.f, 1.f, 1.f}, m_fDissolve, 1.f);
+		// 올리밴더의 5번 머리카락 카드만 알파 컷을 낮춰 가닥 밀도를 높인다.
+		// 다른 캐릭터와 속눈썹 머티리얼은 기존 0.35 기준을 유지한다.
+		const _bool bGerbold =
+			Batch.Key.modelTag == StringID{ "Model_Resource_NPC_GerboldOllivander" };
+		const _bool bGerboldHair = bGerbold && materialIndex == 5u;
+		const _bool bGerboldOpaqueBody =
+			bGerbold && materialIndex >= 6u && materialIndex <= 8u;
+		const _float fAlphaClipThreshold =
+			bGerboldOpaqueBody ? 0.f : (bGerboldHair ? 0.12f : 0.35f);
+		m_pComModelInstance->Bind_Materials(
+			pContext, _float3{ 1,1,1 }, 0, { 1.f, 1.f, 1.f },
+			m_fDissolve, 1.f, 1.f, 1.f, 1.f, 1.f, fAlphaClipThreshold);
 		pContext->DrawIndexedInstanced(mesh->GetNumIndices(), iInstanceCount, 0, 0, 0);
 	}
 
-	ID3D11ShaderResourceView* nullVSSRVs[3]{};
-	pContext->VSSetShaderResources(6, 3, nullVSSRVs);
+	// 인스턴스/본/모프 SRV(t6~t10)가 다음 렌더 패스의 리소스와 충돌하지 않게 해제한다.
+	ID3D11ShaderResourceView* nullVSSRVs[5]{};
+	pContext->VSSetShaderResources(6, 5, nullVSSRVs);
 
 	return S_OK;
 
@@ -670,48 +693,53 @@ int32_t CWorldAgent::Find_AnimIndex(const _string& AnimName)
 }
 void CWorldAgent::Damaged(PLAYER_SKILL_TYPE eType)
 {
+	int32_t baseDamage = 0;
 	switch (eType)
 	{
 	case PLAYER_SKILL_TYPE::ATTACK:
-		GET_SINGLE(UIManager)->CreateDamageFont(5, GetHandle(), false);
-		m_iHp -= 5.f;
+		baseDamage = 5;
 		break;
 	case PLAYER_SKILL_TYPE::ACCIO:
-		GET_SINGLE(UIManager)->CreateDamageFont(10, GetHandle(), true);
-		m_iHp -= 10.f;
+		baseDamage = 10;
 		break;
 	case PLAYER_SKILL_TYPE::DEPULSO:
-		GET_SINGLE(UIManager)->CreateDamageFont(15, GetHandle(), true);
-		m_iHp -= 15.f;
+		baseDamage = 15;
 		break;
 	case PLAYER_SKILL_TYPE::DESCENDO:
-		GET_SINGLE(UIManager)->CreateDamageFont(20, GetHandle(), true);
-		m_iHp -= 20.f;
+		baseDamage = 20;
 		break;
 	case PLAYER_SKILL_TYPE::ANCIENT_LIGHTNING:
-		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
-		m_iHp -= 25.f;
+		baseDamage = 25;
 		break;
 	case PLAYER_SKILL_TYPE::PROTEGO:
-		m_iHp -= 8.f;
+		baseDamage = 8;
 		break;
 	case PLAYER_SKILL_TYPE::DESTORY:
-		m_iHp -= 25.f;
+		baseDamage = 25;
 		break;
 	case PLAYER_SKILL_TYPE::ABRA:
-		m_iHp -= 50.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(25, GetHandle(), true);
+		baseDamage = 50;
 		break;
 	case PLAYER_SKILL_TYPE::CONFRIGO:
-		m_iHp -= 18.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(18, GetHandle(), true);
+		baseDamage = 18;
 		break;
 	case PLAYER_SKILL_TYPE::BOMBARDA:
-		m_iHp -= 18.f;
-		GET_SINGLE(UIManager)->CreateDamageFont(28, GetHandle(), true);
+		baseDamage = 18;
 		break;
-
+	default:
+		break;
 	}
+
+	if (baseDamage <= 0)
+		return;
+
+	const _bool isCritical = RandInt(0, 1) == 1;
+	const int32_t finalDamage = isCritical ?
+		static_cast<int32_t>(std::lround(baseDamage * 1.5f)) :
+		baseDamage;
+	GET_SINGLE(UIManager)->CreateDamageFont(
+		static_cast<uint32_t>(finalDamage), GetHandle(), isCritical);
+	m_iHp -= finalDamage;
 }
 
 

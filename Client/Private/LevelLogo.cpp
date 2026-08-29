@@ -16,6 +16,7 @@
 #include "UIManager.h"
 #include "UIController.h"
 #include "VideoObject.h"
+#include "TextureUI.h"
 
 NS_USING(Client)
 
@@ -96,7 +97,7 @@ HRESULT CLevelLogo::Initialize()
 						E::CUICamera* volatile sink = nullptr;
 						for (size_t i = 0; i < 10'000'000; ++i)
 						{
-							sink = dynamic_cast<E::CUICamera*>(val);
+							sink = Engine::Cast<E::CUICamera>(val);
 						}
 					}
 					auto end = std::chrono::high_resolution_clock::now();
@@ -151,7 +152,18 @@ void CLevelLogo::Update(E::_float fTimeDelta)
 
 		m_Logo = GET_SINGLE(UIManager)->LoadPrefab("Logo").front();
 		SafeGetOBJ(m_Logo)->SetAlpha(0.f);
-		PlayFadeInSacleUp(m_Logo, 9.f, 5.f);
+		if (auto* logo = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CTextureUI>(m_Logo))
+		{
+			logo->SetLogoSparkle(9.f, 3.f);
+			const CHandle logoHandle = m_Logo;
+			logo->Appear = [this, logoHandle](CUIObject*)
+			{
+				if (auto* currentLogo = GetSafeUI(logoHandle))
+					currentLogo->SetAlpha(0.f);
+				PlayFadeInSacleUp(logoHandle, 9.f, 5.f);
+			};
+		}
 
 		m_VideoQue = true;
 

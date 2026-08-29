@@ -25,6 +25,7 @@ public:
 		CHandle ParentHandle{};
 		int32_t iBoneIndex{ -1 };
 		int32_t iSpawnBoneIndex{ -1 };
+		_bool bRestorePurchasedPlayerWand{ false };
 	}WEAPON_DESC;
 
 private:
@@ -36,6 +37,8 @@ public:
 public:
 	HRESULT InitializePrototype(void* pArg = nullptr) override;
 	HRESULT Initialize(void* pArg) override;
+	HRESULT EquipWand2();
+	HRESULT EquipWandModel(const _string& strModelPath, const _string& strResourceTag);
 	void PriorityUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
 	void LateUpdate(E::_float fTimeDelta) override;
@@ -49,6 +52,7 @@ public:
 private:
 	void					Weapon_Throw(_float fTimeDelta);
 	CComModelInstance*		GetParentModelInstance() const;
+	HRESULT					RefreshModelBones();
 private:
 	CComModelInstance* m_pComModelInstance{};
 	// nonAnim
@@ -65,6 +69,8 @@ private:
 	int32_t				m_iMuzzleSocketBoneIndex{ -1 };
 	_float				m_fAngle{ 0 };
 	_bool				m_bThrow{ false };
+	_bool				m_bWand2Equipped{ false };
+	_float				m_fWandSmokeSpawnTime{ 0.f };
 
 public:
 	_float4x4 GetSpawnWorldMatrix() const;
