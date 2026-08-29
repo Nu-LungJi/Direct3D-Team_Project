@@ -253,7 +253,7 @@ private:
 	std::optional<CHandle> m_hRaceBoardCoinText{};
 	std::optional<CHandle> m_hRaceResultCoinText{};
 	_float m_fRaceMiniGameElapsed{};
-	uint32_t m_iRaceMiniGameCoinCount{40};
+	uint32_t m_iRaceMiniGameCoinCount{32};
 	_bool m_bRaceReturnPositionApplied{};
 	_bool m_bRaceResultFadeOutStarted{};
 	_float m_fRaceReturnElapsed{};
@@ -347,6 +347,7 @@ private:
 	_bool ResolveAssioCurrentTurn();
 	void UpdateWandShopWorldBillboard();
 	void UpdateWandShopWorldMousePosition();
+	void SetWandShopCursorVisible(_bool bVisible);
 	// 피킹용
 	_bool PtInRect(const UI_INFO& selectInfo, _float scaleRatio);
 public:

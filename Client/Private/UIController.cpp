@@ -31,6 +31,22 @@ namespace
 		SPELL_TYPE::WINGARDIUM, SPELL_TYPE::AVADAKEDAVRA,
 		SPELL_TYPE::CRUCIO, SPELL_TYPE::IMPERIO
 	};
+
+	void SetPlayerGameplayInputLocked(const _bool bLocked)
+	{
+		auto& gameInstance = E::CGameInstance::Get();
+		for (const auto& [layerTag, handles] : gameInstance.GetGameObjectLayers())
+		{
+			for (const CHandle handle : handles)
+			{
+				if (auto* pPlayer =
+					gameInstance.GetGameObjectByHandleT<CPlayer>(handle))
+				{
+					pPlayer->SetGameplayInputLocked(bLocked);
+				}
+			}
+		}
+	}
 }
 
 CUIController::CUIController()
@@ -39,6 +55,25 @@ CUIController::CUIController()
 
 CUIController::~CUIController()
 {
+}
+
+void CUIController::RefreshPlayerGameplayInputLock()
+{
+	const _bool bSpellMiniGameActive =
+		m_hSpellMiniGame && E::CGameInstance::Get().
+		GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame);
+	SetPlayerGameplayInputLocked(
+		ActiveShortCutSlot || bSpellMiniGameActive);
+}
+
+void CUIController::SetWandShopCursorVisible(const _bool bVisible)
+{
+	E::CGameInstance::Get().SetMouseFix(!bVisible);
+	if (!m_Cursor)
+		return;
+
+	if (auto* pCursor = SafeGetOBJ(*m_Cursor))
+		pCursor->SetAlpha(bVisible ? 1.f : 0.f);
 }
 
 HRESULT CUIController::InitializePrototype(void* pArg)
@@ -133,6 +168,7 @@ void CUIController::Update(E::_float fTimeDelta)
 		GetGameObjectByHandleT<CSpellMiniGame>(*m_hSpellMiniGame))
 	{
 		m_hSpellMiniGame = std::nullopt;
+		RefreshPlayerGameplayInputLock();
 		FadeOutSpellMiniGameBackground();
 		FadeInPotionCountAfterSpellMiniGame();
 		FadeInQuestAfterSpellMiniGame();
@@ -291,6 +327,7 @@ _bool CUIController::StartSpellMiniGame(_bool secondGame)
 		return false;
 
 	m_hSpellMiniGame = *handle;
+	RefreshPlayerGameplayInputLock();
 	E::CGameInstance::Get().GetSoundManager()->Play2D(
 		"./Resources/SampleClient/Sound/UI/Book.wav",
 		SOUND_PLAY_DESC{
@@ -350,6 +387,7 @@ void CUIController::StopSpellMiniGame()
 	}
 
 	m_hSpellMiniGame = std::nullopt;
+	RefreshPlayerGameplayInputLock();
 	FadeOutSpellMiniGameBackground();
 	FadeInPotionCountAfterSpellMiniGame();
 	FadeInQuestAfterSpellMiniGame();
@@ -1160,6 +1198,8 @@ void CUIController::UpdateRookwoodPortalProgression()
 
 void CUIController::CreateSpellType()
 {
+	ActiveShortCutSlot = true;
+	RefreshPlayerGameplayInputLock();
 	GET_SINGLE(UIManager)->FadeOutQuest(0.3f);
 	/********스펠슬롯**********/
 	m_SpellBTNs = GET_SINGLE(UIManager)->LoadPrefab("OnlySpellBTN");
@@ -1257,6 +1297,8 @@ void CUIController::CreateSpellType()
 
 void CUIController::DeleteSpellType()
 {
+	ActiveShortCutSlot = false;
+	RefreshPlayerGameplayInputLock();
 	for (auto hBtn : m_SpellBTNs)
 	{
 		PlayScaleAlphaDownDelete(hBtn);
@@ -1976,6 +2018,7 @@ void CUIController::PlayAlphaUP(CHandle pHandle, float delaytime, float playTime
 
 void CUIController::Free()
 {
+	SetPlayerGameplayInputLocked(false);
 	if (m_hSpellMiniGame)
 	{
 		if (auto* miniGame = E::CGameInstance::Get().

@@ -34,6 +34,7 @@ CInteractiveNpc::~CInteractiveNpc()
 		GET_SINGLE(UIManager)->ClearChoiceUI(false);
 	SyncInteractionPrompt(false);
 	EndMiniGameWorldPause();
+	SetPlayerMovementLocked(false);
 }
 
 HRESULT CInteractiveNpc::InitializePrototype(void* pArg)
@@ -944,7 +945,9 @@ void CInteractiveNpc::EndDialogueCamera(_float fReturnBlendDuration)
 void CInteractiveNpc::SetPlayerMovementLocked(_bool locked)
 {
 	if (auto* pPlayer = E::CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(m_hInteractionPlayer))
+	{
 		pPlayer->SetMovementLocked(locked);
+	}
 }
 
 

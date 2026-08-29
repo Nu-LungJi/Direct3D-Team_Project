@@ -862,6 +862,28 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		return;
 	}
 
+	// 대화형 스펠 미니게임은 UI가 동일한 키와 마우스 입력을 사용한다.
+	// Fly/Attack 상태도 자체 Update 안에서 직접 입력을 읽으므로 상태 머신을
+	// 포함한 플레이어 입력 갱신 전체를 차단해야 한다.
+	if (m_bGameplayInputLocked)
+	{
+		m_bRawMoveInput = false;
+		m_bSprintRequested = false;
+		m_bWalkRequested = false;
+		m_vRawMoveDirection = {};
+		m_fCurrentMoveSpeed = 0.f;
+		m_fControlHoldTime = 0.f;
+		m_bDashTriggered = false;
+		m_iBufferedSkillSlot = 0u;
+		m_fBufferedSkillInputRemainTime = 0.f;
+		m_fAncientMagicInputRemainTime = 0.f;
+		m_hPendingObjectAccioTarget = CHandle{};
+
+		if (m_pComMoveIntent)
+			m_pComMoveIntent->ClearMoveIntent();
+		return;
+	}
+
 	// 비행 상태는 아래에서 일반 입력 처리를 조기 종료하므로,
 	// 탑승/하차 토글은 상태 머신 갱신보다 먼저 처리해야 한다.
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_O))
@@ -1005,7 +1027,7 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		}
 	}
 
-	if (m_bMovementLocked)
+	if (m_bMovementLocked || m_bGameplayInputLocked)
 	{
 		m_fCurrentMoveSpeed = 0.f;
 		m_pComMoveIntent->ClearMoveIntent();
@@ -1894,7 +1916,7 @@ void CPlayer::FixedUpdate(_float fTimeDelta)
 			return;
 	}
 
-	if (m_bMovementLocked)
+	if (m_bMovementLocked || m_bGameplayInputLocked)
 	{
 		m_pComMoveIntent->ClearMoveIntent();
 
@@ -2375,7 +2397,8 @@ void CPlayer::Update(E::_float fTimeDelta)
 		m_pComModelInstance->GetModel()->GetAnimations().size() != 0) {
 
 		m_pModelAnimator->Update(fTimeDelta);
-		bApplyRootMotionTranslation = m_bRootMotionTranslationActive;
+		bApplyRootMotionTranslation =
+			m_bRootMotionTranslationActive && !m_bGameplayInputLocked;
 		const _float3 vRootMotionDelta =
 			m_pModelAnimator->GetRootMotionDelta();
 
@@ -2389,7 +2412,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 			&vRootMotionWorldDisplacement,
 			vWorldDelta);
 
-		if (m_bRootMotionRotationActive)
+		if (m_bRootMotionRotationActive && !m_bGameplayInputLocked)
 		{
 			const _float4 vRootMotionRotationDelta =
 				m_pModelAnimator->GetRootMotionRotationDelta();
@@ -2410,6 +2433,7 @@ void CPlayer::Update(E::_float fTimeDelta)
 	// 재생 비율과 종료 상태로 Turn 회전을 맞출 수 있다.
 	if (!CGameInstance::Get().IsAnimationEditorTarget(GetHandle()) &&
 		m_pStateMachine &&
+		!m_bGameplayInputLocked &&
 		!IsRagdollTransitioning())
 		m_pStateMachine->Update(fTimeDelta);
 
@@ -2584,6 +2608,7 @@ void CPlayer::LateUpdate(E::_float fTimeDelta)
 {
 	if (!CGameInstance::Get().IsAnimationEditorTarget(GetHandle()) &&
 		m_pStateMachine &&
+		!m_bGameplayInputLocked &&
 		!IsRagdollTransitioning())
 		m_pStateMachine->LateUpdate(fTimeDelta);
 

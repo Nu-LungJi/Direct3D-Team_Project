@@ -73,7 +73,7 @@ HRESULT CSpider::Initialize(void* pArg)
 	{
 		return E_FAIL;
 	}
-	m_iHp = m_iMaxHp = 35;
+	m_iHp = m_iMaxHp = 30;
 	m_fDissolve = 0.f;
 	
 	if (FAILED(Ready_Fsm(MonDesc->LevelTag)))

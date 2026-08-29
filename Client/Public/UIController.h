@@ -42,6 +42,7 @@ public:
 	void CreateDeathScene(); // 죽는 화면
 	_bool StartSpellMiniGame(_bool secondGame = false); // 스펠 미니게임 시작
 	void StopSpellMiniGame();
+	void SetWandShopCursorVisible(_bool bVisible);
 
 	// ******** HP
 	void SetHPMax(_float maxHP);  // 최대 hp
@@ -156,6 +157,7 @@ private:
 	//*********내부함수*************//
 private:
 	CUIObject* SafeGetOBJ(CHandle pHandle);
+	void RefreshPlayerGameplayInputLock();
 	void ApplySpellLockStates();
 	void RefreshSpellLockVisual(size_t spellButtonIndex);
 

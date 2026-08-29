@@ -4574,12 +4574,29 @@ void UIManager::OpenWandShopPage(uint32_t pageIndex)
 	m_WandShop.OpenPage(*this, pageIndex);
 }
 
+void UIManager::SetWandShopCursorVisible(const _bool bVisible)
+{
+	E::CGameInstance::Get().SetMouseFix(!bVisible);
+	if (!m_UIController)
+		return;
+
+	if (auto* pController = E::CGameInstance::Get().
+		GetGameObjectByHandleT<CUIController>(*m_UIController))
+	{
+		pController->SetWandShopCursorVisible(bVisible);
+	}
+}
+
 void UIManager::OpenWandShop()
 {
 	// The first full load owns the common frame and navigation controls.
 	// Page changes afterwards are handled by CWandShop without recreating them.
 	if (m_WandShop.IsOpen())
+	{
+		SetWandShopCursorVisible(true);
 		return;
+	}
+	SetWandShopCursorVisible(true);
 	m_bWandShopWorldMode = false;
 	m_fWandShopPanelAppearElapsed = 0.f;
 	m_fWandShopPanelAppearScale = 1.f;
@@ -4607,7 +4624,10 @@ void UIManager::OpenWandShopWorld(
 		// This also guards against an input implementation reporting F4 for
 		// more than one frame while the key is held.
 		if (m_bWandShopWorldMode)
+		{
+			SetWandShopCursorVisible(true);
 			return;
+		}
 		m_WandShop.Close(*this);
 	}
 
@@ -4669,6 +4689,7 @@ void UIManager::OpenWandShopWorld(
 	m_fWandShopPanelAppearElapsed = 0.f;
 	m_fWandShopPanelAppearScale = 0.f;
 	m_WandShopPanelWorld = storedPanelWorld;
+	SetWandShopCursorVisible(true);
 	// Replace the initial NPC-relative rotation immediately with an upright
 	// billboard facing whichever camera is currently active.
 	UpdateWandShopWorldBillboard();

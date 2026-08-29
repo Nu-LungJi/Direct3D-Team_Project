@@ -170,6 +170,7 @@ public:
 
 	void SetCurrentSkill(PLAYER_SKILL_TYPE eSkillType) { m_eSkillType = eSkillType; }
 	void SetMovementLocked(_bool bLocked) { m_bMovementLocked = bLocked; }
+	void SetGameplayInputLocked(_bool bLocked) { m_bGameplayInputLocked = bLocked; }
 	void SetDialoguePose(const _float3& vPosition, const _float3& vLookAt);
 	// 지정한 지면 높이에 CCT 발바닥이 닿도록 원점 높이를 보정한 뒤 대화 포즈를 적용한다.
 	void SetDialoguePoseOnGround(
@@ -291,6 +292,7 @@ private:
 	CComFootIK* m_pComFootIK{};
 	CPlayer_StateMachine* m_pStateMachine{};
 	_bool m_bMovementLocked{};
+	_bool m_bGameplayInputLocked{};
 	_bool m_bRootMotionRotationActive{};
 	_bool m_bRootMotionTranslationActive{};
 	_float m_fRootMotionTranslationScale{ 1.f };
