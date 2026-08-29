@@ -178,6 +178,11 @@ void CInteractiveNpc::BeginDialogue()
 		return;
 
 	m_bTalking = true;
+	if (GetObjectTag() == "Hogsmeade_MiniGameNpc_Professor")
+	{
+		GET_SINGLE(UIManager)->SetMiniMapObjectiveActive(
+			"Hogwart_MiniGameNpcQuest", false);
+	}
 	if (m_DebugStartDialogueIndex.has_value())
 	{
 		m_iDialogueIndex = *m_DebugStartDialogueIndex;

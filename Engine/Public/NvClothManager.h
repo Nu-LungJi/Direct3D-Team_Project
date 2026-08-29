@@ -51,6 +51,13 @@ public:
 	_bool SetClothWind(
 		NVCLOTH_CLOTH_HANDLE Handle,
 		const NVCLOTH_WIND_DESC& Desc);
+	// [LSY] Cloth를 재생성하지 않고 이동 상태별 안정성 프로필을 적용한다.
+	_bool SetClothLinearInertia(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		const _float3& vLinearInertia);
+	_bool SetClothSolverFrequency(
+		NVCLOTH_CLOTH_HANDLE Handle,
+		_float fSolverFrequency);
 	_bool SetClothSelfCollision(
 		NVCLOTH_CLOTH_HANDLE Handle,
 		_float fDistance,

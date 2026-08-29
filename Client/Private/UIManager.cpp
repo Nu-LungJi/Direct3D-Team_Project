@@ -18,11 +18,33 @@
 #include "VideoObject.h"
 #include "Monster.h"
 #include "Player.h"
+#include "SoundManager.h"
 
 NS_USING(Client)
 
 namespace
 {
+	constexpr const _char* ASSIO_UI_START_SOUND_PATH =
+		"./Resources/SampleClient/Sound/AccioActivity/UI/AccioUI_Start.wav";
+	constexpr const _char* ASSIO_UI_END_SOUND_PATH =
+		"./Resources/SampleClient/Sound/AccioActivity/UI/AccioUI_End.wav";
+
+	void PlayAssioUISound(const _char* pSoundPath, _float fVolume)
+	{
+		if (auto* pSoundManager = E::CGameInstance::Get().GetSoundManager())
+		{
+			pSoundManager->Play2D(
+				pSoundPath,
+				SOUND_PLAY_DESC{
+					.sBusID = SOUND_BUS::UI,
+					.fVolume = fVolume,
+					.fPitch = 1.f,
+					.iPriority = 70,
+					.bLoop = false
+				});
+		}
+	}
+
 	void SetRenderGroupRecursive(CHandle handle, E::RENDERGROUP renderGroup)
 	{
 		auto* ui = E::CGameInstance::Get().GetGameObjectByHandleT<E::CUIObject>(handle);
@@ -382,6 +404,7 @@ void UIManager::AssioMiniGameStart(_bool bPlayerStarts)
 	m_bAssioFinalScore = false;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
 	m_bAssioMiniGameActive = true;
+	PlayAssioUISound(ASSIO_UI_START_SOUND_PATH, 0.75f);
 
 	if (auto* text = dynamic_cast<CTextBox*>(
 		GetSafeUI(*m_hAssioPlayerScoreText)))
@@ -566,7 +589,11 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 			m_bAssioFinalScore = false;
 			m_bAssioMiniGameActive = false;
 			m_eAssioScorePhase = ASSIO_SCORE_PHASE::NONE;
-			PlayFadeInAll2DUI(0.f, 0.5f);
+			// 이어지는 NPC 승패 결과 대화가 끝날 때까지 기존 HUD를 숨겨 둔다.
+			// 여기서 먼저 FadeIn하면 결과 대화가 같은 프레임에 다시 FadeOut하며
+			// 복원 대상 Alpha를 0으로 저장해, 특히 패배 대화 뒤 HUD가 돌아오지 않는다.
+			// 결과 대화 종료 시 CAccioActivity_NpcController::FinishDialogue()가
+			// PlayFadeInAll2DUI()를 호출해 미니게임 시작 전 상태로 복원한다.
 		}
 		return;
 	}
@@ -755,6 +782,7 @@ void UIManager::UpdateAssioMiniGame(_float fTimeDelta)
 	m_iAssioPendingScore = 0;
 	m_fAssioScorePhaseElapsed = 0.f;
 	m_eAssioScorePhase = ASSIO_SCORE_PHASE::IMPACT_HOLD;
+	PlayAssioScoreImpactEffect();
 }
 
 void UIManager::PlayAssioScoreImpactEffect()
@@ -990,9 +1018,13 @@ void UIManager::LoadAssioResult()
 		PlayFadeInAll2DUI(0.f, 0.5f);
 		return;
 	}
+	PlayAssioUISound(ASSIO_UI_END_SOUND_PATH, 0.8f);
 
 	// 동점일 때는 플레이어를 우선한다.
 	const _bool playerWon = m_iAssioPlayerScore >= m_iAssioNpcScore;
+	if (playerWon)
+		CreateOrChangeQuest("부릉! 브룸! 참여하기");
+
 	const wchar_t* winnerName = playerWon ? L"이솝 샤프" : L"저스티스 훈";
 	const int winnerScore = playerWon ? m_iAssioPlayerScore : m_iAssioNpcScore;
 	if (auto* winName = dynamic_cast<CTextBox*>(
@@ -1249,6 +1281,7 @@ void UIManager::UpdateRaceMiniGame(_float fTimeDelta)
 			if (m_OnRaceReturnToShop)
 				m_OnRaceReturnToShop();
 
+			CreateOrChangeQuest("지팡이 구매하기");
 			m_bRaceReturnPositionApplied = true;
 		}
 
@@ -3816,6 +3849,24 @@ void UIManager::FadeInQuest(float playtime)
 			if (auto* quest = GetSafeUI(questHandle))
 				quest->SetAlpha(value);
 		}, nullptr, EEaseType::EaseOutQuad);
+}
+
+_bool UIManager::SetMiniMapObjectiveActive(
+	const std::string& key, _bool active)
+{
+	const auto* uiLayer = E::CGameInstance::Get().
+		GetGameObjectLayer("Layer_UI");
+	if (!uiLayer)
+		return false;
+
+	for (const CHandle handle : *uiLayer)
+	{
+		auto* miniMap = E::CGameInstance::Get().
+			GetGameObjectByHandleT<CMiniMap>(handle);
+		if (miniMap && miniMap->SetObjectiveActive(key, active))
+			return true;
+	}
+	return false;
 }
 
 void UIManager::UpdateNPCSpeechBubbles(_float fTimeDelta)

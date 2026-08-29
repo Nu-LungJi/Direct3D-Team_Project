@@ -15,6 +15,9 @@
 #include "DbgLineRender.h"
 #include "ComPxRigidBody.h"
 #include "ComPxSphereCollider.h"
+#include "ComPxBoxCollider.h"
+#include "ResPhysXBoxGeometry.h"
+#include "ResPhysXMaterial.h"
 #include "UIController.h"
 #include "UIManager.h"
 #include "TrollWeapon.h"
@@ -62,8 +65,16 @@ HRESULT CTroll::InitializePrototype(void* pArg)
 HRESULT CTroll::Initialize(void* pArg)
 {
 	auto MonDesc = static_cast<TROLL_DESC*>(pArg);
-	MonDesc->fCCTRadius = 1.25f;
-	MonDesc->fCCTHeight = 4.f;
+	// 트롤의 큰 몸통에 맞춰 이동용 Capsule을 확대한다. 중심 오프셋은
+	// 전체 반높이와 같게 두어 CCT 바닥과 모델 원점(발)을 일치시킨다.
+	// 리소스 로더의 4배 PreTransform을 적용한 바인드 메시가 약
+	// 14.6 높이, 6.2 깊이이므로 몸통 기준으로 그 크기에 맞춘다.
+	MonDesc->fCCTRadius = 3.1f;
+	MonDesc->fCCTHeight = 8.4f;
+	MonDesc->vCCTCenterOffset = {
+		0.f,
+		MonDesc->fCCTHeight * 0.5f + MonDesc->fCCTRadius,
+		0.f };
 	if (FAILED(__super::Initialize(pArg)))
 	{
 		return E_FAIL;
@@ -117,7 +128,90 @@ HRESULT CTroll::Initialize(void* pArg)
 	m_pBeHavior->Set_Flag(ETOUI(CBTRoot::BTFLAG::DROP), FLAGTYPE::ADD);
 	m_pComSphereCol->SetQueryEnabled(true);
 	m_iColliderBoneIndex = m_pComModelInstance->GetModel()->Get_BoneIndex("SKT_Chest");
+	m_tDefaultCCTFilter = m_pCharacterController->GetFilter();
+	if (FAILED(InitializeChargeCollider()))
+		return E_FAIL;
 	return S_OK;
+}
+
+HRESULT CTroll::InitializeChargeCollider()
+{
+	// CMonster의 전투 HurtBox 강체는 매 프레임 SKT_Chest 본의 위치와
+	// 회전을 따라간다. 같은 키네마틱 강체에 돌진용 Shape를 붙이면
+	// 상체가 앞으로 기울 때 배럴 파괴 판정도 애니메이션을 따라간다.
+	CComPxBoxCollider::DESC Desc{};
+	Desc.pComPxRigidBody = m_pComRigidBody;
+	Desc.pResBoxGeo = CResPhysXBoxGeometry::CreateAndLoad({
+		.vHalfExtents = { 4.f, 4.5f, 3.f } });
+	Desc.pResMaterial = CResPhysXMaterial::CreateAndLoad({});
+	Desc.vLocalOffset = { 0.f, -1.5f, 0.f };
+	Desc.iShapeSubIndex = CHARGE_BODY_SHAPE_INDEX;
+	Desc.tFilter = {
+		.iLayer = ETOUI(COLLISION_LAYER::ENEMY_BODY),
+		.iSimulationMask = ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
+		.iQueryMask = ETOUI(COLLISION_LAYER::NONE),
+		.iNotifyFlags =
+			PX_NOTIFY_TOUCH_FOUND |
+			PX_NOTIFY_CONTACT_POINTS
+	};
+
+	if (!Desc.pResBoxGeo || !Desc.pResMaterial ||
+		FAILED(AddComponentFromProto(
+			ES_EngineProtoMajorType::PHYSX,
+			ES_EngineProtoPhysXComponent::Prototype_Component_ComPxBoxCollider,
+			"ComPxTrollChargeBodyCollider",
+			&Desc,
+			&m_pChargeBodyCollider)))
+	{
+		return E_FAIL;
+	}
+
+	return m_pChargeBodyCollider->SetSimulationEnabled(false) &&
+		m_pChargeBodyCollider->SetQueryEnabled(false)
+		? S_OK
+		: E_FAIL;
+}
+
+void CTroll::UpdateChargeColliderState()
+{
+	if (!m_pFsm || !m_pChargeBodyCollider || !m_pCharacterController)
+		return;
+
+	const _bool bShouldEnable =
+		m_pFsm->GetCurState() == MON_STATE::SPAWN;
+	if (bShouldEnable == m_bChargeBodyColliderEnabled)
+		return;
+
+	PX_FILTER_DESC CCTFilter = m_tDefaultCCTFilter;
+	if (bShouldEnable)
+	{
+		// 돌진 중에는 세로 CCT가 잠든 배럴을 먼저 막지 않게 하고,
+		// 애니메이션 본을 추종하는 Box만 실제 접촉을 처리한다.
+		CCTFilter.iSimulationMask &=
+			~ETOUI(COLLISION_LAYER::WORLD_DYNAMIC);
+		CCTFilter.iQueryMask &=
+			~ETOUI(COLLISION_LAYER::WORLD_DYNAMIC);
+
+		if (!m_pCharacterController->SetFilter(CCTFilter) ||
+			!m_pChargeBodyCollider->SetSimulationEnabled(true))
+		{
+			m_pCharacterController->SetFilter(m_tDefaultCCTFilter);
+			m_pChargeBodyCollider->SetSimulationEnabled(false);
+			DEBUG_LOG("[Troll] Failed to enable charge body collision.\n");
+			return;
+		}
+	}
+	else
+	{
+		if (!m_pChargeBodyCollider->SetSimulationEnabled(false) ||
+			!m_pCharacterController->SetFilter(CCTFilter))
+		{
+			DEBUG_LOG("[Troll] Failed to restore collision after charge.\n");
+			return;
+		}
+	}
+
+	m_bChargeBodyColliderEnabled = bShouldEnable;
 }
 void CTroll::ReadySound()
 {
@@ -190,6 +284,7 @@ void CTroll::PriorityUpdate(E::_float fTimeDelta)
 	Update_BBToFsm();
 	__super::PriorityUpdate(fTimeDelta);
 	m_pFsm->Update(fTimeDelta);
+	UpdateChargeColliderState();
 }
 
 void CTroll::Update(E::_float fTimeDelta)
@@ -338,13 +433,14 @@ void CTroll::Destory_Child()
 		pWeapon->Set_Dead();
 	
 }
-void CTroll::OnCCTShapeHit(const PX_CCT_HIT_DATA& tHit)
+void CTroll::OnCollisionEnter(
+	CGameObject* pObj,
+	const PX_ON_COLLISION_DATA& info)
 {
-	if (nullptr != m_pFsm)
-		if (MON_STATE::SPAWN != m_pFsm->GetCurState())
-			return;
+	if (info.iSelfShapeSubIndex != CHARGE_BODY_SHAPE_INDEX)
+		return;
 
-	if (auto* pBarrel = Cast<CPropBarrel>(tHit.pGameObject))
+	if (auto* pBarrel = Cast<CPropBarrel>(pObj))
 		pBarrel->DestroyBarrel();
 }
 void CTroll::Update_BBToFsm()

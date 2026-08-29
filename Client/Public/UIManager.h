@@ -82,6 +82,7 @@ public:
 	void DeleteQuest();
 	void FadeOutQuest(float playtime = 0.3f);
 	void FadeInQuest(float playtime = 0.5f);
+	_bool SetMiniMapObjectiveActive(const std::string& key, _bool active);
 
 	/********레이스 시작 타이머***********/
 	void StartRaceStartTimer();

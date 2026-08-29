@@ -20,6 +20,9 @@ void CPlayer_DashSkill_State::Enter(CStateMachine* pStateMachine)
 		return;
 	}
 
+	// [LSY] 이전 대시가 강제로 중단됐어도 망토 렌더 억제 상태를 새 진입에 남기지 않는다.
+	pPlayer->SetRenderInfluence(false);
+
 	CacheAnimationIndices(*pPlayer);
 	if (m_iDashAnimIndex < 0 || m_iDashEndAnimIndex < 0)
 	{
@@ -122,6 +125,7 @@ void CPlayer_DashSkill_State::Update(CStateMachine* pStateMachine,_float fTimeDe
 	auto* pAnimator = pPlayer->GetAnimator();
 	if (!pAnimator)
 	{
+		pPlayer->SetRenderInfluence(false);
 		RequestLocomotion(pStateMachine);
 		return;
 	}
@@ -296,8 +300,10 @@ void CPlayer_DashSkill_State::Exit(CStateMachine* pStateMachine)
 	{
 		ResetSkillControl(*pPlayer);
 		pPlayer->GetTransform().SetScale(_float3{ 1.f, 1.f, 1.f });
+		// [LSY] 정상 종료와 강제 상태 전환 모두에서 망토 렌더 상태를 반드시 복구한다.
+		pPlayer->SetRenderInfluence(false);
+		pPlayer->SetInvincible(false);
 	}
-	pPlayer->SetInvincible(false);
 	m_ePhase = PHASE::CAST;
 	m_fAnimationRatio = 0.f;
 	m_vDashDirection = {};
