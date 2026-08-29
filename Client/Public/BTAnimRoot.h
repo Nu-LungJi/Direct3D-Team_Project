@@ -49,17 +49,18 @@ protected:
 	virtual void		OnEnter() override;
 	virtual void		OnExit(EVALUATE eResult) override;
 private:
+	void				Get_SoundKey(_string& Path,class CComBeHavior* pBeHavior);
 	//GUi
 	void				Combo(const _char* pName,uint32_t& iFlag);
 	void				Combo2(const _char* pName, FLAGTYPE& eType);
 	void				AddSound();
 	void				SoundTableValueList();
-	void				SoundPopUp(MONSOUND& Sound, CMonster* Monster);
+	void				SoundPopUp(MONSOUND& Sound,class CComBeHavior* pBeHavior);
 protected:
 	void				DragFloat(const _char* pName, _float& fValue, _float fSpeed = 0.1f, _float fMin = 0.f, _float fMax = 1.f);
 	void				BoolButton(const _char* pName, _bool& bButton);
 	void				Rotation(CComTransform* pTransform, CComCharacterMoveIntent* pMoveIntent, CGameObject* pTarget, _float fTimeDelta, _float fRotRatio);
-
+	SOUND_ID			Find_Sound(const MONSOUND& MonSound,class CGameObject* pObj, class CComBeHavior* pBeHavior);
 	void				Play_Sound(_float fTimeDelta);
 protected:
 	_bool						m_bLoop{ true }, m_bStart{ true }, m_bRatio{ false }, m_bEarly{ false }, m_bGravity{ false }, m_bShow{ false },m_bCamShake{ true };

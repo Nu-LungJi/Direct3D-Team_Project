@@ -69,7 +69,7 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 	auto WorldAgentDesc = static_cast<WORLD_AGENT_DESC*>(pArg);
 	m_TargetHandle = WorldAgentDesc->TargetHandle;
 	m_iHp = 1;
-
+	ReadySound();
 	if (FAILED(CGameObject::Initialize(pArg)))
 	{
 		return E_FAIL;
@@ -242,7 +242,8 @@ HRESULT CWorldAgent::Initialize(void* pArg)
 
 		auto* pBB = Get_BlackBoard();
 		pBB->Set_Value<CHandle>(PUBLIC_KEY::TARGETHANDLE, m_TargetHandle);
-		
+		pBB->Set_Value <std::unordered_map<_string, std::vector<_string>>>(PUBLIC_KEY::SOUNDTABLE, m_SoundTable);
+
 		if (!WorldAgentDesc->AnimName.empty())
 		{
 			pBB->Set_Value<_string>(PUBLIC_KEY::ANIMNAME, WorldAgentDesc->AnimName);

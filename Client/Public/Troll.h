@@ -47,7 +47,7 @@ public:
 	HRESULT						Ready_Fsm(const _string& LevelTag);
 	HRESULT						Ready_Skill(const _string& LevelTag);
 	void						Ready_BBKeyValue();
-	void						ReadySound();
+	void						ReadySound() override;
 
 public:
 	_string						Get_SkillName(ATTMON SkillNode)override;

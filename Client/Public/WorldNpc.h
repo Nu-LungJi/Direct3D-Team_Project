@@ -30,7 +30,8 @@ public:
 	void						Set_Gravity(_bool bGravity);
 	_bool						Check_Table(PLAYER_SKILL_TYPE eType) override;
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
-
+private:
+	void						ReadySound() override;
 public:
 	static E::UPtr<CWorldNpc> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
