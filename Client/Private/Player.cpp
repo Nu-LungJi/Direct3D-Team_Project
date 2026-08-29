@@ -1046,7 +1046,6 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 	{
 		//m_pComMoveIntent->RequestWarp({ -6.f, -215.f, 156.f });
-		m_pComMoveIntent->RequestWarp(m_vInitialPosition);
 	}
 	if (m_pStateMachine &&m_pComCharacterMotor &&m_pStateMachine->GetCurrentState() == PLAYER_STATE::LOCOMOTION &&m_pComCharacterMotor->IsGrounded() &&CGameInstance::Get().KeyDown(DIK_SPACE))
 	{
