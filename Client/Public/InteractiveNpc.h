@@ -69,6 +69,10 @@ public:
 		_bool FadeBeforeAction{};
 		// 이 대사를 끝낸 뒤 Repeatable 설정과 관계없이 상호작용을 종료한다.
 		_bool DisableInteractionAfterAdvance{};
+		// 비어 있지 않으면 대사가 표시될 때 함께 재생할 음성 파일.
+		_string VoiceSoundPath{};
+		// 입 모프를 음성 길이에 맞춰 유지한다. 0이면 텍스트 길이로 추정한다.
+		_float VoiceDuration{};
 	};
 
 	struct DESC : public WORLD_AGENT_DESC

@@ -262,7 +262,13 @@ HRESULT CLevelHogwartWorld::Initialize()
 				true,
 				"ShopNpcEntrance",
 				true,
-				2.5f
+				3.6f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_01.mp3",
+				3.47f
 			},
 			{
 				"일이 많아서.. 잠시만 기다려주십쇼!",
@@ -273,7 +279,15 @@ HRESULT CLevelHogwartWorld::Initialize()
 				CInteractiveNpc::DIALOGUE_ACTION::NONE,
 				false,
 				true,
-				"ShopNpcEntrance"
+				"ShopNpcEntrance",
+				true,
+				5.45f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_02.mp3",
+				5.32f
 			},
 			{
 				"돈은 준비되셨죠?",
@@ -289,7 +303,15 @@ HRESULT CLevelHogwartWorld::Initialize()
 				CInteractiveNpc::DIALOGUE_ACTION::NONE,
 				true,
 				false,
-				"ShopNpcDialogueCloseUp"
+				"ShopNpcDialogueCloseUp",
+				false,
+				3.f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_03.mp3",
+				3.16f
 			},
 			{
 				"아, 돈이 부족하시네요... 호그와트 성에서 작은 대회를 연다고 하던데, 그곳으로 가보시죠!",
@@ -297,7 +319,18 @@ HRESULT CLevelHogwartWorld::Initialize()
 				true,
 				{},
 				{},
-				CInteractiveNpc::DIALOGUE_ACTION::MOVE_TO_DESTINATION
+				CInteractiveNpc::DIALOGUE_ACTION::MOVE_TO_DESTINATION,
+				false,
+				false,
+				"",
+				true,
+				9.15f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_04.mp3",
+				9.01f
 			},
 			{
 				"오우, 돈을 다 모아오셨군요!",
@@ -310,7 +343,13 @@ HRESULT CLevelHogwartWorld::Initialize()
 				false,
 				"ShopNpcDialogueCloseUp",
 				true,
-				3.f
+				4.f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_05.mp3",
+				3.89f
 			},
 			{
 				"그럼 자, 여기 지팡이를 한번 골라보십쇼!",
@@ -323,7 +362,13 @@ HRESULT CLevelHogwartWorld::Initialize()
 				false,
 				"ShopNpcDialogueCloseUp",
 				true,
-				3.5f
+				3.95f,
+				"",
+				false,
+				false,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_06.mp3",
+				3.81f
 			},
 			{
 				"오 정말 멋진 지팡이군요. 마법도 하나 같이 배워볼까요?",
@@ -336,10 +381,13 @@ HRESULT CLevelHogwartWorld::Initialize()
 				false,
 				"ShopNpcDialogueCloseUp",
 				true,
-				5.f,
+				6.1f,
 				"ShopNpcSpellLesson",
 				true,
-				true
+				true,
+				false,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_07.mp3",
+				5.95f
 			},
 			{
 				"그 마법은 함부로 쓰면 안되는 마법입니다. 조심하세요!",
@@ -356,7 +404,9 @@ HRESULT CLevelHogwartWorld::Initialize()
 				"",
 				false,
 				false,
-				true
+				true,
+				"./Resources/SampleClient/Sound/NPC/Ollivander/Dialogue/Ollivander_Dialogue_08.mp3",
+				4.91f
 			}
 		};
 		// 기존 호그와트 쪽 액티비티 시작 지점을 이동 목적지로 사용한다.
