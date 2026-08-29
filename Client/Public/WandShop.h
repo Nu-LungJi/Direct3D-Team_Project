@@ -20,6 +20,7 @@ public:
 	void Update(UIManager& manager, _float fTimeDelta);
 	void OpenPage(UIManager& manager, uint32_t pageIndex);
 	void Close(UIManager& manager);
+	_bool ConsumePurchaseCompleted();
 
 private:
 	void AdoptEditorPageRoots();
@@ -41,6 +42,7 @@ private:
 	uint32_t m_iDisplayedCoinCount{ UINT32_MAX };
 	int m_iRootWeightOffset{};
 	_float m_fPurchaseHoldProgress{};
+	_bool m_bPurchaseCompleted{};
 };
 
 NS_END

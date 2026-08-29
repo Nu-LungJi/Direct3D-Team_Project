@@ -12,6 +12,7 @@ NS_USING(Engine)
 namespace
 {
 	constexpr const _char* CINEMATIC_LOAD_ROOT = "./Resources/json/Cinematics";
+	constexpr const _char* CINEMATIC_PROJECT_ROOT = "./JsonFiles/Cinematics";
 	constexpr const _char* CINEMATIC_JSON_ROOT = "Cinematic";
 
 	_bool IsValidCinematicName(const std::string& CinematicName)
@@ -238,7 +239,14 @@ HRESULT CCinematicSystem::Load(const std::string& CinematicName)
 		return E_INVALIDARG;
 	}
 
-	const std::filesystem::path FilePath = std::filesystem::path{ CINEMATIC_LOAD_ROOT } / (CinematicName + ".json");
+	std::filesystem::path FilePath =
+		std::filesystem::path{ CINEMATIC_LOAD_ROOT } /
+		(CinematicName + ".json");
+	if (!std::filesystem::exists(FilePath))
+	{
+		FilePath = std::filesystem::path{ CINEMATIC_PROJECT_ROOT } /
+			(CinematicName + ".json");
+	}
 
 	FCinematicAssetData Data{};
 	const SERIALIZE_RESULT Result = CGameInstance::Get().JsonDeSerializeDetailed(FilePath.generic_string(), Data, CINEMATIC_JSON_ROOT);
@@ -359,12 +367,26 @@ HRESULT CCinematicSystem::Play(const StringID& CinematicID, const std::optional<
 	return S_OK;
 }
 
-void CCinematicSystem::Stop()
+void CCinematicSystem::Stop(_float fReturnBlendDuration)
 {
 	if (m_ePlayState == EPlayState::Stopped &&
 		!m_PreviousCameraID.has_value())
 	{
 		return;
+	}
+
+	if (fReturnBlendDuration > FLT_EPSILON &&
+		m_ePlayState != EPlayState::BlendingOut &&
+		m_PreviousCameraID.has_value())
+	{
+		FCinematicCameraPose pose{};
+		if (SUCCEEDED(EvaluateCamera(m_fPlayTime, pose)))
+		{
+			m_PlayOptions.eReturnMode = ECinematicReturnMode::Blend;
+			m_PlayOptions.fReturnBlendDuration = fReturnBlendDuration;
+			if (SUCCEEDED(BeginBlendOut(pose)))
+				return;
+		}
 	}
 
 	FinishPlayback();

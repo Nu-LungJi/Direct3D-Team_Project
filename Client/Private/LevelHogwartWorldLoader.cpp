@@ -82,6 +82,8 @@ std::future<bool> CLevelHogwartWorldLoader::Load()
 				return false;
 			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcWandBox")))
 				return false;
+			if (FAILED(E::CGameInstance::Get().LoadCinematic("ShopNpcSpellLesson")))
+				return false;
 
 			if (auto texture = E::CGameInstance::Get().AddResource(
 				LEVEL::HOGWART_WORLD,
@@ -576,7 +578,10 @@ _bool CLevelHogwartWorldLoader::UILoad_InWorker()
 		{
 			return false;
 		}
-		if (FAILED(E::CGameInstance::Get().AddPrototype("LEVEL_HOGWART_WORLD", "Prototype_GameObject_SpellMiniGame", CSpellMiniGame::Create())))
+		if (FAILED(E::CGameInstance::Get().AddPrototype(
+			"LEVEL_HOGWART_WORLD",
+			"Prototype_GameObject_SpellMiniGame",
+			CSpellMiniGame::Create())))
 		{
 			return false;
 		}
@@ -806,6 +811,25 @@ HRESULT CLevelHogwartWorldLoader::AnimatedObjectLoad_InWorker()
 
 HRESULT CLevelHogwartWorldLoader::WorldAgentLoad_InWorker()
 {
+	{
+		const _string resourceTag =
+			"Model_Resource_Ollivander_WandBox_Full_Selection";
+		const _string modelPath =
+			"./Resources/SampleClient/Models/Skeleton/"
+			"Ollivander_WandBox_Full_Selection/"
+			"SK_Ollivanders_WandBox_Full_Selection.bin";
+		auto model = CGameInstance::Get().AddResourceT<E::CResModel>(
+			LEVEL::HOGWART_WORLD, resourceTag, CResModel::Create(modelPath));
+		if (!model)
+			return E_FAIL;
+		E::CResModel::DESC desc{};
+		// The supplied BIN is already authored at gameplay scale. Applying the
+		// generic Blender x100 correction makes the hand prop enormous.
+		desc.PreTransformMatrix = XMMatrixIdentity();
+		if (FAILED(model->Load(desc)) || model->GetAnimations().empty())
+			return E_FAIL;
+	}
+
 	struct MODEL_ANIMAL
 	{ _string ResName{};					_string PathName{};				_float3 vScale{3.f,3.f,3.f}; };
 	MODEL_ANIMAL resAnimal[]{ 

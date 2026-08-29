@@ -225,13 +225,14 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.Repeatable = true;
 		Desc.AutoStartOnEnter = true;
 		Desc.AutoAdvanceOpeningLineCount = 2u;
-		// 입장 시네마틱 10초 동안 첫 두 대사를 각각 5초씩 자동 표시한다.
+		// 입장 첫 대사는 빠르게 넘기고, 이후 자동 대사는 기본 시간을 사용한다.
 		Desc.OpeningLineAutoAdvanceDelay = 5.f;
 		Desc.HideDialogueInteractionPrompt = true;
 		Desc.FadeDuration = 0.6f;
 		Desc.FadeHoldDuration = 0.25f;
 		Desc.IdleExpressionAnim = "AN_BODY__Idle__Hu_BM_Idle_Casual_Loop.bin";
 		Desc.WorldSpaceShop = false;
+		Desc.SecondSpellMiniGame = true;
 		Desc.RepositionPlayerForDialogue = false;
 		Desc.ResolveStartDialogueIndex = []()
 		{
@@ -248,7 +249,9 @@ HRESULT CLevelHogwartWorld::Initialize()
 				CInteractiveNpc::DIALOGUE_ACTION::NONE,
 				false,
 				true,
-				"ShopNpcEntrance"
+				"ShopNpcEntrance",
+				true,
+				2.5f
 			},
 			{
 				"일이 많아서.. 잠시만 기다려주십쇼!",
@@ -310,6 +313,39 @@ HRESULT CLevelHogwartWorld::Initialize()
 				"ShopNpcDialogueCloseUp",
 				true,
 				3.5f
+			},
+			{
+				"오 정말 멋진 지팡이군요. 마법도 하나 같이 배워볼까요?",
+				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::START_SPELL_MINIGAME,
+				true,
+				false,
+				"ShopNpcDialogueCloseUp",
+				true,
+				5.f,
+				"ShopNpcSpellLesson",
+				true,
+				true
+			},
+			{
+				"그 마법은 함부러 쓰면 안되는 마법입니다. 조심하세요!",
+				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::NONE,
+				false,
+				false,
+				"ShopNpcDialogueCloseUp",
+				true,
+				5.f,
+				"",
+				false,
+				false,
+				true
 			}
 		};
 		// 기존 호그와트 쪽 액티비티 시작 지점을 이동 목적지로 사용한다.
@@ -419,7 +455,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 			{ 1953.605f, 60.391f, -188.274f } // 1: 코인
 		};
 		Desc.CoinMoveRotationEuler = { 2.034f, 13.171f, 0.f };
-		Desc.MoveFadeHoldDuration = 10.f;
+		Desc.MoveFadeHoldDuration = 20.f;
 		Desc.MoveSpeed = 2.f;
 		Desc.MoveStopDistance = 0.2f;
 
