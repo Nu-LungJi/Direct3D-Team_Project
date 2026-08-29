@@ -780,6 +780,14 @@ _bool CPlayer::IsRagdollTransitioning() const
 
 void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 {
+	const _float fUnscaledDelta = std::max(
+		0.f, CGameInstance::Get().GetUnscaledDelta());
+	m_fAncientMagicChainCooldown = std::max(
+		0.f, m_fAncientMagicChainCooldown - fUnscaledDelta);
+	if (m_fAncientMagicInputRemainTime > 0.f)
+		m_fAncientMagicInputRemainTime = std::max(
+			0.f, m_fAncientMagicInputRemainTime - fUnscaledDelta);
+
 	if (m_iAttackIndicatorParticleOwner != INVALID_PARTICLE_OWNER_ID)
 	{
 		m_fAttackIndicatorRemainTime = std::max(
@@ -1438,15 +1446,29 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 	}
 
 	if (m_pStateMachine && CGameInstance::Get().KeyDown(DIK_E))
+		m_fAncientMagicInputRemainTime = ANCIENT_MAGIC_INPUT_BUFFER_TIME;
+
+	if (m_pStateMachine &&
+		m_fAncientMagicInputRemainTime > 0.f &&
+		m_fAncientMagicChainCooldown <= 0.f)
 	{
 		auto* pEnemyTarget = CGameInstance::Get().GetGameObjectByHandle(m_hAutoTarget);
 		if (pEnemyTarget && !pEnemyTarget->GetPendingDestroy())
 		{
 			m_hPendingAncientThrowTarget = FindAncientThrowTarget();
-			if (m_hPendingAncientThrowTarget &&
-				!m_pStateMachine->RequestState(PLAYER_STATE::ANCIENT_ATTACK_SKILL))
+			if (m_hPendingAncientThrowTarget)
 			{
-				m_hPendingAncientThrowTarget.reset();
+				if (m_pStateMachine->RequestState(PLAYER_STATE::ANCIENT_ATTACK_SKILL))
+				{
+					m_fAncientMagicChainCooldown = ANCIENT_MAGIC_CHAIN_COOLDOWN;
+					m_fAncientMagicInputRemainTime = 0.f;
+				}
+				else
+				{
+					// 현재 고대마법 동작이 끝날 때까지 입력 버퍼는 유지하되,
+					// 아직 사용하지 않은 다음 투척물 핸들은 매 프레임 다시 조회한다.
+					m_hPendingAncientThrowTarget.reset();
+				}
 			}
 		}
 	}
@@ -1464,10 +1486,29 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		RequestAvadaFacialPreview();
 
 	if (!m_bFlyRequested) {
-		if (CGameInstance::Get().KeyDown(DIK_1)) TryUseSkillSlot(1);
-		else if (CGameInstance::Get().KeyDown(DIK_2)) TryUseSkillSlot(2);
-		else if (CGameInstance::Get().KeyDown(DIK_3)) TryUseSkillSlot(3);
-		else if (CGameInstance::Get().KeyDown(DIK_4)) TryUseSkillSlot(4);
+		uint32_t iRequestedSkillSlot{};
+		if (CGameInstance::Get().KeyDown(DIK_1)) iRequestedSkillSlot = 1u;
+		else if (CGameInstance::Get().KeyDown(DIK_2)) iRequestedSkillSlot = 2u;
+		else if (CGameInstance::Get().KeyDown(DIK_3)) iRequestedSkillSlot = 3u;
+		else if (CGameInstance::Get().KeyDown(DIK_4)) iRequestedSkillSlot = 4u;
+
+		if (iRequestedSkillSlot != 0u)
+		{
+			m_iBufferedSkillSlot = iRequestedSkillSlot;
+			m_fBufferedSkillInputRemainTime = SKILL_INPUT_BUFFER_TIME;
+		}
+
+		if (m_iBufferedSkillSlot != 0u)
+		{
+			m_fBufferedSkillInputRemainTime = std::max(
+				0.f, m_fBufferedSkillInputRemainTime - std::max(0.f, fTimeDelta));
+			if (TryUseSkillSlot(m_iBufferedSkillSlot) ||
+				m_fBufferedSkillInputRemainTime <= 0.f)
+			{
+				m_iBufferedSkillSlot = 0u;
+				m_fBufferedSkillInputRemainTime = 0.f;
+			}
+		}
 
 		// L 키는 빌드 구성과 무관한 정식 루모스 토글 입력이다.
 		// Lumos 상태가 현재 활성 여부에 따라 Start/Hold 또는 Stop을 선택한다.
@@ -1636,6 +1677,12 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 		return false;
 	}
 
+	const _bool bRequiresTarget =
+		eSpellType != SPELL_TYPE::REPARO &&
+		eSpellType != SPELL_TYPE::LUMOS;
+	if (bRequiresTarget && !CPlayer_SkillStateBase::HasTargetInRange(*this))
+		return false;
+
 	if (!m_pStateMachine->RequestState(eSkillState))
 		return false;
 
@@ -1650,8 +1697,23 @@ _bool CPlayer::TryUseSkillSlot(uint32_t iSlotNumber)
 
 void CPlayer::UpdateSkillSlotCooldowns(_float fTimeDelta)
 {
-	for (auto& fCooldown : m_SkillSlotCooldowns)
+	auto* pUIController =
+		CGameInstance::Get().GetGameObjectByHandleT<CUIController>(m_UIHandle);
+	for (size_t i = 0; i < m_SkillSlotCooldowns.size(); ++i)
+	{
+		auto& fCooldown = m_SkillSlotCooldowns[i];
 		fCooldown = std::max(0.f, fCooldown - std::max(0.f, fTimeDelta));
+		if (!pUIController)
+			continue;
+
+		const uint32_t iSlotNumber = static_cast<uint32_t>(i) + 1u;
+		const _float fCooldownDuration =
+			pUIController->GetSpellCooldownDuration(iSlotNumber);
+		const _float fReadyRatio = fCooldownDuration > 0.f
+			? 1.f - fCooldown / fCooldownDuration : 1.f;
+		pUIController->SetSpellCooldownRatio(
+			iSlotNumber, fReadyRatio);
+	}
 }
 
 _bool CPlayer::TryUsePotion()
