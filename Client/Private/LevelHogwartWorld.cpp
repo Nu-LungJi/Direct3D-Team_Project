@@ -522,7 +522,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 	GET_SINGLE(UIManager)->CreateFadeOut(3.f, 2.f);
 	E::CGameInstance::Get().GetSoundManager()->Play2D("./Resources/SampleClient/Sound/HogsMeade/Ambient/Roads_Lead_to_Hogsmeade.mp3", SOUND_PLAY_DESC{
    .sBusID = SOUND_BUS::BGM,
-   .fVolume = 0.4f,
+   .fVolume = 0.2f,
    .fPitch = 1.f,
    .iPriority = 64,
    .bLoop = true
