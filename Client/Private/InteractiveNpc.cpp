@@ -73,6 +73,9 @@ HRESULT CInteractiveNpc::Initialize(void* pArg)
 	m_bSecondSpellMiniGame = pDesc->SecondSpellMiniGame;
 	m_bRepeatable = pDesc->Repeatable;
 	m_bAutoStartOnEnter = pDesc->AutoStartOnEnter;
+	m_iAutoAdvanceOpeningLineCount = pDesc->AutoAdvanceOpeningLineCount;
+	m_fOpeningLineAutoAdvanceDelay = std::max(0.1f, pDesc->OpeningLineAutoAdvanceDelay);
+	m_bHideDialogueInteractionPrompt = pDesc->HideDialogueInteractionPrompt;
 	m_fFadeDuration = std::max(0.05f, pDesc->FadeDuration);
 	m_fFadeHoldDuration = std::max(0.f, pDesc->FadeHoldDuration);
 	m_vPlayerDialogueOffset = pDesc->PlayerDialogueOffset;
@@ -102,11 +105,37 @@ void CInteractiveNpc::FixedUpdate(E::_float fTimeDelta)
 void CInteractiveNpc::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
+	m_fDialogueSpeechRemaining = std::max(
+		0.f, m_fDialogueSpeechRemaining - fTimeDelta);
 	UpdateDialogueIntro(fTimeDelta);
 	UpdateMoveOutcome();
 	UpdateMiniGameState();
 
+	if (m_bTalking &&
+		m_eState == STATE::TALKING &&
+		m_eConversationPhase == CONVERSATION_PHASE::TALKING &&
+		m_iDialogueIndex < m_Dialogue.size() &&
+		m_Dialogue[m_iDialogueIndex].Choices.empty() &&
+		(m_iDialogueIndex < m_iAutoAdvanceOpeningLineCount ||
+		 m_Dialogue[m_iDialogueIndex].AutoAdvance ||
+		 (m_bHideDialogueInteractionPrompt &&
+		  m_Dialogue[m_iDialogueIndex].ActionOnAdvance != DIALOGUE_ACTION::NONE)))
+	{
+		m_fOpeningLineElapsed += fTimeDelta;
+		const _float autoAdvanceDelay = m_Dialogue[m_iDialogueIndex].AutoAdvance
+			? std::max(0.1f, m_Dialogue[m_iDialogueIndex].AutoAdvanceDelay)
+			: m_fOpeningLineAutoAdvanceDelay;
+		if (m_fOpeningLineElapsed >= autoAdvanceDelay)
+		{
+			m_fOpeningLineElapsed = 0.f;
+			AdvanceDialogue();
+			return;
+		}
+	}
+
 	const _bool playerInRange = IsPlayerInRange();
+	if (!playerInRange && m_bRepeatable && m_eState == STATE::IDLE)
+		m_bAutoStartTriggered = false;
 	if (m_bAutoStartOnEnter && !m_bAutoStartTriggered &&
 		playerInRange && m_eState == STATE::IDLE &&
 		(!m_bCompleted || m_bRepeatable))
@@ -120,7 +149,7 @@ void CInteractiveNpc::Update(E::_float fTimeDelta)
 		m_eState == STATE::IDLE;
 	// 대화가 시작된 뒤에는 암전 중 위치 보정이나 물리 높이 차이 때문에
 	// 거리 판정이 달라져도 다음 대사가 막히지 않아야 한다.
-	const _bool canAdvanceDialogue = m_bTalking &&
+	const _bool canAdvanceDialogue = !m_bHideDialogueInteractionPrompt && m_bTalking &&
 		m_eState == STATE::TALKING &&
 		m_eConversationPhase == CONVERSATION_PHASE::TALKING;
 
@@ -146,9 +175,17 @@ void CInteractiveNpc::BeginDialogue()
 		return;
 
 	m_bTalking = true;
-	m_iDialogueIndex = m_ResolveStartDialogueIndex
-		? m_ResolveStartDialogueIndex()
-		: 0u;
+	if (m_DebugStartDialogueIndex.has_value())
+	{
+		m_iDialogueIndex = *m_DebugStartDialogueIndex;
+		m_DebugStartDialogueIndex.reset();
+	}
+	else
+	{
+		m_iDialogueIndex = m_ResolveStartDialogueIndex
+			? m_ResolveStartDialogueIndex()
+			: 0u;
+	}
 	if (m_iDialogueIndex >= m_Dialogue.size())
 		m_iDialogueIndex = 0u;
 	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
@@ -226,6 +263,8 @@ void CInteractiveNpc::ShowFirstDialogueLine()
 void CInteractiveNpc::BeginLineTransition()
 {
 	m_fIntroElapsed = 0.f;
+	m_fDialogueSpeechRemaining = 0.f;
+	m_fOpeningLineElapsed = 0.f;
 	m_eConversationPhase = CONVERSATION_PHASE::LINE_FADING_OUT;
 	SyncInteractionPrompt(false);
 	GET_SINGLE(UIManager)->ClearDialoguePopups(false);
@@ -237,13 +276,43 @@ void CInteractiveNpc::ShowCurrentDialogueLine()
 	if (m_iDialogueIndex >= m_Dialogue.size())
 		return;
 	m_fIntroElapsed = 0.f;
+	m_fOpeningLineElapsed = 0.f;
 	m_eConversationPhase = CONVERSATION_PHASE::TALKING;
 	const auto& line = m_Dialogue[m_iDialogueIndex];
 	SetRootMotionActive(line.UseRootMotion);
 	SetRootMotionRotationActive(line.UseRootMotion);
 	SetExpression(line.ExpressionAnim, line.LoopExpression);
 	GET_SINGLE(UIManager)->AddDialoguePopup(m_SpeakerName, line.Text);
-	SyncInteractionPrompt(true);
+	// UTF-8 코드포인트 수를 기준으로 실제 발화 구간만 추정한다.
+	size_t characterCount = 0u;
+	for (unsigned char character : line.Text)
+		if ((character & 0xC0u) != 0x80u)
+			++characterCount;
+	m_fDialogueSpeechRemaining = std::clamp(
+		0.4f + static_cast<_float>(characterCount) * 0.12f,
+		1.2f, 5.f);
+	SyncInteractionPrompt(false);
+	if (m_bHideDialogueInteractionPrompt && !line.Choices.empty())
+	{
+		m_eConversationPhase = CONVERSATION_PHASE::WAITING_CHOICE;
+		std::vector<std::string> choiceTexts{};
+		choiceTexts.reserve(line.Choices.size());
+		for (const auto& choice : line.Choices)
+			choiceTexts.push_back(choice.Text);
+		const CHandle npcHandle = GetHandle();
+		GET_SINGLE(UIManager)->CreateChoiceUI(
+			choiceTexts,
+			[npcHandle](size_t choiceIndex)
+			{
+				if (auto* npc = E::CGameInstance::Get().
+					GetGameObjectByHandleT<CInteractiveNpc>(npcHandle))
+					npc->SelectDialogueChoice(choiceIndex);
+			});
+	}
+	else if (!m_bHideDialogueInteractionPrompt)
+	{
+		SyncInteractionPrompt(true);
+	}
 }
 
 void CInteractiveNpc::AdvanceDialogue()
@@ -410,11 +479,63 @@ void CInteractiveNpc::RestartDialogueForTest()
 	BeginDialogue();
 }
 
+void CInteractiveNpc::RestartDialogueAtIndexForTest(size_t dialogueIndex)
+{
+	m_DebugStartDialogueIndex = dialogueIndex;
+	RestartDialogueForTest();
+}
+
+void CInteractiveNpc::PlayDialogueCameraOnlyForTest(const _string& cinematicName)
+{
+	if (cinematicName.empty())
+		return;
+	PrepareDialogueCamera(cinematicName);
+	EndDialogueCamera();
+	m_DialogueCinematicName = cinematicName;
+	E::FCinematicPlayOptions options{};
+	options.eStartMode = E::ECinematicStartMode::Immediate;
+	options.eReturnMode = E::ECinematicReturnMode::Immediate;
+	m_bDialogueCinematicPlaying =
+		E::CGameInstance::Get().PlayCinematic(
+			StringID{ cinematicName }, GetHandle(), options) == S_OK;
+}
+
+void CInteractiveNpc::StopDialogueCameraOnlyForTest()
+{
+	EndDialogueCamera();
+}
+
+void CInteractiveNpc::PlacePlayerFacingNpc(const _float3& localOffset)
+{
+	ResolvePlayerHandle();
+	auto* pPlayer = E::CGameInstance::Get().GetGameObjectByHandleT<CPlayer>(
+		m_hInteractionPlayer);
+	if (!pPlayer)
+		return;
+
+	const _vector npcPosition = GetTransform().GetState(E::STATE::POSITION);
+	const _vector npcRight = XMVector3Normalize(
+		XMVectorSetY(GetTransform().GetState(E::STATE::RIGHT), 0.f));
+	const _vector npcLook = XMVector3Normalize(
+		XMVectorSetY(GetTransform().GetState(E::STATE::LOOK), 0.f));
+	const _vector up = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	const _vector playerPosition = npcPosition +
+		npcRight * localOffset.x +
+		up * localOffset.y +
+		npcLook * localOffset.z;
+	_float3 worldPlayerPosition{};
+	_float3 npcFacePosition{};
+	XMStoreFloat3(&worldPlayerPosition, playerPosition);
+	XMStoreFloat3(&npcFacePosition, npcPosition + up * 1.35f);
+	pPlayer->SetDialoguePose(worldPlayerPosition, npcFacePosition);
+}
+
 
 void CInteractiveNpc::CancelDialogue()
 {
 	GET_SINGLE(UIManager)->ClearChoiceUI(false);
 	m_bTalking = false;
+	m_fDialogueSpeechRemaining = 0.f;
 	m_iDialogueIndex = 0u;
 	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
 	SetExpression(m_IdleExpressionAnim, true);
@@ -430,6 +551,7 @@ void CInteractiveNpc::FinishDialogue()
 {
 	GET_SINGLE(UIManager)->ClearChoiceUI(false);
 	m_bTalking = false;
+	m_fDialogueSpeechRemaining = 0.f;
 	m_bCompleted = true;
 	m_ePendingDialogueAction = DIALOGUE_ACTION::NONE;
 	SetExpression(m_IdleExpressionAnim, true);
@@ -439,7 +561,8 @@ void CInteractiveNpc::FinishDialogue()
 	if (m_eState == STATE::MOVING || m_eState == STATE::MINIGAME)
 		return;
 
-	EndDialogueCamera();
+	if (!KeepDialogueCameraOnFinish())
+		EndDialogueCamera();
 	SetPlayerMovementLocked(false);
 	GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);
 	m_eState = STATE::IDLE;
@@ -486,6 +609,7 @@ void CInteractiveNpc::BeginDialogueCamera()
 	if (cinematicName.empty())
 		return;
 	m_DialogueCinematicName = cinematicName;
+	PrepareDialogueCamera(cinematicName);
 
 	E::FCinematicPlayOptions options{};
 	options.eStartMode = E::ECinematicStartMode::Immediate;
@@ -499,6 +623,7 @@ void CInteractiveNpc::SwitchDialogueCamera(const _string& cinematicName)
 {
 	if (cinematicName.empty())
 		return;
+	PrepareDialogueCamera(cinematicName);
 	EndDialogueCamera();
 	m_DialogueCinematicName = cinematicName;
 

@@ -30,6 +30,7 @@ struct VS_OUT
     float2 vTexcoord : TEXCOORD0;
     float4 vWorldPos : TEXCOORD1;
     float4 vProjPos : TEXCOORD2;
+	nointerpolation float fDissolveIntensity : TEXCOORD3;
 };
 
 VS_OUT VSMain(VS_IN In)
@@ -54,6 +55,7 @@ VS_OUT VSMain(VS_IN In)
     Out.vTexcoord = In.vTexcoord;
     Out.vWorldPos = mul(float4(In.vPosition, 1.f), g_matWorld);
     Out.vProjPos = Out.vPosition;
+	Out.fDissolveIntensity = 0.f;
     
     return Out;
 }
