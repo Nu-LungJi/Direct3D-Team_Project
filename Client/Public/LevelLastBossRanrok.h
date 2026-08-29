@@ -55,6 +55,7 @@ private:
 private:
 	_bool m_bCreatePlayScreenUI{ false };
 	_bool m_bQuestCreated{ false };
+	_bool m_bDragonSpawnQuestUpdated{ false };
 	_bool m_bDragonDefeated{ false };
 	std::optional<CHandle> m_hEnderDragon{};
 

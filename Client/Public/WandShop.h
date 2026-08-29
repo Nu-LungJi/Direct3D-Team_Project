@@ -28,7 +28,9 @@ private:
 	void ApplyRootWeightOffset(const std::vector<CHandle>& roots,
 		_bool initializeOffset);
 	void CompletePurchase(UIManager& manager);
-	void PlayPageFadeIn(const std::vector<CHandle>& roots) const;
+	void PlayPageFadeIn(
+		const std::vector<CHandle>& roots,
+		_float duration) const;
 	void RefreshPurchaseCoinText();
 	void SetPurchasePromptVisible(_bool visible);
 	_bool HasLivePageRoots() const;

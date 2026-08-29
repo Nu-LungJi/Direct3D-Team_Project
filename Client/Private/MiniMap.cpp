@@ -704,9 +704,14 @@ void CMiniMap::UpdateMonsterMarkers(
 			Cast<CBossTMB>(pMonster) != nullptr ||
 			Cast<CTroll>(pMonster) != nullptr ||
 			Cast<CEnderDragon>(pMonster) != nullptr;
-		pMarker->GetUIInfo().Restag = isBoss ?
+		auto& markerInfo = pMarker->GetUIInfo();
+		markerInfo.Restag = isBoss ?
 			"TEX_UI_T_Map_NamedEnemy" :
 			"TEX_UI_T_MiniMap_AuthorityFigure";
+		const _float markerSize = MONSTER_MARKER_SIZE *
+			(isBoss ? BOSS_MARKER_SCALE : 1.f);
+		markerInfo.SizeX = markerSize;
+		markerInfo.SizeY = markerSize;
 
 		const _float3& monsterPos = pMonster->GetTransform().GetPosition();
 		const _float dx = monsterPos.x - playerPos.x;
@@ -729,7 +734,7 @@ void CMiniMap::UpdateMonsterMarkers(
 			// Boss markers represent position only. Counter-rotate the minimap
 			// parent so the named-enemy icon always stays upright on screen.
 			pMarker->SetLocalRot(-m_UIINFO.Rot);
-			pMarker->GetUIInfo().Rot = 0.f;
+			markerInfo.Rot = 0.f;
 		}
 		else
 		{

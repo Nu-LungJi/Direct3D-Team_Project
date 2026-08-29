@@ -114,15 +114,21 @@ void CLevelLastBossRanrok::Update(E::_float fTimeDelta)
 	if (m_bCreatePlayScreenUI && !m_bQuestCreated)
 	{
 		m_bQuestCreated = true;
-		GET_SINGLE(UIManager)->CreateOrChangeQuest("란록 퇴치하기");
+		GET_SINGLE(UIManager)->CreateOrChangeQuest("수상한 기운이,,, 느껴진다...");
 	}
 
 	if (m_bQuestCreated && !m_bDragonDefeated && m_hEnderDragon)
 	{
 		auto* dragon = CGameInstance::Get().
 			GetGameObjectByHandleT<CEnderDragon>(*m_hEnderDragon);
-		if (!dragon || dragon->GetPendingDestroy() ||
-			dragon->Get_CurrentHp() <= 0)
+		if (dragon && !m_bDragonSpawnQuestUpdated &&
+			dragon->IsSpawnPresentationFinished())
+		{
+			m_bDragonSpawnQuestUpdated = true;
+			GET_SINGLE(UIManager)->CreateOrChangeQuest("란록 퇴치하기");
+		}
+
+		if (dragon && dragon->IsDeathPresentationFinished())
 		{
 			m_bDragonDefeated = true;
 			GET_SINGLE(UIManager)->CreateOrChangeQuest("취업 성공하기");

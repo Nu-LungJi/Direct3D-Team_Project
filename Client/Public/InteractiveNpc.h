@@ -156,7 +156,11 @@ protected:
 	virtual void OpenShop();
 	// 에디터 GUI에서 완료 여부와 자동 시작 여부를 초기화하고 첫 대사를 다시 시험한다.
 	void RestartDialogueForTest();
-	void RestartDialogueAtIndexForTest(size_t dialogueIndex);
+	void RestartDialogueAtIndexForTest(
+		size_t dialogueIndex,
+		_float temporaryFadeDuration = -1.f,
+		_float temporaryFadeHoldDuration = -1.f,
+		_float temporaryFadeOutDuration = -1.f);
 	// NPC와 플레이어 Transform을 건드리지 않고 지정한 시네마틱 카메라만 시험한다.
 	void PlayDialogueCameraOnlyForTest(const _string& cinematicName);
 	void StopDialogueCameraOnlyForTest();
@@ -165,6 +169,15 @@ protected:
 	virtual _bool KeepDialogueCameraOnFinish() const { return false; }
 	// 현재 NPC 로컬 좌표의 오프셋에 플레이어를 놓고 NPC 얼굴을 바라보게 한다.
 	void PlacePlayerFacingNpc(const _float3& localOffset);
+	// 파생 NPC가 자신의 이동 연출에만 암전 유지시간을 조정할 수 있게 한다.
+	void SetMoveFadeHoldDuration(_float duration)
+	{
+		m_fMoveFadeHoldDuration = std::max(0.f, duration);
+	}
+	_float GetMoveFadeHoldDuration() const
+	{
+		return m_fMoveFadeHoldDuration;
+	}
 
 private:
 	// 이름으로 표정 또는 대화 애니메이션을 재생한다.
@@ -238,7 +251,10 @@ private:
 	CHandle m_hInteractionPlayer{};
 	STATE m_eState{ STATE::IDLE };
 	_float m_fFadeDuration{ 0.35f };
+	std::optional<_float> m_TemporaryFadeDurationRestore{};
 	_float m_fFadeHoldDuration{ 0.2f };
+	std::optional<_float> m_TemporaryFadeHoldDurationRestore{};
+	std::optional<_float> m_TemporaryFadeOutDuration{};
 	_float m_fMoveFadeInDuration{ 2.f };
 	_float m_fMoveFadeHoldDuration{ 10.f };
 	_float m_fMoveFadeOutDuration{ 1.f };

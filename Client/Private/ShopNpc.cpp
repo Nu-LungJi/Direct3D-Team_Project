@@ -30,6 +30,7 @@ HRESULT CShopNpc::Initialize(void* pArg)
 		return E_FAIL;
 
 	m_bWorldSpaceShop = pDesc->WorldSpaceShop;
+	m_fOriginalHogwartsMoveFadeHoldDuration = GetMoveFadeHoldDuration();
 	m_vShopPanelPositionOffset = pDesc->ShopPanelPositionOffset;
 	m_vShopPanelRotationOffsetDegrees =
 		pDesc->ShopPanelRotationOffsetDegrees;
@@ -308,13 +309,17 @@ void CShopNpc::UpdateGUI()
 
 void CShopNpc::OpenShop()
 {
+	auto* pUIManager = GET_SINGLE(UIManager);
+	m_bQuestRestoreDeferred = true;
+	pUIManager->SetQuestFadeInDeferred(true);
+	pUIManager->FadeOutQuest(0.3f);
+
 	if (m_iWandBoxOpenAnimation >= 0)
 	{
 		m_bWandBoxPresentationPending = true;
 		return;
 	}
 
-	auto* pUIManager = GET_SINGLE(UIManager);
 	if (m_bWorldSpaceShop)
 	{
 		pUIManager->OpenWandShopWorld(
@@ -402,6 +407,18 @@ void CShopNpc::SpawnWandBoxAtFirstHandShot()
 
 void CShopNpc::Update(E::_float fTimeDelta)
 {
+	// 올리밴더 상점에서 호그와트 쪽 목적지로 이동하는 암전만 시험하기 위한 토글이다.
+	// 첫 입력은 유지시간을 15초로 늘리고, 다음 입력은 설정된 원래 시간으로 되돌린다.
+	if (E::CGameInstance::Get().KeyDown(DIK_F5))
+	{
+		m_bUseExtendedHogwartsMoveFadeHold =
+			!m_bUseExtendedHogwartsMoveFadeHold;
+		SetMoveFadeHoldDuration(
+			m_bUseExtendedHogwartsMoveFadeHold
+				? 15.f
+				: m_fOriginalHogwartsMoveFadeHoldDuration);
+	}
+
 	if (!IsRagdollActive())
 		__super::Update(fTimeDelta);
 
@@ -553,7 +570,23 @@ void CShopNpc::Update(E::_float fTimeDelta)
 		!IsTalking())
 	{
 		m_bWandPurchaseDialoguePending = false;
-		RestartDialogueAtIndexForTest(6u);
+		// 구매 완료 직후 빠르게 암전하고, 후속 대화 카메라가 준비되면
+		// 같은 속도로 검은 화면을 걷어낸다.
+		RestartDialogueAtIndexForTest(6u, 0.f, 2.f, 1.f);
+	}
+
+	// 구매 후 이어지는 스펠 학습과 마지막 NPC 대화까지 모두 끝난 뒤
+	// 지연시킨 퀘스트를 나머지 HUD와 같은 시점에 복원한다.
+	if (m_bQuestRestoreDeferred &&
+		!m_bWandBoxPresentationPending &&
+		!m_bWandBoxPresentationActive &&
+		!m_bWandPurchaseDialoguePending &&
+		!uiManager->IsWandShopOpen() &&
+		!IsTalking() && GetState() == STATE::IDLE)
+	{
+		m_bQuestRestoreDeferred = false;
+		uiManager->SetQuestFadeInDeferred(false);
+		uiManager->FadeInQuest(0.5f);
 	}
 
 	const _bool talking = IsTalking() && GetState() == STATE::TALKING &&
@@ -664,6 +697,12 @@ void CShopNpc::SuspendGameplayForRagdoll()
 	CancelDialogue();
 	StopDialogueCameraOnlyForTest();
 	auto* pUIManager = GET_SINGLE(UIManager);
+	if (m_bQuestRestoreDeferred)
+	{
+		m_bQuestRestoreDeferred = false;
+		pUIManager->SetQuestFadeInDeferred(false);
+		pUIManager->FadeInQuest(0.5f);
+	}
 	if (pUIManager->IsWandShopOpen())
 		pUIManager->CloseWandShop();
 
