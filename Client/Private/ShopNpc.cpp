@@ -10,7 +10,7 @@
 #include "ResModelBone.h"
 #include "UIManager.h"
 #include "AnimatedWorldObject.h"
-
+#include "BTRoot.h"
 NS_USING(Client)
 
 CShopNpc::CShopNpc(const CShopNpc& prototype)
