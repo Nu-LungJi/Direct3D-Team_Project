@@ -232,6 +232,7 @@ HRESULT CLevelHogwartWorld::Initialize()
 		Desc.FadeHoldDuration = 0.25f;
 		Desc.IdleExpressionAnim = "AN_BODY__Idle__Hu_BM_Idle_Casual_Loop.bin";
 		Desc.WorldSpaceShop = false;
+		Desc.SecondSpellMiniGame = true;
 		Desc.RepositionPlayerForDialogue = false;
 		Desc.ResolveStartDialogueIndex = []()
 		{
@@ -310,6 +311,35 @@ HRESULT CLevelHogwartWorld::Initialize()
 				"ShopNpcDialogueCloseUp",
 				true,
 				3.5f
+			},
+			{
+				"오 정말 멋진 지팡이군요. 마법도 하나 같이 배워볼까요?",
+				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::START_SPELL_MINIGAME,
+				true,
+				false,
+				"ShopNpcDialogueCloseUp",
+				true,
+				5.f,
+				"ShopNpcSpellLesson",
+				true,
+				true
+			},
+			{
+				"그 마법은 함부러 쓰면 안되는 마법입니다. 조심하세요!",
+				"AN_BODY__DialogueTalk__HU_STN_STND_Conv_Talk.bin",
+				true,
+				{},
+				{},
+				CInteractiveNpc::DIALOGUE_ACTION::NONE,
+				false,
+				false,
+				"ShopNpcDialogueCloseUp",
+				true,
+				5.f
 			}
 		};
 		// 기존 호그와트 쪽 액티비티 시작 지점을 이동 목적지로 사용한다.

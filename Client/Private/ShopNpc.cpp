@@ -8,6 +8,7 @@
 #include "ResModelAnim.h"
 #include "ResModelBone.h"
 #include "UIManager.h"
+#include "AnimatedWorldObject.h"
 
 NS_USING(Client)
 
@@ -227,6 +228,11 @@ void CShopNpc::UpdateGUI()
 		m_bSpeechJawChannel ? "yes" : "no",
 		m_bSpeechLowerTeethChannel ? "yes" : "no",
 		m_bSpeechTongueChannel ? "yes" : "no");
+	ImGui::Separator();
+	ImGui::TextUnformatted("Wand Box Local Transform");
+	ImGui::DragFloat3("Box Position", &m_vWandBoxLocalPosition.x, 0.01f);
+	ImGui::DragFloat3("Box Rotation", &m_vWandBoxLocalRotation.x, 1.f);
+	ImGui::DragFloat3("Box Scale", &m_vWandBoxLocalScale.x, 0.01f, 0.01f, 10.f);
 }
 
 void CShopNpc::OpenShop()
@@ -282,6 +288,9 @@ void CShopNpc::PrepareDialogueCamera(const _string& cinematicName)
 void CShopNpc::Update(E::_float fTimeDelta)
 {
 	__super::Update(fTimeDelta);
+	auto* uiManager = GET_SINGLE(UIManager);
+	if (uiManager->ConsumeWandPurchaseCompleted())
+		m_bWandPurchaseDialoguePending = true;
 	if (!m_pModelAnimator)
 		return;
 
@@ -297,6 +306,36 @@ void CShopNpc::Update(E::_float fTimeDelta)
 				0.f, XMConvertToRadians(180.f), 0.f));
 		GetTransform().Update();
 		m_pModelAnimator->Play_Anim(m_iWandBoxOpenAnimation, false, 0.15f);
+
+		CAnimatedWorldObject::DESC boxDesc{};
+		boxDesc.sObjectTag = "Ollivander_WandBox_Full_Selection";
+		boxDesc.sModelGroupTag = MagicEnumToStringView(LEVEL::HOGWART_WORLD);
+		boxDesc.sModelResourceTag = "Model_Resource_Ollivander_WandBox_Full_Selection";
+		boxDesc.sAnimationName = "AN_Scene.bin";
+		boxDesc.bLoop = false;
+		boxDesc.fAnimationSpeed = 1.f;
+		boxDesc.ParentHandle = GetHandle();
+		// The supplied AN_Scene clip contains the prop's hand-following motion,
+		// so it is aligned to Ollivander's root instead of double-attaching it
+		// to an animated wrist bone.
+		boxDesc.iParentBoneIndex = -1;
+		boxDesc.vPosition = m_vWandBoxLocalPosition;
+		boxDesc.vRotation = m_vWandBoxLocalRotation;
+		boxDesc.vScale = m_vWandBoxLocalScale;
+		if (const auto box = CGameInstance::Get().AddGameObjectToLayer(
+				LEVEL::HOGWART_WORLD,
+				PROTO_GAMEOBJECT::Prototype_GameObject_AnimatedWorldObject,
+				"03_WandBox",
+				&boxDesc))
+			m_hWandBox = *box;
+	}
+
+	if (m_hWandBox.IsValid())
+	{
+		if (auto* box = Cast<CAnimatedWorldObject>(
+			CGameInstance::Get().GetGameObjectByHandle(m_hWandBox)))
+			box->ApplyTransform(m_vWandBoxLocalPosition,
+				m_vWandBoxLocalRotation, m_vWandBoxLocalScale);
 	}
 
 	if (m_bWandBoxPresentationActive)
@@ -329,7 +368,7 @@ void CShopNpc::Update(E::_float fTimeDelta)
 			m_bWandPresentationOwnsTimePause =
 				E::CGameInstance::Get().BeginTimeScale(pauseDesc);
 			// ShopNpcWandBox의 마지막 카메라 포즈를 기준으로 패널을
-			// 화면 정중앙 3m 앞에 배치한다. 카메라 키가 수정되어도
+			// 카메라 전방 및 화면 오른쪽에 배치한다. 카메라 키가 수정되어도
 			// NPC 로컬 오프셋을 런타임에 다시 계산해 같은 구도를 유지한다.
 			_float3 panelOffset{ -2.f, 1.5f, 0.2f };
 			if (auto* activeCamera = E::CGameInstance::Get().GetActiveCamera())
@@ -339,8 +378,11 @@ void CShopNpc::Update(E::_float fTimeDelta)
 					activeCamera->GetTransform().GetLoadedPostion();
 				const _vector cameraLook = XMVector3Normalize(
 					activeCamera->GetTransform().GetState(E::STATE::LOOK));
+				const _vector cameraRight = XMVector3Normalize(
+					activeCamera->GetTransform().GetState(E::STATE::RIGHT));
 				const _vector panelPosition =
-					cameraPosition + cameraLook * PANEL_DISTANCE;
+					cameraPosition + cameraLook * PANEL_DISTANCE +
+					cameraRight * 1.05f;
 				const _vector panelDelta =
 					panelPosition - GetTransform().GetLoadedPostion();
 				const _vector npcRight = XMVector3Normalize(
@@ -357,7 +399,7 @@ void CShopNpc::Update(E::_float fTimeDelta)
 				};
 			}
 			GET_SINGLE(UIManager)->OpenWandShopWorld(
-				GetHandle(), panelOffset, { 0.f, 180.f, 0.f }, 0.32f);
+				GetHandle(), panelOffset, { 0.f, 180.f, 0.f }, 0.22f);
 			m_bWandShopOpenedByPresentation = true;
 		}
 		else if (m_bWandShopOpenedByPresentation &&
@@ -369,7 +411,21 @@ void CShopNpc::Update(E::_float fTimeDelta)
 			m_bWandPresentationOwnsTimePause = false;
 			m_bWandBoxPresentationActive = false;
 			StopDialogueCameraOnlyForTest();
+			if (auto* box = CGameInstance::Get().GetGameObjectByHandle(m_hWandBox))
+				box->SetPendingDestroy();
+			m_hWandBox = {};
 		}
+	}
+
+	// 구매용 E 홀드가 완료되어 상점 연출이 정리되면, 추가 입력 없이
+	// 기존 대화 페이드 및 CloseUp 시네마틱으로 후속 대화를 시작한다.
+	if (m_bWandPurchaseDialoguePending &&
+		!uiManager->IsWandShopOpen() &&
+		!m_bWandBoxPresentationActive &&
+		!IsTalking())
+	{
+		m_bWandPurchaseDialoguePending = false;
+		RestartDialogueAtIndexForTest(6u);
 	}
 
 	const _bool talking = IsTalking() && GetState() == STATE::TALKING &&

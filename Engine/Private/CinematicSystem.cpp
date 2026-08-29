@@ -12,6 +12,7 @@ NS_USING(Engine)
 namespace
 {
 	constexpr const _char* CINEMATIC_LOAD_ROOT = "./Resources/json/Cinematics";
+	constexpr const _char* CINEMATIC_PROJECT_ROOT = "./JsonFiles/Cinematics";
 	constexpr const _char* CINEMATIC_JSON_ROOT = "Cinematic";
 
 	_bool IsValidCinematicName(const std::string& CinematicName)
@@ -238,7 +239,14 @@ HRESULT CCinematicSystem::Load(const std::string& CinematicName)
 		return E_INVALIDARG;
 	}
 
-	const std::filesystem::path FilePath = std::filesystem::path{ CINEMATIC_LOAD_ROOT } / (CinematicName + ".json");
+	std::filesystem::path FilePath =
+		std::filesystem::path{ CINEMATIC_LOAD_ROOT } /
+		(CinematicName + ".json");
+	if (!std::filesystem::exists(FilePath))
+	{
+		FilePath = std::filesystem::path{ CINEMATIC_PROJECT_ROOT } /
+			(CinematicName + ".json");
+	}
 
 	FCinematicAssetData Data{};
 	const SERIALIZE_RESULT Result = CGameInstance::Get().JsonDeSerializeDetailed(FilePath.generic_string(), Data, CINEMATIC_JSON_ROOT);

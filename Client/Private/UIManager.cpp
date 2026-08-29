@@ -223,8 +223,10 @@ void UIManager::UpdateWandShopWorldBillboard()
 
 	panelLook = XMVector3Normalize(panelLook);
 	const _vector worldUp = XMVectorSet(0.f, 1.f, 0.f, 0.f);
+	// The RTT quad faces back toward the camera. Build its screen-right axis
+	// from look x up so the UI texture is not mirrored horizontally.
 	const _vector panelRight = XMVector3Normalize(
-		XMVector3Cross(worldUp, panelLook));
+		XMVector3Cross(panelLook, worldUp));
 	const _matrix panelPose{
 		XMVectorSetW(panelRight, 0.f),
 		worldUp,

@@ -265,7 +265,15 @@ void CWandShop::CompletePurchase(UIManager& manager)
 		}
 	}
 
+	m_bPurchaseCompleted = true;
 	Close(manager);
+}
+
+_bool CWandShop::ConsumePurchaseCompleted()
+{
+	const _bool completed = m_bPurchaseCompleted;
+	m_bPurchaseCompleted = false;
+	return completed;
 }
 
 void CWandShop::Close(UIManager& manager)

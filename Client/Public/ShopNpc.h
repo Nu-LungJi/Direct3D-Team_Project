@@ -69,6 +69,11 @@ private:
 	_float m_fWandBoxCameraElapsed{};
 	_bool m_bWandShopOpenedByPresentation{};
 	_bool m_bWandPresentationOwnsTimePause{};
+	_bool m_bWandPurchaseDialoguePending{};
+	E::CHandle m_hWandBox{};
+	_float3 m_vWandBoxLocalPosition{ 0.f, 0.f, 0.f };
+	_float3 m_vWandBoxLocalRotation{ 0.f, 0.f, 0.f };
+	_float3 m_vWandBoxLocalScale{ 1.f, 1.f, 1.f };
 };
 
 NS_END

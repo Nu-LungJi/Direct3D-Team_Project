@@ -2301,9 +2301,9 @@ HRESULT CRenderer::Render_UI3D() {
 	m_pContext->RSSetViewports(1, &m_pBackBufferViewPort->GetViewPort());
 
 	// The RTT contents use the orthographic UI camera, but the physical quad
-	// must always be projected by the gameplay camera.  Do not depend on the
-	// camera left in the render context by the preceding RTT pass.
-	auto* gameCamera = CGameInstance::Get().GetCamera("PlayerCamera");
+	// must be projected by the currently active world camera. This keeps the
+	// panel aligned during both gameplay and cinematic camera shots.
+	auto* gameCamera = CGameInstance::Get().GetActiveCamera();
 	if (!gameCamera)
 		gameCamera = CGameInstance::Get().GetActiveCamera();
 	if (gameCamera &&

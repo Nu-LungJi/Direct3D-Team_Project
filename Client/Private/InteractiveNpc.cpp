@@ -216,8 +216,27 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 			return;
 		m_fIntroElapsed = -m_fFadeHoldDuration;
 		const auto& line = m_Dialogue[m_iDialogueIndex];
-		if (!line.CinematicName.empty() && line.CinematicName != m_DialogueCinematicName)
+		if (m_ePendingFadeAction != DIALOGUE_ACTION::NONE)
+		{
+			if (!line.ActionCinematicName.empty())
+			{
+				SwitchDialogueCamera(
+					line.ActionCinematicName,
+					line.ActionCinematicTargetsPlayer);
+			}
+
+			// 화면이 완전히 검은 동안 카메라, 미니게임 객체, 월드 정지 등
+			// 액션에 필요한 모든 초기화를 끝낸 뒤 밝아지는 페이드를 시작한다.
+			const DIALOGUE_ACTION action = m_ePendingFadeAction;
+			m_ePendingFadeAction = DIALOGUE_ACTION::NONE;
+			ExecuteDialogueAction(action);
+			m_bActionSetupCompletedUnderFade = true;
+		}
+		else if (!line.CinematicName.empty() &&
+			line.CinematicName != m_DialogueCinematicName)
+		{
 			SwitchDialogueCamera(line.CinematicName);
+		}
 		SetRootMotionActive(line.UseRootMotion);
 		SetRootMotionRotationActive(line.UseRootMotion);
 		SetExpression(line.ExpressionAnim, line.LoopExpression);
@@ -230,6 +249,12 @@ void CInteractiveNpc::UpdateDialogueIntro(_float fTimeDelta)
 	{
 		if (m_fIntroElapsed < m_fFadeDuration)
 			return;
+		if (m_bActionSetupCompletedUnderFade)
+		{
+			m_bActionSetupCompletedUnderFade = false;
+			m_eConversationPhase = CONVERSATION_PHASE::TALKING;
+			return;
+		}
 		ShowCurrentDialogueLine();
 		return;
 	}
@@ -269,6 +294,12 @@ void CInteractiveNpc::BeginLineTransition()
 	SyncInteractionPrompt(false);
 	GET_SINGLE(UIManager)->ClearDialoguePopups(false);
 	GET_SINGLE(UIManager)->CreateFadeIn(0.f, m_fFadeDuration);
+}
+
+void CInteractiveNpc::BeginActionTransition(DIALOGUE_ACTION action)
+{
+	m_ePendingFadeAction = action;
+	BeginLineTransition();
 }
 
 void CInteractiveNpc::ShowCurrentDialogueLine()
@@ -357,6 +388,18 @@ void CInteractiveNpc::AdvanceDialogue()
 
 	if (currentLine.ActionOnAdvance != DIALOGUE_ACTION::NONE)
 	{
+		if (currentLine.FadeBeforeAction)
+		{
+			BeginActionTransition(currentLine.ActionOnAdvance);
+			return;
+		}
+		if (currentLine.ActionOnAdvance == DIALOGUE_ACTION::START_SPELL_MINIGAME &&
+			!currentLine.ActionCinematicName.empty())
+		{
+			SwitchDialogueCamera(
+				currentLine.ActionCinematicName,
+				currentLine.ActionCinematicTargetsPlayer);
+		}
 		ExecuteDialogueAction(currentLine.ActionOnAdvance);
 		return;
 	}
@@ -434,7 +477,20 @@ void CInteractiveNpc::ExecuteDialogueAction(DIALOGUE_ACTION action)
 
 	case DIALOGUE_ACTION::START_SPELL_MINIGAME:
 		if (StartSpellMiniGame())
-			FinishDialogue();
+		{
+			m_bResumeDialogueAfterSpellMiniGame =
+				m_iDialogueIndex + 1u < m_Dialogue.size();
+			if (m_bResumeDialogueAfterSpellMiniGame)
+			{
+				++m_iDialogueIndex;
+				GET_SINGLE(UIManager)->ClearDialoguePopups(false);
+				SyncInteractionPrompt(false);
+			}
+			else
+			{
+				FinishDialogue();
+			}
+		}
 		break;
 
 	case DIALOGUE_ACTION::START_COIN_MINIGAME:
@@ -619,7 +675,9 @@ void CInteractiveNpc::BeginDialogueCamera()
 			StringID{ m_DialogueCinematicName }, GetHandle(), options) == S_OK;
 }
 
-void CInteractiveNpc::SwitchDialogueCamera(const _string& cinematicName)
+void CInteractiveNpc::SwitchDialogueCamera(
+	const _string& cinematicName,
+	_bool targetPlayer)
 {
 	if (cinematicName.empty())
 		return;
@@ -632,7 +690,9 @@ void CInteractiveNpc::SwitchDialogueCamera(const _string& cinematicName)
 	options.eReturnMode = ECinematicReturnMode::Immediate;
 	m_bDialogueCinematicPlaying =
 		E::CGameInstance::Get().PlayCinematic(
-			StringID{ m_DialogueCinematicName }, GetHandle(), options) == S_OK;
+			StringID{ m_DialogueCinematicName },
+			targetPlayer ? m_hInteractionPlayer : GetHandle(),
+			options) == S_OK;
 }
 
 
@@ -744,6 +804,21 @@ void CInteractiveNpc::UpdateMiniGameState()
 			return;
 
 		EndMiniGameWorldPause();
+		if (m_bResumeDialogueAfterSpellMiniGame &&
+			m_iDialogueIndex < m_Dialogue.size())
+		{
+			m_bResumeDialogueAfterSpellMiniGame = false;
+			const auto& line = m_Dialogue[m_iDialogueIndex];
+			if (!line.CinematicName.empty() &&
+				line.CinematicName != m_DialogueCinematicName)
+			{
+				SwitchDialogueCamera(line.CinematicName);
+			}
+			m_eActiveMiniGame = ACTIVE_MINIGAME::NONE;
+			m_eState = STATE::TALKING;
+			ShowCurrentDialogueLine();
+			return;
+		}
 		EndDialogueCamera();
 		SetPlayerMovementLocked(false);
 		GET_SINGLE(UIManager)->PlayFadeInAll2DUI(0.f, m_fFadeDuration);

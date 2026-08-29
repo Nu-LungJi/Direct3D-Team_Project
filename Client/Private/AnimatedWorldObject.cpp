@@ -49,19 +49,22 @@ HRESULT CAnimatedWorldObject::Initialize(void* pArg)
 			"PERMANENT", "Prototype_Component_Animator", "Com_AnimatedObjectAnimator", &animator, &m_pAnimator)))
 		return E_FAIL;
 
-	CComBeHavior::BEHAVIOR_DESC behaviorDesc{};
-	behaviorDesc.OwnerName = "Com_AnimatedObjectBT";
-	behaviorDesc.resBeHaviorMajor = desc->sBehaviorMajorTag;
-	behaviorDesc.resBeHaviorMinor = desc->sBehaviorMinorTag;
-	if (FAILED(AddComponentFromProto(
-			"BEHAVIOR",
-			"Prototype_Component_BeHavior",
-			"Com_AnimatedObjectBT",
-			&behaviorDesc,
-			&m_pBehavior)))
+	if (!desc->sBehaviorMajorTag.empty() || !desc->sBehaviorMinorTag.empty())
 	{
-		return E_FAIL;
+		CComBeHavior::BEHAVIOR_DESC behaviorDesc{};
+		behaviorDesc.OwnerName = "Com_AnimatedObjectBT";
+		behaviorDesc.resBeHaviorMajor = desc->sBehaviorMajorTag;
+		behaviorDesc.resBeHaviorMinor = desc->sBehaviorMinorTag;
+		if (FAILED(AddComponentFromProto(
+				"BEHAVIOR",
+				"Prototype_Component_BeHavior",
+				"Com_AnimatedObjectBT",
+				&behaviorDesc,
+				&m_pBehavior)))
+			return E_FAIL;
 	}
+	m_ParentHandle = desc->ParentHandle;
+	m_iParentBoneIndex = desc->iParentBoneIndex;
 
 	m_pAnimator->SetEvaluationMode(CComAnimator::EVALUATION_MODE::CPU_GPU);
 	m_pAnimator->Build_BoneMatrices_CPU(0.f);
@@ -95,6 +98,30 @@ void CAnimatedWorldObject::Update(E::_float delta)
 }
 void CAnimatedWorldObject::LateUpdate(E::_float)
 {
+	if (m_ParentHandle.IsValid())
+	{
+		if (auto* parent = CGameInstance::Get().GetGameObjectByHandle(m_ParentHandle))
+		{
+			_matrix parentWorld = parent->GetTransform().GetLoadedWorldMatrix();
+			if (m_iParentBoneIndex >= 0)
+			{
+				if (auto* parentModel = parent->GetComponent<CComModelInstance>("ComCModelIntance"))
+				{
+					const auto& bones = parentModel->Get_CombinedBoneMatrices();
+					if (static_cast<size_t>(m_iParentBoneIndex) < bones.size())
+					{
+						_matrix socket = XMLoadFloat4x4(&bones[m_iParentBoneIndex]);
+						for (uint32_t axis = 0; axis < 3; ++axis)
+							socket.r[axis] = XMVector3Normalize(socket.r[axis]);
+						parentWorld = socket * parentWorld;
+					}
+				}
+			}
+			_float4x4 storedParent{};
+			XMStoreFloat4x4(&storedParent, parentWorld);
+			GetTransform().SetParentWorldMatrix(storedParent);
+		}
+	}
 	GetTransform().Update();
 	if (!m_pModelInstance || !m_pAnimator || !m_pModelInstance->GetModel() ||
 		m_pModelInstance->GetModel()->GetAnimations().empty())

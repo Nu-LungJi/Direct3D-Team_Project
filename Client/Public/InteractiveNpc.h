@@ -63,6 +63,10 @@ public:
 		// 이 대사를 키 입력 없이 다음 대사/액션으로 진행한다.
 		_bool AutoAdvance{};
 		_float AutoAdvanceDelay{ 3.f };
+		// 현재 대사의 액션을 실행하기 직전에 전환할 시네마틱.
+		_string ActionCinematicName{};
+		_bool ActionCinematicTargetsPlayer{};
+		_bool FadeBeforeAction{};
 	};
 
 	struct DESC : public WORLD_AGENT_DESC
@@ -169,12 +173,15 @@ private:
 	// 암전, 플레이어 이동, 카메라 전환, 화면 복귀 순서를 갱신한다.
 	void UpdateDialogueIntro(_float fTimeDelta);
 	void BeginLineTransition();
+	void BeginActionTransition(DIALOGUE_ACTION action);
 	void ShowCurrentDialogueLine();
 	// 첫 대사와 해당 표정 애니메이션을 화면에 표시한다.
 	void ShowFirstDialogueLine();
 	// 플레이어를 NPC 앞에 배치하고 대화용 시네마틱 카메라를 시작한다.
 	void BeginDialogueCamera();
-	void SwitchDialogueCamera(const _string& cinematicName);
+	void SwitchDialogueCamera(
+		const _string& cinematicName,
+		_bool targetPlayer = false);
 	// 대화용 시네마틱을 종료하고 기존 플레이어 카메라로 복귀한다.
 	void EndDialogueCamera();
 	// 대화 중 플레이어 이동 입력의 잠금 상태를 변경한다.
@@ -216,6 +223,7 @@ private:
 	_bool m_bMovePositionApplied{};
 	_bool m_bOwnsWorldPause{};
 	_bool m_bDialogueCinematicPlaying{};
+	_bool m_bResumeDialogueAfterSpellMiniGame{};
 	_bool m_bAutoStartOnEnter{};
 	_bool m_bAutoStartTriggered{};
 	size_t m_iAutoAdvanceOpeningLineCount{};
@@ -245,6 +253,8 @@ private:
 	_float m_fMoveStopDistance{ 0.2f };
 	CHandle m_hAccioActivity{};
 	DIALOGUE_ACTION m_ePendingDialogueAction{ DIALOGUE_ACTION::NONE };
+	DIALOGUE_ACTION m_ePendingFadeAction{ DIALOGUE_ACTION::NONE };
+	_bool m_bActionSetupCompletedUnderFade{};
 
 	enum class ACTIVE_MINIGAME
 	{

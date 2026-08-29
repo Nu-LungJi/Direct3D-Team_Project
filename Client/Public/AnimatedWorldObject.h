@@ -29,6 +29,10 @@ public:
 		_float fStartRatio{};
 		_string sBehaviorMajorTag{};
 		_string sBehaviorMinorTag{};
+		// Optional socket parent.  A negative bone index follows only the
+		// parent's object transform, which is useful for scene-authored props.
+		E::CHandle ParentHandle{};
+		int32_t iParentBoneIndex{ -1 };
 	};
 
 private:
@@ -67,6 +71,8 @@ private:
 	uint64_t m_iInstancedRenderCount{};
 	_bool m_bSubmittedThisFrame{};
 	_bool m_bRenderedLastFrame{};
+	E::CHandle m_ParentHandle{};
+	int32_t m_iParentBoneIndex{ -1 };
 
 public:
 	static E::UPtr<CAnimatedWorldObject> Create();

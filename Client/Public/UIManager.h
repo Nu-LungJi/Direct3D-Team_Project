@@ -129,6 +129,10 @@ public:
 	void OpenWandShopPage(uint32_t pageIndex);
 	void CloseWandShop();
 	_bool IsWandShopOpen() const { return m_WandShop.IsOpen(); }
+	_bool ConsumeWandPurchaseCompleted()
+	{
+		return m_WandShop.ConsumePurchaseCompleted();
+	}
 	_float2 GetUIInteractionMousePosition() const;
 	_bool IsWandShopWorldMode() const { return m_bWandShopWorldMode; }
 
