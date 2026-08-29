@@ -80,8 +80,8 @@ namespace
 			pMonster && (!pMonster->Is_Spawn() || pMonster->Get_CurrentHp() <= 0))
 			return false;
 
-		if (Engine::Cast<CSkillTarget>(pObject))
-			return true;
+		if (const auto* pSkillTarget = Engine::Cast<CSkillTarget>(pObject))
+			return pSkillTarget->CanBePlayerCombatTarget();
 
 		const auto* pBall = Engine::Cast<CAccioBall>(pObject);
 		return pBall && pBall->CanAcquireControl(hPlayer);
@@ -1129,6 +1129,10 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 			ETOUI(COLLISION_LAYER::ENEMY_BODY),
 			TARGET_QUERY_MAX_HITS);
 		AppendTargets(
+			DEFAULT_TARGET_ACQUIRE_RANGE,
+			ETOUI(COLLISION_LAYER::NPC_BODY),
+			TARGET_QUERY_MAX_HITS);
+		AppendTargets(
 			ACCIO_BALL_TARGET_ACQUIRE_RANGE,
 			ETOUI(COLLISION_LAYER::WORLD_DYNAMIC),
 			ACCIO_BALL_TARGET_QUERY_MAX_HITS);
@@ -1206,6 +1210,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 		
 
 			std::vector<PX_OVERLAP_RESULT> results{};
+			// NPC_BODY는 위의 우클릭 선택에서만 검색한다. 평상시 자동 탐색에
+			// 포함하면 상점 NPC가 근처에 있다는 이유만으로 계속 외곽선이 생긴다.
 			if (CGameInstance::Get().GetPhysXManager()->OverlapMultiple(PX_OVERLAP_DESC{ .tGeometry = {.eType = PX_QUERY_GEOMETRY_TYPE::SPHERE, .fRadius = 40.f}, .tPose = {.vPosition = ori},.tFilter = {.iQueryMask = ETOUI(COLLISION_LAYER::ENEMY_BODY)} }, results))
 			{
 
@@ -1258,7 +1264,8 @@ void CPlayer::PriorityUpdate(E::_float fTimeDelta)
 					DEFAULT_TARGET_KEEP_RANGE;
 				keepTargetOverlapDesc.tPose.vPosition = ori;
 				keepTargetOverlapDesc.tFilter.iQueryMask =
-					ETOUI(COLLISION_LAYER::ENEMY_BODY);
+					ETOUI(COLLISION_LAYER::ENEMY_BODY) |
+					ETOUI(COLLISION_LAYER::NPC_BODY);
 
 				const _bool bOverlapped = CGameInstance::Get().
 					GetPhysXManager()->OverlapMultiple(

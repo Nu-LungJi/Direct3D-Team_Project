@@ -2,6 +2,7 @@
 #include "InteractiveNpc.h"
 
 NS_BEGIN(Client)
+class CNpcRagdollController;
 
 // 대사와 시네마틱은 CInteractiveNpc의 흐름을 사용하고,
 // OPEN_SHOP 대사 액션에서 지팡이 상점 UI를 여는 상점 전용 NPC.
@@ -22,13 +23,23 @@ public:
 private:
 	CShopNpc() = default;
 	CShopNpc(const CShopNpc& prototype);
-	~CShopNpc() override = default;
+	~CShopNpc() override;
 
 public:
 	HRESULT Initialize(void* pArg) override;
 	void PriorityUpdate(E::_float fTimeDelta) override;
+	void FixedUpdate(E::_float fTimeDelta) override;
 	void Update(E::_float fTimeDelta) override;
+	void LateUpdate(E::_float fTimeDelta) override;
 	void UpdateGUI() override;
+	_bool Check_Table(PLAYER_SKILL_TYPE eType) override;
+	_bool CanBePlayerCombatTarget() const override;
+	_bool TryGetSkillTargetPosition(_float3& OutPosition) const override;
+	_bool RequestRagdollActivation(
+		const _float3& vLinearVelocity = {},
+		const _float3& vAngularVelocityRadians = {});
+	_bool ResetRagdoll();
+	_bool IsRagdollActive() const;
 
 	static E::UPtr<CShopNpc> Create();
 	E::UPtr<E::CPrototype> Clone(void* pArg) override;
@@ -43,7 +54,10 @@ protected:
 
 private:
 	void SpawnWandBoxAtFirstHandShot();
+	void SuspendGameplayForRagdoll();
 
+	UPtr<CNpcRagdollController> m_pRagdollController{};
+	_bool m_bRagdollGameplaySuspended{};
 	_bool m_bWorldSpaceShop{};
 	_float3 m_vShopPanelPositionOffset{ 0.f, 1.6f, 1.2f };
 	_float3 m_vShopPanelRotationOffsetDegrees{};
