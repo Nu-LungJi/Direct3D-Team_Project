@@ -78,7 +78,7 @@ std::future<bool> CLevelUIEditorLoader::Load()
 			{
 				res->Load();
 			}
-			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_MAP", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/T_Map_OverlandPaper_D.png"))))
+			if (auto res = E::CGameInstance::Get().AddResource("LEVEL_UIEDITOR", "TEX_MAP", E::CResTexture2D::Create(UITextureResourceLoader::ResolvePreferredPath("./Resources/SampleClient/Textures/UI/T_Map_OverlandPaper_D.dds"))))
 			{
 				res->Load();
 			}

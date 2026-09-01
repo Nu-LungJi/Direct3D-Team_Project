@@ -71,7 +71,7 @@ HRESULT CWater::InitializePrototype(void* Arg)
 
 	if (!gameInstance.GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER00"))
 	{
-		auto res = gameInstance.AddResourceT<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER00", CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/T_OceanSwell_N.png"));
+		auto res = gameInstance.AddResourceT<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER00", CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/T_OceanSwell_N.dds"));
 		if (!res)
 			return E_FAIL;
 		if (FAILED(res->Load()))
@@ -79,7 +79,7 @@ HRESULT CWater::InitializePrototype(void* Arg)
 	}
 	if (!gameInstance.GetResourceFirst<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER01"))
 	{
-		auto res = gameInstance.AddResourceT<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER01", CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/T_Water01_N.png"));
+		auto res = gameInstance.AddResourceT<CResTexture2D>("DEFAULT_TEXTURE", "TEX_DEFAULT_WATER01", CResTexture2D::Create("./Resources/Engine/Texture/DefaultTexture/T_Water01_N.dds"));
 		if (!res)
 			return E_FAIL;
 		if (FAILED(res->Load()))
