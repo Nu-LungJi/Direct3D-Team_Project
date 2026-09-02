@@ -626,12 +626,15 @@ SOUND_ID CBTAnimRoot::Find_Sound(const MONSOUND& MonSound,  CGameObject* pObj, C
 
 	auto* pSoundTable = pBB->Get_Value<std::unordered_map<_string, std::vector<_string>>>(PUBLIC_KEY::SOUNDTABLE);
 
-	auto& iter = *pSoundTable->find(MonSound.SoundKey);
+	if (pSoundTable == nullptr)
+		return INVALID_SOUND_ID;
 
-	if (iter == *pSoundTable->end() || iter.second.empty())
+	auto iter = pSoundTable->find(MonSound.SoundKey);
+
+	if (iter == pSoundTable->end() || iter->second.empty())
 		return  INVALID_SOUND_ID;
 
-	auto& SoundPaths = iter.second;
+	auto& SoundPaths = iter->second;
 
 	int32_t iSoundIndex = Engine::RandInt(0, static_cast<int32_t>(SoundPaths.size()) - 1);
 
