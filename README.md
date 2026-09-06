@@ -5,7 +5,7 @@
 오픈월드 액션 RPG **Hogwarts Legacy · 호그와트 레거시**를 **C++와 DirectX 11 자체 엔진으로 모작한 7인 팀 프로젝트**입니다.
 호그와트·호그스미드 탐험, 주문 전투, 보스전과 빗자루 비행 콘텐츠를 제작했으며, **셰이더·렌더링을 주로 담당**했습니다. **Deferred PBR**을 중심으로 **다중 광원·그림자**, **볼류메트릭 안개·구름**, **SSR · PostProcess**를 구현하고 **레벨의 조명·재질·분위기**를 조정했습니다.
 ## [GitHub Repository](https://github.com/Nu-LungJi/Direct3D-Team_Project)
-## [게임 시연 영상](https://www.youtube.com/watch?v=pH1RYggPNs4)
+## [게임 시연 영상 (Demo Video)](https://www.youtube.com/watch?v=pH1RYggPNs4)
 
 | 항목        | 내용                                                                                        |
 | --------- | ----------------------------------------------------------------------------------------- |
