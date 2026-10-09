@@ -109,9 +109,9 @@ void CBTRandSelector::Shuffle()
 	if (!m_Shuffle.empty())
 		return;
 
-	uint32_t iRand = m_Actions.size();
+	uint32_t iRand = static_cast<uint32_t>(m_Actions.size());
 
-	for (size_t i = 0; i < iRand; ++i)
+	for (int32_t i = 0; i < iRand; ++i)
 		m_Shuffle.push_back(i);
 
 	for (size_t i = m_Shuffle.size(); i > 1; --i)

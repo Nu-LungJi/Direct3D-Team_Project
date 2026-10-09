@@ -16,9 +16,9 @@ class CResDynamicTexture2D;
 class CMyGFSDK_SSAO;
 class CMyFSR2_2;
 
-#define FROXELX	320
-#define FROXELY	180
-#define FROXELZ	96
+inline constexpr _float FROXELX = 320.f;
+inline constexpr _float FROXELY = 180.f;
+inline constexpr _float FROXELZ = 96.f;
 
 class CRenderer final : public CEngineBase {
 private:
@@ -50,6 +50,19 @@ public:			// Update
 
 private:		// GUI Update
 	VOID		RendererGUI();
+
+	VOID		ResetFogHeight();
+	VOID		ResetEnvironment();
+	VOID		ResetPostProcess();
+	VOID		ResetFogCore();
+	VOID		ResetFogDistance();
+	VOID		ResetCloudWind();
+	VOID		ResetCloudCore();
+	VOID		ResetCloudSub();
+	VOID		ResetCloudDistribution();
+
+private:
+	CB_ENVLIGHT m_DefaultEnvLight{};
 
 public:			// Render
 	HRESULT		Draw();
@@ -123,7 +136,7 @@ public:			// PostProcess Effect Function
 	VOID		Set_ChromaticRingOpacity(_float _Opacity) { m_fChromaticRingAlpha = _Opacity; }
 	VOID		Apply_OutlineEffect(std::optional<CHandle> _OutlineTargetHandle) { m_pOutlineTargetHandle = _OutlineTargetHandle; }
 	VOID		Clear_OutlineEffect();
-	
+
 private:		// Unbind Shader Resource / Shader / UAV / Render Target
 	VOID		Unbind_Resources();
 
@@ -152,6 +165,7 @@ public:			// Extra Function
 				// 3DUI
 	VOID		SetUI3DPanel(const _float4x4& worldMatrix, _bool active, _bool ignoreDepth = false);
 	VOID		ClearUI3DPanel();
+	VOID		CaptureEnvironmentDefaults();
 
 public:			// Volumetric Fog
 	const CB_VLFOG	Get_VolumetricFogOption()							{ return m_pFogInfo; }
@@ -303,7 +317,7 @@ private:
 	_bool			m_bApplyFilter		= { true };		// 필터 적용 ON-OFF
 	_bool			m_bMotionBlurEnabled{};
 	_bool			m_bApplyVolumetricFog	= { true };	// 볼류메트릭 효과 ON-OFF
-	_bool			m_bApplyVolumetricCloud		= { false };	// 볼류메트릭 클라우드 ON-OFF
+	_bool			m_bApplyVolumetricCloudFilter = true;	// 볼류메트릭 클라우드 ON-OFF
 	_bool			m_bApplyVolumetricCloudTAA = { false };	// 볼류메트릭 클라우드 ON-OFF
 	_bool			m_bApplyShadow		= { true };	// 그림자 ON-OFF
 
@@ -325,6 +339,7 @@ private:		// Volumetric Fog
 
 	SPtr<CResComputeShader>		m_pVolumetricCloudCS{};
 	SPtr<CResComputeShader>		m_pVolumetricCloudTAACS{};
+	SPtr<CResComputeShader>		m_pVolumetricCloudCompositeCS{};
 
 	TEXTURE3D					m_pVoxelLighting{};
 	TEXTURE3D					m_pVoxelAccumulated{};
@@ -333,6 +348,7 @@ private:		// Volumetric Fog
 
 	SPtr<CResDynamicTexture2D>	m_pVolumetricCloudTex{};
 	SPtr<CResDynamicTexture2D>	m_pVolumetricCloudTAATex[2]{};
+	SPtr<CResDynamicTexture2D>	m_pVolumetricCloudCompositeTex{};
 
 	CB_VLFOG					m_pFogInfo{};
 	CB_ENVLIGHT					m_pEnvLightInfo{};
@@ -354,6 +370,10 @@ private:		// Volumetric Fog
 	XMMATRIX					m_mPreviousViewMatrix{};
 	XMMATRIX					m_mPreviousProjMatrix{};
 
+	_bool						m_bCloudHistoryValid = false;
+	uint32_t					m_iCloudHistoryWrite = 0;
+
+	CCameraObject* m_pCloudPreviousCamera = nullptr;
 private:		// PostProcess
 	std::optional<CHandle>				m_pOutlineTargetHandle{};
 

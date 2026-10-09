@@ -152,7 +152,7 @@ void CBossTMB::OverLabTest(_vector vSrcPos, _float fRadius, int32_t iDamage)
 	const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
 	pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
 	pDbgLineRender->SetDepthTest(true);
-	pDbgLineRender->AddSphere(fRadius, XMMatrixTranslation(vSweepPos.x, vSweepPos.y, vSweepPos.z));
+	//pDbgLineRender->AddSphere(fRadius, XMMatrixTranslation(vSweepPos.x, vSweepPos.y, vSweepPos.z));
 	pDbgLineRender->SetColor(vPreviousColor);
 	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 

@@ -16,7 +16,7 @@ HRESULT CFlipbookUI::Initialize(void* pArg)
 	m_FLIPINFO.Columns = pDesc->Columns;
 	m_FLIPINFO.Rows = pDesc->Rows;
 	m_FLIPINFO.Duration = pDesc->Duration;
-	m_FLIPINFO.Padding = pDesc->Padding;
+	m_FLIPINFO.Padding = static_cast<_float>(pDesc->Padding);
 
 	// A flipbook created during another object's Update can be rendered before
 	// its own first Update. Prepare frame zero here so that first render does
@@ -111,8 +111,8 @@ void CFlipbookUI::Update(_float fTimeDelta)
 		}
 	}
 
-	m_curColum = m_CurrentFrame % m_Columns;
-	m_curRow = m_CurrentFrame / m_Columns;
+	m_curColum = static_cast<_float>(m_CurrentFrame % m_Columns);
+	m_curRow = static_cast<_float>(m_CurrentFrame / m_Columns);
 
 	m_texcoord = { m_curColum / (float)m_Columns + padding, m_curRow / (float)m_Rows + padding };
 	m_uvSize = { 1 / (float)m_Columns - padding * 2 , 1 / (float)m_Rows - padding * 2 };

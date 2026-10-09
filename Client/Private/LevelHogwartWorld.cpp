@@ -1633,6 +1633,7 @@ HRESULT CLevelHogwartWorld::Initialize_EnviromentLight()
 	EnviromentLightOption.m_fDirectLightBrightness = 0.60f;
 
 	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
+	CGameInstance::Get().CaptureEnvironmentDefaults();
 
 	return S_OK;
 }

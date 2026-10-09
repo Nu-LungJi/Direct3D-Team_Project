@@ -221,7 +221,7 @@ void CBaseApp::FrameEnd(_float fTimeDelta)
 HRESULT CBaseApp::Initialize(const ENGINE_DESC& engineDesc)
 {
 	m_UpdateTimer.Set_GoalTime(1.f / 60.f);
-	m_FixedUpdateTimer.Set_GoalTime(1.f/ 60.);
+	m_FixedUpdateTimer.Set_GoalTime(1.f/ 60.f);
 	m_MeasureTimer.Set_GoalTime(1.f);
 
 	Engine::ENGINE_DESC EngineDesc{ engineDesc };

@@ -652,7 +652,7 @@
     <FxCompile Include="..\Bin\ShaderFiles\Decal\Shader_HogsmeadePuddle.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="..\Bin\ShaderFiles\Decal\Shader_RWBFloor.hlsl" />
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RWBFloor.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Mesh.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_CPU_Player_Skill_Texture.hlsl" />
     <FxCompile Include="..\ShaderFiles\Shader_EnderDragon.hlsl">

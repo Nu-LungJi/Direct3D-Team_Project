@@ -524,6 +524,7 @@ HRESULT CLevelLastBossRanrok::Initialize_EnviromentLight() {
 	EnviromentLightOption.m_fDirectLightBrightness = 0.25f;
 
 	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
+	CGameInstance::Get().CaptureEnvironmentDefaults();
 
 	return S_OK;
 }

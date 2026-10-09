@@ -1,7 +1,7 @@
 #include "../ShaderHeader/SH_CommonFunction.hlsli"
 
-#define MAX_STEP			96
-#define MIN_STEP			16
+#define MAX_STEP			48
+#define MIN_STEP			12
 #define STEP_SIZE			15.f
 
 static const float	MS_SCATTERING_MULTIPLIER = 0.5f;
@@ -15,12 +15,14 @@ static const float	FOG_DENSITY			= { 0.0001f };
 
 static const float3 RANDOM_FACTOR		= { float3(0.06711056f, 0.00583715f, 52.9829189f) };
 
-static const uint	LIGHT_STEP_COUNT	= { 6 };
+static const uint	LIGHT_STEP_COUNT	= { 4 };
 static const float	LIGHT_STEP_SIZE		= { 40.f };
 
 static const float3 GLOBAL_SUN_COLOR = { float3(0.6f, 0.6f, 0.8f) };
 
 static const uint	BLUENOISE_TEXSIZE = { 256 };
+
+static const float	CLOUD_GROUND_Y = -500.f;
 
 static const int2	Offsets[4] = { int2(0, -1), int2(0, 1), int2(-1, 0), int2(1, 0) };
 
@@ -128,8 +130,9 @@ float3 Compute_MultipleScattering(float3 _RayDirection, float3 _LightDirection, 
 
 float Get_CloudDensity(float3 WorldPos, float BaseDensity)
 {
-	float3	WindOffset = WindDirection * WindTimeAccumulation;
-	float3	MovedPos = WorldPos + WindOffset;
+	const float WindSpeed = 100.f;
+	float3	WindOffset = WindDirection * WindTimeAccumulation * WindSpeed;
+	float3	MovedPos = WorldPos - WindOffset;
 	
 	float2	CurlUV = MovedPos.xz * 0.00005f;
 	float3	CurlNoiseValue = CurlNoiseTexture.SampleLevel(LinearWrap, CurlUV, 0).rgb;
@@ -149,7 +152,7 @@ float Get_CloudDensity(float3 WorldPos, float BaseDensity)
 	float	DistToCam = distance(MovedPos, g_vCamPos);
 	float	DetailFade = 1.f - saturate(DistToCam / 50000.f);
 	
-	float3	PlanetCenter = float3(g_vCamPos.x, -SPHERE_RADIUS, g_vCamPos.z);
+	float3	PlanetCenter = float3(g_vCamPos.x, CLOUD_GROUND_Y - SPHERE_RADIUS, g_vCamPos.z);
 	float	CurrentHeight = distance(WorldPos, PlanetCenter) - SPHERE_RADIUS;
 	
 	float	HeightRange = max(1.f, CloudMaxHeight - CloudMinHeight);
@@ -204,32 +207,33 @@ float2 Get_SphereIntersection(float3 _RayOrigin, float3 _RayDirection, float3 _C
 void CSMain(uint3 ID : SV_DispatchThreadID)
 {
 	uint Width, Height;
-	OriginalTexture.GetDimensions(Width, Height);
+	OUTPUT.GetDimensions(Width, Height);
 	if (ID.x >= Width || ID.y >= Height)	return;
 	
-	uint2	PixelPos = ID.xy;
-	float2	ScreenSpaceNDC = (float2(PixelPos) / float2(Width, Height)) * float2(2.f, -2.f) + float2(-1.f, 1.f);
+	uint2 PixelPos = ID.xy;
+	float2	TexCoord = (float2(PixelPos) + 0.5f) / float2(Width, Height);
+	float2 ScreenSpaceNDC = TexCoord * float2(2.f, -2.f) + float2(-1.f, 1.f);
 
 	float4	ViewPos = mul(float4(ScreenSpaceNDC, 1.f, 1.f), CloudJitterInvProj);
 	float3	ViewDir = normalize(ViewPos.xyz / ViewPos.w);
 	float3	RayDirection = normalize(mul(float4(ViewDir, 0.f), g_matInvView).xyz);
 
-	float3	PlanetCenter = float3(g_vCamPos.x, -SPHERE_RADIUS, g_vCamPos.z);
+	float3	PlanetCenter = float3(g_vCamPos.x, CLOUD_GROUND_Y - SPHERE_RADIUS, g_vCamPos.z);
 	
 	float	CloudStartHeight = Get_SphereIntersection(g_vCamPos, RayDirection, PlanetCenter, SPHERE_RADIUS + CloudMinHeight).y;
 	float	CloudEndHeight	 = Get_SphereIntersection(g_vCamPos, RayDirection, PlanetCenter, SPHERE_RADIUS + CloudMaxHeight).y;
 	
 	if (CloudEndHeight < 0.f || CloudStartHeight < 0.f || CloudStartHeight > CloudLODDistance)
 	{
-		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
+		//OUTPUT[PixelPos] = OriginalTexture[PixelPos];
+		OUTPUT[PixelPos] = float4(0.f, 0.f, 0.f, 1.f);
 		return;
 	}
 
 	uint DepthWidth, DepthHeight;
 	DepthTexture.GetDimensions(DepthWidth, DepthHeight);
 	
-	float2	TexCoord = float2(PixelPos) / float2(Width, Height);
-	uint2	DepthPixelPos = uint2(TexCoord * float2(DepthWidth, DepthHeight));
+	uint2 DepthPixelPos = min(uint2(TexCoord * float2(DepthWidth, DepthHeight)), uint2(DepthWidth - 1, DepthHeight - 1));
 	float	Depth = DepthTexture[DepthPixelPos].r; 
 	
 	bool	bIsSky = (Depth == 1.f || Depth == 0.f);
@@ -241,7 +245,8 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	
 	if (EarthHit.y > 0.f && bIsSky)
 	{
-		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
+		//OUTPUT[PixelPos] = OriginalTexture[PixelPos];
+		OUTPUT[PixelPos] = float4(0.f, 0.f, 0.f, 1.f);
 		return;
 	}
 	
@@ -249,7 +254,8 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	
 	if (DistanceToGeometry < CloudStartHeight || CloudStartHeight > CloudLODDistance)
 	{
-		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
+		//OUTPUT[PixelPos] = OriginalTexture[PixelPos];
+		OUTPUT[PixelPos] = float4(0.f, 0.f, 0.f, 1.f);
 		return;
 	}
 
@@ -258,7 +264,8 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	
 	if (MaxTravelDistance <= 0.f)
 	{
-		OUTPUT[PixelPos] = OriginalTexture[PixelPos];
+		//OUTPUT[PixelPos] = OriginalTexture[PixelPos];
+		OUTPUT[PixelPos] = float4(0.f, 0.f, 0.f, 1.f);
 		return;
 	}
 	
@@ -268,7 +275,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	float	DynamicStepSize = MaxTravelDistance / float(DynamicStepCount);
 	float3	CurrentPosition = g_vCamPos + (RayDirection * CloudStartHeight);
 	
-	float	TemporalSeed = CloudJitterOffset.x * 1000.f;
+	uint	TemporalSeed = (uint) CloudJitterOffset.x;
 	float	JitterValue = Jitter_BlueNoise(PixelPos, TemporalSeed);
 	CurrentPosition += RayDirection * (DynamicStepSize * JitterValue);
 
@@ -304,7 +311,8 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 			LightOpticalDepth *= (LightAbsorption * 10.f);
 			float3	MultipleScattering = Compute_MultipleScattering(RayDirection, CloudLightDirection, LightOpticalDepth, CloudScattering);
 			
-			float	HeightRatio = saturate((CurrentPosition.y - (-SPHERE_RADIUS) - SPHERE_RADIUS - CloudMinHeight) / max(1.f, CloudMaxHeight - CloudMinHeight));
+			float	HeightAboveGround = distance(CurrentPosition, PlanetCenter) - SPHERE_RADIUS;
+			float	HeightRatio = saturate((HeightAboveGround - CloudMinHeight) / max(1.f, CloudMaxHeight - CloudMinHeight));
 			float	AmbientAO = lerp(0.3f, 1.f, HeightRatio);
 			
 			float3	BaseColor = CloudColor * CloudBrightness * AmbientAO;
@@ -333,117 +341,98 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 	FinalColor *= FogFactor;
 	AccumulatedTransmittance = lerp(1.f, AccumulatedTransmittance, FogFactor);
 	
-	OUTPUT[PixelPos] = float4(FinalColor + OriginalTexture[PixelPos].rgb * AccumulatedTransmittance, 1.f);
-	return;
-}
-
-[numthreads(16, 16, 1)]
-void CSMain_CloudTAA_(uint3 ID : SV_DispatchThreadID)
-{
-	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y) return;
-
-	uint2	PixelPos = ID.xy;
-	float2	TexCoord = (float2(PixelPos) + 0.5f) * InvScreenResolution;
-	float2	ScreenSpaceNDC = TexCoord * float2(2.f, -2.f) + float2(-1.f, 1.f);
-
-	float	Depth = DepthTexture[PixelPos].r;
-    
-	float4	ClipSpace  = float4(ScreenSpaceNDC, Depth, 1.f);
-	float4	ViewSpace  = mul(ClipSpace, CloudJitterInvProj);
-	float4	WorldSpace = mul(ViewSpace / ViewSpace.w, g_matInvView);
-    
-	float4	PrevClipSpace = mul(WorldSpace, CloudPrevViewProj);
-	PrevClipSpace /= PrevClipSpace.w;
-	float2	PrevTexCoord = PrevClipSpace.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
-	
-	float3	CurrentColor = OriginalTexture[PixelPos].rgb;
-	
-	if (any(PrevTexCoord < 0.f) || any(PrevTexCoord > 1.f)) {
-		OUTPUT[PixelPos] = float4(CurrentColor, 1.f);
-		return;
-	}
-	
-	float3	MinColor = CurrentColor;
-	float3	MaxColor = CurrentColor;
-    
-	[unroll]
-	for (int x = -1; x <= 1; ++x)
-	{
-    [unroll]
-		for (int y = -1; y <= 1; ++y)
-		{
-			if (x == 0 && y == 0) continue;
-        
-			uint2 NeighborPos = clamp(PixelPos + int2(x, y), 0, (uint2) ScreenResolution - 1);
-			float3 NeighborColor = OriginalTexture[NeighborPos].rgb;
-        
-			MinColor = min(MinColor, NeighborColor);
-			MaxColor = max(MaxColor, NeighborColor);
-		}
-	}
-
-	float3 HistoryColor = HistoryTexture.SampleLevel(LinearClamp, PrevTexCoord, 0).rgb;
-	HistoryColor = clamp(HistoryColor, MinColor, MaxColor);
-    
-	float CurrentLuma = dot(CurrentColor, float3(0.299f, 0.587f, 0.114f));
-	float HistoryLuma = dot(HistoryColor, float3(0.299f, 0.587f, 0.114f));
-	float LumaDiff = abs(CurrentLuma - HistoryLuma);
-	
-	float BlendWeight = lerp(0.05f, 0.2f, saturate(LumaDiff * 5.f));
-	
-	//OUTPUT[PixelPos] = float4(lerp(HistoryColor, CurrentColor, BlendWeight), 1.f);
-	
-	float3 FinalColor = lerp(HistoryColor, CurrentColor, BlendWeight);
-	
-	float3 NeighborSum = 0.f;
-	NeighborSum += OriginalTexture[clamp(PixelPos + int2(0, -1), 0, ScreenResolution - 1)].rgb;
-	NeighborSum += OriginalTexture[clamp(PixelPos + int2(0, 1), 0, ScreenResolution - 1)].rgb;
-	NeighborSum += OriginalTexture[clamp(PixelPos + int2(-1, 0), 0, ScreenResolution - 1)].rgb;
-	NeighborSum += OriginalTexture[clamp(PixelPos + int2(1, 0), 0, ScreenResolution - 1)].rgb;
-
-	float3 BlurColor = NeighborSum * 0.25f;
-	
-	float SharpenAmount = 0.15f;
-	FinalColor = FinalColor + (FinalColor - BlurColor) * SharpenAmount;
-	
-	FinalColor = max(0.f, FinalColor);
-
-	OUTPUT[PixelPos] = float4(FinalColor, 1.f);
+	//OUTPUT[PixelPos] = float4(FinalColor + OriginalTexture[PixelPos].rgb * AccumulatedTransmittance, 1.f);
+	OUTPUT[PixelPos] = float4(FinalColor, AccumulatedTransmittance);
 	return;
 }
 
 [numthreads(16, 16, 1)]
 void CSMain_CloudTAA(uint3 ID : SV_DispatchThreadID)
 {
-	if (ID.x >= (uint) ScreenResolution.x || ID.y >= (uint) ScreenResolution.y)
+	uint Width, Height;
+	OUTPUT.GetDimensions(Width, Height);
+
+	if (ID.x >= Width || ID.y >= Height)
 		return;
 
-	uint2	PixelPos = ID.xy;
-	float	CenterDepth = DepthTexture[PixelPos].r;
-	float3	CenterColor = OriginalTexture[PixelPos].rgb;
-	
-	bool bIsSky = (CenterDepth == 1.f || CenterDepth == 0.f);
+	int2 Pixel = int2(ID.xy);
+	float2 UV = (float2(Pixel) + 0.5f) / float2(Width, Height);
 
-	float3	TotalColor = 0.f;
-	float	TotalWeight = 0.f;
-	
-	[unroll]
-	for (int x = -1; x <= 1; ++x) {
-		[unroll]
-		for (int y = -1; y <= 1; ++y) {
-			uint2 NeighborPos = clamp(PixelPos + int2(x, y), 0, (uint2) ScreenResolution - 1);
-			float NeighborDepth = DepthTexture[NeighborPos].r;
-			
-			bool bNeighborIsSky = (NeighborDepth == 1.f || NeighborDepth == 0.f);
-			if (bIsSky == bNeighborIsSky) {
-				float W = Weights[x + 1][y + 1];
-				TotalColor += OriginalTexture[NeighborPos].rgb * W;
-				TotalWeight += W;
-			}
+	float4 Current = OriginalTexture.Load(int3(Pixel, 0));
+
+    // 이전 화면 좌표를 구하지 못하면 현재 값 사용
+	OUTPUT[Pixel] = Current;
+
+    // 현재 픽셀의 시선 방향 계산
+	float2 NDC = UV * float2(2.f, -2.f) + float2(-1.f, 1.f);
+
+	float4 ViewPosition =
+        mul(float4(NDC, 1.f, 1.f), CloudJitterInvProj);
+
+	float3 ViewDirection =
+        normalize(ViewPosition.xyz / ViewPosition.w);
+
+	float3 WorldDirection =
+        mul(float4(ViewDirection, 0.f), g_matInvView).xyz;
+
+    // 방향 벡터(w=0)로 이전 화면에 투영
+    // 카메라 회전만 보정하는 간단한 방식
+	float4 PreviousClip =
+        mul(float4(WorldDirection, 0.f), CloudPrevViewProj);
+
+	if (PreviousClip.w <= 0.0001f)
+		return;
+
+	float2 PreviousUV =
+        PreviousClip.xy / PreviousClip.w
+        * float2(0.5f, -0.5f) + 0.5f;
+
+	if (any(PreviousUV < 0.f) || any(PreviousUV >= 1.f))
+		return;
+
+	float4 History =
+        HistoryTexture.SampleLevel(LinearClamp, PreviousUV, 0);
+
+    // 이전 결과가 현재 주변 값에서 크게 벗어나지 않도록 제한
+	float4 MinValue = Current;
+	float4 MaxValue = Current;
+
+    [unroll]
+	for (int y = -1; y <= 1; ++y)
+	{
+        [unroll]
+		for (int x = -1; x <= 1; ++x)
+		{
+			int2 P = clamp(
+                Pixel + int2(x, y),
+                int2(0, 0),
+                int2(Width, Height) - 1);
+
+			float4 Neighbor = OriginalTexture.Load(int3(P, 0));
+
+			MinValue = min(MinValue, Neighbor);
+			MaxValue = max(MaxValue, Neighbor);
 		}
 	}
-	
-	float3 FinalColor = TotalColor / TotalWeight;
-	OUTPUT[PixelPos] = float4(FinalColor, 1.f);
-	return;
+
+	History = clamp(History, MinValue, MaxValue);
+
+    // 이전 85%, 현재 15%. RGB와 투과율 A를 함께 누적
+	OUTPUT[Pixel] = lerp(History, Current, 0.15f);
+}
+
+[numthreads(16, 16, 1)]
+void CSMain_CloudComposite(uint3 ID : SV_DispatchThreadID)
+{
+	uint Width, Height;
+	OUTPUT.GetDimensions(Width, Height);
+
+	if (ID.x >= Width || ID.y >= Height)	return;
+
+	float2 UV = (float2(ID.xy) + 0.5f) / float2(Width, Height);
+
+	float4 Scene = OriginalTexture[ID.xy];
+	float4 Cloud = HistoryTexture.SampleLevel(LinearClamp, UV, 0);
+
+	OUTPUT[ID.xy] = float4(Scene.rgb * Cloud.a + Cloud.rgb, Scene.a);
 }

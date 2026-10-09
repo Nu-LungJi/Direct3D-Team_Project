@@ -51,7 +51,7 @@ EVALUATE CBTSecqunce::Evaluate(_float fTimeDelta)
 		if (eValuate == EVALUATE::RUN)
         {
             m_NodeValue.bCur = true;
-            m_NodeValue.iPreSecquenceIndex = i;
+            m_NodeValue.iPreSecquenceIndex = static_cast<int32_t>(i);
             return 	m_eDebug = EVALUATE::RUN;
         }
         else if (eValuate == EVALUATE::FAILED)

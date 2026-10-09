@@ -1,0 +1,36 @@
+{
+	"name": "Puddle Decal",
+	"pixelShader": "./ShaderFiles/Decal/Shader_HogsmeadePuddle.hlsl",
+	"parameters": [
+		{
+			"name": "Tint",
+			"type": "color3",
+			"offset": 0,
+			"default": [ 0.04, 0.05, 0.06]
+		},
+		{
+			"name": "Surface",
+			"type": "float3",
+			"offset": 4,
+			"default": [ 0.06, 1.0, 0.035 ]
+		},
+		{
+			"name": "Normal Strength",
+			"type": "float",
+			"offset": 7,
+			"default": 0.12
+		}
+	],
+	"textures": [
+		{
+			"name": "Puddle Mask",
+			"slot": 2,
+			"path": "./Resources/SampleClient/Textures/DecalResources/PNG_Original/Wetness/T_SuperSmashDecal_MSK.png"
+		},
+		{
+			"name": "Puddle Normal",
+			"slot": 3,
+			"path": "./Resources/SampleClient/Textures/DecalResources/PNG_Original/Wetness/T_Puddle_N.png"
+		}
+	]
+}

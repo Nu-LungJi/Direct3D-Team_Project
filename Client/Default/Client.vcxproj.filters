@@ -2020,7 +2020,7 @@
     <FxCompile Include="..\Bin\ShaderFiles\Decal\Shader_HogsmeadePuddle.hlsl">
       <Filter>ShaderFiles\Decal</Filter>
     </FxCompile>
-    <FxCompile Include="..\Bin\ShaderFiles\Decal\Shader_RWBFloor.hlsl">
+    <FxCompile Include="..\ShaderFiles\Decal\Shader_RWBFloor.hlsl">
       <Filter>ShaderFiles\GameObject</Filter>
     </FxCompile>
   </ItemGroup>

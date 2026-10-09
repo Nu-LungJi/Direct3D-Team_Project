@@ -107,8 +107,16 @@ float4 PSMain(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_T
 	float4	AnalyticFog		= Compute_AnalyticFog(ViewDepth, WorldPos);
 	float	AnalyticWeight	= smoothstep(AnalyticBlendStart, AnalyticBlendEnd, ViewDepth);
 	
-	float3	FinalScattering		= lerp(RayMarchedFog.rgb, AnalyticFog.rgb, AnalyticWeight);
-	float	FinalTransmittance	= lerp(RayMarchedFog.a, AnalyticFog.a, AnalyticWeight);
+	const float FarExtinction = 0.04f;
+	
+	float ExtraDistance = max(ViewDepth - FarZ, 0.0f);
+	float ExtraTransmittance = exp(-FarExtinction * ExtraDistance);
+	
+	float3 FinalScattering = RayMarchedFog.rgb; //lerp(RayMarchedFog.rgb, AnalyticFog.rgb, AnalyticWeight);
+	float FinalTransmittance = RayMarchedFog.a * ExtraTransmittance; //lerp(RayMarchedFog.a, AnalyticFog.a, AnalyticWeight);
+	
+	//float3 FinalScattering =  lerp(RayMarchedFog.rgb, AnalyticFog.rgb, AnalyticWeight);
+	//float FinalTransmittance = lerp(RayMarchedFog.a, AnalyticFog.a, AnalyticWeight);
 	
 	return float4(SceneColor.rgb * FinalTransmittance + FinalScattering, SceneColor.a);
 }

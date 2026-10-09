@@ -1,4 +1,4 @@
-#include "pch.h"
+	#include "pch.h"
 #include "BTAttackAnimation.h"
 #include "ComAnimator.h" 
 #include "ComCharacterMoveIntent.h"
@@ -332,7 +332,7 @@ void CBTAttackAnimation::Att(CMonster* pMon, CComTransform* pSrcTransform, CGame
 		const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
 		pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
 		pDbgLineRender->SetDepthTest(true);
-		pDbgLineRender->AddSphere(m_fCurOverLabSpeed, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
+		//pDbgLineRender->AddSphere(m_fCurOverLabSpeed, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
 		pDbgLineRender->SetColor(vPreviousColor);
 		pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 

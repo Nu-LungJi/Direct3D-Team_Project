@@ -677,6 +677,8 @@ HRESULT CLevelCharlesRookwood::Initialize_EnviromentLight() {
 
 	CGameInstance::Get().Set_EnviromentLight(EnviromentLightOption);
 
+	CGameInstance::Get().CaptureEnvironmentDefaults();
+
 	return S_OK;
 }
 

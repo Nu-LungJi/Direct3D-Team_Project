@@ -31,8 +31,6 @@ VOID	CRenderer::Update(_float fTimeDelta) {
 	m_fDeltaTime = fTimeDelta;
 	m_fTimeAccumulation += fTimeDelta;
 	m_pCloudInfo.g_fWindTimeAccumulation += fTimeDelta;
-
-	if (CGameInstance::Get().KeyDown(DIK_PGDN))	m_bApplyShadow = !m_bApplyShadow;
 }
 
 HRESULT CRenderer::Initialize()
@@ -191,7 +189,10 @@ HRESULT CRenderer::InitializeShaderResource()
 	{
 		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_CloudTAA", .sTarget = "cs_5_0" })))    return E_FAIL;
 	}
-
+	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_VolumetricCloud_Composite", "./ShaderFiles/RayMarching/CS_VolumetricCloud.hlsl"))
+	{
+		if (FAILED(res->Load(CResShader::DESC{ .sEntryPoint = "CSMain_CloudComposite", .sTarget = "cs_5_0" })))    return E_FAIL;
+	}
 	if (auto res = CGameInstance::Get().AddResourceT<E::CResComputeShader>(TAG_RES_GRP_PERMANENT_SHADER, "CS_SSR", "./ShaderFiles/Decal/CS_SSR.hlsl"))
 	{
 		if (FAILED(res->Load()))    return E_FAIL;
@@ -495,12 +496,17 @@ HRESULT CRenderer::InitializeBloom() {
 }
 
 HRESULT CRenderer::InitializeVolumetricEffect() {
+	m_bCloudHistoryValid = false;
+	m_iCloudHistoryWrite = 0;
+
 	_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
+	const uint32_t CloudWidth = (static_cast<uint32_t>(ScreenSize.x) + 1u) / 2u;
+	const uint32_t CloudHeight = (static_cast<uint32_t>(ScreenSize.y) + 1u) / 2u;
 
 	m_pResDynTexTargetVolumetric = Generate_RenderTarget("DynTex2D_Volumetric", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE);
-	m_pVolumetricCloudTex		 = Generate_UnorderedAccessView("UAV_VolumetricCloudMain", DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, ScreenSize.x, ScreenSize.y);
-	m_pVolumetricCloudTAATex[0]  = Generate_UnorderedAccessView("UAV_VolumetricCloudTAA00", DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, ScreenSize.x, ScreenSize.y);
-	m_pVolumetricCloudTAATex[1]  = Generate_UnorderedAccessView("UAV_VolumetricCloudTAA01", DXGI_FORMAT_R8G8B8A8_UNORM, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, ScreenSize.x, ScreenSize.y);
+	m_pVolumetricCloudTex		 = Generate_UnorderedAccessView("UAV_VolumetricCloudMain", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE , CloudWidth, CloudHeight);
+	m_pVolumetricCloudTAATex[0]  = Generate_UnorderedAccessView("UAV_VolumetricCloudTAA00", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, CloudWidth, CloudHeight);
+	m_pVolumetricCloudTAATex[1]  = Generate_UnorderedAccessView("UAV_VolumetricCloudTAA01", DXGI_FORMAT_R16G16B16A16_FLOAT, D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE, CloudWidth, CloudHeight);
 
 	if (!m_pResDynTexTargetVolumetric || !m_pVolumetricCloudTex || !m_pVolumetricCloudTAATex[0] || !m_pVolumetricCloudTAATex[1]) return E_FAIL;
 
@@ -612,11 +618,25 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 	}
 
 	{
-		m_pCloudTAAInfo.g_fScreenResolution = ScreenSize;
-		m_pCloudTAAInfo.g_fInvScreenResolution = _float2(1.f / ScreenSize.x, 1.f / ScreenSize.y);
+		m_pCloudTAAInfo.g_fScreenResolution = _float2(static_cast<_float>(CloudWidth), static_cast<_float>(CloudHeight));
+		m_pCloudTAAInfo.g_fInvScreenResolution = _float2(1.f / static_cast<_float>(CloudWidth), 1.f / static_cast<_float>(CloudHeight));
 		m_pCloudTAAInfo.g_mCloudJitterInvProj = XMMatrixIdentity();
 		m_pCloudTAAInfo.g_mCloudPrevViewProj = XMMatrixIdentity();
 	}
+
+	m_pVolumetricCloudCompositeTex = Generate_UnorderedAccessView(
+		"UAV_VolumetricCloudComposite",
+		DXGI_FORMAT_R16G16B16A16_FLOAT,
+		D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE,
+		static_cast<uint32_t>(ScreenSize.x),
+		static_cast<uint32_t>(ScreenSize.y));
+
+	m_pVolumetricCloudCompositeCS =
+		CGameInstance::Get().GetResourceFirst<CResComputeShader>(
+			TAG_RES_GRP_PERMANENT_SHADER,
+			"CS_VolumetricCloud_Composite");
+
+	if (!m_pVolumetricCloudCompositeTex || !m_pVolumetricCloudCompositeCS) return E_FAIL;
 
 	return S_OK;
 }
@@ -661,6 +681,11 @@ VOID CRenderer::SetUI3DPanel(const _float4x4& worldMatrix, _bool active, _bool i
 VOID CRenderer::ClearUI3DPanel()
 {
 	m_bUI3DPanelActive = false;
+}
+
+VOID CRenderer::CaptureEnvironmentDefaults()
+{
+	m_DefaultEnvLight = CGameInstance::Get().Get_EnviromentLight();
 }
 
 #pragma endregion
@@ -1517,7 +1542,7 @@ HRESULT CRenderer::Render_Lighting() {
 
 		m_pResDynTexTargetPreviousRenderView = CGameInstance::Get().Get_CombinedResource();
 	}
-	
+	return S_OK;
 }
 
 HRESULT CRenderer::Render_Alpha() {
@@ -1622,14 +1647,14 @@ HRESULT CRenderer::Render_Effect()
 }
 
 HRESULT CRenderer::Render_VolumetricEffect() {
-	if (m_bApplyVolumetricFog == false && m_bApplyVolumetricCloud == false) return S_OK;
+	if (m_bApplyVolumetricFog == false && m_bApplyVolumetricCloudFilter == false) return S_OK;
 
 	ZoneScopedN("Render_VolumetricEffect");
 	TracyD3D11Zone(m_pTracyGpuContext, "Volumetric");
 
 	if (FAILED(Update_VolumetricConstantBuffer())) { Unbind_Resources(); return S_OK; }
 
-	if (m_bApplyVolumetricCloud) {
+	if (m_bApplyVolumetricCloudFilter) {
 		if (FAILED(Render_VolumetricCloud())) { Unbind_Resources(); return S_OK; }
 	}
 	if (m_bApplyVolumetricFog) {
@@ -1731,6 +1756,8 @@ HRESULT CRenderer::Render_PlanarEffectReflection(){
 }
 
 HRESULT CRenderer::Update_VolumetricConstantBuffer() {
+	if (!m_bApplyVolumetricCloudFilter)	m_bCloudHistoryValid = false;
+
 	_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
 
 	static uint32_t FrameIndex = 1;
@@ -1742,21 +1769,23 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer() {
 
 	auto ActiveCam = CGameInstance::Get().GetActiveCamera();
 	if (nullptr == ActiveCam) return E_FAIL;
+	if (m_pCloudPreviousCamera != ActiveCam)
+	{
+		m_bCloudHistoryValid = false;
 
+		m_mPreviousViewMatrix = ActiveCam->GetView();
+		m_mPreviousProjMatrix = ActiveCam->GetProj();
+
+		m_pCloudPreviousCamera = ActiveCam;
+	}
 	
-	if (m_bApplyVolumetricCloud) {
+	if (m_bApplyVolumetricCloudFilter) {
 		{
 			D3D11_MAPPED_SUBRESOURCE MRES{};
 			if (SUCCEEDED(m_pContext->Map(m_pVolumetricCloudTAACBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 			{
 
-				_float ProjJitterX = JitterX * (2.f / ScreenSize.x);
-				_float ProjJitterY = JitterY * (2.f / ScreenSize.y);
-
-				_matrix CurrentProj = ActiveCam->GetProj();
-				CurrentProj.r[2] = XMVectorSetX(CurrentProj.r[2], XMVectorGetX(CurrentProj.r[2]) + ProjJitterX);
-				CurrentProj.r[2] = XMVectorSetY(CurrentProj.r[2], XMVectorGetY(CurrentProj.r[2]) + ProjJitterY);
-				XMMATRIX matInvProj = XMMatrixInverse(nullptr, CurrentProj);
+				XMMATRIX matInvProj = XMMatrixInverse(nullptr, ActiveCam->GetProj());
 
 				m_pCloudTAAInfo.g_mCloudJitterInvProj = matInvProj;
 				m_pCloudTAAInfo.g_mCloudPrevViewProj = m_mPreviousViewMatrix * m_mPreviousProjMatrix;
@@ -1794,8 +1823,7 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer() {
 
 				_float ProjJitterX = JitterX * (2.f / ScreenSize.x);
 				_float ProjJitterY = JitterY * (2.f / ScreenSize.y);
-				cbVolumeCloud.g_fCloudJitterOffset = _float3(ProjJitterX, ProjJitterY, 0.f);
-
+				cbVolumeCloud.g_fCloudJitterOffset = _float3(m_bApplyVolumetricCloudTAA ? static_cast<float>(FrameIndex) : 0.f, 0.f, 0.f);
 				if (auto LightHandle = CGameInstance::Get().Get_MainDirectionalLightData().m_pLightHandle) {
 					if (auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value()))
 						cbVolumeCloud.g_fCloudLightDirection = LightOBJ->Get_LightDirection();
@@ -1889,20 +1917,27 @@ HRESULT CRenderer::Update_VolumetricConstantBuffer() {
 	return S_OK;
 }
 
-HRESULT CRenderer::Render_VolumetricCloud() {
-	if (!m_bApplyVolumetricCloud) return S_OK;
+HRESULT CRenderer::Render_VolumetricCloud()
+{
+	if (!m_bApplyVolumetricCloudFilter) {
+		m_bCloudHistoryValid = false;
+		return S_OK;
+	}
 
-	_float2 ScreenSize = CGameInstance::Get().GetClientScreenSize();
-	_float	ThreadCount = 16;
+	auto sceneBeforeCloud = m_pResDynTexTargetPreviousRenderView;
 
-	static uint32_t CurrentIndex = 0;
-	uint32_t PrevIndex = (CurrentIndex + 1) % 2;
+	const auto ScreenSize = CGameInstance::Get().GetClientScreenSize();
+	const uint32_t ScreenWidth = static_cast<uint32_t>(ScreenSize.x);
+	const uint32_t ScreenHeight = static_cast<uint32_t>(ScreenSize.y);
+	const uint32_t CloudWidth = (ScreenWidth + 1u) / 2u;
+	const uint32_t CloudHeight = (ScreenHeight + 1u) / 2u;
 
+	// 1. 현재 프레임 구름 생성
 	{
 		m_pContext->CSSetShader(m_pVolumetricCloudCS->GetComputeShader().Get(), nullptr, 0);
 
 		ID3D11ShaderResourceView* pSRVs[8] = {
-			m_pResDynTexTargetPreviousRenderView->GetSRV().Get(),
+			sceneBeforeCloud->GetSRV().Get(),
 			nullptr,
 			m_pBaseVolumeTexture.Get(),
 			m_pDetailVolumeTexture.Get(),
@@ -1913,51 +1948,74 @@ HRESULT CRenderer::Render_VolumetricCloud() {
 		};
 		m_pContext->CSSetShaderResources(0, 8, pSRVs);
 
-		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVolumetricCloudTex->GetUAV().Get() };
-		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
-	}
-	{
-		m_pContext->Dispatch((ScreenSize.x + ThreadCount - 1) / ThreadCount, (ScreenSize.y + ThreadCount - 1) / ThreadCount, 1);
-
-		ID3D11ShaderResourceView* pNullSRVs[1] = { nullptr };
-		m_pContext->CSSetShaderResources(0, 1, pNullSRVs);
-
-		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
-		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
-	}
-
-	if (m_bApplyVolumetricCloudTAA) {
-		m_pResDynTexTargetPreviousRenderView = m_pVolumetricCloudTex;
-
-		ID3D11ShaderResourceView* pNullSRVs[3] = { nullptr };
-		m_pContext->CSSetShaderResources(2, 3, pNullSRVs);
-
-		return S_OK;
-	}
-	{
-		m_pContext->CSSetShader(m_pVolumetricCloudTAACS->GetComputeShader().Get(), nullptr, 0);
-
-		ID3D11ShaderResourceView* pSRVs[2] = {
-			m_pVolumetricCloudTex->GetSRV().Get(),
-			m_pVolumetricCloudTAATex[PrevIndex]->GetSRV().Get(),
+		ID3D11UnorderedAccessView* pUAVs[1] = {
+			m_pVolumetricCloudTex->GetUAV().Get()
 		};
-		m_pContext->CSSetShaderResources(0, 2, pSRVs);
-
-		ID3D11UnorderedAccessView* pUAVs[1] = { m_pVolumetricCloudTAATex[CurrentIndex]->GetUAV().Get()};
 		m_pContext->CSSetUnorderedAccessViews(0, 1, pUAVs, nullptr);
+
+		m_pContext->Dispatch((CloudWidth + 15u) / 16u, (CloudHeight + 15u) / 16u, 1);
 	}
+
+	Unbind_Resources();
+
+	auto cloudResult = m_pVolumetricCloudTex;
+
+	// 2. TAA 적용
+	if (m_bApplyVolumetricCloudTAA)
 	{
-		m_pContext->Dispatch((ScreenSize.x + ThreadCount - 1) / ThreadCount, (ScreenSize.y + ThreadCount - 1) / ThreadCount, 1);
+		const uint32_t current = m_iCloudHistoryWrite;
+		const uint32_t previous = 1u - current;
 
-		ID3D11ShaderResourceView* pNullSRVs[6] = { nullptr };
-		m_pContext->CSSetShaderResources(0, 6, pNullSRVs);
+		if (!m_bCloudHistoryValid) {
+			m_pContext->CopyResource(m_pVolumetricCloudTAATex[current]->GetTexture().Get(), m_pVolumetricCloudTex->GetTexture().Get());
+		}
+		else
+		{
+			m_pContext->CSSetShader(m_pVolumetricCloudTAACS->GetComputeShader().Get(), nullptr, 0);
 
-		ID3D11UnorderedAccessView* pNullUAVs[1] = { nullptr };
-		m_pContext->CSSetUnorderedAccessViews(0, 1, pNullUAVs, nullptr);
+			ID3D11ShaderResourceView* srvs[2] = {
+				m_pVolumetricCloudTex->GetSRV().Get(),
+				m_pVolumetricCloudTAATex[previous]->GetSRV().Get()
+			};
+			m_pContext->CSSetShaderResources(0, 2, srvs);
+
+			ID3D11UnorderedAccessView* uav = m_pVolumetricCloudTAATex[current]->GetUAV().Get();
+
+			m_pContext->CSSetUnorderedAccessViews(0, 1, &uav, nullptr);
+
+			m_pContext->Dispatch((CloudWidth + 15u) / 16u, (CloudHeight + 15u) / 16u, 1);
+
+			Unbind_Resources();
+		}
+
+		cloudResult = m_pVolumetricCloudTAATex[current];
+		m_iCloudHistoryWrite = previous;
+		m_bCloudHistoryValid = true;
 	}
-	
-	m_pResDynTexTargetPreviousRenderView = m_pVolumetricCloudTAATex[CurrentIndex];
-	CurrentIndex = PrevIndex;
+	else {
+		m_bCloudHistoryValid = false;
+	}
+
+	// 3. 장면과 구름 합성
+	{
+		m_pContext->CSSetShader(m_pVolumetricCloudCompositeCS->GetComputeShader().Get(), nullptr, 0);
+
+		ID3D11ShaderResourceView* compositeSRVs[2] = {
+			sceneBeforeCloud->GetSRV().Get(),
+			cloudResult->GetSRV().Get()
+		};
+		m_pContext->CSSetShaderResources(0, 2, compositeSRVs);
+
+		ID3D11UnorderedAccessView* compositeUAV = m_pVolumetricCloudCompositeTex->GetUAV().Get();
+
+		m_pContext->CSSetUnorderedAccessViews(0, 1, &compositeUAV, nullptr);
+
+		m_pContext->Dispatch((ScreenWidth + 15u) / 16u, (ScreenHeight + 15u) / 16u, 1);
+	}
+
+	Unbind_Resources();
+
+	m_pResDynTexTargetPreviousRenderView = m_pVolumetricCloudCompositeTex;
 
 	return S_OK;
 }
@@ -3084,21 +3142,12 @@ VOID	CRenderer::RendererGUI() {
 	ImGui::TextDisabled("Shader Effect Controller");
 	ImGui::BeginChild("##Inspector", ImVec2(0.f, 120.f), true);
 	{
-		if (m_bApplyEnvLight ? ImGui::Button("EnviromentLight OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("EnviromentLight ON", ImVec2(-FLT_MIN, 20))) {
-			m_bApplyEnvLight = !m_bApplyEnvLight;
-		}
-		if (m_bApplyFilter ? ImGui::Button("PostProcess OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("PostProcess ON", ImVec2(-FLT_MIN, 20))) {
-			m_bApplyFilter = !m_bApplyFilter;
-		}
-		if (m_bApplyVolumetricFog ? ImGui::Button("Volumetric Fog OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Volumetric Fog ON", ImVec2(-FLT_MIN, 20))) {
-			m_bApplyVolumetricFog = !m_bApplyVolumetricFog;
-		}
-		if (m_bApplyVolumetricCloud ? ImGui::Button("Volumetric Cloud OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Volumetric Cloud ON", ImVec2(-FLT_MIN, 20))) {
-			m_bApplyVolumetricCloud = !m_bApplyVolumetricCloud;
-		}
-		if (m_bApplyShadow ? ImGui::Button("Shadow OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Shadow ON", ImVec2(-FLT_MIN, 20))) {
-			m_bApplyShadow = !m_bApplyShadow;
-		}
+		if (ImGui::Checkbox("Environment Light", &m_bApplyEnvLight))	CGameInstance::Get().Set_EnviromentLightEnabled(m_bApplyEnvLight);
+
+		ImGui::Checkbox("Post Process"	, &m_bApplyFilter);
+		ImGui::Checkbox("Volumetric Fog", &m_bApplyVolumetricFog);
+		ImGui::Checkbox("Cloud Filter"	, &m_bApplyVolumetricCloudFilter);
+		ImGui::Checkbox("Shadow"		, &m_bApplyShadow);
 	}
 	ImGui::EndChild();
 
@@ -3121,12 +3170,14 @@ VOID	CRenderer::RendererGUI() {
 			DirtyFlag |= ImGui::DragFloat("##DirectLight", &m_pEnvLightInfo.m_fDirectLightBrightness, 0.001f, 0.f, 1.f, "%.3f");
 
 			if (DirtyFlag) 	CGameInstance::Get().Set_EnviromentLight(m_pEnvLightInfo);
+
+			if (ImGui::Button("Reset##Environment")) ResetEnvironment();
 		}
 	}
 
 	if (m_bApplyFilter) {
 		ImGui::Separator();
-		_float TextToSlotDistance = 120.f;
+		constexpr _float TextToSlotDistance = 120.f;
 		if (ImGui::CollapsingHeader("PostProcess")) {
 			ImGui::TextUnformatted("Blur Intensity");
 			ImGui::SameLine(TextToSlotDistance);
@@ -3143,10 +3194,12 @@ VOID	CRenderer::RendererGUI() {
 			ImGui::TextUnformatted("Vignette Intensity");
 			ImGui::SameLine(TextToSlotDistance);
 			ImGui::DragFloat("##VignetteIntensity", &m_pPostProcessBuffer.g_fVignetteIntensity, 0.01f, 0.f, 10.f, "%.2f");
+
+			if (ImGui::Button("Reset##PostProcess")) ResetPostProcess();
 		}
 	}
 	if (m_bApplyVolumetricFog) {
-		_float TextToSlotDistance = 110.f;
+		constexpr _float TextToSlotDistance = 110.f;
 		ImGui::Separator();
 		if (ImGui::CollapsingHeader("Volumetric Fog CoreOption")) {
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
@@ -3175,30 +3228,8 @@ VOID	CRenderer::RendererGUI() {
 			ImGui::TextUnformatted("FogBrightness");
 			ImGui::SameLine(TextToSlotDistance);
 			ImGui::DragFloat("##FogBrightness", &m_pFogInfo.g_fFogBaseBrightness, 0.001f, 0.f, 1.f, "%.3f");
-		}
-		if (ImGui::CollapsingHeader("Volumetric Fog LightOption")) {
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
-			ImGui::PopStyleColor();
 
-			ImGui::TextUnformatted("FogLightColor");
-			ImGui::SameLine(TextToSlotDistance);
-			ImGui::ColorEdit3("##FogLightColor", (float*)&m_pFogInfo.g_fFogLightColor);
-
-			ImGui::TextUnformatted("FogLightDirection");
-			ImGui::SameLine(TextToSlotDistance);
-
-			_float LightDirection[3] = { m_pFogInfo.g_fFogLightDirection.x, m_pFogInfo.g_fFogLightDirection.y, m_pFogInfo.g_fFogLightDirection.z };
-			if (ImGui::DragFloat3("##LightDirection", LightDirection, 0.01f, -1.f, 1.f)) {
-				XMVECTOR vDir = XMVectorSet(LightDirection[0], LightDirection[1], LightDirection[2], 0.f);
-				if (XMVector3LengthSq(vDir).m128_f32[0] > 0.0001f) {
-					vDir = XMVector3Normalize(vDir);
-					XMStoreFloat3((XMFLOAT3*)&m_pFogInfo.g_fFogLightDirection, vDir);
-
-					LightDirection[0] = m_pFogInfo.g_fFogLightDirection.x;
-					LightDirection[1] = m_pFogInfo.g_fFogLightDirection.y;
-					LightDirection[2] = m_pFogInfo.g_fFogLightDirection.z;
-				}
-			}
+			if (ImGui::Button("Reset##FogCore")) ResetFogCore();
 		}
 		if (ImGui::CollapsingHeader("Volumetric Fog Height")) {
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
@@ -3208,13 +3239,11 @@ VOID	CRenderer::RendererGUI() {
 			ImGui::SameLine(TextToSlotDistance);
 			ImGui::DragFloat("##FogBaseHeight", &m_pFogInfo.g_fFogBaseHeight, 0.25f, -500.f, 500.f, "%.1f");
 
-			ImGui::TextUnformatted("FogMaxHeight");
-			ImGui::SameLine(TextToSlotDistance);
-			ImGui::DragFloat("##FogMaxHeight", &m_pFogInfo.g_fFogMaxHeight, 0.25f, -500.f, 500.f, "%.1f");
-
 			ImGui::TextUnformatted("FogHeightFallOff");
 			ImGui::SameLine(TextToSlotDistance);
 			ImGui::DragFloat("##FogHeightFallOff", &m_pFogInfo.g_fFogHeightFallOff, 0.25f, 0.f, 10.f, "%.2f");
+		
+			if (ImGui::Button("Reset##FogHeight")) ResetFogHeight();
 		}
 		if (ImGui::CollapsingHeader("Volumetric Fog Distance")) {
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
@@ -3228,11 +3257,13 @@ VOID	CRenderer::RendererGUI() {
 			ImGui::TextUnformatted("FogEndDistance");
 			ImGui::SameLine(TextToSlotDistance);
 			ImGui::DragFloat("##FogEndDistance", &m_pFogInfo.g_fFogEndDistance, 1.f, m_pFogInfo.g_fFogStartDistance + 0.1f, 1000.f, "%.1f");
+		
+			if (ImGui::Button("Reset##FogDistance")) ResetFogDistance();
 		}
 	}
-	if (m_bApplyVolumetricCloud) {
+	if (m_bApplyVolumetricCloudFilter) {
 		ImGui::Separator();
-		_float TextToSlotDistance = 120.f;
+		constexpr _float TextToSlotDistance = 120.f;
 		if (ImGui::CollapsingHeader("Volumetric Cloud WindOption")) {
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
 			ImGui::PopStyleColor();
@@ -3250,6 +3281,8 @@ VOID	CRenderer::RendererGUI() {
 					m_pCloudInfo.g_fWindDirection = WindDir;
 				}
 			}
+
+			if (ImGui::Button("Reset##CloudWind")) ResetCloudWind();
 		}
 
 		if (ImGui::CollapsingHeader("Volumetric Cloud CoreOption")) {
@@ -3274,11 +3307,13 @@ VOID	CRenderer::RendererGUI() {
 
 			ImGui::TextUnformatted("CloudScattering");
 			ImGui::SameLine(TextToSlotDistance);
-			ImGui::DragFloat("##CloudScattering", &m_pCloudInfo.g_fCloudScattering, 0.01f, -3.f, 3.f, "%.2f");
+			ImGui::DragFloat("##CloudScattering", &m_pCloudInfo.g_fCloudScattering, 0.01f, 0.f, 1.f, "%.2f");
 
 			ImGui::TextUnformatted("LightAbsorption");
 			ImGui::SameLine(TextToSlotDistance);
 			ImGui::DragFloat("##LightAbsorption", &m_pCloudInfo.g_fLightAbsorption, 0.001f, 0.f, 0.1f, "%.4f");
+
+			if (ImGui::Button("Reset##CloudCore")) ResetCloudCore();
 		}
 		if (ImGui::CollapsingHeader("Volumetric Cloud SubOption")) {
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
@@ -3291,6 +3326,8 @@ VOID	CRenderer::RendererGUI() {
 			ImGui::TextUnformatted("DetailCloudNoise");
 			ImGui::SameLine(TextToSlotDistance);
 			ImGui::DragFloat("##DetailCloudNoise", &m_pCloudInfo.g_fDetailCloudNoiseScale, 0.0001f, 0.f, 0.05f, "%.5f");
+
+			if (ImGui::Button("Reset##CloudSub")) ResetCloudSub();
 		}
 		if (ImGui::CollapsingHeader("Volumetric Cloud Distribution")) {
 			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 0.75f));
@@ -3307,9 +3344,12 @@ VOID	CRenderer::RendererGUI() {
 			ImGui::TextUnformatted("LODDistance");
 			ImGui::SameLine(TextToSlotDistance);
 			ImGui::DragFloat("##LODDistance", &m_pCloudInfo.g_fCloudLODDistance, 500.f, 1000.f, 200000.f, "%.0f");
+
+			if (ImGui::Button("Reset##CloudDistribution")) ResetCloudDistribution();
 		}
-		if (m_bApplyVolumetricCloudTAA ? ImGui::Button("Cloud TAA OFF", ImVec2(-FLT_MIN, 20)) : ImGui::Button("Cloud TAA ON", ImVec2(-FLT_MIN, 20))) {
-			m_bApplyVolumetricCloudTAA = !m_bApplyVolumetricCloudTAA;
+		if (ImGui::Checkbox("Cloud TAA", &m_bApplyVolumetricCloudTAA))
+		{
+			m_bCloudHistoryValid = false;
 		}
 	}
 	if (m_bApplyShadow) {
@@ -3318,6 +3358,69 @@ VOID	CRenderer::RendererGUI() {
 	ImGui::End();
 }
 
+VOID CRenderer::ResetFogHeight()
+{
+	m_pFogInfo.g_fFogBaseHeight = 0.f;
+	m_pFogInfo.g_fFogMaxHeight = 20.f;
+	m_pFogInfo.g_fFogHeightFallOff = 0.05f;
+}
+VOID CRenderer::ResetEnvironment()
+{
+	m_pEnvLightInfo = m_DefaultEnvLight;
+	CGameInstance::Get().Set_EnviromentLight(m_pEnvLightInfo);
+}
+
+VOID CRenderer::ResetPostProcess()
+{
+	m_pPostProcessBuffer.g_fBlurIntensity = 0.f;
+	m_pPostProcessBuffer.g_fDistortionIntensity = 0.f;
+	m_pPostProcessBuffer.g_fChromaticIntensity = 0.f;
+	m_pPostProcessBuffer.g_fVignetteIntensity = 0.f;
+}
+
+VOID CRenderer::ResetFogCore()
+{
+	m_pFogInfo.g_fFogColor = _float3(0.8f, 0.85f, 0.9f);
+	m_pFogInfo.g_fFogIntensity = 1.f;
+	m_pFogInfo.g_fFogDensity = 0.02f;
+	m_pFogInfo.g_fFogNoiseScale = 0.05f;
+	m_pFogInfo.g_fFogScattering = 0.5f;
+	m_pFogInfo.g_fFogBaseBrightness = 0.1f;
+}
+
+VOID CRenderer::ResetFogDistance()
+{
+	m_pFogInfo.g_fFogStartDistance = 0.f;
+	m_pFogInfo.g_fFogEndDistance = 200.f;
+}
+
+VOID CRenderer::ResetCloudWind()
+{
+	m_pCloudInfo.g_fWindDirection = _float3(0.1f, 0.f, 0.05f);
+}
+
+VOID CRenderer::ResetCloudCore()
+{
+	m_pCloudInfo.g_fCloudColor = _float3(0.9f, 0.9f, 1.f);
+	m_pCloudInfo.g_fCloudBrightness = 1.2f;
+	m_pCloudInfo.g_fCloudCoverage = 0.55f;
+	m_pCloudInfo.g_fCloudDensity = 1.f;
+	m_pCloudInfo.g_fCloudScattering = 0.8f;
+	m_pCloudInfo.g_fLightAbsorption = 0.015f;
+}
+
+VOID CRenderer::ResetCloudSub()
+{
+	m_pCloudInfo.g_fBaseCloudNoiseScale = 0.0003f;
+	m_pCloudInfo.g_fDetailCloudNoiseScale = 0.0015f;
+}
+
+VOID CRenderer::ResetCloudDistribution()
+{
+	m_pCloudInfo.g_fCloudMinHeight = 500.f;
+	m_pCloudInfo.g_fCloudMaxHeight = 2500.f;
+	m_pCloudInfo.g_fCloudLODDistance = 50000.f;
+}
 #ifdef _DEBUG
 HRESULT CRenderer::Initialize_Debugging()
 {

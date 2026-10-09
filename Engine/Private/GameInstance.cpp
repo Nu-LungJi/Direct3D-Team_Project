@@ -1358,6 +1358,9 @@ VOID CGameInstance::ClearUI3DPanel()
 {
 	m_pRenderer->ClearUI3DPanel();
 }
+VOID CGameInstance::CaptureEnvironmentDefaults() {
+	m_pRenderer->CaptureEnvironmentDefaults();
+}
 
 SPtr<CResDynamicTexture2D>	CGameInstance::Generate_RenderTarget(const StringID& _sResTag, DXGI_FORMAT _Format, uint32_t _BindFlags, uint32_t _TexWidth, uint32_t _TexHeight) {
 	return m_pRenderer->Generate_RenderTarget(_sResTag, _Format, _BindFlags, _TexWidth, _TexHeight);
@@ -1595,6 +1598,9 @@ VOID	CGameInstance::Set_EnviromentLight(CONST CB_ENVLIGHT _EnvLight) {
 }
 CONST CB_ENVLIGHT CGameInstance::Get_EnviromentLight() {
 	return m_pLightManager->Get_EnviromentLight();
+}
+VOID CGameInstance::Set_EnviromentLightEnabled(_bool enabled) {
+	m_pLightManager->Set_EnviromentLightEnabled(enabled);
 }
 #pragma endregion
 #pragma endregion

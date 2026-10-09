@@ -1937,8 +1937,8 @@ void CAccioActivity_NpcController::DrawDebugState() const
 	pDebug->SetDepthTest(false);
 	pDebug->SetColor(vStateColor);
 	const _float3 vPosition = GetNpcPosition();
-	pDebug->AddSphere(0.75f, XMMatrixTranslation(
-		vPosition.x, vPosition.y + 1.f, vPosition.z));
+	//pDebug->AddSphere(0.75f, XMMatrixTranslation(
+	//	vPosition.x, vPosition.y + 1.f, vPosition.z));
 	pDebug->AddCross(vPosition, 0.5f);
 	if (m_eState == STATE::MOVING ||
 		m_eState == STATE::ENTERING_MATCH ||

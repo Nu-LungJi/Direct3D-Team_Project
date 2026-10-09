@@ -95,6 +95,9 @@ public:
 	XMFLOAT4	Get_CascadeShadowSplits();
 	CSM_DATA&	Get_MainDirectionalLightData() { return m_pMainDirectionalLight; }
 
+public:
+	VOID	Set_EnviromentLightEnabled(_bool enabled);
+
 public:		// Effect Light Fuction
 	HRESULT	Initialize_EffectLight(uint32_t _PoolSize);
 	std::optional<CHandle> Allocate_EffectLight(XMVECTOR _WorldPos, _float _Intensity, _float3 _Color, _float _InnerRange, _float _OuterRange, _float _LifeTime, _float3 _Velocity);
@@ -135,6 +138,12 @@ private:
 
 	HRESULT Copy_StaticShadowToFinal(LIGHT_TYPE _LightType, uint32_t _ShadowSlot);
 
+
+private:
+	VOID	Upload_EnviromentLight();
+
+private:
+	_bool	m_bEnviromentLightEnabled = true;
 
 private:
 

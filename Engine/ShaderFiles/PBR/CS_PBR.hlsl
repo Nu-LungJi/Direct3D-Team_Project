@@ -448,12 +448,13 @@ void CSMain_NonBlend(uint3 ID : SV_DispatchThreadID)
     
 	float	MaterialAO = MultipleTex.b;
 	float	ScreenAO = AmbientMap.Load(PixelCoord).r;
+	//float	ScreenAO = (ID.x >= ScreenWidth / 2) ? AmbientMap.Load(PixelCoord).r : 1.f;
 	float	AmbientOcclusion = MaterialAO * ScreenAO;
 	float3	Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
 	
 	float3	EnviromentLight = Ambient * AmbientOcclusion * EnviromentIntensity;		// Enviroment Light
 	
-	float3	FillLighting	= Albedo * (1.f - Metallic) * FillLightBrightness;		// Shadow Face
+	float3 FillLighting = Albedo * (1.f - Metallic) * FillLightBrightness * ScreenAO; // Shadow Face
 	float3	DirectLighting	= LightAccumulation * DirectLightBrightness;			// Light Face
 	float3	EffectLighting = EffectAccumulation * DirectLightBrightness;			// Light Face
 	
@@ -681,12 +682,15 @@ void CSMain_NonShadow(uint3 ID : SV_DispatchThreadID)
 	}
 	float3 BaseEmissive = EmissiveMap.Load(PixelCoord).rgb;
     
+	float	MaterialAO = MultipleTex.b;
+	
 	float  AmbientOcclusion = AmbientMap.Load(PixelCoord).r;
+	//float AmbientOcclusion = (ID.x >= ScreenWidth / 2) ? AmbientMap.Load(PixelCoord).r : 1.f; // 비교샷 용 코드
 	float3 Ambient = Compute_EnviromentLight(WorldNormal, V, Albedo, Roughness, Metallic, MBR);
 	
-	float3 EnviromentLight = Ambient * AmbientOcclusion * EnviromentIntensity;		// Enviroment Light
+	float3 EnviromentLight = Ambient * MaterialAO * AmbientOcclusion * EnviromentIntensity; // Enviroment Light
 	
-	float3 FillLighting = Albedo * (1.f - Metallic) * FillLightBrightness;			// Shadow Face
+	float3 FillLighting = Albedo * (1.f - Metallic) * FillLightBrightness * AmbientOcclusion; // Shadow Face
 	float3 DirectLighting = LightAccumulation * DirectLightBrightness;				// Light Face  
 	float3 EffectLighting = EffectAccumulation * DirectLightBrightness;				// Light Face
 	

@@ -100,7 +100,7 @@ _bool CBTDecWallCrash::Wall_Crash()
 	const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
 	pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
 	pDbgLineRender->SetDepthTest(true);
-	pDbgLineRender->AddSphere(SweepDesc.tGeometry.fRadius, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
+	//pDbgLineRender->AddSphere(SweepDesc.tGeometry.fRadius, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
 	pDbgLineRender->SetColor(vPreviousColor);
 	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 

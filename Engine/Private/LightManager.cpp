@@ -207,18 +207,6 @@ std::optional<CHandle> CLightManager::FindPlacementLightHandleByAlias(std::strin
 	return std::nullopt;
 }
 
-VOID CLightManager::Set_EnviromentLight(const CB_ENVLIGHT _EnvLight) {
-	m_pEnviromentLight = _EnvLight;
-
-	D3D11_MAPPED_SUBRESOURCE MRES = {};
-	if (SUCCEEDED(m_pContext->Map(m_pEnvLightConstantBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES))) {
-		memcpy(MRES.pData, &m_pEnviromentLight, sizeof(CB_ENVLIGHT));
-		m_pContext->Unmap(m_pEnvLightConstantBuffer->GetCBuffer().Get(), 0);
-	}
-	m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::ENVLIGHT), 1, m_pEnvLightConstantBuffer->GetCBuffer().GetAddressOf());
-	m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::ENVLIGHT), 1, m_pEnvLightConstantBuffer->GetCBuffer().GetAddressOf());
-}
-
 VOID CLightManager::Update(_float fTimeDelta) {
 	Update_ActiveLights();
 }
@@ -1796,6 +1784,36 @@ VOID	CLightManager::Clear_EffectLightPool() {
 	m_pEffectLightPool.clear();
 	m_iEffectLightPoolSize = 0;
 	m_iLastAllocatedIndex = 0;
+}
+
+VOID CLightManager::Set_EnviromentLight(const CB_ENVLIGHT envLight)
+{
+	m_pEnviromentLight = envLight; // 원래 설정값 보관
+	Upload_EnviromentLight();
+}
+
+VOID CLightManager::Set_EnviromentLightEnabled(_bool enabled)
+{
+	m_bEnviromentLightEnabled = enabled;
+	Upload_EnviromentLight();
+}
+
+VOID CLightManager::Upload_EnviromentLight()
+{
+	CB_ENVLIGHT EnvLightData = m_pEnviromentLight;
+
+	if (!m_bEnviromentLightEnabled) EnvLightData.m_fEnviromentIntensity = 0.f;
+
+	D3D11_MAPPED_SUBRESOURCE MRES{};
+	auto* EnvLightCBuffer = m_pEnvLightConstantBuffer->GetCBuffer().Get();
+
+	if (SUCCEEDED(m_pContext->Map(EnvLightCBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES))) {
+		memcpy(MRES.pData, &EnvLightData, sizeof(EnvLightData));
+		m_pContext->Unmap(EnvLightCBuffer, 0);
+	}
+
+	m_pContext->CSSetConstantBuffers(ETOUI(B_SLOTNUMBER::ENVLIGHT), 1, &EnvLightCBuffer);
+	m_pContext->PSSetConstantBuffers(ETOUI(B_SLOTNUMBER::ENVLIGHT), 1, &EnvLightCBuffer);
 }
 
 UPtr<CLightManager> CLightManager::Create(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) {
