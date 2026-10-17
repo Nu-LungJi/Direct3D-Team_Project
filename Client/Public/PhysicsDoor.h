@@ -187,7 +187,7 @@ private:
 	_bool m_bPassageBarrierEnabled{ true };
 	_bool m_bDoorSoundOpen{};
 	SOUND_ID m_iDoorSoundID{ INVALID_SOUND_ID };
-	_bool m_bDebugDraw{ true };
+	_bool m_bDebugDraw{ false };
 };
 
 NS_END

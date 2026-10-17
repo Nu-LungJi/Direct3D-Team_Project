@@ -93,6 +93,7 @@ public:
 			// [LSY] 캐릭터 CCT끼리는 충돌하되 전투용 HurtBox는 이동 Query에서 제외한다.
 			.iQueryMask =
 				ETOUI(COLLISION_LAYER::WORLD_STATIC) |
+				ETOUI(COLLISION_LAYER::WORLD_STATIC_WALL) |
 				ETOUI(COLLISION_LAYER::WORLD_DYNAMIC) |
 				ETOUI(COLLISION_LAYER::MOVING_PLATFORM) |
 				ETOUI(COLLISION_LAYER::PLAYER_BODY) |
@@ -151,6 +152,7 @@ public:
 	CGameObject*				Get_Target() { return CGameInstance::Get().GetGameObjectByHandle(m_TargetHandle); }
 
 	void						Set_Dissolve(_float fDissolve) { m_fDissolve = fDissolve; }
+	_float Get_OutlineOpacity() const override { return 1.f - m_fDissolve; }
 	SOUND_ID 					Play_Sound(const MONSOUND& MonSound);
 	virtual void				Skill_Finished();
 	virtual _string				Get_SkillName(ATTMON SkillNode) { return ""; };

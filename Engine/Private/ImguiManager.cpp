@@ -82,6 +82,12 @@ void CImguiManager::Update_Imgui()
 {
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
+
+	auto& io = ImGui::GetIO();
+
+	if (ImGui::IsMousePosValid(&io.MousePos))
+		io.MousePos.y += 11.f;
+
 	ImGui::NewFrame();
 	ImGuizmo::BeginFrame();
 	//m_pNodeEditor->UpdateGUI();

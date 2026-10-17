@@ -2,6 +2,8 @@
 #include "GameInstance.h"
 #include "TextUI.h"
 
+#include "UIViewport.h"
+
 CTextUI::CTextUI()
 {
 }
@@ -27,6 +29,10 @@ HRESULT CTextUI::Initialize(void* pArg)
 void CTextUI::Update(_float fTimeDelta)
 {
 	CUIObject::Update(fTimeDelta);
+
+	const auto screen = CGameInstance::Get().GetClientScreenSize();
+
+	const auto viewport = UIViewport::FromSize(screen.x, screen.y);
 
 	_float fontscale = m_UIINFO.SizeX;
 
@@ -75,6 +81,8 @@ void CTextUI::Update(_float fTimeDelta)
 	const RENDERGROUP renderGroup = GetResolvedRenderGroup();
 	const _bool usePuzzleFillAndOutline = m_textInfo.FontType ==
 		TEXT_FONT_TYPE::HAKGYOANSIM_PUZZLE_OUTLINE_25;
+
+	
 	const auto queueText = [&, this](
 		const _wstring& text,
 		const _float2& position,
@@ -82,6 +90,10 @@ void CTextUI::Update(_float fTimeDelta)
 		_fvector color,
 		_bool strengthen)
 	{
+
+		const auto drawPosition = viewport.ToScreen(position);
+		const float drawScale = fontscale * viewport.scale;
+
 		if (usePuzzleFillAndOutline)
 		{
 			// The black fill spritefont supplies the solid glyph interior. Honor
@@ -95,8 +107,8 @@ void CTextUI::Update(_float fTimeDelta)
 				renderGroup,
 				"HakgyoansimPuzzleBlack_25px",
 				text,
-				position,
-				fontscale,
+				drawPosition,
+				drawScale,
 				fillColor,
 				0.f,
 				origin);
@@ -104,8 +116,8 @@ void CTextUI::Update(_float fTimeDelta)
 				renderGroup,
 				"HakgyoansimPuzzleOutline_25px",
 				text,
-				position,
-				fontscale,
+				drawPosition,
+				drawScale,
 				outlineColor,
 				0.f,
 				origin);
@@ -116,8 +128,8 @@ void CTextUI::Update(_float fTimeDelta)
 			renderGroup,
 			fontName,
 			text,
-			position,
-			fontscale,
+			drawPosition,
+			drawScale,
 			color,
 			0.f,
 			origin);
@@ -127,8 +139,8 @@ void CTextUI::Update(_float fTimeDelta)
 				renderGroup,
 				fontName,
 				text,
-				position,
-				fontscale,
+				drawPosition,
+				drawScale,
 				color,
 				0.f,
 				origin);

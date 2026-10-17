@@ -31,8 +31,8 @@ const static float	SpecularIntensity = 1.f;
 		
 #define MAX_REFLECTION_LOD  6.f
 
-#define SCREENX 1280
-#define SCREENY 720
+#define SCREENX 1920
+#define SCREENY 1080
 
 #define POINTLIGHT_RESOLUTION 512
 #define SPOTLIGHT_RESOLUTION  512

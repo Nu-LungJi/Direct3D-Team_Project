@@ -135,9 +135,9 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
     UINT systemDpi = ::GetDpiForSystem();
-    float fScaleFactor = systemDpi / 96.f;
+    //float fScaleFactor = systemDpi / 96.f;
 
-    //float fScaleFactor = 1.f;
+    float fScaleFactor = 1.f;
     RECT    rc{ 0,0, LONG(Client::g_iWinSizeX * fScaleFactor), LONG(Client::g_iWinSizeY * fScaleFactor) };
     ::AdjustWindowRectExForDpi(&rc, WS_OVERLAPPEDWINDOW, FALSE, 0, systemDpi);
 

@@ -35,8 +35,8 @@ static const float Weights[3][3] =
 	
 Texture2D<float4>	OriginalTexture		: register(t0);
 Texture2D<float4>	HistoryTexture		: register(t1);
-Texture3D<float>	BaseVolumeTexture	: register(t2);
-Texture3D<float>	DetailVolumeTexture : register(t3);
+Texture3D<float4>	BaseVolumeTexture	: register(t2);
+Texture3D<float4>	DetailVolumeTexture : register(t3);
 
 Texture2D<float>	DepthTexture		: register(t4);
 Texture2D<float4>	WeatherMapTexture	: register(t5);
@@ -130,9 +130,8 @@ float3 Compute_MultipleScattering(float3 _RayDirection, float3 _LightDirection, 
 
 float Get_CloudDensity(float3 WorldPos, float BaseDensity)
 {
-	const float WindSpeed = 100.f;
-	float3	WindOffset = WindDirection * WindTimeAccumulation * WindSpeed;
-	float3	MovedPos = WorldPos - WindOffset;
+	float3 WindOffset = WindDirection * WindTimeAccumulation;
+	float3 MovedPos = WorldPos - WindOffset;
 	
 	float2	CurlUV = MovedPos.xz * 0.00005f;
 	float3	CurlNoiseValue = CurlNoiseTexture.SampleLevel(LinearWrap, CurlUV, 0).rgb;
@@ -171,7 +170,8 @@ float Get_CloudDensity(float3 WorldPos, float BaseDensity)
 	float	BaseCloud = Remap(PerlinWorley, BaseWorleyFBM - 1.f, 1.f, 0.f, 1.f);
 	BaseCloud *= HeightGradient;
 	
-	float	FinalCoverage = CloudCoverage * WeatherCoverage;
+	float	FinalCoverage = saturate(CloudCoverage * WeatherCoverage);
+	if (FinalCoverage <= 0.0001f) return 0.f;
 	float	CutOffValue = 1.f - FinalCoverage;
 	
 	float	BaseCloudShape = saturate(Remap(BaseCloud, CutOffValue, 1.f, 0.f, 1.f));
@@ -302,7 +302,7 @@ void CSMain(uint3 ID : SV_DispatchThreadID)
 			
 			for (uint lStep = 0; lStep < LIGHT_STEP_COUNT; ++lStep)
 			{
-				LightRayPos += CloudLightDirection * CurrentLightStep;
+				LightRayPos += -normalize(CloudLightDirection) * CurrentLightStep;
 				float StepDensity = Get_CloudDensity(LightRayPos, CloudDensity);
 				LightOpticalDepth += StepDensity * CurrentLightStep;
 				CurrentLightStep *= 2.f;

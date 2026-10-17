@@ -145,19 +145,23 @@ void CUIObject::DeleteChild(CHandle childHandle)
 
 void CUIObject::CalcUICoord()
 {
-	auto clientSize = CGameInstance::Get().GetClientScreenSize();
-	auto clientWidth = clientSize.x;
-	auto clientHeight = clientSize.y;
+	if (m_pComTransform == nullptr)
+		return;
 
-	if (m_pComTransform == nullptr) return;
+	const auto screen = CGameInstance::Get().GetClientScreenSize();
+	const auto viewport = UIViewport::FromSize(screen.x, screen.y);
 
-	GetTransform().SetScale(E::_float3{ m_UIINFO.SizeX * m_ScaleRatio * m_localScaleRatio, m_UIINFO.SizeY * m_ScaleRatio * m_localScaleRatio, 1.f });
+	const auto position = viewport.ToScreen({ m_UIINFO.fX, m_UIINFO.fY });
 
-	_float x = m_UIINFO.fX - clientWidth * 0.5f;
-	_float y = -m_UIINFO.fY + clientHeight * 0.5f;
+	const float objectScale = m_ScaleRatio * m_localScaleRatio;
 
-	_float pivotX = m_vPivot.x * m_ScaleRatio * m_localScaleRatio;
-	_float pivotY = -m_vPivot.y * m_ScaleRatio * m_localScaleRatio;
+	GetTransform().SetScale(E::_float3{m_UIINFO.SizeX * objectScale * viewport.scale, m_UIINFO.SizeY * objectScale * viewport.scale, 1.f });
+
+	float x = position.x - screen.x * 0.5f;
+	float y = -position.y + screen.y * 0.5f;
+
+	float pivotX = m_vPivot.x * objectScale * viewport.scale;
+	float pivotY = -m_vPivot.y * objectScale * viewport.scale;
 
 	_float rad = XMConvertToRadians(m_UIINFO.Rot);
 	_float cosR = cosf(rad);

@@ -595,6 +595,9 @@
     <Filter Include="WayPoint">
       <UniqueIdentifier>{45d78343-25cc-496d-8f9a-b7ad35d7dc70}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Utility">
+      <UniqueIdentifier>{9b09d703-161b-48b1-92bc-6fac705958e1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -1359,6 +1362,9 @@
     </ClInclude>
     <ClInclude Include="..\public\WayPointManager.h">
       <Filter>WayPoint</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Public\UIViewport.h">
+      <Filter>Utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

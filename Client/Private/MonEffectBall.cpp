@@ -118,7 +118,7 @@ void CMonEffectBall::LateUpdate(E::_float fTimeDelta)
 	auto cachedDepth = CGameInstance::Get().GetDbgLineRender()->GetDepthMode();
 	CGameInstance::Get().GetDbgLineRender()->SetColor({ 1.f, 0.f, 0.f, 1.f });
 	CGameInstance::Get().GetDbgLineRender()->SetDepthTest(false);
-	CGameInstance::Get().GetDbgLineRender()->AddSphere(5.f, XMLoadFloat4x4(&m_CurWorldmat));
+	//CGameInstance::Get().GetDbgLineRender()->AddSphere(5.f, XMLoadFloat4x4(&m_CurWorldmat));
 	CGameInstance::Get().GetDbgLineRender()->SetColor(cachedCol);
 	CGameInstance::Get().GetDbgLineRender()->SetDepthMode(cachedDepth);
 }

@@ -474,6 +474,7 @@
     <ClInclude Include="..\public\Trail_CPU.h" />
     <ClInclude Include="..\Public\UICamera.h" />
     <ClInclude Include="..\Public\UIObject.h" />
+    <ClInclude Include="..\Public\UIViewport.h" />
     <ClInclude Include="..\Public\Water.h" />
     <ClInclude Include="..\public\WayPointManager.h" />
     <ClInclude Include="..\Public\WorkerManager.h" />

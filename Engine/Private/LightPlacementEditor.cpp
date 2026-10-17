@@ -119,14 +119,14 @@ void CLightPlacementEditor::UpdateGUI()
 	if (m_bEditMode)
 		RenderGizmo();
 
-	if (m_SelectedLight &&
-		ImGui::IsMouseClicked(0) &&
-		!ImGui::IsAnyItemHovered() &&
-		!ImGuizmo::IsOver() &&
-		!ImGuizmo::IsUsing())
-	{
-		m_SelectedLight.reset();
-	}
+	//if (m_SelectedLight &&
+	//	ImGui::IsMouseClicked(0) &&
+	//	!ImGui::IsAnyItemHovered() &&
+	//	!ImGuizmo::IsOver() &&
+	//	!ImGuizmo::IsUsing())
+	//{
+	//	m_SelectedLight.reset();
+	//}
 
 	DrawDebugLights();
 }
@@ -164,8 +164,13 @@ void CLightPlacementEditor::DrawWindow()
 	ImGui::SetNextWindowSize(
 		ImVec2(520.f, 650.f),
 		ImGuiCond_FirstUseEver);
-	if (!ImGui::Begin("Light Placement Editor"))
-	{
+
+	const ImGuiWindowFlags flags =
+		CGameInstance::Get().IsGUIPositionLocked()
+		? ImGuiWindowFlags_NoMove
+		: ImGuiWindowFlags_None;
+
+	if (!ImGui::Begin("Light Placement Editor", nullptr, flags)) {
 		ImGui::End();
 		return;
 	}
@@ -384,6 +389,37 @@ void CLightPlacementEditor::DrawLightList()
 
 	ImGui::Separator();
 	ImGui::TextUnformatted("Lights");
+
+	auto SetAllCastShadow = [this](bool enabled)
+		{
+			const std::string activeGroup = GetActivePlacementGroup();
+
+			for (const auto& handle : m_pLightManager->GetLightHandles())
+			{
+				if (!handle)
+					continue;
+
+				auto* light = CGameInstance::Get().
+					GetGameObjectByHandleT<CLight>(*handle);
+
+				if (!light)
+					continue;
+
+				if (light->Get_LightPlacementGroup() != activeGroup)
+					continue;
+
+				light->Set_LightShadowCast(enabled);
+			}
+		};
+
+	if (ImGui::Button("All Shadows ON"))
+		SetAllCastShadow(true);
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("All Shadows OFF"))
+		SetAllCastShadow(false);
+
 	if (!ImGui::BeginListBox(
 		"##LightPlacementList",
 		ImVec2(-FLT_MIN, 160.f)))

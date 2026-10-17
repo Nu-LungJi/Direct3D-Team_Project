@@ -4,6 +4,7 @@
 #include "UIComponent.h"
 #include "ButtonComponent.h"
 #include "TweenComponent.h"
+#include "UIViewport.h"
 
 NS_BEGIN(Engine)
 

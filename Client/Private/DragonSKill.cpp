@@ -158,7 +158,7 @@ void CDragonSkill::DebugLine(_float3 vPos)
 	const auto ePreviousDepthMode = pDbgLineRender->GetDepthMode();
 	pDbgLineRender->SetColor({ 0.f, 1.f, 1.f, 1.f });
 	pDbgLineRender->SetDepthTest(true);
-	pDbgLineRender->AddSphere(m_fRadius, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
+	//pDbgLineRender->AddSphere(m_fRadius, XMMatrixTranslation(vPos.x, vPos.y, vPos.z));
 	pDbgLineRender->SetColor(vPreviousColor);
 	pDbgLineRender->SetDepthMode(ePreviousDepthMode);
 }

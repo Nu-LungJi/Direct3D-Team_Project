@@ -373,7 +373,9 @@ private:		// Volumetric Fog
 	_bool						m_bCloudHistoryValid = false;
 	uint32_t					m_iCloudHistoryWrite = 0;
 
-	CCameraObject* m_pCloudPreviousCamera = nullptr;
+	CCameraObject*	m_pCloudPreviousCamera = nullptr;
+
+	_float			m_fCloudWindSpeed = 100.f;
 private:		// PostProcess
 	std::optional<CHandle>				m_pOutlineTargetHandle{};
 

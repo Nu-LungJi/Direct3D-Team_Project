@@ -443,6 +443,9 @@ void CGameInstance::UpdateGUI()
 	//		}
 	//	}
 	//}
+
+	if (KeyDown(DIK_SCROLL))
+		m_bGUIPositionLocked = !m_bGUIPositionLocked;
 }
 
 void CGameInstance::UpdateEngine(_float fTimeDelta)

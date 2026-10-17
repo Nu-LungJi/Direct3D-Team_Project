@@ -84,7 +84,7 @@ void CMiniMap::Update(E::_float fTimeDelta)
 {
 	ConfigureDefaultProfile();
 
-	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+	_float2 mousePos = GET_SINGLE(UIManager)->GetUIInteractionMousePosition();
 
 	if (!m_isActive)
 	{

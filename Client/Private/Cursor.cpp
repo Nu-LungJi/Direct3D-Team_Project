@@ -6,6 +6,7 @@
 #include "UIManager.h"
 #include "Client_Defines.h"
 #include "Level_Defines.h"
+#include "UIViewport.h"
 
 NS_USING(Client)
 
@@ -63,24 +64,57 @@ void CCursor::PriorityUpdate(E::_float fTimeDelta)
 
 void CCursor::Update(E::_float fTimeDelta)
 {
-	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
-
 	if (!m_isActive)
 		return;
 
-	CUIObject::Update(fTimeDelta);
+	auto& game = E::CGameInstance::Get();
 
+	const auto screen = game.GetClientScreenSize();
+	if (screen.x <= 0.f || screen.y <= 0.f)
+		return;
+
+	// 실제 창 내부의 마우스 좌표
+	const auto clientMouse = game.GetMousePos();
+
+	RECT rect{};
+	if (!::GetClientRect(game.GetHwnd(), &rect))
+		return;
+
+	const float clientWidth =
+		static_cast<float>(rect.right - rect.left);
+
+	const float clientHeight =
+		static_cast<float>(rect.bottom - rect.top);
+
+	if (clientWidth <= 0.f || clientHeight <= 0.f)
+		return;
+
+	// 창 좌표 → 실제 렌더 화면 좌표
+	const E::_float2 renderMouse{
+		clientMouse.x * screen.x / clientWidth,
+		clientMouse.y * screen.y / clientHeight
+	};
+
+	// 실제 렌더 화면 좌표 → 1280×720 기준 UI 좌표
+	const auto viewport =
+		UIViewport::FromSize(screen.x, screen.y);
+
+	const auto uiMouse = viewport.ToUI(renderMouse);
+
+	// 기존 커서 애니메이션 유지
 	m_fAccTime = std::fmod(
 		m_fAccTime + std::max(0.f, fTimeDelta),
 		4096.f);
 
-	m_UIINFO.fX = mousePos.x;
-	m_UIINFO.fY = mousePos.y;
-
 	if (m_pComTween != nullptr)
-	{
 		m_pComTween->Tick(fTimeDelta);
-	}
+
+	// 이번 프레임의 마우스 위치를 먼저 저장
+	m_UIINFO.fX = uiMouse.x;
+	m_UIINFO.fY = uiMouse.y;
+
+	// 저장한 위치로 Transform 계산
+	CUIObject::Update(fTimeDelta);
 }
 
 void CCursor::LateUpdate(E::_float fTimeDelta)

@@ -265,6 +265,9 @@ namespace Engine
 		_float	g_fDistortionIntensity{};
 		_float	g_fChromaticIntensity{};
 		_float	g_fVignetteIntensity{};
+
+		_float g_fOutlineOpacity{ 1.f };
+		_float3 g_vOutlinePadding{};
 	};
 	static_assert(sizeof(CB_POSTPROCESS) % 16 == 0);
 

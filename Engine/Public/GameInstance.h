@@ -727,6 +727,13 @@ public:
 		return { (float)pt.x, (float)pt.y };
 	}
 	uint64_t GetFrameCnt() const { return m_iFrameCnt; }
+
+public:
+	_bool IsGUIPositionLocked() const { return m_bGUIPositionLocked; }
+
+private:
+	_bool m_bGUIPositionLocked = false;
+
 private:
 	_float2 m_vClientScreenSize{ 1280.f, 720.f };
 	_float2 m_vDisplayScreenSize{ 1920.f, 1280.f };
@@ -736,6 +743,7 @@ private:
 
 private:
 	void MouseFix() const;
+
 
 private:
 	UPtr<CGraphicDevice> m_pGraphicDevice{};

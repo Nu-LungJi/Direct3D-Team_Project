@@ -105,7 +105,11 @@ protected:
 
 private:
 	UPtr<CPrototype> CloneComponentProtoType(const StringID& svGroupTag, const StringID& svPrototypetag, void* pArg) const;
-
+public:
+	virtual _float Get_OutlineOpacity() const
+	{
+		return 1.f;
+	}
 public:
 	template<typename T>
 	HRESULT AddComponentFromProto(const StringID& svGroupTag, const StringID& svPrototypetag, const StringID& svComponentTag,  void* pArg = nullptr, T** outPtr = nullptr)

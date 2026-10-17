@@ -56,10 +56,13 @@ cbuffer CB_BLOOM : register(b10)
 
 cbuffer CB_POSTPROCESS : register(b11)
 {
-	float	BlurIntensity;
-	float	DistortionIntensity;
-	float	ChromaticIntensity;
-	float	VignetteIntensity;
+	float BlurIntensity;
+	float DistortionIntensity;
+	float ChromaticIntensity;
+	float VignetteIntensity;
+
+	float OutlineOpacity;
+	float3 OutlinePadding;
 };
 
 cbuffer CB_LENSFLARE : register(b12)
@@ -494,7 +497,11 @@ float3 Render_ObjectEdge(float3 _Color, float2 _TexCoord)
 	float DepthEdge  = abs(CenterPixel - RightPixel) + abs(CenterPixel - LeftPixel)
 					 + abs(CenterPixel - UpPixel)	 + abs(CenterPixel - DownPixel);
 	
-	return lerp(_Color, OutlineColor.rgb, saturate(DepthEdge) * 50.f);
+	//return lerp(_Color, OutlineColor.rgb, saturate(DepthEdge) * 50.f);
+	float edgeAlpha = saturate(DepthEdge * 50.f);
+	float outlineAlpha = edgeAlpha * saturate(OutlineOpacity);
+
+	return lerp(_Color, OutlineColor.rgb, outlineAlpha);
 }
 
 [numthreads(16, 16, 1)]

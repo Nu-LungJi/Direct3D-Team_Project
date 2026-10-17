@@ -72,7 +72,7 @@ void CSpellMeter::Update(E::_float fTimeDelta)
 
 	CUIObject::Update(fTimeDelta);
 
-	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+	_float2 mousePos = GET_SINGLE(UIManager)->GetUIInteractionMousePosition();
 
 	for (auto& pComponent : m_UIComponents)
 	{

@@ -30,7 +30,7 @@ VOID	CRenderer::Update(_float fTimeDelta) {
 	m_fCurrentLifeTime += fTimeDelta;
 	m_fDeltaTime = fTimeDelta;
 	m_fTimeAccumulation += fTimeDelta;
-	m_pCloudInfo.g_fWindTimeAccumulation += fTimeDelta;
+	m_pCloudInfo.g_fWindTimeAccumulation += fTimeDelta * m_fCloudWindSpeed;
 }
 
 HRESULT CRenderer::Initialize()
@@ -609,8 +609,8 @@ HRESULT CRenderer::InitializeVolumetricEffect() {
 		m_pCloudInfo.g_fBaseCloudNoiseScale = 0.0003f;
 		m_pCloudInfo.g_fDetailCloudNoiseScale = 0.0015f;
 
-		m_pCloudInfo.g_fCloudMinHeight = 500.f;
-		m_pCloudInfo.g_fCloudMaxHeight = 2500.f;
+		m_pCloudInfo.g_fCloudMinHeight = 2500.f;
+		m_pCloudInfo.g_fCloudMaxHeight = 3500.f;
 		m_pCloudInfo.g_fCloudLODDistance = 50000.f;
 
 		m_pCloudInfo.g_fCloudLightDirection = XMFLOAT3(0.0f, -1.0f, 0.0f);
@@ -2213,6 +2213,8 @@ HRESULT CRenderer::Render_PostProcess_MotionBlur()
 
 HRESULT	CRenderer::Update_PostProcessConstantBuffer() {
 
+
+
 	D3D11_MAPPED_SUBRESOURCE MRES{};
 	if (SUCCEEDED(m_pContext->Map(m_pPostProcessCBuffer->GetCBuffer().Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &MRES)))
 	{
@@ -2221,7 +2223,19 @@ HRESULT	CRenderer::Update_PostProcessConstantBuffer() {
 		cbPPBuffer.g_fChromaticIntensity = m_pPostProcessBuffer.g_fChromaticIntensity / 100.f;
 		cbPPBuffer.g_fDistortionIntensity = m_pPostProcessBuffer.g_fDistortionIntensity / 100.f;
 		cbPPBuffer.g_fVignetteIntensity = m_pPostProcessBuffer.g_fVignetteIntensity;
+		cbPPBuffer.g_fOutlineOpacity = 0.f;
 
+		if (m_pOutlineTargetHandle)
+		{
+			auto* target = CGameInstance::Get().GetGameObjectByHandle(
+				m_pOutlineTargetHandle.value());
+
+			if (target && !target->GetPendingDestroy())
+			{
+				cbPPBuffer.g_fOutlineOpacity =
+					std::clamp(target->Get_OutlineOpacity(), 0.f, 1.f);
+			}
+		}
 		memcpy(MRES.pData, &cbPPBuffer, sizeof(CB_POSTPROCESS));
 		m_pContext->Unmap(m_pPostProcessCBuffer->GetCBuffer().Get(), 0);
 	}
@@ -3137,7 +3151,12 @@ HRESULT CRenderer::Bind_PlanarConstantBuffer() {
 #pragma endregion
 
 VOID	CRenderer::RendererGUI() {
-	ImGui::Begin("Renderer Controller");
+	const ImGuiWindowFlags flags =
+		CGameInstance::Get().IsGUIPositionLocked()
+		? ImGuiWindowFlags_NoMove
+		: ImGuiWindowFlags_None;
+
+	ImGui::Begin("Renderer Controller", nullptr, flags);
 
 	ImGui::TextDisabled("Shader Effect Controller");
 	ImGui::BeginChild("##Inspector", ImVec2(0.f, 120.f), true);
@@ -3282,6 +3301,11 @@ VOID	CRenderer::RendererGUI() {
 				}
 			}
 
+			ImGui::TextUnformatted("CloudWindSpeed");
+			ImGui::SameLine(TextToSlotDistance);
+
+			ImGui::DragFloat("##CloudWindSpeed", &m_fCloudWindSpeed, 0.5f, 0.f, 1000.f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
+
 			if (ImGui::Button("Reset##CloudWind")) ResetCloudWind();
 		}
 
@@ -3303,7 +3327,7 @@ VOID	CRenderer::RendererGUI() {
 
 			ImGui::TextUnformatted("CloudDensity");
 			ImGui::SameLine(TextToSlotDistance);
-			ImGui::DragFloat("##CloudDensity", &m_pCloudInfo.g_fCloudDensity, 0.01f, 0.f, 5.f, "%.2f");
+			ImGui::DragFloat("##CloudDensity", &m_pCloudInfo.g_fCloudDensity, 0.0001f, 0.f, 5.f, "%.4f");
 
 			ImGui::TextUnformatted("CloudScattering");
 			ImGui::SameLine(TextToSlotDistance);
@@ -3417,8 +3441,8 @@ VOID CRenderer::ResetCloudSub()
 
 VOID CRenderer::ResetCloudDistribution()
 {
-	m_pCloudInfo.g_fCloudMinHeight = 500.f;
-	m_pCloudInfo.g_fCloudMaxHeight = 2500.f;
+	m_pCloudInfo.g_fCloudMinHeight = 2500.f;
+	m_pCloudInfo.g_fCloudMaxHeight = 3500.f;
 	m_pCloudInfo.g_fCloudLODDistance = 50000.f;
 }
 #ifdef _DEBUG

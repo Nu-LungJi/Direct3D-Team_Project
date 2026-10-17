@@ -19,6 +19,8 @@
 #include "Monster.h"
 #include "Player.h"
 #include "SoundManager.h"
+#include "UIViewport.h"
+#include <cfloat>
 
 NS_USING(Client)
 
@@ -1759,10 +1761,32 @@ void UIManager::UpdateWandShopWorldMousePosition()
 
 _float2 UIManager::GetUIInteractionMousePosition() const
 {
-	if (!m_bWandShopWorldMode)
-		return E::CGameInstance::Get().GetMousePos();
-	return m_bWandShopPanelMouseHit ?
-		m_WandShopPanelMousePosition : _float2{ -FLT_MAX, -FLT_MAX };
+	auto& game = E::CGameInstance::Get();
+
+	const auto screen = game.GetClientScreenSize();
+
+	if (screen.x <= 0.f || screen.y <= 0.f) return { -FLT_MAX, -FLT_MAX };
+
+	const auto viewport = UIViewport::FromSize(screen.x, screen.y);
+
+	if (m_bWandShopWorldMode) {
+		if (!m_bWandShopPanelMouseHit) return { -FLT_MAX, -FLT_MAX };
+		return viewport.ToUI(m_WandShopPanelMousePosition);
+	}
+
+	const auto clientMouse = game.GetMousePos();
+
+	RECT rect{};
+	if (!::GetClientRect(game.GetHwnd(), &rect)) return { -FLT_MAX, -FLT_MAX };
+
+	const _float clientWidth = static_cast<_float>(rect.right - rect.left);
+	const _float clientHeight = static_cast<_float>(rect.bottom - rect.top);
+
+	if (clientWidth <= 0.f || clientHeight <= 0.f) return { -FLT_MAX, -FLT_MAX };
+
+	const E::_float2 renderMouse{ clientMouse.x * screen.x / clientWidth, clientMouse.y * screen.y / clientHeight };
+
+	return viewport.ToUI(renderMouse);
 }
 
 void UIManager::Initialize(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext)
@@ -3020,10 +3044,19 @@ void UIManager::CreateDamageFont(uint32_t damage, CHandle targetMonster, _bool i
 	if (!pDamageFont)
 		return;
 
+	const auto viewport =
+		UIViewport::FromSize(screenSize.x, screenSize.y);
+
+	// 화면 픽셀 좌표 → 1280×720 기준 UI 좌표
+	const auto uiPosition = viewport.ToUI({
+		screenPosition.x,
+		screenPosition.y
+		});
+
 	pDamageFont->SetwText(std::to_wstring(damage));
 	pDamageFont->SetPos({
-		screenPosition.x + offsetX(generator),
-		screenPosition.y + offsetY(generator)
+		uiPosition.x + offsetX(generator),
+		uiPosition.y + offsetY(generator)
 		});
 
 	if (isCritical)

@@ -5,6 +5,7 @@
 #include "Resources.h"
 #include "Level_Defines.h"
 #include "FlyCamera.h"
+#include "UIManager.h"
 
 NS_USING(Client)
 
@@ -63,7 +64,7 @@ void CTextBox::PriorityUpdate(E::_float fTimeDelta)
 
 void CTextBox::Update(E::_float fTimeDelta)
 {
-	_float2 mousePos = E::CGameInstance::Get().GetMousePos();
+	_float2 mousePos = GET_SINGLE(UIManager)->GetUIInteractionMousePosition();
 
 	if (!m_isActive)
 		return;

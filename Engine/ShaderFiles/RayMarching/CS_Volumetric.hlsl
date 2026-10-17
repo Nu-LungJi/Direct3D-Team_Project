@@ -149,9 +149,16 @@ float GetVolumeFogDensity(float3 _WorldPos)
 	
 	float	HeightLimit = 1.f - smoothstep(FogMaxHeight * 0.8f, FogMaxHeight, CurrentHeight);
 	
-	float	FinalFlowNoise = Compute_FogFlow(_WorldPos, float3(1.f, 1.f, 1.f));
+	float	FlowNoise = Compute_FogFlow(_WorldPos, float3(1.f, 1.f, 1.f));
+	
+	float	ViewDepth = max(mul(float4(_WorldPos, 1.f), g_matView).z, 0.f);
+	
+	float	StartDistance = max(FogStartDistance, 0.f);
+	float	EndDistance = max(FogEndDistance, StartDistance + 0.001f);
+	
+	float	DistanceFactor = smoothstep(StartDistance, EndDistance, ViewDepth);
 
-	return	HeightFactor * FogDensity * HeightLimit * FinalFlowNoise;
+	return HeightFactor * FogDensity * HeightLimit * FlowNoise * DistanceFactor;
 }	
 
 float Sample_CascadeShadow(float3 _WorldPos, uint _CascadeIndex)
