@@ -16,18 +16,18 @@
 
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=VIDEO_ID_1">
-    <img src="./Docs/RedButton.svg"
+  <a href="https://youtu.be/pH1RYggPNs4">
+    <img src="./Docs/Button_GamePlay.svg"
          width="250"
          alt="전체 게임 플레이 영상">
   </a>
-  <a href="https://www.youtube.com/watch?v=VIDEO_ID_2">
-    <img src="./Docs/BlueButton.svg"
+  <a href="https://youtu.be/gmc5yBkPOqs">
+    <img src="./Docs/Button_IndivGameDesc.svg"
          width="250"
          alt="개인 파트 기술 설명 영상">
   </a>
-  <a href="https://www.youtube.com/watch?v=VIDEO_ID_2">
-    <img src="./Docs/BlueButton.svg"
+  <a href="https://youtu.be/gmc5yBkPOqs">
+    <img src="./Docs/Button_TeamGameDesc.svg"
          width="250"
          alt="전체 파트 기술 설명 영상">
   </a>
