@@ -41,7 +41,10 @@
 </td>
 </tr>  
 </table>
+</div>
+
 ### GAMEPLAY HIGHLIGHTS
+
 <table>
 <tr>
 <td width="50%" align="center">
