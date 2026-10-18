@@ -36,7 +36,7 @@
 <tr>
 <td width="100%" align="center">
   <img src="./Docs/MainTitle_ScreenShot.png" width="100%" alt="Main Gameplay">
-  <br><b>**01 — GAMEPLAY MAIN HIGHLIGHT**</b>
+  <br><b>01 — GAMEPLAY MAIN HIGHLIGHT</b>
   <br><sub>중간 보스 : 펜시브 전투</sub>
 </td>
 </tr>  
