@@ -7,6 +7,97 @@
 ## [GitHub Repository](https://github.com/Nu-LungJi/Direct3D-Team_Project)
 ## [게임 시연 영상 (Demo Video)](https://www.youtube.com/watch?v=pH1RYggPNs4)
 
+
+<div align="center">
+
+## GAMEPLAY SHOWCASE
+
+<sub>COMBAT · SHADER EFFECTS · MINI GAME</sub>
+
+[![게임 플레이 영상](https://img.shields.io/badge/Watch-Gameplay-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/pH1RYggPNs4=VIDEO_ID)
+[![개인 파트 기술 설명](https://img.shields.io/badge/Gameplay-Demo-2563EB?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/gmc5yBkPOqs=VIDEO_ID)
+[![팀 파트 기술 설명](https://img.shields.io/badge/Gameplay-Demo-2563EB?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/gmc5yBkPOqs=VIDEO_ID)
+
+<br><br>
+
+<img src="./Docs/MainTitle_ScreenShot.png" width="100%" alt="Main Gameplay">
+
+**01 — GAMEPLAY HIGHLIGHT**
+
+<sub>최종 보스 : 란록 전투</sub>
+
+<br><br>
+
+### SYSTEM HIGHLIGHTS
+
+</div>
+
+<table>
+<tr>
+<td width="50%" align="center">
+  <img src="./Docs/Play_ScreenShot01.png" width="100%" alt="Combat">
+  <br><b>02 / 전투 및 고대 마법 이펙트</b>
+  <br><sub>COMBAT SYSTEM & SKILL</sub>
+</td>
+<td width="50%" align="center">
+  <img src="./Docs/Play_ScreenShot02.png" width="100%" alt="Skills">
+  <br><b>03 / 퍼즐 기믹 스킬</b>
+  <br><sub>PUZZLE SOLVING</sub>
+</td>
+</tr>
+<tr>
+<td align="center">
+  <img src="./Docs/Play_ScreenShot03.png" width="100%" alt="Boss">
+  <br><b>04 / 미니게임 : 소환사의 코트</b>
+  <br><sub>MINI GAME : Summoner's Court</sub>
+</td>
+<td align="center">
+  <img src="./Docs/Play_ScreenShot04.png" width="100%" alt="World">
+  <br><b>05 / 미니게임 : 부릉! 브룸!</b>
+  <br><sub>MINI GAME : Bloom Rider</sub>
+</td>
+</tr>
+<tr>
+<td align="center">
+  <img src="./Docs/Play_ScreenShot05.png" width="100%" alt="Character">
+  <br><b>06 / 중간 보스 펜시브 전투</b>
+  <br><sub>MID-BOSS COMBAT</sub>
+</td>
+<td align="center">
+  <img src="./Docs/Play_ScreenShot06.png" width="100%" alt="UI">
+  <br><b>07 / 중간 보스 트롤 전투</b>
+  <br><sub>MID-BOSS COMBAT</sub>
+</td>
+</tr>
+    <tr>
+<td align="center">
+  <img src="./Docs/VisualEffect01.png" width="100%" alt="Character">
+  <br><b>06 / 쉐이더 이펙트 : 갓 레이</b>
+  <br><sub>SHADER VISUAL EFFECT</sub>
+</td>
+<td align="center">
+  <img src="./Docs/VisualEffect02.png" width="100%" alt="UI">
+  <br><b>07 / 쉐이더 이펙트 : SSR 물웅덩이 반사</b>
+  <br><sub>SHADER VISUAL EFFECT</sub>
+</td>
+</tr>
+</table>
+
+<div align="center">
+
+<br>
+
+<img src="./Images/Gameplay08.png" width="100%" alt="Final Gameplay">
+
+**08 — FINAL SHOWCASE**
+
+<sub>게임 전체의 완성도를 보여주는 최종 플레이 장면</sub>
+
+</div>
+
+
+
+
 | 항목        | 내용                                                                                        |
 | --------- | ----------------------------------------------------------------------------------------- |
 | 개발 기간     | 2026.06.30 ~ 2026.08.30 (약 8주)                                                            |
@@ -349,78 +440,3 @@ Scatter 배치에는 지형 경사를 반영했습니다. 주변 높이의 차�
 ## 원작 및 리소스
 
 원작은 Avalanche Software가 개발하고 Warner Bros. Games가 배급한 [Hogwarts Legacy · 호그와트 레거시](https://store.steampowered.com/app/990080/Hogwarts_Legacy/)입니다. 본 프로젝트는 학습·포트폴리오용 모작이며, 원작 리소스와 외부 라이브러리의 권리는 각 권리자에게 있습니다.
-
-
-
-<div align="center">
-
-## GAMEPLAY SHOWCASE
-
-<sub>COMBAT · EXPLORATION · VISUAL EFFECTS</sub>
-
-<br><br>
-
-<img src="./Images/Gameplay01.png" width="100%" alt="Main Gameplay">
-
-**01 — FEATURED GAMEPLAY**
-
-<sub>게임의 핵심 플레이 경험을 보여주는 대표 장면</sub>
-
-<br><br>
-
-### SYSTEM HIGHLIGHTS
-
-</div>
-
-<table>
-<tr>
-<td width="50%" align="center">
-  <img src="./Images/Gameplay02.png" width="100%" alt="Combat">
-  <br><b>02 / COMBAT SYSTEM</b>
-  <br><sub>전투 및 타격 시스템</sub>
-</td>
-<td width="50%" align="center">
-  <img src="./Images/Gameplay03.png" width="100%" alt="Skills">
-  <br><b>03 / SKILL EFFECTS</b>
-  <br><sub>스킬 및 시각 효과</sub>
-</td>
-</tr>
-<tr>
-<td align="center">
-  <img src="./Images/Gameplay04.png" width="100%" alt="Boss">
-  <br><b>04 / BOSS BATTLE</b>
-  <br><sub>보스 패턴 및 AI</sub>
-</td>
-<td align="center">
-  <img src="./Images/Gameplay05.png" width="100%" alt="World">
-  <br><b>05 / WORLD EXPLORATION</b>
-  <br><sub>월드 및 레벨 구성</sub>
-</td>
-</tr>
-<tr>
-<td align="center">
-  <img src="./Images/Gameplay06.png" width="100%" alt="Character">
-  <br><b>06 / CHARACTER SYSTEM</b>
-  <br><sub>캐릭터 인터랙션</sub>
-</td>
-<td align="center">
-  <img src="./Images/Gameplay07.png" width="100%" alt="UI">
-  <br><b>07 / GAME INTERFACE</b>
-  <br><sub>UI 및 HUD 시스템</sub>
-</td>
-</tr>
-</table>
-
-<div align="center">
-
-<br>
-
-<img src="./Images/Gameplay08.png" width="100%" alt="Final Gameplay">
-
-**08 — FINAL SHOWCASE**
-
-<sub>게임 전체의 완성도를 보여주는 최종 플레이 장면</sub>
-
-</div>
-
-
