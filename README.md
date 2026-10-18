@@ -21,11 +21,13 @@
          width="250"
          alt="전체 게임 플레이 영상">
   </a>
+  &nbsp;&nbsp;
   <a href="https://youtu.be/gmc5yBkPOqs">
     <img src="./Docs/Button_IndivGameDesc.svg"
          width="250"
          alt="개인 파트 기술 설명 영상">
   </a>
+  &nbsp;&nbsp;
   <a href="https://youtu.be/gmc5yBkPOqs">
     <img src="./Docs/Button_TeamGameDesc.svg"
          width="250"
