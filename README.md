@@ -22,9 +22,9 @@
 
 <img src="./Docs/MainTitle_ScreenShot.png" width="100%" alt="Main Gameplay">
 
-**01 — GAMEPLAY HIGHLIGHT**
+**01 — GAMEPLAY MAIN HIGHLIGHT**
 
-<sub>최종 보스 : 란록 전투</sub>
+<sub></sub>
 
 <br><br>
 
@@ -87,11 +87,11 @@
 
 <br>
 
-<img src="./Images/Gameplay08.png" width="100%" alt="Final Gameplay">
+<img src="./Docs/FinalTitle_ScreenShot.png" width="100%" alt="Final Gameplay">
 
-**08 — FINAL SHOWCASE**
+**08 — GAMEPLAY FINAL HIGHLIGHT**
 
-<sub>게임 전체의 완성도를 보여주는 최종 플레이 장면</sub>
+<sub>최종 보스 : 란록 전투</sub>
 
 </div>
 
