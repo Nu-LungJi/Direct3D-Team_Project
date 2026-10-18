@@ -351,25 +351,76 @@ Scatter 배치에는 지형 경사를 반영했습니다. 주변 높이의 차�
 원작은 Avalanche Software가 개발하고 Warner Bros. Games가 배급한 [Hogwarts Legacy · 호그와트 레거시](https://store.steampowered.com/app/990080/Hogwarts_Legacy/)입니다. 본 프로젝트는 학습·포트폴리오용 모작이며, 원작 리소스와 외부 라이브러리의 권리는 각 권리자에게 있습니다.
 
 
-## 🎮 Gameplay Screenshots
 
-| 대표 플레이 화면 | 전투 시스템 |
-|:---:|:---:|
-| ![Gameplay 01](./Images/Gameplay01.png) | ![Gameplay 02](./Images/Gameplay02.png) |
-| 게임 플레이 장면 | 전투 시스템 구현 |
+<div align="center">
 
-| 스킬 및 이펙트 | 보스 전투 |
-|:---:|:---:|
-| ![Gameplay 03](./Images/Gameplay03.png) | ![Gameplay 04](./Images/Gameplay04.png) |
-| 스킬 및 시각 효과 | 보스 전투 장면 |
+## GAMEPLAY SHOWCASE
 
-| 맵 탐험 | 캐릭터 상호작용 |
-|:---:|:---:|
-| ![Gameplay 05](./Images/Gameplay05.png) | ![Gameplay 06](./Images/Gameplay06.png) |
-| 게임 월드 탐험 | 캐릭터 상호작용 구현 |
+<sub>COMBAT · EXPLORATION · VISUAL EFFECTS</sub>
 
-| 게임 UI | 기타 콘텐츠 |
-|:---:|:---:|
-| ![Gameplay 07](./Images/Gameplay07.png) | ![Gameplay 08](./Images/Gameplay08.png) |
-| 게임 인터페이스 | 추가 게임 콘텐츠 |
+<br><br>
+
+<img src="./Images/Gameplay01.png" width="100%" alt="Main Gameplay">
+
+**01 — FEATURED GAMEPLAY**
+
+<sub>게임의 핵심 플레이 경험을 보여주는 대표 장면</sub>
+
+<br><br>
+
+### SYSTEM HIGHLIGHTS
+
+</div>
+
+<table>
+<tr>
+<td width="50%" align="center">
+  <img src="./Images/Gameplay02.png" width="100%" alt="Combat">
+  <br><b>02 / COMBAT SYSTEM</b>
+  <br><sub>전투 및 타격 시스템</sub>
+</td>
+<td width="50%" align="center">
+  <img src="./Images/Gameplay03.png" width="100%" alt="Skills">
+  <br><b>03 / SKILL EFFECTS</b>
+  <br><sub>스킬 및 시각 효과</sub>
+</td>
+</tr>
+<tr>
+<td align="center">
+  <img src="./Images/Gameplay04.png" width="100%" alt="Boss">
+  <br><b>04 / BOSS BATTLE</b>
+  <br><sub>보스 패턴 및 AI</sub>
+</td>
+<td align="center">
+  <img src="./Images/Gameplay05.png" width="100%" alt="World">
+  <br><b>05 / WORLD EXPLORATION</b>
+  <br><sub>월드 및 레벨 구성</sub>
+</td>
+</tr>
+<tr>
+<td align="center">
+  <img src="./Images/Gameplay06.png" width="100%" alt="Character">
+  <br><b>06 / CHARACTER SYSTEM</b>
+  <br><sub>캐릭터 인터랙션</sub>
+</td>
+<td align="center">
+  <img src="./Images/Gameplay07.png" width="100%" alt="UI">
+  <br><b>07 / GAME INTERFACE</b>
+  <br><sub>UI 및 HUD 시스템</sub>
+</td>
+</tr>
+</table>
+
+<div align="center">
+
+<br>
+
+<img src="./Images/Gameplay08.png" width="100%" alt="Final Gameplay">
+
+**08 — FINAL SHOWCASE**
+
+<sub>게임 전체의 완성도를 보여주는 최종 플레이 장면</sub>
+
+</div>
+
 
