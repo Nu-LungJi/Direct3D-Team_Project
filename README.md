@@ -349,3 +349,27 @@ Scatter 배치에는 지형 경사를 반영했습니다. 주변 높이의 차�
 ## 원작 및 리소스
 
 원작은 Avalanche Software가 개발하고 Warner Bros. Games가 배급한 [Hogwarts Legacy · 호그와트 레거시](https://store.steampowered.com/app/990080/Hogwarts_Legacy/)입니다. 본 프로젝트는 학습·포트폴리오용 모작이며, 원작 리소스와 외부 라이브러리의 권리는 각 권리자에게 있습니다.
+
+
+## 🎮 Gameplay Screenshots
+
+| 대표 플레이 화면 | 전투 시스템 |
+|:---:|:---:|
+| ![Gameplay 01](./Images/Gameplay01.png) | ![Gameplay 02](./Images/Gameplay02.png) |
+| 게임 플레이 장면 | 전투 시스템 구현 |
+
+| 스킬 및 이펙트 | 보스 전투 |
+|:---:|:---:|
+| ![Gameplay 03](./Images/Gameplay03.png) | ![Gameplay 04](./Images/Gameplay04.png) |
+| 스킬 및 시각 효과 | 보스 전투 장면 |
+
+| 맵 탐험 | 캐릭터 상호작용 |
+|:---:|:---:|
+| ![Gameplay 05](./Images/Gameplay05.png) | ![Gameplay 06](./Images/Gameplay06.png) |
+| 게임 월드 탐험 | 캐릭터 상호작용 구현 |
+
+| 게임 UI | 기타 콘텐츠 |
+|:---:|:---:|
+| ![Gameplay 07](./Images/Gameplay07.png) | ![Gameplay 08](./Images/Gameplay08.png) |
+| 게임 인터페이스 | 추가 게임 콘텐츠 |
+
