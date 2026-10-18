@@ -40,9 +40,9 @@
   <br><sub>중간 보스 : 펜시브 전투</sub>
 </td>
 </tr>  
-
+</table>
 ### GAMEPLAY HIGHLIGHTS
-
+<table>
 <tr>
 <td width="50%" align="center">
   <img src="./Docs/Play_ScreenShot01.png" width="100%" alt="Combat">
