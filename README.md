@@ -349,3 +349,78 @@ Scatter 배치에는 지형 경사를 반영했습니다. 주변 높이의 차�
 ## 원작 및 리소스
 
 원작은 Avalanche Software가 개발하고 Warner Bros. Games가 배급한 [Hogwarts Legacy · 호그와트 레거시](https://store.steampowered.com/app/990080/Hogwarts_Legacy/)입니다. 본 프로젝트는 학습·포트폴리오용 모작이며, 원작 리소스와 외부 라이브러리의 권리는 각 권리자에게 있습니다.
+
+
+<h2>Gameplay Showcase</h2>
+
+<p>주요 전투 시스템과 게임 플레이 장면을 소개합니다.</p>
+
+<table>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <img src="./Images/Gameplay01.png" width="100%" alt="Combat System">
+      <br>
+      <b>01. Combat System</b>
+      <br>
+      <sub>실시간 전투 및 타격 연출</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <img src="./Images/Gameplay02.png" width="100%" alt="Skill Effects">
+      <br>
+      <b>02. Skill Effects</b>
+      <br>
+      <sub>스킬 및 파티클 이펙트</sub>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center" valign="top">
+      <img src="./Images/Gameplay03.png" width="100%" alt="Boss Battle">
+      <br>
+      <b>03. Boss Battle</b>
+      <br>
+      <sub>보스 전투 및 패턴</sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="./Images/Gameplay04.png" width="100%" alt="World Exploration">
+      <br>
+      <b>04. World Exploration</b>
+      <br>
+      <sub>월드 및 레벨 디자인</sub>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center" valign="top">
+      <img src="./Images/Gameplay05.png" width="100%" alt="Enemy AI">
+      <br>
+      <b>05. Enemy AI</b>
+      <br>
+      <sub>적 AI 및 행동 패턴</sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="./Images/Gameplay06.png" width="100%" alt="Character System">
+      <br>
+      <b>06. Character System</b>
+      <br>
+      <sub>캐릭터 조작 및 상호작용</sub>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center" valign="top">
+      <img src="./Images/Gameplay07.png" width="100%" alt="Game Interface">
+      <br>
+      <b>07. Game Interface</b>
+      <br>
+      <sub>HUD 및 UI 시스템</sub>
+    </td>
+    <td align="center" valign="top">
+      <img src="./Images/Gameplay08.png" width="100%" alt="Gameplay Features">
+      <br>
+      <b>08. Gameplay Features</b>
+      <br>
+      <sub>기타 게임 플레이 요소</sub>
+    </td>
+  </tr>
+</table>
