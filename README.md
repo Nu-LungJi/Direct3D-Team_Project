@@ -12,9 +12,6 @@
 
 ## GAMEPLAY SHOWCASE
 
-<sub>COMBAT · SHADER EFFECTS · MINI GAME</sub>
-
-
 <p align="center">
   <a href="https://youtu.be/pH1RYggPNs4">
     <img src="./Docs/Button_GamePlay.svg"
@@ -35,9 +32,6 @@
   </a>
 </p>
 
-<br><br>
-
-<br>
 <table>
 <tr>
 <td width="100%" align="center">
@@ -46,15 +40,9 @@
   <br><sub>중간 보스 : 펜시브 전투</sub>
 </td>
 </tr>  
-</table>
 
-<br><br>
+### GAMEPLAY HIGHLIGHTS
 
-### SYSTEM HIGHLIGHTS
-
-</div>
-
-<table>
 <tr>
 <td width="50%" align="center">
   <img src="./Docs/Play_ScreenShot01.png" width="100%" alt="Combat">
