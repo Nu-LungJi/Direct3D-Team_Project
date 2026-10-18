@@ -26,7 +26,7 @@
 <td width="100%" align="center">
   <img src="./Docs/MainTitle_ScreenShot.png" width="100%" alt="Main Gameplay">
   <br><b>**01 — GAMEPLAY MAIN HIGHLIGHT**</b>
-  <br><sub>최종 보스 : 란록 전투</sub>
+  <br><sub>중간 보스 : 펜시브 전투</sub>
 </td>
 </tr>  
 </table>
@@ -65,8 +65,8 @@
 <tr>
 <td align="center">
   <img src="./Docs/Play_ScreenShot05.png" width="100%" alt="Character">
-  <br><b>06 / 중간 보스 펜시브 전투</b>
-  <br><sub>MID-BOSS COMBAT</sub>
+  <br><b>06 / 마을 레벨 디자인</b>
+  <br><sub>WORLD / LEVEL DESIGN</sub>
 </td>
 <td align="center">
   <img src="./Docs/Play_ScreenShot06.png" width="100%" alt="UI">
