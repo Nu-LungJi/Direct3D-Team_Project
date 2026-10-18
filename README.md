@@ -14,9 +14,24 @@
 
 <sub>COMBAT · SHADER EFFECTS · MINI GAME</sub>
 
-[![게임 플레이 영상](https://img.shields.io/badge/Watch-Gameplay-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/pH1RYggPNs4=VIDEO_ID)
-[![개인 파트 기술 설명](https://img.shields.io/badge/Gameplay-Demo-2563EB?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/gmc5yBkPOqs=VIDEO_ID)
-[![팀 파트 기술 설명](https://img.shields.io/badge/Gameplay-Demo-2563EB?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/gmc5yBkPOqs=VIDEO_ID)
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=VIDEO_ID_1">
+    <img src="./Docs/RedButton.svg"
+         width="250"
+         alt="전체 게임 플레이 영상">
+  </a>
+  <a href="https://www.youtube.com/watch?v=VIDEO_ID_2">
+    <img src="./Docs/BlueButton.svg"
+         width="250"
+         alt="개인 파트 기술 설명 영상">
+  </a>
+  <a href="https://www.youtube.com/watch?v=VIDEO_ID_2">
+    <img src="./Docs/BlueButton.svg"
+         width="250"
+         alt="전체 파트 기술 설명 영상">
+  </a>
+</p>
 
 <br><br>
 
