@@ -101,7 +101,7 @@
 <tr>
 <td width="100%" align="center">
   <img src="./Docs/FinalTitle_ScreenShot.png" width="100%" alt="Final Gameplay">
-  <br><b>**08 — GAMEPLAY FINAL HIGHLIGHT**</b>
+  <br><b>08 — GAMEPLAY FINAL HIGHLIGHT</b>
   <br><sub>최종 보스 : 란록 전투</sub>
 </td>
 </tr>  
