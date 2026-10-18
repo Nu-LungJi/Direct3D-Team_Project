@@ -20,11 +20,16 @@
 
 <br><br>
 
-<img src="./Docs/MainTitle_ScreenShot.png" width="100%" alt="Main Gameplay">
-
-**01 — GAMEPLAY MAIN HIGHLIGHT**
-
-<sub></sub>
+<br>
+<table>
+<tr>
+<td width="100%" align="center">
+  <img src="./Docs/MainTitle_ScreenShot.png" width="100%" alt="Main Gameplay">
+  <br><b>**01 — GAMEPLAY MAIN HIGHLIGHT**</b>
+  <br><sub>최종 보스 : 란록 전투</sub>
+</td>
+</tr>  
+</table>
 
 <br><br>
 
@@ -83,20 +88,16 @@
 </tr>
 </table>
 
-<div align="center">
-
 <br>
-
-<img src="./Docs/FinalTitle_ScreenShot.png" width="100%" alt="Final Gameplay">
-
-**08 — GAMEPLAY FINAL HIGHLIGHT**
-
-<sub>최종 보스 : 란록 전투</sub>
-
-</div>
-
-
-
+<table>
+<tr>
+<td width="100%" align="center">
+  <img src="./Docs/FinalTitle_ScreenShot.png" width="100%" alt="Final Gameplay">
+  <br><b>**08 — GAMEPLAY FINAL HIGHLIGHT**</b>
+  <br><sub>최종 보스 : 란록 전투</sub>
+</td>
+</tr>  
+</table>
 
 | 항목        | 내용                                                                                        |
 | --------- | ----------------------------------------------------------------------------------------- |
