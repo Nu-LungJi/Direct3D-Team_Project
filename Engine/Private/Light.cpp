@@ -413,7 +413,7 @@ HRESULT CLight::Capture_ShadowMap(ID3D11DeviceContext* pContext, E::RENDER_CTX& 
 	
 		BoundingBox ShadowBound{};
 	
-		if (GOBJ->GetShadowBounds(ShadowBound)) {
+		if (CGameInstance::Get().Is_ShadowCullingEnabled() && GOBJ->GetShadowBounds(ShadowBound)) {
 			const _float ShadowCullPadding = 1.f;
 
 			ShadowBound.Extents.x += ShadowCullPadding;

@@ -425,6 +425,31 @@ public:
 
 	VOID	Set_EnviromentLightEnabled(_bool enabled);
 
+	_bool Is_ShadowCullingEnabled() const { return m_pLightManager->Is_ShadowCullingEnabled(); }
+
+	_bool Is_StaticShadowCacheEnabled() const { return m_pLightManager->Is_StaticShadowCacheEnabled(); }
+
+	void Set_ShadowCullingEnabled(_bool enabled) { m_pLightManager->Set_ShadowCullingEnabled(enabled); }
+
+	void Set_StaticShadowCacheEnabled(_bool enabled) { m_pLightManager->Set_StaticShadowCacheEnabled(enabled); }
+
+	_bool Is_LightFrustumCullingEnabled() const { return m_pLightManager->Is_LightFrustumCullingEnabled(); }
+
+	void Set_LightFrustumCullingEnabled(_bool enabled) { m_pLightManager->Set_LightFrustumCullingEnabled(enabled); }
+
+	_bool Is_ShadowCommandListCacheEnabled() const { return m_pLightManager->Is_ShadowCommandListCacheEnabled(); }
+
+
+	void Set_ShadowCommandListCacheEnabled(_bool enabled) { m_pLightManager->Set_ShadowCommandListCacheEnabled(enabled); }
+
+	_bool Is_ShadowInputUploadCacheEnabled() const { return m_pLightManager->Is_ShadowInputUploadCacheEnabled(); }
+
+	void Set_ShadowInputUploadCacheEnabled(_bool enabled) { m_pLightManager->Set_ShadowInputUploadCacheEnabled(enabled); }
+
+	_bool Is_FinalShadowMapReuseEnabled() const { return m_pLightManager->Is_FinalShadowMapReuseEnabled(); }
+
+	void Set_FinalShadowMapReuseEnabled(_bool enabled) { m_pLightManager->Set_FinalShadowMapReuseEnabled(enabled); }
+
 #pragma endregion
 
 #pragma region ANIMATIONEDTIOR_MANAGER

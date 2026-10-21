@@ -502,7 +502,7 @@ HRESULT CModel_Instance_Manager::Render_ShadowInstanced(ID3D11DeviceContext* pCo
 
 		for (size_t i = 0; i < InstanceCount; ++i) {
 			_bool bVisibleToLight = true;
-			if (LightType != LIGHT_TYPE::DIRECTIONAL && i < pBatch->ShadowBounds.size()) {
+			if (CGameInstance::Get().Is_ShadowCullingEnabled() && LightType != LIGHT_TYPE::DIRECTIONAL && i < pBatch->ShadowBounds.size()) {
 				const auto& OptionalBounds = pBatch->ShadowBounds[i];
 
 				if (OptionalBounds.has_value()) {

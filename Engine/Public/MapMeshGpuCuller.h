@@ -15,6 +15,8 @@ struct CB_MAPMESH_GPU_CULL
 	uint32_t mipCount = 0; // Hi-Z 텍스처에서 사용할 수 있는 밉 레벨 수
 	uint32_t useHiz = 0; // 유효한 이전 Hi-Z가 있을 때만 오클루전 컬링을 활성화
 	_float hizBias = 0.0005f; // 깊이 정밀도 오차로 인한 잘못된 컬링을 완화하는 여유값
+	uint32_t useFrustum = 1;
+	uint32_t cullPadding[3]{};
 };
 
 // CPU에서 받은 맵 메시 인스턴스를 GPU에서 프러스텀·Hi-Z 컬링하고,
@@ -50,8 +52,13 @@ public:
 	// 인스턴스 버텍스 스트림으로 바인딩할 컬링 결과 버퍼를 반환
 	ID3D11Buffer* GetVisibleInstanceBuffer() const;
 	// DrawIndexedInstancedIndirect에서 사용할 인자 버퍼를 반환
-	ID3D11Buffer* GetIndirectArgsBuffer() const;
 
+	ID3D11Buffer* GetIndirectArgsBuffer() const;
+public:
+	void SetFrustumCullingEnabled(_bool enabled) { m_bFrustumCullingEnabled = enabled; }
+
+private:
+	_bool m_bFrustumCullingEnabled = true;
 private:
 	// 필요한 수를 수용하도록 현재 용량을 두 배 단위로 확장해 계산
 	static uint32_t CalculateExpandedCapacity(uint32_t currentCapacity, uint32_t requiredCapacity, uint32_t minimumCapacity);

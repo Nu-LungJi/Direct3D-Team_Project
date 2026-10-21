@@ -223,6 +223,19 @@ HRESULT CLightManager::Capture_ShadowMap() {
 		m_pContext->OMSetRenderTargets(0, nullptr, nullptr);
 	}
 
+
+	{
+		if (m_bShadowSettingsDirty) {
+			for (const auto& handle : m_LightHandleList) {
+				if (!handle) continue;
+
+				auto* light = CGameInstance::Get().GetGameObjectByHandleT<CLight>(*handle);
+				if (light) light->InvalidateAllShadow();
+			}
+
+			m_bShadowSettingsDirty = false;
+		}
+	}
 	Allocate_ShadowSlot();
 
 	Update_LightData();
@@ -277,7 +290,7 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			RENDER_CTX RCTX{};
 			RCTX.pass = RENDERPASS::SHADOW;
 
-			const _bool bStaticWasDirty = LightOBJ->Is_StaticDirty();
+			const _bool bStaticWasDirty = !m_bStaticShadowCacheEnabled || LightOBJ->Is_StaticDirty();
 
 			if (bStaticWasDirty) {
 				Build_StaticShadowCasterList(m_pActiveShadowLightList[i]);
@@ -297,7 +310,7 @@ HRESULT CLightManager::Capture_ShadowMap() {
 				LightOBJ->Set_StaticDirty(false);
 			}
 
-			const _bool bFinalShadowDirty = bStaticWasDirty || LightOBJ->Is_DynamicDirty();
+			const _bool bFinalShadowDirty = !m_bFinalShadowMapReuseEnabled || bStaticWasDirty || LightOBJ->Is_DynamicDirty();
 			if (bFinalShadowDirty) {
 				if (FAILED(Copy_StaticShadowToFinal(LIGHT_TYPE::POINT, static_cast<uint32_t>(ShadowSlot)))) { UnBind_ShadowResource();  return E_FAIL; }
 
@@ -343,7 +356,7 @@ HRESULT CLightManager::Capture_ShadowMap() {
 			RENDER_CTX RCTX{};
 			RCTX.pass = RENDERPASS::SHADOW;
 
-			const _bool bStaticWasDirty = LightOBJ->Is_StaticDirty();
+			const _bool bStaticWasDirty = !m_bStaticShadowCacheEnabled || LightOBJ->Is_StaticDirty();
 
 			if (bStaticWasDirty) {
 				Build_StaticShadowCasterList(m_pActiveShadowLightList[i]);
@@ -360,7 +373,7 @@ HRESULT CLightManager::Capture_ShadowMap() {
 				}
 			}
 
-			const _bool bFinalShadowDirty = bStaticWasDirty || LightOBJ->Is_DynamicDirty();
+			const _bool bFinalShadowDirty = !m_bFinalShadowMapReuseEnabled || bStaticWasDirty || LightOBJ->Is_DynamicDirty();
 			if (bFinalShadowDirty){
 				if (FAILED(Copy_StaticShadowToFinal(LightOBJ->Get_LightType(), static_cast<uint32_t>(ShadowSlot)))) { UnBind_ShadowResource();  return E_FAIL; }
 				auto DynamicShadowDSV = m_pDynamicDirectionalShadowList.DSVList[ShadowSlot];
@@ -910,7 +923,7 @@ VOID	CLightManager::Update_ActiveLights() {
 			continue;
 		}
 		// Frustum Culling
-		if (!IsInFrustum(LightOBJ)) continue;
+		if (m_bLightFrustumCullingEnabled && !IsInFrustum(LightOBJ)) continue;
 
 		XMVECTOR CurrentPosition = LightOBJ->GetTransform().GetLoadedPostion();
 		_float	 DistanceSQ = XMVectorGetX(XMVector3LengthSq(XMVectorSubtract(CameraPos, CurrentPosition)));
@@ -1081,7 +1094,7 @@ VOID CLightManager::Build_StaticShadowCasterList(std::optional<CHandle> _LightHa
 	auto AddStaticShadowCaster = [&](IRenderable* pRenderable) {
 		if (nullptr == pRenderable)	return;
 
-		if (CullLight) {
+		if (m_bShadowCullingEnabled && CullLight) {
 			BoundingBox ShadowBounds{};
 
 			if (pRenderable->GetShadowBounds(ShadowBounds))
@@ -1718,6 +1731,10 @@ VOID	CLightManager::Invalidate_DynamicShadowMaps(){
 		auto LightOBJ = CGameInstance::Get().GetGameObjectByHandleT<CLight>(LightHandle.value());
 		if (nullptr == LightOBJ) continue;
 
+		if (!m_bShadowCullingEnabled) {
+			LightOBJ->Set_DynamicDirty(true);
+			continue;
+		}
 		_bool bHasCasterNow = false;
 
 		for (auto Renderable : m_pRenderable_DynamicObjectList) {
@@ -1725,7 +1742,10 @@ VOID	CLightManager::Invalidate_DynamicShadowMaps(){
 
 			BoundingBox Bounds{};
 
-			if (!Renderable->GetShadowBounds(Bounds) || LightOBJ->Intersects_ShadowBounds(Bounds)) {
+			const bool hasBounds = Renderable->GetShadowBounds(Bounds);
+
+			if (!hasBounds || LightOBJ->Intersects_ShadowBounds(Bounds))
+			{
 				bHasCasterNow = true;
 				break;
 			}
@@ -1738,12 +1758,13 @@ VOID	CLightManager::Invalidate_DynamicShadowMaps(){
 				const size_t InstanceCount = Batch->Instances.size();
 
 				for (size_t i = 0; i < InstanceCount; ++i) {
-					if (i >= Batch->ShadowBounds.size() || !Batch->ShadowBounds[i].has_value()) {
-						bHasCasterNow = true;
-						break;
-					}
+					const bool hasBounds =
+						i < Batch->ShadowBounds.size() &&
+						Batch->ShadowBounds[i].has_value();
 
-					if (LightOBJ->Intersects_ShadowBounds(Batch->ShadowBounds[i].value())) {
+					if (!hasBounds ||
+						LightOBJ->Intersects_ShadowBounds(Batch->ShadowBounds[i].value()))
+					{
 						bHasCasterNow = true;
 						break;
 					}

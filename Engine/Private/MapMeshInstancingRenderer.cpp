@@ -212,7 +212,9 @@ HRESULT CMapMeshInstancingRenderer::RenderShadow(ID3D11DeviceContext* context, c
 
 	auto cacheIterator = m_CachedShadowCommandLists.find(cacheKey);
 
-	const bool cacheNeedsRebuild = cacheIterator == m_CachedShadowCommandLists.end() || 
+	const bool cacheNeedsRebuild = 
+		!CGameInstance::Get().Is_ShadowCommandListCacheEnabled() ||
+		cacheIterator == m_CachedShadowCommandLists.end() || 
 		cacheIterator->second.commandList == nullptr ||
 		cacheIterator->second.lightType != lightType;
 
@@ -294,7 +296,7 @@ HRESULT CMapMeshInstancingRenderer::PrepareShadowDrawPacket(ID3D11DeviceContext*
 	if (FAILED(ResolveShadowDrawResources(lightType, outPacket)))
 		return E_FAIL;
 
-	const _bool uploadShadowData = m_IsShadowGpuDataDirty;
+	const _bool uploadShadowData = !CGameInstance::Get().Is_ShadowInputUploadCacheEnabled() || m_IsShadowGpuDataDirty;
 
 	if (FAILED(RunShadowGpuCulling(context, shadowContext, lightType, uploadShadowData, outPacket)))
 		return E_FAIL;
@@ -701,6 +703,8 @@ HRESULT CMapMeshInstancingRenderer::RunShadowGpuCulling(ID3D11DeviceContext* con
 		shadowMapSize
 	};
 
+	m_pShadowGpuCuller->SetFrustumCullingEnabled(
+		CGameInstance::Get().Is_ShadowCullingEnabled());
 	if (FAILED(m_pShadowGpuCuller->BuildVisibleInstancesAndIndirectArgs(
 		context, m_ResidentInstances, m_ResidentOcclusionData, m_ResidentCullMetadata, m_ResidentBatchCount,
 		m_BatchIndexByDraw, m_IndirectDrawArguments, uploadResidentData,

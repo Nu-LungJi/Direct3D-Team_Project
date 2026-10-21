@@ -117,6 +117,75 @@ public:		// Effect Light Fuction
 		m_bEffectLightDebugDepthTest = bDepthTest;
 	}
 
+	_bool	Is_ShadowCullingEnabled() const		{ return m_bShadowCullingEnabled; }
+	_bool	Is_StaticShadowCacheEnabled() const { return m_bStaticShadowCacheEnabled; }
+
+	void	Set_ShadowCullingEnabled(_bool enabled) {
+		if (m_bShadowCullingEnabled == enabled)	return;
+			
+
+		m_bShadowCullingEnabled = enabled;
+		m_bShadowSettingsDirty = true;
+	}
+
+	void Set_StaticShadowCacheEnabled(_bool enabled) {
+		if (m_bStaticShadowCacheEnabled == enabled)	return;
+			
+
+		m_bStaticShadowCacheEnabled = enabled;
+		m_bShadowSettingsDirty = true;
+	}
+	_bool Is_LightFrustumCullingEnabled() const
+	{
+		return m_bLightFrustumCullingEnabled;
+	}
+
+	void Set_LightFrustumCullingEnabled(_bool enabled)
+	{
+		if (m_bLightFrustumCullingEnabled == enabled)
+			return;
+
+		m_bLightFrustumCullingEnabled = enabled;
+		m_bShadowSettingsDirty = true;
+	}
+	_bool Is_ShadowCommandListCacheEnabled() const
+	{
+		return m_bShadowCommandListCacheEnabled;
+	}
+
+	void Set_ShadowCommandListCacheEnabled(_bool enabled)
+	{
+		m_bShadowCommandListCacheEnabled = enabled;
+	}
+
+	_bool Is_ShadowInputUploadCacheEnabled() const
+	{
+		return m_bShadowInputUploadCacheEnabled;
+	}
+
+	void Set_ShadowInputUploadCacheEnabled(_bool enabled)
+	{
+		m_bShadowInputUploadCacheEnabled = enabled;
+	}
+
+	_bool Is_FinalShadowMapReuseEnabled() const
+	{
+		return m_bFinalShadowMapReuseEnabled;
+	}
+
+	void Set_FinalShadowMapReuseEnabled(_bool enabled)
+	{
+		m_bFinalShadowMapReuseEnabled = enabled;
+	}
+private:
+	_bool m_bShadowCullingEnabled			= true;
+	_bool m_bStaticShadowCacheEnabled		= true;
+	_bool m_bShadowSettingsDirty			= false;
+	_bool m_bLightFrustumCullingEnabled		= true;
+	_bool m_bShadowCommandListCacheEnabled	= true;
+	_bool m_bShadowInputUploadCacheEnabled	= true;
+	_bool m_bFinalShadowMapReuseEnabled		= false;
+
 private:	// Effect Light Variable
 	VOID	Update_EffectLightData();
 
@@ -146,8 +215,6 @@ private:
 	_bool	m_bEnviromentLightEnabled = true;
 
 private:
-
-
 
 	SPtr<CResDynamicTexture2D>			m_pUAVComBinedOutput = { nullptr };
 

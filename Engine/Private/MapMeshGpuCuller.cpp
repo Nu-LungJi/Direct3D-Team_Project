@@ -203,6 +203,8 @@ HRESULT CMapMeshGpuCuller::BuildVisibleInstancesAndIndirectArgs(
 	cullConstants.instanceCount = instanceCount;
 	cullConstants.mipCount = previousHizBuffer ? previousHizBuffer->GetMipCount() : 0;
 	cullConstants.useHiz = previousHizBuffer && previousHizSRV && cullConstants.mipCount > 0 && screenSize.x > 0.f && screenSize.y > 0.f;
+	cullConstants.useFrustum =
+		m_bFrustumCullingEnabled ? 1u : 0u;
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource{};
 	if (FAILED(context->Map(m_pCullConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))

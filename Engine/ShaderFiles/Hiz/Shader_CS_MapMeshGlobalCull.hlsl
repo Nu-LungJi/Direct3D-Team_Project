@@ -37,6 +37,8 @@ cbuffer CB_MapMeshGpuCull : register(b0)
     uint gMipCount;
     uint gUseHiz;
     float gHizBias;
+	uint gUseFrustum;
+	uint3 gCullPadding;
 };
 
 bool IsOutsideFrustum(MAPMESH_OCCLUSION_DATA bounds)
@@ -152,8 +154,10 @@ void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
     if (index >= gInstanceCount)
         return;
 
-    if (IsOutsideFrustum(gOcclusionData[index]))
-        return;
+	if (gUseFrustum != 0) {
+		if (IsOutsideFrustum(gOcclusionData[index])) return;
+	}
+
 
     bool visible = true;
     if (gUseHiz != 0)

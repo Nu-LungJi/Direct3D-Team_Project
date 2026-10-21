@@ -7,6 +7,7 @@
 #include "MyGFSDK_SSAO.h"
 #include "UIObject.h"
 #include "MyFSR2_2.h"
+#include "imgui_internal.h"
 
 NS_USING(Engine)
 CRenderer::CRenderer(ComPtr<ID3D11Device> pDevice, ComPtr<ID3D11DeviceContext> pContext) : m_pDevice{ pDevice }, m_pContext{ pContext }
@@ -3159,7 +3160,7 @@ VOID	CRenderer::RendererGUI() {
 	ImGui::Begin("Renderer Controller", nullptr, flags);
 
 	ImGui::TextDisabled("Shader Effect Controller");
-	ImGui::BeginChild("##Inspector", ImVec2(0.f, 120.f), true);
+	ImGui::BeginChild("##Inspector", ImVec2(0.f, 180.f), true);
 	{
 		if (ImGui::Checkbox("Environment Light", &m_bApplyEnvLight))	CGameInstance::Get().Set_EnviromentLightEnabled(m_bApplyEnvLight);
 
@@ -3376,8 +3377,99 @@ VOID	CRenderer::RendererGUI() {
 			m_bCloudHistoryValid = false;
 		}
 	}
-	if (m_bApplyShadow) {
+	if (m_bApplyShadow)
+	{
 		ImGui::Separator();
+
+		if (ImGui::CollapsingHeader("Shadow Option"))
+		{
+			auto& gameInstance = CGameInstance::Get();
+
+			_bool lightCulling =
+				gameInstance.Is_LightFrustumCullingEnabled();
+
+			_bool shadowCulling =
+				gameInstance.Is_ShadowCullingEnabled();
+
+			_bool allCulling = lightCulling && shadowCulling;
+
+			// 하위 옵션의 상태가 다르면 혼합 상태로 표시
+			ImGui::PushItemFlag(
+				ImGuiItemFlags_MixedValue,
+				lightCulling != shadowCulling);
+
+			const bool allCullingChanged =
+				ImGui::Checkbox("All Culling", &allCulling);
+
+			ImGui::PopItemFlag();
+
+			// 상위 옵션 변경 시 두 컬링을 함께 변경
+			if (allCullingChanged)
+			{
+				gameInstance.Set_LightFrustumCullingEnabled(allCulling);
+				gameInstance.Set_ShadowCullingEnabled(allCulling);
+
+				lightCulling = allCulling;
+				shadowCulling = allCulling;
+			}
+
+			ImGui::Indent();
+
+			if (ImGui::Checkbox("Light Frustum Culling", &lightCulling))
+			{
+				gameInstance.Set_LightFrustumCullingEnabled(lightCulling);
+			}
+
+			if (ImGui::Checkbox("Shadow Caster Culling", &shadowCulling))
+			{
+				gameInstance.Set_ShadowCullingEnabled(shadowCulling);
+			}
+
+			ImGui::Unindent();
+
+			// 기존 정적 그림자 캐시는 독립적으로 유지
+			_bool staticShadowCache =
+				gameInstance.Is_StaticShadowCacheEnabled();
+
+			if (ImGui::Checkbox("Static Shadow Cache", &staticShadowCache))
+			{
+				gameInstance.Set_StaticShadowCacheEnabled(staticShadowCache);
+			}
+			ImGui::Separator();
+
+			_bool commandListCache =
+				CGameInstance::Get().Is_ShadowCommandListCacheEnabled();
+
+			if (ImGui::Checkbox(
+				"Shadow Command List Cache",
+				&commandListCache))
+			{
+				CGameInstance::Get().
+					Set_ShadowCommandListCacheEnabled(commandListCache);
+			}
+
+			_bool inputUploadCache =
+				CGameInstance::Get().Is_ShadowInputUploadCacheEnabled();
+
+			if (ImGui::Checkbox(
+				"Shadow Input Upload Cache",
+				&inputUploadCache))
+			{
+				CGameInstance::Get().
+					Set_ShadowInputUploadCacheEnabled(inputUploadCache);
+			}
+
+			_bool finalMapReuse =
+				CGameInstance::Get().Is_FinalShadowMapReuseEnabled();
+
+			if (ImGui::Checkbox(
+				"Final Shadow Map Reuse",
+				&finalMapReuse))
+			{
+				CGameInstance::Get().
+					Set_FinalShadowMapReuseEnabled(finalMapReuse);
+			}
+		}
 	}
 	ImGui::End();
 }
