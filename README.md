@@ -103,17 +103,25 @@
 </tr>  
 </table>
 
-| 항목        | 내용                                                                                        |
+## 개발 내용
+
+| 항목 | 내용 |
 | --------- | ----------------------------------------------------------------------------------------- |
-| 개발 기간     | 2026.06.30 ~ 2026.08.30 (약 8주)                                                            |
-| 개발 인원     | 7인 — 셰이더·렌더링 중심 담당                                                                        |
-| 플랫폼       | Windows PC / x64                                                                          |
-| 장르·플레이 구성 | 3인칭 액션 RPG · 월드 탐험 · 주문 전투 · 보스전 · 빗자루 비행                                                 |
-| 프로젝트 구성   | 공통 Engine · 게임 Client · MapEditor · SampleClient · 모델 변환 도구                               |
-| 주요 담당     | 렌더링 파이프라인, PBR·환경광, 다중 광원·그림자, 볼류메트릭, 반사·후처리·최적화                                          |
-| 추가 담당     | 이펙트 제작·연동, 맵 재질 편집·저장, Scatter 확장, 레벨 조명·환경 배치, 팀 코드 통합                                   |
-| 사용 기술     | C++20 · Direct3D 11 · HLSL · Compute Shader · NVIDIA HBAO+ · Dear ImGui                   |
-| 제작 보조     | Git/GitHub(협업), RenderDoc(디버깅), Tracy Profiler(디버깅), Google Gemini(AI), ChatGPT Codex(AI) |
+| 개발 기간 | 2026.06.30 ~ 2026.08.30 (약 8주) |
+| 개발 인원 | 7인 — 셰이더·렌더링 중심 담당 |
+| 플랫폼 | Windows PC / x64 |
+| 장르·플레이 구성 | 3인칭 액션 RPG · 월드 탐험 · 주문 전투 · 보스전 · 빗자루 비행 |
+| 프로젝트 구성 | 공통 Engine · 게임 Client · MapEditor · SampleClient · 모델 변환 Tool |
+| 주요 담당 | 렌더링 파이프라인, PBR·환경광, 다중 광원·그림자, 볼류메트릭, 반사·후처리·최적화 |
+| 추가 담당 | 이펙트 제작·연동, 맵 재질 편집·저장, Scatter 확장, 레벨 조명·환경 배치, 팀 코드 통합 |
+| 언어 | C++20 / HLSL |
+| 그래픽 API·셰이더 | Direct3D 11 / Compute Shader / Shader Model 5.0 |
+| 렌더링 라이브러리 | NVIDIA HBAO+ / DirectXTex / DirectXTK |
+| 물리·애니메이션 | PhysX / NvCloth |
+| 디버깅·프로파일링 | RenderDoc / Tracy Profiler |
+| 개발 환경 | Visual Studio 2022 |
+| 버전 관리·협업 | Git / GitHub |
+| AI 개발 보조 | Google Gemini / ChatGPT Codex |
 
 ## 주요 기술 구현
 
@@ -461,21 +469,6 @@ Scatter 배치에는 지형 경사를 반영했습니다. 주변 높이의 차�
 팀 코드 통합 과정에서는 렌더 그룹과 이펙트 합성 순서를 조정하고, 상수 버퍼 구조·슬롯 구분·셰이더 바인딩을 정리했습니다. 투명 객체 출력, 노멀 계산, 씬 전환 시 조명 상태 등 렌더링 연동 문제를 수정했습니다.
 
 관련 코드: `Engine/Private/Renderer.cpp` · `Engine/Private/LightManager.cpp`
-
-## 개발 환경
-
-| 분류 | 기술 |
-| --- | --- |
-| 언어 | C++20 / STL / HLSL |
-| 그래픽 | Direct3D 11 / Compute Shader / Shader Model 5.0 |
-| 렌더링 라이브러리 | NVIDIA HBAO+ / DirectXTex / DirectXTK |
-| 물리·애니메이션 보조 | PhysX / NvCloth |
-| 내비게이션·리소스 | Recast/Detour / Assimp |
-| 오디오 | FMOD |
-| 에디터·디버깅 | Dear ImGui / ImGuizmo / Tracy |
-| 개발 환경·협업 | Visual Studio 2022 / Windows SDK / Git·GitHub / vcpkg |
-
-개발 환경 표는 팀 프로젝트 전체의 기술 구성이며, 개인 담당 범위는 위의 셰이더·렌더링 및 추가 구현 항목에 해당합니다.
 
 ## 원작 및 리소스
 
