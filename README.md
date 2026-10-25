@@ -255,7 +255,9 @@ flowchart TB
 이미 활성화된 광원과 그림자 슬롯에 유지 가중치를 부여해 카메라 이동 중 슬롯이 빈번하게 교체되는 것을 줄였습니다. 이펙트용 광원은 **풀에서 재사용**하고, 이펙트 위치와 수명에 맞춰 갱신·반환하도록 연결했습니다.
 
 ### Trouble Shooting | Shadow Map 최적화
-<table><tr>
+<table>
+  <tr>
+    <td>
 #### ⚠️ 문제 발생
 
 다중 광원에 대한 Shadow Map 생성 과정에서 **불필요한 렌더링과 반복적인 CPU 연산**으로 프레임 저하가 발생했습니다.
@@ -282,7 +284,9 @@ flowchart TB
 - **추정 FPS:** 37.18 → 60.00 (**61.40% 증가**)
 
 불필요한 그림자 렌더링과 반복적인 CPU/GPU연산을 최소화하여 그림자 처리 성능을 개선하였고, 그 결과, 1920x1080 기준 FPS를 약 61.4% 증가시켜 목표 FPS인 60FPS에서도 안정적으로 렌더링할 수 있도록 만들었습니다.
-</tr></table>
+    </td>
+  </tr>
+</table>
 
 관련 코드: `Engine/Private/Light.cpp` · `Engine/Private/LightManager.cpp` · `Engine/ShaderFiles/PBR/CS_PBR.hlsl`
 
