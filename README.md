@@ -21,7 +21,7 @@
          alt="개인 파트 기술 설명 영상">
   </a>
   &nbsp;&nbsp;
-  <a href="https://youtu.be/gmc5yBkPOqs">
+  <a href="https://youtu.be/N4lJ058jHGI">
     <img src="./Docs/Button_TeamGameDesc.svg"
          width="250"
          alt="전체 파트 기술 설명 영상">
