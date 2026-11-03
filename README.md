@@ -154,43 +154,7 @@
 
 **불투명 객체는 Deferred로 처리하고, 투명 객체는 별도 Forward** 경로에서 그려 **조명 결과와 합성**합니다. 이후 **볼류메트릭·이펙트·후처리·UI 순서로 화면을 구성**합니다.
 
-```mermaid
-flowchart TB
-    subgraph LIGHTING["<b>01 · 표면 정보와 조명</b>"]
-        direction LR
-        G["<b>표면 정보 준비</b><br/>깊이 · G-buffer<br/>데칼 · HBAO+"]
-        L["<b>조명 계산</b><br/>Compute Shader<br/>PBR + IBL"]
-        R["<b>반사 적용</b><br/>SSR · 평면 반사"]
-        S["<b>광원별</b><br/>그림자 맵"]
-        G --> L --> R
-        S --> L
-    end
-
-    subgraph FINISH["<b>02 · 합성과 출력</b>"]
-        direction LR
-        T["<b>투명 객체 합성</b><br/>Forward 렌더링"]
-        V["<b>환경 · 이펙트 합성</b><br/>구름 · 안개 → 이펙트"]
-        O["<b>후처리 · 출력</b><br/>PostProcess → 3D UI · UI"]
-        T --> V --> O
-    end
-
-    LIGHTING --> FINISH
-
-    class G buffer
-    class L,S light
-    class R post
-    class T,V composite
-    class O output
-    style LIGHTING fill:#F8FAFC,stroke:#CBD5E1,color:#334155
-    style FINISH fill:#F8FAFC,stroke:#CBD5E1,color:#334155
-
-    classDef buffer fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:1.5px
-    classDef light fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:1.5px
-    classDef composite fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:1.5px
-    classDef post fill:#EDE9FE,stroke:#7C3AED,color:#4C1D95,stroke-width:1.5px
-    classDef output fill:#1E293B,stroke:#0F172A,color:#FFFFFF,stroke-width:1.5px
-    linkStyle default stroke:#64748B,stroke-width:1.5px
-```
+<img src="./Docs/Deferred-PBR-Process.png" alt="지연 렌더링 PBR 과정" width="100%">
 
 관련 코드: `Engine/Private/Renderer.cpp` · `Engine/ShaderFiles/PBR/CS_PBR.hlsl`
 
@@ -222,43 +186,7 @@ flowchart TB
 
 점광원·스포트라이트의 그림자는 **정적 객체와 동적 객체를 분리**했습니다. 정적 장면이 바뀌었을 때 정적 그림자를 갱신하고, 최종 그림자 맵에 정적 결과를 복사한 뒤 동적 객체를 추가합니다.
 
-```mermaid
-flowchart TB
-    subgraph STATIC["<b>1 · 정적 그림자 캐시 준비</b>"]
-        direction LR
-        DIRTY{"<b>정적 그림자<br/>변경 여부</b>"}
-        CAPTURE["정적 객체<br/>그림자 다시 캡처"]
-        KEEP["기존 정적<br/>캐시 유지"]
-        READY["<b>사용할 정적<br/>깊이 데이터 확정</b>"]
-        DIRTY -->|"변경됨"| CAPTURE --> READY
-        DIRTY -->|"변경 없음"| KEEP --> READY
-    end
-
-    subgraph FINAL["<b>2 · 최종 그림자 갱신 또는 재사용</b>"]
-        direction LR
-        NEED{"<b>최종 그림자<br/>갱신 필요?</b>"}
-        COPY["정적 깊이를<br/>최종 맵에 복사"]
-        DYNAMIC["동적 객체의<br/>그림자 추가"]
-        REUSE["이전 최종<br/>그림자 재사용"]
-        RESULT["<b>샘플링에 사용할<br/>최종 그림자 맵</b>"]
-        NEED -->|"예"| COPY --> DYNAMIC --> RESULT
-        NEED -->|"아니요"| REUSE --> RESULT
-    end
-
-    STATIC --> FINAL
-
-    classDef check fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:1.5px
-    classDef update fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:1.5px
-    classDef cache fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:1.5px
-    classDef output fill:#1E293B,stroke:#0F172A,color:#FFFFFF,stroke-width:1.5px
-    class DIRTY,NEED check
-    class CAPTURE,COPY,DYNAMIC update
-    class KEEP,READY,REUSE cache
-    class RESULT output
-    style STATIC fill:#F8FAFC,stroke:#CBD5E1,color:#334155
-    style FINAL fill:#F8FAFC,stroke:#CBD5E1,color:#334155
-    linkStyle default stroke:#64748B,stroke-width:1.5px
-```
+<img src="./Docs/Shadow-Cache-Process.png" alt="그림자 캐시 과정" width="100%">
 
 이미 활성화된 광원과 그림자 슬롯에 유지 가중치를 부여해 카메라 이동 중 슬롯이 빈번하게 교체되는 것을 줄였습니다. 이펙트용 광원은 **풀에서 재사용**하고, 이펙트 위치와 수명에 맞춰 갱신·반환하도록 연결했습니다.
 
@@ -308,30 +236,7 @@ flowchart TB
 - **깊이 방향 적분:** 셀 구간의 길이와 소멸 계수로 투과율을 계산하고 산란광을 앞에서 뒤로 누적합니다.
 - **TAA :**  Halton Jitter와 이전 프레임의 ViewProjection을 사용해 안개 데이터를 재투영·혼합합니다.
 
-```mermaid
-flowchart LR
-    F["<b>Froxel 구성</b><br/>Jitter · 월드 위치 복원<br/>높이 · 노이즈 기반 밀도"]
-    S["<b>산란광 계산</b><br/>광원 · 그림자 · 위상 함수<br/>산란광 · 소멸 계수"]
-    T["<b>TAA</b><br/>이전 프레임으로 재투영<br/>현재 · 이전 데이터 혼합"]
-    H["<b>이전 프레임</b><br/>3D 안개 데이터"]
-    O["<b>깊이 적분 · 합성</b><br/>산란광 · 투과율 누적<br/>장면 색에 안개 반영"]
-
-    F --> S --> T --> O
-    H --> T
-    T -.->|"다음 프레임용 저장"| H
-
-    class F buffer
-    class S light
-    class T,H post
-    class O output
-
-    classDef buffer fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:1.5px
-    classDef light fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:1.5px
-    classDef composite fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:1.5px
-    classDef post fill:#EDE9FE,stroke:#7C3AED,color:#4C1D95,stroke-width:1.5px
-    classDef output fill:#1E293B,stroke:#0F172A,color:#FFFFFF,stroke-width:1.5px
-    linkStyle default stroke:#64748B,stroke-width:1.5px
-```
+<img src="./Docs/Froxel-Fog-Process.png" alt="Froxel Fog 과정" width="100%">
 
 광원과 그림자에 따른 산란의 차이로 **God Ray**를 표현했습니다. 이 시간적 누적은 **볼류메트릭 안개에 적용한 처리**입니다. 안개 자체의 샘플링 계단 현상을 완화하고, 레벨별 밀도·높이·색상·광원 산란 강도를 조정할 수 있도록 구성했습니다.
 
@@ -362,30 +267,7 @@ flowchart LR
 
 별도 **평면 반사 시점에서 반사 대상과 이펙트를 렌더 타깃에 출력**하고, 바닥에 투영해 SSR 결과와 함께 합성합니다.
 
-```mermaid
-flowchart LR
-    S["<b>SSR 준비</b><br/>표면 위치 · 반사 방향<br/>물웅덩이 · 바닥 마스크"]
-    R["<b>화면 공간 탐색</b><br/>깊이 기반 Ray Marching<br/>교차 픽셀의 색 조회"]
-    W["<b>반사 비중 조절</b><br/>Fresnel · Roughness<br/>화면 가장자리 감쇠"]
-    P["<b>평면 반사 시점</b>"]
-    T["<b>별도 렌더 타깃</b><br/>반사 대상 · 이펙트 출력"]
-    C["<b>반사 합성</b><br/>바닥 · 물웅덩이"]
-
-    S --> R --> W --> C
-    P --> T --> C
-
-    class S,R buffer
-    class W post
-    class P,T light
-    class C output
-
-    classDef buffer fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:1.5px
-    classDef light fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:1.5px
-    classDef composite fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:1.5px
-    classDef post fill:#EDE9FE,stroke:#7C3AED,color:#4C1D95,stroke-width:1.5px
-    classDef output fill:#1E293B,stroke:#0F172A,color:#FFFFFF,stroke-width:1.5px
-    linkStyle default stroke:#64748B,stroke-width:1.5px
-```
+<img src="./Docs/Surface-Reflection-Process.png" alt="바닥 반사 SSR" width="100%">
 
 관련 코드: `Engine/ShaderFiles/Decal/CS_SSR.hlsl` · `Client/ShaderFiles/Decal/Shader_HogsmeadePuddle.hlsl`
 
@@ -395,46 +277,7 @@ HBAO+에는 **깊이·월드 노멀·카메라 행렬·장면 스케일**을 전
 
 Bloom은 밝은 영역을 추출한 뒤 가로·세로 각각 **1/2, 1/4 해상도**의 버퍼에서 수직·수평 블러를 수행합니다. 두 해상도의 결과를 업샘플링해 합성하고, 원본 장면에 더해 빛 번짐을 표현합니다.
 
-```mermaid
-flowchart TB
-    subgraph BLOOM["<b>01 · 다중 해상도 Bloom</b>"]
-        direction LR
-        A["<b>원본 장면</b><br/>조명 · 이펙트 합성 결과"]
-        B["<b>Bright Pass</b><br/>1/2 해상도"]
-        H["<b>1/2 해상도</b><br/>수직 · 수평 블러"]
-        Q["<b>1/4 다운샘플</b><br/>수직 · 수평 블러"]
-        C["<b>Bloom 합성</b><br/>업샘플 · 두 해상도 결합<br/>원본 장면에 가산"]
-        A --> B
-        B --> H --> C
-        B --> Q --> C
-        A --> C
-    end
-
-    subgraph POST["<b>02 · 화면 연출과 색보정</b>"]
-        direction LR
-        E["<b>화면 연출</b><br/>Radial Blur<br/>→ 화면 왜곡 · 색수차"]
-        M["<b>톤 · 색보정</b><br/>ACES 톤매핑<br/>→ LUT 색보정"]
-        O["<b>최종 보정</b><br/>비네팅 · 감마 보정<br/>→ 외곽선 합성"]
-        E --> M --> O
-    end
-
-    BLOOM --> POST
-
-    class A buffer
-    class B,H,Q light
-    class C composite
-    class E,M post
-    class O output
-    style BLOOM fill:#F8FAFC,stroke:#CBD5E1,color:#334155
-    style POST fill:#F8FAFC,stroke:#CBD5E1,color:#334155
-
-    classDef buffer fill:#DBEAFE,stroke:#2563EB,color:#1E3A8A,stroke-width:1.5px
-    classDef light fill:#FEF3C7,stroke:#D97706,color:#78350F,stroke-width:1.5px
-    classDef composite fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:1.5px
-    classDef post fill:#EDE9FE,stroke:#7C3AED,color:#4C1D95,stroke-width:1.5px
-    classDef output fill:#1E293B,stroke:#0F172A,color:#FFFFFF,stroke-width:1.5px
-    linkStyle default stroke:#64748B,stroke-width:1.5px
-```
+<img src="./Docs/Bloom-PostProcess-Process.png" alt="PostProcess 과정" width="100%">
 
 | 후처리 | 구현 내용 |
 | --- | --- |
