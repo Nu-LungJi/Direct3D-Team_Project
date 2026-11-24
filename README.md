@@ -82,12 +82,12 @@
     <tr>
 <td align="center">
   <img src="./Docs/VisualEffect01.png" width="100%" alt="Character">
-  <br><b>06 / 쉐이더 이펙트 : 갓 레이</b>
+  <br><b>08 / 쉐이더 이펙트 : 갓 레이</b>
   <br><sub>SHADER VISUAL EFFECT</sub>
 </td>
 <td align="center">
   <img src="./Docs/VisualEffect02.png" width="100%" alt="UI">
-  <br><b>07 / 쉐이더 이펙트 : SSR 물웅덩이 반사</b>
+  <br><b>09 / 쉐이더 이펙트 : SSR 물웅덩이 반사</b>
   <br><sub>SHADER VISUAL EFFECT</sub>
 </td>
 </tr>
@@ -98,7 +98,7 @@
 <tr>
 <td width="100%" align="center">
   <img src="./Docs/FinalTitle_ScreenShot.png" width="100%" alt="Final Gameplay">
-  <br><b>08 — GAMEPLAY FINAL HIGHLIGHT</b>
+  <br><b>10 — GAMEPLAY FINAL HIGHLIGHT</b>
   <br><sub>최종 보스 : 란록 전투</sub>
 </td>
 </tr>  
